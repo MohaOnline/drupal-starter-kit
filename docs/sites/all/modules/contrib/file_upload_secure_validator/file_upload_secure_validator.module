@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Provides file upload extension validation through php fileinfo.
+ */
+
+/**
+ * Implements hook_field_widget_form_alter().
+ *
+ * Add one more validation callback to every file field of every content type.
+ */
+function file_upload_secure_validator_field_widget_form_alter(&$element, &$form_state, $context) {
+  // Retrieve all user defined allowed file extensions for each file field and
+  // pass them as a parameter to the validation callback.
+  $children = array_intersect_key($element, element_children($element));
+  foreach ($children as $child_element_index => $child_element) {
+    if ($child_element["#type"] == "managed_file") {
+      // make sure that `fileinfo` extension is loaded/enabled.
+      if (extension_loaded('fileinfo')) {
+        $child_element["#upload_validators"]["file_upload_secure_validator_upload_validate"] = array();
+        $element[$child_element_index] = $child_element;
+      }
+      else {
+        drupal_set_message(t("It seems as if Fileinfo extension is not loaded/enabled. If you are using Windows, may be, you should uncomment php_fileinfo.dll in php.ini file."), "error");
+      }
+    }
+  }
+}
+
+/**
+ * Validation callback for 'file_upload_secure_validator_upload_validate'.
+ *
+ * @param object $file
+ *   The file to be uploaded.
+ */
+function file_upload_secure_validator_upload_validate($file) {
+  $errors = array();
+  $error_message = t("There was a problem with this file's extension.");
+
+  // Get mime type from filename.
+  $mime_by_filename = file_get_mimetype($file->filename);
+
+  // FILEINFO_MIME_TYPE - pre-defined constant in fileinfo library.
+  // Used to inform the library that we want Mime-type information of a file.
+  // Refer http://php.net/manual/en/fileinfo.constants.php for more information.
+  $finfo = finfo_open(FILEINFO_MIME_TYPE);
+  $real_mime = finfo_file($finfo, $file->uri);
+
+  if ($mime_by_filename !== $real_mime) {
+    $errors[] = $error_message;
+  }
+
+  finfo_close($finfo);
+
+  return $errors;
+}

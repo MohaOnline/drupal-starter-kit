@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * @file
+ * Contains automated tests for file_upload_secure_validator.
+ */
+
+/**
+ * The main UnitTestCase class.
+ */
+class FileUploadSecureValidatorUnitTestCase extends DrupalUnitTestCase {
+
+  /**
+   * Enabling the module.
+   */
+  public function setUp() {
+    parent::setUp();
+    module_load_include('module', 'file_upload_secure_validator');
+  }
+
+  /**
+   * Describing and grouping our test suite.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'FileUploadSecureValidator UnitTestCase',
+      'description' => 'Test all agreement of mimetype-from-extension with mimetype-from-fileinfo.',
+      'group' => 'File Upload Secure Validator',
+    );
+  }
+
+  /**
+   * Basic test function for testing the extension.
+   */
+  public function testExtensions() {
+    $uris_cases = $this->scenarioProvider();
+    foreach ($uris_cases as $case => $info) {
+      $file = $this->mockFile($info);
+
+      $errors = file_upload_secure_validator_upload_validate($file);
+      $error = array_pop($errors);
+
+      $this->assertEqual($error, $info['expected'], "Succesfuly covered the case of a '$case'");
+    }
+  }
+
+  /**
+   * Scenario related data are created in this function.
+   */
+  public function scenarioProvider() {
+
+    $module_path = drupal_get_path('module', 'file_upload_secure_validator');
+    $uris_cases = array(
+      'True extension' => array(
+        'uri' => drupal_get_path('module', 'file_upload_secure_validator') . '/tests/resources/original_pdf.pdf',
+        'filename' => "original_pdf.pdf",
+        'expected' => NULL,
+      ),
+      'Falsified extension' => array(
+        'uri' => drupal_get_path('module', 'file_upload_secure_validator') . '/tests/resources/original_pdf.txt',
+        'filename' => "original_pdf.txt",
+        'expected' => t("There was a problem with this file's extension."),
+      ),
+    );
+
+    return $uris_cases;
+  }
+
+  /**
+   * Mock file creation.
+   */
+  private function mockFile($fileinfo) {
+    // We only care about the actual file url.
+    $mockFile = new stdClass();
+    $mockFile->uri = $fileinfo["uri"];
+    $mockFile->filename = $fileinfo["filename"];
+
+    return $mockFile;
+  }
+
+}
