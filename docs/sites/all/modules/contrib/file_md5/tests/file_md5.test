@@ -1,0 +1,60 @@
+<?php
+/**
+ * @file
+ * Testing File MD5 functionality.
+ */
+
+/**
+ * Class FileMD5TestCase.
+ */
+class FileMD5TestCase extends \DrupalWebTestCase {
+
+  /**
+   * Test module.
+   */
+  const MODULE = 'file_md5_test';
+
+  /**
+   * MD5 hash of "image.png" inside of "tests/files".
+   */
+  const MD5HASH = 'cb79d9724183005c1fc3cfdfd71ac29a';
+
+  /**
+   * Path to test file.
+   *
+   * @var string
+   */
+  private $testFile = '';
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return [
+      'name' => 'File MD5',
+      'group' => t('Utilities'),
+      'description' => t('Testing functionality of File MD5 module.'),
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp() {
+    parent::setUp(self::MODULE);
+    $this->testFile = drupal_get_path('module', self::MODULE) . '/files/image.png';
+  }
+
+  /**
+   * Test file uploading and comparing it hash.
+   */
+  public function testForm() {
+    $this->drupalLogin($this->drupalCreateUser(['access content']));
+    $this->drupalGet(self::MODULE);
+    $this->drupalPost(NULL, ['files[file_md5_test_file]' => drupal_realpath($this->testFile)], t('Upload'));
+    $this->drupalPost(NULL, [], t('Save configuration'));
+    $this->assertRaw(t('The configuration options have been saved.'));
+    $this->assertTrue(file_md5_load_file(self::MD5HASH));
+  }
+
+}

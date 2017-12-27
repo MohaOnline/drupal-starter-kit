@@ -1,0 +1,118 @@
+<?php
+/**
+ * @file
+ * File MD5.
+ */
+
+// Include auxiliary functionality.
+require_once 'includes/file_md5.common.inc';
+// Include Node Export related functionality.
+require_once 'includes/file_md5.node_export.inc';
+
+/**
+ * Implements hook_file_presave().
+ */
+function file_md5_file_presave(\stdClass $file) {
+  $file->md5 = file_md5_hash($file->uri);
+}
+
+/**
+ * Implements hook_file_validate().
+ */
+function file_md5_file_validate(\stdClass $file) {
+  $errors = [];
+
+  // Validate a file by MD5 only if this is allowed.
+  // @see file_md5_form_system_file_system_settings_alter()
+  if (variable_get(__FUNCTION__, FALSE)) {
+    $existing = file_md5_load_file(file_md5_hash($file->uri));
+
+    if (!empty($existing)) {
+      $errors[] = t('An identical file located here: @uri.', [
+        '@uri' => $existing->uri,
+      ]);
+    }
+  }
+
+  return $errors;
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function file_md5_form_system_file_system_settings_alter(array &$form, array &$form_state, $form_id) {
+  $items = [];
+
+  $items['file_md5_file_validate'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Enable validation by comparing MD5 hash of a file'),
+    '#default_value' => FALSE,
+  ];
+
+  if (module_exists('node_export')) {
+    $items['file_md5_node_export'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Enable @module integration', [
+        '@module' => 'Node Export',
+      ]),
+      '#default_value' => TRUE,
+    ];
+  }
+
+  // Dynamically set values for form elements, provided by this module.
+  foreach ($items as $name => $item) {
+    $items[$name]['#default_value'] = variable_get($name, $item['#default_value']);
+  }
+
+  // Extend an original form.
+  // @see system_file_system_settings()
+  $form += [
+    'file_md5' => $items + [
+      '#type' => 'fieldset',
+      '#title' => t('@module settings', [
+        '@module' => 'File MD5',
+      ]),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_node_export_alter().
+ */
+function file_md5_node_export_alter(array &$nodes) {
+  if (variable_get('file_md5_node_export', TRUE)) {
+    foreach ($nodes as $i => &$node) {
+      file_md5_node_export_process_file_fields('node', $node, function (array &$item) {
+        $item = $item['md5'];
+      });
+    }
+  }
+}
+
+/**
+ * Implements hook_node_export_import_alter().
+ */
+function file_md5_node_export_import_alter(array &$nodes) {
+  if (variable_get('file_md5_node_export', TRUE)) {
+    foreach ($nodes as $i => &$node) {
+      file_md5_node_export_process_file_fields('node', $node, function (&$item) {
+        $item = (array) file_md5_load_file($item);
+      });
+    }
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function file_md5_module_implements_alter(array &$implementations, $hook) {
+  if (in_array($hook, ['node_export_alter', 'node_export_import_alter'])) {
+    $implementation = [
+      'file_md5' => $implementations['file_md5'],
+    ];
+
+    unset($implementations['file_md5']);
+
+    $implementations = $implementation + $implementations;
+  }
+}

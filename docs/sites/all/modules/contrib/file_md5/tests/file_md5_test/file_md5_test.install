@@ -1,0 +1,16 @@
+<?php
+/**
+ * @file
+ * Installation and update operations.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function file_md5_test_install() {
+  global $user;
+
+  foreach (file_md5_scan(drupal_get_path('module', 'file_md5_test'), ['png']) as $file) {
+    file_usage_add($file, 'file_md5_test', 'user', $user->uid);
+  }
+}

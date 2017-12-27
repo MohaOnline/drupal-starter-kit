@@ -1,0 +1,69 @@
+<?php
+/**
+ * @file
+ * File MD5 (Test).
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function file_md5_test_menu() {
+  $routes = [];
+
+  $routes['file_md5_test'] = [
+    'title' => 'File MD5 (Test)',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['file_md5_test_form'],
+    'access arguments' => ['access content'],
+  ];
+
+  return $routes;
+}
+
+/**
+ * Implements hook_form().
+ */
+function file_md5_test_form(array $form, array &$form_state) {
+  $form['file_md5_test_file'] = [
+    '#type' => 'managed_file',
+    '#title' => t('File'),
+    '#default_value' => 0,
+  ];
+
+  foreach ($form as $name => $item) {
+    $value = variable_get($name, $item['#default_value']);
+
+    // Preprocess value of file field.
+    if (isset($item['#type']) && 'managed_file' === $item['#type']) {
+      $file = file_md5_load_file($value);
+
+      if (FALSE !== $file) {
+        $value = $file->fid;
+      }
+    }
+
+    $form[$name]['#default_value'] = $value;
+  }
+
+  $form['#submit'][] = __FUNCTION__ . '_submit';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function file_md5_test_form_submit(array $form, array &$form_state) {
+  global $user;
+
+  if ($form_state['values']['file_md5_test_file'] > 0) {
+    $file = file_load($form_state['values']['file_md5_test_file']);
+    $file->status = FILE_STATUS_PERMANENT;
+
+    // Replace FID by MD5.
+    $form_state['values']['file_md5_test_file'] = $file->md5;
+
+    // Add file usage.
+    file_usage_add(file_save($file), 'file_md5_test', 'user', $user->uid);
+  }
+}
