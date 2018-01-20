@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * List of functions used to alter the theme registry in Bootstrap based themes.
@@ -108,7 +109,7 @@ function bootstrap_theme_registry_alter(&$registry) {
   }
 
   // Inject the "footer" variable default in the existing "table" hook.
-  // @see https://drupal.org/node/806982
+  // @see https://www.drupal.org/node/806982
   // @todo Make this discoverable in some way instead of a manual injection.
   $registry['table']['variables']['footer'] = NULL;
 
@@ -173,7 +174,7 @@ function bootstrap_theme_registry_alter(&$registry) {
  * @see _theme_process_registry()
  * @see _theme_build_registry()
  */
-function _bootstrap_process_theme_registry(&$registry, $themes) {
+function _bootstrap_process_theme_registry(array &$registry, $themes) {
   // Convert to an array if needed.
   if (is_string($themes)) {
     $themes = array();
@@ -248,14 +249,14 @@ function _bootstrap_process_theme_registry(&$registry, $themes) {
 
         // Setup a default "context" variable. This allows #context to be passed
         // to every template and theme function.
-        // @see https://drupal.org/node/2035055
+        // @see https://www.drupal.org/node/2035055
         if (isset($info['variables']) && !isset($info['variables']['context'])) {
           $registry[$hook]['variables']['context'] = array();
         }
 
         // Setup a default "icon" variable. This allows #icon to be passed
         // to every template and theme function.
-        // @see https://drupal.org/node/2219965
+        // @see https://www.drupal.org/node/2219965
         if (isset($info['variables']) && !isset($info['variables']['icon'])) {
           $registry[$hook]['variables']['icon'] = NULL;
         }
@@ -281,7 +282,7 @@ function _bootstrap_process_theme_registry(&$registry, $themes) {
  *
  * @see https://www.drupal.org/node/2098551
  */
-function _bootstrap_registry_sort_phase_functions(&$functions, $hook, $phase, $themes) {
+function _bootstrap_registry_sort_phase_functions(array &$functions, $hook, $phase, array $themes) {
   // Immediately return if there is nothing to sort.
   if (count($functions) < 2) {
     return;
@@ -326,13 +327,10 @@ function _bootstrap_registry_sort_phase_functions(&$functions, $hook, $phase, $t
  * @param string|array $themes
  *   The name of the theme or list of theme names to process.
  *
- * @return array
- *   The functions found, suitable for returning from hook_theme;
- *
- * @see https://drupal.org/node/939462
+ * @see https://www.drupal.org/node/939462
  * @see drupal_find_theme_functions()
  */
-function _bootstrap_process_theme_registry_suggestions(&$registry, $themes) {
+function _bootstrap_process_theme_registry_suggestions(array &$registry, $themes) {
   // Convert to an array if needed.
   if (is_string($themes)) {
     $themes = array();
@@ -460,6 +458,7 @@ function _bootstrap_process_theme_registry_suggestions(&$registry, $themes) {
  * @see https://www.drupal.org/node/2339447
  */
 if (!function_exists('drupal_group_functions_by_prefix')) {
+
   /**
    * Group all user functions by word before first underscore.
    *
@@ -478,6 +477,7 @@ if (!function_exists('drupal_group_functions_by_prefix')) {
 
     return $grouped_functions;
   }
+
 }
 
 /**
