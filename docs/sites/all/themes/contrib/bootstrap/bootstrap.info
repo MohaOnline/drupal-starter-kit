@@ -208,9 +208,9 @@ multipliers[screen-md-max][] = 2x
 multipliers[screen-lg-min][] = 1.5x
 multipliers[screen-lg-min][] = 2x
 
-; Information added by Drupal.org packaging script on 2018-01-20
-version = "7.x-3.18"
+; Information added by Drupal.org packaging script on 2018-01-26
+version = "7.x-3.19"
 core = "7.x"
 project = "bootstrap"
-datestamp = "1516429990"
+datestamp = "1516989514"
 
