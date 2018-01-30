@@ -1,0 +1,12 @@
+name = Easychart
+description = A visual editor for the world's best web charting tool: Highcharts.
+core = 7.x
+package = Easychart
+dependencies[] = file
+dependencies[] = libraries
+; Information added by Drupal.org packaging script on 2016-10-04
+version = "7.x-3.7"
+core = "7.x"
+project = "easychart"
+datestamp = "1475594998"
+

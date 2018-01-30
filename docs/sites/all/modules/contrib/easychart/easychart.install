@@ -1,0 +1,222 @@
+<?php
+
+/**
+ * @file
+ * Easychart install file.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function easychart_uninstall() {
+  node_type_delete('easychart');
+  file_unmanaged_delete('public://easychart-options.json');
+}
+
+/**
+ * Implements hook_field_schema().
+ */
+function easychart_field_schema($field) {
+  $columns = array(
+    'csv' => array('type' => 'text', 'size' => 'big', 'not null' => FALSE),
+    'csv_url' => array('type' => 'text', 'size' => 'medium', 'not null' => FALSE),
+    'config' => array('type' => 'text', 'size' => 'big', 'not null' => FALSE),
+  );
+  return array(
+    'columns' => $columns,
+  );
+}
+
+/**
+ * Convert xAxis and yAxis to objects instead of arrays.
+ */
+function easychart_update_7322 () {
+  // Get all existing chart configurations
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'easychart')
+    ->fieldCondition('easychart', 'config', '', '!=');
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $easycharts = $result['node'];
+    foreach ($easycharts as $easychart) {
+      $node = node_load($easychart->nid);
+
+      $item = field_get_items('node', $node, 'easychart');
+      if (isset($item[0]['config']) && $item[0]['config'] != '') {
+        $config = json_decode($item[0]['config']);
+
+        // Remove the series object.
+        unset($config->series);
+
+        // Fix xAxis and yAxis.
+        foreach ($config as $key => $item) {
+          if (in_array($key, array('xAxis', 'yAxis')) && is_object($item)) {
+            $config->$key = array($item);
+          }
+        }
+
+        $config = json_encode($config);
+
+        $node->easychart['und'][0]['config'] = $config;
+        field_attach_update('node', $node);
+      }
+    }
+  }
+}
+
+/**
+ * Remove unused fields.
+ */
+function easychart_update_7301 () {
+  // TODO: remove easychart_stored column
+
+  // Convert global Highchart options to Easychart presets.
+  $presets = variable_get('global_highchart_options', "");
+  if ($presets != '') {
+    variable_set('easychart_presets', $presets);
+  }
+  variable_del('global_highchart_options');
+
+  // Remove highchart_ui_options. Conversion to the new options object is too complex.
+  variable_del('highchart_ui_options');
+}
+
+/**
+ * Cleanup the config object.
+ */
+function easychart_update_7300 () {
+
+  // Get all existing chart configurations
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'easychart')
+    ->fieldCondition('easychart', 'config', '', '!=');
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $easycharts = $result['node'];
+    foreach ($easycharts as $easychart) {
+      $node = node_load($easychart->nid);
+
+      $item = field_get_items('node', $node, 'easychart');
+      if (isset($item[0]['config']) && $item[0]['config'] != '') {
+        $config = json_decode($item[0]['config']);
+        // Remove the series object.
+        unset($config->series);
+
+        // Remove empty entries.
+        _cleanup_object($config);
+
+        $config = json_encode($config);
+
+        $node->easychart['und'][0]['config'] = $config;
+        field_attach_update('node', $node);
+      }
+    }
+  }
+}
+
+/*
+ * Helper function to remove empty objects.
+ */
+function _cleanup_object($config) {
+  foreach($config as $key => $item) {
+    if (is_object($item) || is_array($item)) {
+      $arr = (array) $item;
+      if (empty($arr)) {
+        unset($config->$key);
+      }
+      else {
+        _cleanup_object($item);
+      }
+    }
+  }
+}
+
+/**
+ * Transpose all existing data.
+ */
+function easychart_update_7200 () {
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'easychart')
+    ->fieldCondition('easychart', 'csv', '', '!=');
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $easycharts = $result['node'];
+    foreach ($easycharts as $easychart) {
+      $node = node_load($easychart->nid);
+
+      $data = field_get_items('node', $node, 'easychart');
+
+      // Get separator.
+      $separator = ',';
+      $seps = array(';',',','|',"\t");
+      $max = 0;
+
+      foreach($seps as $sep){
+        $count = substr_count($data[0]['csv'], $sep);
+        if($count > $max){
+          $separator = $sep;
+          $max = $count;
+        }
+      }
+
+      $new_data = array();
+      $rows = str_getcsv($data[0]['csv'], "\n"); //parse the rows
+      foreach($rows as &$row) {
+        $new_data[] = str_getcsv($row, $separator);
+      }
+      $new_data = _transpose($new_data);
+
+      // Clear the first cell if there are categories
+      if (!is_numeric($new_data[1][0])) {
+        $new_data[0][0] = '';
+      }
+
+      $node->easychart['und'][0]['csv'] = json_encode($new_data);
+
+      field_attach_update('node', $node);
+    }
+  }
+}
+
+/*
+ * Helper function to transpose an array
+ */
+function _transpose($array) {
+  $transposed_array = array();
+  if ($array) {
+    foreach ($array as $row_key => $row) {
+      if (is_array($row) && !empty($row)) { //check to see if there is a second dimension
+        foreach ($row as $column_key => $element) {
+          $transposed_array[$column_key][$row_key] = $element;
+        }
+      }
+      else {
+        $transposed_array[0][$row_key] = $row;
+      }
+    }
+    return $transposed_array;
+  }
+}
+
+/**
+ * Adds storage for an external CSV url.
+ */
+function easychart_update_7100 () {
+  $spec = array(
+    'type' => 'text',
+    'description' => '',
+    'size' => 'medium',
+    'not null' => FALSE,
+  );
+  $data_table_name = 'field_data_easychart';
+  $revision_table_name = 'field_revision_easychart';
+  $field_name = 'easychart_csv_url';
+  db_add_field($data_table_name, $field_name, $spec);
+  db_add_field($revision_table_name, $field_name, $spec);
+}

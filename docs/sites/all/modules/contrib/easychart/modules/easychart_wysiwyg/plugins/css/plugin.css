@@ -1,0 +1,55 @@
+.easychart_dialog {
+  background:#fff;
+  padding: 0;
+  border: 1px solid #fff;
+}
+
+.easychart_dialog .ui-dialog-titlebar {
+  margin:0;
+  padding:1em;
+  background-color:#333;
+  color:#fff;
+  position:relative;
+}
+
+.easychart_dialog .ui-dialog-titlebar-close {
+  position:absolute;
+  right:5px;
+  color:#fff;
+}
+
+#easyChartDialog {
+  margin:10px 0 0 0;
+}
+
+#easyChartDialog .easychart-view-modes-wrapper {
+  margin-bottom: 1em;
+}
+
+/* iFrame in popup */
+body.easychart-add-chart ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+body.easychart-add-chart ul li {
+  cursor: pointer;
+  padding: 0.5em;
+  list-style: none;
+  border: 1px solid #f3f3f3;
+  margin: 0.5em 0;
+}
+
+body.easychart-add-chart ul li.active {
+  background: #d0f4c8;
+  border: 1px solid #3faf26;
+}
+
+body.easychart-add-chart .views-field-nid {
+  display: none;
+}
+
+body.easychart-add-chart div.views-admin-links ul.links li {
+  display: none;
+}

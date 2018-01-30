@@ -1,0 +1,194 @@
+<?php
+
+/**
+ * @file
+ * Easychart WYSIWYG integration.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function easychart_wysiwyg_permission() {
+  return array(
+    'view easychart wysiwyg list' => array(
+      'title' => t('View Easychart WYSIWYG list'),
+      'description' => t('People with this permission will be allowed to access the view to embed charts in editors.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function easychart_wysiwyg_theme_registry_alter(&$theme_registry) {
+
+  // Add 'html--editor-easychart.tpl.php' template file
+  $theme_registry['html__admin__config__media__easychart__charts'] = array();
+  $theme_registry['html__admin__config__media__easychart__charts']['template'] = 'html--easychart-charts';
+  $theme_registry['html__admin__config__media__easychart__charts']['path'] = drupal_get_path('module', 'easychart_wysiwyg') . "/theme";
+  $theme_registry['html__admin__config__media__easychart__charts']['render element'] = 'html';
+  $theme_registry['html__admin__config__media__easychart__charts']['base hook'] = 'html';
+  $theme_registry['html__admin__config__media__easychart__charts']['type'] = 'module';
+  $theme_registry['html__admin__config__media__easychart__charts']['theme path'] = drupal_get_path('module', 'easychart_wysiwyg') . "/theme";
+
+  // Add 'page--editor-easychart.tpl.php' template file
+  $theme_registry['page__admin__config__media__easychart__charts'] = array();
+  $theme_registry['page__admin__config__media__easychart__charts']['template'] = 'page--easychart-charts';
+  $theme_registry['page__admin__config__media__easychart__charts']['path'] = drupal_get_path('module', 'easychart_wysiwyg') . "/theme";
+  $theme_registry['page__admin__config__media__easychart__charts']['render element'] = 'page';
+  $theme_registry['page__admin__config__media__easychart__charts']['base hook'] = 'page';
+  $theme_registry['page__admin__config__media__easychart__charts']['type'] = 'module';
+  $theme_registry['page__admin__config__media__easychart__charts']['theme path'] = drupal_get_path('module', 'easychart_wysiwyg') . "/theme";
+  $theme_registry['page__admin__config__media__easychart__charts']['override preprocess functions'] = TRUE;
+}
+
+/*
+ * Implements template_preprocess_page.
+ */
+function easychart_wysiwyg_preprocess_page(&$variables) {
+  // Force the use of this template.
+  if ($variables['theme_hook_suggestions'][0] == 'page__admin__config_media__easychart__charts') {
+    $variables['theme_hook_suggestion'] = 'page__admin__config_media__easychart__charts';
+  }
+}
+
+/**
+ * Implementing the Wysiwyg API.
+ *
+ * Register a directory containing Wysiwyg plugins.
+ *
+ * @param string $type
+ *   The type of objects being collected: either 'plugins' or 'editors'.
+ *
+ * @return string
+ *   A sub-directory of the implementing module that contains the corresponding
+ *   plugin files. This directory must only contain integration files for
+ *   Wysiwyg module.
+ */
+function easychart_wysiwyg_wysiwyg_include_directory($type) {
+
+  switch ($type) {
+    case 'plugins':
+      // You can just return $type, if you place your Wysiwyg plugins into a
+      // sub-directory named 'plugins'.
+      return $type;
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function easychart_wysiwyg_views_api() {
+  return array('api' => 3.0);
+}
+
+/**
+ * Implements of hook_views_pre_render().
+ */
+function easychart_wysiwyg_views_pre_render(&$view) {
+
+  if ($view->name == 'easychart_plugin' && $view->current_display == 'page') {
+
+    // suppress other interface elements.
+    module_invoke_all('suppress');
+
+    drupal_add_js("var oEditor = window.parent.CKEDITOR;
+      if (oEditor) {
+      var instance = oEditor.currentInstance;
+      var lang = oEditor.lang;
+      var config = oEditor.config;
+      }",
+      'inline'
+    );
+    drupal_add_js(drupal_get_path('module', 'easychart_wysiwyg') . '/plugins/js/popup.js');
+
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function easychart_wysiwyg_init() {
+  // A global counter to be used when printing the charts.
+  global $chart_count;
+  $chart_count = 0;
+
+  drupal_add_css(drupal_get_path('module', 'easychart_wysiwyg') . '/plugins/css/plugin.css');
+}
+
+/**
+ * Implements hook_filter_info().
+ */
+function easychart_wysiwyg_filter_info() {
+  $filters['easychart'] = array(
+    'title' => t('Insert Easychart charts'),
+    'prepare callback' => 'easychart_wysiwyg_filter_easychart_prepare',
+    'process callback' => 'easychart_wysiwyg_filter_easychart_process',
+    'tips callback' => 'easychart_wysiwyg_filter_easychart_tips',
+    'cache' => FALSE,
+  );
+
+  return $filters;
+}
+
+/**
+ * Prepare callback for hook_filter
+ *
+ * // TODO this shouldn't be needed, remove from info hook too.
+ */
+function easychart_wysiwyg_filter_easychart_prepare($text, $filter, $format, $langcode, $cache, $cache_id) {
+  return $text;
+}
+
+/**
+ * Process callback for hook_filter
+ */
+function easychart_wysiwyg_filter_easychart_process($text, $filter, $format, $langcode, $cache, $cache_id) {
+  if (preg_match('/\[\[chart-nid:(\d+),chart-view-mode:(\w+)\]\]/', $text, $matches)) {
+    return preg_replace_callback('/\[\[chart-nid:(\d+),chart-view-mode:(\w+)\]\]/', '_easychart_wysiwyg_render_node', $text);
+  }
+  // Support for v2 of the placeholder.
+  else if (preg_match('/\[\[chart-nid:(\d+)\]\]/', $text, $matches)) {
+    return preg_replace_callback('/\[\[chart-nid:(\d+)\]\]/', '_easychart_wysiwyg_render_node', $text);
+  }
+  else {
+    return $text;
+  }
+}
+
+/**
+ * Tips callback for hook_filter
+ */
+function easychart_wysiwyg_filter_easychart_tips($filter, $format, $long) {
+  return t('[[chart-nid:123,chart-view-mode:teaser]] - Insert a chart');
+}
+
+/**
+ * Provides the replacement html to be rendered in place of the embed code.
+ *
+ * Does not handle nested embeds.
+ *
+ * @param array $matches
+ *   numeric node id that has been captured by preg_replace_callback
+ *
+ * @return string
+ *   The rendered HTML replacing the embed code
+ */
+function _easychart_wysiwyg_render_node($matches) {
+
+  $node = node_load($matches[1]);
+
+  $view_mode = 'full';
+  if (isset($matches[2])) {
+    $view_mode = $matches[2];
+  }
+
+  if ($node == FALSE || !node_access('view', $node) || !$node->status) {
+    return "[[chart-nid:{$matches[1]},chart-view-mode:{$view_mode}]]";
+  }
+  else {
+    $view = node_view($node, $view_mode);
+    $render = drupal_render($view);
+    return $render;
+  }
+}
