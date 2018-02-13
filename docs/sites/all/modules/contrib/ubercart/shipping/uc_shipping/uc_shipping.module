@@ -7,7 +7,6 @@
  * and tracking numbers.
  */
 
-
 /**
  * Implements hook_help().
  */
@@ -15,7 +14,6 @@ function uc_shipping_help($path, $arg) {
   switch ($path) {
     case 'admin/store/orders/%/packages/new':
       return '<p>' . t('Organize products into packages. Package numbers in multiple shipping types are of the first shipping type they appear in. All packages are given a unique ID when they are saved. Choose the default package "Sep." to automatically create a package for each of the selected quantity of products in that row.') . '</p>';
-      break;
   }
 }
 
@@ -445,7 +443,7 @@ function uc_shipping_package_load($package_id) {
  * Saves a package.
  */
 function uc_shipping_package_save($package) {
-  $package = (object)$package;
+  $package = (object) $package;
 
   if (!isset($package->package_id)) {
     $package->package_id = db_insert('uc_packages')
@@ -853,9 +851,7 @@ function uc_shipping_uc_order($op, $order, $arg2) {
       if ($package_count > 0) {
         return FALSE;
       }
-
       return TRUE;
-      break;
 
     case 'delete':
       // Find and delete the shipments.

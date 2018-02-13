@@ -5,6 +5,9 @@
  * Ubercart attribute checkout tests.
  */
 
+/**
+ * Tests the product attribute API.
+ */
 class UbercartAttributeCheckoutTestCase extends UbercartTestHelper {
 
   public static function getInfo() {
@@ -26,7 +29,7 @@ class UbercartAttributeCheckoutTestCase extends UbercartTestHelper {
   /**
    * Tests that product in cart has the selected attribute option.
    */
-  function testAttributeAddToCart() {
+  public function testAttributeAddToCart() {
     for ($display = 0; $display <= 3; ++$display) {
       // Set up an attribute.
       $data = array(

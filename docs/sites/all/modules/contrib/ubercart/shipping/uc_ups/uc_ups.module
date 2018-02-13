@@ -387,6 +387,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
       $units = 'LBS';
       $unit_name = 'Pounds';
       break;
+
     case 'cm':
       $units = 'KGS';
       $unit_name = 'Kilograms';
@@ -404,6 +405,7 @@ function uc_ups_shipping_quote($packages, $origin, $destination, $ups_service) {
       case 'in':
         $weight_factor = uc_weight_conversion($package->weight_units, 'lb');
         break;
+
       case 'cm':
         $weight_factor = uc_weight_conversion($package->weight_units, 'kg');
         break;
@@ -663,7 +665,7 @@ function uc_ups_quote($products, $details, $method) {
       if (!isset($product->pkg_qty) || !$product->pkg_qty) {
         $product->pkg_qty = 1;
       }
-      $num_of_pkgs = (int)($product->qty / $product->pkg_qty);
+      $num_of_pkgs = (int) ($product->qty / $product->pkg_qty);
 
       // Grab some product properties directly from the (cached) product
       // data.  They are not normally available here because the $product
@@ -706,7 +708,7 @@ function uc_ups_quote($products, $details, $method) {
     return array();
   }
 
-  $dest = (object)$details;
+  $dest = (object) $details;
 
   foreach ($packages as $key => $ship_packages) {
     $orig = $addresses[$key];
@@ -727,9 +729,9 @@ function uc_ups_quote($products, $details, $method) {
       if (isset($response->Response->Error)) {
         foreach ($response->Response->Error as $error) {
           if (user_access('configure quotes') && variable_get('uc_quote_display_debug', FALSE)) {
-            $debug_data[$ups_service]['error'][] = (string)$error->ErrorSeverity . ' ' . (string)$error->ErrorCode . ': ' . (string)$error->ErrorDescription;
+            $debug_data[$ups_service]['error'][] = (string) $error->ErrorSeverity . ' ' . (string) $error->ErrorCode . ': ' . (string) $error->ErrorDescription;
           }
-          if (strpos((string)$error->ErrorSeverity, 'Hard') !== FALSE) {
+          if (strpos((string) $error->ErrorSeverity, 'Hard') !== FALSE) {
             // All or nothing quote. If some products can't be shipped by
             // a certain service, no quote is given for that service. If
             // that means no quotes are given at all, they'd better call in.
@@ -744,12 +746,12 @@ function uc_ups_quote($products, $details, $method) {
         if (isset($response->RatedShipment->NegotiatedRates)) {
           $charge = $response->RatedShipment->NegotiatedRates->NetSummaryCharges->GrandTotal;
         }
-        if (!isset($charge->CurrencyCode) || (string)$charge->CurrencyCode == variable_get('uc_currency_code', "USD")) {
+        if (!isset($charge->CurrencyCode) || (string) $charge->CurrencyCode == variable_get('uc_currency_code', "USD")) {
           // Markup rate before customer sees it.
           if (!isset($quotes[$ups_service]['rate'])) {
             $quotes[$ups_service]['rate'] = 0;
           }
-          $rate = uc_ups_rate_markup((string)$charge->MonetaryValue);
+          $rate = uc_ups_rate_markup((string) $charge->MonetaryValue);
           $quotes[$ups_service]['rate'] += $rate;
         }
       }
@@ -847,20 +849,20 @@ function uc_ups_void_shipment($shipment_number, $tracking_numbers = array()) {
   $response = new SimpleXMLElement($resp->data);
   if (isset($response->Response)) {
     if (isset($response->Response->ResponseStatusCode)) {
-      $success = (string)$response->Response->ResponseStatusCode;
+      $success = (string) $response->Response->ResponseStatusCode;
     }
     if (isset($response->Response->Error)) {
       foreach ($response->Response->Error as $error) {
-        drupal_set_message((string)$error->ErrorSeverity . ' ' . (string)$error->ErrorCode . ': ' . (string)$error->ErrorDescription, 'error');
+        drupal_set_message((string) $error->ErrorSeverity . ' ' . (string) $error->ErrorCode . ': ' . (string) $error->ErrorDescription, 'error');
       }
     }
   }
   if (isset($response->Status)) {
     if (isset($response->Status->StatusType)) {
-      $success = (string)$response->Status->StatusType->Code;
+      $success = (string) $response->Status->StatusType->Code;
     }
   }
-  return (bool)$success;
+  return (bool) $success;
 }
 
 /**
@@ -880,8 +882,10 @@ function uc_ups_rate_markup($rate) {
     switch ($type) {
       case 'percentage':
         return $rate + $rate * floatval($markup) / 100;
+
       case 'multiplier':
         return $rate * floatval($markup);
+
       case 'currency':
         return $rate + floatval($markup);
     }
