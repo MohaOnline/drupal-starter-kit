@@ -1,0 +1,54 @@
+<?php
+
+/**
+* @file
+* Detects if PHPmailer has been installed.
+*/
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function just_smtp_uninstall() {
+  variable_del('just_smtp_on');
+  variable_del('just_smtp_host');
+  variable_del('just_smtp_port');
+  variable_del('just_smtp_protocol');
+  variable_del('just_smtp_username');
+  variable_del('just_smtp_password');
+  variable_del('just_smtp_encrypt');
+  variable_del('just_smtp_test_address');
+}
+
+
+/**
+ * Implements hook_requirements().
+ */
+function just_smtp_requirements ($phase) {
+  $requirements = array();
+  // Ensure translations don't break during installation.
+  $t = get_t();
+
+  // Check if PHPMailer has been installed. Unfortunately we cannot
+  // detect that during install time with just using the libraries
+  // module it seems.
+  if ($phase == 'runtime') {
+    $library = libraries_detect('PHPMailer');
+    if ($library['installed']) {
+      $requirements['PHPMailer'] = array(
+        'title' => $t('PHPMailer'),
+        'severity' => REQUIREMENT_OK,
+        'value' => $library['version'],
+      );
+    }
+    else {
+      $requirements['PHPMailer'] = array(
+        'title' => $t('PHPMailer'),
+        'description' => $t('PHPmailer has not been installed. Please <a href="@url">download</a> and install it under sites/all/libraries.', array('@url' => 'https://github.com/PHPMailer/PHPMailer')),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+
+  return $requirements;
+}

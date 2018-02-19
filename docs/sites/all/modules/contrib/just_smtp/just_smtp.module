@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * @file
+ * Enables Drupal to send e-mail directly to an SMTP server.
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function just_smtp_menu() {
+  $items['admin/config/system/just_smtp'] = array(
+    'title'            => 'Just SMTP configuration',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('just_smtp_admin_settings'),
+    'access arguments' => array('administer smtp module'),
+    'description'      => 'Send site emails through an SMTP server of your choice.',
+    'file'             => 'just_smtp.admin.inc',
+  );
+  return $items;
+
+}
+
+/**
+ * Implements hook_permission().
+ */
+function just_smtp_permission() {
+  return array(
+    'administer smtp module' => array(
+      'title' => t('Administer Just SMTP module'),
+      'description' => t('Perform administration tasks for Just SMTP module.'))
+  );
+}
+
+
+/**
+ * Implements hook_mail().
+ */
+function just_smtp_mail($key, &$message, $params) {
+  if ($key == 'just-smtp-test') {
+    $message['subject'] = $params['subject'];
+    $message['body'] = $params['body'];
+  }
+}
+
+
+/**
+ * Implements hook_libraries_info().
+ *
+ * For defining external libraries.
+ */
+
+function just_smtp_libraries_info() {
+
+  // A very simple library. No changing APIs (hence, no versions), no variants.
+  // Expected to be extracted into 'sites/all/libraries/simple'.
+  $libraries['PHPMailer'] = array(
+    'name' => 'PHPMailer',
+    'vendor url' => 'https://github.com/PHPMailer/PHPMailer',
+    'download url' => 'https://github.com/PHPMailer/PHPMailer',
+    'version arguments' => array(
+      'file' => 'class.phpmailer.php', // Could be any file with version info
+      'pattern' => '/\$Version = \'([0-9\.]+)\'/',
+      'lines' => 50,
+    ),
+    'files' => array(
+      'php' => array('PHPMailerAutoload.php'), //this can be a path to the file location like array('lib/simple.js')
+    ),
+  );
+
+  return $libraries;
+}
