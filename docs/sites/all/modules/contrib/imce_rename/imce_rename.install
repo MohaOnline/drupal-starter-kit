@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @file
+ * Install file for imce_rename
+ */
+
+/**
+ * Implementation of hook_install()
+ */
+function imce_rename_install() {
+  $profiles = variable_get('imce_profiles', array());
+  //set crop permissions. make profile#1 have access by default.
+  foreach ($profiles as $i => $profile) {
+    foreach ($profile['directories'] as $j => $directory) {
+      $profiles[$i]['directories'][$j]['rename'] = $i == 1 ? 1 : 0;
+      $profiles[$i]['directories'][$j]['rename_folder'] = $i == 1 ? 1 : 0;
+    }
+  }
+  variable_set('imce_profiles', $profiles);
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function imce_rename_uninstall() {
+  $profiles = variable_get('imce_profiles', array());
+  //delete rename permissions.
+  foreach ($profiles as $i => $profile) {
+    foreach ($profile['directories'] as $j => $directory) {
+      unset($profiles[$i]['directories'][$j]['rename']);
+      unset($profiles[$i]['directories'][$j]['rename_folder']);
+    }
+  }
+  variable_set('imce_profiles', $profiles);
+}
+
+
+/**
+ * Set the new folder permission to match the file permission. This will ensure a seamless upgrade
+ */
+function imce_rename_update_7001() {
+  $profiles = variable_get('imce_profiles', array());
+  foreach ($profiles as $i => $profile) {
+    foreach ($profile['directories'] as $j => $directory) {
+      $profiles[$i]['directories'][$j]['rename_folder'] = $profiles[$i]['directories'][$j]['rename'];
+    }
+  }
+  variable_set('imce_profiles', $profiles);
+}

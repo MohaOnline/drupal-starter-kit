@@ -1,0 +1,7 @@
+
+#op-item-rename a, #imce-content #edit-rename {
+  background-image: url(rename.png);
+  /*For IMCE 1.x*/
+  background-repeat: no-repeat;
+  padding-left: 20px;
+}
