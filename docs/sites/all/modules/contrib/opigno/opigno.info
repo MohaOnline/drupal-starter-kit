@@ -1,0 +1,24 @@
+name = Opigno Core
+description = Opigno LMS Core
+core = 7.x
+package = Opigno
+
+dependencies[] = og
+dependencies[] = options
+dependencies[] = og_ui
+dependencies[] = rules
+dependencies[] = rules_conditional
+dependencies[] = rules_i18n
+dependencies[] = views
+dependencies[] = views_php
+dependencies[] = better_exposed_filters
+dependencies[] = image
+
+files[] = tests/OpignoWebTestCase.test
+files[] = views/opigno_filter_own_groups.inc
+; Information added by Drupal.org packaging script on 2018-02-09
+version = "7.x-1.19"
+core = "7.x"
+project = "opigno"
+datestamp = "1518182893"
+

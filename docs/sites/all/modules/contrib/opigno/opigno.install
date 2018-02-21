@@ -1,0 +1,486 @@
+<?php
+
+/**
+ * @file
+ * Contains install instructions and logic
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function opigno_schema() {
+  $schema = opigno_get_latest_group_activity_schema();
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function opigno_install() {
+  db_update('system')
+    ->fields(array(
+      'weight' => 20
+    ))
+    ->condition('name', 'opigno')
+    ->execute();
+
+  // Disable comments by default.
+  if (module_exists('comment')) {
+    variable_set('comment_' . OPIGNO_COURSE_BUNDLE, COMMENT_NODE_CLOSED);
+  }
+
+  $type = node_type_load(OPIGNO_COURSE_BUNDLE);
+  if (empty($type)) {
+    $type = node_type_set_defaults(array(
+      'type' => OPIGNO_COURSE_BUNDLE,
+      'name' => st('Course'),
+      'base' => 'node_content',
+      'description' => st("A <em>course</em> entity. This is the fundamental building bloc for Opigno. It can contain students, teachers, quizzes, files and many other ressources."),
+      'custom' => 1,
+      'modified' => 1,
+      'locked' => 0,
+      'promoted' => 0,
+    ));
+    node_type_save($type);
+    node_add_body_field($type);
+  }
+
+  include_once drupal_get_path('module', 'og') . '/og_ui/og_ui.module';
+  if (function_exists('og_ui_node_type_save')) {
+    variable_set('og_group_type_' . OPIGNO_COURSE_BUNDLE, TRUE);
+    og_ui_node_type_save(OPIGNO_COURSE_BUNDLE);
+  }
+
+  // Add the OG content access field.
+  if (module_exists('og_access')) {
+    og_create_field(OG_ACCESS_FIELD, 'node', OPIGNO_COURSE_BUNDLE);
+  }
+
+  opigno_add_image_fields();
+  opigno_add_image_filters();
+}
+
+/**
+ * Implements hook_field_schema().
+ */
+function opigno_field_schema($field) {
+  if ($field['type'] == 'opigno_tools') {
+    return array(
+      'columns' => array(
+        'tool' => array(
+          'type' =>
+          'varchar',
+          'length' => 50,
+          'not null' => TRUE
+        ),
+      ),
+      'indexes' => array(
+        'tool' => array('tool'),
+      ),
+    );
+  }
+}
+
+/**
+ * Enable the course image field
+ */
+function opigno_update_7101()
+{
+  $type = node_type_load(OPIGNO_COURSE_BUNDLE);
+  if (!empty($type)) {
+    $field = field_info_field('opigno_course_image');
+    if (empty($field)) {
+      field_create_field(array(
+        'active' => 1,
+        'cardinality' => 1,
+        'deleted' => 0,
+        'entity_types' => array(),
+        'field_name' => 'opigno_course_image',
+        'foreign keys' => array(
+          'fid' => array(
+            'columns' => array(
+              'fid' => 'fid',
+            ),
+            'table' => 'file_managed',
+          ),
+        ),
+        'indexes' => array(
+          'fid' => array(
+            0 => 'fid',
+          ),
+        ),
+        'locked' => 0,
+        'module' => 'image',
+        'settings' => array(
+          'default_image' => 47,
+          'uri_scheme' => 'public',
+        ),
+        'translatable' => 0,
+        'type' => 'image',
+      ));
+    }
+
+    $instance = field_info_instance('node', 'opigno_course_image', 'course');
+    if (empty($instance)) {
+      field_create_instance(array(
+        'bundle' => 'course',
+        'deleted' => 0,
+        'description' => '',
+        'display' => array(
+          'default' => array(
+            'label' => 'above',
+            'module' => 'image',
+            'settings' => array(
+              'image_link' => '',
+              'image_style' => 'thumbnail',
+            ),
+            'type' => 'image',
+            'weight' => 19,
+          ),
+          'teaser' => array(
+            'label' => 'above',
+            'settings' => array(),
+            'type' => 'hidden',
+            'weight' => 0,
+          ),
+        ),
+        'entity_type' => 'node',
+        'field_name' => 'opigno_course_image',
+        'label' => 'course_image',
+        'required' => 0,
+        'settings' => array(
+          'alt_field' => 0,
+          'default_image' => 0,
+          'file_directory' => '',
+          'file_extensions' => 'png gif jpg jpeg',
+          'max_filesize' => '',
+          'max_resolution' => '',
+          'min_resolution' => '',
+          'title_field' => 0,
+          'user_register_form' => FALSE,
+        ),
+        'widget' => array(
+          'active' => 1,
+          'module' => 'image',
+          'settings' => array(
+            'preview_image_style' => 'apps_logo_small',
+            'progress_indicator' => 'throbber',
+          ),
+          'type' => 'image_image',
+          'weight' => 42,
+        ),
+      ));
+    }
+
+    $source_dir=drupal_get_path('profile','opigno_lms')."/img";
+    $filename="opigno_lms.png";
+    $source = $source_dir . '/' . $filename;
+    $destination = $filename;
+    $field = field_info_field('opigno_course_image');
+    opigno_content_set_default_image($field,$filename, $source, $destination);
+  }
+}
+
+
+/**
+ * Enable the course image field
+ * Add two new image styles for courses/classes
+ */
+function opigno_update_7102()
+{
+  // Update new default image for course image.
+  $source_dir = drupal_get_path('module','opigno') . '/img';
+  $filename = 'opigno_course_default.jpg';
+  $source = $source_dir . '/' . $filename;
+  $field = field_info_field('opigno_course_image');
+  opigno_content_set_default_image($field, $filename, $source);
+
+  // Add the new image filters
+  opigno_add_image_filters();
+
+  // If the training catalogue is not in his default state, clone it (to keep
+  //   the old version) and revert it before running the menu update.
+  $training_catalogue_view = views_get_view('opigno_course_catalgue');
+  if ($training_catalogue_view->type == 'Overridden') {
+    $clone = $training_catalogue_view->clone_view(); // Clone and revert the old view
+
+    $clone->name = $clone->name .'_cloned';
+    $clone->human_name = $clone->human_name .' CLONED';
+    if (!empty($clone->display['page']->display_options['path'])) {
+      $clone->display['page']->display_options['path'] .= '-cloned';
+    }
+
+    $clone->save();
+    drupal_set_message('Your view "'. $clone->human_name .'" has been cloned.');
+  }
+
+  // Change here the path for training catalogue. If it's not changed, the menu
+  //   update will not work.
+  if (!empty($training_catalogue_view->display['page']->display_options['path'])) {
+    $training_catalogue_view->display['page']->display_options['path'] = 'training-catalogue';
+    $training_catalogue_view->save();
+  }
+  menu_rebuild();
+
+  // Update the menu links to the new paths
+  // Update my-courses to my-trainings and course-catalogue to training-catalogue
+  $paths_to_update = array(
+    'my-courses' => array(
+      'path' => 'my-trainings',
+      'title' => 'My trainings',
+      'default_weight' => -45,
+      'id' => 'main-navigation-item-my-courses',
+      'updated' => false
+    ),
+    'course-catalogue' => array(
+      'path' => 'training-catalogue',
+      'title' => 'Training catalogue',
+      'default_weight' => -40,
+      'id' => 'main-navigation-item-training-catalogue',
+      'updated' => false
+    ),
+  );
+
+  foreach ($paths_to_update as $old_path => $new_values) {
+    $mlid_query = db_select('menu_links', 'ml')
+      ->fields('ml', array('mlid'))
+      ->condition('link_path', $old_path)
+      ->execute();
+
+    while ($mlid = $mlid_query->fetchField()) {
+      if (!empty($mlid)) {
+        $item = menu_link_load($mlid);
+
+        $item['link_path'] = $new_values['path'];
+        $item['router_path'] = $new_values['path'];
+        $item['path'] = $new_values['path'];
+        $item['tab-root'] = $new_values['path'];
+        $item['href'] = $new_values['path'];
+
+        $item['link_title'] = $new_values['title'];
+        $item['title'] = $new_values['title'];
+
+        menu_link_save($item);
+        $paths_to_update[$old_path]['updated'] = true;
+      }
+    }
+
+    // If the menu doesn't exists and the theme is Platon, create them.
+    if ($paths_to_update[$old_path]['updated'] == false && variable_get('theme_default', null) == 'platon') {
+      $item = array(
+        'link_path' => $new_values['path'],
+        'link_title' => $new_values['title'],
+        'menu_name' => 'main-menu',
+        'weight' => $new_values['default_weight'],
+        'options' => array(
+          'attributes' => array('id' => $new_values['id'])
+        ),
+        'router_path' => $new_values['path']
+      );
+      menu_link_save($item);
+    }
+  }
+
+  // Install the new table
+  $schema = opigno_get_latest_group_activity_schema();
+  db_create_table('opigno_latest_group_activity', $schema['opigno_latest_group_activity']);
+}
+
+function opigno_add_image_fields() {
+  $type = node_type_load(OPIGNO_COURSE_BUNDLE);
+  if (!empty($type)) {
+    $field = field_info_field('opigno_course_image');
+    if (empty($field)) {
+      field_create_field(array(
+        'active' => 1,
+        'cardinality' => 1,
+        'deleted' => 0,
+        'entity_types' => array(),
+        'field_name' => 'opigno_course_image',
+        'foreign keys' => array(
+          'fid' => array(
+            'columns' => array(
+              'fid' => 'fid',
+            ),
+            'table' => 'file_managed',
+          ),
+        ),
+        'indexes' => array(
+          'fid' => array(
+            0 => 'fid',
+          ),
+        ),
+        'locked' => 0,
+        'module' => 'image',
+        'settings' => array(
+          'default_image' => 47,
+          'uri_scheme' => 'public',
+        ),
+        'translatable' => 0,
+        'type' => 'image',
+      ));
+    }
+
+    $instance = field_info_instance('node', 'opigno_course_image', 'course');
+    if (empty($instance)) {
+      field_create_instance(array(
+        'bundle' => 'course',
+        'deleted' => 0,
+        'description' => '',
+        'display' => array(
+          'default' => array(
+            'label' => 'above',
+            'module' => 'image',
+            'settings' => array(
+              'image_link' => '',
+              'image_style' => 'thumbnail',
+            ),
+            'type' => 'image',
+            'weight' => 19,
+          ),
+          'teaser' => array(
+            'label' => 'above',
+            'settings' => array(),
+            'type' => 'hidden',
+            'weight' => 0,
+          ),
+        ),
+        'entity_type' => 'node',
+        'field_name' => 'opigno_course_image',
+        'label' => 'Image',
+        'required' => 0,
+        'settings' => array(
+          'alt_field' => 0,
+          'default_image' => 0,
+          'file_directory' => '',
+          'file_extensions' => 'png gif jpg jpeg',
+          'max_filesize' => '',
+          'max_resolution' => '',
+          'min_resolution' => '',
+          'title_field' => 0,
+          'user_register_form' => FALSE,
+        ),
+        'widget' => array(
+          'active' => 1,
+          'module' => 'image',
+          'settings' => array(
+            'preview_image_style' => 'apps_logo_small',
+            'progress_indicator' => 'throbber',
+          ),
+          'type' => 'image_image',
+          'weight' => 42,
+        ),
+      ));
+    }
+
+    // Set default image
+    $source_dir = drupal_get_path('module','opigno') . '/img';
+    $filename = 'opigno_course_default.jpg';
+    $source = $source_dir . '/' . $filename;
+    $field = field_info_field('opigno_course_image');
+    opigno_content_set_default_image($field, $filename, $source);
+  }
+}
+
+function opigno_add_image_filters() {
+  // Add image style for courses main page
+  $style = image_style_save(array(
+    'name' => 'course_intro_image',
+    'label' => 'Course intro image (1200)',
+  ));
+  $effect = array(
+    'name' => 'image_scale',
+    'data' => array(
+      'width' => 1200,
+      'height' => null,
+      'upscale' => false,
+    ),
+    'isid' => $style['isid'],
+  );
+  image_effect_save($effect);
+
+  // Add image style for courses main page
+  $style = image_style_save(array(
+    'name' => 'course_thumbnail_image',
+    'label' => 'Course thumbnail image (400x300)',
+  ));
+  $effect = array(
+    'name' => 'image_scale_and_crop',
+    'data' => array(
+      'width' => 400,
+      'height' => 300,
+    ),
+    'isid' => $style['isid'],
+  );
+  image_effect_save($effect);
+}
+
+function opigno_get_latest_group_activity_schema() {
+  $schema = array();
+  $schema['opigno_latest_group_activity'] = array(
+    'description' => 'The latest activity of a user in a group',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The node ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'The user ID who view of node.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'timestamp' => array(
+        'description' => 'The Unix timestamp when the node was view.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid','uid'),
+    'indexes' => array(
+      'nid_uid' => array('uid', 'nid'),
+      'timestamp' => array('timestamp'),
+    ),
+  );
+  return $schema;
+}
+
+function opigno_content_set_default_image(&$field, $filename, $source) {
+  // Simulate an upload of the default user image
+  $file = new stdClass;
+  $file->filename = $filename;
+  $file->timestamp = REQUEST_TIME;
+  $file->uri = $source;
+  $file->filemime = file_get_mimetype($source);
+  $file->uid = 1;
+  $file->status = 1;
+  $file = file_copy($file, 'public://', FILE_EXISTS_REPLACE);
+  $fid = $file->fid;
+
+  // Set the default image
+  $field['settings']['default_image'] = (string) $fid;
+  field_update_field($field);
+}
+
+/**
+ * Put in this function all the strings that are not in a t() or st() function.
+ */
+function opigno_install_translations() {
+  //
+  // --- PATCHES
+  // https://www.drupal.org/files/system.rules_.inc_.patch
+  t("Get system variable of type '!type'");
+  t('System');
+  t('Variable');
+  t('Select the variable name');
+  t('Added variable');
+
+  //
+  // --- FIELDS
+  // opigno.module
+  t('Course tools');
+  t('Activate tools for this course. Deactivated tools will be hidden from users.');
+}
