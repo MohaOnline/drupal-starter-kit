@@ -1,0 +1,16 @@
+name = Quiz - Short answer
+package = Quiz question
+description = Short answer question type for Quiz.
+core = 7.x
+dependencies[] = quiz
+dependencies[] = quiz_question
+
+files[] = short_answer.classes.inc
+files[] = short_answer.test
+
+; Information added by Drupal.org packaging script on 2017-11-15
+version = "7.x-5.2"
+core = "7.x"
+project = "quiz"
+datestamp = "1510774094"
+
