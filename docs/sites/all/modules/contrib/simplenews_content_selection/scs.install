@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install/Uninstall functions
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function scs_uninstall() {
+  // Delete created variables
+  variable_del('scs_view_mode');
+  variable_del('scs_node_type');
+}
+
+/**
+ * Update variable to array setting to allow multiple selections
+ */
+function scs_update_7000() {
+  $old_var = variable_get('scs_view_mode', 'scs');
+  variable_set('scs_view_mode', array($old_var));
+}
