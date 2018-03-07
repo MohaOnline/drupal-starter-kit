@@ -1,0 +1,14 @@
+name = AJAX Comments Nodejs Integration
+description = Integrates Ajax Comments with Nodejs
+core = 7.x
+dependencies[] = ajax_comments
+dependencies[] = nodejs
+dependencies[] = nodejs_ajax
+
+
+; Information added by Drupal.org packaging script on 2017-08-06
+version = "7.x-1.3"
+core = "7.x"
+project = "ajax_comments"
+datestamp = "1502021946"
+
