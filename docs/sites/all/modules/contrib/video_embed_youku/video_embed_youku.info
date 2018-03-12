@@ -1,0 +1,14 @@
+name = "Video Embed Youku"
+description = "Provides Youku handler for Video Embed Fields."
+core = 7.x
+package = Media
+configure = admin/config/media/vef_video_styles
+
+dependencies[] = "video_embed_field"
+
+; Information added by Drupal.org packaging script on 2016-05-10
+version = "7.x-1.3"
+core = "7.x"
+project = "video_embed_youku"
+datestamp = "1462869842"
+

@@ -1,0 +1,3 @@
+#video_embed_youku
+
+作为video_embed_field 的扩展模块，此模块增加了对youku视频的支持
