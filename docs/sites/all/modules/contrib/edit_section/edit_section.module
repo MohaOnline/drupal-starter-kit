@@ -1,0 +1,201 @@
+<?php
+
+/*
+ * Edit section defines an input filter that adds an [edit] to every h1-h6
+ * class n a node so you can only edit this part of the node
+ */
+
+define('_EDIT_SECTION_REGEX', '/<h1|<h2|<h3|<h4|<h5|<h6/i');
+
+/**
+ * Implements hook_filter_info().
+ */
+function edit_section_filter_info() {
+  $filters['edit_section_filter'] = array(
+    'title' => t('Edit section'),
+    'description' => t('Allows users to edit sections individually.'),
+    'process callback' => '_edit_section_filter_process',
+    'prepare callback' => '_edit_section_filter_prepare',
+  );
+  return $filters;
+}
+
+/**
+ * Edit_section filter prepare callback
+ * prepare the string, see http://drupal.org/project/examples.
+ */
+function _edit_section_filter_prepare($text, $filter, $format, $langcode, $cache, $cache_id) {
+  return $text;
+}
+
+/**
+ * edit_section filter process callback
+ *
+ * The actual filtering is performed here. The supplied text should be
+ * returned,
+ * once any necessary substitutions have taken place. Adds [edit] next to h1-h6
+ * html tags.
+ */
+function _edit_section_filter_process($text) {
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $node = node_load(arg(1));
+    if (node_access('update', $node)) {
+      _edit_section_add_links($text);
+    }
+  }
+  return $text;
+}
+
+/**
+ * Callback to actually add [edit]link.
+ */
+function _edit_section_add_links_callback($matches) {
+  global $_edit_section_sid;
+
+  $link = l('edit', 'node/' . arg(1) . '/edit/' . $_edit_section_sid, array('title' => 'Link to edit the following section of this page.'));
+  $_edit_section_sid++;
+
+  //dsm("one");
+  return '<span class="edit-section" id="edit-section-' . $_edit_section_sid . '">' . $link . '</span>' . $matches[0];
+}
+
+/**
+ * Add an [edit] to each h1-h6 html tag with a link to edit this section.
+ */
+function _edit_section_add_links(&$text) {
+  global $_edit_section_sid;
+  $_edit_section_sid = 0;
+  $text = preg_replace_callback(_EDIT_SECTION_REGEX, '_edit_section_add_links_callback', $text);
+}
+
+/**
+ * Implementation of hook_menu http://api.drupal.org/api/function/hook_menu/7
+ */
+function edit_section_menu() {
+  $items['node/%node/edit/%'] = array(
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('edit_section_form', 1, 3),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Getting the offset because we only want to edit a section of the whole body.
+ */
+function _edit_section_get_offsets($text, $section_id) {
+  preg_match_all(_EDIT_SECTION_REGEX, $text, $matches, PREG_OFFSET_CAPTURE);
+  $offsets['start'] = $matches[0][$section_id][1];   // get the start offset of the section
+  $h = $matches[0][$section_id][0][2];               // get heading ordinal of the section
+  $section_id++;
+  if (isset($matches[0][$section_id])) {
+    while (!empty($matches[0][$section_id]) && $matches[0][$section_id][0][2] > $h) {
+      $section_id++;
+    }
+  }
+  if (isset($matches[0][$section_id])) {
+    $offsets['end'] = $matches[0][$section_id][1];
+  }   // The end offset is the start of the section we found
+  else {
+    $offsets['end'] = strlen($text);
+  }   // We ran out of sections - the end offset is the length of the text
+  return $offsets;
+}
+
+/**
+ * FAPI definition for the edit section form.
+ *
+ * ...
+ * @ingroup forms
+ * @see edit_section_form_submit()
+ */
+function edit_section_form($form, $form_state, $node, $section_id) {
+  // New d7 way to get the body, direct access like $node->body['und'][0]['safe_value'] is bad!
+  $body = field_get_items('node', $node, 'body', $node->language);
+  $offsets = _edit_section_get_offsets($body[0]['value'], $section_id);
+  $form['section'] = array(
+    '#title' => t('Section'),
+    '#rows' => 20,
+    '#type' => 'text_format',
+    '#default_value' => substr($body[0]['value'], $offsets['start'], $offsets['end'] - $offsets['start']),
+  );
+  if (module_exists('better_formats')) {
+    $form['section'] += array(
+      '#entity_type' => 'node',
+      '#entity' => $node,
+      '#bundle' => $node->type,
+      '#field_name' => 'body',
+      '#format' => $body[0]['format'],
+    );
+  }
+  $node_options = variable_get('node_options_' . $node->type, array(
+    'status',
+    'promote',
+  ));
+  $revision = in_array('revision', $node_options);
+  // Add a revision field if the "Create new revision" option is checked,
+  // or if the current user has the ability to check that option.
+  if ($revision || user_access('administer nodes')) {
+    $form['revision_information'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Revision information'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $form['revision_information']['revision'] = array(
+      '#access' => user_access('administer nodes'),
+      '#type' => 'checkbox',
+      '#title' => t('Create new revision'),
+      '#default_value' => $revision,
+    );
+    $form['revision_information']['log'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Log message'),
+      '#rows' => 2,
+      '#description' => t('An explanation of the additions or updates being made to help other authors understand your motivations.'),
+      '#required' => module_exists('enforce_revlog')
+        && variable_get('enforce_revlog_node_type_' . $node->type, 0)  // enforce_revlog is enabled for this content type
+        && !user_access('skip revision log message'),
+    );
+  }
+  $form['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+  $form['#node'] = $node;
+  $form['#section_id'] = $section_id;
+  $form['#offsets'] = $offsets;
+  return $form;
+}
+
+/**
+ * Submit the changes and save them.
+ */
+function edit_section_form_submit($form, &$form_state) {
+  $node = $form['#node'];
+  $offsets = $form['#offsets'];
+  if (!empty($node->body[$node->language])) {
+    $language = $node->language;
+  }
+  else {
+    $language = LANGUAGE_NONE;
+  }
+  $body = substr($node->body[$language][0]['value'], 0, $offsets['start']);
+  $body .= $form_state['values']['section']['value'];
+  $body .= substr($node->body[$language][0]['value'], $offsets['end']);
+  $node->body[$language][0]['value'] = $body;
+  if ($form_state['values']['revision']) {
+    $node->revision = TRUE;
+    $node->log = $form_state['values']['log'];
+  }
+  node_save($node);
+  $watchdog_args = array('@type' => $node->type, '%title' => $node->title);
+  $node_link = l(t('view'), 'node/' . $node->nid);
+  watchdog('content', '@type: updated %title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
+  $t_args = array('@type' => $node->type, '%title' => $node->title);
+  drupal_set_message(t('@type %title has been updated.', $t_args));
+  $form_state['redirect'] = 'node/' . $node->nid;
+}
