@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * @file
+ * Installation and uninstallation functions.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function paypal_payment_pps_schema() {
+  $schema['paypal_payment_pps_payment_method'] = array(
+    'fields' => array(
+      'capture' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'default' => 0,
+        'not null' => TRUE,
+      ),
+      'email_address' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'pmid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'server' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('pmid'),
+    'unique keys' => array(
+      'pmid' => array('pmid'),
+    ),
+  );
+
+  return $schema;
+}

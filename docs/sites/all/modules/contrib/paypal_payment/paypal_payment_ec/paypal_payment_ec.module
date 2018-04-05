@@ -1,0 +1,197 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and global functions.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function paypal_payment_ec_menu() {
+  $items['paypal_payment_ec/return'] = array(
+    'title' => 'PayPal Express Checkout return url',
+    'page callback' => 'paypal_payment_ec_return',
+    'access callback' => 'paypal_payment_ec_return_access',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_payment_method_controller_info().
+ */
+function paypal_payment_ec_payment_method_controller_info() {
+  return array('PayPalPaymentECPaymentMethodController');
+}
+
+/**
+ * Implements hook_entity_load().
+ */
+function paypal_payment_ec_entity_load(array $entities, $entity_type) {
+  if ($entity_type == 'payment_method') {
+    $pmids = array();
+    foreach ($entities as $payment_method) {
+      if ($payment_method->controller->name == 'PayPalPaymentECPaymentMethodController') {
+        $pmids[] = $payment_method->pmid;
+      }
+    }
+    if ($pmids) {
+      $query = db_select('paypal_payment_ec_payment_method')
+        ->fields('paypal_payment_ec_payment_method')
+        ->condition('pmid', $pmids);
+      $result = $query->execute();
+      while ($data = $result->fetchAssoc()) {
+        $payment_method = $entities[$data['pmid']];
+        $payment_method->controller_data = (array) $data;
+        $payment_method->controller_data['server'] = (int) $payment_method->controller_data['server'];
+        unset($payment_method->controller_data['pmid']);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_ACTION().
+ */
+function paypal_payment_ec_payment_method_insert(PaymentMethod $payment_method) {
+  if ($payment_method->controller->name == 'PayPalPaymentECPaymentMethodController') {
+    $values = $payment_method->controller_data += $payment_method->controller->controller_data_defaults;
+    $values['pmid'] = $payment_method->pmid;
+    drupal_write_record('paypal_payment_ec_payment_method', $values);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_ACTION().
+ */
+function paypal_payment_ec_payment_method_update(PaymentMethod $payment_method) {
+  if ($payment_method->controller->name == 'PayPalPaymentECPaymentMethodController') {
+    $values = $payment_method->controller_data += $payment_method->controller->controller_data_defaults;
+    $values['pmid'] = $payment_method->pmid;
+    drupal_write_record('paypal_payment_ec_payment_method', $values, 'pmid');
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_ACTION().
+ */
+function paypal_payment_ec_payment_method_delete($entity) {
+  if ($entity->controller->name == 'PayPalPaymentECPaymentMethodController') {
+    db_delete('paypal_payment_ec_payment_method')
+      ->condition('pmid', $entity->pmid)
+      ->execute();
+  }
+}
+
+/**
+ * Form build callback: implements
+ * PaymentMethodController::payment_method_configuration_form_elements_callback.
+ */
+function paypal_payment_ec_payment_method_configuration_form_elements(array $form, array &$form_state) {
+  $payment_method = $form_state['payment_method'];
+  $controller = $payment_method->controller;
+  $controller_data = $payment_method->controller_data + $controller->controller_data_defaults;
+  $form = array();
+
+  $elements['authentication'] = array(
+    '#title' => t('Authentication'),
+    '#type' => 'fieldset',
+  );
+  $elements['authentication']['username'] = array(
+    '#default_value' => $controller_data['username'],
+    '#title' => t('Username'),
+    '#required' => TRUE,
+    '#type' => 'textfield',
+  );
+  $elements['authentication']['password'] = array(
+    '#default_value' => $controller_data['password'],
+    '#description' => t('The password will be stored as plain text.'),
+    '#title' => t('Password'),
+    '#required' => TRUE,
+    '#type' => 'textfield',
+  );
+  $elements['authentication']['signature'] = array(
+    '#default_value' => $controller_data['signature'],
+    '#required' => TRUE,
+    '#title' => t('Signature'),
+    '#type' => 'textfield',
+  );
+  $elements['authentication']['email_address'] = array(
+    '#default_value' => $controller_data['email_address'],
+    '#title' => t('Email address'),
+    '#type' => 'textfield',
+  );
+  $elements['workflow'] = array(
+    '#title' => t('Workflow'),
+    '#type' => 'fieldset',
+  );
+  $elements['workflow']['server'] = array(
+    '#default_value' => $controller_data['server'],
+    '#options' => array(
+      $controller::NVP_API_SERVER_PRODUCTION => ('Production'),
+      $controller::NVP_API_SERVER_SANDBOX => ('Sandbox'),
+    ),
+    '#required' => TRUE,
+    '#title' => t('Server'),
+    '#type' => 'radios',
+  );
+  $elements['workflow']['capture'] = array(
+    '#default_value' => $controller_data['capture'],
+    '#options' => array(
+      $controller::CAPTURE_AUTOMATIC => t('Automatic'),
+      $controller::CAPTURE_MANUAL => t('Manual'),
+    ),
+    '#required' => TRUE,
+    '#title' => t('Capture'),
+    '#type' => 'radios',
+  );
+
+  return $elements;
+}
+
+/**
+ * Implements form validate callback for
+ * paypal_payment_ec_payment_method_configuration_form_elements().
+ */
+function paypal_payment_ec_payment_method_configuration_form_elements_validate(array $element, array &$form_state) {
+  $values = drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+
+  $controller_data = &$form_state['payment_method']->controller_data;
+  $controller_data['email_address'] = $values['authentication']['email_address'];
+  $controller_data['password'] = $values['authentication']['password'];
+  $controller_data['signature'] = $values['authentication']['signature'];
+  $controller_data['username'] = $values['authentication']['username'];
+  $controller_data['capture'] = $values['workflow']['capture'];
+  $controller_data['server'] = $values['workflow']['server'];
+  if (!empty($values['authentication']['email_address']) && !valid_email_address($values['authentication']['email_address'])) {
+    form_error($element['authentication']['email_address'], t('The email address is not valid.'));
+  }
+}
+
+/**
+ * Return callback.
+ */
+function paypal_payment_ec_return() {
+  $token = $_GET['token'];
+  $controller = payment_method_controller_load('PayPalPaymentECPaymentMethodController');
+  $authentication = $controller->loadAuthentication($token, 'token');
+  $payment = entity_load_single('payment', $authentication->pid);
+  $checkout_status = $payment->method->controller->getExpressCheckoutDetails($payment, $authentication);
+  if ($checkout_status) {
+    if ($payment->method->controller->doExpressCheckoutPayment($payment, $authentication)) {
+      entity_save('payment', $payment);
+    }
+  }
+  $payment->finish();
+}
+
+/**
+ * Access callback for the return URL.
+ *
+ * @return bool
+ */
+function paypal_payment_ec_return_access() {
+  return isset($_GET['token']) && payment_method_controller_load('PayPalPaymentECPaymentMethodController')->loadAuthentication($_GET['token'], 'token');
+}

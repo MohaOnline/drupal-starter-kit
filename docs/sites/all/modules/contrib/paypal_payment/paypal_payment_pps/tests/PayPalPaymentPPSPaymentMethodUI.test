@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentPPSPaymentMethodCRUD.
+ */
+
+/**
+ * Tests the PayPalPaymentPPSPaymentMethodController UI.
+ */
+class PayPalPaymentPPSPaymentMethodUI extends PayPalPaymentWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'Payment method UI',
+      'group' => 'PayPal Payments Standard',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(array $modules = array()) {
+    $this->profile = 'testing';
+    parent::setUp($modules + array('paypal_payment_pps'));
+  }
+
+  /**
+   * Tests
+   * PayPalPaymentPPSPaymentMethodController::payment_method_configuration_form_elements_callback.
+   */
+  public function testUI() {
+    $controller_class_name = 'PayPalPaymentPPSPaymentMethodController';
+    $controller = payment_method_controller_load($controller_class_name);
+    $controller_data = array(
+      'email_address' => 'b@b.b',
+      'server' => $controller::SANDBOX_SERVER_URL,
+      'capture' => $controller::CAPTURE_MANUAL,
+    ) + $controller->controller_data_defaults;
+    $account = $this->drupalCreateUser(array('payment.payment_method.create.' . $controller_class_name));
+    $this->drupalLogin($account);
+    $this->drupalPost('admin/config/services/payment/method/add/' . $controller_class_name, array(
+      'title_specific' => 'Foo',
+      'name' => 'foo',
+      'controller_form[email_address]' => $controller_data['email_address'],
+      'controller_form[server]' => $controller_data['server'],
+      'controller_form[capture]' => $controller_data['capture'],
+    ), t('Save'));
+    $payment_method_loaded = entity_load_single('payment_method', 1);
+    $this->assertEqual($controller_data, $payment_method_loaded->controller_data);
+  }
+
+}

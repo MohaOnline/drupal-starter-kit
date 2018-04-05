@@ -1,0 +1,66 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentPPSPaymentMethodCRUD.
+ */
+
+/**
+ * Tests PayPalPaymentPPSPaymentMethodController CRUD.
+ */
+class PayPalPaymentPPSPaymentMethodCRUD extends PayPalPaymentWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'Payment method CRUD',
+      'group' => 'PayPal Payments Standard',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(array $modules = array()) {
+    $this->profile = 'testing';
+    parent::setUp($modules + array('paypal_payment_pps'));
+  }
+
+  /**
+   * Tests CRUD.
+   */
+  public function testCRUD() {
+    $controller = payment_method_controller_load('PayPalPaymentPPSPaymentMethodController');
+    $payment_method = new PaymentMethod(array(
+      'controller' => $controller,
+      'controller_data' => $controller->controller_data_defaults,
+    ));
+    entity_save('payment_method', $payment_method);
+    $this->assertTrue($this->paymentMethodControllerDataExists($payment_method, 'paypal_payment_pps_payment_method'));
+
+    // Test loading a payment method.
+    $payment_method_loaded = entity_load_single('payment_method', $payment_method->pmid);
+    $this->assertEqual($payment_method->controller_data, $payment_method_loaded->controller_data);
+
+    // Test updating a payment method.
+    $payment_method->controller_data = array(
+      'server' => $controller::SANDBOX_SERVER_URL,
+      'capture' => $controller::CAPTURE_MANUAL,
+    );
+    entity_save('payment_method', $payment_method);
+    $this->assertTrue($this->paymentMethodControllerDataExists($payment_method, 'paypal_payment_pps_payment_method'));
+
+    // Test deleting a payment method.
+    entity_delete('payment_method', $payment_method->pmid);
+    $count = db_select('paypal_payment_pps_payment_method', 'mpi')
+      ->condition('pmid', $payment_method->pmid)
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+    $this->assertFalse($count);
+  }
+
+}

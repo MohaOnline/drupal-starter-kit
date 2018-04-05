@@ -1,0 +1,13 @@
+name = PayPal Express Checkout tests
+description = Supports PayPal Express Checkout testing.
+package = Payment
+dependencies[] = paypal_payment_ec
+core = 7.x
+hidden = TRUE
+
+; Information added by Drupal.org packaging script on 2018-02-14
+version = "7.x-1.3"
+core = "7.x"
+project = "paypal_payment"
+datestamp = "1518607085"
+

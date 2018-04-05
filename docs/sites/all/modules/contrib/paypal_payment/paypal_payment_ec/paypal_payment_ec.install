@@ -1,0 +1,86 @@
+<?php
+
+/**
+ * @file
+ * Installation and uninstallation functions.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function paypal_payment_ec_schema() {
+  $schema['paypal_payment_ec_payment'] = array(
+    'fields' => array(
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'payerID' => array(
+        'type' => 'varchar',
+        'length' => 13,
+        'not null' => TRUE,
+      ),
+      'pid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'token' => array(
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('pid'),
+    'unique keys' => array(
+      'token' => array('token'),
+    ),
+  );
+  $schema['paypal_payment_ec_payment_method'] = array(
+    'fields' => array(
+      'capture' => array(
+        'type' => 'varchar',
+        'length' => 13,
+        'not null' => TRUE,
+      ),
+      'email_address' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'password' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'pmid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'server' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ),
+      'signature' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'username' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('pmid'),
+    'unique keys' => array(
+      'pmid' => array('pmid'),
+    ),
+  );
+
+  return $schema;
+}

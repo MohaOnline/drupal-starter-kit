@@ -1,0 +1,79 @@
+<?php
+
+/**
+ * @file
+ * Contains installation and uninstallation functions.
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * @see PayPalPaymentIPN
+ */
+function paypal_payment_ipn_schema() {
+  $schema['paypal_payment_ipn'] = array(
+    'description' => 'Stores processed IPNs.',
+    'fields' => array(
+      'psiid' => array(
+        'description' => 'The payment status item ID this row refers to.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'pid' => array(
+        'description' => 'The PID of the Payment this IPN is for.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'txn_id' => array(
+        'description' => 'The PayPal transaction ID.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('psiid'),
+    'indexes' => array(
+      'txn_id' => array('txn_id'),
+    ),
+    'foreign keys' => array(
+      'pid' => array(
+        'table' => 'payment',
+        'columns'=> array('pid' => 'pid'),
+      ),
+      'psiid' => array(
+        'table' => 'payment_status_item',
+        'columns' => array('psiid' => 'psiid'),
+      ),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Add a psiid column to {paypal_payment_ipn} table.
+ */
+function paypal_payment_ipn_update_7102() {
+  db_drop_primary_key('paypal_payment_ipn');
+  db_add_field('paypal_payment_ipn', 'psiid', array(
+    'description' => 'The payment status item ID this row refers to.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  ));
+  db_add_primary_key('paypal_payment_ipn', array('psiid'));
+}
+
+/**
+ * Delete data that's not linked to any payment from {paypal_payment_ipn}.
+ */
+function paypal_payment_ipn_update_7101() {
+  db_delete('paypal_payment_ipn')
+    ->condition('pid', 0)
+    ->execute();
+}
+

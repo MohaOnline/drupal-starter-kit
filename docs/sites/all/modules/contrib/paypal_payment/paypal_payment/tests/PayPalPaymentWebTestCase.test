@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentWebTestCase.
+ */
+
+/**
+ * Contains PayPal testing helpers.
+ */
+class PayPalPaymentWebTestCase extends DrupalWebTestCase {
+
+  /**
+   * Checks if a payment method's controller data exists in the database.
+   *
+   * @param PaymentMethod $payment_method
+   * @param string $table
+   *
+   * @return bool
+   */
+  public function paymentMethodControllerDataExists(PaymentMethod $payment_method, $table) {
+    $query = db_select($table);
+    $values = $payment_method->controller_data + $payment_method->controller->controller_data_defaults;
+    foreach ($values as $property => $value) {
+      $query->condition($property, $value);
+    }
+    $count = $query->countQuery()->execute()->fetchField();
+
+    return (bool) $count;
+  }
+
+}

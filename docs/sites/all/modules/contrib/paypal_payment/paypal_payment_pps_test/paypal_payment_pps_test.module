@@ -1,0 +1,114 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and global functions.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function paypal_payment_pps_test_menu() {
+  $items['paypal_payment_pps_test/form/%entity_object'] = array(
+    'load arguments' => array('payment_method'),
+    'title' => 'Go to payment server',
+    'page callback' => 'paypal_payment_pps_test_payment_form',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['paypal_payment_pps_test/paypal-pps-server'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('paypal_payment_pps_test_paypal_server_form'),
+    'access callback' => TRUE,
+  );
+  $items['paypal_payment_pps_test/paypal-pps-server/cancel'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('paypal_payment_pps_test_paypal_server_cancel_form'),
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_url_outbound_alter().
+ */
+function paypal_payment_pps_test_url_outbound_alter(&$path, array &$options, $original_path) {
+  if ($original_path == PayPalPaymentPPSPaymentMethodController::SERVER_URL) {
+    $path = url('paypal_payment_pps_test/paypal-pps-server', array(
+      'absolute' => TRUE,
+    ));
+  }
+  elseif ($original_path == PayPalPaymentPPSPaymentMethodController::SANDBOX_SERVER_URL) {
+    $path = url('paypal_payment_pps_test/paypal-pps-server/cancel', array(
+      'absolute' => TRUE,
+    ));
+  }
+}
+
+/**
+ * Returns a payment form.
+ *
+ * @return array
+ *   A Drupal form.
+ */
+function paypal_payment_pps_test_payment_form(PaymentMethod $payment_method) {
+  $payment = new Payment(array(
+    'currency_code' => 'EUR',
+    'description' => 'foo',
+    'finish_callback' => 'paypal_payment_pps_test_finish_callback',
+    'method' => $payment_method,
+    'uid' => 1,
+  ));
+  $payment->setLineItem(new PaymentLineItem(array(
+    'name' => 'foo',
+    'amount' => 1.0,
+    'tax_rate' => 0.1,
+  )));
+
+  return drupal_get_form('payment_form_standalone', $payment);
+}
+
+/**
+ * Performs a redirect to the merchant site after a completed payment.
+ */
+function paypal_payment_pps_test_paypal_server_form(array $form, array &$form_state) {
+  $data = array(
+    'business' => 'b@b.b',
+    'invoice' => $_POST['invoice'],
+    'txn_id' => 'foo',
+  );
+  foreach ($data as $property => $value) {
+    $form[$property] = array(
+      '#type' => 'hidden',
+      '#value' => $value,
+    );
+  }
+  $form['#action'] = $_POST['return'];
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+/**
+ * Performs a redirect to the merchant site after a cancelled payment.
+ */
+function paypal_payment_pps_test_paypal_server_cancel_form(array $form, array &$form_state) {
+  $form['#action'] = $_POST['cancel_return'];
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements Payment::finish_callback.
+ */
+function paypal_payment_pps_test_finish_callback(Payment $payment) {
+  drupal_goto('<front>');
+}

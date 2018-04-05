@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentIPNWebTestCase.
+ */
+
+/**
+ * Contains testing helpers.
+ */
+abstract class PayPalPaymentIPNWebTestCase extends PaymentWebTestCase {
+
+  /**
+   * Creates IPN variables for a payment.
+   *
+   * @param integer $pid
+   *   THE PID of the Payment the IPN is for.
+   * @param bool $valid
+   *   Whether the IPN needs to be valid.
+   *
+   * @return array
+   */
+  public function mockIPNVariables($pid, $valid = TRUE) {
+    return array(
+      'mc_gross' => '19.95',
+      'protection_eligibility' => 'Eligible',
+      'address_status' => 'confirmed',
+      'payer_id' => 'LPLWNMTBWMFAY',
+      'tax' => '0.00',
+      'address_street' => '1 Main St',
+      'payment_status' => 'Completed',
+      'txn_id' => $valid ? 'TXN_ID_VERIFIED' : $this->randomName(),
+      'invoice' => PayPalPaymentIPNController::invoiceID($pid),
+    );
+  }
+
+  /**
+   * Checks if an IPN exists in the database.
+   *
+   * @param PayPalPaymentIPN $ipn
+   *
+   * @return bool
+   */
+  public function IPNExists(PayPalPaymentIPN $ipn) {
+    $query = db_select('paypal_payment_ipn', 'mpi');
+    foreach (get_object_vars($ipn) as $property => $value) {
+      if (property_exists(get_class($ipn), $property)) {
+        $query->condition($property, $value);
+      }
+    }
+    $count = $query->countQuery()->execute()->fetchField();
+
+    return (bool) $count;
+  }
+
+}

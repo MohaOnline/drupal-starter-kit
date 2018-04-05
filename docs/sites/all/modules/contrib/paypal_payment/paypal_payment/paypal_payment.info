@@ -1,0 +1,17 @@
+name = PayPal
+description = Provides generic PayPal functionality.
+core = 7.x
+package = Payment
+
+files[] = includes/PayPalPaymentNVPAPIPaymentMethodControllerBase.inc
+files[] = tests/PayPalPaymentWebTestCase.test
+
+dependencies[] = chr
+dependencies[] = payment:payment (>=1.17)
+
+; Information added by Drupal.org packaging script on 2018-02-14
+version = "7.x-1.3"
+core = "7.x"
+project = "paypal_payment"
+datestamp = "1518607085"
+

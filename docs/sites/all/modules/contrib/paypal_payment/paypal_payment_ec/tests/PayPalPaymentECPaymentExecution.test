@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentECPaymentExecution.
+ */
+
+/**
+ * Tests payment execution.
+ */
+class PayPalPaymentECPaymentExecution extends PaymentWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'Payment execution',
+      'group' => 'PayPal Express Checkout',
+      'dependencies' => array('paypal_payment_ec_test'),
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(array $modules = array()) {
+    parent::setUp(array_merge($modules, array('paypal_payment_ec_test')));
+  }
+
+  /**
+   * Tests payment execution.
+   */
+  public function testPaymentExecutionSuccessAutomaticCapture() {
+    $this->assertPaymentExecution(PayPalPaymentECPaymentMethodController::NVP_API_SERVER_PRODUCTION, PayPalPaymentECPaymentMethodController::CAPTURE_AUTOMATIC, PAYMENT_STATUS_SUCCESS);
+  }
+
+  /**
+   * Tests payment execution.
+   */
+  public function testPaymentExecutionSuccessManualCapture() {
+    $this->assertPaymentExecution(PayPalPaymentECPaymentMethodController::NVP_API_SERVER_PRODUCTION, PayPalPaymentECPaymentMethodController::CAPTURE_MANUAL, PAYPAL_PAYMENT_STATUS_WAITING_FOR_CAPTURE);
+  }
+
+  /**
+   * Tests payment execution using the sandbox server.
+   */
+  public function testPaymentExecutionFail() {
+    $this->assertPaymentExecution(PayPalPaymentECPaymentMethodController::NVP_API_SERVER_SANDBOX, PayPalPaymentECPaymentMethodController::CAPTURE_AUTOMATIC, PAYMENT_STATUS_FAILED);
+  }
+
+  /**
+   * Asserts a correct payment execution.
+   */
+  public function assertPaymentExecution($server, $capture, $payment_status) {
+    $payment_method = $this->paymentMethodCreate(2, payment_method_controller_load('PayPalPaymentECPaymentMethodController'));
+    $payment_method->controller_data = array(
+      'capture' => $capture,
+      'email_address' => 'b@b.b',
+      'server' => $server,
+    );
+    entity_save('payment_method', $payment_method);
+    $this->drupalPost('paypal_payment_ec_test/form/' . $payment_method->pmid, array(), t('Pay'));
+    $this->assertURL('<front>');
+    $pid = 1;
+    $payment = entity_load_single('payment', $pid);
+    $this->assertEqual($payment->getStatus()->status, $payment_status);
+  }
+
+}

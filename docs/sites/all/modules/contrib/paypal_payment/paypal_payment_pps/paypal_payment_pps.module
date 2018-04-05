@@ -1,0 +1,302 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and global functions.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function paypal_payment_pps_menu() {
+  $items['paypal_payment_pps/redirect/%entity_object'] = array(
+    'load arguments' => array('payment'),
+    'title' => 'Go to payment server',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('paypal_payment_pps_form_redirect', 2),
+    'access callback' => 'paypal_payment_pps_form_redirect_access',
+    'access arguments' => array(2),
+    'type' => MENU_CALLBACK,
+  );
+  $items['paypal_payment_pps/return/%entity_object/%'] = array(
+    'load arguments' => array('payment'),
+    'title' => 'PayPal Payments Standard return url',
+    'page callback' => 'paypal_payment_pps_return',
+    'page arguments' => array(2, 3),
+    'access callback' => 'paypal_payment_pps_return_access',
+    'access arguments' => array(2, 3),
+    'type' => MENU_CALLBACK,
+  );
+  $items['paypal_payment_pps/return/cancel/%entity_object/%'] = array(
+    'load arguments' => array('payment'),
+    'title' => 'PayPal Payments Standard return url',
+    'page callback' => 'paypal_payment_pps_return_cancel',
+    'page arguments' => array(3, 4),
+    'access callback' => 'paypal_payment_pps_return_access',
+    'access arguments' => array(3, 4),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_payment_method_controller_info().
+ */
+function paypal_payment_pps_payment_method_controller_info() {
+  return array('PayPalPaymentPPSPaymentMethodController');
+}
+
+/**
+ * Implements hook_entity_load().
+ */
+function paypal_payment_pps_entity_load(array $entities, $entity_type) {
+  if ($entity_type == 'payment_method') {
+    $pmids = array();
+    foreach ($entities as $payment_method) {
+      if ($payment_method->controller->name == 'PayPalPaymentPPSPaymentMethodController') {
+        $pmids[] = $payment_method->pmid;
+      }
+    }
+    if ($pmids) {
+      $query = db_select('paypal_payment_pps_payment_method')
+        ->fields('paypal_payment_pps_payment_method')
+        ->condition('pmid', $pmids);
+      $result = $query->execute();
+      while ($data = $result->fetchAssoc()) {
+        $payment_method = $entities[$data['pmid']];
+        $payment_method->controller_data = (array) $data;
+        unset($payment_method->controller_data['pmid']);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_ACTION().
+ */
+function paypal_payment_pps_payment_method_insert(PaymentMethod $payment_method) {
+  if ($payment_method->controller->name == 'PayPalPaymentPPSPaymentMethodController') {
+    $values = $payment_method->controller_data += $payment_method->controller->controller_data_defaults;
+    $values['pmid'] = $payment_method->pmid;
+    drupal_write_record('paypal_payment_pps_payment_method', $values);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_ACTION().
+ */
+function paypal_payment_pps_payment_method_update(PaymentMethod $payment_method) {
+  if ($payment_method->controller->name == 'PayPalPaymentPPSPaymentMethodController') {
+    $values = $payment_method->controller_data += $payment_method->controller->controller_data_defaults;
+    $values['pmid'] = $payment_method->pmid;
+    drupal_write_record('paypal_payment_pps_payment_method', $values, 'pmid');
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_ACTION().
+ */
+function paypal_payment_pps_payment_method_delete($entity) {
+  if ($entity->controller->name == 'PayPalPaymentPPSPaymentMethodController') {
+    db_delete('paypal_payment_pps_payment_method')
+      ->condition('pmid', $entity->pmid)
+      ->execute();
+  }
+}
+
+/**
+ * Form build callback: implements
+ * PaymentMethodController::payment_method_configuration_form_elements_callback.
+ */
+function paypal_payment_pps_payment_method_configuration_form_elements(array $form, array &$form_state) {
+  $payment_method = $form_state['payment_method'];
+  $controller = $payment_method->controller;
+  $controller_data = $payment_method->controller_data + $controller->controller_data_defaults;
+
+  $elements['email_address'] = array(
+    '#default_value' => $controller_data['email_address'],
+    '#required' => TRUE,
+    '#title' => t('PayPal account email address'),
+    '#type' => 'textfield',
+  );
+  $elements['server'] = array(
+    '#default_value' => $controller_data['server'],
+    '#options' => array(
+      $controller::SERVER_URL => t('Production'),
+      $controller::SANDBOX_SERVER_URL => t('Sandbox'),
+    ),
+    '#required' => TRUE,
+    '#title' => t('Server'),
+    '#type' => 'radios',
+  );
+  $elements['capture'] = array(
+    '#default_value' => $controller_data['capture'],
+    '#options' => array(
+      $controller::CAPTURE_AUTOMATIC => t('Automatic'),
+      $controller::CAPTURE_MANUAL => t('Manual'),
+    ),
+    '#required' => TRUE,
+    '#title' => t('Capture'),
+    '#type' => 'radios',
+  );
+
+  return $elements;
+}
+
+/**
+ * Implements form validate callback for
+ * paypal_payment_pps_payment_method_configuration_form_elements().
+ */
+function paypal_payment_pps_payment_method_configuration_form_elements_validate(array $element, array &$form_state) {
+  $values = drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+
+  $controller_data = &$form_state['payment_method']->controller_data;
+  $controller_data['email_address'] = $values['email_address'];
+  $controller_data['server'] = $values['server'];
+  $controller_data['capture'] = $values['capture'];
+  if (!valid_email_address($values['email_address'])) {
+    form_error($element['email_address'], t('The email address is not valid.'));
+  }
+}
+
+/**
+ * Form build callback: the redirect form.
+ */
+function paypal_payment_pps_form_redirect(array $form, array &$form_state, Payment $payment) {
+  global $language;
+
+  $controller_data = $payment->method->controller_data;
+
+  $hash = PayPalPaymentIPNController::hashPID($payment->pid);
+  // Prepare POST data.
+  $return_url = url("paypal_payment_pps/return/{$payment->pid}/$hash", array(
+    'absolute' => TRUE,
+  ));
+  $cancel_return_url = url("paypal_payment_pps/return/cancel/{$payment->pid}/$hash", array(
+    'absolute' => TRUE,
+  ));
+  $data = array(
+    'cmd' => '_cart',
+    'upload' => 1,
+    'business' => $controller_data['email_address'],
+    'notify_url' => PayPalPaymentIPNController::URL(),
+    'charset' => 'utf-8',
+    'no_note' => 1,
+    'no_shipping' => 1,
+    'cancel_return' => $cancel_return_url,
+    'return' => $return_url,
+    'rm' => 2,
+    'paymentaction' => $controller_data['capture'],
+    'currency_code' => $payment->currency_code,
+    'lc' => $language->language,
+    'invoice' => PayPalPaymentIPNController::invoiceID($payment->pid),
+  );
+  // Add each line item separately. The first item starts at 1.
+  $index = 1;
+  foreach ($payment->line_items as $line_item) {
+    $data['amount_' . $index] = $line_item->unitAmount(TRUE);
+    $data['item_name_' . $index] = $line_item->name;
+    $data['quantity_' . $index] = $line_item->quantity;
+    $index++;
+  }
+
+  // Build the form.
+  $form['#action'] = url($controller_data['server'], array(
+    'external' => TRUE,
+  ));
+  drupal_alter('paypal_payment_pps_data', $payment, $data);
+  foreach ($data as $name => $value) {
+    if (!empty($value)) {
+      $form[$name] = array(
+        '#type' => 'hidden',
+        '#value' => $value,
+      );
+    }
+  }
+  $form['message'] = array(
+    '#type' => 'markup',
+    '#markup' => '<p>' . t('You will be redirected to the off-site payment server to authorize the payment.') . '</p>',
+  );
+  // We need form submission as quickly as possible, so use light inline code.
+  $form['js'] = array(
+    '#type' => 'markup',
+    '#markup' => '<script type="text/javascript">document.getElementById(\'paypal-payment-pps-form-redirect\').submit();</script>',
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Continue'),
+  );
+
+  return $form;
+}
+
+/**
+ * Access callback for the redirect page.
+ *
+ * @param Payment $payment
+ *   The payment to check access to.
+ * @param object $account
+ *   An optional user to check access for. If NULL, then the currently logged
+ *   in user is used.
+ *
+ * @return bool
+ */
+function paypal_payment_pps_form_redirect_access(Payment $payment, $account = NULL) {
+  return is_a($payment->method->controller, 'PayPalPaymentPPSPaymentMethodController')
+    && payment_status_is_or_has_ancestor($payment->getStatus()->status, PAYMENT_STATUS_PENDING)
+    && isset($_SESSION['paypal_payment_pps_pid']) && $_SESSION['paypal_payment_pps_pid'] == $payment->pid;
+}
+
+/**
+ * Return callback.
+ */
+function paypal_payment_pps_return(Payment $payment) {
+  if (PayPalPaymentIPNController::validate($_POST)) {
+    $status = PayPalPaymentIPNController::process($_POST);
+    $payment->setStatus($status);
+  }
+  // If the payment is still pending we assume we are returning from a
+  // successful payment.
+  if ($payment->getStatus()->status == PAYMENT_STATUS_PENDING) {
+    $status = new PaymentStatusItem(PAYPAL_PAYMENT_STATUS_SUCCESSFULLY_RETURNED);
+    // After returning from PayPal the POST data might contain something that
+    // is not quite an IPN:
+    // - tx: The transaction id.
+    // - st: Status (usually "Pending").
+    // - amt: The total amount.
+    // - cc: The currency code.
+    // @see https://www.drupal.org/project/paypal_payment/issues/2918709#comment-12362825
+    if (isset($_POST['tx'])) {
+      $status->ipn = new PayPalPaymentIPN(['txn_id' => $_POST['tx']]);
+    }
+    $payment->setStatus($status);
+  }
+  $payment->finish();
+}
+
+/**
+ * Cancellation return callback.
+ *
+ * @param Payment $payment
+ *
+ * @return NULL
+ */
+function paypal_payment_pps_return_cancel(Payment $payment) {
+  $payment->setStatus(new PaymentStatusItem(PAYMENT_STATUS_CANCELLED));
+  $payment->finish();
+}
+
+/**
+ * Access callback for the return pages.
+ *
+ * @param Payment $payment
+ *   The Payment to check access to.
+ * @param string $hash
+ *   The hash based on $payment->pid.
+ *
+ * @return bool
+ */
+function paypal_payment_pps_return_access(Payment $payment, $hash) {
+  return PayPalPaymentIPNController::hashPID($payment->pid) == $hash;
+}

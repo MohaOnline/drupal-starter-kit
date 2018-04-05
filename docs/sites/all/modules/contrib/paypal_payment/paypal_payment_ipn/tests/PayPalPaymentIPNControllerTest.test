@@ -1,0 +1,200 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentIPNControllerTest.
+ */
+
+/**
+ * Tests PayPalPaymentIPNController functionality.
+ */
+class PayPalPaymentIPNControllerTest extends PayPalPaymentIPNWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'PayPalPaymentIPNController',
+      'group' => 'PayPal IPN',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(array $modules = array()) {
+    $this->profile = 'testing';
+    parent::setUp($modules + array('paypal_payment_ipn_test'));
+  }
+
+  /**
+   * Tests save().
+   */
+  public function testSave() {
+    $ipn_variables = $this->mockIPNVariables(9);
+
+    // Test inserting an IPN.
+    $ipn = new PayPalPaymentIPN($ipn_variables);
+    PayPalPaymentIPNController::save($ipn);
+    $this->assertTrue($this->IPNExists($ipn), 'All IPN properties were inserted correctly.');
+
+    // Test updating an IPN.
+    $ipn = new PayPalPaymentIPN($ipn_variables);
+    $ipn->pid = 7;
+    PayPalPaymentIPNController::save($ipn);
+    $this->assertTrue($this->IPNExists($ipn), 'All IPN properties were updated correctly.');
+  }
+
+  /**
+   * Tests load().
+   *
+   * @depends testSave
+   */
+  public function testLoad() {
+    $ipn = new PayPalPaymentIPN(array('psiid' => 42));
+    PayPalPaymentIPNController::save($ipn);
+    $ipn_loaded = PayPalPaymentIPNController::load($ipn->psiid);
+    $this->assertTrue($ipn_loaded instanceof PayPalPaymentIPN, 'An IPN is loaded correctly.');
+    $non_existing_ipn_loaded = PayPalPaymentIPNController::load(999);
+    $this->assertFalse($non_existing_ipn_loaded, 'A non-existing IPN is not loaded.');
+  }
+
+  /**
+   * Tests delete().
+   *
+   * @depends testSave
+   */
+  public function testDelete() {
+    $ipn = new PayPalPaymentIPN(array('psiid' => 42));
+    PayPalPaymentIPNController::save($ipn);
+    PayPalPaymentIPNController::delete($ipn->psiid);
+    $count = db_select('paypal_payment_ipn', 'mpi')
+      ->condition('txn_id', $ipn->txn_id)
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+    $this->assertFalse($count, 'An IPN is deleted.');
+  }
+
+  /**
+   * Tests URL().
+   */
+  public function testURL() {
+    $this->assertTrue(valid_url(PayPalPaymentIPNController::URL(), TRUE));
+  }
+
+  /**
+   * Tests acknowledge().
+   */
+  public function testAcknowledge() {
+    $this->assertTrue(PayPalPaymentIPNController::acknowledge($this->mockIPNVariables(9, TRUE)));
+    $this->assertFalse(PayPalPaymentIPNController::acknowledge($this->mockIPNVariables(9, FALSE)));
+  }
+
+  /**
+   * Tests validate().
+   */
+  public function testValidate() {
+    $payment_method = $this->paymentMethodCreate(2, payment_method_controller_load('PayPalPaymentIPNTestPaymentMethodController'));
+    entity_save('payment_method', $payment_method);
+    $payment = $this->paymentCreate(2, $payment_method);
+    entity_save('payment', $payment);
+
+    // Test valid IPN variables.
+    $ipn_variables = $this->mockIPNVariables($payment->pid);
+    $this->assertTrue(PayPalPaymentIPNController::validate($ipn_variables));
+
+    // Test an already processed IPN.
+    $ipn = new PayPalPaymentIPN($ipn_variables);
+    $ipn->pid = PayPalPaymentIPNController::PID($ipn_variables['invoice']);
+    PayPalPaymentIPNController::save($ipn);
+    $this->assertTrue(PayPalPaymentIPNController::validate($ipn_variables));
+
+    // Test IPN variables for which no Payment exists.
+    $ipn_variables = $this->mockIPNVariables(999);
+    $this->assertFalse(PayPalPaymentIPNController::validate($ipn_variables));
+  }
+
+  /**
+   * Test process().
+   */
+  function testProcess() {
+    $payment_method = $this->paymentMethodCreate(2, payment_method_controller_load('PayPalPaymentIPNTestPaymentMethodController'));
+    entity_save('payment_method', $payment_method);
+    $payment = $this->paymentCreate(2, $payment_method);
+    entity_save('payment', $payment);
+    $original_payment_status = $payment->getStatus()->status;
+    $ipn_variables = $this->mockIPNVariables($payment->pid);
+    PayPalPaymentIPNController::process($ipn_variables);
+    $payment = entity_load_single('payment', $payment->pid);
+    $this->assertNotEqual($original_payment_status, $payment->getStatus()->status);
+
+    // Test processing the same IPN again.
+    $original_payment_status = $payment->getStatus()->status;
+    $ipn_variables = $this->mockIPNVariables($payment->pid);
+    PayPalPaymentIPNController::process($ipn_variables);
+    $payment = entity_load_single('payment', $payment->pid);
+    $this->assertEqual($original_payment_status, $payment->getStatus()->status);
+  }
+
+  /**
+   * Tests hashPID().
+   */
+  public function testHashPID() {
+    $this->assertTrue(is_string(PayPalPaymentIPNController::hashPID(3)));
+  }
+
+  /**
+   * Tests invoiceID().
+   */
+  public function testInvoiceID() {
+    $this->assertTrue(is_string(PayPalPaymentIPNController::invoiceID(3)));
+  }
+
+  /**
+   * Tests PID().
+   *
+   * @depends testInvoiceID
+   */
+  public function testPID() {
+    $pid = 3;
+    $valid_invoice_id = PayPalPaymentIPNController::invoiceID(3);
+    $this->assertIdentical(PayPalPaymentIPNController::PID($valid_invoice_id), $pid);
+    $invalid_invoice_id = 'foo';
+    $this->assertFalse(PayPalPaymentIPNController::PID($invalid_invoice_id));
+  }
+
+  /**
+   * Tests statusMap().
+   */
+  public function testStatusMap() {
+    foreach (PayPalPaymentIPNController::statusMap() as $paypal_status => $payment_status) {
+      $this->assertTrue(is_string($paypal_status));
+      $this->assertTrue(is_string($payment_status));
+    }
+  }
+
+  /**
+   * Tests pendingStatusMap().
+   */
+  public function testPendingStatusMap() {
+    foreach (PayPalPaymentIPNController::pendingStatusMap() as $paypal_status => $payment_status) {
+      $this->assertTrue(is_string($paypal_status));
+      $this->assertTrue(is_string($payment_status));
+    }
+  }
+
+  /**
+   * Tests convertStatus().
+   */
+  public function testConvertStatus() {
+    $ipn_variables = $this->mockIPNVariables(9);
+    $this->assertEqual(PayPalPaymentIPNController::convertStatus($ipn_variables), PAYMENT_STATUS_SUCCESS);
+    $ipn_variables['payment_status'] = 'Pending';
+    $ipn_variables['pending_reason'] = 'multi-currency';
+    $this->assertEqual(PayPalPaymentIPNController::convertStatus($ipn_variables), PAYPAL_PAYMENT_STATUS_MULTI_CURRENCY);
+  }
+
+}

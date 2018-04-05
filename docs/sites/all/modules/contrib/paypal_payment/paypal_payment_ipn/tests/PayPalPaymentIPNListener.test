@@ -1,0 +1,62 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentIPNListener.
+ */
+
+/**
+ * Tests the IPN callback functionality.
+ */
+class PayPalPaymentIPNListener extends PayPalPaymentIPNWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'IPN listener',
+      'group' => 'PayPal IPN',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(array $modules = array()) {
+    $this->profile = 'testing';
+    parent::setUp($modules + array('paypal_payment_ipn_test'));
+  }
+
+  /**
+   * Tests the IPN listener.
+   */
+  public function testIPNListener() {
+    $payment_method = $this->paymentMethodCreate(2, payment_method_controller_load('PayPalPaymentIPNTestPaymentMethodController'));
+    entity_save('payment_method', $payment_method);
+    $payment = $this->paymentCreate(2, $payment_method);
+    entity_save('payment', $payment);
+    $original_payment_status = $payment->getStatus();
+
+    // Mock an IPN.
+    $ipn_variables = $this->mockIPNVariables($payment->pid);
+    $url = PayPalPaymentIPNController::URL();
+    $this->curlExec(array(
+      CURLOPT_POST => TRUE,
+      CURLOPT_POSTFIELDS => $ipn_variables,
+      CURLOPT_URL => $url,
+    ));
+    $response = $this->drupalGetContent();
+    $this->assertFalse($response);
+    $this->verbose($response);
+    $this->assertResponse(200);
+
+    // Test that an IPN has been saved.
+    $payment = entity_load_single('payment', $payment->pid);
+    $new_payment_status = $payment->getStatus();
+    $this->assertNotEqual($original_payment_status->status, $new_payment_status->status);
+    $this->assertTrue(PayPalPaymentIPNController::load($new_payment_status->psiid));
+  }
+
+}

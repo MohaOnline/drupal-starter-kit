@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * @file
+ * Contains \PayPalPaymentPPSPaymentExecution.
+ */
+
+/**
+ * Tests payment execution.
+ */
+class PayPalPaymentPPSPaymentExecution extends PaymentWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'Payment execution',
+      'group' => 'PayPal Payments Standard',
+      'dependencies' => array('paypal_payment_pps_test'),
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(array $modules = array()) {
+    parent::setUp(array_merge($modules, array('paypal_payment_pps_test')));
+  }
+
+  /**
+   * Tests payment execution.
+   */
+  public function testPaymentExecution() {
+    $payment_method = $this->paymentMethodCreate(2, payment_method_controller_load('PayPalPaymentPPSPaymentMethodController'));
+    $payment_method->controller_data = array(
+      'email_address' => 'b@b.b',
+      'server' => PayPalPaymentPPSPaymentMethodController::SANDBOX_SERVER_URL,
+    );
+    entity_save('payment_method', $payment_method);
+    $this->assertPaymentExecution($payment_method);
+  }
+
+  /**
+   * Tests payment execution using the sandbox server.
+   */
+  public function testSandboxPaymentExecution() {
+    $payment_method = $this->paymentMethodCreate(2, payment_method_controller_load('PayPalPaymentPPSPaymentMethodController'));
+    $payment_method->controller_data = array(
+      'server' => PayPalPaymentPPSPaymentMethodController::SANDBOX_SERVER_URL,
+    );
+    entity_save('payment_method', $payment_method);
+    $this->assertPaymentExecution($payment_method);
+  }
+
+  /**
+   * Asserts a correct payment execution.
+   */
+  public function assertPaymentExecution(PaymentMethod $payment_method) {
+    $data = array(
+      
+    );
+    $this->drupalPost('paypal_payment_pps_test/form/' . $payment_method->pmid, $data, t('Pay'));
+    $this->drupalPost(NULL, array(), t('Continue'));
+    $this->drupalPost(NULL, array(), t('Submit'));
+    $this->assertURL('<front>');
+  }
+
+}

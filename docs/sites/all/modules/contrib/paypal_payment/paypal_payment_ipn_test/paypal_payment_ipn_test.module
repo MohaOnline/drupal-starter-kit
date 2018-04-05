@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and global functions.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function paypal_payment_ipn_test_menu() {
+  $items['paypal_payment_ipn_test/paypal-ipn-server'] = array(
+    'page callback' => 'paypal_payment_ipn_test_paypal_server',
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_url_outbound_alter().
+ */
+function paypal_payment_ipn_test_url_outbound_alter(&$path, array &$options, $original_path) {
+  if (in_array($original_path, array(PayPalPaymentIPNController::PAYPAL_IPN_SERVER_URL, PayPalPaymentIPNController::PAYPAL_IPN_SANDBOX_SERVER_URL))) {
+    $path = url('paypal_payment_ipn_test/paypal-ipn-server', array(
+      'absolute' => TRUE,
+    ));
+  }
+}
+
+/**
+ * Implements hook_payment_method_controller_info().
+ */
+function paypal_payment_ipn_test_payment_method_controller_info() {
+  return array('PayPalPaymentIPNTestPaymentMethodController');
+}
+
+/**
+ * Responds to a PayPal IPN acknowledgement request.
+ */
+function paypal_payment_ipn_test_paypal_server() {
+  // Get and process raw POST data.
+  $fp = fopen("php://input", 'r');
+  $raw_post_data = stream_get_contents($fp);
+  $raw_post_data = explode('&', $raw_post_data);
+  $post = array();
+  foreach ($raw_post_data as $data) {
+    $fragments = explode('=', $data);
+    $post[$fragments[0]] = urldecode($fragments[1]);
+  }
+
+  // Respond to the request.
+  if (isset($post['txn_id'])
+  && urldecode($post['txn_id']) == 'TXN_ID_VERIFIED'
+  && isset($post['cmd'])
+  && urldecode($post['cmd']) == '_notify-validate') {
+    print 'VERIFIED';
+  }
+  else {
+    print 'INVALID';
+  }
+  drupal_exit();
+}

@@ -1,0 +1,19 @@
+name = PayPal Payments Standard
+description = Provides a <a href="https://www.paypal.com/webapps/mpp/paypal-payments-standard">PayPal Payments Standard</a> payment method type.
+package = Payment
+dependencies[] = paypal_payment
+dependencies[] = paypal_payment_ipn
+core = 7.x
+PHP = 5.3
+files[] = includes/PayPalPaymentPPSPaymentMethodController.inc
+files[] = tests/PayPalPaymentPPSPaymentExecution.test
+files[] = tests/PayPalPaymentPPSPaymentMethodCRUD.test
+files[] = tests/PayPalPaymentPPSPaymentMethodUI.test
+files[] = tests/PayPalPaymentWebTestCase.test
+
+; Information added by Drupal.org packaging script on 2018-02-14
+version = "7.x-1.3"
+core = "7.x"
+project = "paypal_payment"
+datestamp = "1518607085"
+

@@ -1,0 +1,62 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and global functions.
+ */
+
+/**
+ * The URL path to receive IPN requests at.
+ */
+define('PAYPAL_IPN_LISTENER_PATH', 'paypal_payment_ipn');
+
+/**
+ * Implements hook_menu().
+ */
+function paypal_payment_ipn_menu() {
+  $items[PAYPAL_IPN_LISTENER_PATH] = array(
+    'load arguments' => array('payment_method'),
+    'page callback' => 'paypal_payment_ipn_post',
+    'page arguments' => array(1),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Processes an IPN request based on POST data.
+ */
+function paypal_payment_ipn_post() {
+  $ipn_variables = $_POST;
+  foreach ($_POST as $ipn_variable => $value) {
+    $ipn_variables[$ipn_variable] = rawurldecode($value);
+  }
+  if (PayPalPaymentIPNController::acknowledge($ipn_variables) && PayPalPaymentIPNController::validate($ipn_variables)) {
+    PayPalPaymentIPNController::process($ipn_variables);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_update() for payment.
+ *
+ * If available save the IPN records after saving the payment.
+ */
+function paypal_payment_ipn_payment_update($payment) {
+  if ($payment->method->controller instanceof PayPalPaymentIPNPaymentMethodControllerInterface) {
+    $status = $payment->getStatus();
+    if (isset($status->ipn)) {
+      $status->ipn->pid = $payment->pid;
+      $status->ipn->psiid = $status->psiid;
+      PayPalPaymentIPNController::save($status->ipn);
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for payment.
+ */
+function paypal_payment_ipn_payment_insert($payment) {
+  paypal_payment_ipn_payment_update($payment);
+}

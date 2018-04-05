@@ -1,0 +1,179 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and global functions.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function paypal_payment_ec_test_menu() {
+  $items['paypal_payment_ec_test/form/%entity_object'] = array(
+    'load arguments' => array('payment_method'),
+    'title' => 'Go to payment server',
+    'page callback' => 'paypal_payment_ec_test_payment_form',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['paypal_payment_ec_test/set_express_checkout/success'] = array(
+    'page callback' => 'paypal_payment_ec_test_api',
+    'page arguments' => array(TRUE),
+    'access callback' => TRUE,
+  );
+  $items['paypal_payment_ec_test/set_express_checkout/fail'] = array(
+    'page callback' => 'paypal_payment_ec_test_api',
+    'page arguments' => array(FALSE),
+    'access callback' => TRUE,
+  );
+  $items['paypal_payment_ec_test/checkout/success'] = array(
+    'page callback' => 'paypal_payment_ec_test_checkout',
+    'page arguments' => array(TRUE),
+    'access callback' => TRUE,
+  );
+  $items['paypal_payment_ec_test/checkout/fail'] = array(
+    'page callback' => 'paypal_payment_ec_test_checkout',
+    'page arguments' => array(FALSE),
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_url_outbound_alter().
+ */
+function paypal_payment_ec_test_url_outbound_alter(&$path, array &$options, $original_path) {
+  $controller = payment_method_controller_load('PayPalPaymentECPaymentMethodController');
+  $paths = array(
+    $controller::NVP_API_URL_SERVER_PRODUCTION => 'paypal_payment_ec_test/set_express_checkout/success',
+    $controller::NVP_API_URL_SERVER_SANDBOX => 'paypal_payment_ec_test/set_express_checkout/fail',
+    $controller::URL_CHECKOUT_PRODUCTION => 'paypal_payment_ec_test/checkout/success',
+    $controller::URL_CHECKOUT_SANDBOX => 'paypal_payment_ec_test/checkout/fail',
+  );
+  if (isset($paths[$original_path])) {
+    $path = url($paths[$original_path], array(
+      'absolute' => TRUE,
+    ));
+  }
+}
+
+/**
+ * Returns a payment form.
+ *
+ * @return array
+ *   A Drupal form.
+ */
+function paypal_payment_ec_test_payment_form(PaymentMethod $payment_method) {
+  $payment = new Payment(array(
+    'currency_code' => 'EUR',
+    'description' => 'foo',
+    'finish_callback' => 'paypal_payment_ec_test_finish_callback',
+    'method' => $payment_method,
+    'uid' => 1,
+  ));
+  $payment->setLineItem(new PaymentLineItem(array(
+    'name' => 'foo',
+    'amount' => 1.0,
+    'tax_rate' => 0.1,
+  )));
+
+  return drupal_get_form('payment_form_standalone', $payment);
+}
+
+/**
+ * Responds to API requests.
+ *
+ * @param bool $success
+ */
+function paypal_payment_ec_test_api($success) {
+  $controller = payment_method_controller_load('PayPalPaymentECPaymentMethodController');
+  $nvp_request = $controller->NVPAPIParseResponse(file_get_contents('php://input'));
+  $nvp_response = array();
+  if ($success && isset($nvp_request['METHOD'])) {
+    if ($nvp_request['METHOD'] == 'SetExpressCheckout'
+    && isset($nvp_request['RETURNURL']) && valid_url($nvp_request['RETURNURL'], TRUE)
+    && isset($nvp_request['CANCELURL']) && valid_url($nvp_request['CANCELURL'], TRUE)) {
+      variable_set('paypal_payment_ec_test_return_url', $nvp_request['RETURNURL']);
+      variable_set('paypal_payment_ec_test_cancel_url', $nvp_request['CANCELURL']);
+      $datetime = new DateTime();
+      $nvp_response = array(
+        'TIMESTAMP' => $datetime->format(DateTime::ISO8601),
+        'TOKEN' => paypal_payment_ec_test_token(),
+      );
+    }
+    elseif ($nvp_request['METHOD'] == 'GetExpressCheckoutDetails'
+    && isset($nvp_request['TOKEN'])) {
+      $payer_id = substr(drupal_get_hash_salt(), 0, 13);
+      variable_set('paypal_payment_ec_test_payer_id', $payer_id);
+      $nvp_response = array(
+        'PAYERID' => $payer_id,
+      );
+    }
+    elseif ($nvp_request['METHOD'] == 'doExpressCheckoutPayment'
+    && isset($nvp_request['PAYERID']) && $nvp_request['PAYERID'] === variable_get('paypal_payment_ec_test_payer_id')
+    && isset($nvp_request['TOKEN'])) {
+      $authentication = $controller::loadAuthentication($nvp_request['TOKEN'], 'token');
+      $payment = entity_load_single('payment', $authentication->pid);
+      if ($payment->method->controller_data['capture'] == $controller::CAPTURE_AUTOMATIC) {
+        $nvp_response = array(
+          'PAYMENTINFO_0_PAYMENTSTATUS' => 'Completed',
+        );
+      }
+      elseif ($payment->method->controller_data['capture'] == $controller::CAPTURE_MANUAL) {
+        $nvp_response = array(
+          'PAYMENTINFO_0_PAYMENTSTATUS' => 'Pending',
+          'PAYMENTINFO_0_PENDINGREASON' => 'authorization',
+        );
+      }
+    }
+  }
+  if ($nvp_response) {
+    $nvp_response['ACK'] = 'Success';
+  }
+  else {
+    $nvp_response['ACK'] = 'Failure';
+  }
+  array_walk($nvp_response, function(&$value, $key) {
+    $value = $key . '=' . urlencode($value);
+  });
+  print implode('&', $nvp_response);
+  drupal_exit();
+}
+
+/**
+ * Returns a checkout response.
+ *
+ * @param bool $success
+ */
+function paypal_payment_ec_test_checkout($success) {
+  if ($success
+  && isset($_GET['cmd']) && $_GET['cmd'] == '_express-checkout'
+  && isset($_GET['token']) && $_GET['token'] == paypal_payment_ec_test_token()) {
+    $url = variable_get('paypal_payment_ec_test_return_url');
+  }
+  else {  
+    $url = variable_get('paypal_payment_ec_test_cancel_url');
+  }
+  drupal_goto($url, array(
+    'query' => array(
+      'token' => paypal_payment_ec_test_token(),
+    ),
+  ));
+}
+
+/**
+ * Returns a PayPal checkout token.
+ *
+ * @return string
+ */
+function paypal_payment_ec_test_token() {
+  return substr(drupal_get_hash_salt(), 0, 20);
+}
+
+/**
+ * Implements Payment::finish_callback.
+ */
+function paypal_payment_ec_test_finish_callback(Payment $payment) {
+  drupal_goto('<front>');
+}

@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * Enable module chr.
+ */
+function paypal_payment_update_7101() {
+  if (!module_enable(['chr'])) {
+    throw new DrupalUpdateException('Could not enable the chr module. Please download it before running this update.');
+  }
+}
