@@ -1,0 +1,18 @@
+name = Views Data Export PHPExcel
+description = "Extension to VDE, which allows XLSX files export utilizing PHPExcel library"
+
+package = Views
+core = 7.x
+
+dependencies[] = views_data_export
+dependencies[] = libraries
+
+; Plugins
+files[] = plugins/views_data_export_phpexcel_plugin_style_export.inc
+
+; Information added by Drupal.org packaging script on 2015-03-06
+version = "7.x-1.0"
+core = "7.x"
+project = "views_data_export_phpexcel"
+datestamp = "1425634083"
+

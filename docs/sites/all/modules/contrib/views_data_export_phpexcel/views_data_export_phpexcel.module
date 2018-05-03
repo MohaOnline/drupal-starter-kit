@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Main module functions and hooks.
+ */
+
+/**
+ * Implements hook_libraries_info().
+ */
+function views_data_export_phpexcel_libraries_info() {
+  $libraries['PHPExcel'] = array(
+    'name' => 'PHPExcel',
+    'vendor url' => 'https://phpexcel.codeplex.com/',
+    'download url' => 'https://phpexcel.codeplex.com/downloads/get/809023',
+    'path' => 'Classes',
+    'version arguments' => array(
+      'file' => 'changelog.txt',
+      // 1.8.x: Version 1.8.0
+      'pattern' => '/@version\s+(\d+\.\d+\.\d+)/',
+      'lines' => 25,
+    ),
+    'files' => array(
+      'php' => array('PHPExcel.php'),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function views_data_export_phpexcel_views_api() {
+  // Using version 2 because Views Data Export still uses it too.
+  return array(
+    'api' => 2,
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function views_data_export_phpexcel_theme() {
+  // PHPExcel XLSX theme.
+  $hooks['views_data_export_xlsx_body'] = array(
+    'variables' => array(
+      'view' => NULL,
+      'options' => NULL,
+      'rows' => NULL,
+      'title' => NULL,
+    ),
+    'file' => 'views_data_export_phpexcel.theme.inc',
+  );
+
+  return $hooks;
+}

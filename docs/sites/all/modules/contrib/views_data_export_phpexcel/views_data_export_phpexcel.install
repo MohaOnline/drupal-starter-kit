@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ * Module's installation hooks and functions.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function views_data_export_phpexcel_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break during installation.
+  $t = get_t();
+  if ($phase == 'runtime') {
+    // Try to detect PHPExcel library.
+    $library = libraries_detect('PHPExcel');
+    if (($library = libraries_detect('PHPExcel')) && !empty($library['installed'])) {
+      // The library is installed. Awesome!
+      $requirements['views_data_export_phpexcel'] = array(
+        'title' => $t('PHPExcel library'),
+        'value' => $library['version'],
+        'severity' => REQUIREMENT_OK,
+      );
+    }
+    else {
+      $error = $t('Not found');
+      $error_message = '';
+      if ($library) {
+        // Retrieve status code.
+        $error = $library['error'];
+        // Retrieve error message.
+        $error_message = $library['error message'];
+      }
+      $requirements['views_data_export_phpexcel'] = array(
+        'title' => $t('PHPExcel library'),
+        'value' => $error,
+        'description' => $error_message,
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+
+  return $requirements;
+}
