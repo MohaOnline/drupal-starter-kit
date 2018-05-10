@@ -1,0 +1,122 @@
+<?php
+/**
+ * @file
+ * Swiper module hooks.
+ */
+
+// Always include the common functions file.
+require_once dirname(__FILE__) . '/inc/swiper.common.inc';
+
+define('SWIPER_FIELD_CONTENT', 'field_swiper_content');
+define('SWIPER_FIELD_CONTAINER_WIDTH', 'field_swiper_container_width');
+define('SWIPER_CONTENT_TYPE_NAME', 'swiper');
+define('SWIPER_BLOCK_TEMPLATE', 'block--swiper');
+define('SWIPER_BLOCK_NAME_PATTERN', 'swiper_block_');
+define('SWIPER_JS_IMPLEMENTATION_FILE', 'swiper.jquery.js');
+define('SWIPER_CSS_PLUGIN_FILE', 'swiper.css');
+define('SWIPER_ASSETS_SCRIPTS_PATH', '/theme/assets/scripts/');
+define('SWIPER_ASSETS_STYLES_PATH', '/theme/assets/styles/');
+define('SWIPER_NODE_ADD_PATH', 'node/add/swiper');
+define('SWIPER_LIBRARY_FOLDER_NAME', 'Swiper');
+define('SWIPER_LIBRARY_DISTRIBUTION_FILES_FOLDER_NAME', 'dist');
+define('SWIPER_PLUGIN_FILE_PREFIX_PATTERN', 'idangerous.swiper-');
+define('SWIPER_PLUGIN_FILE_SUFFIX_PATTERN', '.min.js');
+define('SWIPER_PLUGIN_REPOSITORY_URL', 'https://github.com/nolimits4web/Swiper');
+
+/**
+ * Implements hook_node_info().
+ */
+function swiper_node_info() {
+  return array(
+    SWIPER_CONTENT_TYPE_NAME => array(
+      'name' => t('Swiper Gallery'),
+      'base' => 'node_content',
+      'has_title' => TRUE,
+      'title_label' => t('Title'),
+      'description' => t('Create a new swiper content'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function swiper_theme_registry_alter(&$theme_registry) {
+  $template_key = str_replace('-', '_', SWIPER_BLOCK_TEMPLATE);
+  $theme_registry[$template_key] = array(
+    'path' => swiper_get_template_folder_path(SWIPER_BLOCK_TEMPLATE),
+    'template' => SWIPER_BLOCK_TEMPLATE,
+    'type' => 'module',
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function swiper_block_info() {
+  $blocks = array();
+
+  // Create a block to each node of image swipe type.
+  $nodes = swiper_get_nodes_of_content_type();
+  foreach ($nodes as $nid => $node) {
+    $blocks[SWIPER_BLOCK_NAME_PATTERN . $nid] = array(
+      // info: The name of the block.
+      'info' => t('Swiper: @node_title', array('@node_title' => $node->title)),
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function swiper_block_view($delta = '') {
+  $block = array();
+
+  if (strpos($delta, SWIPER_BLOCK_NAME_PATTERN) !== FALSE) {
+    $node_id = str_replace(SWIPER_BLOCK_NAME_PATTERN, '', $delta);
+    $node_object = node_load($node_id);
+
+    swiper_implements_plugin_behavior($node_object);
+    $block['content'] = array(
+      '#node' => $node_object,
+      '#swiper_content' => swiper_get_swiper_contents_from_node($node_object),
+    );
+  }
+
+  return $block;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function swiper_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'swiper_node_form') {
+    if (!swiper_get_plugin_library_path()) {
+      // Sets a warning message to the user in the forms, in case that not have the library installed.
+      swiper_set_no_library_found_warning_message();
+    }
+
+    // Adds a extra form submit handler in case of a new swiper node type.
+    if (current_path() == SWIPER_NODE_ADD_PATH) {
+      $form['#new_node'] = TRUE;
+      $form['#submit'][] = 'swiper_node_form_submit';
+    }
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function swiper_node_delete($node) {
+  if ($node->type == SWIPER_CONTENT_TYPE_NAME) {
+    $block_delta = SWIPER_BLOCK_NAME_PATTERN . $node->nid;
+
+    $has_block = block_load('swiper', $block_delta);
+    if ($has_block) {
+      // Deletes block.
+      swiper_delete_block($block_delta);
+    }
+  }
+}

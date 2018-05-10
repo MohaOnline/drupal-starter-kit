@@ -1,0 +1,107 @@
+<?php
+/**
+ * @file
+ * Install, update, and uninstall functions for the swiper module
+ */
+
+// Including .module file to be able to use the constants of the module.
+module_load_include('module', 'swiper');
+
+/**
+ * Implements hook_install().
+ */
+function swiper_install() {
+  swiper_create_content_type();
+  node_types_rebuild();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function swiper_uninstall() {
+  swiper_delete_nodes();
+
+  // Deletes content type.
+  swiper_delete_content_type_fields();
+  node_type_delete(SWIPER_CONTENT_TYPE_NAME);
+  node_types_rebuild();
+}
+
+/**
+ * Deletes all nodes of the related content type.
+ */
+function swiper_delete_nodes() {
+  $result = db_query('SELECT n.nid FROM {node} n WHERE n.type = :type', array(':type' => SWIPER_CONTENT_TYPE_NAME));
+
+  node_delete_multiple($result->fetchCol());
+}
+
+/**
+ * Deletes all the content type fields created upon module installation.
+ */
+function swiper_delete_content_type_fields() {
+  $fields = swiper_get_content_type_fields();
+
+  foreach ($fields as $field) {
+    field_delete_instance($field);
+    field_delete_field($field['field_name']);
+  }
+}
+
+/**
+ * Create swiper the content type.
+ */
+function swiper_create_content_type() {
+  $fields = swiper_get_content_type_fields();
+
+  foreach ($fields as $field) {
+    field_create_field($field);
+    field_create_instance($field);
+  }
+}
+
+/**
+ * Get the fields definitions of the swiper content type.
+ *
+ * @return array
+ *   $fields
+ */
+function swiper_get_content_type_fields() {
+  $weight = 0;
+
+  $fields = array(
+    array(
+      'field_name' => SWIPER_FIELD_CONTENT,
+      'type' => 'text_long',
+      'translatable' => TRUE,
+      'entity_type' => 'node',
+      'bundle' => SWIPER_CONTENT_TYPE_NAME,
+      'label' => t('Gallery Items'),
+      'widget' => array(
+        'type' => 'text_long',
+        'weight' => $weight++,
+      ),
+      'settings' => array(
+        'text_processing' => '1',
+      ),
+      'description' => t('Insert the content that will be part of a swiper carousel.'),
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'required' => TRUE,
+    ),
+    array(
+      'field_name' => SWIPER_FIELD_CONTAINER_WIDTH,
+      'type' => 'text',
+      'translatable' => TRUE,
+      'entity_type' => 'node',
+      'bundle' => SWIPER_CONTENT_TYPE_NAME,
+      'label' => t('Container Width (px, %, etc)'),
+      'widget' => array(
+        'type' => 'text_textfield',
+        'weight' => $weight++,
+      ),
+      'description' => t("Specify Swiper's container Width, example: 960px. <br />This value will be set in a CSS inline style in the default container div class. <br /> Make sure to include the unit of measurement (px, %, etc) in the entered value."),
+    ),
+  );
+
+  return $fields;
+}
