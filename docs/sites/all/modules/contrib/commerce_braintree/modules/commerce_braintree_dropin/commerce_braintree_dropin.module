@@ -1,0 +1,406 @@
+<?php
+
+/**
+ * @file
+ * Provides integration with Braintree Drop-in UI.
+ */
+
+/**
+ * Implements hook_commerce_payment_method_info().
+ */
+function commerce_braintree_dropin_commerce_payment_method_info() {
+  $payment_methods = array();
+
+  $payment_methods['braintree_dropin'] = array(
+    'base' => 'commerce_braintree_dropin',
+    'title' => t('Braintree Drop-in UI'),
+    'short_title' => t('Braintree Drop-in UI'),
+    'display_title' => t('Credit card'),
+    'description' => t('Integrates with Braintree Drop-in for secure on-site credit card payment.'),
+    'terminal' => TRUE,
+    'offsite' => FALSE,
+    'callbacks' => array(
+      'settings_form' => 'commerce_braintree_settings_form',
+      'submit_form_validate' => 'commerce_braintree_js_form_validate',
+      'submit_form_submit' => 'commerce_braintree_js_form_submit',
+    ),
+    'cardonfile' => array(
+      'create form callback' => 'commerce_braintree_js_cardonfile_form',
+      'update form callback' => 'commerce_braintree_js_cardonfile_form',
+      'create callback' => 'commerce_braintree_js_cardonfile_form_submit',
+      'update callback' => 'commerce_braintree_js_cardonfile_form_submit',
+      'delete callback' => 'commerce_braintree_cardonfile_update_delete',
+      'charge callback' => 'commerce_braintree_cardonfile_charge',
+    ),
+  );
+
+  return $payment_methods;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function commerce_braintree_dropin_form_alter(&$form, &$form_state, $form_id) {
+  // Check to see if this is a checkout form and there is payment form element.
+  if (strstr($form_id, 'commerce_checkout_form')
+      && !empty($form['commerce_payment'])
+      && !empty($form_state['order']->payment_methods)) {
+
+    // Determine if Braintree Drop-in is available for this order.
+    $payment_methods = $form_state['order']->payment_methods;
+    foreach ($payment_methods as $payment_method) {
+      if ($payment_method['method_id'] == 'braintree_dropin') {
+        $drop_in = TRUE;
+      }
+    }
+
+    if (!empty($drop_in)) {
+      // Make sure the Drop-in javascript api is included.
+      $form['#attached']['js'][] = array(
+        'data' => 'https://js.braintreegateway.com/v2/braintree.js',
+        'type' => 'external',
+      );
+
+      // When there is more than 1 payment method available, replace the
+      // ajax handler for the payment method selector so that the entire
+      // form is reloaded. Otherwise you cannot switch between different
+      // payment methods during checkout. This is because Braintree
+      // Drop-in hijacks the form event handlers.
+      if (count($payment_methods) > 1) {
+        $form['#prefix'] = '<div id="commerce-braintree-dropin-checkout-wrapper">';
+        $form['#suffix'] = '</div>';
+        $form['commerce_payment']['payment_method']['#ajax'] = array(
+          'callback' => 'commerce_braintree_dropin_checkout_ajax',
+          'wrapper' => 'commerce-braintree-dropin-checkout-wrapper',
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Alters the admin order payment form to add support for Braintree Drop-in UI.
+ */
+function commerce_braintree_dropin_form_commerce_payment_order_transaction_add_form_alter(&$form, &$form_state) {
+  // Include the Braintree Drop-in UI when it is selected as the payment method.
+  if (!empty($form['payment_terminal']) && $form_state['payment_method']['method_id'] == 'braintree_dropin') {
+
+    // Drop-in UI has it's own card on file UI.
+    $form['payment_terminal']['payment_details']['cardonfile']['#access'] = FALSE;
+
+    $arguments = array();
+    if (!empty($form_state['order']->uid)) {
+      $account = user_load($form_state['order']->uid);
+      if (!empty($account->data['braintree_vault']['id'])) {
+        $arguments['customerId'] = $account->data['braintree_vault']['id'];
+      }
+    }
+
+    $form['payment_terminal']['payment_details'] += (array) commerce_braintree_dropin_submit_form_elements($form_state['payment_method'], $arguments);
+  }
+}
+
+/**
+ * Override of commerce_payment_pane_checkout_form_details_refresh().
+ *
+ * Replaces the entire form so that Braintree Drop-in events can be
+ * added or removed properly when changing payment methods during
+ * checkout.
+ */
+function commerce_braintree_dropin_checkout_ajax(&$form, &$form_state) {
+  return $form;
+}
+
+/**
+ * Form callback for Braintree Drop-in payment method.
+ *
+ * @see CALLBACK_commerce_payment_method_submit_form().
+ */
+function commerce_braintree_dropin_submit_form($payment_method, $pane_values, $checkout_pane, $order) {
+  $form = array();
+
+  $arguments = array();
+  if (!empty($order->uid)) {
+    $account = user_load($order->uid);
+    if (!empty($account->data['braintree_vault']['id'])) {
+      $arguments['customerId'] = $account->data['braintree_vault']['id'];
+    }
+  }
+
+  // Append common the drop-in ui form elements to the form array.
+  $form += (array) commerce_braintree_dropin_submit_form_elements($payment_method, $arguments);
+
+  return $form;
+}
+
+/**
+ * Returns the common FAPI form elements for all Drop-in UI implementations.
+ *
+ * @param $payment_method
+ *   The payment method being used.
+ * @param array $arguments
+ *   An array of arguments to be passed Braintree token method.
+ *
+ * @return array
+ *   An array of form elements for the drop-in ui.
+ */
+function commerce_braintree_dropin_submit_form_elements($payment_method, $arguments = array()) {
+  global $user;
+  $form = array();
+
+  // Initialize Braintree and create a token.
+  commerce_braintree_initialize($payment_method);
+
+  $js_settings = array(
+    'environment' => $payment_method['settings']['environment'],
+    'clientToken' => Braintree_ClientToken::generate($arguments),
+  );
+
+  // Allow other modules to alter the JS settings.
+  drupal_alter('commerce_braintree_dropin_js', $js_settings, $payment_method);
+
+  // The custom token is required to generate the Drop-in payment form.
+  $form['#attached']['js'][] = array(
+    'data' => array('commerceBraintreeDropin' => $js_settings),
+    'type' => 'setting',
+  );
+
+  // Make sure the Drop-in javascript api is included.
+  $form['#attached']['js'][] = array(
+    'data' => 'https://js.braintreegateway.com/v2/braintree.js',
+    'type' => 'external',
+  );
+
+  // Attach our own javascript to handle the Drop-in form generation.
+  $form['#attached']['js'][] = drupal_get_path('module', 'commerce_braintree_dropin') . '/js/commerce_braintree_dropin.js';
+
+  // Include a container div for the Drop-in form to attach to.
+  $form['braintree_dropin'] = array(
+    '#markup' => '<div id="commerce-braintree-dropin-container"></div>',
+  );
+
+  // Add option to save card on file for authenticated users.
+  if (!empty($payment_method['settings']['cardonfile']) && !empty($user->uid)) {
+    $storage = variable_get('commerce_cardonfile_storage', 'opt-in');
+    if ($storage !== 'required') {
+      $form['cardonfile'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Securely save this payment method for next time.'),
+        '#default_value' => $storage == 'opt-in' ? FALSE : TRUE,
+      );
+    }
+    else {
+      $form['cardonfile'] = array(
+        '#type' => 'value',
+        '#value' => TRUE,
+      );
+    }
+  }
+
+  return $form;
+}
+
+/**
+ * Form callback for commerce_cardonfile entities.
+ */
+function commerce_braintree_dropin_cardonfile_form($form, &$form_state, $op, $card) {
+  $form_state['card'] = $card;
+  $account = user_load($card->uid);
+  $arguments = array();
+  $payment_instance = commerce_payment_method_instance_load($card->instance_id);
+  $form_state['payment_instance'] = $payment_instance;
+  commerce_braintree_initialize($payment_instance);
+
+  if (!empty($card->remote_id)) {
+    // Query Braintree for the payment method matching this card on file.
+    try {
+      $payment_method = \Braintree_PaymentMethod::find($card->remote_id);
+    }
+    catch (Exception $ex) {
+      // If Braintree doesn't return the payment method, we cannot proceed.
+      drupal_set_message(t('We are unable to locate your stored payment method'), 'error');
+      watchdog('commerce_braintree_dropin', 'Unable to fetch Braintree payment method due to @error', array('@error' => $ex->getMessage()), WATCHDOG_ERROR);
+      return array();
+    }
+  }
+
+  // Determine the Braintree customer id and append it to the API request.
+  if (!empty($account->data) && !empty($account->data['braintree_vault'])) {
+    // Set the Braintree Customer ID if stored on the user object.
+    $arguments['customerId'] = $account->data['braintree_vault']['id'];
+  }
+  else if (!empty($payment_method->customerId)) {
+    // Set the Braintree Customer ID from the loaded payment method.
+    $arguments['customerId'] = $payment_method->customerId;
+  }
+
+  // Append common the drop-in ui form elements to the form array.
+  $form += (array) commerce_braintree_dropin_submit_form_elements($payment_instance, $arguments);
+
+  // Remove the card on file options since we're always saving these.
+  unset($form['cardonfile']);
+
+  $form['customer_id'] = array(
+    '#type' => 'value',
+    '#value' => !empty($arguments['customerId']) ? $arguments['customerId'] : FALSE,
+  );
+
+  $form['actions'] = array(
+    '#type' => 'container',
+  );
+
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save Payment Method'),
+  );
+
+  return $form;
+}
+
+/**
+ * Submit handler for commerce_cardonfile form callbacks.
+ */
+function commerce_braintree_dropin_cardonfile_form_submit(&$form, &$form_state) {
+  $account = user_load($form_state['card']->uid);
+  $cards = commerce_cardonfile_load_multiple_by_uid($form_state['card']->uid, $form_state['payment_instance']['instance_id']);
+  commerce_braintree_initialize($form_state['payment_instance']);
+  $nonce = commerce_braintree_js_get_nonce();
+
+  // Populate the customer variable with data from Braintree.
+  if (!empty($form_state['values']['customer_id'])) {
+    // Query for the customer record from the customer id in form values.
+    try {
+      $customer = Braintree_Customer::find($form_state['values']['customer_id']);
+    }
+    catch (Exception $ex) {
+      watchdog('commerce_braintree_dropin', 'Unable to fetch Braintree customer account due to @error', array('@error' => $ex->getMessage()), WATCHDOG_ERROR);
+      return;
+    }
+
+    // Create or determine the payment method that was selected
+    // during update.
+    try {
+      $payment_method = Braintree_PaymentMethod::create(array(
+        'customerId' => $form_state['values']['customer_id'],
+        'paymentMethodNonce' => $nonce,
+      ))->paymentMethod;
+    } catch (Exception $ex) {
+      watchdog('commerce_braintree_dropin', 'Unable to load/create a payment method due to @error', array('@error' => $ex->getMessage()), WATCHDOG_ERROR);
+      return;
+    }
+  }
+  else {
+    // Create a new customer and payment method at once.
+    try {
+      $customer = Braintree_Customer::create(array(
+        'email' => $account->mail,
+        'paymentMethodNonce' => $nonce,
+      ))->customer;
+      $payment_method = reset($customer->creditCards);
+    }
+    catch (Exception $ex) {
+      watchdog('commerce_braintree_dropin', 'Unable to fetch Braintree customer account due to @error', array('@error' => $ex->getMessage()), WATCHDOG_ERROR);
+      return;
+    }
+  }
+
+  try {
+    if (!empty($payment_method->token)) {
+      // Set this payment method as the default.
+      Braintree_PaymentMethod::update($payment_method->token, array('options' => array('makeDefault' => TRUE)));
+      $instance_default = $payment_method->token;
+    }
+  }
+  catch (Exception $ex) {
+    watchdog('commerce_braintree_dropin', 'Unable to set default payment method due to @error', array('@error' => $ex->getMessage()), WATCHDOG_ERROR);
+  }
+
+  // Loop over each of the Braintree payment methods and make sure
+  // a matching card on file entity exits.
+  foreach ($customer->creditCards as $vault_profile) {
+    $card = commerce_cardonfile_load_multiple(array(), array('remote_id' => $vault_profile->token));
+
+    // Create a new card on file entity if we were unable to load one
+    // for this vault profile.
+    if (empty($card)) {
+      $card = commerce_cardonfile_new();
+      $card->remote_id = $vault_profile->token;
+      $card->status = TRUE;
+      $card->uid = $form_state['card']->uid;
+    }
+    else {
+      $card = reset($card);
+    }
+
+    // Update the values returned from Braintree.
+    $card->card_type = $vault_profile->cardType;
+    $card->card_number = $vault_profile->last4;
+    $card->card_exp_month = $vault_profile->expirationMonth;
+    $card->card_exp_year = $vault_profile->expirationYear;
+    $card->instance_default = $vault_profile->default;
+    $card->payment_method = $form_state['payment_instance']['method_id'];
+    $card->instance_id = $form_state['payment_instance']['instance_id'];
+    $card->instance_default = !empty($instance_default) ? ($instance_default == $vault_profile->token) : $vault_profile->default;
+
+    commerce_cardonfile_save($card);
+
+    // Pop this card off the cards on file array.
+    unset($cards[$card->card_id]);
+  }
+
+  // Loop over any cards that were't returned from Braintree
+  // and make sure they're deleted.
+  foreach ($cards as $card) {
+    commerce_cardonfile_delete($card->card_id);
+  }
+
+  // Store the Braintree customer information on the Drupal user.
+  $account->data['braintree_vault']['id'] = $customer->id;
+  user_save($account);
+
+  drupal_set_message(t('Payment information updated successfully'));
+  $form_state['redirect'] = 'user/' . $form_state['card']->uid . '/cards';
+}
+
+/**
+ * Implements hook_commerce_cardonfile_checkout_pane_form_alter().
+ */
+function commerce_braintree_dropin_commerce_cardonfile_checkout_pane_form_alter(&$pane, $form, $form_state) {
+  // Drop-in UI has it's own card on file UI.
+  // Remove what commerce_cardonfile provides.
+  if (strpos($form['commerce_payment']['payment_method']['#default_value'], 'braintree_dropin') === 0) {
+    $pane['cardonfile']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Delete callback for commerce_cardonfile.
+ */
+function commerce_braintree_dropin_cardonfile_delete($form, &$form_state, $payment_method, $card) {
+  commerce_braintree_initialize($payment_method);
+  try {
+    Braintree_PaymentMethod::delete($card->remote_id);
+  }
+  catch (Exception $ex) {
+    watchdog('commerce_braintree_dropin', 'Unable to delete payment method due to @error', array('@error' => $ex->getMessage()), WATCHDOG_ERROR);
+    drupal_set_message(t('Unable to delete the payment method at this time'), 'error');
+  }
+
+  // If the card being deleted is the instance default, attempt to update
+  // another card owned by the the same user as the instance default.
+  if ($card->instance_default) {
+    $cards = commerce_cardonfile_load_multiple_by_uid($card->uid, $payment_method);
+    unset($cards[$card->card_id]);
+    if (!empty($cards)) {
+      $new_default = reset($cards);
+      $new_default->instance_default = TRUE;
+      commerce_cardonfile_save($new_default);
+    }
+  }
+
+  commerce_cardonfile_delete($card->card_id);
+
+  return TRUE;
+}

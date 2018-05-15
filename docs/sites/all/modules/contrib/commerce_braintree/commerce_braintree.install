@@ -1,0 +1,93 @@
+<?php
+
+/**
+ * Implements hook_enable().
+ */
+function commerce_braintree_enable() {
+  // If Card on File is already enabled, fetch its weight.
+  $weight = db_select('system', 's')
+    ->fields('s', array('weight'))
+    ->condition('name', 'commerce_cardonfile', '=')
+    ->execute()
+    ->fetchField();
+
+  // If it wasn't found, pick an arbitrary high weight.
+  if ($weight === FALSE) {
+    $weight = 1000;
+  }
+
+  db_update('system')
+    ->fields(array(
+      'weight' => $weight + 1,
+    ))
+    ->condition('type', 'module')
+    ->condition('name', 'commerce_braintree')
+    ->execute();
+}
+
+/**
+ * Implements hook_requirements().
+ *
+ * Checks required BrainTree Libraries on Install
+ */
+function commerce_braintree_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time.
+  $t = get_t();
+
+  // Test PHP version.
+  if (version_compare(phpversion(), '5.2.1', '<')) {
+    $requirements['php']['description'] = $t('Your PHP installation is too old. Braintree requires at least PHP %version.', array('%version' => '5.2.1'));
+    $requirements['php']['severity'] = REQUIREMENT_ERROR;
+  }
+
+  // Find the BrainTree PHP library
+  $requirements['commerce_braintree_php'] = array(
+    'title' => $t('Braintree PHP Library'),
+  );
+  drupal_load('module', 'libraries');
+  $path = libraries_get_path('braintree_php');
+  if (file_exists('./' . $path . '/lib/Braintree.php')) {
+    $requirements['commerce_braintree_php']['value'] = $t('Installed');
+    $requirements['commerce_braintree_php']['severity'] = REQUIREMENT_OK;
+  }
+  else {
+    $requirements['commerce_braintree_php']['value'] = $t('Not Installed');
+    $requirements['commerce_braintree_php']['severity'] = REQUIREMENT_ERROR;
+    $requirements['commerce_braintree_php']['description'] = $t('Please install the <a href="@url">BrainTree PHP library</a>.', array('@url' => 'https://github.com/braintree/braintree_php'));
+  }
+
+  // Test Required PHP Extensions.
+  $requiredExtensions = array(
+    'xmlwriter',
+    'SimpleXML',
+    'openssl',
+    'dom',
+    'hash',
+    'curl'
+  );
+  $disabled_extensions = array();
+
+  $value = '';
+  foreach ($requiredExtensions as $ext) {
+    $ext_enabled = extension_loaded($ext) ? 'Enabled' : 'Disabled';
+
+    $value .= $ext . ': ' . $ext_enabled . ' ';
+
+    if ($ext_enabled == 'Disabled') {
+      $disabled_extensions[] = $ext;
+    }
+  }
+
+  $requirements['commerce_braintree_php_extensions'] = array(
+      'title' => $t('Braintree PHP Extensions'),
+      'value' => ($phase == 'install') ? '' : $value
+  );
+
+  if ($disabled_extensions) {
+    $requirements['commerce_braintree_php_extensions']['severity'] = REQUIREMENT_ERROR;
+    $requirements['commerce_braintree_php_extensions']['description'] = $t('The following PHP extensions must be enabled for Braintree: ' . implode(', ', $disabled_extensions));
+  }
+
+  return $requirements;
+}

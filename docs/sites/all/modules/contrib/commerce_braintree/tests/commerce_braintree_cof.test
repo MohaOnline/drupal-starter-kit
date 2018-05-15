@@ -1,0 +1,226 @@
+<?php
+
+/**
+ * @file
+ * Functional tests for the commerce payment module user interface.
+ */
+
+/**
+ * Test payment user interface.
+ */
+class CommerceBraintreeCofTest extends CommerceBaseTestCase {
+
+  /**
+   * Order object.
+   */
+  protected $order;
+
+  protected $price = 3;
+
+  protected $randomName;
+
+  /**
+   * Set a random name.
+   *
+   * @param string $randomName
+   */
+  public function setRandomName($randomName) {
+    $this->randomName = $randomName;
+  }
+
+  public function getRandomName() {
+    return $this->randomName;
+  }
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Braintree CoF transaction test',
+      'description' => 'Test Braintree service with CoF.',
+      'group' => 'Drupal Commerce Braintree',
+    );
+  }
+
+  /**
+   * Implementation of setUp().
+   */
+  function setUp() {
+    $modules = parent::setUpHelper('all');
+    $modules[] = 'commerce_braintree';
+    $modules[] = 'commerce_cardonfile';
+    parent::setUp($modules);
+
+    // User creation for different operations.
+    $this->store_admin = $this->createStoreAdmin();
+    $this->web_user = $this->drupalCreateUser(array('manage own card data'));
+
+    // The rule that sends a mail after checkout completion should be disabled
+    // as it returns an error caused by how mail messages are stored.
+    $rules_config = rules_config_load('commerce_checkout_order_email');
+    $rules_config->active = FALSE;
+    $rules_config->save();
+
+    // Setup a default user name.
+    $this->setRandomName($this->randomName());
+  }
+
+  /**
+   * Init Braintree test credentials.
+   */
+  protected function getCredentials() {
+    // Include Braintree API.
+    // Using a test account.
+    libraries_load('braintree_php');
+    Braintree_Configuration::environment('sandbox');
+    Braintree_Configuration::merchantId('y37hv7xmv9tqspcz');
+    Braintree_Configuration::publicKey('25sz2yrhy4nr8vj7');
+    Braintree_Configuration::privateKey('90907493a55d78ffdccaf415a3226f25');
+  }
+
+  /**
+   * Return an array with credit card info.
+   */
+  protected function createTrDataInfo($order) {
+    $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+    $this->getCredentials();
+    $trData = Braintree_TransparentRedirect::transactionData(
+      array(
+        // Add transaction related data.
+        'transaction' => array(
+          'type' => Braintree_Transaction::SALE,
+          'amount' => $this->price,
+          'orderId' => $order->order_id,
+          'customer' => array(
+            'firstName' => 'Test User',
+            'email' => 'test@exemple.com',
+          ),
+          'billing' => array(
+            'countryCodeAlpha2' => 'US',
+          ),
+          'options' => array(
+            'storeInVault' => TRUE,
+            'submitForSettlement' => TRUE,
+          ),
+        ),
+        'redirectUrl' => url('checkout/' . $order->order_id . '/payment/return/', array('absolute' => TRUE))
+      )
+    );
+    return $trData;
+  }
+
+  /**
+   * Test a card on File request. Be sure we store the credit card.
+   */
+  function testCommerceBraintreeCofRequest() {
+    $this->setBraintreeCredential();
+
+    $user = $this->web_user;
+    // Log in as normal user.
+    $this->drupalLogin($user);
+    $product = $this->createDummyProduct($this->randomName(), $this->randomName(), $this->price, 'USD', $this->store_admin->uid);
+    $this->order = $this->createDummyOrder($user->uid, array($product->product_id => 20));
+    $edit = array();
+
+    $edit['transaction[credit_card][number]'] = '4111111111111111';
+    $edit['transaction[credit_card][cardholder_name]'] = $this->getRandomName();
+    $edit['transaction[credit_card][expiration_month]'] = '10';
+    $edit['transaction[credit_card][expiration_year]'] = '2012';
+    $edit['transaction[credit_card][cvv]'] = '123';
+    $edit['tr_data'] = $this->createTrDataInfo($this->order);
+    $option = array();
+    $option['method'] = 'POST';
+    $option['data'] = drupal_http_build_query($edit);
+
+    $url = Braintree_TransparentRedirect::url();
+    $request = drupal_http_request($url, $option);
+    $feedback = explode('?', $request->headers['location']);
+
+    $payment_method  = commerce_payment_method_instance_load('braintree_cof|commerce_payment_braintree_cof');
+    module_load_include('inc', 'commerce_braintree', 'commerce_braintree.commerce_braintree_cof');
+    commerce_braintree_cof_process_transaction($this->order, $payment_method, $feedback[1]);
+
+    // Now need to check is the credit card is really created.
+    $query = db_select('commerce_card_data', 'ccd')
+    ->fields('ccd', array('remote_id'))
+    ->condition('card_name', $this->getRandomName());
+    $result = $query->execute();
+
+    // We should have one, and only one, result.
+    $this->assertEqual('1', $result->rowCount(), 'Found 1 result.');
+
+    // Then, try to re-use the created credit card to register a new
+    // transaction.
+     $query = db_select('commerce_card_data', 'ccd')
+    ->fields('ccd', array('remote_id'))
+    ->condition('card_name', $this->getRandomName());
+    $remote_id = $query->execute()->fetchField();
+
+    $trData = Braintree_TransparentRedirect::transactionData(
+      array(
+        // Add transaction related data.
+        'transaction' => array(
+          'type' => Braintree_Transaction::SALE,
+          'amount' => '42',
+          'orderId' => $this->order->order_id,
+          'paymentMethodToken' => $remote_id,
+        ),
+        'redirectUrl' => url('checkout/' . $this->order->order_id . '/payment/return/', array('absolute' => TRUE))
+      )
+    );
+    $edit = array();
+
+    $edit['tr_data'] = $trData;
+    $option = array();
+    $option['method'] = 'POST';
+    $option['data'] = drupal_http_build_query($edit);
+
+    $url = Braintree_TransparentRedirect::url();
+    $request = drupal_http_request($url, $option);
+    $feedback = explode('?', $request->headers['location']);
+
+    $result = Braintree_TransparentRedirect::confirm($feedback[1]);
+    $this->assertEqual($result->success, TRUE, 'COF - Transaction made by re-using a registered card confirmed.');
+
+    $user = $this->web_user;
+    // Log in as normal user.
+    $this->drupalLogin($user);
+    $this->drupalGet('user/' . $user->uid . '/stored-payment-methods');
+    $this->assertResponse(200, t('Stored payment methods page exists.'));
+    $this->assertText($this->getRandomName(), t('Credit card found'));
+
+    $this->clickLink('Delete');
+    $this->GetCredentials();
+    $this->drupalPost(NULL, array(), t('Delete'));
+    $this->drupalGet('user/' . $user->uid . '/stored-payment-methods');
+    // The page should no exist anymore (no credit card).
+    $this->assertNoResponse(200, t('Stored payment methods page exists.'));
+  }
+
+  /**
+   * Fill the payment settings form with testing values.
+   */
+  private function setBraintreeCredential() {
+
+    // Create an admin user, log in and enable test blocks.
+    $this->admin_user = $this->drupalCreateUser(array(
+      'administer site configuration',
+      'bypass rules access',
+      'bypass node access',
+      'administer nodes',
+      'administer payment methods'
+    ));
+    $this->drupalLogin($this->admin_user);
+
+    $this->drupalGet('admin/commerce/config/payment-methods/manage/commerce_payment_braintree_cof');
+    $this->clickLink('edit');
+    $info = array(
+      'parameter[payment_method][settings][payment_method][settings][commerce_braintree_mode]' => 'sandbox',
+      'parameter[payment_method][settings][payment_method][settings][commerce_braintree_merchant_id]' => 'y37hv7xmv9tqspcz',
+      'parameter[payment_method][settings][payment_method][settings][commerce_braintree_public_key]' => '25sz2yrhy4nr8vj7',
+      'parameter[payment_method][settings][payment_method][settings][commerce_braintree_private_key]' => '90907493a55d78ffdccaf415a3226f25',
+    );
+    $this->drupalPost(NULL, $info, t('Save'));
+  }
+}

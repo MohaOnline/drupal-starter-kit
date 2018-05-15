@@ -1,0 +1,337 @@
+<?php
+
+/**
+ * @file
+ * Provides integration with Braintree Hosted Fields.
+ */
+
+/**
+ * Implements hook_library().
+ */
+function commerce_braintree_hostedfields_library() {
+  $path = drupal_get_path('module', 'commerce_braintree_hostedfields');
+  $libraries['braintree.hostedfields'] = array(
+    'title' => 'Braintree Hosted Fields',
+    'website' => 'https://github.com/braintree/braintree-web',
+    'version' => '2.25.0',
+    'js' => array(
+      'https://js.braintreegateway.com/js/braintree-2.25.0.min.js' => array(
+        'type' => 'external',
+      ),
+      $path . '/js/commerce_braintree_hostedfields.js' => array(),
+    ),
+    'css' => array(
+      $path . '/css/commerce_braintree_hostedfields.css' => array(),
+    ),
+  );
+  return $libraries;
+}
+
+/**
+ * Implements hook_commerce_payment_method_info().
+ */
+function commerce_braintree_hostedfields_commerce_payment_method_info() {
+  $payment_methods = array();
+
+  $payment_methods['braintree_hostedfields'] = array(
+    'base' => 'commerce_braintree_hostedfields',
+    'title' => t('Braintree Hosted Fields'),
+    'short_title' => t('Braintree Hosted Fields'),
+    'display_title' => t('Credit card'),
+    'description' => t('Integrates with Braintree Hosted Fields for secure on-site credit card payment.'),
+    'terminal' => TRUE,
+    'offsite' => FALSE,
+    'callbacks' => array(
+      'submit_form_validate' => 'commerce_braintree_js_form_validate',
+      'submit_form_submit' => 'commerce_braintree_js_form_submit',
+    ),
+    'cardonfile' => array(
+      'create form callback' => 'commerce_braintree_js_cardonfile_form',
+      'update form callback' => 'commerce_braintree_js_cardonfile_form',
+      'create callback' => 'commerce_braintree_js_cardonfile_form_submit',
+      'update callback' => 'commerce_braintree_js_cardonfile_form_submit',
+      'delete callback' => 'commerce_braintree_cardonfile_update_delete',
+      'charge callback' => 'commerce_braintree_cardonfile_charge',
+    ),
+  );
+
+  return $payment_methods;
+}
+
+/**
+ * Returns the default settings for Hosted Fields.
+ */
+function commerce_braintree_hostedfields_default_settings() {
+  return array(
+    'merchant_id' => '',
+    'public_key' => '',
+    'private_key' => '',
+    'merchant_account_id' => '',
+    'descriptor_name' => '',
+    'environment' => 'sandbox',
+    'paypal_button' => FALSE,
+    'advanced_fraud_detect' => FALSE,
+    'cardonfile' => FALSE,
+    'submit_for_settlement' => TRUE,
+  );
+}
+
+/**
+ * Payment method callback: Braintree Web settings form.
+ *
+ * @see CALLBACK_commerce_payment_method_settings_form()
+ */
+function commerce_braintree_hostedfields_settings_form($settings = array()) {
+  $settings = $settings + commerce_braintree_hostedfields_default_settings();
+  // Reuse the transparent redirect settings form.
+  $form = commerce_braintree_settings_form($settings);
+
+  // Add option to enable the Braintree PayPal button.
+  $form['paypal_button'] = array(
+    '#type' => 'radios',
+    '#title' => t('Include PayPal Button'),
+    '#description' => t('Adds the ability to pay via PayPal. <strong>Must also be configured in the Braintree dashboard.</strong>'),
+    '#options' => array(
+      0 => t('No'),
+      1 => t('Yes'),
+    ),
+    '#default_value' => $settings['paypal_button'],
+  );
+
+  $form['advanced_fraud_detect'] = array(
+    '#type' => 'radios',
+    '#title' => t('Enable Advanced Fraud Detection?'),
+    '#description' => t('This requires additional configuration within your merchant account, please review !link', array(
+      '!link' => l(t('the Braintree documentation for Advanced Fraud tools'), 'https://articles.braintreepayments.com/support/guides/fraud-tools/advanced/overview'),
+    )),
+    '#options' => array(
+      0 => t('No'),
+      1 => t('Yes'),
+    ),
+    '#default_value' => $settings['advanced_fraud_detect'],
+  );
+  $form['descriptor_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Unique Store Descriptor Name'),
+    '#description' => t('This soft identifier is used to know which store this transaction came from in the case that you are running multiple stores with the same braintree account. Company name/DBA section must be either 3, 7 or 12 characters and the product descriptor can be up to 18, 14, or 9 characters respectively (with an * in between for a total descriptor name of 22 characters).'),
+    '#default_value' => $settings['descriptor_name'],
+  );
+  return $form;
+}
+
+/**
+ * Form callback for Braintree Drop-in payment method.
+ *
+ * @see CALLBACK_commerce_payment_method_submit_form()
+ */
+function commerce_braintree_hostedfields_submit_form($payment_method, $pane_values, $checkout_pane, $order) {
+  return commerce_braintree_hostedfields_submit_form_elements($payment_method);
+}
+
+/**
+ * Implements hook_commerce_cardonfile_payment_terminal_form_alter().
+ */
+function commerce_braintree_hostedfields_commerce_cardonfile_payment_terminal_form_alter(&$form, &$form_state) {
+  if (!empty($form['payment_terminal']) && !empty($form_state['payment_method']['method_id']) && $form_state['payment_method']['method_id'] == 'braintree_hostedfields') {
+    // Remove the hosted fields on the payment terminal when
+    // card on file is the default option.
+    if ($form_state['triggering_element']['#name'] == 'op' && !empty($form['payment_terminal']['payment_details']['cardonfile']['#default_value']) && $form['payment_terminal']['payment_details']['cardonfile']['#default_value'] != 'new') {
+      commerce_braintree_hosted_fields_remove_hosted_fields_form($form['payment_terminal']['payment_details'], $form_state);
+    }
+
+    // Remove the hosted fields on the payment terminal when
+    // a card on file payment method is selected.
+    if (!empty($form_state['values']['payment_details']['cardonfile']) && $form_state['values']['payment_details']['cardonfile'] != 'new') {
+      commerce_braintree_hosted_fields_remove_hosted_fields_form($form['payment_terminal']['payment_details'], $form_state);
+    }
+  }
+}
+
+/**
+ * Implements hook_commerce_cardonfile_checkout_pane_form_alter().
+ */
+function commerce_braintree_hostedfields_commerce_cardonfile_checkout_pane_form_alter(&$pane, &$form, $form_state) {
+  // Only continue when the selected payment method is Braintree Hosted Fields.
+  if (empty($form['commerce_payment']['payment_method']['#default_value'])
+    || strpos($form['commerce_payment']['payment_method']['#default_value'], 'braintree_hostedfields') !== 0) {
+    return;
+  }
+
+  // Only continue when card on file options are available.
+  if ($pane['cardonfile']['#type'] == 'value' && $pane['cardonfile']['#value'] == 'new') {
+    return;
+  }
+
+  $pane['cardonfile']['#required'] = TRUE;
+
+  // Remove the Braintree form elements and JavaScript if an existing
+  // card on file was selected.
+  if (empty($form_state['triggering_element'])
+      || ($form_state['triggering_element']['#name'] == 'commerce_payment[payment_method]' && $pane['cardonfile']['#default_value'] != 'new')
+      || (empty($form_state['values']['commerce_payment']['payment_details']['cardonfile']) || $form_state['values']['commerce_payment']['payment_details']['cardonfile'] !== 'new')) {
+    commerce_braintree_hosted_fields_remove_hosted_fields_form($pane, $form_state);
+  }
+}
+
+/**
+ * Helper method to strip a FAPI array of hosted fields.
+ *
+ * @param $form
+ * @param $form_state
+ */
+function commerce_braintree_hosted_fields_remove_hosted_fields_form(&$form, &$form_state) {
+  unset($form['braintree']);
+  foreach ($form['#attached']['js'] as $key => $val) {
+    if (!empty($form['#attached']['js'][$key]['data']['commerceBraintreeHostedFields'])) {
+      unset($form['#attached']['js'][$key]);
+    }
+  }
+}
+
+/**
+ * Return the form elements for the hosted fields form.
+ *
+ * @param $payment_method
+ *   The commerce payment method.
+ * @param array $arguments
+ *   An optional array of arguments to pass to Braintree.
+ *
+ * @return array
+ *   An array of form elements.
+ */
+function commerce_braintree_hostedfields_submit_form_elements($payment_method, $arguments = array()) {
+  global $user;
+  $form = array();
+
+  // Setting the customer id loads Braintree vault saved payment methods.
+  if (!empty($user->data['braintree_vault']) && empty($arguments['customerId'])) {
+    $arguments['customerId'] = $user->data['braintree_vault']['id'];
+  }
+
+  // Initialize Braintree and create a token.
+  commerce_braintree_initialize($payment_method);
+  $form['#attached']['library'][] = array('commerce_braintree_hostedfields', 'braintree.hostedfields');
+
+  $js_settings = array(
+    'environment' => $payment_method['settings']['environment'],
+    'advancedFraudTools' => (bool) $payment_method['settings']['advanced_fraud_detect'],
+    'clientToken' => Braintree_ClientToken::generate($arguments),
+    'hostedFields' => array(
+      'styles' => array(),
+      'number' => array('selector' => '#card-number'),
+      'cvv' => array('selector' => '#cvv'),
+      'expirationMonth' => array('selector' => '#expiration-month'),
+      'expirationYear' => array('selector' => '#expiration-year'),
+    ),
+  );
+
+  // Add required settings for PayPal.
+  if (!empty($payment_method['settings']['paypal_button'])) {
+    $js_settings['paypal'] = array('container' => 'paypal-container');
+  }
+
+  // Allow other modules to alter the JS settings.
+  drupal_alter('commerce_braintree_hostedfields_js', $js_settings, $payment_method);
+
+  $form['#attached']['js'][] = array(
+    'data' => array(
+      'commerceBraintreeHostedFields' => $js_settings,
+    ),
+    'type' => 'setting',
+  );
+
+  $form['braintree'] = array(
+    '#type' => 'container',
+  );
+  $form['braintree']['#attributes']['class'][] = 'braintree-form';
+  $form['braintree']['errors'] = array(
+    '#type' => 'hidden',
+  );
+  $form['braintree']['device_data'] = array(
+    '#type' => 'hidden',
+  );
+
+  $form['braintree']['cc'] = array(
+    '#type' => 'container',
+  );
+
+  $form['braintree']['cc']['method_wrapper'] = array(
+    '#prefix' => '<div class="payment-details-method-title">',
+    '#markup' => t('Pay with Credit Card'),
+    '#suffix' => '</div>',
+    '#access' => !empty($payment_method['settings']['paypal_button']),
+  );
+
+  $form['braintree']['cc']['number'] = array(
+    '#type' => 'item',
+    '#title' => t('Card number'),
+    '#markup' => '<div id="card-number" class="braintree-hosted-field"></div>',
+  );
+
+  $form['braintree']['cc']['expiration'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('clearfix'),
+    ),
+  );
+
+  $form['braintree']['cc']['expiration']['month'] = array(
+    '#type' => 'item',
+    '#title' => t('Expiry Month'),
+    '#markup' => '<div id="expiration-month" class="braintree-hosted-field"></div>',
+  );
+
+  $form['braintree']['cc']['expiration']['divider'] = array(
+    '#markup' => '<span class="commerce-month-year-divider">/</span>',
+  );
+
+  $form['braintree']['cc']['expiration']['year'] = array(
+    '#type' => 'item',
+    '#title' => t('Year'),
+    '#markup' => '<div id="expiration-year" class="braintree-hosted-field"></div>',
+  );
+
+  $form['braintree']['cc']['cvv'] = array(
+    '#type' => 'item',
+    '#title' => t('CVV'),
+    '#markup' => '<div id="cvv" class="braintree-hosted-field"></div>',
+  );
+
+  // Add form elements required to add PayPal button.
+  if (!empty($payment_method['settings']['paypal_button'])) {
+    $form['braintree']['paypal'] = array(
+      '#type' => 'container',
+    );
+
+    $form['braintree']['paypal']['method_title'] = array(
+      '#prefix' => '<div class="paypal-method-title">',
+      '#markup' => t('Or pay with PayPal'),
+      '#suffix' => '</div>',
+    );
+
+    $form['braintree']['paypal']['button'] = array(
+      '#type' => 'item',
+      '#markup' => '<div id="paypal-container"></div>',
+    );
+  }
+
+  // Add option to save card on file for authenticated users.
+  if (!empty($payment_method['settings']['cardonfile']) && !empty($user->uid)) {
+    $storage = variable_get('commerce_cardonfile_storage', 'opt-in');
+    if ($storage !== 'required') {
+      $form['cardonfile'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Securely save this payment method for next time.'),
+        '#default_value' => $storage == 'opt-in' ? FALSE : TRUE,
+      );
+    }
+    else {
+      $form['cardonfile'] = array(
+        '#type' => 'value',
+        '#value' => TRUE,
+      );
+    }
+  }
+
+  return $form;
+}

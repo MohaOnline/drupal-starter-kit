@@ -1,0 +1,123 @@
+/* Commerce Braintree Hosted Fields -- Default Styles */
+.braintree-form {
+  overflow: hidden;
+  margin: 1rem 0;
+  border-top: 1px solid #ececec;
+  border-bottom: 1px solid #ececec;
+}
+
+.braintree-form #edit-commerce-payment-payment-details-braintree-number,
+.braintree-form #edit-commerce-payment-payment-details-braintree-cvv {
+  width: auto;
+}
+
+.braintree-form .payment-details-method-title,
+.braintree-form .paypal-method-title {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.braintree-form .form-item {
+  margin-bottom: .5rem;
+}
+
+.braintree-form #edit-commerce-payment-payment-details-braintree-cc,
+.braintree-form #edit-commerce-payment-payment-details-braintree-paypal,
+.braintree-form #edit-payment-details-braintree-cc,
+.braintree-form #edit-payment-details-braintree-paypal,
+.braintree-form #edit-cc,
+.braintree-form #edit-paypal {
+  padding: 1rem 0;
+}
+
+.braintree-form #edit-commerce-payment-payment-details-braintree-paypal,
+.braintree-form #edit-payment-details-braintree-paypal,
+.braintree-form #edit-paypal{
+  border-top: 1px solid #ececec;
+}
+
+.braintree-form #edit-commerce-payment-payment-details-braintree-cc-expiration .form-type-item,
+.braintree-form #edit-payment-details-braintree-cc-expiration .form-type-item,
+.braintree-form #edit-expiration .form-type-item {
+  padding: 0;
+}
+
+.braintree-form .commerce-month-year-divider {
+  display: none;
+}
+
+.braintree-hosted-field {
+  height: 1.2em;
+  border: 1px solid #D6D2C4;
+  padding: 5px;
+  background: #FFF;
+  box-sizing: content-box;
+  width: auto;
+}
+
+.braintree-hosted-fields-focused {
+  border-color: #777;
+}
+
+.braintree-hosted-fields-invalid {
+  border-color: red;
+}
+
+.braintree-hosted-fields-valid {
+  border-color: limegreen;
+}
+
+/* Commerce Braintree Hosted Fields -- Responsive Styles */
+@media only screen and (min-width: 768px) {
+  .braintree-form {
+    display: flex;
+  }
+
+  .braintree-form #edit-commerce-payment-payment-details-braintree-cc,
+  .braintree-form #edit-commerce-payment-payment-details-braintree-paypal,
+  .braintree-form #edit-payment-details-braintree-cc,
+  .braintree-form #edit-payment-details-braintree-paypal,
+  .braintree-form #edit-cc,
+  .braintree-form #edit-paypal {
+    border: none;
+    width: calc(50% - 1rem - 1px);
+    display: block;
+    float: left;
+  }
+
+  .braintree-form #edit-commerce-payment-payment-details-braintree-cc,
+  .braintree-form #edit-payment-details-braintree-cc,
+  .braintree-form #edit-cc {
+    padding-right: 1rem;
+  }
+
+  .braintree-form #edit-commerce-payment-payment-details-braintree-paypal,
+  .braintree-form #edit-payment-details-braintree-paypal,
+  .braintree-form #edit-paypal {
+    padding-left: 1rem;
+    border-left: 1px solid #ececec;
+  }
+
+  .braintree-form #edit-commerce-payment-payment-details-braintree-cc-expiration,
+  .braintree-form #edit-payment-details-braintree-cc-expiration,
+  .braintree-form #edit-expiration {
+    display: flex;
+  }
+
+  .braintree-form #edit-commerce-payment-payment-details-braintree-cc-expiration .form-type-item,
+  .braintree-form #edit-payment-details-braintree-cc-expiration .form-type-item,
+  .braintree-form #edit-expiration .form-type-item {
+    flex-grow: 2;
+  }
+
+  .braintree-form .commerce-month-year-divider {
+    display: block;
+    margin: auto 1rem .5rem 1rem;
+    width: .75rem;
+    text-align: center;
+    line-height: 1.2em;
+    height: 1.2em;
+    padding: 5px 0;
+  }
+}

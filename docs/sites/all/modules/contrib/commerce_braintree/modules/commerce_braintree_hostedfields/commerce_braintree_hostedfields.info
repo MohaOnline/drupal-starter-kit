@@ -1,0 +1,12 @@
+name = Braintree (Hosted Fields)
+description = Integrates Braintree Hosted Fields for on-site credit card payment.
+package = Commerce (contrib)
+core = 7.x
+dependencies[] = commerce_braintree
+
+; Information added by Drupal.org packaging script on 2017-07-18
+version = "7.x-2.0"
+core = "7.x"
+project = "commerce_braintree"
+datestamp = "1500407958"
+
