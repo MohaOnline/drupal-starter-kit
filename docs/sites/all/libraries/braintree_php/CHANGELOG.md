@@ -1,3 +1,62 @@
+## 3.33.0
+* Fix WebhookTestingGateway to use local configuration
+* Add Disbursement type field and methods
+
+## 3.32.0
+* Add support for US Bank Account verifications API
+
+## 3.31.0
+* Fix issue where webhook verification would fail due to missing global public key configuration value
+* Fix issue where webhook testing did not work on instantiated gateway
+* Add support for VCR compelling evidence dispute representment
+
+## 3.30.0
+* Add `oauthAccessRevocation` to `WebhookNotification`s
+* Add support for `profileId` in Transaction#create options for VenmoAccounts
+* Add support for dispute search by `customerId`, `disbursementDate`, and `effectiveDate`
+* Make `CustomerGateway::find` backward compatible
+* Remove `sepaMandateType` and `sepaMandateAcceptanceLocation` params from `ClientTokenGateway`
+
+## 3.29.0
+* Add support for `association_filter_id` in `Customer#find`
+* Add support for setting `timeout` and `acceptGzipEncoding` values on construction of `Configuration` instances
+
+## 3.28.0
+* Add support for Level 3 summary parameters: `shippingAmount`, `discountAmount`, and `shipsFromPostalCode`
+* Add support for `tax_amount` field on transaction `line_items`
+* Add `sourceMerchantId` property to `WebhookNotification`s if present
+* Deprecate `TRANSACTION_LINE_ITEM_DISCOUNT_AMOUNT_MUST_BE_GREATER_THAN_ZERO` error in favor of `TRANSACTION_LINE_ITEM_DISCOUNT_AMOUNT_CANNOT_BE_NEGATIVE`.
+* Deprecate `TRANSACTION_LINE_ITEM_UNIT_TAX_AMOUNT_MUST_BE_GREATER_THAN_ZERO` error in favor of `TRANSACTION_LINE_ITEM_UNIT_TAX_AMOUNT_CANNOT_BE_NEGATIVE`.
+* Deprecate `Braintree\Transaction\LineItem` in favor of `Braintree\TransactionLineItem`.
+* Add `findAll` static method to `TransactionLineItem` class
+* Add support for `profile_id` in Transaction#create options for VenmoAccounts
+
+## 3.27.0
+* Add support for Level 3 summary parameters: `shippingAmount`, `discountAmount`, and `shipsFromPostalCode`
+* Add support for transaction line items
+* Add support for tagged evidence in `DisputeGateway::addTextEvidence` (Beta release)
+* Update https certificate bundle
+
+## 3.26.1
+* Deprecate `OAuthGateway::computeSignature`
+* Fix spec to expect PayPal transactions to move to settling rather than settled
+* Fix AchMandate acceptedAt attribute parsing
+
+## 3.26.0
+* Add support for upgrading a PayPal future payment refresh token to a billing agreement
+* Address deprecation warnings for create_function with PHP 7 (#193, thanks @chrisdeeming)
+* Add `cardHolderName` to `CreditCardDetails` (#201, thanks @Samistine)
+* Add GrantedPaymentInstrumentUpdate webhook support
+* Allow paypal => options params to be passed in camel case
+* Add ability to create a transaction from a shared nonce
+* Implement JsonSerializable on Braintree Objects for easier logging (#200, thanks @hfmikep)
+* Fix spec to expect PayPal transaction to settle immediately after successful capture
+* Add `options` -> `paypal` -> `shipping` for creating & updating customers as well as creating payment methods
+* Add `options` -> `paypal` -> `description` for creating and updating subscriptions
+* Add `binData` to `PaymentMethodNonce`
+* Add `bin` to `ApplePayCard`
+* Add `deviceDataCaptured` field in `riskData`
+
 ## 3.25.0
 * Add `submitForSettlement` option to `Subscription::retryCharge`
 * Support `eci_indicator` for Transaction sale with raw Apple Pay parameters
@@ -422,7 +481,7 @@
 
 ## 2.4.0
 
-* Added ability to specify country using countryName, countryCodeAlpha2, countryCodeAlpha3, or countryCodeNumeric (see [ISO_3166-1](http://en.wikipedia.org/wiki/ISO_3166-1))
+* Added ability to specify country using countryName, countryCodeAlpha2, countryCodeAlpha3, or countryCodeNumeric (see [ISO_3166-1](https://en.wikipedia.org/wiki/ISO_3166-1))
 * Added gatewayRejectionReason to Braintree_Transaction and Braintree_Verification
 * Added unified message to result objects
 
@@ -457,7 +516,7 @@
 
 * Updated success? on transaction responses to return false on declined transactions
 * Search results now include Enumerable and will automatically paginate data
-* Added credit_card[cardholder_name] to allowed transaction params and CreditCardDetails (thanks [chrismcc](http://github.com/chrismcc))
+* Added credit_card[cardholder_name] to allowed transaction params and CreditCardDetails (thanks [chrismcc](https://github.com/chrismcc))
 * Fixed a bug with Customer::all
 * Added constants for error codes
 

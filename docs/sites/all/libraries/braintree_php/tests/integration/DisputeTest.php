@@ -85,6 +85,22 @@ class DisputeTest extends Setup
         $this->assertEquals($result->evidence->id, $updatedDispute->evidence[0]->id);
     }
 
+    public function testAddFileEvidence_addsEvidence_withCategory()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+        $documentId = $this->createSampleDocument()->id;
+
+        $result = Braintree\Dispute::addFileEvidence($disputeId,
+            [
+                'category' => 'GENERAL',
+                'documentId' => $documentId,
+            ]
+        );
+
+        $this->assertTrue($result->success);
+        $this->assertEquals('GENERAL', $result->evidence->category);
+    }
+
     public function testAddFileEvidence_raisesError_whenDisputeNotFound()
     {
         $this->setExpectedException('Braintree\Exception\NotFound', 'dispute with id "unknown_dispute_id" not found');
@@ -119,6 +135,32 @@ class DisputeTest extends Setup
         $this->assertRegExp('/^\w{16,}$/', $evidence->id);
         $this->assertNull($evidence->sentToProcessorAt);
         $this->assertNull($evidence->url);
+        $this->assertNull($evidence->tag);
+        $this->assertNull($evidence->sequenceNumber);
+    }
+
+    public function testAddTaggedTextEvidence_addsTextEvidence()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+
+        $result = $this->gateway->dispute()->addTextEvidence($disputeId,
+            [
+                'content' => "UPS",
+                'category' => "CARRIER_NAME",
+                'sequenceNumber' => "1"
+            ]
+        );
+        $evidence = $result->evidence;
+
+        $this->assertTrue($result->success);
+        $this->assertEquals("UPS", $evidence->comment);
+        $this->assertNotNull($evidence->createdAt);
+        $this->assertRegExp('/^\w{16,}$/', $evidence->id);
+        $this->assertNull($evidence->sentToProcessorAt);
+        $this->assertNull($evidence->url);
+        $this->assertEquals("CARRIER_NAME", $evidence->category);
+        $this->assertEquals("CARRIER_NAME", $evidence->tag);
+        $this->assertEquals("1", $evidence->sequenceNumber);
     }
 
     public function testAddTextEvidence_raisesError_whenDisputeNotFound()
@@ -229,5 +271,138 @@ class DisputeTest extends Setup
         $this->assertFalse($result->success);
         $this->assertEquals(Braintree\Error\Codes::DISPUTE_CAN_ONLY_REMOVE_EVIDENCE_FROM_OPEN_DISPUTE, $error->code);
         $this->assertEquals("Evidence can only be removed from disputes that are in an Open state", $error->message);
+    }
+
+    public function testCategorizedEvidence_fileForTextOnlyCategory()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+        $documentId = $this->createSampleDocument()->id;
+
+        $result = Braintree\Dispute::addFileEvidence($disputeId,
+            [
+                'category' => 'DEVICE_ID',
+                'documentId' => $documentId,
+            ]
+        );
+
+        $error = $result->errors->forKey('dispute')->errors[0];
+        $this->assertFalse($result->success);
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_EVIDENCE_CATEGORY_TEXT_ONLY, $error->code);
+    }
+
+    public function testCategorizedEvidence_withFile_invalidCategoryProvided()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+        $documentId = $this->createSampleDocument()->id;
+
+        $result = Braintree\Dispute::addFileEvidence($disputeId,
+            [
+                'category' => 'NOTREALCATEGORY',
+                'documentId' => $documentId,
+            ]
+        );
+
+        $error = $result->errors->forKey('dispute')->errors[0];
+        $this->assertFalse($result->success);
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_CAN_ONLY_CREATE_EVIDENCE_WITH_VALID_CATEGORY, $error->code);
+    }
+
+    public function testCategorizedEvidence_withText_invalidCategoryProvided()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+
+        $result = Braintree\Dispute::addTextEvidence($disputeId,
+            [
+                'category' => 'NOTREALCATEGORY',
+                'content' => 'evidence',
+            ]
+        );
+
+        $error = $result->errors->forKey('dispute')->errors[0];
+        $this->assertFalse($result->success);
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_CAN_ONLY_CREATE_EVIDENCE_WITH_VALID_CATEGORY, $error->code);
+    }
+
+    public function testCategorizedEvidence_textForFileOnlyCategory()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+
+        $result = Braintree\Dispute::addTextEvidence($disputeId,
+            [
+                'category' => 'MERCHANT_WEBSITE_OR_APP_ACCESS',
+                'content' => 'evidence',
+            ]
+        );
+
+        $error = $result->errors->forKey('dispute')->errors[0];
+        $this->assertFalse($result->success);
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_EVIDENCE_CATEGORY_DOCUMENT_ONLY, $error->code);
+    }
+
+    public function testCategorizedEvidence_invalidDateTimeFormatFails()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+
+        $result = Braintree\Dispute::addTextEvidence($disputeId,
+            [
+                'category' => 'DOWNLOAD_DATE_TIME',
+                'content' => 'baddate',
+            ]
+        );
+
+        $error = $result->errors->forKey('dispute')->errors[0];
+        $this->assertFalse($result->success);
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_EVIDENCE_CONTENT_DATE_INVALID, $error->code);
+    }
+
+    public function testCategorizedEvidence_validDateTimeFormatSuccess()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+
+        $result = Braintree\Dispute::addTextEvidence($disputeId,
+            [
+                'category' => 'DOWNLOAD_DATE_TIME',
+                'content' => '2018-10-20T18:00:00-0500',
+            ]
+        );
+
+        $this->assertTrue($result->success);
+    }
+
+    public function testCategorizedEvidence_finalizeFail_DigitalGoodsPartialEvidence()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+
+        Braintree\Dispute::addTextEvidence($disputeId,
+            [
+                'category' => 'DEVICE_ID',
+                'content' => 'iphone_id',
+            ]
+        );
+
+        $result = Braintree\Dispute::finalize($disputeId);
+        $this->assertFalse($result->success);
+
+        $errors = $result->errors->forKey('dispute')->errors;
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_DIGITAL_GOODS_MISSING_EVIDENCE, $errors[0]->code);
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_DIGITAL_GOODS_MISSING_DOWNLOAD_DATE, $errors[1]->code);
+    }
+
+    public function testCategorizedEvidence_finalizeFail_PartialNonDisputeTransInfo()
+    {
+        $disputeId = $this->createSampleDispute()->id;
+
+        Braintree\Dispute::addTextEvidence($disputeId,
+            [
+                'category' => 'PRIOR_NON_DISPUTED_TRANSACTION_ARN',
+                'content' => '123',
+            ]
+        );
+
+        $result = Braintree\Dispute::finalize($disputeId);
+        $this->assertFalse($result->success);
+
+        $error = $result->errors->forKey('dispute')->errors[0];
+        $this->assertEquals(Braintree\Error\Codes::DISPUTE_PRIOR_NON_DISPUTED_TRANSACTION_MISSING_DATE, $error->code);
     }
 }
