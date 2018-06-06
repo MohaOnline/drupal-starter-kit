@@ -1,0 +1,89 @@
+<?php
+// $Id: smart_paging.install,v 1.1.2.4 2010/12/08 22:42:42 arpeggio Exp $
+/**
+ * @file
+ * Smart paging installation callback.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function smart_paging_schema() {
+  $schema['smart_paging'] = array(
+    'description' => 'Entity content level customized settings of Smart Paging.',
+    'fields' => array(
+      'entity_id' => array(
+        'type'        => 'int',
+        'not null'    => TRUE,
+        'description' => 'The entity type ID this configuration is attached to.',
+      ),
+      'entity_type' => array(
+        'type'        => 'varchar',
+        'length'      => 128,
+        'not null'    => TRUE,
+        'description' => 'An entity type refer to table {field_config_entity_type}.type.',
+      ),
+      'configuration' => array(
+        'type'        => 'blob',
+        'not null'    => FALSE,
+        'description' => 'Customized settings of Smart Paging (serialized).',
+      ),
+    ),
+    'primary key' => array('entity_id', 'entity_type'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Creates database tables needed by this module.
+ */
+function smart_paging_install() {
+  module_load_include('module', 'smart_paging', 'smart_paging');
+}
+
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Removes all tables and variables inserted into the
+ * database by this module.
+ */
+function smart_paging_uninstall() {
+  variable_del('smart_paging_enable_clean_url');
+  variable_del('smart_paging_path_prefix');
+  variable_del('smart_paging_use_js_pager');
+  variable_del('smart_paging_use_link_rel');
+  variable_del('smart_paging_use_link_canonical');
+  variable_del('smart_paging_use_nopaging_canonical');
+  variable_del('smart_paging_method');
+  variable_del('smart_paging_pagebreak');
+  variable_del('smart_paging_character_count');
+  variable_del('smart_paging_word_count');
+  variable_del('smart_paging_title_display_suffix');
+  variable_del('smart_paging_title_suffix');
+}
+
+/**
+ * Rename all 'name' field with 'filter_html' value to 'smart_paging_filter'
+ * where 'module' field have 'smart_paging' value.
+ */
+function smart_paging_update_7000() {
+  db_update('filter')
+    ->fields(array('name' => 'smart_paging_filter'))
+    ->condition('module', 'smart_paging')
+    ->execute();
+}
+
+/**
+ * Change type of configuration field from big text to blob.
+ */
+function smart_paging_update_7001() {
+  $spec = array(
+    'type'        => 'blob',
+    'not null'    => FALSE,
+    'description' => 'Customized settings of Smart Paging (serialized).',
+  );
+  db_change_field('smart_paging', 'configuration', 'configuration', $spec);
+}
