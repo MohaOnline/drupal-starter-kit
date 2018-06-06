@@ -1,0 +1,151 @@
+/**
+ * @file
+ * CSS for subscription information.
+ *
+ * @todo Update the selectors to match the new form markup or remove the file 
+ * (and corresponding images) altogether.
+ */
+
+/* Subscription list (user/x/subscription) */
+.subscription {
+  border: 1px solid #cccccc;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 20px 0;
+}
+.subscription h2 {
+  padding: 0;
+  margin: 0;
+}
+.subscription .messages {
+  margin: 8px 0;
+  font-size: 90%;
+}
+.subscription table {
+  width: auto;
+  float: left;
+}
+.subscription table td,
+.subscription table th {
+  color: inherit;
+  background: transparent;
+}
+.subscription table tr {
+  background: transparent;
+}
+
+.subscription .line-items {
+  float: right;
+  width: 260px;
+  padding: 0px;
+}
+.subscription .line-items.change {
+  background: #fffbcc;
+  border: 1px solid #e6db55;
+  clear: right;
+}
+.subscription .line-items.change .label {
+  font-weight: bold;
+  padding: 10px;
+}
+.subscription .line-items.change .total {
+  border-color: #e6db55;
+}
+.subscription .line-items ul {
+  margin: 0;
+  padding: 0;
+}
+.subscription .line-items li {
+  padding: 5px 10px 5px 10px;
+  overflow: hidden;
+  vertical-align: baseline;
+  font-size: 13px;
+}
+.subscription .line-items li > .name {
+  display: inline;
+}
+.subscription .line-items li > .qty {
+  font-weight: bold;
+  font-size: 12px;
+  display: inline;
+}
+.subscription .line-items li > .qty:after {
+  font-weight: normal;
+  content: '\00D7';
+  padding-right: 5px;
+}
+.subscription .line-items li > .cost {
+  display: block;
+  float: right;
+  padding-left: 10px;
+  padding-bottom: 10px;
+  height: 100%;
+}
+.subscription .line-items .total {
+  clear: both;
+  float: right;
+  border-top: 1px solid gray;
+  padding: 10px;
+}
+.subscription .changing_to {
+  display: inline;
+  top: 100%;
+  left: 0;
+  background: red;
+}
+.subscription .subscription-links {
+  text-align: right;
+}
+.subscription ul.links {
+  font-size: inherit;
+}
+
+/* Subscription signup */
+.recurly-signup .messages {
+  margin: 10px 0;
+}
+.recurly-plan-list {
+  margin: 0 -10px;
+}
+.recurly-plan-list .plan {
+  border: 1px solid #cccccc;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 10px;
+  float: left;
+  width: 120px;
+  background-color: white;
+}
+.recurly-plan-list .plan-hover {
+  background-color: #fffdf2;
+  border-color: #ed5;
+  cursor: pointer;
+}
+.recurly-plan-list .plan-selected {
+  background-color: #fffce5;
+}
+.recurly-plan-list .plan h2 {
+  margin: 0;
+  padding: 0;
+}
+.recurly-plan-list .plan-signup {
+  text-align: center;
+}
+.recurly-plan-list a.plan-select {
+  display: block;
+}
+.recurly-plan-list .plan-selected a.plan-select {
+  font-weight: bold;
+}
+.recurly-plan-list a.plan-select input {
+  display: none;
+}
+#recurly-subscription-change-form .form-actions {
+  text-align: center;
+}
+
+/* Invoice list (user/x/subscription/invoices) */
+table.invoice-list tr.past_due,
+table.invoice-list tr.failed {
+  background-color: #eeb9b9;
+}

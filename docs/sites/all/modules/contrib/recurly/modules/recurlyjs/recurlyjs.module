@@ -1,0 +1,90 @@
+<?php
+
+/**
+ * @file
+ * Uses Recurly.js to process subscription and billing forms.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function recurlyjs_menu() {
+  $items = array();
+
+  // Configure built-in pages if enabled.
+  $entity_type = variable_get('recurly_entity_type', 'user');
+  if ($entity_type && variable_get('recurly_pages', '1')) {
+    $entity_info = entity_get_info();
+    $bundle = variable_get('recurly_bundle_' . $entity_type, NULL);
+    $bundle = empty($bundle) ? $entity_type : $bundle;
+
+    $entity_path = $entity_type . '/%' . $entity_type;
+    $items[$entity_path . '/subscription/billing'] = array(
+      'title' => 'Update billing information',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array(
+        'recurlyjs_update_billing_form',
+        $entity_type,
+        1,
+      ),
+      'access callback' => 'recurly_subscription_page_access',
+      'access arguments' => array($entity_type, 1, 'update_billing'),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 4,
+      'file' => 'includes/recurlyjs.pages.inc',
+    );
+
+    $items[$entity_path . '/subscription/signup/%'] = array(
+      'title' => 'Signup',
+      'page callback' => 'recurlyjs_subscribe_page',
+      'page arguments' => array($entity_type, 1, 4),
+      'access callback' => 'recurly_subscription_page_access',
+      'access arguments' => array($entity_type, 1, 'signup'),
+      'type' => MENU_CALLBACK,
+      'file' => 'includes/recurlyjs.pages.inc',
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_recurly_url_info().
+ */
+function recurlyjs_recurly_url_info($operation, $context) {
+  switch ($operation) {
+    case 'update_billing':
+      $entity_info = recurly_account_load(array('account_code' => $context['account']->account_code), TRUE);
+      return url($entity_info->entity_type . '/' . $entity_info->entity_id . '/subscription/billing');
+
+    case 'subscribe':
+      list($id, $vid, $bundle) = entity_extract_ids($context['entity_type'], $context['entity']);
+      $currency_string = !isset($context['currency']) || $context['currency'] == variable_get('recurly_default_currency', 'USD') ? '' : '/' . $context['currency'];
+      watchdog('recurly', 'subscribe');
+
+      return url($context['entity_type'] . '/' . $id . '/subscription/signup/' . $context['plan_code'] . $currency_string);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function recurlyjs_theme() {
+  $items['recurlyjs_update_billing'] = array(
+    'render element' => 'form',
+    'template' => 'templates/recurlyjs-update-billing',
+  );
+  $items['recurlyjs_subscribe_page'] = array(
+    'variables' => array('form' => NULL),
+    'template' => 'templates/recurlyjs-subscribe-page',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function recurlyjs_form_recurly_settings_form_alter(&$form, &$form_state) {
+  module_load_include('inc', 'recurlyjs', 'includes/recurlyjs.pages');
+  _recurlyjs_form_recurly_settings_form_alter($form, $form_state);
+}

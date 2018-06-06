@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for Recurly module.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function recurlyjs_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  if ($phase == 'runtime') {
+    // Verify that recurly_hosted isn't enabled at the same time.
+    if (module_exists('recurly_hosted')) {
+      $requirements['recurlyjs_conflict'] = array(
+        'title' => $t('Recurly.js conflict'),
+        'value' => $t('The "Recurly hosted pages" module should not be enabled at the same time as Recurly.js module. Disable Recurly hosted pages module to prevent conflicts.'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function recurlyjs_uninstall() {
+  variable_del('recurlyjs_address_requirement');
+  variable_del('recurlyjs_enable_add_ons');
+  variable_del('recurlyjs_enable_coupons');
+  variable_del('recurlyjs_hide_vat_number');
+}
+
+
+/**
+ * Remove recurly_api_key.
+ */
+function recurlyjs_update_7200() {
+  variable_del('recurly_api_key');
+}

@@ -1,0 +1,228 @@
+/**
+ * @file
+ * Styling of the Recurly payment widgets. Used for new subscriptions, one-time
+ * payments and billing information updates.
+ *
+ * This CSS is based upon the Recurly.js default theme, but with overly
+ * stylistic elements removed so as to make a more useful set of defaults that
+ * may be added upon.
+ */
+
+/* Default styles for the div surrounding each field iframe.*/
+/**
+ * @file
+ * Styling of the Recurly payment widgets. Used for new subscriptions, one-time
+ * payments and billing information updates.
+ *
+ * This CSS is based upon the Recurly.js default theme, but with overly
+ * stylistic elements removed so as to make a more useful set of defaults that
+ * may be added upon.
+ */
+
+/* Default styles for the div surrounding each field iframe.*/
+/* This class name is set by Recurly and can not be changed. */
+.recurly-hosted-field {
+  position: relative;
+  width: auto;
+  height: 38px;
+  background: white;
+  border: 1px solid #c2c2c2;
+  padding: 0 0.5rem;
+  outline: none;
+  box-shadow: none;
+  border-radius: 0;
+  color: #c2c2c2;
+}
+
+/* This class name is set by Recurly and can not be changed. */
+.recurly-hosted-field-focus {
+  border-color: #2c0730;
+  color: #2c0730;
+  z-index: 10;
+}
+
+/* This class name is set by Recurly and can not be changed. */
+.recurly-hosted-field-number {
+  padding-left: 60px;
+}
+
+.recurlyjs-form-item__first_name {
+  display: block;
+  float: left;
+  width: 48%;
+  margin-right: 2%;
+}
+
+.recurlyjs-form-item__last_name {
+  display: block;
+  float: left;
+  width: 48%;
+}
+.recurlyjs-form-item__first_name input,
+.recurlyjs-form-item__last_name input {
+  max-width: 100%;
+  box-sizing:border-box;
+}
+
+.recurlyjs-cc-info {
+  display: block;
+  clear: both;
+  float: left;
+  width: 100%;
+  margin: 0 0 1em 0;
+}
+
+.recurlyjs-form-item__number {
+  display: block;
+  float: left;
+  width: 66%;
+  min-width: 220px;
+  margin-right: 1em;
+}
+
+.recurlyjs-form-item__cvv {
+  display: block;
+  float: left;
+  width: 8%;
+  min-width: 50px;
+  margin-right: 1em;
+}
+
+.recurlyjs-form-item__month,
+.recurlyjs-form-item__year {
+  display: block;
+  float: left;
+  width: 10%;
+  min-width: 70px;
+}
+
+.recurlyjs-form-item__month {
+  width: 8%;
+  min-width: 50px;
+}
+
+.recurlyjs-form-item__year {
+  margin-left: 4px;
+}
+
+.recurlyjs-icon-card {
+  display: block;
+  height: 32px;
+  width: 32px;
+  z-index: 10;
+  position: relative;
+  left: 10px;
+  bottom: 36px;
+  margin-bottom: -36px;
+  -ms-transform: scale(1,1);
+  /* IE 9 */
+  -webkit-transform: scale(1,1);
+  /* Chrome,Safari,Opera */
+  transform: scale(1,1);
+  -webkit-transition: scale 0.2s;
+  transition: scale 0.2s;
+  transform-origin: 50% 50%;
+  -webkit-transform-origin: 50% 50%;
+}
+
+.recurlyjs-icon-card__unknown {
+  background: url("../images/generic_card.png") top left no-repeat;
+}
+
+.recurlyjs-icon-card__visa {
+  background: url("../images/visa.png") top left no-repeat;
+}
+
+.recurlyjs-icon-card__american_express {
+  background: url("../images/amex.png") top left no-repeat;
+}
+
+.recurlyjs-icon-card__discover {
+  background: url("../images/discover.png") top left no-repeat;
+}
+
+.recurlyjs-icon-card__mastercard {
+  background: url("../images/mastercard.png") top left no-repeat;
+}
+
+.recurlyjs-element__hidden {
+  display: none;
+}
+
+.recurlyjs-element {
+  font-size: 1.2em;
+}
+
+.recurlyjs-element span {
+  font-weight: bold;
+}
+
+/* Clearfix */
+.recurlyjs-plan,
+.recurlyjs-name-wrapper,
+.recurlyjs-city-state-postal-wrapper {
+  display: block;
+  clear: both;
+  float: left;
+  width: 100%;
+}
+
+
+.recurlyjs-plan-name {
+  font-weight: bold;
+}
+
+.recurlyjs-plan-name .recurlyjs-plan-frequency {
+  font-size: 1em;
+}
+
+.recurlyjs-plan-name .recurlyjs-plan-frequency,
+.recurlyjs-plan-name .recurlyjs-plan-frequency span {
+  font-style: italic;
+  font-weight: normal;
+}
+
+.recurlyjs-plan-frequency .plan-amount {
+  font-style: normal;
+}
+
+.recurlyjs-total {
+  margin: 1em 0 2em 0;
+  padding: 1em 0 0 0;
+}
+
+.recurlyjs-city-state-postal-wrapper input {
+  clear: both;
+  width: 100%;
+}
+
+.recurlyjs-city-state-postal-wrapper .recurlyjs-form-item__city {
+  display: block;
+  float: left;
+  width: 30%;
+  min-width: 5em;
+}
+
+.recurlyjs-city-state-postal-wrapper .recurlyjs-form-item__state {
+  display: block;
+  float: left;
+  margin: 0 1.5em;
+  width: 10%;
+  min-width: 3em;
+}
+
+.recurlyjs-city-state-postal-wrapper .recurlyjs-form-item__postal_code {
+  display: block;
+  float: left;
+  width: 25%;
+  min-width: 5em;
+}
+
+.recurlyjs-form-item__vat_number {
+  clear: both;
+}
+
+form .recurlyjs-form-item__error input,
+form .recurlyjs-form-item__error .recurly-hosted-field {
+  border: 1px solid red;
+}

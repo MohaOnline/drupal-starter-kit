@@ -1,0 +1,16 @@
+name = Recurly
+description = Provides API integration with Recurly using their PHP client library.
+dependencies[] = libraries
+core = 7.x
+package = Recurly
+
+files[] = views/recurly_account_code_handler.inc
+files[] = views/recurly_entity_owner_handler.inc
+files[] = views/recurly_entity_owner_reverse_handler.inc
+
+; Information added by Drupal.org packaging script on 2017-04-04
+version = "7.x-3.0"
+core = "7.x"
+project = "recurly"
+datestamp = "1491321790"
+

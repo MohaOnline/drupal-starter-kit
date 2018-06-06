@@ -1,0 +1,129 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for Recurly module.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function recurly_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  if ($phase == 'runtime') {
+    $requirements['recurly'] = array(
+      'title' => $t('Recurly'),
+    );
+    // Verify that the recurly php library is present.
+    $path = libraries_get_path('recurly');
+    if ($path && file_exists($path . '/lib/recurly.php')) {
+      $requirements['recurly']['value'] = $t('The required Recurly PHP library is installed.');
+      $requirements['recurly']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['recurly']['value'] = $t('The required Recurly PHP library is missing. Download the Recurly PHP library from <a href="https://github.com/recurly/recurly-client-php">https://github.com/recurly/recurly-client-php</a> and place it in sites/all/libraries so that "recurly.php" is located at sites/all/libraries/recurly/lib/recurly.php');
+      $requirements['recurly']['severity'] = REQUIREMENT_ERROR;
+    }
+  }
+
+  // Ensure cURL exists if SimpleTest hasn't checked it already.
+  if (!module_exists('simpletest') && !function_exists('curl_init')) {
+    $requirements['recurly_curl'] = array(
+      'title' => $t('cURL'),
+      'severity' => REQUIREMENT_ERROR,
+      'description' => $t('Recurly module requires the <a href="http://php.net/manual/en/curl.setup.php">PHP cURL library</a>.'),
+    );
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_schema().
+ */
+function recurly_schema() {
+  $schema = array();
+
+  $schema['recurly_account'] = array(
+    'description' => 'Recurly account information mapped to Drupal entities.',
+    'fields' => array(
+      'account_code' => array(
+        'description' => 'The unique identifier of the account in Recurly.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'description' => 'Whether the account is closed or active.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_type' => array(
+        'description' => 'The Drupal entity type this account is associated with, typical "user" or "node".',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'description' => 'The Drupal entity ID that maps to this account.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'updated' => array(
+        'description' => 'The Unix timestamp when the account information was last updated.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('account_code'),
+    'indexes' => array(
+      'entity_type_entity_id' => array('entity_type', 'entity_id'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function recurly_install() {
+  // Initialize the Recurly listener key variable.
+  variable_set('recurly_listener_key', substr(drupal_hash_base64(REQUEST_TIME), 0, 8));
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function recurly_uninstall() {
+  // Remove the site-wide account settings.
+  variable_del('recurly_subdomain');
+  variable_del('recurly_private_api_key');
+  variable_del('recurly_public_key');
+  variable_del('recurly_default_currency');
+  variable_del('recurly_pages');
+  variable_del('recurly_token_mapping');
+
+  variable_del('recurly_subscription_cancel_behavior');
+  variable_del('recurly_subscription_display');
+  variable_del('recurly_subscription_downgrade_timeframe');
+  variable_del('recurly_subscription_max');
+  variable_del('recurly_subscription_plans');
+  variable_del('recurly_subscription_upgrade_timeframe');
+
+  variable_del('recurly_entity_type');
+  foreach (array_keys(entity_get_info()) as $entity_name) {
+    variable_del('recurly_bundle_' . $entity_name);
+  }
+
+  // Remove the push notification settings.
+  variable_del('recurly_listener_key');
+  variable_del('recurly_push_logging');
+}

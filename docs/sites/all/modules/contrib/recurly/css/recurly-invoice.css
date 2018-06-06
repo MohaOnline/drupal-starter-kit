@@ -1,0 +1,39 @@
+/**
+ * @file
+ * CSS for subscription information. Typically under
+ * user/x/subscription/invoices/[invoice-uuid].
+ */
+.invoice {
+  position: relative;
+}
+.invoice-pdf {
+  position: absolute;
+  right: 0;
+  top: -36px;
+}
+.invoice .messages {
+  margin: 8px 0;
+}
+.invoice-date {
+  float: right;
+}
+table.invoice-calculations {
+  width: auto;
+  float: right;
+}
+.invoice table td,
+.invoice table th {
+  color: inherit;
+  background: transparent;
+}
+.invoice table tr {
+  background: transparent;
+}
+.invoice th.right,
+.invoice td.right {
+  text-align: right;
+}
+td.line-total,
+th.line-total {
+  text-align: right;
+}

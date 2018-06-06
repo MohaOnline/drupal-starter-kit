@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for Recurly Hosted module.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function recurly_hosted_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  if ($phase === 'install') {
+    // Verify that recurlyjs isn't enabled at the same time.
+    if (module_exists('recurlyjs')) {
+      $requirements['recurly_hosted_conflict']['title'] = $t('Recurly.js conflict');
+      $requirements['recurly_hosted_conflict']['description'] = $t('The "Recurly hosted pages" could not be enabled because the Recurly.js module is active. If specifically needing to use Recurly hosted pages, disable Recurly.js first.');
+      $requirements['recurly_hosted_conflict']['severity'] = REQUIREMENT_ERROR;
+    }
+  }
+  return $requirements;
+}
