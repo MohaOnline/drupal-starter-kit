@@ -6,9 +6,8 @@ configure = admin/config/system/just_smtp
 files[] = just_smtp.mail.inc
 dependencies[] = libraries
 
-; Information added by Drupal.org packaging script on 2017-06-26
-version = "7.x-1.0"
+; Information added by Drupal.org packaging script on 2018-07-09
+version = "7.x-1.1"
 core = "7.x"
 project = "just_smtp"
-datestamp = "1498448344"
-
+datestamp = "1531121336"

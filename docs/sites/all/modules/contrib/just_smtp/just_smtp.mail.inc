@@ -63,13 +63,44 @@ class JustSmtpMailSystem implements MailSystemInterface {
       $mail->Password = variable_get('just_smtp_password', '');
     }
     $mail->SMTPAuth = empty ($mail->Username) ? FALSE : TRUE;
-    $to = $this->parse_mail ($message['to']);
-    if (!valid_email_address($to['mail'])) {
-      drupal_set_message(t('The submitted to address (@to) is not valid.', array('@to' => $to['mail'])), 'error');
-      watchdog('smtp', 'The submitted to address (@to) is not valid.', array('@from' => $to['mail']), WATCHDOG_ERROR);
-      return FALSE;
+
+    $addresses = $this->addresses_to_array($message['to']);
+    foreach ($addresses as $address) {
+      $to = $this->parse_mail ($address);
+      if (!valid_email_address($to['mail'])) {
+        drupal_set_message(t('The submitted to address (@to) is not valid.', array('@to' => $address)), 'error');
+        watchdog('smtp', 'The submitted to address (@to) is not valid.', array('@to' => $address), WATCHDOG_ERROR);
+        return FALSE;
+      }
+      $mail->addAddress ($to['mail'], $to['name']);
     }
-    $mail->addAddress ($to['mail'], $to['name']);
+
+    if (isset($message['headers']['Cc'])) {
+      $addresses = $this->addresses_to_array($message['headers']['Cc']);
+      foreach ($addresses as $address) {
+        $cc = $this->parse_mail ($address);
+        if (!valid_email_address($cc['mail'])) {
+          drupal_set_message(t('The submitted cc address (@cc) is not valid.', array('@cc' => $address)), 'error');
+          watchdog('smtp', 'The submitted cc address (@cc) is not valid.', array('@cc' => $address), WATCHDOG_ERROR);
+          return FALSE;
+        }
+        $mail->addCc ($cc['mail'], $cc['name']);      
+      }
+    }
+
+    if (isset($message['headers']['Bcc'])) {
+      $addresses = $this->addresses_to_array($message['headers']['Bcc']);
+      foreach ($addresses as $address) {
+        $bcc = $this->parse_mail ($address);
+        if (!valid_email_address($bcc['mail'])) {
+          drupal_set_message(t('The submitted bcc address (@bcc) is not valid.', array('@bcc' => $address)), 'error');
+          watchdog('smtp', 'The submitted bcc address (@bcc) is not valid.', array('@bcc' => $address), WATCHDOG_ERROR);
+          return FALSE;
+        }
+        $mail->addBcc ($bcc['mail'], $bcc['name']);      
+      }
+      unset($message['headers']['Bcc']);
+    }
 
     $from = $this->parse_mail ($message['from']);
     if (!valid_email_address($from['mail'])) {
@@ -113,6 +144,17 @@ class JustSmtpMailSystem implements MailSystemInterface {
       $name = '';
     }
     return array ('mail' => $email, 'name' => $name);
+  }
+
+  /**
+   * Converts a comma-separated string of addresses into an array.
+   */
+  protected function addresses_to_array ($string) {
+    $return = explode(',', $string);
+    foreach  ($return as $id => $address) {
+      $return[$id] = trim($address);
+    }
+    return $return;
   }
 
   protected function default_mail_system () {
