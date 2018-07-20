@@ -1,0 +1,17 @@
+name = Baidu Map Geofield
+description = Provides integration of the Baidu Map API with the Geocoder and Geofield modules to support display of geographic and location data through Baidu Maps.
+core = 7.x
+package = Fields
+
+dependencies[] = baidu_map
+dependencies[] = geocoder
+dependencies[] = geofield
+
+files[] = includes/baidu_map_geofield_plugin_style_map.inc
+
+; Information added by Drupal.org packaging script on 2013-12-17
+version = "7.x-1.0"
+core = "7.x"
+project = "baidu_map"
+datestamp = "1387277007"
+

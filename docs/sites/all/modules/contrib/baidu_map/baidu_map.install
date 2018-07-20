@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * @file
+ * Installation and update functions for Baidu Map.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function baidu_map_uninstall() {
+  // Remove the Baidu Map API Key variable.
+  variable_del('baidu_map_api_key');
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function baidu_map_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    // Raise warning if Baidu Map API Key has not been set yet or does not
+    // contain exactly 24 or 32 alphanumeric characters, lower or upper case.
+    if (!preg_match(BAIDU_MAP_API_KEY_VALIDATE_REGEX, variable_get('baidu_map_api_key', ''))) {
+      $requirements['baidu_map'] = array(
+        'title' => $t('Baidu Map module'),
+        'description' => $t('Baidu Map module has not been properly configured yet. Please configure its settings from the <a href="@url">Baidu Map settings page</a>.', array('@url' => url('admin/config/services/baidu_map'))),
+        'severity' => REQUIREMENT_WARNING,
+        'value' => $t('Not configured'),
+      );
+    }
+  }
+
+  return $requirements;
+}

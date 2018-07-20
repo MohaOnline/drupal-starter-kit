@@ -1,0 +1,57 @@
+<?php
+
+/**
+ * @file
+ * Provides display of geographic and location data through the Baidu Map API.
+ */
+
+/**
+ * Declare a constant regular expression used for the API Key validation.
+ */
+define('BAIDU_MAP_API_KEY_VALIDATE_REGEX', '/(^([a-zA-Z0-9]){24}$)|(^([a-fA-F0-9]){32}$)/');
+
+/**
+ * Implements hook_help().
+ */
+function baidu_map_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+    case 'admin/config/services/baidu_map':
+      $output .= t('The Baidu Map module provides integration with the <a href="@bmapi_link">Baidu Map API</a> to allow display of geographic and location information on maps.<br/>Please configure module\'s settings by filling the form below:', array('@bmapi_link' => 'http://lbsyun.baidu.com/apiconsole/key'));
+      break;
+
+    default:
+      break;
+  }
+
+  return $output;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function baidu_map_permission() {
+  return array(
+    'administer baidu map' => array(
+      'title' => t('Administer Baidu Map'),
+      'description' => t('Perform maintenance tasks for Baidu Map.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function baidu_map_menu() {
+  // Callback for the Baidu Map API Key configuration form.
+  $items['admin/config/services/baidu_map'] = array(
+    'title' => 'Baidu Map',
+    'description' => 'Enables display of geographic and location information through the Baidu Map API.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('baidu_map_settings'),
+    'access arguments' => array('administer baidu map'),
+    'file' => 'baidu_map.admin.inc',
+  );
+
+  return $items;
+}

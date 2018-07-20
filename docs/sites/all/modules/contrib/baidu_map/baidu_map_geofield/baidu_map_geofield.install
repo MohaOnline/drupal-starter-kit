@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Installation and update functions for Baidu Map Geofield.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function baidu_map_geofield_uninstall() {
+  // Remove the variables addded by Baidu Map Geofield.
+  variable_del('baidu_map_geofield_geocoder_delay');
+}

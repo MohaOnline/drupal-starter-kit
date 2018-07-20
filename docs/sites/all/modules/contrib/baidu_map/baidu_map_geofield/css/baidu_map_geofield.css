@@ -1,0 +1,6 @@
+/**
+ * Related Issue #1966296: Info tooltip styling is broken for GeofieldMap.
+ */
+.geofieldBaiduMap img {
+  max-width: none;
+}

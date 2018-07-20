@@ -1,0 +1,472 @@
+<?php
+
+/**
+ * @file
+ * Provides integration of the Baidu Map JS API with the Geofield.
+ *
+ * Implements a Baidu geocoder and a geofield display formatter.
+ */
+
+/**
+ * Implements hook_views_api().
+ *
+ * Provides support for Views displayed through Baidu Maps.
+ */
+function baidu_map_geofield_views_api() {
+  return array(
+    'api' => '3.0-alpha1',
+    'path' => drupal_get_path('module', 'baidu_map_geofield') . '/includes',
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ * 
+ * API function needed for ctools integration with geocoder.
+ */
+function baidu_map_geofield_ctools_plugin_api() {
+  return array('version' => 1);
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ * 
+ * API function needed for ctools integration with geocoder.
+ */
+function baidu_map_geofield_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'geocoder' && !empty($plugin)) {
+    return "plugins/$plugin";
+  }
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ *
+ * Declare a new formatter for the geofield to display through Baidu Maps.
+ * More information on each setting in formatter form callback below.
+ */
+function baidu_map_geofield_field_formatter_info() {
+  return array(
+    'baidu_map_geofield' => array(
+      'label' => t('Baidu Map Geofield'),
+      'field types' => array('geofield'),
+      'settings' => array(
+        'baidu_map_geofield_width' => '100%',
+        'baidu_map_geofield_height' => '300px',
+        'baidu_map_geofield_zoom' => 'auto',
+        'baidu_map_geofield_type' => 'normal',
+        'baidu_map_geofield_style' => 'normal',
+        'baidu_map_geofield_showtraffic' => FALSE,
+        'baidu_map_geofield_navigationcontrol' => '',
+        'baidu_map_geofield_scrollwheel' => FALSE,
+        'baidu_map_geofield_draggable' => TRUE,
+        'baidu_map_geofield_maptypecontrol' => FALSE,
+        'baidu_map_geofield_scalecontrol' => FALSE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * Display a geofield through the baidu map display formatter.
+ */
+function baidu_map_geofield_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  // The Baidu Map API key is required to load the Maps.
+  $api_key = variable_get('baidu_map_api_key');
+  if (empty($api_key)) {
+    // Let users know the Baidu Map API key was not properly configured.
+    $element[0] = array(
+      '#markup' => t('Unable to display Baidu Map: no value found for the API Key.'),
+    );
+  }
+  else {
+    list($entity_id) = entity_extract_ids($entity_type, $entity);
+
+    $settings = $display['settings'];
+    // Get Baidu Map API settings to instantiate the map for
+    // the field displayed.
+    $map_settings = baidu_map_geofield_settings_do($settings);
+    // Load GeoPHP libraries from the geophp module.
+    geophp_load();
+    $data = array();
+
+    // For each geofield value.
+    foreach ($items as $delta => $item) {
+      // For a new field value with no geocoding results geom could be NULL.
+      if (!empty($item['geom'])) {
+        // Load a Geometry or Point object.
+        $geometry = geoPHP::load($item['geom']);
+        if (!empty($geometry)) {
+          // Output the geometry in json and decode it as an array.
+          $datum = json_decode($geometry->out('json'));
+          $datum->properties = array(
+            // Allow users to alter displayed description through the theme.
+            'description' => theme('baidu_map_geofield_infowindow', array(
+              'entity' => $entity,
+              'instance' => $instance,
+              'entity_type' => $entity_type,
+              'langcode' => $langcode,
+              'items' => $items,
+              'delta' => $delta,
+            )),
+          );
+          $data[] = $datum;
+        }
+      }
+    }
+
+    if (!empty($data)) {
+      // Build a unique HTML ID for the map HTML markup.
+      $map_id = drupal_html_id("baidu_map_geofield_entity_{$entity_type}_{$entity_id}_{$field['field_name']}");
+
+      // Prepare the necessary javascript settings to instantiate the map.
+      $js_settings = array(
+        $map_id => array(
+          'map_settings' => $map_settings,
+          'data' => count($data) == 1 ? $data[0] : array('type' => 'GeometryCollection', 'geometries' => $data),
+        ),
+      );
+
+      // Prepare the HTML container attributes for the map markup.
+      $container_attributes = array(
+        // No need for defaults: values are populated from the field defaults.
+        'style' => "height:{$settings['baidu_map_geofield_height']}; width:{$settings['baidu_map_geofield_width']}",
+        'id' => $map_id,
+        'class' => 'geofieldBaiduMap',
+      );
+
+      // Attach JS settings and HTML markup to the field for rendering.
+      $element[0] = array(
+        '#attached' => array(
+          'js' => array(
+            // Supports Baidu Map JS API V2.
+            ('//api.map.baidu.com/api?v=2.0&ak=' . $api_key) => array('type' => 'external'),
+            drupal_get_path('module', 'baidu_map_geofield') . '/js/GeoJSON.js' => array('type' => 'file'),
+            drupal_get_path('module', 'baidu_map_geofield') . '/js/baidu_map_geofield.js' => array('type' => 'file'),
+            array('data' => array('geofieldBaiduMap' => $js_settings), 'type' => 'setting'),
+          ),
+          'css' => array(
+            drupal_get_path('module', 'baidu_map_geofield') . '/css/baidu_map_geofield.css',
+          ),
+        ),
+        // Insert the HTML ID, and other attributes in the markup
+        // to be rendered.
+        '#markup' => '<div' . drupal_attributes($container_attributes) . '></div>',
+      );
+    }
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ *
+ * Display a form to allow further configuration of the map display settings.
+ */
+function baidu_map_geofield_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  // Get baidu map display formatter settings form.
+  $element = baidu_map_geofield_settings_form($settings);
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ *
+ * Display all field's formatter settings on entity display management page.
+ */
+function baidu_map_geofield_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary = array();
+
+  // No need to add filter_xss_admin anywhere since the @ placeholder would
+  // already run through check_plain.
+  if ($settings['baidu_map_geofield_width']) {
+    $summary[] = t('Map width: @w', array('@w' => $settings['baidu_map_geofield_width']));
+  }
+  if ($settings['baidu_map_geofield_height']) {
+    $summary[] = t('Map height: @h', array('@h' => $settings['baidu_map_geofield_height']));
+  }
+  if ($settings['baidu_map_geofield_zoom']) {
+    $summary[] = t('Zoom level: @z', array('@z' => $settings['baidu_map_geofield_zoom']));
+  }
+  if ($settings['baidu_map_geofield_type']) {
+    $summary[] = t('Map Type: @type', array('@type' => ucfirst($settings['baidu_map_geofield_type'])));
+  }
+  if ($settings['baidu_map_geofield_style']) {
+    $summary[] = t('Map Style: @style', array('@style' => ucfirst($settings['baidu_map_geofield_style'])));
+  }
+  if (isset($settings['baidu_map_geofield_showtraffic'])) {
+    $summary[] = t('Show traffic: @yn', array('@yn' => ($settings['baidu_map_geofield_showtraffic'] ? t('Yes') : t('No'))));
+  }
+  if (isset($settings['baidu_map_geofield_navigationcontrol'])) {
+    $summary[] = t('Navigation controls: @yn', array('@yn' => (empty($settings['baidu_map_geofield_navigationcontrol']) ? t('Hidden') : ucfirst($settings['baidu_map_geofield_navigationcontrol']))));
+  }
+  if ($settings['baidu_map_geofield_scrollwheel']) {
+    $summary[] = t('Scrollwheel: @yn', array('@yn' => ($settings['baidu_map_geofield_scrollwheel'] ? t('Yes') : t('No'))));
+  }
+  if ($settings['baidu_map_geofield_draggable']) {
+    $summary[] = t('Draggable: @yn', array('@yn' => ($settings['baidu_map_geofield_draggable'] ? t('Yes') : t('No'))));
+  }
+  if (isset($settings['baidu_map_geofield_maptypecontrol'])) {
+    $summary[] = t('Show map type control: @yn', array('@yn' => ($settings['baidu_map_geofield_maptypecontrol'] ? t('Yes') : t('No'))));
+  }
+  if (isset($settings['baidu_map_geofield_scalecontrol'])) {
+    $summary[] = t('Show the map scale: @yn', array('@yn' => ($settings['baidu_map_geofield_scalecontrol'] ? t('Yes') : t('No'))));
+  }
+  return implode('<br />', $summary);
+}
+
+/**
+ * Helper function used by the formatter settings form.
+ *
+ * Returns all the fields for the display formatter settings form.
+ */
+function baidu_map_geofield_settings_form($settings, $element = array()) {
+  // Define the Map width textfield.
+  $element['baidu_map_geofield_width'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Map width'),
+    '#default_value' => $settings['baidu_map_geofield_width'],
+    '#size' => 25,
+    '#maxlength' => 25,
+    '#description' => t('The default width of a Baidu map, as a CSS length or percentage. Examples: <em>50px</em>, <em>5em</em>, <em>2.5in</em>, <em>95%</em>.'),
+    '#required' => TRUE,
+  );
+  // Define the Map height textfield.
+  $element['baidu_map_geofield_height'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Map height'),
+    '#default_value' => $settings['baidu_map_geofield_height'],
+    '#size' => 25,
+    '#maxlength' => 25,
+    '#description' => t('The default height of a Baidu map, as a CSS length or percentage. Examples: <em>50px</em>, <em>5em</em>, <em>2.5in</em>, <em>95%</em>.'),
+    '#required' => TRUE,
+  );
+  // Define the Map Zoom select list ranging from 0 to 20.
+  $element['baidu_map_geofield_zoom'] = array(
+    '#type' => 'select',
+    '#title' => t('Zoom'),
+    '#default_value' => $settings['baidu_map_geofield_zoom'],
+    '#options' => array_merge(array('auto' => 'Automatic'), drupal_map_assoc(range(0, 20))),
+    '#description' => t('The default zoom level of a Baidu map, ranging from 0 to 20 (the greatest). Select <em>Automatic</em> for the map to automatically center and zoom to show all locations.'),
+  );
+  // Define the Default Map Type select list with several custom options.
+  $element['baidu_map_geofield_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Default Map Type'),
+    '#options' => array(
+      'normal' => t('Normal'),
+      'perspective' => t('Perspective'),
+      'satellite' => t('Satellite'),
+      'hybrid' => t('Hybrid'),
+    ),
+    '#default_value' => $settings['baidu_map_geofield_type'],
+    '#description' => t('Select the default map display type. <em>Hybrid</em> is <strong>only supported</strong> for Beijing, Shanghai and Guangzhou.'),
+  );
+  // Define the Map Style.
+  // 原色（normal）、深色（dark）、浅色（light）.
+  $element['baidu_map_geofield_style'] = array(
+    '#type' => 'select',
+    '#title' => t('Default Map Style'),
+    '#options' => array(
+      'normal' => t('Normal'),
+      'dark' => t('Dark'),
+      'light' => t('Light'),
+    ),
+    '#default_value' => $settings['baidu_map_geofield_style'],
+    '#description' => t('Select the default map display style.'),
+  );
+  // Show traffic option as a checkbox.
+  $element['baidu_map_geofield_showtraffic'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show traffic'),
+    '#default_value' => $settings['baidu_map_geofield_showtraffic'],
+    '#description' => t('Display or hide traffic information on the map.'),
+  );
+  // Define the navigation controls select list with several options.
+  $element['baidu_map_geofield_navigationcontrol'] = array(
+    '#type' => 'select',
+    '#title' => t('Navigation controls'),
+    '#options' => array(
+      '' => t('Hidden'),
+      'large' => t('Large'),
+      'pan' => t('Pan'),
+      'small' => t('Small'),
+      'zoom' => t('Zoom'),
+    ),
+    '#default_value' => $settings['baidu_map_geofield_navigationcontrol'],
+    '#description' => t('Display or hide map navigation controls in the top left corner, including the cursor and the zoom level bar.'),
+  );
+  // Enable scrollwheel zooming as a checkbox.
+  $element['baidu_map_geofield_scrollwheel'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Scrollwheel'),
+    '#description' => t('Enable scrollwheel zooming'),
+    '#default_value' => $settings['baidu_map_geofield_scrollwheel'],
+  );
+  // Enable dragging on the map as a checkbox.
+  $element['baidu_map_geofield_draggable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Draggable'),
+    '#description' => t('Enable dragging on the map'),
+    '#default_value' => $settings['baidu_map_geofield_draggable'],
+  );
+  // Show map type control option as a checkbox.
+  $element['baidu_map_geofield_maptypecontrol'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show map type control'),
+    '#default_value' => $settings['baidu_map_geofield_maptypecontrol'],
+    '#description' => t('The map type control is displayed in the top right corner and allows users to switch between map display types.'),
+  );
+  // Show the map scale control option as a checkbox.
+  $element['baidu_map_geofield_scalecontrol'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show the map scale'),
+    '#default_value' => $settings['baidu_map_geofield_scalecontrol'],
+    '#description' => t('Display or hide the map scale in the bottom left corner.'),
+  );
+
+  return $element;
+}
+
+/**
+ * Helper function for the display formatter view.
+ *
+ * Returns a formatted array of map settings according to the Baidu Map API to
+ * instantiate maps' javascript settings for display.
+ */
+function baidu_map_geofield_settings_do($settings) {
+  $map_settings = array(
+    'zoom' => $settings['baidu_map_geofield_zoom'],
+    'maptype' => $settings['baidu_map_geofield_type'],
+    'mapstyle' => $settings['baidu_map_geofield_style'],
+    'showtraffic' => $settings['baidu_map_geofield_showtraffic'],
+    'navigationcontrol' => $settings['baidu_map_geofield_navigationcontrol'],
+    'scrollwheel' => $settings['baidu_map_geofield_scrollwheel'],
+    'draggable' => $settings['baidu_map_geofield_draggable'],
+    'maptypecontrol' => $settings['baidu_map_geofield_maptypecontrol'],
+    'scalecontrol' => $settings['baidu_map_geofield_scalecontrol'],
+  );
+  return $map_settings;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add Baidu Map Geofield specific configuration settings to the Baidu Map
+ * settings form.
+ */
+function baidu_map_geofield_form_baidu_map_settings_alter(&$form, &$form_state, $form_id) {
+  // Delay between Geocoding requests sent to Baidu Map.
+  $form['baidu_map_geocoder_delay'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Delay between Baidu geocoding requests (in milliseconds)'),
+    '#description' => t('Adds a delay between geocoding requests, to avoid OVER_QUERY_LIMIT errors from Baidu. 200ms is recommended.'),
+    '#default_value' => variable_get('baidu_map_geofield_geocoder_delay', 0),
+    '#size' => 10,
+  );
+}
+
+/**
+ * Helper function for the baidu geocoder functions.
+ *
+ * Geocoder Widget - Parse an address field. This function was essentially
+ * copied from the geocoder module. The Baidu geocoder API needs addressfield
+ * component values to be concatenated into a string with a particular order,
+ * which is different from the order used currently by the geocoder module.
+ *
+ * @see geocoder_widget_parse_addressfield()
+ */
+function baidu_map_geofield_geocoder_widget_parse_addressfield_china($field_item) {
+  $address = '';
+  // Aggregate addressfield component values in an order specific to China.
+  // The order was changed from the original geocoder function.
+  if (!empty($field_item['country'])) {
+    $address .= $field_item['country'];
+  }
+  if (!empty($field_item['administrative_area'])) {
+    $address .= $field_item['administrative_area'];
+  }
+  if (!empty($field_item['locality'])) {
+    $address .= $field_item['locality'];
+  }
+  if (!empty($field_item['thoroughfare'])) {
+    $address .= $field_item['thoroughfare'];
+  }
+  if (!empty($field_item['premise'])) {
+    $address .= $field_item['premise'];
+  }
+  if (!empty($field_item['sub_administrative_area'])) {
+    $address .= $field_item['sub_administrative_area'];
+  }
+  if (!empty($field_item['postal_code'])) {
+    $address .= $field_item['postal_code'];
+  }
+
+  return $address;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function baidu_map_geofield_theme() {
+  return array(
+    'baidu_map_geofield_infowindow' => array(
+      'variables' => array(
+        'entity' => NULL,
+        'instance' => NULL,
+        'entity_type' => NULL,
+        'langcode' => NULL,
+        'items' => NULL,
+        'delta' => 0,
+      ),
+    ),
+  );
+}
+
+/**
+ * Theme function for the contents of the InfoWindow used for each Marker.
+ *
+ * When a Marker is clicked on a map, an InfoWindow can be displayed. The theme
+ * function would return by default the corresponding entity label, but it
+ * could return any formatted HTML. Since almost all entity and field related
+ * paramaters are passed in the $variables array, the default output could be
+ * overridden to display much more information, such as the coordinates of each
+ * of the location Markers. Return NULL to prevent a Marker from being attached
+ * an InfoWindow.
+ */
+function theme_baidu_map_geofield_infowindow($variables) {
+  return entity_label($variables['entity_type'], $variables['entity']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add a validation callback to the Geofield field settings form to prevent the
+ * Baidu Geocoder from being selected if a Baidu Map API Key is not configured.
+ */
+function baidu_map_geofield_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  $form['#validate'][] = 'baidu_map_geofield_geocoder_baidu_form_validate';
+}
+
+/**
+ * Form validation callback for the Geofield field Baidu Geocoder settings.
+ *
+ * @see baidu_map_geofield_form_field_ui_field_edit_form_alter()
+ */
+function baidu_map_geofield_geocoder_baidu_form_validate(&$form, &$form_state) {
+  $values = $form_state['values'];
+  // The Baidu Map API key is required for Geocoding with Baidu.
+  $api_key = variable_get('baidu_map_api_key');
+  if (isset($values['instance']['widget']['settings']['geocoder_handler']) && $values['instance']['widget']['settings']['geocoder_handler'] == 'baidu' && empty($api_key)) {
+    form_set_error("instance][widget][settings][geocoder_handler", t('Current settings could not be saved with the Baidu Geocoder, because <strong>no Baidu Map API Key could be found</strong>. Please configure first a valid <em>Baidu Map API key</em> in the <a href="@bm_admin">Baidu Map settings page</a>, then try submitting this form\'s settings again.', array('@bm_admin' => url('admin/config/services/baidu_map'))));
+  }
+}
