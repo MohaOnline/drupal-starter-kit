@@ -1,0 +1,794 @@
+<?php
+/**
+ * @file
+ * Deploy module functions.
+ */
+
+/**
+ * Include core implementations and Deploy's own implementations.
+ *
+ * @todo
+ *   Do this properly with hook_hook_info().
+ */
+module_load_include('inc', 'deploy', 'deploy.manager');
+module_load_include('inc', 'deploy', 'deploy.core');
+module_load_include('inc', 'deploy', 'deploy.deploy');
+
+/**
+ * Deployment statuses.
+ */
+define('DEPLOY_STATUS_FAILED', 0);
+define('DEPLOY_STATUS_STARTED', 1);
+define('DEPLOY_STATUS_PROCESSING', 2);
+define('DEPLOY_STATUS_DEPLOYED', 3);
+define('DEPLOY_STATUS_PUBLISHED', 4);
+
+/**
+ * Implements hook_permission().
+ */
+function deploy_permission() {
+  return array(
+    'administer deployment plans' => array(
+      'title' => t('Administer deployment plans'),
+      'description' => t('Perform administrative tasks on deployment plans.'),
+    ),
+    'administer deployment endpoints' => array(
+      'title' => t('Administer deployment endpoints'),
+      'description' => t('Perform administrative on deployment endpoints.'),
+    ),
+    'deploy deployment plans' => array(
+      'title' => t('Deploy deployment plans'),
+      'description' => t('Deploy the contents of deployment plans.'),
+    ),
+    'edit deployment plans' => array(
+      'title' => t('Edit deployment plans'),
+      'description' => t('Edit the contents of deployment plans.'),
+    ),
+    'view deployment plans' => array(
+      'title' => t('View deployment plans'),
+      'description' => t('View details and contents of deployment plans.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function deploy_ctools_plugin_type() {
+  return array(
+    'authenticators' => array(
+      'cache' => TRUE,
+      'use hooks' => TRUE,
+      'classes' => array('handler'),
+    ),
+    'services' => array(
+      'cache' => TRUE,
+      'use hooks' => TRUE,
+      'classes' => array('handler'),
+    ),
+    'aggregators' => array(
+      'cache' => TRUE,
+      'use hooks' => TRUE,
+      'classes' => array('handler'),
+    ),
+    'processors' => array(
+      'cache' => TRUE,
+      'use hooks' => TRUE,
+      'classes' => array('handler'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function deploy_entity_info() {
+  $info = [
+    'deploy_manager_entities' => [
+      'label' => t('Deploy Manager Entity'),
+      'entity class' => 'DeployManagerEntitiesEntity',
+      'controller class' => 'EntityAPIController',
+      'base table' => 'deploy_manager_entities',
+      'entity keys' => [
+        'id' => 'dme_id',
+      ],
+      'fieldable' => FALSE,
+      'module' => 'deploy',
+      'bundles' => [
+        'deploy_manager_entities' => [
+          'label' => t('Deploy Manager Entity'),
+        ],
+      ],
+      'access callback' => 'deploy_access',
+      'label callback' => 'deploy_manager_entities_label',
+      'views controller class' => 'DeployManagerEntityViewsController',
+    ]
+  ];
+
+  // We can only use entity cache if it is enabled.
+  if (module_exists('entitycache')) {
+    $info['deploy_manager_entities']['entity cache'] = TRUE;
+  }
+
+  return $info;
+
+}
+
+/**
+ * Implements hook_entity_property_info().
+ */
+function deploy_entity_property_info() {
+
+  $properties = [
+    'dme_id' => [
+      'type'  => 'integer',
+      'label' => t('Deploy Manager Entity ID'),
+      'description' => t('The unique identifier for the deploy manager entity identifier.'),
+      'schema field' => 'dme_id',
+    ],
+    'plan_name' => [
+      'type' => 'text',
+      'label' => t('Plan Name'),
+      'description' => t('The machine name of the plan the entity belongs to.'),
+      'schema field' => 'plan_name',
+    ],
+    'entity_type' => [
+      'type' => 'text',
+      'label' => t('Entity Type'),
+      'description' => t('The type of entity.'),
+      'schema field' => 'entity_type',
+    ],
+    'entity_id' => [
+      'type' => 'integer',
+      'label' => t('Entity ID'),
+      'description' => t('The primary identifier for the entity.'),
+      'schema field' => 'entity_id',
+    ],
+    'revision_id' => [
+      'type' => 'integer',
+      'label' => t('Revision ID'),
+      'description' => t('The revision identifier.'),
+      'schema field' => 'revision_id',
+    ],
+    'timestamp' => [
+      'type' => 'date',
+      'label' => t('Added'),
+      'description' => t('The date and time when the entity was added to the plan'),
+      'schema field' => 'timestamp',
+    ],
+  ];
+
+  $info = ['deploy_manager_entities' => ['properties' => $properties]];
+  return $info;
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function deploy_views_api() {
+  return [
+    'api' => 3,
+    'path' => drupal_get_path('module', 'deploy') . '/includes',
+  ];
+}
+
+/**
+ * Implements deploy_auto_plan_status_alter().
+ */
+function deploy_deploy_auto_plan_status_alter(&$status, $entity, $type) {
+
+  // We don't want to add the Deploy Manager Entities to a deployment plan.
+  if ('deploy_manager_entities' == $type) {
+    $status = FALSE;
+  }
+}
+
+/**
+ * Get all aggregator plugins.
+ */
+function deploy_get_aggregator_plugins() {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'aggregators');
+}
+
+/**
+ * Get one aggregator plugin.
+ */
+function deploy_get_aggregator_plugin($name) {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'aggregators', $name);
+}
+
+/**
+ * Get all processor plugins.
+ */
+function deploy_get_processor_plugins() {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'processors');
+}
+
+/**
+ * Get one processor plugin.
+ */
+function deploy_get_processor_plugin($name) {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'processors', $name);
+}
+
+/**
+ * Get all authenticator plugins.
+ */
+function deploy_get_authenticator_plugins() {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'authenticators');
+}
+
+/**
+ * Get one authenticator plugin.
+ */
+function deploy_get_authenticator_plugin($name) {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'authenticators', $name);
+}
+
+/**
+ * Get all service plugins.
+ */
+function deploy_get_service_plugins() {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'services');
+}
+
+/**
+ * Get one service plugin.
+ */
+function deploy_get_service_plugin($name) {
+  ctools_include('plugins');
+  return ctools_get_plugins('deploy', 'services', $name);
+}
+
+/**
+ * Access callback.
+ *
+ * @param string $op
+ *   The operation to be performed.
+ * @param object $entity
+ *   The entity the action is to be performed on.
+ * @param object $account
+ *   The user account wishing to perform the action.
+ *
+ * @return bool
+ *   TRUE if the user can perform the requested action.
+ */
+function deploy_access($op, $entity = NULL, $account = NULL) {
+
+  if (user_access('administer deployment plans', $account)) {
+    return TRUE;
+  }
+
+  switch ($op) {
+
+    case 'deploy':
+      $permission = 'deploy deployment plans';
+      break;
+
+    case 'edit':
+      $permission = 'edit deployment plans';
+      break;
+
+    case 'list':
+    case 'view':
+      $permission = 'view deployment plans';
+      break;
+
+    default:
+      $permission = 'administer deployment plans';
+      break;
+  }
+
+  return user_access($permission, $account);
+}
+
+/**
+ * Object factory for a deployment plan.
+ */
+function deploy_plan_create($schema, $item) {
+  $plan = new DeployPlan;
+  // Unserialize our serialized params.
+  foreach ($schema['fields'] as $field => $info) {
+    if (!empty($info['serialize'])) {
+      $plan->{$field} = unserialize($item->{$field});
+    }
+    else {
+      $plan->{$field} = $item->{$field};
+    }
+  }
+  return $plan;
+}
+
+/**
+ * Loader callback for a deployment plan.
+ */
+function deploy_plan_load($name) {
+  $plans = deploy_plan_load_all();
+  if (isset($plans[$name])) {
+     drupal_alter("deploy_plan_load", $plans[$name]);
+    return $plans[$name];
+  }
+  return FALSE;
+}
+
+/**
+ * Loader callback for all deployment plans.
+ */
+function deploy_plan_load_all($args = array()) {
+  $type = !empty($args) ? 'conditions' : 'all';
+  ctools_include('export');
+  $plans = ctools_export_load_object('deploy_plans', $type, $args);
+  if (isset($plans)) {
+    // Load each plan's configuration into itself.
+    foreach ($plans as &$plan) {
+      $plan->load();
+    }
+    return $plans;
+  }
+}
+
+/**
+ * Loader callback for all enabled deployment plans.
+ */
+function deploy_plan_load_all_enabled($args = array()) {
+  $type = !empty($args) ? 'conditions' : 'all';
+  ctools_include('export');
+  $enabled_plans = array();
+  $all_plans = ctools_export_load_object('deploy_plans', $type, $args);
+  if (isset($all_plans)) {
+    // Load each plan's configuration into itself.
+    foreach ($all_plans as $plan) {
+      if (!empty($plan->disabled)) {
+        continue;
+      }
+      $plan->load();
+      $enabled_plans[$plan->name] = $plan;
+    }
+    return $enabled_plans;
+  }
+}
+
+/**
+ * Options callback for the deploy_plan data type.
+ */
+function deploy_plan_get_options($args = array()) {
+  $plans = deploy_plan_load_all($args);
+  $options = array();
+  foreach ($plans as $plan_name => $info) {
+    $options[$plan_name] = $info->title;
+  }
+  return $options;
+}
+
+/**
+ * Helper function to recieve the status of a plan.
+ */
+function deploy_plan_get_status($name) {
+  $query = db_select('deploy_deployments', 'dd');
+  $query->join('deploy_log', 'dl', 'dd.lid = dl.lid');
+
+  $status = $query
+    ->fields('dl', array('status'))
+    ->condition('dd.plan_name', $name)
+    ->orderBy('dl.timestamp', 'DESC')
+    ->range(0, 1)
+    ->execute()
+    ->fetchField();
+  return $status;
+}
+
+/**
+ * Object factory for a deployment endpoint.
+ */
+function deploy_endpoint_create($schema, $item) {
+  $endpoint = new DeployEndpoint;
+  // Unserialize our serialized params.
+  foreach ($schema['fields'] as $field => $info) {
+    if (!empty($info['serialize'])) {
+      $endpoint->{$field} = unserialize($item->{$field});
+    }
+    else {
+      $endpoint->{$field} = $item->{$field};
+    }
+  }
+  return $endpoint;
+}
+
+/**
+ * Loader callback for a deployment endpoint.
+ */
+function deploy_endpoint_load($name) {
+  $endpoints = deploy_endpoint_load_all();
+  if (isset($endpoints[$name])) {
+    return $endpoints[$name];
+  }
+  return FALSE;
+}
+
+/**
+ * Loader callback for a deployment endpoint.
+ */
+function deploy_endpoint_load_all() {
+  ctools_include('export');
+  $endpoints = ctools_export_load_object('deploy_endpoints', 'all');
+  if (isset($endpoints)) {
+    return $endpoints;
+  }
+}
+
+/**
+ * Writes a deployment plan.
+ */
+function deploy_plan_save($data) {
+
+  $plan = new DeployPlan();
+  foreach ($data as $key => $value) {
+    $plan->{$key} = $value;
+  }
+
+  $returned = ctools_export_crud_save('deploy_plans', $plan);
+  if (SAVED_NEW !== $returned && SAVED_UPDATED !== $returned) {
+    throw new DeployPlanException('Failed to create plan.');
+  }
+
+  return $plan;
+}
+
+/**
+ * Implements hook_entity_dependency_iterator().
+ */
+function deploy_entity_dependency_iterator() {
+  $plugins = array();
+
+  $plugins['deploy_iterator'] = array(
+    'title' => t('Deploy Iterator'),
+    'description' => t('Default iterator for Deploy to return UUID entities and invoke Deploy-specific hooks.'),
+    'handler' => 'DeployIterator',
+    'file' => 'includes/DeployIterator.inc',
+  );
+
+  return $plugins;
+}
+
+/**
+ * Constructs a deployment iterator, which is the core of the dependency
+ * framework.
+ */
+function deploy_iterator($entities, $plan = NULL) {
+  if (is_null($plan) || empty($plan->dependency_plugin)) {
+    $iterator = new DeployIterator($entities);
+    return new EntityDependencyIteratorIterator($iterator);
+  }
+  elseif (!empty($plan->dependency_plugin)) {
+    $class_name = ctools_plugin_load_class('entity_dependency', 'iterator', $plan->dependency_plugin, 'handler');
+    $iterator = new $class_name($entities);
+    return new EntityDependencyIteratorIterator($iterator);
+  }
+}
+
+/**
+ * Helper function to get operation info.
+ */
+function deploy_get_operation_info($event_name = NULL) {
+  $cache = &drupal_static(__FUNCTION__);
+  if (empty($cache)) {
+    $operations = module_invoke_all('deploy_operation_info');
+    foreach (array('preprocess', 'postprocess') as $event) {
+      // Avoid empty keys.
+      if (!isset($operations[$event])) {
+        $operations[$event] = array();
+      }
+    }
+    $cache = $operations;
+  }
+  if (!empty($event_name)) {
+    return $cache[$event_name];
+  }
+  return $cache;
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function deploy_cron_queue_info() {
+  return array(
+    'deploy_deploy' => array(
+      'worker callback' => 'deploy_queue_worker_deploy',
+      'time' => 60,
+    ),
+    'deploy_publish' => array(
+      'worker callback' => 'deploy_queue_worker_publish',
+      'time' => 60,
+    ),
+  );
+}
+
+/**
+ * Processes a single queued item for deployment.
+ */
+function deploy_queue_worker_deploy($entity, &$context = NULL) {
+  $endpoint = deploy_endpoint_load($entity->__metadata['endpoint_name']);
+  $plan = deploy_plan_load($entity->__metadata['plan_name']);
+
+  if ($plan && $endpoint) {
+    $entities = array(array('type' => $entity->__metadata['type'], 'id' => $entity->__metadata['id']));
+    $iterator = deploy_iterator($entities, $plan);
+    $endpoint->deploy($entity->__metadata['deployment_key'], $iterator, $entity->__metadata['lock_name']);
+  }
+}
+
+/**
+ * Processes a single queued item for publishing.
+ */
+function deploy_queue_worker_publish($entity, &$context = NULL) {
+  $endpoint = deploy_endpoint_load($entity->__metadata['endpoint_name']);
+  $plan = deploy_plan_load($entity->__metadata['plan_name']);
+
+  if ($plan && $endpoint) {
+    $entities = array(array('type' => $entity->__metadata['type'], 'id' => $entity->__metadata['id']));
+    $iterator = deploy_iterator($entities, $plan);
+    $endpoint->publish($entity->__metadata['deployment_key'], $iterator, $entity->__metadata['lock_name']);
+    $context['results'][$entity->__metadata['endpoint_name']] = $entity->__metadata['plan_name'];
+  }
+}
+
+/**
+ * Batch API 'finished' callback.
+ */
+function deploy_batch_finished_operation($success, $results, $operations) {
+  if ($success) {
+    foreach ($results as $endpoint_name => $plan_name) {
+      $endpoint = deploy_endpoint_load($endpoint_name);
+      $plan = deploy_plan_load($plan_name);
+      drupal_set_message(t('Plan %plan has been deployed and published to %endpoint.', array('%plan' => $plan->title, '%endpoint' => $endpoint->title)));
+    }
+  }
+}
+
+/**
+ * Helper function to retrieve relevant information about a deployment status.
+ */
+function deploy_status_info($status = NULL, $key = NULL) {
+  $info = array(
+    DEPLOY_STATUS_FAILED => array(
+      'title' => t('Failed'),
+      'keyed message' => 'Deployment %key failed.',
+      'watchdog' => WATCHDOG_ERROR,
+      'class' => 'error',
+    ),
+    DEPLOY_STATUS_STARTED => array(
+      'title' => t('Started'),
+      'keyed message' => 'Deployment of %key started.',
+      'watchdog' => WATCHDOG_INFO,
+      'class' => 'warning',
+    ),
+    DEPLOY_STATUS_PROCESSING => array(
+      'title' => t('Processing'),
+      'keyed message' => 'Deployment %key is processing.',
+      'watchdog' => WATCHDOG_INFO,
+      'class' => 'warning',
+    ),
+    DEPLOY_STATUS_DEPLOYED => array(
+      'title' => t('Deployed'),
+      'watchdog' => WATCHDOG_INFO,
+      'keyed message' => 'Deployment %key was deployed.',
+      'class' => 'warning',
+    ),
+    DEPLOY_STATUS_PUBLISHED => array(
+      'title' => t('Published'),
+      'keyed message' => 'Deployment %key was published.',
+      'watchdog' => WATCHDOG_INFO,
+      'class' => 'status',
+    ),
+  );
+  if ($status === NULL && $key === NULL) {
+    return $info;
+  }
+  elseif ($status !== NULL && $status !== FALSE && $key === NULL) {
+    if (isset($info[$status])) {
+      return $info[$status];
+    }
+  }
+  elseif ($status !== NULL && $status !== FALSE && $key !== NULL && $key !== FALSE) {
+    if (isset($info[$status][$key])) {
+      return $info[$status][$key];
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Helper function to log deployments.
+ *
+ * This function also logs to the watchdog log for more visibility.
+ *
+ * @param mixed $key
+ *   Can be either an existing key (UUID) or a string of a plan name indicating
+ *   that a new deployment is started and a key needs to be generated.
+ * @param integer $status
+ *   Status code.
+ * @param string $message
+ *   A message to log.
+ * @param array $variables
+ *   Placeholder variables to be used in $message.
+ */
+function deploy_log($key, $status, $message = '', $variables = array(), $timestamp = NULL) {
+  // Log to watchdog for more visibility.
+  $info = deploy_status_info($status);
+  if ($status == DEPLOY_STATUS_FAILED) {
+    watchdog_exception('deploy', $message);
+  }
+  else {
+    watchdog('deploy', $info['keyed message'], array('%key' => $key), $info['watchdog']);
+  }
+  if ($timestamp === NULL) {
+    $timestamp = time();
+  }
+  // If the key isn't a UUID, then it's a plan name indicating that a new
+  // deployment has started.
+  if ($key && !uuid_is_valid($key)) {
+    $plan_name = $key;
+    $key = uuid_generate();
+    db_insert('deploy_deployments')
+      ->fields(array(
+        'plan_name' => $plan_name,
+        'uuid' => $key,
+      ))
+      ->execute();
+    return $key;
+  }
+  if (uuid_is_valid($key)) {
+    // Add the log entry for this deployment.
+    $lid = db_insert('deploy_log')
+      ->fields(array(
+        'uuid' => $key,
+        'status' => $status,
+        'message' => $message,
+        'timestamp' => $timestamp,
+      ))
+      ->execute();
+    // Update the log pointer for this deployment.
+    db_update('deploy_deployments')
+      ->fields(array(
+        'lid' => $lid,
+      ))
+      ->condition('uuid', $key)
+      ->execute();
+    return $key;
+  }
+  return FALSE;
+}
+
+/**
+ * Checks if the entity is the latest revision.
+ *
+ * @param string $entity_type
+ *   The machine name of the entity type.
+ * @param object $entity
+ *   The entity object to use for the look up.
+ *
+ * @return bool
+ *   Is the supplied entity the latest revision.
+ */
+function deploy_is_latest_revision($entity_type, $entity) {
+  $entity_info = &drupal_static(__FUNCTION__);
+  if (empty($entity_info[$entity_type])) {
+    $entity_info[$entity_type] = entity_get_info($entity_type);
+  }
+
+  $info = $entity_info[$entity_type];
+
+  // If the entity doesn't support revisions this must be considered to be the latest revision.
+  if (empty($info['entity keys']['revision'])) {
+    return TRUE;
+  }
+
+  $query = new EntityFieldQuery();
+
+  $result = $query->entityCondition('entity_type', $entity_type)
+    ->entityCondition('entity_id', $entity->{$info['entity keys']['id']})
+    ->entityCondition('revision_id', $entity->{$info['entity keys']['revision']}, '>')
+    ->execute();
+
+  return empty($result[$entity_type]);
+}
+
+/**
+ * Looks up which plans an entity is present in.
+ *
+ * @param string $entity_type
+ *   The machine name of the entity type.
+ * @param integer $entity_id
+ *   The id for the entity.
+ * @param string $exclude
+ *   The machine of a plan to exclude from the look up. Ignored if NULL.
+ * @param integer $revision_id
+ *   The revision id to use for the lookup. All revisions are used if NULL.
+ *
+ * @return array
+ *   List of plans the entity was found in.
+ */
+function deploy_find_entity($entity_type, $entity_id, $exclude=NULL, $revision_id=NULL) {
+  $query = db_select('deploy_manager_entities', 'dme')
+    ->fields('dme', ['plan_name'])
+    ->condition('entity_type', $entity_type)
+    ->condition('entity_id', $entity_id)
+    ->groupBy('plan_name');
+
+  $query->addExpression('MAX(revision_id)', 'max_rev_id');
+
+  if ($exclude) {
+    $query->condition('plan_name', $exclude, '!=');
+  }
+
+  if ($revision_id) {
+    $query->condition('revision_id', $revision_id);
+  }
+
+  return $query->execute()->fetchAllKeyed();
+}
+
+/**
+ * Entity label callback.
+ */
+function deploy_manager_entities_label($entity, $entity_type) {
+  $plan_entity = deploy_plan_entity_load($entity->entity_type, $entity->entity_id, $entity->revision_id);
+  return deploy_plan_entity_label($entity->entity_type, $plan_entity, $entity->revision_id);
+}
+
+/**
+ * Loads an entity that is included in a deployment plan.
+ *
+ * @param string $type
+ *   The type of entity included in a plan.
+ * @param int $id
+ *   The identifier for the entity in the plan.
+ * @param int $rev
+ *   The revision identifier for the entity in the plan.
+ *
+ * @return object
+ *   The entity object.
+ */
+function deploy_plan_entity_load($type, $id, $rev = NULL) {
+  if (empty($rev)) {
+    $entity = entity_load_single($type, $id);
+  }
+  else {
+    $entity = entity_revision_load($type, $rev);
+  }
+
+  return $entity;
+}
+
+/**
+ * Load an entity and generates the label for it.
+ *
+ * @param string $type
+ *   The type of entity included in the plan.
+ * @param object $entity
+ *   The entity that's included in the plan.
+ * @param int $rev
+ *   The revision identifier for the entity in the plan.
+ *
+ * @return string
+ *   The label for the entity.
+ */
+function deploy_plan_entity_label($type, $entity, $rev = NULL) {
+  $label = entity_label($type, $entity);
+
+  if (empty($rev)) {
+    $full_label = t('@entity_label', ['@entity_label' => $label]);
+  }
+  else {
+    $full_label = t('@entity_label [rev:@rev]', ['@entity_label' => $label, '@rev' => $rev]);
+  }
+
+  return $full_label;
+}

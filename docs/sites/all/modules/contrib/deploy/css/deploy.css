@@ -1,0 +1,8 @@
+.deploy-plan .newer-available {
+  background-color: #840;
+  background-color: rgba(255, 252, 229, 0.8);
+}
+
+.deploy-plan .newer-available.odd {
+  background-color: rgba(255, 252, 229, 1);
+}

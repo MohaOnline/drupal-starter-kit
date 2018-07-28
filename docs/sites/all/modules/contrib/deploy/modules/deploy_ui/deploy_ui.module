@@ -1,0 +1,85 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function deploy_ui_menu() {
+  $items = array();
+
+  $items['admin/structure/deploy/plans/list/%ctools_export_ui/empty'] = array(
+    'title' => 'Empty',
+    'description' => 'Remove all content from the plan',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('deploy_ui_empty_plan_form', 5),
+    'access callback' => 'deploy_ui_user_access',
+    'access arguments' => array('edit deployment plans'),
+    'file' => 'deploy_ui.pages.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+
+  $items['admin/structure/deploy/plans/list/%ctools_export_ui/flatten'] = array(
+    'title' => 'Remove Duplicates',
+    'description' => 'Remove duplicate content from the plan',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('deploy_ui_flatten_plan_form', 5),
+    'access callback' => 'deploy_ui_user_access',
+    'access arguments' => array('edit deployment plans'),
+    'file' => 'deploy_ui.pages.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+
+  return $items;
+}
+
+/**
+ * Access callback handler.
+ *
+ * This is a bit of a hack to prevent actions being rendered on the VBO
+ * confirmation form.
+ *
+ * @param string $string
+ *   The permission, such as "administer nodes", being checked for.
+ * @param object $account
+ *   The account to check, if not given use currently logged in user.
+ *
+ * @return boolean
+ *   Boolean TRUE if the current user has the requested permission.
+ */
+function deploy_ui_user_access($string, $account=NULL, $deny_for_post=TRUE) {
+
+  if (!user_access($string, $account)) {
+    return FALSE;
+  }
+
+  if ('POST' == $_SERVER['REQUEST_METHOD'] && $deny_for_post && 'view' == arg(6)) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function deploy_ui_theme() {
+  return array(
+    'deploy_ui_plan_view' => array(
+      'render_element' => 'vars',
+      'template' => 'deploy-ui-plan-view',
+      'path' => drupal_get_path('module', 'deploy_ui') . '/templates',
+    ),
+    'deploy_ui_overview_plan_content' => array(
+      'variables' => array('info' => array()),
+      'file' => 'deploy_ui.pages.inc',
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_ctools_plugin_directory().
+ */
+function deploy_ui_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && $plugin == 'export_ui') {
+    return 'plugins/' . $plugin;
+  }
+}
