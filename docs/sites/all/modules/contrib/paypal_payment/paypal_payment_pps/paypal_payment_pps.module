@@ -193,9 +193,11 @@ function paypal_payment_pps_form_redirect(array $form, array &$form_state, Payme
     'invoice' => PayPalPaymentIPNController::invoiceID($payment->pid),
   );
   // Add each line item separately. The first item starts at 1.
+  $currency = currency_load($payment->currency_code);
   $index = 1;
   foreach ($payment->line_items as $line_item) {
-    $data['amount_' . $index] = $line_item->unitAmount(TRUE);
+    $amount = $currency->roundAmount($line_item->unitAmount(TRUE));
+    $data['amount_' . $index] = $amount;
     $data['item_name_' . $index] = $line_item->name;
     $data['quantity_' . $index] = $line_item->quantity;
     $index++;
