@@ -1,4 +1,8 @@
-
+/*
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ */
 
 function elfinder_ckeditor_callback(arg1) {
 
@@ -7,13 +11,23 @@ function elfinder_ckeditor_callback(arg1) {
   if (typeof arg1 == 'object') {
     url = arg1.url;
   }
+
   funcNum = window.location.search.replace(/^.*CKEditorFuncNum=(\d+).*$/, "$1");
+
   window.opener.CKEDITOR.tools.callFunction(funcNum, url, function() {
     // adapted from http://docs.ckeditor.com/#!/guide/dev_file_browser_api
+
     var dialog = this.getDialog();
-    if (dialog.getName() == 'link' ) {
+
+    if (dialog.getName() == 'link') {
+
       var element = dialog.getContentElement('info', 'linkDisplayText');
-      var display_text = element.getValue();
+      var display_text = null;
+
+      if (element) {
+        display_text = element.getValue();
+      }
+
       // If display text is blank, insert the filename.
       if (element && !display_text) {
         element.setValue(arg1.name);

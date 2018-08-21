@@ -1,11 +1,9 @@
-; $Id: elfinder_ffsel.info,v 1.1.2.2 2010/11/20 23:18:55 ph0enix Exp $
-name = elFinder BUEditor integration
-description = Adding elFinder to BUEditor Insert Image dialog
+name = elFinder TinyMCE integration
+description = Extended tinyMCE integration
 package = User interface
 core = 7.x
 project status url = https://drupal-elfinder.sourceforge.io/release-history.php
 
-dependencies[] = bueditor
 dependencies[] = elfinder
 
 ; Information added by Drupal.org packaging script on 2017-11-16

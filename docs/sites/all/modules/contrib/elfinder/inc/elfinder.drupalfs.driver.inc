@@ -357,7 +357,8 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
         $this->setError(strip_tags(implode(' ', $validation_errors)));
         return FALSE;
       }
-    } else {
+    }
+    else {
       watchdog('elfinder', 'File upload "' . $name . '" not found in $_FILES');
     }
     return TRUE;

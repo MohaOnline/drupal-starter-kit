@@ -1,6 +1,11 @@
+/*
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ */
 
 .el-finder-nav ul li {
-	background:none;
-	padding:0;
-	margin:0;
+    background: none;
+    padding: 0;
+    margin: 0;
 }

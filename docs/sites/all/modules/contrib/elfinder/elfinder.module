@@ -1,7 +1,8 @@
 <?php
 /**
- * elFinder is a AJAX file manager with Wysiwyg API capable editors support
- * Copyright (c) 2010-2013, Alexey Sukhotin
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
  */
 
 define('ELFINDER_POPUP_WIDTH', 700);
@@ -30,10 +31,10 @@ function elfinder_check_badpaths() {
     $message = t('elFinder library directory containing features test files :files. Please remove these files to avoid security hole.', array(':files' => implode(', ', $badpaths)));
     watchdog('elfinder', $message, array(), WATCHDOG_ALERT);
     drupal_set_message($message, 'error');
-    
+
     $ret['result'] = FALSE;
     $ret['message'] = $message;
-    
+
   }
 
   return $ret;
@@ -42,13 +43,13 @@ function elfinder_check_badpaths() {
 function elfinder_init() {
   elfinder_check_badpaths();
 }
- 
+
 /**
  * Implements hook_menu().
  */
 function elfinder_menu() {
   $items = array();
-  
+
   $access = array('use file manager');
 
   $items['admin/content/files'] = array(
@@ -57,10 +58,10 @@ function elfinder_menu() {
     'page arguments' => array('backend'),
     'description' => 'Manage media files.',
     'access arguments' => array('administer file manager'),
-  );  
+  );
 
   $items['admin/content/files']['type'] = MENU_LOCAL_TASK;
-    
+
   $items['elfinder'] = array(
     'title' => 'File browser',
     'page callback' => 'elfinder_file_browser',
@@ -96,7 +97,7 @@ function elfinder_menu() {
 
   $items['admin/config/elfinder'] = $items['admin/config/media/elfinder'] = $settings_page;
   $items['admin/config/elfinder']['type'] = MENU_CALLBACK;
- 
+
   $items['admin/config/media/elfinder/profile'] = array(
     'title' => 'Add Profile',
     'page callback' => 'elfinder_admin_profiles',
@@ -105,7 +106,7 @@ function elfinder_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'inc/elfinder.admin.profiles.inc',
   );
-  
+
   $items['admin/config/media/elfinder/profile/%/delete'] = array(
     'title' => 'Delete Profile',
     'page callback' => 'elfinder_admin_profiles',
@@ -124,8 +125,8 @@ function elfinder_menu() {
     'file' => 'inc/elfinder.admin.profiles.inc',
   );
 
-  
- $items['elfinder/ahah/dir'] = array(
+
+  $items['elfinder/ahah/dir'] = array(
     'title' => 'JavaScript Volume Add Item',
     'page callback' => 'elfinder_admin_form_dir_js',
     'page arguments' => array('item_add'),
@@ -133,16 +134,16 @@ function elfinder_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'inc/elfinder.admin.profiles.inc',
   );
-  
- $items['elfinder/ahah/rmdir/%'] = array(
+
+  $items['elfinder/ahah/rmdir/%'] = array(
     'title' => 'JavaScript Volume Remove Item',
     'page callback' => 'elfinder_admin_form_dir_js',
     'page arguments' => array('item_remove', 3),
     'access arguments' => array('administer file manager'),
     'type' => MENU_CALLBACK,
     'file' => 'inc/elfinder.admin.profiles.inc',
-  );  
-  
+  );
+
   $items['elfinder/upload/fckeditor'] = array(
     'title' => 'FCKeditor Quick Upload',
     'page callback' => 'elfinder_editor_upload_fckeditor',
@@ -150,18 +151,18 @@ function elfinder_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'editors/fckeditor/fckeditor.upload.inc',
   );
-  
+
   $items['elfinder/upload/ckeditor'] = array(
     'title' => 'CKeditor Quick Upload',
     'page callback' => 'elfinder_editor_upload_ckeditor',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
     'file' => 'editors/ckeditor/ckeditor.upload.inc',
-  );  
-  
+  );
+
   /* Getting updated menu items from hook_elfinder_menu */
   $newitems = module_invoke_all('elfinder_menu', $items);
-  
+
   return ($newitems) ? $newitems : $items;
 }
 
@@ -196,20 +197,33 @@ function elfinder_file_browser($browser_mode = 'default') {
         $langCode = $_GET['langCode'];
       }
     }
-    
+
     /* Initial frontend settings */
     $elfinder_js_settings = array(
       'connectorUrl' => url('elfinder/connector'),
       'moduleUrl' => url('elfinder'),
       'editorApp' => $editorApp,
       'langCode' => $langCode,
-      'rememberLastDir' => variable_get('elfinder_settings_misc_rememberlastdir', 'true')  == 'true' ? TRUE : FALSE, // remember last opened directory
+      'rememberLastDir' => variable_get('elfinder_settings_misc_rememberlastdir', 'true') == 'true' ? TRUE : FALSE, // remember last opened directory
       'disabledCommands' => elfinder_get_disabled_commands(),
       'requestType' => variable_get('elfinder_settings_misc_requesttype', 'get') == 'get' ? 'get' : 'post',
       'browserMode' => $browser_mode,
       'token' => drupal_get_token('elFinder'),
       'soundPath' => base_path() . elfinder_lib_path() . '/sounds',
+      'commandsOptions' => array('dummy' => array()),
     );
+
+    if (variable_get('elfinder_settings_filesystem_external_preview', 'disabled') != 'disabled') {
+      $elfinder_js_settings['commandsOptions']['quicklook'] = array(
+        'sharecadMimes' => array('image/vnd.dwg', 'image/vnd.dxf', 'model/vnd.dwf', 'application/vnd.hp-hpgl', 'application/plt', 'application/step', 'model/iges', 'application/vnd.ms-pki.stl', 'application/sat', 'image/cgm', 'application/x-msmetafile'),
+        'googleDocsMimes' => array('application/pdf', 'image/tiff', 'application/vnd.ms-office', 'application/msword', 'application/vnd.ms-word', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/postscript', 'application/rtf'),
+        'officeOnlineMimes' => array('application/msword', 'application/vnd.ms-word', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+      );
+    }
+
+    if ($browser_mode == 'backend') {
+      //$elfinder_js_settings['commandsOptions']['help'] = array('view' => array('about', 'shortcuts', 'integrations'));
+    }
 
     if (($mheight = variable_get('elfinder_settings_misc_manager_height', '')) != '') {
       $elfinder_js_settings['height'] = (int)$mheight;
@@ -219,17 +233,34 @@ function elfinder_file_browser($browser_mode = 'default') {
     if ($editorApp) {
       $elfinder_js_settings['editorCallback'] = 'elfinder_' . $editorApp . '_callback';
     }
-    
+
     $options = array(
-      'group' => CSS_DEFAULT, 
+      'group' => CSS_DEFAULT,
       'every_page' => FALSE,
     );
 
-	  $sysjqver = variable_get('jquery_update_jquery_version', '1.10');
+    $sysjqver = '1.4.4';
+    $sysuiver = '1.8.7';
 
-    if (!(module_exists('jquery_update') && preg_match('/1\.(8|9|10|11|12)/', $sysjqver))) {
-      drupal_add_js($path . '/js/elfinder.jquery.min.js');
-      drupal_add_js($path . '/js/elfinder.jquery-ui.min.js');
+    $sys_ui_lib = drupal_get_library('system','ui');
+    $sys_jq_lib = drupal_get_library('system','jquery');
+
+    if ($sys_jq_lib != false) {
+      $sysjqver = $sys_jq_lib['version'];
+    }
+
+    if ($sys_ui_lib != false) {
+      $sysuiver = $sys_ui_lib['version'];
+    }
+
+    if (preg_match('/1\.(4|5|6|8|9|10)\.?/', $sysjqver) || preg_match('/1\.(8|9)\.?/', $sysuiver)) {
+      if (property_exists('elFinder', 'ApiVersion')) {
+        drupal_add_js($path . '/js/elfinder.jquery.min.js');
+        drupal_add_js($path . '/js/elfinder.jquery-ui.min.js');
+      } else {
+        drupal_add_js($path . '/js/elfinder.jquery.legacy.min.js');
+        drupal_add_js($path . '/js/elfinder.jquery-ui.legacy.min.js');
+      }
     } else {
       drupal_add_library('system', 'ui.button');
       drupal_add_library('system', 'ui.dialog');
@@ -239,10 +270,10 @@ function elfinder_file_browser($browser_mode = 'default') {
       drupal_add_library('system', 'ui.selectable');
       drupal_add_library('system', 'ui.slider');
     }
-    
-    elfinder_add_css($path . '/css/ui-themes/smoothness/jquery-ui.custom.css', $options);
+
+    elfinder_add_css($path . '/css/ui-themes/smoothness/jquery-ui.min.css', $options);
     elfinder_add_css($path . '/css/elfinder.common.css', $options);
-    
+
     if (is_readable($libpath . 'css/elfinder.min.css') && is_readable($libpath . 'js/elfinder.min.js')) {
       elfinder_add_css($libpath . 'css/elfinder.min.css');
       drupal_add_js($libpath . 'js/elfinder.min.js');
@@ -317,36 +348,57 @@ function elfinder_file_browser($browser_mode = 'default') {
     } else {
       watchdog('Failed Requirement', 'elFinder unable to load required JS and CSS files', array(), WATCHDOG_ERROR);
     }
- 
-		$langfile = $libpath . 'js/i18n/elfinder.' . $langCode . '.js';
-      
+
+    $langfile = $libpath . 'js/i18n/elfinder.' . $langCode . '.js';
+
     if (is_readable($libpath . 'css/theme.css')) {
-        elfinder_add_css($libpath . 'css/theme.css');
+      elfinder_add_css($libpath . 'css/theme.css');
     }
-		
+
+// thumbnail size hack
+/*    
+    $tmbSize = (int)variable_get('elfinder_settings_thumbnail_size', '48');
+    
+    $tmbSizeFinal = $tmbSize . 'px';
+    
+    $tmbWrapperSize = $tmbSize + 4;
+    
+    $tmbWrapperSizeFinal = $tmbWrapperSize . 'px';
+    
+    drupal_add_css(".elfinder-cwd-icon { width: $tmbSizeFinal; height: $tmbSizeFinal;} .elfinder-cwd-view-icons .elfinder-cwd-file-wrapper { width: $tmbWrapperSizeFinal; height: $tmbWrapperSizeFinal; }", array('type' => 'inline'));
+*/
+
     /* Adding localization */
     if (is_readable($langfile)) {
       drupal_add_js($langfile);
     }
 
+    if (is_readable($libpath . 'js/extras/editors.default.min.js')) {
+      drupal_add_js($libpath . 'js/extras/editors.default.min.js');
+    }
+
+    if (is_readable($libpath . 'js/extras/quicklook.googledocs.min.js')) {
+      drupal_add_js($libpath . 'js/extras/quicklook.googledocs.min.js');
+    }
+    //drupal_add_js('http://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.5/require.min.js');
     /* Getting updated frontend settings from hook_elfinder_js_settings */
     $newjssettings = module_invoke_all('elfinder_js_settings', $elfinder_js_settings);
-    
+
     if (isset($newjssettings['all'])) {
       $elfinder_js_settings = array_merge($elfinder_js_settings, (array)$newjssettings['all']);
     }
-    
+
     if (isset($newjssettings[$editorApp])) {
       $elfinder_js_settings = array_merge($elfinder_js_settings, (array)$newjssettings[$editorApp]);
     }
 
     /* Loading callbacks for returning url from file manager to caller */
-    $editor_plugins = elfinder_system_listing("$editorApp\.callback\.js\$", $path . '/editors' , 'name', 0);
+    $editor_plugins = elfinder_system_listing("$editorApp\.callback\.js\$", $path . '/editors', 'name', 0);
 
     $callback_file = '';
 
     if (isset($editorApp)) {
-    
+
       if (isset($editorApp) && isset($editor_plugins[$editorApp . '.callback'])) {
 
         $callback_file = $editor_plugins[$editorApp . '.callback']->uri;
@@ -355,40 +407,42 @@ function elfinder_file_browser($browser_mode = 'default') {
           drupal_add_js($callback_file);
         }
       }
-      
+
       if (isset($elfinder_js_settings['browserscripts'])) {
         foreach ((array)$elfinder_js_settings['browserscripts'] as $script) {
           drupal_add_js($script, array('weight' => 999));
         }
         unset($elfinder_js_settings['browserscripts']);
       }
-    
-    }
-      
-    if (property_exists('elFinder', 'ApiVersion')) {
-        $elfinder_js_settings['api21'] = true;
-    } else {
-        drupal_add_js($path . '/js/info.js');
-    }
-   // drupal_add_js($path . '/js/mouseover.js');
-    drupal_add_js($path . '/js/elfinder.callback.js');
-    drupal_add_js(array('elfinder' => $elfinder_js_settings), 'setting');
-      
-      
-     $libs = elfinder_get_libraries('tinymce');
 
-     if (count($libs) > 0 && !empty($libs['tinymce'])) {
-         
-         $path = $libs['tinymce'] . '/jscripts/tiny_mce/tiny_mce_popup.js';
-         $abspath = base_path() . "/$path";
-         drupal_add_js($path);
-     }
+    }
+
+    if (property_exists('elFinder', 'ApiVersion')) {
+      $elfinder_js_settings['api21'] = true;
+    } else {
+      drupal_add_js($path . '/js/info.js');
+    }
+    // drupal_add_js($path . '/js/mouseover.js');
+    drupal_add_js(array('elfinder' => $elfinder_js_settings), 'setting');
+    drupal_add_js($path . '/js/elfinder.callback.js');
     
+    //drupal_add_js(array('elfinder' => $elfinder_js_settings), 'setting');
+
+
+    $libs = elfinder_get_libraries('tinymce');
+
+    if (count($libs) > 0 && !empty($libs['tinymce'])) {
+
+      $path = $libs['tinymce'] . '/jscripts/tiny_mce/tiny_mce_popup.js';
+      $abspath = base_path() . "/$path";
+      drupal_add_js($path);
+    }
+
   } else {
     drupal_set_message(t('elFinder library was not found. Please download it from <a href="@url">@url</a> and install to @libpath.', array('@url' => elfinder_download_url(), '@libpath' => $libpath)), 'error');
   }
 
-  if ($browser_mode && $browser_mode  == 'backend') {
+  if ($browser_mode && $browser_mode == 'backend') {
     return theme('elfinder_page_backend');
   } else {
     print theme('elfinder_page');
@@ -404,7 +458,7 @@ function elfinder_get_disabled_commands() {
   $disabled_commands = array();
 
   $permissions = elfinder_permission();
-  
+
   $commands = elfinder_cmd_permissions();
 
   // Disable not allowed commands
@@ -412,12 +466,12 @@ function elfinder_get_disabled_commands() {
     if (array_key_exists($perm_name, $commands) && !user_access($perm_name)) {
       array_push($disabled_commands, $commands[$perm_name]);
     }
-  } 
-   
-/*  if (!user_access('download own uploaded files') && !user_access('download all uploaded files')) {
-    $disabled_commands[] = 'getfile';
-  }*/
- 
+  }
+
+  /*  if (!user_access('download own uploaded files') && !user_access('download all uploaded files')) {
+      $disabled_commands[] = 'getfile';
+    }*/
+
   return $disabled_commands;
 }
 
@@ -429,31 +483,31 @@ function elfinder_user_roles() {
 function elfinder_get_user_profile() {
   /* Get role id list sorted by weight descending */
   $profiles = elfinder_admin_profile_get();
-  
+
   if (!is_array($profiles)) {
-      $profiles = array($profiles);
+    $profiles = array($profiles);
   }
-  
+
   $first_profile = NULL;
-  
+
   $rids = elfinder_user_roles();
   $rids[] = 1; // anonymous user
-  
+
   /* Get first matching profile for higest weight user role */
   foreach ($rids as $rid) {
     foreach ($profiles as $profile) {
-        if (isset($profile->settings['profile_role']) && in_array($rid, $profile->settings['profile_role']) ) {
-          if (is_null($first_profile)) {
-            $first_profile = $profile;
-          } else if (isset($profile->settings['volume'])) {
-            /* Adding all available to current user volumes from other profiles */
-            foreach ($profile->settings['volume'] as $volume) {
-              $first_profile->settings['volume'][] = $volume;
-            }
+      if (isset($profile->settings['profile_role']) && in_array($rid, $profile->settings['profile_role'])) {
+        if (is_null($first_profile)) {
+          $first_profile = $profile;
+        } else if (isset($profile->settings['volume'])) {
+          /* Adding all available to current user volumes from other profiles */
+          foreach ($profile->settings['volume'] as $volume) {
+            $first_profile->settings['volume'][] = $volume;
           }
         }
+      }
     }
-    
+
   }
 
   return $first_profile;
@@ -464,28 +518,35 @@ function elfinder_get_user_profile() {
  */
 function elfinder_filesystemconnector($mode = 'default') {
   global $base_root, $user;
-  
+
   $p = elfinder_get_user_profile();
-  
+
   $path = drupal_get_path('module', 'elfinder');
-  
+
   include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinderConnector.class.php';
   include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinderVolumeDriver.class.php';
   include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinderVolumeLocalFileSystem.class.php';
   include_once $path . DIRECTORY_SEPARATOR . 'inc' . DIRECTORY_SEPARATOR . 'elfinder.drupalfs.driver.inc';
   include_once $path . DIRECTORY_SEPARATOR . 'inc' . DIRECTORY_SEPARATOR . 'elfinder.drupalfs.acl.inc';
   include_once $path . DIRECTORY_SEPARATOR . 'inc' . DIRECTORY_SEPARATOR . 'elfinder.admin.profiles.inc';
+  if (is_readable(dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinderPlugin.php')) {
+    include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinderPlugin.php';
+  }
 
-  
-/**
- * Emulate json_encode required by filesystem connector for old php without JSON support
- */
+  if (is_readable(dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'editors' . DIRECTORY_SEPARATOR . 'editor.php')) {
+    include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'editors' . DIRECTORY_SEPARATOR . 'editor.php';
+  }
+
+
+  /**
+   * Emulate json_encode required by filesystem connector for old php without JSON support
+   */
   if (!function_exists('json_encode')) {
     function json_encode($arg) {
       return drupal_json($arg);
     }
   }
-  
+
   /* Disabling incompartible devel module features */
   if (module_exists('devel')) {
     $devel_incompat = array('dev_timer', 'devel_query_display', 'dev_mem', 'devel_redirect_page');
@@ -504,17 +565,17 @@ function elfinder_filesystemconnector($mode = 'default') {
   }
 
   // Set absolute/relative url variable.
-  if(!isset($mode) && variable_get('elfinder_settings_filesystem_fileurl', 'true') == 'false') {
+  if (!isset($mode) && variable_get('elfinder_settings_filesystem_fileurl', 'true') == 'false') {
     $mode = 'relative';
   }
 
   $disabled_commands = elfinder_get_disabled_commands();
 
   $acl = new elFinderDrupalACL();
-  
+
   $pubFiles = file_stream_wrapper_get_instance_by_uri('public://');
   $pvtFiles = file_stream_wrapper_get_instance_by_uri('private://');
-  
+
   $roots = array();
 
   if ($p) {
@@ -524,25 +585,25 @@ function elfinder_filesystemconnector($mode = 'default') {
   }
 
   $options_defs = array(
-      'disabled' => $disabled_commands, // list of not allowed commands
-      'debug' => FALSE,
-      'dirSize' => FALSE,
-      'tmbSize' => isset($profile['tmbsize']) ? $profile['tmbsize'] : variable_get('elfinder_settings_thumbnail_size', '48'), // thumbnail image size
-      'tmbPath' => variable_get('elfinder_settings_thumbnail_dirname', 'tmb'), // thumbnail images directory (tmbPath in 2.x)
-      'tmbCrop' => variable_get('elfinder_settings_thumbnail_tmbcrop', 'true') == 'true' ? TRUE : FALSE, // crop thumbnail image
-      'dateFormat' => variable_get('date_format_long', 'j M Y H:i'),  // file modification date format
-      'mimeDetect' => isset($profile['mime_detect']) ? $profile['mime_detect'] : variable_get('elfinder_settings_filesystem_mimedetect', 'auto'),  // file type detection method
-      'imgLib' => isset($profile['imglib']) ? $profile['imglib'] : variable_get('elfinder_settings_thumbnail_imglib', 'auto'), // image manipulation library
-      'fileMode' => isset($profile['file_perm']) ? octdec($profile['file_perm']) : octdec(variable_get('elfinder_settings_filesystem_fileperm', '0666')), // created file permissions
-      'dirMode' => isset($profile['dir_perm']) ? octdec($profile['dir_perm']) : octdec(variable_get('elfinder_settings_filesystem_dirperm', '0777')), // created directory permissions
-      'accessControlData' => array('uid' => $user->uid),
-      'acceptedName' => '/^[^\.]+/',
-      'uploadMaxSize' => parse_size(variable_get('elfinder_settings_filesystem_maxfilesize', '')),
-      'userProfile' => $p,
-      'jpgQuality' => variable_get('image_jpeg_quality', 75),
+    'disabled' => $disabled_commands, // list of not allowed commands
+    'debug' => FALSE,
+    'dirSize' => FALSE,
+    'tmbSize' => isset($profile['tmbsize']) ? (int)$profile['tmbsize'] : (int)variable_get('elfinder_settings_thumbnail_size', '48'), // thumbnail image size
+    'tmbPath' => variable_get('elfinder_settings_thumbnail_dirname', 'tmb'), // thumbnail images directory (tmbPath in 2.x)
+    'tmbCrop' => variable_get('elfinder_settings_thumbnail_tmbcrop', 'true') == 'true' ? TRUE : FALSE, // crop thumbnail image
+    'dateFormat' => variable_get('date_format_long', 'j M Y H:i'),  // file modification date format
+    'mimeDetect' => isset($profile['mime_detect']) ? $profile['mime_detect'] : variable_get('elfinder_settings_filesystem_mimedetect', 'auto'),  // file type detection method
+    'imgLib' => isset($profile['imglib']) ? $profile['imglib'] : variable_get('elfinder_settings_thumbnail_imglib', 'auto'), // image manipulation library
+    'fileMode' => isset($profile['file_perm']) ? octdec($profile['file_perm']) : octdec(variable_get('elfinder_settings_filesystem_fileperm', '0666')), // created file permissions
+    'dirMode' => isset($profile['dir_perm']) ? octdec($profile['dir_perm']) : octdec(variable_get('elfinder_settings_filesystem_dirperm', '0777')), // created directory permissions
+    'accessControlData' => array('uid' => $user->uid),
+    'acceptedName' => '/^[^\.]+/',
+    'uploadMaxSize' => parse_size(variable_get('elfinder_settings_filesystem_maxfilesize', '')),
+    'userProfile' => $p,
+    'jpgQuality' => variable_get('image_jpeg_quality', 75),
+    'dispInlineRegex' => variable_get('elfinder_settings_filesystem_inlinepreviewregex', '^$'),
   );
 
-  
   if (is_object($pubFiles) && user_access('access public files')) {
     $roots[] = array_merge($options_defs, array(
       'driver' => 'Drupal',
@@ -550,9 +611,9 @@ function elfinder_filesystemconnector($mode = 'default') {
       'URL' => $mode == 'relative' ? base_path() . $pubFiles->getDirectoryPath() : $pubFiles->getExternalUrl(), // root directory URL
       'alias' => variable_get('elfinder_settings_filesystem_public_root_label', '') != '' ? variable_get('elfinder_settings_filesystem_public_root_label', '') : t('Public Files'), // display this instead of root directory name (named 'alias' in elFinder 2.0)
       'accessControl' => array($acl, 'fsAccessPublic'),
-     ));
+    ));
   }
-  
+
   if (is_object($pvtFiles) && user_access('access private files')) {
     $roots[] = array_merge($options_defs, array(
       'driver' => 'Drupal',
@@ -560,9 +621,9 @@ function elfinder_filesystemconnector($mode = 'default') {
       'URL' => $mode == 'relative' ? base_path() . $pvtFiles->getDirectoryPath() : $pvtFiles->getExternalUrl(), // root directory URL
       'alias' => variable_get('elfinder_settings_filesystem_private_root_label', '') != '' ? variable_get('elfinder_settings_filesystem_private_root_label', '') : t('Private Files'), // display this instead of root directory name (named 'alias' in elFinder 2.0)
       'accessControl' => array($acl, 'fsAccessPrivate'),
-     ));
+    ));
   }
-  
+
   if (user_access('access unmanaged files')) {
     $roots[] = array_merge($options_defs, array(
       'driver' => 'LocalFileSystem',
@@ -570,15 +631,15 @@ function elfinder_filesystemconnector($mode = 'default') {
       'URL' => elfinder_file_directory_url($mode == 'relative' ? TRUE : FALSE), // root directory URL
       'alias' => variable_get('elfinder_settings_filesystem_unmanaged_root_label', '') != '' ? variable_get('elfinder_settings_filesystem_unmanaged_root_label', '') : t('Unmanaged Files'), // display this instead of root directory name (named 'alias' in elFinder 2.0)
       'accessControl' => array($acl, 'fsAccessUnmanaged'),
-     ));
+    ));
   }
-  
+
   if (isset($profile['volume'])) {
 
     foreach ($profile['volume'] as $volume) {
 
       $root = array(
-          'alias' => $volume['label'],
+        'alias' => $volume['label'],
       );
 
       $is_subdir = FALSE;
@@ -591,17 +652,17 @@ function elfinder_filesystemconnector($mode = 'default') {
       }
 
       if ($is_subdir) {
-          
+
         $root['driver'] = 'Drupal';
 
         $scheme = file_uri_scheme($volume['path']);
 
         if ($scheme == FALSE) {
-           if (is_object(file_stream_wrapper_get_instance_by_uri('private://'))) {
-             $scheme = 'private';
+          if (is_object(file_stream_wrapper_get_instance_by_uri('private://'))) {
+            $scheme = 'private';
           } else {
-             $scheme = 'public';
-           }
+            $scheme = 'public';
+          }
         }
 
         $rootpath = $volume['path'];
@@ -613,9 +674,9 @@ function elfinder_filesystemconnector($mode = 'default') {
         $streamWrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
 
         if (is_object($streamWrapper)) {
-            $volpath = $streamWrapper->realpath();
-            $volurl = $mode == 'relative' ? base_path() . $streamWrapper->getDirectoryPath() : $streamWrapper->getExternalUrl();
-            $url = isset($volume['url']) && $volume['url'] != '' ? elfinder_parse_path_tokens($volume['url']) : $volurl;
+          $volpath = $streamWrapper->realpath();
+          $volurl = $mode == 'relative' ? base_path() . $streamWrapper->getDirectoryPath() : $streamWrapper->getExternalUrl();
+          $url = isset($volume['url']) && $volume['url'] != '' ? elfinder_parse_path_tokens($volume['url']) : $volurl;
         }
         $rootpath = elfinder_parse_path_tokens($rootpath);
 
@@ -624,7 +685,7 @@ function elfinder_filesystemconnector($mode = 'default') {
         $rootpath = $volpath . DIRECTORY_SEPARATOR . $trimmedpath;
         $url = rtrim($url, '/');
 
-        $url .= "/$trimmedpath";
+        //$url .= "/$trimmedpath";
 
         if (!file_prepare_directory($rootpath, FILE_CREATE_DIRECTORY)) {
           drupal_set_message(t('Error. Cannot initialize directory %dir', array('%dir' => $rootpath)), 'error');
@@ -650,14 +711,14 @@ function elfinder_filesystemconnector($mode = 'default') {
       $roots[] = $root;
     }
   }
-  
+
   $opts = array(
-    'roots' => $roots,     
-	'driver_defaults' => $options_defs,
+    'roots' => $roots,
+    'driver_defaults' => $options_defs,
   );
-  
+
   $newopts = module_invoke_all('elfinder_connector_config', $opts);
-  
+
   if ($newopts) {
     $opts = $newopts;
   }
@@ -666,42 +727,42 @@ function elfinder_filesystemconnector($mode = 'default') {
     public function test() {
     }
   }
-  
+
   try {
-	  $elFinderObj = new elFinderDrupal($opts);
+    $elFinderObj = new elFinderDrupal($opts);
   } catch (Exception $e) {
-	module_invoke_all('exit');
-	exit(drupal_json_encode(array('error' => array(t('Unable to initialize elFinder object. :msg', array(':msg' => basename($e->getFile()) .": ". $e->getMessage()))))));
+    module_invoke_all('exit');
+    exit(drupal_json_encode(array('error' => array(t('Unable to initialize elFinder object. :msg', array(':msg' => basename($e->getFile()) . ": " . $e->getMessage()))))));
   }
-  
+
   $bindcmds = module_invoke_all('elfinder_bind');
-  
+
   foreach ($bindcmds as $cmd => $cmdfunc) {
     $elFinderObj->bind($cmd, $cmdfunc);
   }
-  
+
   try {
-	$elFinderConnectorObj = new elFinderConnectorDrupal($elFinderObj);
+    $elFinderConnectorObj = new elFinderConnectorDrupal($elFinderObj);
   } catch (Exception $e) {
-	module_invoke_all('exit');
-	exit(drupal_json_encode(array('error' => array(t('Unable to initialize elFinder connector object. :msg', array(':msg' => basename($e->getFile()) .": ". $e->getMessage()))))));
+    module_invoke_all('exit');
+    exit(drupal_json_encode(array('error' => array(t('Unable to initialize elFinder connector object. :msg', array(':msg' => basename($e->getFile()) . ": " . $e->getMessage()))))));
   }
-  
+
   module_invoke_all('elfinder_connector_init', $elFinderConnectorObj);
-    
-	if (!drupal_valid_token($_REQUEST['token'], 'elFinder', TRUE)) {
-		module_invoke_all('exit');
-		exit(drupal_json_encode(array('error' => array(t('Access denied')))));
-	} else {
-		try {
-			$elFinderConnectorObj->run();
-		} catch (Exception $e) {
-			module_invoke_all('exit');
-			exit(drupal_json_encode(array('error' => array(t('Unable to run elFinder connector. :msg', array(':msg' => basename($e->getFile()) .": ". $e->getMessage()))))));
-		}
-		module_invoke_all('exit');
-		exit();
-	}
+
+  if (!drupal_valid_token($_REQUEST['token'], 'elFinder', TRUE)) {
+    module_invoke_all('exit');
+    exit(drupal_json_encode(array('error' => array(t('Access denied')))));
+  } else {
+    try {
+      $elFinderConnectorObj->run();
+    } catch (Exception $e) {
+      module_invoke_all('exit');
+      exit(drupal_json_encode(array('error' => array(t('Unable to run elFinder connector. :msg', array(':msg' => basename($e->getFile()) . ": " . $e->getMessage()))))));
+    }
+    module_invoke_all('exit');
+    exit();
+  }
 }
 
 function elfinder_elfinder_bind() {
@@ -724,7 +785,7 @@ function elfinder_theme() {
     'arguments' => array('libPath' => '/' . elfinder_lib_path()),
     'path' => drupal_get_path('module', 'elfinder') . '/tpl',
   );
-  
+
   return $theme;
 }
 
@@ -773,7 +834,7 @@ function elfinder_permission() {
       'title' => t('Copy to clipboard'),
       'description' => t('Allow users to copy files to clipboard'),
     ),
-    
+
     'cut to clipboard' => array(
       'title' => t('Cut to clipboard'),
       'description' => t('Allow users to cut files to clipboard'),
@@ -783,12 +844,12 @@ function elfinder_permission() {
       'title' => t('View file info'),
       'description' => t('Allow users to view file info'),
     ),
-    
+
     'preview files' => array(
       'title' => t('Preview files'),
       'description' => t('Allow users to preview files'),
     ),
-    
+
     'delete files and directories' => array(
       'title' => t('Delete files and directories'),
       'description' => t('Allow users to delete files and directories'),
@@ -828,12 +889,12 @@ function elfinder_permission() {
       'title' => t('Download all uploaded files'),
       'description' => t('Allow users to download all uploaded files'),
     ),
-    
+
     'access public files' => array(
       'title' => t('Access public files'),
       'description' => t('Allow users to access public files directory'),
     ),
-    
+
     'access private files' => array(
       'title' => t('Access private files'),
       'description' => t('Allow users to access private files directory'),
@@ -843,12 +904,12 @@ function elfinder_permission() {
       'title' => t('Access unmanaged files'),
       'description' => t('Allow users to access unmanaged files in custom directory'),
     ),
-    
+
     'write public files' => array(
       'title' => t('Write public files'),
       'description' => t('Allow users write access to public files directory'),
     ),
-    
+
     'write private files' => array(
       'title' => t('Write private files'),
       'description' => t('Allow users write access to private files directory'),
@@ -863,31 +924,31 @@ function elfinder_permission() {
       'title' => t('View file descriptions'),
       'description' => t('Allow users to view file descriptions'),
     ),
-    
+
     'edit file description' => array(
       'title' => t('Edit file descriptions'),
       'description' => t('Allow users to edit file descriptions'),
     ),
-    
+
     'view file owner' => array(
       'title' => t('View file owner'),
       'description' => t('Allow users to view file owner'),
     ),
-    
+
     'view file downloads' => array(
       'title' => t('View file downloads'),
       'description' => t('Allow users to view file downloads'),
     ),
-      
+
     'mount network volumes' => array(
       'title' => t('Mount network volumes'),
       'description' => t('Allow users to mount remote network volumes'),
     ),
-    
+
   );
-  
+
   $newperms = module_invoke_all('elfinder_perms', $perm);
-  
+
   return ($newperms) ? $newperms : $perm;
 }
 
@@ -897,31 +958,31 @@ function elfinder_permission() {
  */
 function elfinder_cmd_permissions() {
   $perm = array(
-    'create new directories'        => 'mkdir',
-    'create new files'              => 'mkfile',
-    'rename files and directories'  => 'rename',
-    'file uploads'                  => 'upload',
-    'copy to clipboard'             => 'copy',
-    'cut to clipboard'              => 'cut',
-    'paste from clipboard'          => 'paste',
-    'preview files'                 => 'quicklook',
-    'view file info'                => 'info',
-    'delete files and directories'  => 'rm',
-    'duplicate files'               => 'duplicate',
-    'edit files'                    => 'edit',
-    'add files to archive'          => 'archive',
-    'extract files from archive'    => 'extract',
-    'resize images'                 => 'resize',
-    'download own uploaded files'   => 'download',
-    'view file description'         => 'desc',
-    'edit file description'         => 'editdesc',
-    'view file owner'               => 'owner',
-    'view file downloads'           => 'downloadcount',
-    'mount network volumes'         => 'netmount',
+    'create new directories' => 'mkdir',
+    'create new files' => 'mkfile',
+    'rename files and directories' => 'rename',
+    'file uploads' => 'upload',
+    'copy to clipboard' => 'copy',
+    'cut to clipboard' => 'cut',
+    'paste from clipboard' => 'paste',
+    'preview files' => 'quicklook',
+    'view file info' => 'info',
+    'delete files and directories' => 'rm',
+    'duplicate files' => 'duplicate',
+    'edit files' => 'edit',
+    'add files to archive' => 'archive',
+    'extract files from archive' => 'extract',
+    'resize images' => 'resize',
+    'download own uploaded files' => 'download',
+    'view file description' => 'desc',
+    'edit file description' => 'editdesc',
+    'view file owner' => 'owner',
+    'view file downloads' => 'downloadcount',
+    'mount network volumes' => 'netmount',
   );
-  
+
   $newcperms = module_invoke_all('elfinder_cmd_perms', $perm);
-  
+
   return ($newcperms) ? $newcperms : $perm;
 }
 
@@ -933,39 +994,39 @@ function elfinder_wysiwyg_plugin($editor, $version) {
   $path = drupal_get_path('module', 'elfinder');
 
   drupal_add_js($path . '/js/elfinder.wysiwyg.init.js', array('group' => JS_LIBRARY));
-  
+
   $options = array(
-    'elfinder_url' => url('elfinder', array('query' => array('app' => $editor ))),
+    'elfinder_url' => url('elfinder', array('query' => array('app' => $editor))),
     'homepage_url' => elfinder_homepage_url(),
-    'path'         => $path,
+    'path' => $path,
   );
-  
+
   /* bueditor hack */
   if (preg_match('/^(bueditor|bue)/', $editor)) {
-      $editor = 'bueditor';
+    $editor = 'bueditor';
   }
-  
-  $editor_plugins = elfinder_system_listing("$editor\.inc\$", $path . '/editors' , 'name', 0);
-  
+
+  $editor_plugins = elfinder_system_listing("$editor\.inc\$", $path . '/editors', 'name', 0);
+
   /* loading editor plugin */
   $plugin_file = '';
-  
+
   if (isset($editor_plugins[$editor])) {
-  
+
     $plugin_file = $editor_plugins[$editor]->uri;
- 
+
     if ($plugin_file) {
-      $options['plugin_url_base'] = "$path/editors/$editor"; 
+      $options['plugin_url_base'] = "$path/editors/$editor";
       require_once $plugin_file;
     }
   }
 
   /* hook for adding another editor support */
   //module_invoke_all('elfinder_editor_plugin');
-  
+
   /* wysiwyg plugin generation func for selected editor */
   $pluginfunc = 'elfinder_' . $editor . '_elfinder_editor_plugin';
-  
+
   /* returning elFinder wysiwyg editor plugin for selected editor */
   if (function_exists($pluginfunc)) {
     return call_user_func_array($pluginfunc, array($options));
@@ -991,7 +1052,7 @@ function elfinder_download_url() {
  * library files path
  */
 function elfinder_lib_path($name = 'elfinder') {
-  
+
   $libraries = &drupal_static(__FUNCTION__);
 
   if (!isset($libraries)) {
@@ -999,7 +1060,7 @@ function elfinder_lib_path($name = 'elfinder') {
   }
 
   $path = '';
-  
+
   if (!isset($libraries[$name])) {
     return FALSE;
   } else {
@@ -1064,8 +1125,8 @@ function elfinder_connector_path() {
 }
 
 /**
-  * path to files directory
-  */
+ * path to files directory
+ */
 function elfinder_file_directory_path($absolute = FALSE) {
   $path = variable_get('elfinder_settings_filesystem_root_custom', '');
   $path = elfinder_parse_path_tokens($path);
@@ -1074,23 +1135,23 @@ function elfinder_file_directory_path($absolute = FALSE) {
 }
 
 /**
-  * Returning site document root
-  */
+ * Returning site document root
+ */
 function elfinder_document_root() {
   return realpath('');
 }
 
 
 /**
-  * replace path tokens to its values (%uid, %user, etc)
-  */
+ * replace path tokens to its values (%uid, %user, etc)
+ */
 function elfinder_parse_path_tokens($unparsed_path) {
   global $user, $language;
   $path = $unparsed_path;
-  
+
   $uname = isset($user->name) ? preg_replace('/[[:^alnum:]]+/', '', $user->name) : '';
   $langCode = isset($language->language) ? $language->language : 'en';
-  
+
   $path_tokens = array(
     '%uid' => $user->uid,
     '%name' => $uname,
@@ -1103,38 +1164,38 @@ function elfinder_parse_path_tokens($unparsed_path) {
 
   if (function_exists('token_replace')) {
     $node = null;
-      
+
     if (module_exists('og_context') AND isset($_SESSION['og_context']['gid'])) {
-      $gid =  $_SESSION['og_context']['gid'];
+      $gid = $_SESSION['og_context']['gid'];
       $node = node_load($gid);
-    } 
-      
+    }
+
     $path = token_replace($path, array('node' => $node, 'user' => $user));
   }
-  
+
   return $path;
 }
 
 /**
-  * default path to files directory
-  */
+ * default path to files directory
+ */
 function elfinder_default_directory_path() {
   $filepath = '';
 
   $scheme = file_default_scheme();
-    
+
   if ($scheme == 'public') {
-    $filepath = variable_get('file_public_path', conf_path() . '/files');  
+    $filepath = variable_get('file_public_path', conf_path() . '/files');
   } else {
     $filepath = variable_get('file_private_path', conf_path());
   }
-  
+
   return $filepath;
 }
 
 /**
-  * files directory url
-  */
+ * files directory url
+ */
 function elfinder_file_directory_url($force_relative = FALSE) {
   global $base_root;
 
@@ -1149,32 +1210,32 @@ function elfinder_file_directory_url($force_relative = FALSE) {
   if ($force_relative) {
     $fileurl = str_replace($base_root, '', $fileurl);
   }
-  
+
   return $fileurl;
 }
 
 /**
-  * prepare directory for files
-  */
+ * prepare directory for files
+ */
 function elfinder_prepare_directory($directory) {
   $rc = file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
   return $rc;
 }
 
 /**
-  * Add css
-  */
+ * Add css
+ */
 function elfinder_add_css($path, $options = array()) {
-    return drupal_add_css($path, $options);
+  return drupal_add_css($path, $options);
 }
 
 /**
-  * Removing unwanted css
-  */
+ * Removing unwanted css
+ */
 function elfinder_browser_css() {
   $css = drupal_add_css();
   $rms = array();
-  
+
   if (module_exists('admin_menu')) {
 
     $apath = drupal_get_path('module', 'admin_menu');
@@ -1184,29 +1245,29 @@ function elfinder_browser_css() {
     $rms[] = isset($atpath) ? $atpath : '';
 
     foreach (array_keys($css) as $k) {
-   
+
       foreach ($rms as $rm) {
 
         if (preg_match('|' . $rm . '|', $k) && $rm != '') {
-        
+
           unset($css[$k]);
         }
       }
     }
   }
-  
+
   return drupal_get_css($css);
 }
 
 /**
-  * Removing unwanted js
-  */
+ * Removing unwanted js
+ */
 function elfinder_browser_js() {
 
   $js = drupal_add_js(NULL, array('scope' => 'header'));
-  
+
   if (module_exists('admin_menu')) {
-  
+
     $apath = drupal_get_path('module', 'admin_menu');
     $atpath = drupal_get_path('module', 'admin_menu_toolbar');
 
@@ -1227,32 +1288,32 @@ function elfinder_browser_js() {
 
 
 function elfinder_system_listing($matchexpr, $path, $arg1, $arg2) {
-    return drupal_system_listing("/$matchexpr/", $path, $arg1, $arg2);
+  return drupal_system_listing("/$matchexpr/", $path, $arg1, $arg2);
 }
 
 function elfinder_get_drupal_file_obj($uri) {
-    global $user;
+  global $user;
 
-    $file = NULL;
+  $file = NULL;
+ 
+  $fid = db_select('file_managed', 'f')
+    ->condition('uri', rawurldecode($uri))
+    ->fields('f', array('fid'))
+    ->execute()
+    ->fetchField();
     
-    $fid = db_select('file_managed', 'f')
-      ->condition('uri', rawurldecode($uri))
-      ->fields('f', array('fid'))
-      ->execute()
-      ->fetchField();
-
-    if ($fid) {
-      $file = file_load($fid);
-    } 
-    else {
-      $file = new StdClass;
-      $file->uid = $user->uid;
-      $file->filename = basename($uri);
-      $file->uri = $uri;
-      $file->filemime = file_get_mimetype($uri);
-      if (is_file(drupal_realpath($uri))) {
-        $file->filesize = filesize($uri);
-
+  if ($fid) {
+    $file = file_load($fid);
+  }
+  else {
+    $file = new StdClass;
+    $file->uid = $user->uid;
+    $file->filename = basename($uri);
+    $file->uri = $uri;
+    $file->filemime = file_get_mimetype($uri);
+    if (is_file(drupal_realpath($uri))) {
+      $file->filesize = filesize($uri);
+    
       // Use the file_entity module's mimetype to entity type
       // functionality if we have that method available.
       if (function_exists('file_entity_file_type')) {
@@ -1276,32 +1337,32 @@ function elfinder_get_drupal_file_obj($uri) {
         }
       }
     }
-      $file->timestamp = REQUEST_TIME;
-      $file->status = FILE_STATUS_PERMANENT;
-    }
-    return $file;
+    $file->timestamp = REQUEST_TIME;
+    $file->status = FILE_STATUS_PERMANENT;
+  }
+  return $file;
 }
 
 function elfinder_file_download($uri) {
   if (variable_get('elfinder_settings_filesystem_handleprivate', 'true') == 'true') {
     global $user;
-    
+
     $accessown = 'download own uploaded files';
     $accessall = 'download all uploaded files';
-    
+
     $info = elfinder_get_drupal_file_obj($uri);
     if (($info->uid == $user->uid && user_access($accessown)) || user_access($accessall)) {
-    
-     $disposition = preg_match("/^(text|image)\//", $info->filemime) ? 'inline' : 'attachment';
+
+      $disposition = preg_match("/^(text|image)\//", $info->filemime) ? 'inline' : 'attachment';
 
       return array(
         'Content-Type' => $info->filemime,
         'Content-Length' => $info->filesize,
         'Content-Disposition' => elFinderDrupal::GetContentDisposition($info->filename, $info->filemime, FALSE),
       );
-    
+
     }
- 
+
     return NULL;
   }
 }
@@ -1309,25 +1370,25 @@ function elfinder_file_download($uri) {
 function elfinder_admin_profile_get($name = '') {
 
   $q = db_select('elfinder_profile', 'p')->fields('p', array('pid', 'name', 'description', 'settings'));
-  
+
   if ($name) {
     $q->condition('p.name', $name);
   }
-  
+
   $result = $q->execute();
-  
+
   $profile = array();
-     
+
   foreach ($result as $record) {
     $row = $record;
     $row->settings = unserialize($row->settings);
     $profile[] = $row;
   }
-  
+
   if (count($profile) == 1) {
     $profile = $profile[0];
   }
-  
+
   return $profile;
 }
 
@@ -1352,13 +1413,54 @@ function elfinder_block_view() {
 function elfinder_ckeditor_settings_alter(&$settings, $conf) {
 
   $width = variable_get('elfinder_settings_misc_manager_width', '');
-  if(!$width) {
+  if (!$width) {
     $width = ELFINDER_POPUP_WIDTH;
   }
   $height = variable_get('elfinder_settings_misc_manager_height', '');
-  if(!$height) {
+  if (!$height) {
     $height = ELFINDER_POPUP_HEIGHT;
   }
   $settings['js_conf']['filebrowserWindowWidth'] = $width;
   $settings['js_conf']['filebrowserWindowHeight'] = $height;
 }
+
+
+function elfinder_libraries_info() {
+  $libraries['elfinder'] = array(
+    'name' => 'elFinder File Manager',
+    'vendor url' => elfinder_homepage_url(),
+    'download url' => 'https://github.com/Studio-42/elFinder/archive/2.1.38.zip',
+    'version arguments' => array(
+      'file' => 'js/elfinder.min.js',
+      'pattern' => '@ \* Version\s+([0-9\.]+)@',
+      'lines' => 5,
+    ),
+    'files' => array(
+      'js' => array(
+        'js/elfinder.min.js',
+      ),
+      'css' => array(
+        'css/elfinder.min.css',
+      )
+    ),
+  );
+  return $libraries;
+}
+
+function elfinder_get_installed_version() {
+  if (module_exists('libraries')) {
+    $library = libraries_detect('elfinder');
+    return $library['installed'] ? $library['version'] : FALSE;
+  } else {
+    $js_file = elfinder_lib_path() . '/js/elfinder.min.js';
+    $js_contents = @file_get_contents($js_file);
+    if (!$js_contents) {
+      return FALSE;
+    }
+    if (preg_match('@ \* Version\s+([0-9\.]+)@', $js_contents, $matches)) {
+      return $matches[1];
+    }
+    return 'unknown';
+  }
+}
+

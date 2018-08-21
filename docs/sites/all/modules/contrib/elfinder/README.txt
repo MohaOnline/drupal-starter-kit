@@ -4,10 +4,10 @@ elFinder file manager integration module for Drupal
 System Requirements:
 
  - Drupal 7.x
- - elFinder 2.0.9+ 
+ - elFinder 2.0.9+ or 2.1.38+
 
-   Note: elFinder 2.0rc1 no more supported - use 2.x dev build from 
-         http://sourceforge.net/projects/drupal-elfinder/files/Library/ 
+   Note: elFinder 2.0rc1 no more supported - use 2.0.9+ or 2.1.38+ dev build from 
+         http://elfinder.org 
          or use production version if it is available
 
 Optional:
@@ -27,11 +27,9 @@ Optional:
 Installation:
 
   1. Unpack archive contents into modules/elfinder
-  2. Get latest elFinder at http://sourceforge.net/projects/drupal-elfinder/files/Library/ and it's contents to sites/all/libraries/elfinder
+  2. Get latest elFinder at http://elfinder.org and it's contents to sites/all/libraries/elfinder
   3. REMOVE following files from library directory if it exists to avoid security hole:
 
-     sites/all/libraries/elfinder/elfinder.html
-     sites/all/libraries/elfinder/elfinder.php.html
      sites/all/libraries/elfinder/connectors/php/connector.php
      sites/all/libraries/elfinder/php/connector.php
 
@@ -42,18 +40,17 @@ Installation:
 Usage:
 
  1. Administration backend
-  
   a. Open /elfinder url (or ?q=elfinder if seo-capable urls disabled)
   b. Go to Administer page. Click 'Files' under Content section.
 
  2. Inside CKEditor (FCKeditor)
   2.1. Open Image Properties dialog in editor
   2.2. Click Browse Server button near image url
- 
+
  3. Inside TinyMCE
   3.1. Open Insert/edit image dialog
   3.2. Click Browse button near image url
-  
+
  4. Inside BUEditor
   4.1. Click 'Insert/edit image'
   4.2. Click 'Browse'
@@ -64,7 +61,7 @@ Usage:
   5.1. Make sure that you have jWYSYWIG 0.93+ (http://github.com/akzhan/jwysiwyg/), jQuery 1.3+ and jQuery UI 1.7+ installed
   5.2. Click 'Insert image' button
   5.3. Click 'Browse Server' button near image url
- 
+
  6. Inside YUI Editor
   6.1. Click 'Insert Image' button
   6.2. Click 'Browse Server' button near image url
@@ -72,13 +69,11 @@ Usage:
  7. Inside WYMeditor
   7.1. Click 'Image' button
   7.2. Click 'Browse Server' button near image url
- 
 
-  
+
 Known Issues:
 
  - Not all editors supported
  - Conflicting with some devel module features
-
 
 

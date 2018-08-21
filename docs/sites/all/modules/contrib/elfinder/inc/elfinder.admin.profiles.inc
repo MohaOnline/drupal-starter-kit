@@ -1,4 +1,9 @@
 <?php
+/**
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ */
 
 /**
  * @file
@@ -31,69 +36,69 @@ function elfinder_admin_profile($form, &$form_state) {
 
   if ($action == 'profile_add') {
     $form['profile_name'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Profile Name'),
-        '#default_value' => '',
-        '#size' => 14,
+      '#type' => 'textfield',
+      '#title' => t('Profile Name'),
+      '#default_value' => '',
+      '#size' => 14,
     );
   } else {
     $form['profile_name_label'] = array(
-        '#title' => t('Profile Name'),
-        '#markup' => $profile_name,
-        '#size' => 14,
-        '#type' => 'item',
+      '#title' => t('Profile Name'),
+      '#markup' => $profile_name,
+      '#size' => 14,
+      '#type' => 'item',
     );
 
     $form['profile_name'] = array(
-        '#default_value' => $profile_name,
-        '#type' => 'hidden',
+      '#default_value' => $profile_name,
+      '#type' => 'hidden',
     );
   }
 
   $form['profile_description'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Description'),
-      '#default_value' => isset($p->description) ? $p->description : '',
+    '#type' => 'textarea',
+    '#title' => t('Description'),
+    '#default_value' => isset($p->description) ? $p->description : '',
   );
 
   $form['profile_role'] = array(
-      '#type' => 'checkboxes',
-      '#title' => t('Roles'),
-      '#default_value' => isset($profile['profile_role']) ? array_keys($profile['profile_role']) : array(),
-      '#options' => user_roles(),
-      '#description' => t('Roles for which profile settings will be applied'),
+    '#type' => 'checkboxes',
+    '#title' => t('Roles'),
+    '#default_value' => isset($profile['profile_role']) ? array_keys($profile['profile_role']) : array(),
+    '#options' => user_roles(),
+    '#description' => t('Roles for which profile settings will be applied'),
   );
 
   $form['profile_action'] = array(
-      '#default_value' => $action,
-      '#type' => 'hidden',
+    '#default_value' => $action,
+    '#type' => 'hidden',
   );
 
   $form['filesystem_settings'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('File system'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+    '#type' => 'fieldset',
+    '#title' => t('File system'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
 
   $form['volumes'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Volumes'),
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
+    '#type' => 'fieldset',
+    '#title' => t('Volumes'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
   );
 
   $form['volumes']['volumes_wrapper'] = array(
-      '#weight' => -4,
-      '#prefix' => '<div class="clear-block" id="poll-choice-wrapper">',
-      '#suffix' => '</div>',
+    '#weight' => -4,
+    '#prefix' => '<div class="clear-block" id="poll-choice-wrapper">',
+    '#suffix' => '</div>',
   );
 
   $form['volumes']['volumes_wrapper']['volume'] = array(
-      '#prefix' => '<div id="profile-volumes">',
-      '#suffix' => '</div>',
-      '#type' => 'markup',
-      '#value' => '&nbsp;',
+    '#prefix' => '<div id="profile-volumes">',
+    '#suffix' => '</div>',
+    '#type' => 'markup',
+    '#value' => '&nbsp;',
   );
 
 
@@ -129,35 +134,35 @@ function elfinder_admin_profile($form, &$form_state) {
   foreach ($form['volumes']['volumes_wrapper']['volume'] as $volume) {
     if (is_array($volume) && isset($volume['volume_settings'])) {
       $ckeditor_volumes[] = t('Volume @i (@path)', array(
-          '@i' => $i,
-          '@path' => $volume['volume_settings']['path']['#default_value'],
-              ));
+        '@i' => $i,
+        '@path' => $volume['volume_settings']['path']['#default_value'],
+      ));
       $i++;
     }
   }
 
   $form['volumes']['volumes_wrapper']['volume_add'] = array(
-      '#type' => 'submit',
-      '#value' => t('Add volume'),
-      '#weight' => 1,
-      '#name' => 'addfield',
-      '#submit' => array('elfinder_admin_profile_change_volume'),
-      '#ajax' => array(
-          'wrapper' => 'profile-volumes',
-          'callback' => 'elfinder_admin_profile_callback',
-          'method' => 'replace',
-          'effect' => 'fade',
-      ),
+    '#type' => 'submit',
+    '#value' => t('Add volume'),
+    '#weight' => 1,
+    '#name' => 'addfield',
+    '#submit' => array('elfinder_admin_profile_change_volume'),
+    '#ajax' => array(
+      'wrapper' => 'profile-volumes',
+      'callback' => 'elfinder_admin_profile_callback',
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
   );
 
 
   $form['filesystem_settings']['mime_detect'] = array(
-      '#type' => 'radios',
-      '#title' => t('File type detection'),
-      '#default_value' => isset($profile['mimedetect']) ? $profile['mimedetect'] : 'auto',
-      '#options' => array(
-          'auto' => t('Automatical detection'),
-      ),
+    '#type' => 'radios',
+    '#title' => t('File type detection'),
+    '#default_value' => isset($profile['mimedetect']) ? $profile['mimedetect'] : 'auto',
+    '#options' => array(
+      'auto' => t('Automatical detection'),
+    ),
   );
 
   if (function_exists('finfo_open')) {
@@ -175,144 +180,144 @@ function elfinder_admin_profile($form, &$form_state) {
 
 
   $form['filesystem_settings']['file_url_type'] = array(
-      '#type' => 'radios',
-      '#title' => t('Selected file url type'),
-      '#default_value' => $profile['file_url_type'] == 'true' ? 'true' : 'false',
-      '#options' => array(
-          'true' => t('Absolute'),
-          'false' => t('Relative'),
-      ),
+    '#type' => 'radios',
+    '#title' => t('Selected file url type'),
+    '#default_value' => $profile['file_url_type'] == 'true' ? 'true' : 'false',
+    '#options' => array(
+      'true' => t('Absolute'),
+      'false' => t('Relative'),
+    ),
   );
 
   $form['filesystem_settings']['file_perm'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Created file permissions'),
-      '#default_value' => isset($profile['file_perm']) ? $profile['file_perm'] : '0666',
-      '#size' => 4,
+    '#type' => 'textfield',
+    '#title' => t('Created file permissions'),
+    '#default_value' => isset($profile['file_perm']) ? $profile['file_perm'] : '0666',
+    '#size' => 4,
   );
 
   $form['filesystem_settings']['dir_perm'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Created directory permissions'),
-      '#default_value' => isset($profile['dir_perm']) ? $profile['dir_perm'] : '0777',
-      '#size' => 4,
+    '#type' => 'textfield',
+    '#title' => t('Created directory permissions'),
+    '#default_value' => isset($profile['dir_perm']) ? $profile['dir_perm'] : '0777',
+    '#size' => 4,
   );
 
 
   $form['filesystem_settings']['max_filesize'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Maximum upload size'),
-      '#default_value' => isset($profile['max_filesize']) ? $profile['max_filesize'] : '',
-      '#description' => t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size. If left empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes (current limit <strong>%limit</strong>).', array('%limit' => format_size(file_upload_max_size()))),
-      '#size' => 10,
-      '#weight' => 5,
+    '#type' => 'textfield',
+    '#title' => t('Maximum upload size'),
+    '#default_value' => isset($profile['max_filesize']) ? $profile['max_filesize'] : '',
+    '#description' => t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size. If left empty the file sizes will be limited only by PHP\'s maximum post and file upload sizes (current limit <strong>%limit</strong>).', array('%limit' => format_size(file_upload_max_size()))),
+    '#size' => 10,
+    '#weight' => 5,
   );
 
   $form['filesystem_settings']['user_quota'] = array(
-      '#type' => 'textfield',
-      '#title' => t('User quota'),
-      '#default_value' => isset($profile['user_quota']) ? $profile['user_quota'] : '',
-      '#description' => t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size. If left empty the file sizes will be unlimited.'),
-      '#size' => 10,
-      '#weight' => 5,
+    '#type' => 'textfield',
+    '#title' => t('User quota'),
+    '#default_value' => isset($profile['user_quota']) ? $profile['user_quota'] : '',
+    '#description' => t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size. If left empty the file sizes will be unlimited.'),
+    '#size' => 10,
+    '#weight' => 5,
   );
 
   $form['thumbnail_settings'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Thumbnails'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+    '#type' => 'fieldset',
+    '#title' => t('Thumbnails'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
 
   $form['thumbnail_settings']['tmbsize'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Thumbnail size'),
-      '#default_value' => isset($profile['tmbsize']) ? $profile['tmbsize'] : '48',
-      '#size' => 4,
+    '#type' => 'textfield',
+    '#title' => t('Thumbnail size'),
+    '#default_value' => isset($profile['tmbsize']) ? $profile['tmbsize'] : '48',
+    '#size' => 4,
   );
 
   $form['thumbnail_settings']['tmbdirname'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Thumbnail directory name'),
-      '#default_value' => isset($profile['tmbdirname']) ? $profile['tmbdirname'] : 'tmb',
-      '#size' => 10,
+    '#type' => 'textfield',
+    '#title' => t('Thumbnail directory name'),
+    '#default_value' => isset($profile['tmbdirname']) ? $profile['tmbdirname'] : 'tmb',
+    '#size' => 10,
   );
 
   $form['thumbnail_settings']['imglib'] = array(
-      '#type' => 'radios',
-      '#title' => t('Image manipulation library'),
-      '#default_value' => isset($profile['imglib']) ? $profile['imglib'] : 'auto',
-      '#options' => array(
-          'auto' => t('Automatical detection'),
-          'imagick' => t('Image Magick'),
-          'gd' => t('GD'),
-      ),
+    '#type' => 'radios',
+    '#title' => t('Image manipulation library'),
+    '#default_value' => isset($profile['imglib']) ? $profile['imglib'] : 'auto',
+    '#options' => array(
+      'auto' => t('Automatical detection'),
+      'imagick' => t('Image Magick'),
+      'gd' => t('GD'),
+    ),
   );
 
   $form['thumbnail_settings']['tmbcrop'] = array(
-      '#type' => 'radios',
-      '#title' => t('Image crop'),
-      '#default_value' => $profile['tmbcrop'] == 'true' ? 'true' : 'false',
-      '#options' => array(
-          'true' => t('Yes'),
-          'false' => t('No'),
-      ),
-      '#description' => t('Crop image to fit thumbnail size. Yes - crop, No - scale image to fit thumbnail size.'),
+    '#type' => 'radios',
+    '#title' => t('Image crop'),
+    '#default_value' => $profile['tmbcrop'] == 'true' ? 'true' : 'false',
+    '#options' => array(
+      'true' => t('Yes'),
+      'false' => t('No'),
+    ),
+    '#description' => t('Crop image to fit thumbnail size. Yes - crop, No - scale image to fit thumbnail size.'),
   );
 
   $form['misc_settings'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Miscellaneous'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+    '#type' => 'fieldset',
+    '#title' => t('Miscellaneous'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
 
   $form['misc_settings']['rememberlastdir'] = array(
-      '#type' => 'radios',
-      '#title' => t('Remember last opened directory'),
-      '#default_value' => $profile['rememberlastdir'] == 'true' ? 'true' : 'false',
-      '#options' => array(
-          'true' => t('Yes'),
-          'false' => t('No'),
-      ),
-      '#description' => t('Creates a cookie. Disable if you have issues with caching.'),
+    '#type' => 'radios',
+    '#title' => t('Remember last opened directory'),
+    '#default_value' => $profile['rememberlastdir'] == 'true' ? 'true' : 'false',
+    '#options' => array(
+      'true' => t('Yes'),
+      'false' => t('No'),
+    ),
+    '#description' => t('Creates a cookie. Disable if you have issues with caching.'),
   );
 
 
   $form['misc_settings']['manager_width'] = array(
-      '#type' => 'textfield',
-      '#title' => t('File manager width'),
-      '#default_value' => isset($profile['manager_width']) ? $profile['manager_width'] : '',
-      '#size' => 4,
+    '#type' => 'textfield',
+    '#title' => t('File manager width'),
+    '#default_value' => isset($profile['manager_width']) ? $profile['manager_width'] : '',
+    '#size' => 4,
   );
 
   $form['misc_settings']['manager_height'] = array(
-      '#type' => 'textfield',
-      '#title' => t('File manager height'),
-      '#default_value' => isset($profile['manager_height']) ? $profile['manager_height'] : '',
-      '#size' => 4,
+    '#type' => 'textfield',
+    '#title' => t('File manager height'),
+    '#default_value' => isset($profile['manager_height']) ? $profile['manager_height'] : '',
+    '#size' => 4,
   );
 
   $form['misc_settings']['ckeditor_upload_settings'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('CKEditor/FCKeditor Upload Settings'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#description' => t('CKEditor and FCKeditor allowing to upload and insert image files directly from Insert Image dialog.'),
+    '#type' => 'fieldset',
+    '#title' => t('CKEditor/FCKeditor Upload Settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('CKEditor and FCKeditor allowing to upload and insert image files directly from Insert Image dialog.'),
   );
 
   $form['misc_settings']['ckeditor_upload_settings']['ckeditor_upload_directory'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Path'),
-      '#default_value' => isset($profile['ckeditor_upload_directory']) ? $profile['ckeditor_upload_directory'] : '',
-      '#size' => 40,
-      '#description' => t('Image upload path. Default file uri is used if no uri prefix specified. Examples: public://ckeditor - image will be uploaded into public://ckeditor; images/ckeditor - image will be uploaded to :uriimages/ckeditor', array(':uri' => file_build_uri(''))),
+    '#type' => 'textfield',
+    '#title' => t('Path'),
+    '#default_value' => isset($profile['ckeditor_upload_directory']) ? $profile['ckeditor_upload_directory'] : '',
+    '#size' => 40,
+    '#description' => t('Image upload path. Default file uri is used if no uri prefix specified. Examples: public://ckeditor - image will be uploaded into public://ckeditor; images/ckeditor - image will be uploaded to :uriimages/ckeditor', array(':uri' => file_build_uri(''))),
   );
 
   $form['submit'] = array(
-      '#type' => 'submit',
-      '#name' => 'save_profile',
-      '#value' => t('Save configuration')
+    '#type' => 'submit',
+    '#name' => 'save_profile',
+    '#value' => t('Save configuration')
   );
 
   $form['#submit'][] = 'elfinder_admin_submit';
@@ -343,8 +348,8 @@ function elfinder_admin_profiles($action = '', $profile_name = '') {
 function elfinder_admin_profiles_delete_form($form_id, &$form_state, $action, $profile_name) {
   $form = array();
   $form['profile_name'] = array(
-      '#type' => 'hidden',
-      '#default_value' => $profile_name,
+    '#type' => 'hidden',
+    '#default_value' => $profile_name,
   );
 
 
@@ -381,53 +386,53 @@ function elfinder_admin_dir_form($delta, $values = array(), $votes = 0) {
 
 
   $form['volume_settings'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Volume @n (@p)', array('@n' => ($delta + 1), '@p' => $values['path'])),
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
+    '#type' => 'fieldset',
+    '#title' => t('Volume @n (@p)', array('@n' => ($delta + 1), '@p' => $values['path'])),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
   );
 
   $form['volume_settings']['path'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Path'),
-      '#default_value' => isset($values['path']) ? $values['path'] : '',
-      '#parents' => array('volume', $delta, 'path'),
-      '#prefix' => '<div class="elfinder-field-wrapper-volume-path">',
-      '#suffix' => '</div>',
-      '#size' => 40,
+    '#type' => 'textfield',
+    '#title' => t('Path'),
+    '#default_value' => isset($values['path']) ? $values['path'] : '',
+    '#parents' => array('volume', $delta, 'path'),
+    '#prefix' => '<div class="elfinder-field-wrapper-volume-path">',
+    '#suffix' => '</div>',
+    '#size' => 40,
   );
 
   $form['volume_settings']['label'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Label'),
-      '#size' => 15,
-      '#default_value' => isset($values['label']) ? $values['label'] : '',
-      '#description' => t('Root directory label in directory tree'),
-      '#parents' => array('volume', $delta, 'label'),
+    '#type' => 'textfield',
+    '#title' => t('Label'),
+    '#size' => 15,
+    '#default_value' => isset($values['label']) ? $values['label'] : '',
+    '#description' => t('Root directory label in directory tree'),
+    '#parents' => array('volume', $delta, 'label'),
   );
 
   $form['volume_settings']['url'] = array(
-      '#type' => 'textfield',
-      '#title' => t('URL'),
-      '#default_value' => isset($values['url']) ? $values['url'] : '',
-      '#parents' => array('volume', $delta, 'url'),
-      '#prefix' => '<div class="elfinder-field-wrapper-volume-path">',
-      '#suffix' => '</div>',
-      '#description' => t('Custom URL prefix (default %def)', array('%def' => $defaulturl)),
-      '#size' => 40,
+    '#type' => 'textfield',
+    '#title' => t('URL'),
+    '#default_value' => isset($values['url']) ? $values['url'] : '',
+    '#parents' => array('volume', $delta, 'url'),
+    '#prefix' => '<div class="elfinder-field-wrapper-volume-path">',
+    '#suffix' => '</div>',
+    '#description' => t('Custom URL prefix (default %def)', array('%def' => $defaulturl)),
+    '#size' => 40,
   );
 
   $form['volume_settings']['delete'] = array(
-      '#type' => 'submit',
-      '#value' => t('Delete'),
-      '#name' => 'rmfield-' . $delta,
-      '#submit' => array('elfinder_admin_profile_change_volume'),
-      '#ajax' => array(
-          'callback' => 'elfinder_admin_profile_callback',
-          'wrapper' => 'profile-volumes',
-          'method' => 'replace',
-          'effect' => 'fade',
-      ),
+    '#type' => 'submit',
+    '#value' => t('Delete'),
+    '#name' => 'rmfield-' . $delta,
+    '#submit' => array('elfinder_admin_profile_change_volume'),
+    '#ajax' => array(
+      'callback' => 'elfinder_admin_profile_callback',
+      'wrapper' => 'profile-volumes',
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
   );
 
   return $form;
@@ -466,28 +471,28 @@ function elfinder_admin_submit($form, &$form_state) {
 
   foreach ($settings as $setting) {
     if (isset($form_state['values'][$setting])) {
-      
+
       /* Excluding empty volumes */
-	    if ($setting == 'volume') {
-		    for ($i = 0; $i < count($form_state['values']['volume']); $i++) {
-			    if (empty($form_state['values']['volume'][$i]['path'])) {
-				    unset($form_state['values']['volume'][$i]);
-			    }
-		    }
-	    }
-      
+      if ($setting == 'volume') {
+        for ($i = 0; $i < count($form_state['values']['volume']); $i++) {
+          if (empty($form_state['values']['volume'][$i]['path'])) {
+            unset($form_state['values']['volume'][$i]);
+          }
+        }
+      }
+
       $profile_settings[$setting] = $form_state['values'][$setting];
     }
   }
-  
+
   // Save roles.
   $profile_settings['profile_role'] = array();
-  foreach($form_state['values']['profile_role'] as $rid) {
+  foreach ($form_state['values']['profile_role'] as $rid) {
     if ($rid != 0) {
       $profile_settings['profile_role'][$rid] = $rid;
     }
   }
-  
+
   $profile_name = $form_state['values']['profile_name'];
   $profile_description = $form_state['values']['profile_description'];
 

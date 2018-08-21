@@ -1,4 +1,9 @@
 <?php
+/**
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ */
 
 // Main hooks to tell FielField Sources about our source
 function elfinder_ffsel_filefield_sources_info() {
@@ -52,11 +57,11 @@ function filefield_source_elfinder_info() {
 function filefield_source_elfinder_menu() {
   $items = array();
   $items['filefield/elfinder/%/%'] = array(
-      'page callback' => 'filefield_source_elfinder_page',
-      'page arguments' => array(2, 3),
-      'access callback' => 'filefield_edit_access',
-      'access arguments' => array(2, 3),
-      'type' => MENU_CALLBACK,
+    'page callback' => 'filefield_source_elfinder_page',
+    'page arguments' => array(2, 3),
+    'access callback' => 'filefield_edit_access',
+    'access arguments' => array(2, 3),
+    'type' => MENU_CALLBACK,
   );
   return $items;
 }
@@ -66,9 +71,9 @@ function filefield_source_elfinder_menu() {
  */
 function elfinder_ffsel_theme() {
   return array(
-      'filefield_source_elfinder_element' => array(
-          'render element' => 'element',
-      ),
+    'filefield_source_elfinder_element' => array(
+      'render element' => 'element',
+    ),
   );
 }
 
@@ -90,58 +95,58 @@ function filefield_source_elfinder_process($element, &$form_state, $form) {
   $instance = field_widget_instance($element, $form_state);
 
   $element['filefield_elfinder'] = array(
-      '#weight' => 100.5,
-      '#theme' => 'filefield_source_elfinder_element',
-      '#filefield_source' => TRUE, // Required for proper theming.
-      '#description' => filefield_sources_element_validation_help($element['#upload_validators']),
+    '#weight' => 100.5,
+    '#theme' => 'filefield_source_elfinder_element',
+    '#filefield_source' => TRUE, // Required for proper theming.
+    '#description' => filefield_sources_element_validation_help($element['#upload_validators']),
   );
 
   $filepath_id = $element['#id'] . '-elfinder-path';
   $display_id = $element['#id'] . '-elfinder-display';
   $select_id = $element['#id'] . '-elfinder-select';
   $element['filefield_elfinder']['file_path'] = array(
-      '#type' => 'hidden',
-      '#attributes' => array(
-          'id' => $filepath_id,
-          'onchange' => "if (!jQuery('#$select_id').attr('disabled')) { jQuery('#$select_id').mousedown().attr('disabled', true); jQuery('#$display_id').html(this.value); }",
-      ),
-      '#value_callback' => 'elfinder_ffsel_element_value',
-      '#upload_validators' => $element['#upload_validators'],
-      '#maxlength' => NULL,
+    '#type' => 'hidden',
+    '#attributes' => array(
+      'id' => $filepath_id,
+      'onchange' => "if (!jQuery('#$select_id').attr('disabled')) { jQuery('#$select_id').mousedown().attr('disabled', true); jQuery('#$display_id').html(this.value); }",
+    ),
+    '#value_callback' => 'elfinder_ffsel_element_value',
+    '#upload_validators' => $element['#upload_validators'],
+    '#maxlength' => NULL,
   );
 
   $width = variable_get('elfinder_settings_misc_manager_width', '');
-  if(!$width) {
+  if (!$width) {
     $width = ELFINDER_POPUP_WIDTH;
   }
   $height = variable_get('elfinder_settings_misc_manager_height', '');
-  if(!$height) {
+  if (!$height) {
     $height = ELFINDER_POPUP_HEIGHT;
   }
 
   $elfinder_function = 'var left = window.screenX + (window.innerWidth / 2) - (' . $width . ' / 2); var top = window.screenY + (window.innerHeight / 2) - (' . $height . ' / 2); window.open(\'' . url('elfinder', array('query' => array('app' => 'ffs', 'field_name' => $element['#field_name'], 'filepath_id' => $filepath_id, 'select_id' => $select_id))) . '\', \'\', \'width=' . $width . ',height=' . $height . ',top=\'+top+\',left=\'+left+\',resizable=1\'); return false;';
 
   $element['filefield_elfinder']['display_path'] = array(
-      '#type' => 'markup',
-      '#markup' => '<span id="' . $display_id . '" class="filefield-sources-elfinder-display">' . t('No file selected') . '</span> (<a class="filefield-sources-elfinder-browse" href="#" onclick="' . $elfinder_function . '">' . t('browse') . '</a>)',
+    '#type' => 'markup',
+    '#markup' => '<span id="' . $display_id . '" class="filefield-sources-elfinder-display">' . t('No file selected') . '</span> (<a class="filefield-sources-elfinder-browse" href="#" onclick="' . $elfinder_function . '">' . t('browse') . '</a>)',
   );
 
   $element['filefield_elfinder']['upload_button'] = array(
-      '#name' => implode('_', $element['#array_parents']) . '_elfinder_select',
-      '#type' => 'submit',
-      '#value' => t('Select'),
-      '#validate' => array(),
-      '#submit' => array('filefield_sources_field_submit'),
-      '#limit_validation_errors' => array($element['#parents']),
-      '#name' => $element['#name'] . '[filefield_elfinder][button]',
-      '#id' => $select_id,
-      '#attributes' => array('style' => 'display: none;'),
-      '#ajax' => array(
-          'path' => 'file/ajax/' . implode('/', $element['#array_parents']) . '/' . $form['form_build_id']['#value'],
-          'wrapper' => $element['upload_button']['#ajax']['wrapper'],
-          'method' => 'replace',
-          'effect' => 'fade',
-      ),
+    '#name' => implode('_', $element['#array_parents']) . '_elfinder_select',
+    '#type' => 'submit',
+    '#value' => t('Select'),
+    '#validate' => array(),
+    '#submit' => array('filefield_sources_field_submit'),
+    '#limit_validation_errors' => array($element['#parents']),
+    '#name' => $element['#name'] . '[filefield_elfinder][button]',
+    '#id' => $select_id,
+    '#attributes' => array('style' => 'display: none;'),
+    '#ajax' => array(
+      'path' => 'file/ajax/' . implode('/', $element['#array_parents']) . '/' . $form['form_build_id']['#value'],
+      'wrapper' => $element['upload_button']['#ajax']['wrapper'],
+      'method' => 'replace',
+      'effect' => 'fade',
+    ),
   );
 
   return $element;
@@ -163,21 +168,21 @@ function filefield_source_elfinder_value($element, &$item) {
 
     // Resolve the file path to an FID.
     $fid = db_select('file_managed', 'f')
-            ->condition('uri', rawurldecode($uri))
-            ->fields('f', array('fid'))
-            ->execute()
-            ->fetchField();
+      ->condition('uri', rawurldecode($uri))
+      ->fields('f', array('fid'))
+      ->execute()
+      ->fetchField();
     if ($fid) {
       $file = file_load($fid);
       if (filefield_sources_element_validate($element, $file)) {
-        $item = array_merge($item, (array) $file);
+        $item = array_merge($item, (array)$file);
       }
     } else {
       $local_root = elfinder_document_root() . '/' . $file_directory_prefix . '/';
       $file_path = preg_replace('/.*(' . preg_quote('/' . $file_directory_prefix . '/', '/') . ')/', $local_root, $item['filefield_elfinder']['file_path']);
 
       if ($file = filefield_sources_save_file($file_path, $element['#upload_validators'], $element['#upload_location'], FILE_EXISTS_REPLACE)) {
-        $item = array_merge($item, (array) $file);
+        $item = array_merge($item, (array)$file);
         drupal_set_message(t('File created'));
       } else {
         form_error($element, t('The selected file could not be used because the file does not exist in the database.'));
@@ -237,7 +242,7 @@ function elfinder_ffsel_elfinder_js_settings($settings) {
  */
 function elfinder_ffsel_element_value($element, $input = FALSE, &$form_state = NULL) {
 
-  if(empty($input)) {
+  if (empty($input)) {
     return array();
   }
 
@@ -265,22 +270,22 @@ function elfinder_ffsel_element_value($element, $input = FALSE, &$form_state = N
 
   $files = explode('%%', $input);
 
-  foreach($files AS $delta => $file) {
+  foreach ($files AS $delta => $file) {
     // Respect the field's count limit.
-    if($upload_delta == $field['cardinality']) {
+    if ($upload_delta == $field['cardinality']) {
       break;
     }
     $uri = preg_replace('/.*(' . preg_quote('/' . $file_directory_prefix . '/', '/') . ')/', $scheme . '://', $file);
     // Resolve the file path to an FID.
     $fid = db_select('file_managed', 'f')
-            ->condition('uri', rawurldecode($uri))
-            ->fields('f', array('fid'))
-            ->execute()
-            ->fetchField();
+      ->condition('uri', rawurldecode($uri))
+      ->fields('f', array('fid'))
+      ->execute()
+      ->fetchField();
     if ($fid) {
       $file = file_load($fid);
       if (filefield_sources_element_validate($element, $file)) {
-        $items[$upload_delta] = (array) $file;
+        $items[$upload_delta] = (array)$file;
         $items[$upload_delta]['_weight'] = $upload_delta;
         $upload_delta++;
       }
@@ -289,7 +294,7 @@ function elfinder_ffsel_element_value($element, $input = FALSE, &$form_state = N
       $file_path = preg_replace('/.*(' . preg_quote('/' . $file_directory_prefix . '/', '/') . ')/', $local_root, $file);
 
       if ($file = filefield_sources_save_file($file_path, $element['#upload_validators'], $element['#upload_location'], FILE_EXISTS_REPLACE)) {
-        $items[$upload_delta] = (array) $file;
+        $items[$upload_delta] = (array)$file;
         $items[$upload_delta]['_weight'] = $upload_delta;
         $upload_delta++;
         drupal_set_message(t('File created'));

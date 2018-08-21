@@ -1,5 +1,11 @@
+/*
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ */
+
 .elfinder-field-wrapper-volume-path {
- float:left;
- width:300px;
- bborder:#f00 1px solid;
+    float: left;
+    width: 300px;
+    bborder: #f00 1px solid;
 }

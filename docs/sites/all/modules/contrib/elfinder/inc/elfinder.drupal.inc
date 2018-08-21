@@ -1,43 +1,48 @@
 <?php
 /**
- * @file
- * 
- * elFinder conenctor class 
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
  */
 
+/**
+ * @file
+ *
+ * elFinder conenctor class
+ */
 class elFinderDrupal extends elFinder {
-	public function __construct($opts) {
-        if (is_callable(array($this, 'version'))) {
-            
-            $ver = floatval($this->version());
-            
-            if (isset(elFinder::$ApiVersion)) {
-                $ver = elFinder::$ApiVersion;
-            }
-            
-            if ($ver == 2.1 && is_callable(array($this, 'revision')) && $this->revision() < 37) {
-                $this->connector_unsupported_error();
-            }
+  public function __construct($opts) {
+    if (is_callable(array($this, 'version'))) {
 
-            parent::__construct($opts);
-            
-            $this->commands['desc'] = array('target' => TRUE, 'content' => FALSE);
-            $this->commands['owner'] = array('target' => TRUE, 'content' => FALSE);
-            $this->commands['downloadcount'] = array('target' => TRUE);
-            
-        } else {
-            $this->connector_unsupported_error();
-        }
-        
-	}
+      $ver = floatval($this->version());
+
+      if (isset(elFinder::$ApiVersion)) {
+        $ver = elFinder::$ApiVersion;
+      }
+
+      if ($ver == 2.1 && is_callable(array($this, 'revision')) && $this->revision() < 37) {
+        $this->connector_unsupported_error();
+      }
+
+      parent::__construct($opts);
+
+      $this->commands['desc'] = array('target' => TRUE, 'content' => FALSE);
+      $this->commands['owner'] = array('target' => TRUE, 'content' => FALSE);
+      $this->commands['downloadcount'] = array('target' => TRUE);
+
+    } else {
+      $this->connector_unsupported_error();
+    }
+
+  }
 
 
   public function connector_unsupported_error() {
-      $this->connector_error(t('Unsupported elFinder library version. Please upgrade.'));   
+    $this->connector_error(t('Unsupported elFinder library version. Please upgrade.'));
   }
-    
+
   public function connector_error($message) {
-    exit(drupal_json_encode(array('error' => array(strip_tags($message)))));   
+    exit(drupal_json_encode(array('error' => array(strip_tags($message)))));
   }
 
   /* Overriding search query argument name 'q' since it's already used in Drupal */
@@ -60,10 +65,10 @@ class elFinderDrupal extends elFinder {
         $errors = array_merge($errors, $volume->error());
       }
     } else {
-    foreach ($this->volumes as $volume) {
-      $result = array_merge($result, $volume->search($q, $mimes));
+      foreach ($this->volumes as $volume) {
+        $result = array_merge($result, $volume->search($q, $mimes));
         $errors = array_merge($errors, $volume->error());
-    }
+      }
     }
 
     // Exclude hidden folders from search results.
@@ -91,15 +96,15 @@ class elFinderDrupal extends elFinder {
     $error = array(self::ERROR_UNKNOWN, '#' . $target);
 
     if (($volume = $this->volume($target)) == FALSE
-            || ($file = $volume->file($target)) == FALSE) {
+      || ($file = $volume->file($target)) == FALSE) {
       return array('error' => $this->error($error, self::ERROR_FILE_NOT_FOUND));
     }
 
     $error[1] = $file['name'];
-    
- 		if ($volume->driverId() == 'f') {
-			return array('desc' => '');
-		}
+
+    if ($volume->driverId() == 'f') {
+      return array('desc' => '');
+    }
 
     if ($volume->commandDisabled('desc')) {
       return array('error' => $this->error($error, self::ERROR_ACCESS_DENIED));
@@ -118,15 +123,15 @@ class elFinderDrupal extends elFinder {
     $error = array(self::ERROR_UNKNOWN, '#' . $target);
 
     if (($volume = $this->volume($target)) == FALSE
-            || ($file = $volume->file($target)) == FALSE) {
+      || ($file = $volume->file($target)) == FALSE) {
       return array('error' => $this->error($error, self::ERROR_FILE_NOT_FOUND));
     }
 
     $error[1] = $file['name'];
-    
- 		if ($volume->driverId() == 'f') {
-			return array('owner' => '');
-		}
+
+    if ($volume->driverId() == 'f') {
+      return array('owner' => '');
+    }
 
     if ($volume->commandDisabled('owner')) {
       return array('error' => $this->error($error, self::ERROR_ACCESS_DENIED));
@@ -145,15 +150,15 @@ class elFinderDrupal extends elFinder {
     $error = array(self::ERROR_UNKNOWN, '#' . $target);
 
     if (($volume = $this->volume($target)) == FALSE
-            || ($file = $volume->file($target)) == FALSE) {
+      || ($file = $volume->file($target)) == FALSE) {
       return array('error' => $this->error($error, self::ERROR_FILE_NOT_FOUND));
     }
 
     $error[1] = $file['name'];
-    
- 		if ($volume->driverId() == 'f') {
-			return array('downloadcount' => '');
-		}
+
+    if ($volume->driverId() == 'f') {
+      return array('downloadcount' => '');
+    }
 
     if ($volume->commandDisabled('downloadcount')) {
       return array('error' => $this->error($error, self::ERROR_ACCESS_DENIED));
@@ -167,7 +172,7 @@ class elFinderDrupal extends elFinder {
   }
 
   /**
-   * Required to output file in browser when volume URL is not set 
+   * Required to output file in browser when volume URL is not set
    * Return array contains opened file pointer, root itself and required headers
    *
    * @param  array  command arguments
@@ -199,31 +204,31 @@ class elFinderDrupal extends elFinder {
     $mime = ($download) ? 'application/octet-stream' : $file['mime'];
 
     $result = array(
-        'volume' => $volume,
-        'pointer' => $fp,
-        'info' => $file,
-        'header' => array(
-            "Content-Type: " . $mime,
-            "Content-Disposition: " . $this->GetContentDisposition($file['name'], $mime, $download),
-            "Content-Location: " . $file['name'],
-            'Content-Transfer-Encoding: binary',
-            "Content-Length: " . $file['size'],
-            "Connection: close"
-        )
+      'volume' => $volume,
+      'pointer' => $fp,
+      'info' => $file,
+      'header' => array(
+        "Content-Type: " . $mime,
+        "Content-Disposition: " . $this->GetContentDisposition($file['name'], $mime, $download),
+        "Content-Location: " . $file['name'],
+        'Content-Transfer-Encoding: binary',
+        "Content-Length: " . $file['size'],
+        "Connection: close"
+      )
     );
-    
+
     $real_path = $this->realpath($target);
     module_invoke_all('file_download', $volume->drupalpathtouri($real_path));
-    
+
     return $result;
   }
 
   /**
    * Generating Content-Disposition HTTP header
    *
-   * @param  string  $file     Filename
-   * @param  string  $filemime MIME Type
-   * @param  bool    $download Disposition type (true = download file, false = open file in browser)
+   * @param  string $file Filename
+   * @param  string $filemime MIME Type
+   * @param  bool $download Disposition type (true = download file, false = open file in browser)
    * @return string
    * @author Dmitry (dio) Levashov, Alexey Sukhotin
    * */
@@ -239,7 +244,7 @@ class elFinderDrupal extends elFinder {
       $mime = 'application/octet-stream';
     } else {
       $disp = preg_match('/^(image|text)/i', $mime)
-              || $mime == 'application/x-shockwave-flash' ? 'inline' : 'attachment';
+      || $mime == 'application/x-shockwave-flash' ? 'inline' : 'attachment';
     }
 
     $disp .= '; ';
@@ -255,6 +260,8 @@ class elFinderDrupal extends elFinder {
       } else {
         $disp .= "filename*=\"?UTF-8''" . rawurlencode($filename) . "\";";
       }
+    } elseif (preg_match("/Chrome\/(\d+)/", $ua, $m)) {
+      $disp .= "filename=\"" . $filename . "\"";
     } else {
       $disp .= "filename=" . $filename;
     }
@@ -263,3 +270,4 @@ class elFinderDrupal extends elFinder {
   }
 
 }
+

@@ -1,4 +1,9 @@
 <?php
+/**
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ */
 
 /**
  * @file
@@ -28,30 +33,29 @@ function elfinder_admin_profile_links($profile_name) {
 }
 
 
-
 /**
  * Settings form definition
  */
 function elfinder_admin_form(&$form_state) {
   global $user, $language;
   $path = drupal_get_path('module', 'elfinder');
- // require_once $path .'/inc/' . 'elfinder.admin.profiles.inc';
+  // require_once $path .'/inc/' . 'elfinder.admin.profiles.inc';
 
   $langCode = isset($language->language) ? $language->language : 'en';
- 
+
   $form['profiles'] = array(
     '#type' => 'fieldset',
     '#title' => t('Profiles'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
-  
+
   $profiles = elfinder_admin_profile_get();
-  
+
   $roles = user_roles();
-  
+
   $rows = array();
-  
+
   if ($profiles) {
     if (is_array($profiles)) {
       foreach ($profiles as $profile) {
@@ -61,21 +65,21 @@ function elfinder_admin_form(&$form_state) {
       $profile = $profiles;
       $rows[] = array($profile->pid, $profile->name, $profile->description, implode(', ', array_intersect_key($roles, $profile->settings['profile_role'])), elfinder_admin_profile_links($profile->name));
     }
-  
+
   }
 
-  $profile_table =  theme('table', array(
+  $profile_table = theme('table', array(
     'header' => array(t('Id'), t('Name'), t('Description'), t('Role'), ''),
     'rows' => $rows
   ));
-  
+
   $addprofile = l(t('Add profile'), 'admin/config/media/elfinder/profile');
-  
+
   $form['profiles']['profile_list'] = array(
     '#type' => 'markup',
     '#markup' => "$profile_table<br/>$addprofile",
   );
-  
+
   $form['filesystem_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('File system settings'),
@@ -110,7 +114,7 @@ function elfinder_admin_form(&$form_state) {
     '#default_value' => variable_get('elfinder_settings_filesystem_unmanaged_root_label', ''),
     '#description' => t('Root directory label in directory tree'),
   );
-  
+
   $form['filesystem_settings']['filesystem_root_custom'] = array(
     '#prefix' => '<div class="custom-container">',
     '#suffix' => '</div>',
@@ -137,7 +141,7 @@ function elfinder_admin_form(&$form_state) {
       'auto' => t('Automatical detection'),
     ),
   );
-  
+
   $form['filesystem_settings']['filesystem_allowed_extensions'] = array(
     '#prefix' => '<div class="custom-container">',
     '#suffix' => '</div>',
@@ -147,7 +151,7 @@ function elfinder_admin_form(&$form_state) {
     '#default_value' => variable_get('elfinder_settings_filesystem_allowed_extensions', ''),
     '#description' => t('Separate extensions with a space or comma and do not include the leading dot.'),
   );
-  
+
   if (function_exists('finfo_open')) {
     $form['filesystem_settings']['mime_detect']['#options']['finfo'] = t('php finfo');
   }
@@ -160,8 +164,41 @@ function elfinder_admin_form(&$form_state) {
   $form['filesystem_settings']['mime_detect']['#options']['bsd'] = t('file -Ib (bsd)');
   $form['filesystem_settings']['mime_detect']['#options']['internal'] = t('By file extension (built-in)');
   $form['filesystem_settings']['mime_detect']['#options']['drupal'] = t('Drupal API');
-  
-  
+
+
+  $form['filesystem_settings']['filesystem_inline_preview'] = array(
+    '#type' => 'radios',
+    '#title' => t('Preview'),
+    '#default_value' => variable_get('elfinder_settings_filesystem_inline_preview', 'default'),
+    '#description' => t('File types allowed to display in preview'),
+    '#options' => array(
+      'default' => t('Default - images, video, audio, pdf, text'),
+      'all' => t('All supported for preview files - additional: md, psd, html, archives, swf, sharecad.org, MS Office Online, Google Docs - be careful'),
+      'custom' => t('Custom regex'),
+      'disabled' => t('Disabled'),
+    ),
+  );
+
+  $form['filesystem_settings']['filesystem_inline_preview_custom'] = array(
+    '#prefix' => '<div class="custom-container">',
+    '#suffix' => '</div>',
+    '#type' => 'textfield',
+    '#title' => t('Custom preview match regex'),
+    '#default_value' => variable_get('elfinder_settings_filesystem_inlinepreviewcustom', '^(?:(?:image|video|audio)|application/(?:x-mpegURL|dash\\+xml)|(?:text/plain|application/pdf)$)'),
+    '#description' => t('Custom mime type match regex for preview'),
+  );
+
+  $form['filesystem_settings']['filesystem_external_preview'] = array(
+    '#type' => 'radios',
+    '#title' => t('External Service Preview'),
+    '#default_value' => variable_get('elfinder_settings_filesystem_external_preview', 'disabled'),
+    '#description' => t('Use Microsoft, Google and other online services to preview some office documents. <b>Warning!</b> By previewing document with external services <b>YOU ARE ULOADING</b> the document to them. Google, Microsoft and other service owners usually <b>TRACK</b> your activity and <b>share it with Sales, CIA, FSB (KGB), FBI, governors, etc.</b>'),
+    '#options' => array(
+      'default' => t('Use Microsoft Office and Google Docs for preview'),
+      'disabled' => t('Disabled'),
+    ),
+  );
+
   $form['filesystem_settings']['file_url_type'] = array(
     '#type' => 'radios',
     '#title' => t('Selected file url type'),
@@ -170,7 +207,7 @@ function elfinder_admin_form(&$form_state) {
       'true' => t('Absolute'),
       'false' => t('Relative'),
     ),
-  );  
+  );
 
   $form['filesystem_settings']['file_perm'] = array(
     '#type' => 'textfield',
@@ -195,7 +232,7 @@ function elfinder_admin_form(&$form_state) {
     '#size' => 10,
     '#weight' => 5,
   );
-  
+
   $form['filesystem_settings']['max_filecount'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum folder size'),
@@ -204,7 +241,7 @@ function elfinder_admin_form(&$form_state) {
     '#size' => 10,
     '#weight' => 5,
   );
-  
+
   $form['filesystem_settings']['handleprivate'] = array(
     '#type' => 'radios',
     '#title' => t('Handle private downloads'),
@@ -222,7 +259,7 @@ function elfinder_admin_form(&$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
-  
+
   $form['thumbnail_settings']['tmbsize'] = array(
     '#type' => 'textfield',
     '#title' => t('Thumbnail size'),
@@ -244,7 +281,7 @@ function elfinder_admin_form(&$form_state) {
     '#options' => array(
       'auto' => t('Automatical detection'),
       'imagick' => t('Image Magick'),
-      'gd'  => t('GD'),
+      'gd' => t('GD'),
     ),
   );
 
@@ -265,7 +302,7 @@ function elfinder_admin_form(&$form_state) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );
-  
+
   $form['misc_settings']['rememberlastdir'] = array(
     '#type' => 'radios',
     '#title' => t('Remember last opened directory'),
@@ -312,7 +349,7 @@ function elfinder_admin_form(&$form_state) {
 
   $form['submit'] = array('#type' => 'submit', '#value' => t('Save configuration'));
   $form['#submit'][] = 'elfinder_admin_submit';
-  
+
   return $form;
 }
 
@@ -344,11 +381,25 @@ function elfinder_admin_submit($form, &$form_state) {
   variable_set('elfinder_settings_filesystem_public_root_label', $form_state['values']['filesystem_public_root_label']);
   variable_set('elfinder_settings_filesystem_private_root_label', $form_state['values']['filesystem_private_root_label']);
   variable_set('elfinder_settings_filesystem_unmanaged_root_label', $form_state['values']['filesystem_unmanaged_root_label']);
-  variable_set('elfinder_settings_misc_manager_width', $form_state['values']['manager_width']);  
-  variable_set('elfinder_settings_misc_manager_height', $form_state['values']['manager_height']);  
+  variable_set('elfinder_settings_misc_manager_width', $form_state['values']['manager_width']);
+  variable_set('elfinder_settings_misc_manager_height', $form_state['values']['manager_height']);
   variable_set('elfinder_settings_misc_hidden_folders', $form_state['values']['hidden_folders']);
   variable_set('elfinder_settings_filesystem_allowed_extensions', $form_state['values']['filesystem_allowed_extensions']);
-  
+
+  if ($form_state['values']['filesystem_inline_preview'] == 'default') {
+    variable_set('elfinder_settings_filesystem_inlinepreviewregex', '^(?:(?:image|video|audio)|application/(?:x-mpegURL|dash\\+xml)|(?:text/plain|application/pdf)$)');
+  } else if ($form_state['values']['filesystem_inline_preview'] == 'all') {
+    variable_set('elfinder_settings_filesystem_inlinepreviewregex', '.');
+  } else if ($form_state['values']['filesystem_inline_preview'] == 'custom') {
+    variable_set('elfinder_settings_filesystem_inlinepreviewregex', variable_get('elfinder_settings_filesystem_inlinepreviewcustom', '^$'));
+  } else {
+    variable_set('elfinder_settings_filesystem_inlinepreviewregex', '^$');
+  }
+
+  variable_set('elfinder_settings_filesystem_inline_preview', $form_state['values']['filesystem_inline_preview']);
+  variable_set('elfinder_settings_filesystem_inlinepreviewcustom', $form_state['values']['filesystem_inline_preview_custom']);
+  variable_set('elfinder_settings_filesystem_external_preview', $form_state['values']['filesystem_external_preview']);
+
   drupal_set_message(t('Changes have been saved.'));
 }
 

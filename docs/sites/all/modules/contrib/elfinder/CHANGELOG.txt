@@ -1,6 +1,6 @@
 2.x-dev
 -------
-  - Now requires elFinder 2.0.9+
+  - Now requires elFinder 2.0.9+ or 2.1.38+
   - Added multiple root directories support
   - Added Drupal file_managed table synchronization
   - Added per-role configurable profiles support
@@ -8,4 +8,6 @@
   - Added CKEditor and FCKeditor Upload tab support
   - New library search algoritm with install profiles and multiple sites support
   - Search support
+  - Inline preview support for PSD, md, html, office docs (by Google/Microsoft online tools), CAD (by sharecad.org online tools),  etc (disabled by default, be careful)
+  - Auto fit window
 
