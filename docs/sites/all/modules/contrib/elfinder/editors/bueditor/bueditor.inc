@@ -1,6 +1,4 @@
 <?php
-// $Id$
-
 /**
  * @file
  * BUEditor integration plugin

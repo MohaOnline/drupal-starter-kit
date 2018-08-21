@@ -15,7 +15,7 @@ if (class_exists('elFinder')) {
 function elfinder_check_badpaths() {
   $ret = array('result' => TRUE, 'message' => '');
   $libpath = elfinder_lib_path();
-  $badfiles = array('elfinder.html', 'elfinder.php.html', 'connectors/php/connector.php', 'php/connector.php', 'php/connector.minimal.php');
+  $badfiles = array('connectors/php/connector.php', 'php/connector.php', 'php/connector.minimal.php');
 
   $badpaths = array();
 
@@ -186,8 +186,7 @@ function elfinder_file_browser($browser_mode = 'default') {
     if (isset($_GET['app'])) {
       if (preg_match("/^[a-zA-Z]+$/", $_GET['app'])) {
         $editorApp = $_GET['app'];
-      }
-      elseif (preg_match("/^([a-zA-Z]+)|/", $_GET['app'], $m)) {
+      } elseif (preg_match("/^([a-zA-Z]+)|/", $_GET['app'], $m)) {
         $editorApp = $m[1];
       }
     }
@@ -220,21 +219,25 @@ function elfinder_file_browser($browser_mode = 'default') {
     if ($editorApp) {
       $elfinder_js_settings['editorCallback'] = 'elfinder_' . $editorApp . '_callback';
     }
-
+    
     $options = array(
       'group' => CSS_DEFAULT, 
       'every_page' => FALSE,
     );
 
-	  $sysjqver = variable_get('jquery_update_jquery_version', '1.5');
+	  $sysjqver = variable_get('jquery_update_jquery_version', '1.10');
 
-    if (!(module_exists('jquery_update') && preg_match('/1\.(6|7)/', $sysjqver))) {
+    if (!(module_exists('jquery_update') && preg_match('/1\.(8|9|10|11|12)/', $sysjqver))) {
       drupal_add_js($path . '/js/elfinder.jquery.min.js');
       drupal_add_js($path . '/js/elfinder.jquery-ui.min.js');
     } else {
-      drupal_add_library('system', 'ui.selectable');
+      drupal_add_library('system', 'ui.button');
+      drupal_add_library('system', 'ui.dialog');
       drupal_add_library('system', 'ui.draggable');
       drupal_add_library('system', 'ui.droppable');
+      drupal_add_library('system', 'ui.resizable');
+      drupal_add_library('system', 'ui.selectable');
+      drupal_add_library('system', 'ui.slider');
     }
     
     elfinder_add_css($path . '/css/ui-themes/smoothness/jquery-ui.custom.css', $options);
@@ -243,12 +246,10 @@ function elfinder_file_browser($browser_mode = 'default') {
     if (is_readable($libpath . 'css/elfinder.min.css') && is_readable($libpath . 'js/elfinder.min.js')) {
       elfinder_add_css($libpath . 'css/elfinder.min.css');
       drupal_add_js($libpath . 'js/elfinder.min.js');
-    } 
-    else if (is_readable($libpath . 'css/elfinder.full.css') && is_readable($libpath . 'js/elfinder.full.js')) {
+    } else if (is_readable($libpath . 'css/elfinder.full.css') && is_readable($libpath . 'js/elfinder.full.js')) {
       elfinder_add_css($libpath . 'css/elfinder.full.css');
       drupal_add_js($libpath . 'js/elfinder.full.js');
-    } 
-    else if (is_readable($libpath . 'css/common.css') && is_readable($libpath . 'js/elFinder.js')) {
+    } else if (is_readable($libpath . 'css/common.css') && is_readable($libpath . 'js/elFinder.js')) {
       elfinder_add_css($libpath . 'css/common.css');
       elfinder_add_css($libpath . 'css/dialog.css');
       elfinder_add_css($libpath . 'css/toolbar.css');
@@ -313,12 +314,15 @@ function elfinder_file_browser($browser_mode = 'default') {
       drupal_add_js($libpath . 'js/commands/netmount.js');
       drupal_add_js($libpath . 'js/proxy/elFinderSupportVer1.js');
       drupal_add_js($libpath . 'js/jquery.dialogelfinder.js');
-    }
-    else {
+    } else {
       watchdog('Failed Requirement', 'elFinder unable to load required JS and CSS files', array(), WATCHDOG_ERROR);
     }
  
 		$langfile = $libpath . 'js/i18n/elfinder.' . $langCode . '.js';
+      
+    if (is_readable($libpath . 'css/theme.css')) {
+        elfinder_add_css($libpath . 'css/theme.css');
+    }
 		
     /* Adding localization */
     if (is_readable($langfile)) {
@@ -360,21 +364,33 @@ function elfinder_file_browser($browser_mode = 'default') {
       }
     
     }
-
-    drupal_add_js($path . '/js/info.js');
+      
+    if (property_exists('elFinder', 'ApiVersion')) {
+        $elfinder_js_settings['api21'] = true;
+    } else {
+        drupal_add_js($path . '/js/info.js');
+    }
    // drupal_add_js($path . '/js/mouseover.js');
     drupal_add_js($path . '/js/elfinder.callback.js');
     drupal_add_js(array('elfinder' => $elfinder_js_settings), 'setting');
+      
+      
+     $libs = elfinder_get_libraries('tinymce');
+
+     if (count($libs) > 0 && !empty($libs['tinymce'])) {
+         
+         $path = $libs['tinymce'] . '/jscripts/tiny_mce/tiny_mce_popup.js';
+         $abspath = base_path() . "/$path";
+         drupal_add_js($path);
+     }
     
-  }
-  else {
+  } else {
     drupal_set_message(t('elFinder library was not found. Please download it from <a href="@url">@url</a> and install to @libpath.', array('@url' => elfinder_download_url(), '@libpath' => $libpath)), 'error');
   }
 
   if ($browser_mode && $browser_mode  == 'backend') {
     return theme('elfinder_page_backend');
-  }
-  else {
+  } else {
     print theme('elfinder_page');
   }
 
@@ -503,8 +519,7 @@ function elfinder_filesystemconnector($mode = 'default') {
 
   if ($p) {
     $profile = $p->settings;
-  } 
-  else {
+  } else {
     $profile = array();
   }
 
@@ -584,8 +599,7 @@ function elfinder_filesystemconnector($mode = 'default') {
         if ($scheme == FALSE) {
            if (is_object(file_stream_wrapper_get_instance_by_uri('private://'))) {
              $scheme = 'private';
-           }
-           else {
+          } else {
              $scheme = 'public';
            }
         }
@@ -620,8 +634,7 @@ function elfinder_filesystemconnector($mode = 'default') {
         $root['URL'] = $url;
         $root['tmbPath'] = $volpath . DIRECTORY_SEPARATOR . variable_get('elfinder_settings_thumbnail_dirname', 'tmb');
         $root['tmbURL'] = $volurl . '/' . variable_get('elfinder_settings_thumbnail_dirname', 'tmb');
-      }
-      else {
+      } else {
 
         $rootpath = elfinder_parse_path_tokens($volume['path']);
         $root['driver'] = 'LocalFileSystem';
@@ -989,8 +1002,7 @@ function elfinder_lib_path($name = 'elfinder') {
   
   if (!isset($libraries[$name])) {
     return FALSE;
-  }
-  else {
+  } else {
     $path .= $libraries[$name];
   }
 
@@ -1113,8 +1125,7 @@ function elfinder_default_directory_path() {
     
   if ($scheme == 'public') {
     $filepath = variable_get('file_public_path', conf_path() . '/files');  
-  }
-  else {
+  } else {
     $filepath = variable_get('file_private_path', conf_path());
   }
   
@@ -1241,8 +1252,18 @@ function elfinder_get_drupal_file_obj($uri) {
       $file->filemime = file_get_mimetype($uri);
       if (is_file(drupal_realpath($uri))) {
         $file->filesize = filesize($uri);
-        list($type) = explode("/", $file->filemime);
 
+      // Use the file_entity module's mimetype to entity type
+      // functionality if we have that method available.
+      if (function_exists('file_entity_file_type')) {
+        $types = file_entity_file_type($file);
+        if (count($types) > 0) {
+          $file->type = $types[0];
+        } else {
+          $file->type = 'default';
+        }
+      } else {
+        list($type) = explode("/", $file->filemime);
         switch($type) {
           case 'image':
           case 'video':
@@ -1254,6 +1275,7 @@ function elfinder_get_drupal_file_obj($uri) {
             break;
         }
       }
+    }
       $file->timestamp = REQUEST_TIME;
       $file->status = FILE_STATUS_PERMANENT;
     }

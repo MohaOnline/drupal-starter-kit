@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * @file
@@ -19,7 +18,6 @@ function elfinder_ckeditor_elfinder_editor_plugin($options) {
         'filebrowserUploadUrl' => url('elfinder/upload/ckeditor'),
         'filebrowserImageUploadUrl' => url('elfinder/upload/ckeditor'),
         'filebrowserFlashUploadUrl' => url('elfinder/upload/ckeditor'),
-        //'filebrowserBrowseUrl' => 'javascript:alert(12345);return false;//',
       ),
       'load' => FALSE,
     ),

@@ -18,8 +18,6 @@ Drupal.wysiwyg.editor.attach.yui = function(context, params, settings) {
 	
 	var dialogcode = $('#' + params.field + '-panel');
 	
-	
-	 //var oImgHtml = $('<div>'+imgHtml+'</div>');
 	var oUrl = $('input#' + params.field + '_insertimage_url');
 	var browsebutton = $('<input type="button">');
 

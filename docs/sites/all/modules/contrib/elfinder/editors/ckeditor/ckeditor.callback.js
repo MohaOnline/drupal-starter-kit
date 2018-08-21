@@ -1,7 +1,6 @@
-// $Id$
+
 
 function elfinder_ckeditor_callback(arg1) {
- // console.log(typeof url);
 
   var url = arg1;
 

@@ -1,6 +1,6 @@
 2.x-dev
 -------
-  - Now requires elFinder 2.0
+  - Now requires elFinder 2.0.9+
   - Added multiple root directories support
   - Added Drupal file_managed table synchronization
   - Added per-role configurable profiles support

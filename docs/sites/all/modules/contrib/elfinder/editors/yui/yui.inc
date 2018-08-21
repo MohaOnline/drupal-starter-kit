@@ -1,6 +1,4 @@
 <?php
-// $Id$
-
 /**
  * @file
  * YUI editor integration plugin

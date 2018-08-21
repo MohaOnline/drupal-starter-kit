@@ -36,8 +36,7 @@ function elfinder_admin_profile($form, &$form_state) {
         '#default_value' => '',
         '#size' => 14,
     );
-  }
-  else {
+  } else {
     $form['profile_name_label'] = array(
         '#title' => t('Profile Name'),
         '#markup' => $profile_name,
@@ -112,8 +111,7 @@ function elfinder_admin_profile($form, &$form_state) {
     if (isset($form_state['clicked_button']['#name']) && $form_state['clicked_button']['#name'] == 'addfield') {
       $form['volumes']['volumes_wrapper']['volume'][] = elfinder_admin_dir_form(count($choices), '', 0);
     }
-  }
-  else {
+  } else {
 
     for ($i = 0; $i < count($dirs); $i++) {
       $form['volumes']['volumes_wrapper']['volume'][$i] = elfinder_admin_dir_form($i, $dirs[$i], 0);
@@ -335,8 +333,7 @@ function elfinder_admin_profiles($action = '', $profile_name = '') {
 
   if ($action == 'profile_delete') {
     $obj = drupal_get_form('elfinder_admin_profiles_delete_form', $action, $profile_name);
-  }
-  else {
+  } else {
     $obj = drupal_get_form('elfinder_admin_profile', $action, $profile_name);
   }
 
@@ -378,8 +375,7 @@ function elfinder_admin_dir_form($delta, $values = array(), $votes = 0) {
 
   if (is_object($pvtfiles)) {
     $defaulturl = $pvtfiles->getExternalUrl();
-  }
-  elseif (is_object($pubfiles)) {
+  } elseif (is_object($pubfiles)) {
     $defaulturl = $pubfiles->getExternalUrl();
   }
 
@@ -447,8 +443,7 @@ function elfinder_admin_profile_change_volume($form, &$form_state) {
     $form_state['values']['volume'] = array_values($form_state['values']['volume']);
     unset($form_state['input']['volume'][$itemid]);
     $form_state['input']['volume'] = array_values($form_state['input']['volume']);
-  }
-  elseif ($clickedbutton = 'addfield') {
+  } elseif ($clickedbutton = 'addfield') {
     $form_state['input']['volume'][] = '';
   }
 

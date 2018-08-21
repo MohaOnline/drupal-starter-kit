@@ -1,8 +1,13 @@
 <?php
+/**
+ * elFinder Integration
+ *
+ * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ */
 
 /**
  * @file
- * 
+ *
  * elFinder driver for Drupal filesystem.
  *
  * @author Alexey Sukhotin
@@ -14,7 +19,7 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   /**
    * Create Drupal file object
    *
-   * @param  string  $path  file path
+   * @param  string $path file path
    * @return object
    * @author Alexey Sukhotin
    * */
@@ -26,49 +31,49 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   /**
    * Convert path to Drupal file URI
    *
-   * @param  string  $path  file path
+   * @param  string $path file path
    * @return string
    * @author Alexey Sukhotin
    * */
   public function drupalpathtouri($path) {
 
-    $relpath = $this->_relpath($path);
     $pvtpath = drupal_realpath('private://');
     $pubpath = drupal_realpath('public://');
+    $tmppath = drupal_realpath('temporary://');
+
     $uri = '';
 
-    $rc = strpos($path, $pvtpath);
-
-    if ($rc == 0 && is_numeric($rc)) {
-      $uri = 'private://' . substr($path, strlen($pvtpath));
-    }
-    else {
-      $uri = 'public://' . substr($path, strlen($pubpath));
+    if (strpos($path, $pvtpath) === 0) {
+      $uri = 'private://' . substr($path, strlen($pvtpath) + 1);
+    } elseif (strpos($path, $tmppath) === 0) {
+      $uri = 'temporary://' . substr($path, strlen($tmppath) + 1);
+    } else {
+      $uri = 'public://' . substr($path, strlen($pubpath) + 1);
     }
 
     return @file_stream_wrapper_uri_normalize($uri);
   }
-  
+
   /**
    * Check if file extension is allowed
    *
-   * @param stdClass  $file  file object
+   * @param stdClass $file file object
    * @return array
    * @author Alexey Sukhotin
    **/
   protected function CheckExtension(stdClass $file) {
 
     $allowed_extensions = variable_get('elfinder_settings_filesystem_allowed_extensions', '');
-    
+
     if (!empty($allowed_extensions)) {
-      
-      $errors =  file_validate_extensions($file, $allowed_extensions);
-      
+
+      $errors = file_validate_extensions($file, $allowed_extensions);
+
       if (!empty($errors)) {
-        $this->setError(implode(' ', $errors));
+        $this->setError(strip_tags(implode(' ', $errors)));
         return FALSE;
       }
-      
+
     }
     return TRUE;
   }
@@ -76,8 +81,8 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   /**
    * Create dir
    *
-   * @param  string  $path  parent dir path
-   * @param string  $name  new directory name
+   * @param  string $path parent dir path
+   * @param string $name new directory name
    * @return bool
    * @author Alexey Sukhotin
    * */
@@ -93,21 +98,21 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   /**
    * Create file
    *
-   * @param  string  $path  parent dir path
-   * @param string  $name  new file name
+   * @param  string $path parent dir path
+   * @param string $name new file name
    * @return bool
-   * @author Alexey Sukhotin   
+   * @author Alexey Sukhotin
    * */
   protected function _mkfile($path, $name) {
     $path = $path . DIRECTORY_SEPARATOR . $name;
     $uri = $this->drupalpathtouri($path);
-    
+
     if (!$this->CheckExtension($this->_drupalfileobject($path))) {
       return FALSE;
     }
-    
+
     $file = file_save_data("", $uri);
-    
+
     $this->FileUsageAdd($file);
 
     if (isset($file->fid)) {
@@ -120,11 +125,11 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   /**
    * Copy file into another file
    *
-   * @param  string  $source     source file path
-   * @param  string  $targetDir  target directory path
-   * @param  string  $name       new file name
+   * @param  string $source source file path
+   * @param  string $targetDir target directory path
+   * @param  string $name new file name
    * @return bool
-   * @author Alexey Sukhotin   
+   * @author Alexey Sukhotin
    * */
   protected function _copy($source, $targetDir, $name) {
 
@@ -133,7 +138,7 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
     if (!is_dir($target) && !$this->CheckExtension($this->_drupalfileobject($target))) {
       return FALSE;
     }
-    
+
     if (!$this->CheckUserQuota()) {
       return FALSE;
     }
@@ -148,17 +153,18 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
 
   /**
    * Move file into another parent dir
+   * Return new file path or false
    *
-   * @param  string  $source  source file path
-   * @param  string  $target  target dir path
-   * @param  string  $name    file name
-   * @return bool
-   * @author Alexey Sukhotin   
+   * @param  string $source source file path
+   * @param  string $target target dir path
+   * @param  string $name new name
+   * @return bool|string
+   * @author Alexey Sukhotin
    * */
   protected function _move($source, $targetDir, $name) {
 
     $target = $targetDir . DIRECTORY_SEPARATOR . (!empty($name) ? $name : basename($source));
-    
+
     if (!is_dir($target) && !$this->CheckExtension($this->_drupalfileobject($target))) {
       return FALSE;
     }
@@ -168,10 +174,10 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
       $dsturi = $this->drupalpathtouri($target);
 
       $children = db_select('file_managed', 'f')
-              ->condition('uri', $srcuri . '/%', 'LIKE')
-              ->fields('f', array('fid', 'uri'))
-              ->execute()
-              ->fetchAll();
+        ->condition('uri', $srcuri . '/%', 'LIKE')
+        ->fields('f', array('fid', 'uri'))
+        ->execute()
+        ->fetchAll();
 
       foreach ($children as $child) {
         $newuri = str_replace("$srcuri/", "$dsturi/", $child->uri);
@@ -179,8 +185,7 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
       }
 
       return @rename($source, $target);
-    }
-    elseif (@file_move($this->_drupalfileobject($source), $this->drupalpathtouri($target))) {
+    } elseif (@file_move($this->_drupalfileobject($source), $this->drupalpathtouri($target))) {
       return TRUE;
     }
 
@@ -190,28 +195,33 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   /**
    * Remove file
    *
-   * @param  string  $path  file path
+   * @param  string $path file path
    * @return bool
    * @author Alexey Sukhotin
    * */
   protected function _unlink($path) {
-    
+
     $file = $this->_drupalfileobject($path);
-    
     $this->FileUsageDelete($file);
 
-    if (@file_delete($file) === TRUE) {
+    $result = @file_delete($file);
+
+    if ($result === TRUE) {
       return TRUE;
     }
-    else {
+
+    if (is_array($result)) {
+      return $result['file'];
+    } else {
       return FALSE;
     }
+
   }
 
   /**
    * Remove dir
    *
-   * @param  string  $path  dir path
+   * @param  string $path dir path
    * @return bool
    * @author Alexey Sukhotin
    * */
@@ -220,39 +230,64 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   }
 
   /**
+   * Delete dirctory trees and included files.
+   *
+   * Clone of elfinderVolumeDriver::delTree().
+   *
+   * Using elFinderVolumeLocalFileSystem::delTree to delete a folder with files
+   * in it would not update file_usage and file_managed tables. Using
+   * elfinderVolumeDriver::delTree makes it work better.
+   */
+  protected function delTree($localpath) {
+    foreach ($this->_scandir($localpath) as $p) {
+      elFinder::extendTimeLimit();
+      $stat = $this->stat($this->convEncOut($p));
+      $this->convEncIn();
+      ($stat['mime'] === 'directory') ? $this->delTree($p) : $this->_unlink($p);
+    }
+    $res = $this->_rmdir($localpath);
+    $res && $this->clearstatcache();
+    return $res;
+  }
+
+  /**
    * Create new file and write into it from file pointer.
    * Return new file path or false on error.
    *
-   * @param  resource  $fp   file pointer
-   * @param  string    $dir  target dir path
-   * @param  string    $name file name
+   * @param  resource $fp file pointer
+   * @param  string $dir target dir path
+   * @param  string $name file name
    * @return bool|string
    * @author Dmitry (dio) Levashov, Alexey Sukhotin
    * */
   protected function _save($fp, $dir, $name, $stat) {
     $tmpname = $name;
-		
-	$bu_ret = module_invoke_all('elfinder_beforeupload', array('name' => $name, 'dir' => $dir, 'stat' => $stat ));
 
-	if (isset($bu_ret)) {
+    $bu_ret = module_invoke_all('elfinder_beforeupload', array('name' => $name, 'dir' => $dir, 'stat' => $stat));
+
+    if (isset($bu_ret)) {
       if (!is_array($bu_ret)) {
         $bu_ret = array($bu_ret);
       }
 
       $tmpname = end($bu_ret);
-	}
-	
+    }
+
     $path = $dir . DIRECTORY_SEPARATOR . (!empty($tmpname) ? $tmpname : $name);
 
     if (!$this->CheckUserQuota()) {
       return FALSE;
     }
-    
+
     if (!$this->CheckFolderCount($dir)) {
       return FALSE;
     }
-    
+
     if (!$this->CheckExtension($this->_drupalfileobject($path))) {
+      return FALSE;
+    }
+
+    if (!$this->FileValidate($name)) {
       return FALSE;
     }
 
@@ -267,12 +302,12 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
 
     fclose($target);
     @chmod($path, $this->options['fileMode']);
-    
+
     $file = $this->_drupalfileobject($path);
 
     @file_save($file);
     $this->FileUsageAdd($file);
-    
+
     return $path;
   }
 
@@ -286,7 +321,7 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
 
     return TRUE;
   }
-  
+
 
   protected function CheckFolderCount($dir) {
     $max_allowed = variable_get('elfinder_settings_filesystem_maxfilecount', 0);
@@ -306,9 +341,33 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   }
 
   /**
+   * Let other Drupal modules perform validation on the uploaded file.
+   * See hook_file_validate().
+   *
+   * @param  string    $name file name
+   * @return bool
+   */
+  protected function FileValidate($name) {
+    // The uploaded file is still in temp. Fetch it's name & path from $_FILES.
+    $index = array_search($name, $_FILES['upload']['name']);
+    if ($index !== FALSE) {
+      $file = $this->_drupalfileobject($_FILES['upload']['tmp_name'][$index]);
+      $validation_errors = module_invoke_all('file_validate', $file);
+      if (!empty($validation_errors)) {
+        $this->setError(strip_tags(implode(' ', $validation_errors)));
+        return FALSE;
+      }
+    } else {
+      watchdog('elfinder', 'File upload "' . $name . '" not found in $_FILES');
+    }
+    return TRUE;
+  }
+
+
+  /**
    * Return files list in directory.
    *
-   * @param  string  $path  dir path
+   * @param  string $path dir path
    * @return array
    * @author Dmitry (dio) Levashov
    * */
@@ -353,10 +412,10 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
 
     if ($file->fid) {
       $finfo = db_select('elfinder_file_extinfo', 'f')
-              ->condition('fid', $file->fid)
-              ->fields('f', array('fid', 'description'))
-              ->execute()
-              ->fetchObject();
+        ->condition('fid', $file->fid)
+        ->fields('f', array('fid', 'description'))
+        ->execute()
+        ->fetchObject();
 
       $descobj = new StdClass;
       $descobj->fid = $file->fid;
@@ -366,8 +425,7 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
         if (($rc = drupal_write_record('elfinder_file_extinfo', $descobj, isset($finfo->fid) ? array('fid') : array())) == 0) {
           return -1;
         }
-      }
-      else {
+      } else {
         return $finfo->description;
       }
     }
@@ -381,12 +439,12 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
 
     if ($file->fid && module_exists('elfinder_stats')) {
       $downloads = db_select('elfinder_stats', 's')
-              ->fields('s', array('fid'))
-              ->condition('s.fid', $file->fid)
-              ->condition('s.type', 'download')
-              ->countQuery()
-              ->execute()
-              ->fetchField();
+        ->fields('s', array('fid'))
+        ->condition('s.fid', $file->fid)
+        ->condition('s.type', 'download')
+        ->countQuery()
+        ->execute()
+        ->fetchField();
       return $downloads ? $downloads : 0;
     }
     return 0;
@@ -409,18 +467,35 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
     return $ret;
   }
 
+  /**
+   * Extract files from archive.
+   *
+   * Run the parent extract() then add the files to the Drupal db.
+   *
+   * @param string $hash
+   *    Archive filename hash.
+   * @param bool $makedir
+   *    Extract the files into a new folder.
+   * @return array|bool
+   */
   public function extract($hash, $makedir = NULL) {
     if (!$this->CheckUserQuota()) {
       return FALSE;
     }
 
-    $fstat = parent::extract($hash);
+    $fstat = array();
+
+    if ($makedir == NULL) {
+      $fstat = parent::extract($hash);
+    } else {
+      $fstat = parent::extract($hash, $makedir);
+    }
 
     if ($fstat != FALSE) {
       $path = $this->decode($fstat['hash']);
       $this->AddToDrupalDB($path);
       $file = $this->_drupalfileobject($path);
-      if($fstat['mime'] !== 'directory') {
+      if ($fstat['mime'] !== 'directory') {
         $this->FileUsageAdd($file);
       }
     }
@@ -428,16 +503,23 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
     return $fstat;
   }
 
-  protected function AddToDrupalDB($path) {
-
-    if (is_dir($path)) {
-      $files = $this->_scandir($path);
-      foreach ($files as $file) {
-        $this->AddToDrupalDB($file);
+  /**
+   * Recursive function to add new files to Drupal's db.
+   *
+   * TODO: If a file with the same name already exists anywhere else, this will
+   * not create a new entry.
+   */
+  protected function AddToDrupalDB($files) {
+    foreach($files AS $file) {
+      if($file['mime'] == 'directory') {
+        $newfiles = $this->scandir($file['hash']);
+        $this->AddToDrupalDB($newfiles);
+      } else {
+        $filepath = $this->decode($file['hash']);
+        $file_object = $this->_drupalfileobject($filepath);
+        @file_save($file_object);
+        $this->FileUsageAdd($file_object);
       }
-    }
-    elseif (is_file($path)) {
-      @file_save($this->_drupalfileobject($path));
     }
     return TRUE;
   }
@@ -457,8 +539,7 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
 
       if ($diff > 0) {
         return $diff;
-      }
-      else {
+      } else {
         return 0;
       }
     }
@@ -477,17 +558,17 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
 
     return $result;
   }
-  
+
   protected function FileUsageAdd($file) {
     // Record that the module elfinder is using the file.
     @file_usage_add($file, 'elfinder', 'elfinderFileFetcher', 0); // 0 : means that there is no reference at the moment.
   }
-  
+
   protected function FileUsageDelete($file) {
     // Delete record that the module elfinder is using the file.
     @file_usage_delete($file, 'elfinder', 'elfinderFileFetcher', 0); // 0 : means that there is no reference at the moment.
   }
-  
+
   protected function _checkArchivers() {
     $this->archivers = variable_get('elfinder_settings_misc_archivers', array());
 
@@ -496,5 +577,76 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
       variable_set('elfinder_settings_misc_archivers', $this->archivers);
     }
   }
+
+  /**
+   * Rename file and return file info
+   *
+   * @param  string  $hash  file hash
+   * @param  string  $name  new file name
+   * @return array|false
+   **/
+  public function rename($hash, $name) {
+
+    $results = parent::rename($hash, $name);
+    // Update any fields that point to this file.
+    field_cache_clear();
+    return $results;
+  }
+
+  /**
+   * Taken from elFinderVolumeDriver::remove().
+   *
+   * Adds a message if the file is in use.
+   */
+  protected function remove($path, $force = false) {
+    $stat = $this->stat($path);
+
+    if (empty($stat)) {
+      return $this->setError(elFinder::ERROR_RM, $path, elFinder::ERROR_FILE_NOT_FOUND);
+    }
+
+    $stat['realpath'] = $path;
+    $this->rmTmb($stat);
+    $this->clearcache();
+
+    if (!$force && !empty($stat['locked'])) {
+      return $this->setError(elFinder::ERROR_LOCKED, $this->path($stat['hash']));
+    }
+
+    if ($stat['mime'] == 'directory' && empty($stat['thash'])) {
+      $ret = $this->delTree($this->convEncIn($path));
+      $this->convEncOut();
+      if (!$ret) {
+        return $this->setError(elFinder::ERROR_RM, $this->path($stat['hash']));
+      }
+    } else {
+      $results = $this->_unlink($this->convEncIn($path));
+      if (!$results) {
+        return $this->setError(elFinder::ERROR_RM, $this->path($stat['hash']));
+      }
+      if (is_array($results)) {
+        // File is in use and is being protected by Drupal. Fetch the first
+        // entity where it's used.
+        foreach($results AS $entity_type => $entity) {
+          if(is_array($entity)) {
+            foreach($entity AS $id => $count) {
+              if($entity_type == 'node' && is_integer($id)) {
+                $node = node_load($id);
+                if(!empty($node->title)) {
+                  return $this->setError(elFinder::ERROR_RM, $this->path($stat['hash']), '', t('File is used in @title', array('@title' => $node->title)));
+                }
+              }
+            }
+          }
+        }
+        return $this->setError(elFinder::ERROR_RM, $this->path($stat['hash']), t('File is in use.'));
+      }
+      $this->clearstatcache();
+    }
+    $this->removed[] = $stat;
+    return true;
+  }
+
+
 
 }

@@ -44,8 +44,7 @@ function elfinder_editor_upload_fckeditor() {
   
   if ($file) {
     print "window.parent.OnUploadCompleted(0, '" . file_create_url($file->uri) . "', '" . $file->filename . "', '') ;";
-  }
-  else {
+  } else {
     print 'window.parent.OnUploadCompleted(1,"","", "' . t('Error uploading file!') . '") ;';
   }
   

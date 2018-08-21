@@ -17,8 +17,7 @@ function elfinder_ffsel_hooks($method, &$params) {
     $result = call_user_func_array($function, $params);
     if (isset($result) && is_array($result)) {
       $return = array_merge_recursive($return, $result);
-    }
-    elseif (isset($result)) {
+    } elseif (isset($result)) {
       $return[] = $result;
     }
   }
@@ -173,16 +172,14 @@ function filefield_source_elfinder_value($element, &$item) {
       if (filefield_sources_element_validate($element, $file)) {
         $item = array_merge($item, (array) $file);
       }
-    }
-    else {
+    } else {
       $local_root = elfinder_document_root() . '/' . $file_directory_prefix . '/';
       $file_path = preg_replace('/.*(' . preg_quote('/' . $file_directory_prefix . '/', '/') . ')/', $local_root, $item['filefield_elfinder']['file_path']);
 
       if ($file = filefield_sources_save_file($file_path, $element['#upload_validators'], $element['#upload_location'], FILE_EXISTS_REPLACE)) {
         $item = array_merge($item, (array) $file);
         drupal_set_message(t('File created'));
-      }
-      else {
+      } else {
         form_error($element, t('The selected file could not be used because the file does not exist in the database.'));
       }
     }
@@ -259,8 +256,7 @@ function elfinder_ffsel_element_value($element, $input = FALSE, &$form_state = N
   $field_state = field_form_get_state($field_element['#field_parents'], $field_name, $langcode, $form_state);
   if (isset($field_state['items'])) {
     $items = $field_state['items'];
-  }
-  else {
+  } else {
     $items = drupal_array_get_nested_value($form_state['values'], $field_parents);
   }
 
@@ -288,8 +284,7 @@ function elfinder_ffsel_element_value($element, $input = FALSE, &$form_state = N
         $items[$upload_delta]['_weight'] = $upload_delta;
         $upload_delta++;
       }
-    }
-    else {
+    } else {
       $local_root = elfinder_document_root() . '/' . $file_directory_prefix . '/';
       $file_path = preg_replace('/.*(' . preg_quote('/' . $file_directory_prefix . '/', '/') . ')/', $local_root, $file);
 
@@ -298,8 +293,7 @@ function elfinder_ffsel_element_value($element, $input = FALSE, &$form_state = N
         $items[$upload_delta]['_weight'] = $upload_delta;
         $upload_delta++;
         drupal_set_message(t('File created'));
-      }
-      else {
+      } else {
         form_error($element, t('The selected file could not be used because the file does not exist in the database.'));
       }
     }

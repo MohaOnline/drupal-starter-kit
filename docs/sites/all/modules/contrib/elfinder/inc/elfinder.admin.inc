@@ -57,8 +57,7 @@ function elfinder_admin_form(&$form_state) {
       foreach ($profiles as $profile) {
         $rows[] = array($profile->pid, $profile->name, $profile->description, implode(', ', array_intersect_key($roles, $profile->settings['profile_role'])), elfinder_admin_profile_links($profile->name));
       }
-    }
-    else {
+    } else {
       $profile = $profiles;
       $rows[] = array($profile->pid, $profile->name, $profile->description, implode(', ', array_intersect_key($roles, $profile->settings['profile_role'])), elfinder_admin_profile_links($profile->name));
     }
@@ -144,6 +143,7 @@ function elfinder_admin_form(&$form_state) {
     '#suffix' => '</div>',
     '#type' => 'textfield',
     '#title' => t('Allowed file extensions'),
+    '#maxlength' => 1000,
     '#default_value' => variable_get('elfinder_settings_filesystem_allowed_extensions', ''),
     '#description' => t('Separate extensions with a space or comma and do not include the leading dot.'),
   );

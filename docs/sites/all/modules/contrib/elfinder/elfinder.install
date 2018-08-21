@@ -14,15 +14,17 @@ function elfinder_requirements($phase) {
 	
 	$ver_major = 0;
 	$ver_minor = 0;
+    $ver_release = 0;
 	$min_major = 2;
 	$min_minor = 0;
 	
 	$min_ver = "$min_major.$min_minor";
 
   $libpath = elfinder_lib_path();
+    $ver = '';
 	
 	
-	$install_t = t('Please download it from <a href="@url">@url</a> and install to @libpath.', array('@url' => 'http://sourceforge.net/projects/elfinder/files/', '@libpath' => $libpath));
+	$install_t = t('Please download it from <a href="@url">@url</a> and install to @libpath.', array('@url' => 'http://elfinder.org', '@libpath' => $libpath));
 
   if ($phase == 'runtime' || $phase == 'install' || $phase == 'update') {
     $description = t('elFinder library was not found.') . ' ' . $install_t;
@@ -36,27 +38,33 @@ function elfinder_requirements($phase) {
 
       $value = t('Exists');
 
-      if (preg_match("/(?:this|elFinder\.prototype)\.version\s*=\s*[\"\']([^\"\']+)[\"\']/", $editor_file_content, $matches)) {
+      if (preg_match("/(?:this|elFinder\.prototype|\.prototype)\.version\s*=\s*[\"\']([^\"\']+)[\"\']/", $editor_file_content, $matches)) {
 				$ver = $matches[1];
         $value = t('@ver', array('@ver' => $ver));
       }
 
       $description = '';
 			
-			if (preg_match("/^(\d+)\.(\d+|x)/", $ver, $matches)) {
-				$ver_major = $matches[1];
+			if (preg_match("/^(\d+)\.(\d+|x)(\.(\d+))?/", $ver, $matches)) {
+				$ver_major = (int)$matches[1];
 				$ver_minor = $matches[2];
+                $ver = "$ver_major.$ver_minor";
+                if (count($matches) == 5) {
+                    $ver_release = (int)$matches[4];
+                    $ver = "$ver_major.$ver_minor.$ver_release";
+                }
 			}	
 				
-			$ver = "$ver_major.$ver_minor";
+		
+        
 			
-			if ($ver_major < $min_major) {
+			if (($ver_major < $min_major) || ($ver_major == 2 && $ver_minor == '1' && $ver_release < 38)) {
 				$description = t('Not supported elFinder library. Please upgrade to @minver.', array('@ver' => $ver, '@minver' => $min_ver)) . ' ' . $install_t;
 				$severity = REQUIREMENT_ERROR;
 			} else {
 				$severity = REQUIREMENT_OK;
 			}
-            
+    
             $badpaths_check = elfinder_check_badpaths();
             
             if ($badpaths_check['result'] == FALSE) {
@@ -117,7 +125,6 @@ function elfinder_schema() {
 }
 
 function elfinder_update_7101() {
- // drupal_install_schema('elfinder');
 }
 
 function elfinder_update_7102() {

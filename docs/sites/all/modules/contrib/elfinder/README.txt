@@ -4,7 +4,7 @@ elFinder file manager integration module for Drupal
 System Requirements:
 
  - Drupal 7.x
- - elFinder 2.0+ 
+ - elFinder 2.0.9+ 
 
    Note: elFinder 2.0rc1 no more supported - use 2.x dev build from 
          http://sourceforge.net/projects/drupal-elfinder/files/Library/ 

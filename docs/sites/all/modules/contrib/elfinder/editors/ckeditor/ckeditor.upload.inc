@@ -43,8 +43,7 @@ function elfinder_editor_upload_ckeditor() {
 
   if ($file) {
     print "window.parent.CKEDITOR.tools.callFunction(2, '" . file_create_url($file->uri) . "', '');";
-  }
-  else {
+  } else {
     print "window.parent.CKEDITOR.tools.callFunction(2, '', '" . t('Error uploading file!') . "');";
   }
 

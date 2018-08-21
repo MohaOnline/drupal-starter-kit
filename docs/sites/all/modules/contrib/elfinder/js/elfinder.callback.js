@@ -84,9 +84,7 @@ $().ready(function() {
   for (var i in uiopts) {
     var optsGroup = uiopts[i];
     var newOptsGroup = Array();
-    
 
-    
     for (var j in optsGroup) {
       var found = false;
       for (var k in disabledCommands) {
@@ -109,9 +107,6 @@ $().ready(function() {
       newOpts.push(newOptsGroup);
     }
   }
-  
-  /*elFinder.prototype._options.contextmenu.files.push('|');
-  elFinder.prototype._options.contextmenu.files.push('rename');  */
   
   var contextMenuCwd = elFinder.prototype._options.contextmenu.cwd;
   var contextMenuFiles = elFinder.prototype._options.contextmenu.files;
@@ -164,11 +159,6 @@ $().ready(function() {
   elFinder.prototype._options.contextmenu.files = newContextMenuFiles;
   elFinder.prototype._options.contextmenu.navbar = newContextMenuNavbar;
 
-
-  //elFinder.prototype._options.ui.push('mouseover');
-
-
-
 });
 
 
@@ -196,6 +186,42 @@ $().ready(function() {
       elfinderOpts.getFileCallback = window[Drupal.settings.elfinder.editorCallback];
     }
     
+    if (elfinderOpts.api21) {
+        //alert('api21');
+        console.log('2.1 api');
+      elfinderOpts['commandsOptions'] = {
+              info: {
+        // Key is the same as your command name
+      	desc : {
+          // Field label
+          label : 'Description1',
+          
+          // HTML Template
+          tpl : '<div class="elfinder-info-desc"><span class="elfinder-info-spinner"></span></div>',
+          
+          // Action that sends the request to the server and get the description
+          action : function(file, filemanager, dialog) {
+            // Use the @filemanager object to issue a request
+            filemanager.request({
+              // Issuing the custom 'desc' command, targetting the selected file
+              data : { cmd: 'desc', target: file.hash, },
+              preventDefault: true,
+            })
+            // If the request fails, populate the field with 'Unknown'
+            .fail(function() {
+              dialog.find('.elfinder-info-desc').html(filemanager.i18n('unknown'));
+            })
+            // When the request is successful, show the description
+            .done(function(data) {
+              dialog.find('.elfinder-info-desc').html(data.desc);
+            });
+          },
+        },
+      }
+      };
+
+    }
+      
     $('#finder').elfinder(elfinderOpts);
 
     if(elfinderOpts.browserMode != 'backend') {

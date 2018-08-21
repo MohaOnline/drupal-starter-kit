@@ -4,64 +4,41 @@
  * 
  * elFinder conenctor class 
  */
+
 class elFinderDrupal extends elFinder {
-
 	public function __construct($opts) {
+        if (is_callable(array($this, 'version'))) {
+            
+            $ver = floatval($this->version());
+            
+            if (isset(elFinder::$ApiVersion)) {
+                $ver = elFinder::$ApiVersion;
+            }
+            
+            if ($ver == 2.1 && is_callable(array($this, 'revision')) && $this->revision() < 37) {
+                $this->connector_unsupported_error();
+            }
 
-		$this->time  = $this->utime();
-		$this->debug = (isset($opts['debug']) && $opts['debug'] ? true : false);
-		
-		setlocale(LC_ALL, !empty($opts['locale']) ? $opts['locale'] : 'en_US.UTF-8');
-
-		// bind events listeners
-		if (!empty($opts['bind']) && is_array($opts['bind'])) {
-			foreach ($opts['bind'] as $cmd => $handler) {
-				$this->bind($cmd, $handler);
-			}
-		}
-
-		if (!isset($opts['roots']) || !is_array($opts['roots'])) {
-			$opts['roots'] = array();
-		}
-
-		// check for net volumes stored in session
-    if (method_exists($this, 'getNetVolumes')) {
-      foreach ($this->getNetVolumes() as $root) {
-        $opts['roots'][] = $root;
-      }
-    }
-
-		// "mount" volumes
-		foreach ($opts['roots'] as $i => $o) {
-			$class = 'elFinderVolume'.(isset($o['driver']) ? $o['driver'] : '');
-
-			if (class_exists($class)) {
-				$volume = new $class();
-
-				if ($volume->mount($o)) {
-					// unique volume id (ends on "_") - used as prefix to files hash
-					$id = $volume->id();
-					
-					$this->volumes[$id] = $volume;
-					if (!$this->default && $volume->isReadable()) {
-						$this->default = $this->volumes[$id]; 
-					}
-				} else {
-					$this->mountErrors[] = 'Driver "'.$class.'" : '.implode(' ', $volume->error());
-				}
-			} else {
-				$this->mountErrors[] = 'Driver "'.$class.'" does not exists';
-			}
-		}
-
-		// if at least one redable volume - ii desu >_<
-		$this->loaded = !empty($this->default);
-		
-    /* Adding new command */
-    $this->commands['desc'] = array('target' => TRUE, 'content' => FALSE);
-    $this->commands['owner'] = array('target' => TRUE, 'content' => FALSE);
-    $this->commands['downloadcount'] = array('target' => TRUE);
+            parent::__construct($opts);
+            
+            $this->commands['desc'] = array('target' => TRUE, 'content' => FALSE);
+            $this->commands['owner'] = array('target' => TRUE, 'content' => FALSE);
+            $this->commands['downloadcount'] = array('target' => TRUE);
+            
+        } else {
+            $this->connector_unsupported_error();
+        }
+        
 	}
+
+
+  public function connector_unsupported_error() {
+      $this->connector_error(t('Unsupported elFinder library version. Please upgrade.'));   
+  }
+    
+  public function connector_error($message) {
+    exit(drupal_json_encode(array('error' => array(strip_tags($message)))));   
+  }
 
   /* Overriding search query argument name 'q' since it's already used in Drupal */
 
@@ -73,11 +50,23 @@ class elFinderDrupal extends elFinder {
   protected function search($args) {
     $q = trim($args['elfinder_search_q']);
     $mimes = !empty($args['mimes']) && is_array($args['mimes']) ? $args['mimes'] : array();
+    $target = !empty($args['target']) ? $args['target'] : null;
     $result = array();
+    $errors = array();
 
+    if ($target) {
+      if ($volume = $this->volume($target)) {
+        $result = $volume->search($q, $mimes, $target);
+        $errors = array_merge($errors, $volume->error());
+      }
+    } else {
     foreach ($this->volumes as $volume) {
       $result = array_merge($result, $volume->search($q, $mimes));
+        $errors = array_merge($errors, $volume->error());
     }
+    }
+
+    // Exclude hidden folders from search results.
     $hidden_folders = variable_get('elfinder_settings_misc_hidden_folders', '');
     if($hidden_folders) {
       $hidden_folders = explode(',', $hidden_folders);
@@ -88,7 +77,12 @@ class elFinderDrupal extends elFinder {
         }
       }
     }
-    return array('files' => $result);
+
+    $result = array('files' => $result);
+    if ($errors) {
+      $result['warning'] = $errors;
+    }
+    return $result;
   }
 
   protected function desc($args) {
@@ -243,8 +237,7 @@ class elFinderDrupal extends elFinder {
     if ($download) {
       $disp = 'attachment';
       $mime = 'application/octet-stream';
-    }
-    else {
+    } else {
       $disp = preg_match('/^(image|text)/i', $mime)
               || $mime == 'application/x-shockwave-flash' ? 'inline' : 'attachment';
     }
@@ -256,16 +249,13 @@ class elFinderDrupal extends elFinder {
       $filename = str_replace("+", "%20", $filename);
       //$filename = str_replace(" ", "%20", $filename);
       $disp .= "filename=" . $filename;
-    }
-    elseif (preg_match("/Firefox\/(\d+)/", $ua, $m)) {
+    } elseif (preg_match("/Firefox\/(\d+)/", $ua, $m)) {
       if ($m[1] >= 8) {
         $disp .= "filename*=?UTF-8''" . rawurlencode($filename);
-      }
-      else {
+      } else {
         $disp .= "filename*=\"?UTF-8''" . rawurlencode($filename) . "\";";
       }
-    }
-    else {
+    } else {
       $disp .= "filename=" . $filename;
     }
 

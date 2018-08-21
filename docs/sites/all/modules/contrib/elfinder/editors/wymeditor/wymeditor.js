@@ -22,10 +22,6 @@ Drupal.wysiwyg.editor.attach.wymeditor = function(context, params, settings) {
     
     var oImgHtml = $('<div>'+imgHtml+'</div>');
     
-        
-    //$('body', oImgHtml).addClass('wym_dialog wym_dialog_image');
-    //$('body', oImgHtml).attr('omload', 'WYMeditor.INIT_DIALOG(' + index + ')');
-    
     var oUrl = $("input.wym_src", oImgHtml);
     var browsebutton = $('<input type="button">');
     browsebutton.attr('value', Drupal.t('Browse Server'));
@@ -43,8 +39,6 @@ Drupal.wysiwyg.editor.attach.wymeditor = function(context, params, settings) {
       elfinderUrl = tmp;
     }
 
-    /*  */
- 
     browsebutton.attr('onclick', 'var w = window; w.open("' + elfinderUrl + '","","toolbar=no,menubar=no,width=600,height=600")');
     browsebutton.insertAfter(oUrl);
     

@@ -74,12 +74,20 @@ elFinder.prototype.commands.info = function() {
 				title : this.title,
 				width : 'auto',
         modal : true,
-				close : function() { $(this).elfinderdialog('destroy'); }
+          close: function() {
+            $(this).elfinderdialog('destroy');
+          }
 			},
 			count = [],
-			replSpinner = function(msg) { dialog.find('.'+spclass).parent().text(msg); },
-      replSpinnerById = function(msg, id) { dialog.find('.' + spclass + '-' + id).parent().html(msg); },
-			id = fm.namespace+'-info-'+$.map(files, function(f) { return f.hash }).join('-'),
+        replSpinner = function(msg) {
+          dialog.find('.' + spclass).parent().text(msg);
+        },
+        replSpinnerById = function(msg, id) {
+          dialog.find('.' + spclass + '-' + id).parent().html(msg);
+        },
+        id = fm.namespace + '-info-' + $.map(files, function(f) {
+          return f.hash
+        }).join('-'),
 			dialog = fm.getUI().find('#'+id), 
 			size, tmb, file, title, dcnt;
       
@@ -208,7 +216,9 @@ elFinder.prototype.commands.info = function() {
 		} else {
 			view  = view.replace('{class}', 'elfinder-cwd-icon-group');
 			title = tpl.groupTitle.replace('{items}', msg.items).replace('{num}', cnt);
-			dcnt  = $.map(files, function(f) { return f.mime == 'directory' ? 1 : null }).length;
+        dcnt = $.map(files, function(f) {
+          return f.mime == 'directory' ? 1 : null
+        }).length;
 			if (!dcnt) {
 				size = 0;
 				$.each(files, function(h, f) { 
@@ -225,7 +235,9 @@ elFinder.prototype.commands.info = function() {
 			} else {
 				content.push(row.replace(l, msg.kind).replace(v, dcnt == cnt ? msg.folders : msg.folders+' '+dcnt+', '+msg.files+' '+(cnt-dcnt)))
 				content.push(row.replace(l, msg.size).replace(v, tpl.spinner.replace('{text}', msg.calc).replace('{id}', 'size')));
-				count = $.map(files, function(f) { return f.hash });
+          count = $.map(files, function(f) {
+            return f.hash
+          });
 				
 			}
 		}
@@ -253,7 +265,9 @@ elFinder.prototype.commands.info = function() {
 		// load thumbnail
 		if (tmb) {
 			$('<img/>')
-				.load(function() { dialog.find('.elfinder-cwd-icon').css('background', 'url("'+tmb+'") center center no-repeat'); })
+          .load(function() {
+            dialog.find('.elfinder-cwd-icon').css('background', 'url("' + tmb + '") center center no-repeat');
+          })
 				.attr('src', tmb);
 		}
 		

@@ -1,6 +1,4 @@
 Drupal.elfinder = {
-  editor: {
-  
-  }
+  editor: {}
 
 }
