@@ -1,6 +1,7 @@
 <?php
 
 /**
+ * @file
  * Classes used in the Quiz Question module.
  *
  * The core of the Quiz Question module is a set of abstract classes that
@@ -19,37 +20,41 @@
  * extend the existing content.
  *
  * Where do I start?
- * To create a new question type, check out the multichoice question type for instance.
- *
- * @file
+ * To create a new question type, check out the multichoice question type for
+ * instance.
  */
 
 /**
- * A base implementation of a quiz_question, adding a layer of abstraction between the
- * node API, quiz API and the question types.
+ * A base implementation of a quiz_question.
+ *
+ * This class is adding a layer of abstraction between the node API, quiz API
+ * and the question types.
  *
  * It is required that Question types extend this abstract class.
  *
- * This class has default behaviour that all question types must have. It also handles the node API, but
- * gives the question types opportunity to save, delete and provide data specific to the question types.
+ * This class has default behaviour that all question types must have. It also
+ * handles the node API, but gives the question types opportunity to save,
+ * delete and provide data specific to the question types.
  *
- * This abstract class also declares several abstract functions forcing question-types to implement required
- * methods.
+ * This abstract class also declares several abstract functions forcing
+ * question-types to implement required methods.
  */
 abstract class QuizQuestion {
   /*
    * QUESTION IMPLEMENTATION FUNCTIONS
    *
-   * This part acts as a contract(/interface) between the question-types and the rest of the system.
+   * This part acts as a contract(/interface) between the question-types and the
+   * rest of the system.
    *
-   * Question types are made by extending these generic methods and abstract methods.
+   * Question types are made by extending these generic methods and abstract
+   * methods.
    */
 
   /**
    * The current node for this question.
    */
   public $node = NULL;
-  // Extra node properties
+  // Extra node properties.
   public $nodeProperties = NULL;
 
   /**
@@ -63,30 +68,31 @@ abstract class QuizQuestion {
   }
 
   /**
-   * Allow question types to override the body field title
+   * Allow question types to override the body field title.
    *
    * @return string
-   *  The title for the body field
+   *   The title for the body field.
    */
   public function getBodyFieldTitle() {
     return t('Question');
   }
 
   /**
-   * Returns a node form to quiz_question_form
+   * Returns a node form to quiz_question_form.
    *
    * Adds default form elements, and fetches question type specific elements
-   * from their implementation of getCreationForm
+   * from their implementation of getCreationForm.
    *
    * @param array $form_state
+   *
    * @return array
-   *   An renderable FAPI array
+   *   An renderable FAPI array.
    */
   public function getNodeForm(array &$form_state = NULL) {
     global $user;
     $form = array();
 
-    // mark this form to be processed by quiz_form_alter. quiz_form_alter will
+    // Mark this form to be processed by quiz_form_alter. quiz_form_alter will
     // among other things hide the revision fieldset if the user don't have
     // permission to control the revisioning manually.
     $form['#quiz_check_revision_access'] = TRUE;
@@ -110,7 +116,7 @@ abstract class QuizQuestion {
       );
     }
 
-    // Store quiz id in the form
+    // Store quiz id in the form.
     $form['quiz_nid'] = array(
       '#type' => 'hidden',
     );
@@ -123,10 +129,11 @@ abstract class QuizQuestion {
       $form['quiz_vid']['#value'] = intval($_GET['quiz_vid']);
     }
 
-    // Identify this node as a quiz question type so that it can be recognized by other modules effectively.
+    // Identify this node as a quiz question type so that it can be recognized
+    // by other modules effectively.
     $form['is_quiz_question'] = array(
       '#type' => 'value',
-      '#value' => TRUE
+      '#value' => TRUE,
     );
 
     if (!empty($this->node->nid)) {
@@ -142,7 +149,7 @@ abstract class QuizQuestion {
       '#description' => t('This feedback will show when configured and the user answers a question, regardless of correctness.'),
     );
 
-    // Add question type specific content
+    // Add question type specific content.
     $form = array_merge($form, $this->getCreationForm($form_state));
 
     if (variable_get('quiz_auto_revisioning', 1) && $this->hasBeenAnswered()) {
@@ -160,7 +167,7 @@ abstract class QuizQuestion {
    * (This data is generally added to the node's extra field.)
    *
    * @return array
-   *  Content array
+   *   Content array.
    */
   public function getNodeView() {
     $content = array();
@@ -173,7 +180,7 @@ abstract class QuizQuestion {
    * @see load hook in quiz_question.module (quiz_question_load)
    *
    * @return array
-   *   Array with all additional node properties
+   *   Array with all additional node properties.
    */
   public function getNodeProperties() {
     if (isset($this->nodeProperties)) {
@@ -200,6 +207,7 @@ abstract class QuizQuestion {
 
   /**
    * Responsible for handling insert/update of question-specific data.
+   *
    * This is typically called from within the Node API, so there is no need
    * to save the node.
    *
@@ -207,7 +215,7 @@ abstract class QuizQuestion {
    * created.
    *
    * A save function is required to handle the following three situations:
-   * - A new node is created ($is_new is TRUE)
+   * - A new node is created ($is_new is TRUE).
    * - A new node *revision* is created ($is_new is NOT set, because the
    *   node itself is not new).
    * - An existing node revision is modified.
@@ -215,10 +223,11 @@ abstract class QuizQuestion {
    * @see hook_update and hook_insert in quiz_question.module
    *
    * @param bool $is_new
-   *  TRUE when the node is initially created.
+   *   TRUE when the node is initially created.
    */
   public function save($is_new = FALSE) {
-    // We call the abstract function saveNodeProperties to save type specific data
+    // We call the abstract function saveNodeProperties to save type specific
+    // data.
     $this->saveNodeProperties($this->node->is_new);
 
     db_merge('quiz_question_properties')
@@ -254,15 +263,16 @@ abstract class QuizQuestion {
    * Delete question data from the database.
    *
    * Called by quiz_question_delete (hook_delete).
-   * Child classes must call super
+   *
+   * Child classes must call super.
    *
    * @param bool $only_this_version
-   *  If the $only_this_version flag is TRUE, then only the particular
-   *  nid/vid combo should be deleted. Otherwise, all questions with the
-   *  current nid can be deleted.
+   *   If the $only_this_version flag is TRUE, then only the particular
+   *   nid/vid combo should be deleted. Otherwise, all questions with the
+   *   current nid can be deleted.
    */
   public function delete($only_this_version = FALSE) {
-    // Delete properties
+    // Delete properties.
     $delete = db_delete('quiz_question_properties')
       ->condition('nid', $this->node->nid);
     if ($only_this_version) {
@@ -278,7 +288,7 @@ abstract class QuizQuestion {
    * called to validate that the settings are acceptable.
    *
    * @param array $form
-   *  The processed form.
+   *   The processed form.
    */
   abstract public function validateNode(array &$form);
 
@@ -286,11 +296,11 @@ abstract class QuizQuestion {
    * Get the form through which the user will answer the question.
    *
    * @param array $form_state
-   *  The FAPI form_state array
+   *   The FAPI form_state array.
    * @param int $result_id
-   *  The result id.
+   *   The result id.
    * @return array
-   *  An renderable FAPI array
+   *   An renderable FAPI array.
    */
   public function getAnsweringForm(array $form_state = NULL, $result_id) {
     $form = array();
@@ -302,9 +312,9 @@ abstract class QuizQuestion {
    * Get the form used to create a new question.
    *
    * @param array $form_state
-   *  The FAPI form_state array
+   *   The FAPI form_state array.
    * @return array
-   *  An renderable FAPI array
+   *   An renderable FAPI array.
    */
   abstract public function getCreationForm(array &$form_state = NULL);
 
@@ -316,7 +326,7 @@ abstract class QuizQuestion {
   abstract public function getMaximumScore();
 
   /**
-   * Save question type specific node properties
+   * Save question type specific node properties.
    */
   abstract public function saveNodeProperties();
 
@@ -328,11 +338,11 @@ abstract class QuizQuestion {
    * @param $vid
    *   The revision ID.
    */
-  function saveRelationships($nid, $vid) {
+  public function saveRelationships($nid, $vid) {
     $quiz_node = node_load($nid, $vid);
 
     if (variable_get('quiz_auto_revisioning', 1) && quiz_has_been_answered($quiz_node)) {
-      // We need to revise the quiz node if it has been answered
+      // We need to revise the quiz node if it has been answered.
       $quiz_node->revision = 1;
       $quiz_node->auto_created = TRUE;
       $quiz_node->log = t('The current revision has been answered. We create a new revision so that the reports from the existing answers stays correct.');
@@ -353,7 +363,7 @@ abstract class QuizQuestion {
     entity_create('quiz_question_relationship', $insert_values)->save();
 
     // Update max_score for relationships if auto update max score is enabled
-    // for question
+    // for question.
     $quizzes_to_update = array();
     $result = db_query(
       'SELECT parent_vid as vid from {quiz_node_relationship} where child_nid = :nid and child_vid = :vid and auto_update_max_score=1', array(':nid' => $this->node->nid, ':vid' => $this->node->vid));
@@ -373,11 +383,12 @@ abstract class QuizQuestion {
   }
 
   /**
-   * Finds out if a question has been answered or not
+   * Finds out if a question has been answered or not.
    *
-   * This function also returns TRUE if a quiz that this question belongs to have been answered.
-   * Even if the question itself haven't been answered. This is because the question might have
-   * been rendered and a user is about to answer it...
+   * This function also returns TRUE if a quiz that this question belongs to
+   * have been answered. Even if the question itself haven't been answered.
+   * This is because the question might have been rendered and a user is about
+   * to answer it...
    *
    * @return bool
    *   TRUE if question has been answered or is about to be answered...
@@ -393,10 +404,10 @@ abstract class QuizQuestion {
   }
 
   /**
-   * Determines if the user can view the correct answers
+   * Determines if the user can view the correct answers.
    *
-   * @return TRUE|NULL
-   *   TRUE if the view may include the correct answers to the question
+   * @return true|null
+   *   TRUE if the view may include the correct answers to the question.
    */
   public function viewCanRevealCorrect() {
     global $user;
@@ -409,9 +420,9 @@ abstract class QuizQuestion {
   }
 
   /**
-   * Utility function that returns the format of the node body
+   * Utility function that returns the format of the node body.
    *
-   * @return string|NULL
+   * @return string|null
    *   The format of the node body
    */
   protected function getFormat() {
@@ -471,8 +482,9 @@ abstract class QuizQuestion {
   }
 
   /**
-   * Is this "question" an actual question? For example, a Quiz Page is not a
-   * question, neither is a "quiz directions".
+   * Is this "question" an actual question?
+   *
+   * For example, a Quiz Page is not a question, neither is a "quiz directions".
    *
    * Returning FALSE here means that the question will not be numbered, and
    * possibly other things.
@@ -482,19 +494,20 @@ abstract class QuizQuestion {
   public function isQuestion() {
     return TRUE;
   }
+
 }
 
 /**
- * Each question type must store its own response data and be able to calculate a score for
- * that data.
+ * Each question type must store its own response data and be able to calculate
+ * a score for that data.
  */
 abstract class QuizQuestionResponse {
 
-  // Result id
+  // Result id.
   protected $result_id = 0;
   protected $is_correct = FALSE;
   protected $evaluated = TRUE;
-  // The question node(not a quiz question instance)
+  // The question node(not a quiz question instance).
   public $question = NULL;
   public $quizQuestion = NULL;
   protected $answer = NULL;
@@ -506,20 +519,27 @@ abstract class QuizQuestionResponse {
    * Create a new user response.
    *
    * @param int $result_id
-   *  The result ID for the user's result set. There is one result ID per time
-   *  the user takes a quiz.
+   *   The result ID for the user's result set. There is one result ID per time
+   *   the user takes a quiz.
    * @param stdClass $question_node
-   *  The question node.
+   *   The question node.
    * @param mixed $answer
-   *  The answer (dependent on question type).
+   *   The answer (dependent on question type).
    */
   public function __construct($result_id, stdClass $question_node, $answer = NULL) {
     $this->result_id = $result_id;
     $this->question = $question_node;
     $this->quizQuestion = _quiz_question_get_instance($question_node);
     $this->answer = $answer;
-    $result = db_query('SELECT * FROM {quiz_node_results_answers}
-            WHERE result_id = :result_id AND question_nid = :question_nid AND question_vid = :question_vid', array(':result_id' => $result_id, ':question_nid' => $question_node->nid, ':question_vid' => $question_node->vid))->fetch();
+    $result = db_query('SELECT *
+      FROM {quiz_node_results_answers}
+      WHERE result_id = :result_id
+      AND question_nid = :question_nid
+      AND question_vid = :question_vid', array(
+      ':result_id' => $result_id,
+      ':question_nid' => $question_node->nid,
+      ':question_vid' => $question_node->vid
+    ))->fetch();
     if (is_object($result)) {
       foreach ($result as $key => $value) {
         $this->$key = $value;
@@ -532,7 +552,7 @@ abstract class QuizQuestionResponse {
    *
    * @return QuizQuestion
    */
-  function getQuizQuestion() {
+  public function getQuizQuestion() {
     return $this->quizQuestion;
   }
 
@@ -540,7 +560,7 @@ abstract class QuizQuestionResponse {
    * Used to refresh this instances question node in case drupal has changed it.
    *
    * @param stdClass $newNode
-   *  Question node
+   *   Question node.
    */
   public function refreshQuestionNode($newNode) {
     $this->question = $newNode;
@@ -548,6 +568,7 @@ abstract class QuizQuestionResponse {
 
   /**
    * Indicate whether the response has been evaluated (scored) yet.
+   *
    * Questions that require human scoring (e.g. essays) may need to manually
    * toggle this.
    *
@@ -566,7 +587,7 @@ abstract class QuizQuestionResponse {
    *
    * @return bool
    */
-  function isCorrect() {
+  public function isCorrect() {
     return ($this->getMaxScore(FALSE) == $this->getScore(FALSE));
   }
 
@@ -579,7 +600,7 @@ abstract class QuizQuestionResponse {
    * @return int
    *   The max score of this question response.
    */
-  function getScore($weight_adjusted = TRUE) {
+  public function getScore($weight_adjusted = TRUE) {
     if ($weight_adjusted) {
       $ratio = $this->getWeightedRatio();
       return $this->score() * $ratio;
@@ -596,7 +617,7 @@ abstract class QuizQuestionResponse {
    * @return int
    *   The max score of this question response.
    */
-  function getMaxScore($weight_adjusted = TRUE) {
+  public function getMaxScore($weight_adjusted = TRUE) {
     if ($weight_adjusted) {
       $quiz_result = quiz_result_load($this->result_id);
       $relationships = entity_load('quiz_question_relationship', FALSE, array(
@@ -634,19 +655,19 @@ abstract class QuizQuestionResponse {
    * Represent the response as a stdClass object.
    *
    * Convert data to an object that has the following properties:
-   * - $score
-   * - $nid
-   * - $vid
-   * - $result_id
-   * - $is_correct
-   * - $is_evaluated
-   * - $is_skipped
-   * - $is_doubtful
-   * - $tid
+   * - $score.
+   * - $nid.
+   * - $vid.
+   * - $result_id.
+   * - $is_correct.
+   * - $is_evaluated.
+   * - $is_skipped.
+   * - $is_doubtful.
+   * - $tid.
    *
    * @return stdClass
    */
-  function toBareObject() {
+  public function toBareObject() {
     $obj = new stdClass();
     $obj->score = $this->getScore(); // This can be 0 for unscored.
     $obj->nid = $this->question->nid;
@@ -682,15 +703,17 @@ abstract class QuizQuestionResponse {
   }
 
   /**
-   * Creates the report form for the admin pages, and for when a user gets feedback after answering questions.
+   * Creates the report form for the admin pages, and for when a user gets
+   * feedback after answering questions.
    *
-   * The report is a form to allow editing scores and the likes while viewing the report form
+   * The report is a form to allow editing scores and the likes while viewing
+   * the report form.
    *
-   * @return array|NULL
+   * @return array|null
    *   An renderable FAPI array
    */
   public function getReportForm() {
-    // Add general data, and data from the question type implementation
+    // Add general data, and data from the question type implementation.
     $form = array();
 
     $form['nid'] = array(
@@ -728,14 +751,14 @@ abstract class QuizQuestionResponse {
   }
 
   /**
-   * Get the response part of the report form
+   * Get the response part of the report form.
    *
    * @return array
-   *  Array of response data, with each item being an answer to a response. For
-   *  an example, see MultichoiceResponse::getFeedbackValues(). The sub
-   *  items are keyed by the feedback type. Providing a NULL option means that
-   *  feedback will not be shown. See an example at
-   *  LongAnswerResponse::getFeedbackValues().
+   *   Array of response data, with each item being an answer to a response. For
+   *   an example, see MultichoiceResponse::getFeedbackValues(). The sub items
+   *   are keyed by the feedback type. Providing a NULL option means that
+   *   feedback will not be shown. See an example at
+   *   LongAnswerResponse::getFeedbackValues().
    */
   public function getFeedbackValues() {
     $data = array();
@@ -755,44 +778,45 @@ abstract class QuizQuestionResponse {
   }
 
   /**
-   * Get the feedback form for the reportForm
+   * Get the feedback form for the reportForm.
    *
-   * @return array|FALSE
-   *   An renderable FAPI array, or FALSE if no answer form
+   * @return array|false
+   *   An renderable FAPI array, or FALSE if no answer form.
    */
   public function getReportFormAnswerFeedback() {
     return FALSE;
   }
 
   /**
-   * Get the submit function for the reportForm
+   * Get the submit function for the reportForm.
    *
-   * @return string|FALSE
-   *  Submit function as a string, or FALSE if no submit function
+   * @return string|false
+   *   Submit function as a string, or FALSE if no submit function.
    */
   public function getReportFormSubmit() {
     return FALSE;
   }
 
   /**
-   * Get the validate function for the reportForm
+   * Get the validate function for the reportForm.
    *
    * @param array $element
    *   The form element of this question.
    * @param array $form_state
-   *   The FAPI form_state array
+   *   The FAPI form_state array.
    */
   public function getReportFormValidate(&$element, &$form_state) {
-    // Check to make sure that entered score is not higher than max allowed score.
+    // Check to make sure that entered score is not higher than max allowed
+    // score.
     if ($element['score']['#value'] && $element['score']['#value'] > $this->getMaxScore(TRUE)) {
       form_error($element['score'], t('The score needs to be a number between 0 and @max', array('@max' => $this->getMaxScore(TRUE))));
     }
   }
 
   /**
-   * Utility function that returns the format of the node body
+   * Utility function that returns the format of the node body.
    *
-   * @return string|NULL
+   * @return string|null
    *   The format of the node body
    */
   protected function getFormat() {
@@ -827,7 +851,8 @@ abstract class QuizQuestionResponse {
    * Can the quiz taker view the requested review?
    *
    * @param string $option
-   *   An option key
+   *   An option key.
+   *
    * @return bool
    */
   public function canReview($option) {
@@ -893,7 +918,7 @@ abstract class QuizQuestionResponse {
     foreach ($result_answer_ids as $result_answer_id) {
       $ra = entity_load_single('quiz_result_answer', $result_answer_id);
       $question = node_load($ra->question_nid, $ra->question_vid);
-      /** @var $ra_i QuizQuestionResponse */
+      /* @var $ra_i QuizQuestionResponse */
       $ra_i = _quiz_question_response_get_instance($ra->result_id, $question);
       $items[$ra->result_id][] = array('answer' => $ra_i->getResponse());
     }
@@ -901,6 +926,8 @@ abstract class QuizQuestionResponse {
   }
 
   /**
+   * Get the weighted score ratio.
+   *
    * This returns the ratio of the weighted score of this question versus the
    * question score. For example, if the question is worth 10 points in the
    * associated quiz, but it is a 3 point multichoice question, the weighted
@@ -974,12 +1001,12 @@ class QuizQuestionResponseBroken extends QuizQuestionResponse {
    * Create a new user response.
    *
    * @param int $result_id
-   *  The result ID for the user's result set. There is one result ID per time
-   *  the user takes a quiz.
+   *   The result ID for the user's result set. There is one result ID per time
+   *   the user takes a quiz.
    * @param stdClass $question_node
-   *  The question node.
+   *   The question node.
    * @param mixed $answer
-   *  The answer (dependent on question type).
+   *   The answer (dependent on question type).
    */
   public function __construct($result_id, stdClass $question_node, $answer = NULL) {
     $this->quizQuestion = _quiz_question_get_instance($question_node);

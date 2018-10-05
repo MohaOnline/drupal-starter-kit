@@ -6,19 +6,20 @@
  */
 
 /**
- * Create the form for the revision actions page
+ * Create the form for the revision actions page.
  *
- * Form for deciding what to do with the quizzes a question is member of when the question is
- * revised
+ * Form for deciding what to do with the quizzes a question is member of when
+ * the question is revised.
  *
  * @param array $form
  * @param array $form_state
  * @param stdClass $question_node
+ *
  * @return array
- *   An renderable FAPI array
+ *   An renderable FAPI array.
  */
 function quiz_question_revision_actions_form($form, $form_state, $question_node) {
-  $efq = new EntityFieldQuery;
+  $efq = new EntityFieldQuery();
 
   // Find relationships that contain not the current version of this question.
   $result = $efq->entityCondition('entity_type', 'quiz_question_relationship')
@@ -94,7 +95,7 @@ function quiz_question_revision_actions_form($form, $form_state, $question_node)
 }
 
 /**
- * Submit callback for the revision actions page
+ * Submit callback for the revision actions page.
  */
 function quiz_question_revision_actions_form_submit($form, &$form_state) {
   $form_state['redirect'] = 'node/' . $form_state['values']['question_node']->nid;

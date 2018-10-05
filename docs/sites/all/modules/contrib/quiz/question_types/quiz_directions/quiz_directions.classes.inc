@@ -2,7 +2,7 @@
 
 /**
  * @file
- * quiz_directions classes
+ * Quiz_directions classes.
  *
  * This module uses the question interface to define something which is
  * actually not a question.
@@ -115,7 +115,7 @@ class QuizDirectionsQuestion extends QuizQuestion {
 }
 
 /**
- * Extension of QuizQuestionResponse
+ * Extension of QuizQuestionResponse.
  */
 class QuizDirectionsResponse extends QuizQuestionResponse {
 
@@ -167,9 +167,9 @@ class QuizDirectionsResponse extends QuizQuestionResponse {
   }
 
   /**
-   * Implementation of getReportForm
+   * Implementation of getReportForm().
    *
-   * @see QuizQuestionResponse#getReportForm()
+   * @see QuizQuestionResponse::getReportForm()
    */
   public function getReportForm() {
     return array(

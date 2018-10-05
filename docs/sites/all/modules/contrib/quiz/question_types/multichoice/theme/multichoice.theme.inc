@@ -8,7 +8,7 @@
 /**
  * Theme the creation form.
  *
- * @param $variables
+ * @param array $variables
  *
  * @return string
  *   An HTML string representing the themed output.
@@ -18,7 +18,8 @@ function theme_multichoice_creation_form($variables) {
   $path = drupal_get_path('module', 'multichoice') . '/multichoice.js';
   drupal_add_js($path);
 
-  // We open the settings fieldset if there is errors involving the choice_multi setting.
+  // We open the settings fieldset if there is errors involving the choice_multi
+  // setting.
   $errors = form_get_errors();
   if (isset($errors['choice_multi'])) {
     $form['settings']['#collapsed'] = FALSE;
@@ -38,7 +39,7 @@ function theme_multichoice_creation_form($variables) {
 /**
  * Theme the answer part of the node view.
  *
- * @param $variables
+ * @param array $variables
  *
  * @return string
  *   An HTML string representing the themed output.
@@ -69,15 +70,15 @@ function theme_multichoice_answer_node_view($variables) {
               $image,
             ),
             'title' => $show_correct ?
-              t('Score if chosen: @sc Score if not chosen: @nc', array(
-                '@sc' => $short['score_if_chosen'],
-                '@nc' => $short['score_if_not_chosen'])
-              ) :
-              t('You are not allowed to view the solution for this question'),
+            t('Score if chosen: @sc Score if not chosen: @nc', array(
+              '@sc' => $short['score_if_chosen'],
+              '@nc' => $short['score_if_not_chosen'],
+            )) :
+            t('You are not allowed to view the solution for this question'),
           ),
         ),
       ),
-      $answer_markup
+      $answer_markup,
     );
   }
   return theme('table', array('header' => $header, 'rows' => $rows));

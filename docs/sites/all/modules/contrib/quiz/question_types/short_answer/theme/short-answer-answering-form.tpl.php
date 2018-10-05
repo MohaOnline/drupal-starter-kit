@@ -8,5 +8,3 @@
  * - $form.
  */
 print drupal_render($form);
-
-?>

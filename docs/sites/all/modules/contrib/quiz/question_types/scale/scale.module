@@ -40,7 +40,7 @@ function scale_theme($existing, $type, $theme, $path) {
   return array(
     'scale_creation_form' => array(
       'render element' => 'form',
-      'path' =>  $module_path . '/theme',
+      'path' => $module_path . '/theme',
       'file' => 'scale.theme.inc',
     ),
     'scale_response_form' => array(
@@ -122,7 +122,8 @@ function scale_config_validate($form, $form_state) {
  *   The Question revision ID.
  * @param int $result_id
  *   The result ID for this attempt.
- * @return array|FALSE
+ *
+ * @return array|false
  *   Array containing the answer data.
  */
 function scale_get_answer($question_nid, $question_vid, $result_id) {
@@ -226,7 +227,8 @@ function scale_manage_collection_form($form, &$form_state) {
         '#options' => array(
           t('Save changes, do not change questions using this preset'),
           t('Save changes, and change your own questions who uses this preset'),
-          t('Delete this preset(This will not affect existing questions)')),
+          t('Delete this preset(This will not affect existing questions)')
+        ),
       );
     }
     else {
@@ -268,9 +270,10 @@ function scale_collection_form_submit($form, &$form_state) {
 
       // @todo Rename to-do to $op
       switch ($alternatives['to-do']) {
-        //Save, but don't change.
+        // Save, but don't change.
         case 0:
-        //Save and change existing questions.
+
+        // Save and change existing questions.
         case 1:
           $new_col_id = $s_q->saveAnswerCollection(FALSE, $alternatives, 1);
           if (isset($alternatives['for_all'])) {
@@ -284,7 +287,8 @@ function scale_collection_form_submit($form, &$form_state) {
           if ($alternatives['to-do'] == 0) {
             // The old version of the collection shall not be a preset anymore.
             _scale_unpreset_collection($col_id, $user->uid);
-            // If the old version of the collection doesn't belong to any questions it is safe to delete it.
+            // If the old version of the collection doesn't belong to any
+            // questions it is safe to delete it.
             $s_q->deleteCollectionIfNotUsed($col_id);
 
             if (isset($alternatives['for_all'])) {
@@ -316,7 +320,7 @@ function scale_collection_form_submit($form, &$form_state) {
           $deleted++;
           break;
 
-        // New
+        // New.
         case 3:
           if (drupal_strlen($alternatives['alternative0']) > 0) {
             $new_col_id = $s_q->saveAnswerCollection(FALSE, $alternatives, 1);
@@ -345,7 +349,7 @@ function scale_collection_form_validate($form, &$form_state) {
     if (drupal_strlen($form_state['values']['collectionnew']['alternative1']) == 0) {
       // This can't be replaced by adding #required to the form elements. If
       // we did so we would always have to create a new collection when we
-      // press submit
+      // press submit.
       form_set_error('collectionnew][alternative1', t('New preset must have atleast two alternatives.'));
     }
   }
@@ -355,7 +359,8 @@ function scale_collection_form_validate($form, &$form_state) {
  * Searches a string for the answer collection id.
  *
  * @param string $string
- * @return int|FALSE
+ *
+ * @return int|false
  *   answer collection id.
  */
 function _scale_get_col_id($string) {
@@ -378,7 +383,7 @@ function _scale_unpreset_collection($col_id, $user_id) {
     ->execute();
   if (user_access('Edit global presets')) {
     db_update('quiz_scale_answer_collection')
-      ->fields(array('for_all' =>  0))
+      ->fields(array('for_all' => 0))
       ->execute();
   }
 }
@@ -389,7 +394,7 @@ function _scale_unpreset_collection($col_id, $user_id) {
  * @param int $new_col_id
  *   Answer collection id.
  * @param int $for_all
- *  0 if not for all, 1 if for all.
+ *   Use 0 if not for all, 1 if for all.
  */
 function _scale_set_for_all($new_col_id, $for_all) {
   db_update('quiz_scale_answer_collection')

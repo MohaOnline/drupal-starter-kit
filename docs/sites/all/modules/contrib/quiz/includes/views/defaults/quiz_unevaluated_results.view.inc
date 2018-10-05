@@ -3,7 +3,7 @@
 $view = new view();
 $view->name = 'quiz_unevaluated_results';
 $view->description = '';
-$view->tag = 'default';
+$view->tag = 'quiz';
 $view->base_table = 'quiz_node_results';
 $view->human_name = 'quiz_unevaluated_results';
 $view->core = 7;
@@ -84,6 +84,11 @@ $handler->display->display_options['filters']['is_evaluated']['table'] = 'quiz_n
 $handler->display->display_options['filters']['is_evaluated']['field'] = 'is_evaluated';
 $handler->display->display_options['filters']['is_evaluated']['value'] = '0';
 $handler->display->display_options['filters']['is_evaluated']['group'] = 1;
+/* Filter criterion: Quiz result: Invalid */
+$handler->display->display_options['filters']['is_invalid']['id'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['table'] = 'quiz_node_results';
+$handler->display->display_options['filters']['is_invalid']['field'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['value'] = '0';
 
 /* Display: Score any quiz */
 $handler = $view->new_display('page', 'Score any quiz', 'page');
@@ -118,12 +123,19 @@ $handler->display->display_options['filters']['is_evaluated']['table'] = 'quiz_n
 $handler->display->display_options['filters']['is_evaluated']['field'] = 'is_evaluated';
 $handler->display->display_options['filters']['is_evaluated']['value'] = '0';
 $handler->display->display_options['filters']['is_evaluated']['group'] = 1;
+/* Filter criterion: Quiz result: Invalid */
+$handler->display->display_options['filters']['is_invalid']['id'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['table'] = 'quiz_node_results';
+$handler->display->display_options['filters']['is_invalid']['field'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['value'] = '0';
+$handler->display->display_options['filters']['is_invalid']['group'] = 1;
 /* Filter criterion: User: Current */
 $handler->display->display_options['filters']['uid_current']['id'] = 'uid_current';
 $handler->display->display_options['filters']['uid_current']['table'] = 'users';
 $handler->display->display_options['filters']['uid_current']['field'] = 'uid_current';
 $handler->display->display_options['filters']['uid_current']['relationship'] = 'uid_1';
 $handler->display->display_options['filters']['uid_current']['value'] = '1';
+$handler->display->display_options['filters']['uid_current']['group'] = 1;
 $handler->display->display_options['path'] = 'admin/quiz/quiz-unevaluated-results';
 $handler->display->display_options['menu']['type'] = 'normal';
 $handler->display->display_options['menu']['title'] = 'Score quizzes';
@@ -155,12 +167,19 @@ $handler->display->display_options['filters']['is_evaluated']['table'] = 'quiz_n
 $handler->display->display_options['filters']['is_evaluated']['field'] = 'is_evaluated';
 $handler->display->display_options['filters']['is_evaluated']['value'] = '0';
 $handler->display->display_options['filters']['is_evaluated']['group'] = 1;
+/* Filter criterion: Quiz result: Invalid */
+$handler->display->display_options['filters']['is_invalid']['id'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['table'] = 'quiz_node_results';
+$handler->display->display_options['filters']['is_invalid']['field'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['value'] = '0';
+$handler->display->display_options['filters']['is_invalid']['group'] = 1;
 /* Filter criterion: User: Current */
 $handler->display->display_options['filters']['uid_current']['id'] = 'uid_current';
 $handler->display->display_options['filters']['uid_current']['table'] = 'users';
 $handler->display->display_options['filters']['uid_current']['field'] = 'uid_current';
 $handler->display->display_options['filters']['uid_current']['relationship'] = 'uid';
 $handler->display->display_options['filters']['uid_current']['value'] = '1';
+$handler->display->display_options['filters']['uid_current']['group'] = 1;
 $handler->display->display_options['path'] = 'admin/quiz/quiz-unevaluated-results';
 $handler->display->display_options['menu']['type'] = 'normal';
 $handler->display->display_options['menu']['title'] = 'Score quizzes';

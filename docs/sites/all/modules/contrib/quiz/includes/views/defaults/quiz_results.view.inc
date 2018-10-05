@@ -3,7 +3,7 @@
 $view = new view();
 $view->name = 'quiz_results';
 $view->description = '';
-$view->tag = 'default';
+$view->tag = 'quiz';
 $view->base_table = 'quiz_node_results';
 $view->human_name = 'quiz_results';
 $view->core = 7;
@@ -155,6 +155,11 @@ $handler->display->display_options['arguments']['nid']['validate_options']['type
 );
 $handler->display->display_options['arguments']['nid']['validate_options']['access'] = TRUE;
 $handler->display->display_options['arguments']['nid']['validate_options']['access_op'] = 'update';
+/* Filter criterion: Quiz result: Invalid */
+$handler->display->display_options['filters']['is_invalid']['id'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['table'] = 'quiz_node_results';
+$handler->display->display_options['filters']['is_invalid']['field'] = 'is_invalid';
+$handler->display->display_options['filters']['is_invalid']['value'] = '0';
 
 /* Display: Page */
 $handler = $view->new_display('page', 'Page', 'page');

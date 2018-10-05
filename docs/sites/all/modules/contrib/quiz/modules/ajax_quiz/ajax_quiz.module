@@ -1,6 +1,6 @@
 <?php
 
-/*
+/**
  * @file
  * module file for ajax_quiz quiz module
  */

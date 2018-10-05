@@ -1,11 +1,11 @@
 <?php
 
 /**
- * This plugin array is more or less self documenting
+ * This plugin array is more or less self documenting.
  */
 
 $plugin = array(
-  // the title in the admin
+  // The title in the admin.
   'title' => t('@quiz Pane: Take', array('@quiz' => QUIZ_NAME)),
   'single' => TRUE,
   'render callback' => 'quiz_quiztake_pane_content_type_render',
@@ -16,8 +16,9 @@ $plugin = array(
 );
 
 /**
- * Run-time rendering of the body of the block (content type)
- * See ctools_plugin_examples for more advanced info
+ * Run-time rendering of the body of the block (content type).
+ *
+ * See ctools_plugin_examples for more advanced info.
  */
 function quiz_quiztake_pane_content_type_render($subtype, $conf, $panel_args, $context = NULL) {
   if (!empty($context) && empty($context->data)) {
@@ -51,6 +52,7 @@ function quiz_quiztake_pane_content_type_render($subtype, $conf, $panel_args, $c
   }
   return $block;
 }
+
 /**
  * Returns the administrative title for a type.
  */

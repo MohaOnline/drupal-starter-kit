@@ -10,7 +10,7 @@
  */
 class QuizAccessTestCase extends QuizTestCase {
 
-  function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
+  public function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
     $modules[] = 'short_answer';
     parent::setUp($modules, $admin_permissions, $user_permissions);
   }
@@ -43,14 +43,14 @@ class QuizAccessTestCase extends QuizTestCase {
     $this->drupalGet("node/$quiz_node->nid/take");
     $this->drupalPost(NULL, array(
       "question[$question_node->nid][answer]" => 'bluish',
-      ), t('Finish'));
+    ), t('Finish'));
 
     // Score.
     $this->drupalLogin($grader);
     $this->drupalGet("node/$quiz_node->nid/quiz/results/1/view");
     $this->drupalPost(NULL, array(
       'question[0][score]' => 5,
-      ), t('Save score'));
+    ), t('Save score'));
   }
 
   /**
@@ -66,19 +66,18 @@ class QuizAccessTestCase extends QuizTestCase {
     ));
     $quiz_node = $this->linkQuestionToQuiz($question_node);
 
-
     $grader = $this->drupalCreateUser(array('score taken quiz answer', 'view own quiz results'));
     $this->drupalLogin($grader);
     $this->drupalGet("node/$quiz_node->nid/take");
     $this->drupalPost(NULL, array(
       "question[$question_node->nid][answer]" => 'bluish',
-      ), t('Finish'));
+    ), t('Finish'));
 
     // Score.
     $this->drupalGet("node/$quiz_node->nid/quiz/results/1/view");
     $this->drupalPost(NULL, array(
       'question[0][score]' => 5,
-      ), t('Save score'));
+    ), t('Save score'));
   }
 
 }

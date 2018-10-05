@@ -1,12 +1,12 @@
 <?php
 
-/*
+/**
  * @file
  * Themes for the quiz question module.
  */
 
 /**
- * Theme the question creation form
+ * Theme the question creation form.
  *
  * @param array $variables
  */

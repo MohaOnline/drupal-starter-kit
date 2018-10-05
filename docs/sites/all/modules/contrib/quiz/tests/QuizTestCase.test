@@ -22,7 +22,7 @@ abstract class QuizTestCase extends DrupalWebTestCase {
    * @param array $user_permissions
    *   Array of user permissions to add.
    */
-  function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
+  public function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
     $modules[] = 'quiz';
     $modules[] = 'quiz_question';
     parent::setUp($modules);
@@ -87,7 +87,6 @@ abstract class QuizTestCase extends DrupalWebTestCase {
     $filtered_html_permission = filter_permission_name($filtered_html_format);
     user_role_grant_permissions(DRUPAL_ANONYMOUS_RID, array($filtered_html_permission));
     user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array($filtered_html_permission));
-
 
     $admin_permissions[] = 'administer quiz configuration';
     $admin_permissions[] = 'create quiz content';

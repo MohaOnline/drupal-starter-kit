@@ -9,7 +9,7 @@ class QuizResult extends Entity {
    *
    * @return QuizResultAnswer[]
    */
-  function getLayout() {
+  public function getLayout() {
     $layouts = drupal_static('quiz_result_layout', array());
 
     if (!isset($layouts[$this->identifier()])) {
@@ -58,7 +58,10 @@ class QuizResult extends Entity {
     $quiz = node_load($this->nid, $this->vid);
     $user = user_load($this->uid);
 
-    return t('@user\'s @quiz result in "@title"', array('@user' => format_username($user), '@quiz' => QUIZ_NAME, '@title' => $quiz->title));
+    return t('@user\'s @quiz result in "@title"', array(
+      '@user' => format_username($user),
+      '@quiz' => QUIZ_NAME, '@title' => $quiz->title,
+    ));
   }
 
 }

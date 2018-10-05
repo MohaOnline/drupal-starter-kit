@@ -2,7 +2,7 @@
 
 /**
  * @file
- * multichoice questions install file.
+ * Multichoice questions install file.
  */
 
 /**
@@ -37,7 +37,7 @@ function multichoice_schema() {
       ),
     ),
     'primary key' => array(
-      'id'
+      'id',
     ),
     'unique keys' => array(
       'result_answer_id' => array('result_answer_id'),
@@ -58,7 +58,7 @@ function multichoice_schema() {
       ),
     ),
     'primary key' => array(
-      'user_answer_id', 'answer_id'
+      'user_answer_id', 'answer_id',
     ),
     'indexes' => array(
       'answer_id' => array('user_answer_id'),
@@ -97,7 +97,7 @@ function multichoice_schema() {
       ),
     ),
     'primary key' => array(
-      'nid', 'vid'
+      'nid', 'vid',
     ),
   );
 
@@ -169,7 +169,7 @@ function multichoice_schema() {
     ),
     'indexes' => array(
       'quiz_id' => array('question_nid', 'question_vid'),
-    )
+    ),
   );
 
   $schema['quiz_multichoice_user_settings'] = array(
@@ -199,7 +199,7 @@ function multichoice_schema() {
       ),
     ),
     'primary key' => array(
-      'uid'
+      'uid',
     ),
   );
   return $schema;
@@ -222,13 +222,17 @@ function multichoice_uninstall() {
  * Change answer_format to a varchar.
  */
 function multichoice_update_7500() {
-  foreach (array('answer_format', 'feedback_if_chosen_format', 'feedback_if_not_chosen_format') as $field) {
+  $fields = array(
+    'answer_format',
+    'feedback_if_chosen_format',
+    'feedback_if_not_chosen_format',
+  );
+  foreach ($fields as $field) {
     db_change_field('quiz_multichoice_answers', $field, $field, array(
       'type' => 'varchar',
       'length' => 255,
       'not null' => TRUE,
-      )
-    );
+    ));
   }
 }
 

@@ -10,7 +10,7 @@
  */
 class MatchingTestCase extends QuizQuestionTestCase {
 
-  // initializing attributes.
+  // Initializing attributes.
   var $question_node_type = 'matching';
   var $title = '';
   var $body = '';
@@ -23,15 +23,15 @@ class MatchingTestCase extends QuizQuestionTestCase {
     );
   }
 
-  function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
+  public function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
     parent::setUp(array('matching'));
   }
 
   /**
    * Test adding and taking a matching question.
    */
-  function testCreateQuizQuestion() {
-    // Login as our privileged user..
+  public function testCreateQuizQuestion() {
+    // Login as our privileged user.
     $this->drupalLogin($this->admin);
 
     $match = array();
@@ -55,7 +55,7 @@ class MatchingTestCase extends QuizQuestionTestCase {
   /**
    * Test using a matching question inside a quiz.
    */
-  function testTakeQuestion() {
+  public function testTakeQuestion() {
     $quiz_node = $this->drupalCreateQuiz(array(
       'review_options' => array('end' => drupal_map_assoc(array('answer_feedback', 'score'))),
     ));
@@ -93,7 +93,7 @@ class MatchingTestCase extends QuizQuestionTestCase {
       "question[2][answer][1]" => 1,
       "question[2][answer][2]" => 2,
       "question[2][answer][3]" => 3,
-      ), t('Finish'));
+    ), t('Finish'));
     $this->assertText('MAF 1');
     $this->assertText('MAF 2');
     $this->assertText('MAF 3');
@@ -105,7 +105,7 @@ class MatchingTestCase extends QuizQuestionTestCase {
       "question[2][answer][1]" => 1,
       "question[2][answer][2]" => 2,
       "question[2][answer][3]" => 2,
-      ), t('Finish'));
+    ), t('Finish'));
     $this->assertText('MAF 1');
     $this->assertText('MAF 2');
     // The behavior right now is that all the feedback shows.
@@ -116,7 +116,7 @@ class MatchingTestCase extends QuizQuestionTestCase {
   /**
    * Test if the penalty system for guessing wrong work.
    */
-  function testChoicePenalty() {
+  public function testChoicePenalty() {
     $quiz_node = $this->drupalCreateQuiz(array(
       'review_options' => array('end' => drupal_map_assoc(array('answer_feedback', 'score'))),
     ));
@@ -137,14 +137,14 @@ class MatchingTestCase extends QuizQuestionTestCase {
       "question[{$question_node->nid}][answer][4]" => 4,
       "question[{$question_node->nid}][answer][5]" => 5,
       "question[{$question_node->nid}][answer][6]" => 4,
-      ), t('Finish'));
+    ), t('Finish'));
     $this->assertText('You got 1 of 3 possible points.');
   }
 
   /**
    * Test that the question response can be edited.
    */
-  function testEditQuestionResponse() {
+  public function testEditQuestionResponse() {
     // Create & link a question.
     $question_node = $this->testCreateQuizQuestion();
     $quiz_node = $this->linkQuestionToQuiz($question_node);
@@ -163,12 +163,12 @@ class MatchingTestCase extends QuizQuestionTestCase {
     $this->drupalGet("node/$quiz_node->nid/take/1");
     $this->drupalPost(NULL, array(
       "question[$question_node->nid][answer][1]" => 1,
-      ), t('Next'));
+    ), t('Next'));
     $this->drupalGet("node/$quiz_node->nid/take/1");
     $this->drupalPost(NULL, array(
       "question[$question_node->nid][answer][1]" => 0,
       "question[$question_node->nid][answer][2]" => 2,
-      ), t('Next'));
+    ), t('Next'));
   }
 
 }

@@ -4,7 +4,8 @@
  * @file
  * Quiz_page question type for the Quiz module.
  *
- * Pages are implemented as a question type. However, they do not affect the score.
+ * Pages are implemented as a question type. However, they do not affect the
+ * score.
  */
 
 /**

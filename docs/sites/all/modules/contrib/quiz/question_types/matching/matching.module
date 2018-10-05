@@ -15,9 +15,11 @@ function matching_help($path, $args) {
   switch ($path) {
     case 'admin/modules#description':
       return t('Matching question type for quiz module.');
+
     case 'node/add#matching':
     case 'admin/help#matching':
       return t('A question type for the quiz module: allows you to create matching type questions, which connect terms with one another.');
+
     default:
       break;
   }

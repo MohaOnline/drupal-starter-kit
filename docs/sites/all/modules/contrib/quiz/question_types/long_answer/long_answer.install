@@ -76,7 +76,7 @@ function long_answer_schema() {
         'not null' => TRUE,
       ),
       'answer' => array(
-        'type' => 'text'
+        'type' => 'text',
       ),
       'answer_format' => array(
         'type' => 'varchar',
@@ -84,7 +84,7 @@ function long_answer_schema() {
         'description' => 'Text format for the answer text.',
       ),
       'answer_feedback' => array(
-        'type' => 'text'
+        'type' => 'text',
       ),
       'answer_feedback_format' => array(
         'type' => 'varchar',

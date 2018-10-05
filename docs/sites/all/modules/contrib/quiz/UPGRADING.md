@@ -10,4 +10,5 @@ If you do not have any custom question modules, an upgrade to 5.x is easy.
 6. Verify that existing results work
 7. Done!
 
-If you encounter any errors during update, please post them to https://www.drupal.org/project/issues/quiz
+If you encounter any errors during update, please post them to
+https://www.drupal.org/project/issues/quiz

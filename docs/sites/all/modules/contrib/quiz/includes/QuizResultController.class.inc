@@ -2,7 +2,7 @@
 
 class QuizResultController extends EntityAPIController {
 
-  function delete($ids, \DatabaseTransaction $transaction = NULL) {
+  public function delete($ids, \DatabaseTransaction $transaction = NULL) {
     foreach ($ids as $result_id) {
       // Fire the question types' implementations of question attempts deletion.
       $sql = 'SELECT result_id, question_nid, question_vid FROM {quiz_node_results_answers}
@@ -27,9 +27,10 @@ class QuizResultController extends EntityAPIController {
    *
    * @param type $entity
    * @param \DatabaseTransaction $transaction
-   * @return boolean
+   *
+   * @return bool
    */
-  function save($entity, \DatabaseTransaction $transaction = NULL) {
+  public function save($entity, \DatabaseTransaction $transaction = NULL) {
     if (empty($entity->time_start)) {
       $entity->time_start = REQUEST_TIME;
     }
@@ -56,8 +57,6 @@ class QuizResultController extends EntityAPIController {
       }
     }
 
-
-
     // Save the Quiz result.
     parent::save($entity, $transaction);
 
@@ -67,7 +66,6 @@ class QuizResultController extends EntityAPIController {
 
       // Call @deprecated hook_quiz_begin().
       module_invoke_all('quiz_begin', $quiz, $entity->result_id);
-
 
       // Create question list.
       $questions = quiz_build_question_list($quiz);
@@ -97,9 +95,9 @@ class QuizResultController extends EntityAPIController {
       }
 
       if (!empty($entity->build_on_last)) {
-        // Build on the last attempt the user took. If this quiz has build on last
-        // attempt set, we need to search for a previous attempt with the same
-        // version of the current quiz.
+        // Build on the last attempt the user took. If this quiz has build on
+        // last attempt set, we need to search for a previous attempt with the
+        // same version of the current quiz.
         $quiz_result_old = self::findOldResult($entity);
         // Now clone the answers on top of the new result.
         quiz_clone_quiz_result($quiz_result_old, $entity);
@@ -114,7 +112,7 @@ class QuizResultController extends EntityAPIController {
    * will return the first completed result found.
    */
   public static function findOldResult($quiz_result) {
-    $efq = new EntityFieldQuery;
+    $efq = new EntityFieldQuery();
     $result = $efq->entityCondition('entity_type', 'quiz_result')
       ->propertyCondition('uid', $quiz_result->uid)
       ->propertyCondition('nid', $quiz_result->nid)
@@ -131,8 +129,8 @@ class QuizResultController extends EntityAPIController {
     return FALSE;
   }
 
-  public function buildContent($entity, $view_mode = 'full', $langcode = NULL) {
-    $out = parent::buildContent($entity, $view_mode, $langcode);
+  public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    $out = parent::buildContent($entity, $view_mode, $langcode, $content);
 
     if (!$entity->is_evaluated && empty($_POST)) {
       $msg = t('Parts of this @quiz have not been evaluated yet. The score below is not final.', array('@quiz' => QUIZ_NAME));
@@ -156,10 +154,13 @@ class QuizResultController extends EntityAPIController {
       // Loop through all the questions and get their feedback.
       $question_node = node_load($question['nid'], $question['vid']);
 
-
       $instance = _quiz_question_response_get_instance($entity->result_id, $question_node);
       if ($instance->getQuizQuestion()->hasFeedback()) {
-        $qras = entity_load('quiz_result_answer', FALSE, array('result_id' => $entity->result_id, 'question_nid' => $question_node->nid, 'question_vid' => $question_node->vid));
+        $qras = entity_load('quiz_result_answer', FALSE, array(
+          'result_id' => $entity->result_id,
+          'question_nid' => $question_node->nid,
+          'question_vid' => $question_node->vid,
+        ));
         $qra = reset($qras);
 
         $feedback = $qra->view();

@@ -15,7 +15,10 @@ foreach (element_children($form) as $key) {
           'width' => 35,
           'data' => drupal_render($form[$key]['correct']),
         ),
-        drupal_render($form[$key]['answer']) . drupal_render($form[$key]['advanced']),
+        drupal_render($form[$key]['answer'])
+        . drupal_render($form[$key]['advanced'])
+        . drupal_render($form[$key]['remove_button'])
+        . theme('status_messages'),
         drupal_render($form[$key]['weight']),
       ),
       'class' => array('draggable'),
@@ -23,5 +26,16 @@ foreach (element_children($form) as $key) {
     $rows[] = $row;
   }
 }
-print theme('table', array('rows' => $rows, 'header' => array(t('Correct'), t('Answer'), t('Weight')), 'attributes' => array('id' => 'multichoice-alternatives-table')));
+
+print theme('table', array(
+  'rows' => $rows,
+  'header' => array(
+    t('Correct'),
+    t('Answer'),
+    t('Weight'),
+  ),
+  'attributes' => array(
+    'id' => 'multichoice-alternatives-table',
+  ),
+));
 print drupal_render_children($form);

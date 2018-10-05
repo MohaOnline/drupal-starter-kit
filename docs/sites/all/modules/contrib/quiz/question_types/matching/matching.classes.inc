@@ -228,6 +228,7 @@ class MatchingQuestion extends QuizQuestion {
       $form = $this->customShuffle($form);
     }
     $form['scoring_info'] = array(
+      '#access' => !empty($this->node->choice_penalty),
       '#markup' => '<p><em>' . t('You lose points by selecting incorrect options. You may leave an option blank to avoid losing points.') . '</em></p>',
     );
     return $form;

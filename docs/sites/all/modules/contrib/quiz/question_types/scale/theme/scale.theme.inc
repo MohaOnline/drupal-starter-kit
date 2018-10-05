@@ -44,7 +44,7 @@ function theme_scale_response_form($variables) {
  * function because sometimes the form is returned from cache.
  *
  * @param $form
- *  The scale creation form.
+ *   The scale creation form.
  */
 function theme_scale_creation_form($form) {
   drupal_add_js(drupal_get_path('module', 'scale') . '/scale.js');

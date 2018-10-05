@@ -2,7 +2,7 @@
 
 /**
  * @file
- * TrueFalse question type for the Quiz module
+ * TrueFalse question type for the Quiz module.
  *
  * Allows the creation of "True or False" questions.
  */
@@ -14,9 +14,11 @@ function truefalse_help($path, $args) {
   switch ($path) {
     case 'admin/modules#description':
       return t('TrueFalse question type for the quiz module.');
+
     case 'node/add#truefalse':
     case 'admin/help#truefalse':
       return t('A question type for the quiz module. A simplified version of multichoice where "true" and "false" are the alternatives.');
+
     default:
       break;
   }
@@ -63,7 +65,6 @@ function truefalse_theme() {
     ),
   );
 }
-
 
 /**
  * Theme the truefalse response form.

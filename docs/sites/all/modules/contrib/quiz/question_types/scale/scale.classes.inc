@@ -4,7 +4,8 @@
  * @file
  * Scale classes.
  *
- * Question type, enabling rapid creation of simple surveys using the quiz framework.
+ * Question type, enabling rapid creation of simple surveys using the quiz
+ * framework.
  *
  * @todo: We mix the names answer_collection and alternatives. Use either alternative or answer consistently
  */
@@ -14,7 +15,8 @@
  */
 class ScaleQuestion extends QuizQuestion {
 
-  // $util will be set to true if an instance of this class is used only as a utility.
+  // $util will be set to true if an instance of this class is used only as a
+  // utility.
   protected $util = FALSE;
   // (answer)Collection id.
   protected $col_id = NULL;
@@ -23,7 +25,7 @@ class ScaleQuestion extends QuizQuestion {
    * Tells the instance that it is being used as a utility.
    *
    * @param int $col_id
-   *   Answer collection id
+   *   Answer collection id.
    */
   public function initUtil($col_id) {
     $this->util = TRUE;
@@ -38,7 +40,8 @@ class ScaleQuestion extends QuizQuestion {
   public function saveNodeProperties($is_new = FALSE) {
     $is_new_node = $is_new || $this->node->revision == 1;
     $answer_collection_id = $this->saveAnswerCollection($is_new_node);
-    // Save the answer collection as a preset if the save preset option is checked.
+    // Save the answer collection as a preset if the save preset option is
+    // checked.
     if (!empty($this->node->save)) {
       $this->setPreset($answer_collection_id);
     }
@@ -66,23 +69,24 @@ class ScaleQuestion extends QuizQuestion {
    * Add a preset for the current user.
    *
    * @param int $col_id
-   *   Answer collection id of the collection this user wants to have as a preset.
+   *   Answer collection id of the collection this user wants to have as a
+   *   preset.
    */
   private function setPreset($col_id) {
     db_merge('quiz_scale_user')
       ->key(array(
         'uid' => $GLOBALS['user']->uid,
-        'answer_collection_id' => $col_id
+        'answer_collection_id' => $col_id,
       ))
       ->fields(array(
         'uid' => $GLOBALS['user']->uid,
-        'answer_collection_id' => $col_id
+        'answer_collection_id' => $col_id,
       ))
       ->execute();
   }
 
   /**
-   * Stores|Identifies the answer collection
+   * Stores|Identifies the answer collection.
    *
    * Stores the answer collection to the database, or identifies an existing
    * collection. We try to reuse answer collections as much as possible to
@@ -94,7 +98,7 @@ class ScaleQuestion extends QuizQuestion {
    * @param array $alt_input
    *   The alternatives array to be saved.
    * @param int $preset
-   *   1 for preset, 0 for not a preset
+   *   Use 1 for preset, 0 for not a preset.
    *
    * @return int
    *   Answer collection id
@@ -178,9 +182,10 @@ class ScaleQuestion extends QuizQuestion {
    * Deletes an answer collection if it isn't being used.
    *
    * @param int $answer_collection_id
-   *   Answer collection id
+   *   Answer collection id.
    * @param int $accept
    *   If collection is used more than this many times we keep it.
+   *
    * @return bool
    *   TRUE if deleted, FALSE if not deleted.
    */
@@ -197,10 +202,12 @@ class ScaleQuestion extends QuizQuestion {
       return FALSE;
     }
 
-    // Check if the collection is used in an existing question. If it is we can't delete it.
+    // Check if the collection is used in an existing question. If it is we
+    // can't delete it.
     $count = db_query('SELECT COUNT(*) FROM {quiz_scale_node_properties} WHERE answer_collection_id = :acid', array(':acid' => $answer_collection_id))->fetchField();
 
-    // We delete the answer collection if it isn't being used by enough questions.
+    // We delete the answer collection if it isn't being used by enough
+    // questions.
     if ($count <= $accept) {
       db_delete('quiz_scale_answer_collection')
         ->condition('id', $answer_collection_id)
@@ -220,11 +227,13 @@ class ScaleQuestion extends QuizQuestion {
    * @param array $alternatives
    *   This is the collection that will be compared with the database.
    * @param int $answer_collection_id
-   *   If we are matching a set of alternatives with a given collection that exists in the database.
+   *   If we are matching a set of alternatives with a given collection that
+   *   exists in the database.
    * @param int $last_id
    *   The id of the last alternative we compared with.
+   *
    * @return bool
-   *  TRUE if the collection exists, FALSE otherwise.
+   *   TRUE if the collection exists, FALSE otherwise.
    */
   private function existingCollection(array $alternatives, $answer_collection_id = NULL, $last_id = NULL) {
     $my_alts = isset($answer_collection_id) ? $alternatives : array_reverse($alternatives);
@@ -412,7 +421,7 @@ class ScaleQuestion extends QuizQuestion {
       '#attributes' => array('onchange' => 'refreshAlternatives(this)'),
     );
     $max_num_alts = variable_get('scale_max_num_of_alts', 10);
-    // TODO: use drupal_add_js($path, 'settings');
+    // TODO: use drupal_add_js($path, 'settings').
     $form['jsArray'] = array('#markup' => "<script type='text/javascript'>$jsArray var scale_max_num_of_alts = $max_num_alts;</script>");
     $form['answer']['alternatives'] = array(
       '#type' => 'fieldset',
@@ -430,7 +439,7 @@ class ScaleQuestion extends QuizQuestion {
         '#required' => $i < 2,
       );
     }
-    // @todo: Rename save to save_as_preset or something
+    // @todo: Rename save to save_as_preset or something.
     $form['answer']['alternatives']['save'] = array(
       '#type' => 'checkbox',
       '#title' => t('Save as a new preset'),
@@ -445,6 +454,7 @@ class ScaleQuestion extends QuizQuestion {
    * Get all available presets for the current user.
    *
    * @param bool $with_defaults
+   *
    * @return array
    *   Array holding all the preset collections as an array of objects. Each
    *   object in the array has the following properties:
@@ -455,7 +465,7 @@ class ScaleQuestion extends QuizQuestion {
   public function getPresetCollections($with_defaults = FALSE) {
     global $user;
 
-    // array holding data for each collection.
+    // Array holding data for each collection.
     $collections = array();
     $scale_element_names = array();
     $sql = 'SELECT DISTINCT ac.id AS answer_collection_id, a.answer, ac.for_all
@@ -471,10 +481,10 @@ class ScaleQuestion extends QuizQuestion {
     $col_id = NULL;
 
     // Populate the $collections array.
-    while (true) {
+    while (TRUE) {
       if (!($res_o = $res->fetch()) || ($res_o->answer_collection_id != $col_id)) {
 
-         // We have gone through all elements for one answer collection, and
+        // We have gone through all elements for one answer collection, and
         // need to store the answer collection name and id in the options array.
         if (isset($col_id)) {
           $num_scale_elements = count($collections[$col_id]->alternatives);
@@ -503,6 +513,7 @@ class ScaleQuestion extends QuizQuestion {
    *
    * @param array $collections
    *   Collections array, from getPresetCollections() for instance...
+   *
    * @return array
    *   An array with options.
    */
@@ -519,6 +530,7 @@ class ScaleQuestion extends QuizQuestion {
    *
    * @param array $collections
    *   Collections array, from getPresetCollections() for instance...
+   *
    * @return string
    *   javascript(string)
    */
@@ -549,7 +561,7 @@ class ScaleQuestion extends QuizQuestion {
 }
 
 /**
- * Extension of QuizQuestionResponse
+ * Extension of QuizQuestionResponse.
  */
 class ScaleResponse extends QuizQuestionResponse {
 

@@ -43,7 +43,7 @@ function short_answer_schema() {
         'size' => 'tiny',
         'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => 0
+        'default' => 0,
       ),
       // One of exact (0), case insensitive (1), regex (2), manual (3).
       'correct_answer_evaluation' => array(
@@ -51,19 +51,19 @@ function short_answer_schema() {
         'size' => 'tiny',
         'unsigned' => TRUE,
         'not null' => TRUE,
-        'default' => 0
+        'default' => 0,
       ),
       // Correct answer.
       'correct_answer' => array(
-        'type' => 'text'
+        'type' => 'text',
       ),
       // Feedback if answer is correct.
       'feedback_correct' => array(
-        'type' => 'text'
+        'type' => 'text',
       ),
       // Feedback if answer is incorrect.
       'feedback_incorrect' => array(
-        'type' => 'text'
+        'type' => 'text',
       ),
     ),
     'primary key' => array('nid', 'vid'),
@@ -97,10 +97,10 @@ function short_answer_schema() {
         'not null' => TRUE,
       ),
       'answer' => array(
-        'type' => 'text'
+        'type' => 'text',
       ),
       'answer_feedback' => array(
-        'type' => 'text'
+        'type' => 'text',
       ),
       'answer_feedback_format' => array(
         'type' => 'varchar',

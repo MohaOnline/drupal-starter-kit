@@ -3,9 +3,8 @@ package = Quiz core
 core = 7.x
 hidden = TRUE
 
-; Information added by Drupal.org packaging script on 2017-11-15
-version = "7.x-5.2"
+; Information added by Drupal.org packaging script on 2018-08-30
+version = "7.x-5.3"
 core = "7.x"
 project = "quiz"
-datestamp = "1510774094"
-
+datestamp = "1535645294"

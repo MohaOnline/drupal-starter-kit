@@ -4,7 +4,8 @@
  * @file
  * Quiz_directions question type for the Quiz module.
  *
- * Directions are implemented as a question type. However, they do not affect the score.
+ * Directions are implemented as a question type. However, they do not affect
+ * the score.
  */
 
 /**

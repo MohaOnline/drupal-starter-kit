@@ -4,7 +4,8 @@
  * @file
  * Long answer classes.
  *
- * This module uses the question interface to define the long_answer question type.
+ * This module uses the question interface to define the long_answer question
+ * type.
  */
 
 /**
@@ -223,7 +224,8 @@ class LongAnswerResponse extends QuizQuestionResponse {
     parent::__construct($result_id, $question_node, $answer);
 
     if (!isset($answer)) {
-      // Question has been answered already. We fetch the answer data from the database.
+      // Question has been answered already. We fetch the answer data from the
+      // database.
       $r = db_query('SELECT *
         FROM {quiz_long_answer_user_answers}
         WHERE result_answer_id = :raid', array(':raid' => $this->result_answer_id))->fetch();
@@ -305,7 +307,8 @@ class LongAnswerResponse extends QuizQuestionResponse {
     $data = array();
 
     $data[] = array(
-      // Hide this column. Does not make sense for long answer as there are no choices.
+      // Hide this column. Does not make sense for long answer as there are no
+      // choices.
       'choice' => NULL,
       'attempt' => check_markup($this->answer, $this->answer_format),
       'correct' => $this->question->answers[0]['is_correct'] ? quiz_icon('correct') : '',

@@ -4,9 +4,10 @@
  * @file
  * Long_answer question type for the Quiz module.
  *
- * Long answer questions make use of the quiz question framework (quiz_question.module).
- * The functions in this file are largely used for grading long answer questions. Most
- * of the real logic is in long_answer.classes.inc.
+ * Long answer questions make use of the quiz question framework
+ * (quiz_question.module). The functions in this file are largely used for
+ * grading long answer questions. Most of the real logic is in
+ * long_answer.classes.inc.
  */
 
 /**
@@ -114,7 +115,8 @@ function long_answer_score_an_answer($values, $update_total = TRUE) {
     ->key(array('result_answer_id' => $quiz_question_response->result_answer_id))
     ->execute();
 
-  // Now the user data has been updated. We also need to update the data in the quiz tables.
+  // Now the user data has been updated. We also need to update the data in the
+  // quiz tables.
   $quiz_result_answer = entity_load_single('quiz_result_answer', $quiz_question_response->result_answer_id);
   $quiz_result_answer->points_awarded = $score;
   $quiz_result_answer->is_correct = $quiz_question_response->isCorrect();

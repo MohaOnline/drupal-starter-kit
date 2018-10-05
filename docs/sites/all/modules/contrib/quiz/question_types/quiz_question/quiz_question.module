@@ -1,9 +1,11 @@
 <?php
 
 /**
- * Quiz Question module.
- * This module provides the basic facilities for adding quiz question types to a quiz.
  * @file
+ * Quiz Question module.
+ *
+ * This module provides the basic facilities for adding quiz question types to
+ * a quiz.
  */
 
 /**
@@ -74,7 +76,7 @@ function quiz_question_node_info() {
       $node_info[$type] = array(
         'name' => $definition['name'],
         'base' => 'quiz_question',
-        'description' => $definition['description']
+        'description' => $definition['description'],
       );
     }
   }
@@ -109,7 +111,8 @@ function quiz_question_form_node_form_alter(&$form, $form_state, $form_id) {
 function quiz_question_node_form_submit($form, &$form_state) {
   $node = $form_state['node'];
   if (!empty($form_state['values']['revision'])) {
-    // Forced redirect to question-revision-actions, overriding any '?destination' that's set
+    // Forced redirect to question-revision-actions, overriding any
+    // '?destination' that's set.
     unset($_GET['destination']);
     unset($_REQUEST['edit']['destination']);
     $form_state['redirect'] = array('node/' . $node->nid . '/question-revision-actions', array('query' => drupal_get_destination()));
@@ -132,8 +135,9 @@ function quiz_question_validate($node, &$form) {
  *   A list of question nodes to get answers from.
  * @param int $result_id
  *   The result ID for this attempt.
+ *
  * @return array
- *   An renderable FAPI array
+ *   An renderable FAPI array.
  */
 function quiz_question_answering_form($form, $form_state, $nodes, $result_id) {
   $quiz_result = quiz_result_load($result_id);
@@ -149,7 +153,7 @@ function quiz_question_answering_form($form, $form_state, $nodes, $result_id) {
     if ($nodes->type == 'quiz_page') {
       foreach ($quiz_result->getLayout() as $question) {
         if ($question['nid'] == $nodes->nid) {
-          // Found a page
+          // Found a page.
           $nodes = array(node_load($nodes->nid, $nodes->vid));
           foreach ($quiz_result->getLayout() as $question2) {
             if ($question2['qnr_pid'] == $question['qnr_id']) {
@@ -172,7 +176,7 @@ function quiz_question_answering_form($form, $form_state, $nodes, $result_id) {
   foreach ($nodes as $node) {
     $question = _quiz_question_get_instance($node);
     $class = drupal_html_class('quiz-question-' . $node->type);
-    // Element for a single question
+    // Element for a single question.
     $element = $question->getAnsweringForm($form_state, $result_id);
     $qra = quiz_result_answer_load($quiz_result->result_id, $node->nid, $node->vid);
 
@@ -296,7 +300,8 @@ function quiz_question_answering_form_submit_blank($form, &$form_state) {
       // Delete the user's answer.
       _quiz_question_response_get_instance($quiz_result->result_id, $question)->delete();
 
-      // Mark our question attempt as skipped, reset the correct and points flag.
+      // Mark our question attempt as skipped, reset the correct and points
+      // flag.
       $qra = quiz_result_answer_load($quiz_result->result_id, $question->nid, $question->vid);
       $qra->is_skipped = 1;
       $qra->is_correct = 0;
@@ -339,7 +344,7 @@ function quiz_question_goto($quiz, $question_number) {
  * This is to see if a new revision of a question should be made when saving.
  *
  * @return bool
- *  TRUE if a user has submitted an answer for this question.
+ *   TRUE if a user has submitted an answer for this question.
  */
 function quiz_question_has_been_answered($node) {
   $question_instance = _quiz_question_get_instance($node);
@@ -385,10 +390,10 @@ function quiz_question_config($form, $context) {
   $q_types = quiz_question_get_info();
   $form = array();
   $form['#validate'] = array();
-  // Go through all question types and merge their config forms
+  // Go through all question types and merge their config forms.
   foreach ($q_types as $type => $values) {
     $function = $type . '_quiz_question_config';
-    if ($admin_form = $function()) {
+    if (function_exists($function) && $admin_form = $function()) {
       $form[$type] = $admin_form;
       $form[$type]['#type'] = 'fieldset';
       $form[$type]['#title'] = $values['name'];
@@ -403,7 +408,7 @@ function quiz_question_config($form, $context) {
   return system_settings_form($form);
 }
 
-// NODE API
+// NODE API.
 
 /**
  * Implements hook_node_revision_delete().
@@ -412,7 +417,8 @@ function quiz_question_node_revision_delete($node) {
   $q_types = quiz_question_get_info();
   foreach ($q_types as $q_type => $info) {
     if ($node->type == $q_type) {
-      _quiz_delete_question($node, TRUE); // true for only this version
+      // True for only this version.
+      _quiz_delete_question($node, TRUE);
     }
   }
 }
@@ -455,9 +461,9 @@ function quiz_question_query_alter(QueryAlterableInterface $query) {
     if ($types = array_keys(quiz_question_get_info())) {
       $tables = $query->getTables();
       foreach ($tables as $table) {
-        if ($table['table'] == 'search_index') {
-          // Remove the node IDs from the query.
-          $query->condition('n.type', $types, 'NOT IN');
+        if ($table['table'] == 'search_index' && isset($tables['node'])) {
+          // Remove the quiz node types from the query.
+          $query->condition("{$tables['node']['alias']}.type", $types, 'NOT IN');
         }
       }
     }
@@ -502,12 +508,12 @@ function quiz_question_delete(&$node) {
  * same tracing of what's happened if a question was deleted unintentionally.
  *
  * @param stdClass $node
- *   The question node
+ *   The question node.
  * @param bool $only_this_version
- *   Whether to delete only the specific revision of the question
+ *   Whether to delete only the specific revision of the question.
  */
 function _quiz_delete_question($node, $only_this_version) {
-  // let each question class delete its own stuff
+  // Let each question class delete its own stuff.
   _quiz_question_get_instance($node, TRUE)->delete($only_this_version);
 
   // FIXME QuizQuestion class makes these relationships, so it should handle their 'deletion' too
@@ -555,7 +561,7 @@ function quiz_question_load($nodes) {
   }
 }
 
-// END NODE API
+// END NODE API.
 
 /**
  * Get an instance of a quiz question.
@@ -564,9 +570,10 @@ function quiz_question_load($nodes) {
  * object of the appropriate type.
  *
  * @param stdClass $node
- *  Question node
+ *   Question node.
+ *
  * @return QuizQuestion
- *  The appropriate QuizQuestion extension instance
+ *   The appropriate QuizQuestion extension instance.
  */
 function _quiz_question_get_instance($node) {
   $info = quiz_question_get_info();
@@ -574,14 +581,14 @@ function _quiz_question_get_instance($node) {
     $constructor = $info[$node->type]['question provider'];
   }
   else {
-    $node = new stdClass;
+    $node = new stdClass();
   }
 
   if (empty($constructor)) {
     $constructor = 'QuizQuestionBroken';
   }
 
-  // We create a new instance of QuizQuestion
+  // We create a new instance of QuizQuestion.
   $to_return = new $constructor($node);
 
   return $to_return;
@@ -594,22 +601,24 @@ function _quiz_question_get_instance($node) {
  * object of the appropriate type.
  *
  * @param int $result_id
- *   Result id
+ *   Result id.
  * @param stdClass $question
- *   The question node (not a QuizQuestion instance)
+ *   The question node (not a QuizQuestion instance).
  * @param mixed $answer
  *   Response to the answering form.
  * @param $nid
  *   The Question node ID.
  * @param $vid
  *   The Question revision ID.
+ *
  * @return QuizQuestionResponse
- *   The appropriate QuizQuestionResponse extension instance
+ *   The appropriate QuizQuestionResponse extension instance.
  */
 function _quiz_question_response_get_instance($result_id, $question, $answer = NULL, $nid = NULL, $vid = NULL) {
   $info = quiz_question_get_info();
 
-  // If the question node isn't set we fetch it from the QuizQuestion instance this response belongs to
+  // If the question node isn't set we fetch it from the QuizQuestion instance
+  // this response belongs to.
   if (!isset($question)) {
     $question = node_load($nid, $vid);
   }
@@ -620,12 +629,12 @@ function _quiz_question_response_get_instance($result_id, $question, $answer = N
 
   if (empty($constructor)) {
     $constructor = 'QuizQuestionResponseBroken';
-    $question = new stdClass;
+    $question = new stdClass();
   }
   $to_return = new $constructor($result_id, $question, $answer);
-  // All response classes must extend QuizQuestionResponse
+  // All response classes must extend QuizQuestionResponse.
   if (!($to_return instanceof QuizQuestionResponse)) {
-    drupal_set_message(t('The question-response isn\'t a QuizQuestionResponse. It needs to extend the QuizQuestionResponse interface, or extend the abstractQuizQuestionResponse class.'), 'error', FALSE);
+    drupal_set_message(t("The question-response isn't a QuizQuestionResponse. It needs to extend the QuizQuestionResponse interface, or extend the abstractQuizQuestionResponse class."), 'error', FALSE);
   }
 
   $result = $to_return->getReport();
@@ -638,13 +647,15 @@ function _quiz_question_response_get_instance($result_id, $question, $answer = N
 /**
  * Get the information about various implementations of quiz questions.
  *
- * @param string|NULL $name
+ * @param string|null $name
  *   The question type, e.g. truefalse, for which the info shall be returned, or
  *   NULL to return an array with info about all types.
  * @param bool $reset
  *   If this is true, the cache will be reset.
+ *
  * @return array
  *   An array of information about quiz question implementations.
+ *
  * @see quiz_question_quiz_question_info() for an example of a quiz question info hook.
  */
 function quiz_question_get_info($name = NULL, $reset = FALSE) {
@@ -654,7 +665,7 @@ function quiz_question_get_info($name = NULL, $reset = FALSE) {
     foreach ($qtypes as $type => $definition) {
       // We only want the ones with classes.
       if (!empty($definition['question provider'])) {
-        // Cache the info
+        // Cache the info.
         $info[$type] = $definition;
       }
     }
@@ -664,14 +675,15 @@ function quiz_question_get_info($name = NULL, $reset = FALSE) {
 }
 
 /**
- * Get the max score for a question
+ * Get the max score for a question.
  *
  * @param $nid
  *   The Question node ID.
  * @param $vid
  *   The Question revision ID.
+ *
  * @return int
- *   The max score
+ *   The max score.
  */
 function quiz_question_get_max_score($nid, $vid) {
   return db_query('SELECT max_score
@@ -682,13 +694,14 @@ function quiz_question_get_max_score($nid, $vid) {
 /**
  * Returns a result report for a question response.
  *
- * The returned value is a form array because in some contexts the scores in the form
- * is editable
+ * The returned value is a form array because in some contexts the scores in the
+ * form is editable.
  *
  * @param stdClass $question
- *   The question node
+ *   The question node.
+ *
  * @return array
- *   An renderable FAPI array
+ *   An renderable FAPI array.
  */
 function quiz_question_report_form($question, $result_id) {
   $response_instance = _quiz_question_response_get_instance($result_id, $question);
@@ -700,7 +713,7 @@ function quiz_question_report_form($question, $result_id) {
  * Add body field to quiz_question nodes.
  *
  * @param string $type
- *   The question content type machine name
+ *   The question content type machine name.
  */
 function quiz_question_add_body_field($type) {
   node_types_rebuild();
@@ -711,12 +724,12 @@ function quiz_question_add_body_field($type) {
     return;
   }
   node_add_body_field($node_type, 'Question');
-  // Override default weight to make body field appear first
+  // Override default weight to make body field appear first.
   $instance = field_read_instance('node', 'body', $type);
   $instance['widget']['weight'] = -10;
   $instance['widget']['settings']['rows'] = 6;
 
-  // Make the question body visible by default for the question view mode
+  // Make the question body visible by default for the question view mode.
   $instance['display']['question'] = array(
     'label' => 'hidden',
     'type' => 'text_default',
@@ -911,7 +924,7 @@ function quiz_question_node_grants($account, $op) {
   $grants = array();
   if ($op == 'view') {
     if (user_access('view quiz question outside of a quiz')) {
-      // Granting view access
+      // Granting view access.
       $grants['quiz_question'][] = 1;
     }
   }
@@ -954,8 +967,9 @@ function theme_quiz_question_feedback($variables) {
  * Helper function to facilitate icon display, like "correct" or "selected".
  *
  * @param string $type
- *   The question content type machine name
+ *   The question content type machine name.
  * @param array $variables
+ *
  * @return string
  *   An HTML string representing the themed output.
  */

@@ -11,11 +11,14 @@ Hooks for interacting with a quiz:
 
 ## Developing new question types
 
-You need to create a new module that extends the existing question type core. The truefalse or multichoice question types are good places to start.
+You need to create a new module that extends the existing question type core.
+The truefalse or multichoice question types are good places to start.
 Here are the steps:
 
 1. Create a new module.
-2. Use your module's .install file to create the necessary tables for property and answer storage.
+2. Use your module's .install file to create the necessary tables for property
+   and answer storage.
 3. Make sure you module implements `hook_quiz_question_info()`.
 4. Define classes that extend `QuizQuestion` and `QuizQuestionResponse`.
-   For a complete example, see `multichoice.classes.inc` or `truefalse.classes.inc`.
+   For a complete example, see `multichoice.classes.inc` or
+   `truefalse.classes.inc`.

@@ -129,13 +129,14 @@ function short_answer_score_an_answer($values, $update_total = TRUE) {
     ->key(array('result_answer_id' => $quiz_question_response->result_answer_id))
     ->execute();
 
-  // Now the user data has been updated. We also need to update the data in the quiz tables.
+  // Now the user data has been updated. We also need to update the data in the
+  // quiz tables.
   $quiz_result_answer = entity_load_single('quiz_result_answer', $quiz_question_response->result_answer_id);
   $quiz_result_answer->points_awarded = $score;
   $quiz_result_answer->is_correct = $quiz_question_response->isCorrect();
   $quiz_result_answer->save();
 
-  // Third, we update the main quiz results table
+  // Third, we update the main quiz results table.
   if ($update_total) {
     quiz_update_total_score($quiz, $result_id);
   }

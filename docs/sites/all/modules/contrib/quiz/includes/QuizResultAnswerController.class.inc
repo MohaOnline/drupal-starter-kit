@@ -8,8 +8,8 @@ class QuizResultAnswerController extends EntityAPIController {
   /**
    * Build the response content with feedback.
    */
-  public function buildContent($entity, $view_mode = 'full', $langcode = NULL) {
-    $out = parent::buildContent($entity, $view_mode, $langcode);
+  public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    $out = parent::buildContent($entity, $view_mode, $langcode, $content);
     $node = node_load($entity->question_nid, $entity->question_vid);
     $entity_info = entity_get_info('node');
     // @kludge

@@ -29,15 +29,17 @@ class LongAnswerTestCase extends QuizQuestionTestCase {
    *   Array of admin permissions to add.
    * @param array $user_permissions
    *   Array of user permissions to add.
-   * @return void|FALSE
+   *
+   * @return void|false
    */
-  function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
+  public function setUp($modules = array(), $admin_permissions = array(), $user_permissions = array()) {
     parent::setUp(array('long_answer'), array('score any quiz'));
   }
 
   /**
-   * Test manually graded questions. Also test feedback here instead of its own
-   * test case.
+   * Test manually graded questions.
+   *
+   * Also test feedback here instead of its own test case.
    *
    * Note: we use two questions here to make sure the grading form is handled
    * correctly.
@@ -97,7 +99,7 @@ class LongAnswerTestCase extends QuizQuestionTestCase {
   /**
    * Test adding and taking a long answer question.
    */
-  function testCreateQuizQuestion($settings = array()) {
+  public function testCreateQuizQuestion($settings = array()) {
     if (!$settings) {
       $settings = array(
         'rubric' => array(
@@ -123,7 +125,7 @@ class LongAnswerTestCase extends QuizQuestionTestCase {
   /**
    * Test that rubric and answer filter settings are respected.
    */
-  function testFilterFormats() {
+  public function testFilterFormats() {
     // Login as our privileged user.
     $this->drupalLogin($this->admin);
 
@@ -179,7 +181,7 @@ class LongAnswerTestCase extends QuizQuestionTestCase {
   /**
    * Test that the question response can be edited.
    */
-  function testEditQuestionResponse() {
+  public function testEditQuestionResponse() {
     $this->drupalLogin($this->admin);
 
     // Create & link a question.

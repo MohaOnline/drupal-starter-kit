@@ -39,7 +39,7 @@ class QuizPagesQuestion extends QuizQuestion {
    *
    * @see QuizQuestion::getAnsweringForm()
    */
-  function getAnsweringForm(array $form_state = NULL, $result_id) {
+  public function getAnsweringForm(array $form_state = NULL, $result_id) {
     $element = array(
       '#type' => 'hidden',
     );
@@ -103,7 +103,7 @@ class QuizPagesQuestion extends QuizQuestion {
 }
 
 /**
- * Extension of QuizQuestionResponse
+ * Extension of QuizQuestionResponse.
  */
 class QuizPagesResponse extends QuizQuestionResponse {
 
@@ -153,9 +153,9 @@ class QuizPagesResponse extends QuizQuestionResponse {
   }
 
   /**
-   * Implementation of getReportForm
+   * Implementation of getReportForm().
    *
-   * @see QuizQuestionResponse#getReportForm()
+   * @see QuizQuestionResponse::getReportForm()
    */
   public function getReportForm() {
     return array(

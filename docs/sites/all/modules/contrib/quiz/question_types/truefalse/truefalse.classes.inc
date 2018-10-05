@@ -4,7 +4,8 @@
  * @file
  * TrueFalse classes.
  *
- * This module uses the question interface to define the True/False question type.
+ * This module uses the question interface to define the True/False question
+ * type.
  */
 
 /**
@@ -18,8 +19,8 @@ class TrueFalseQuestion extends QuizQuestion {
    * @see QuizQuestion::saveNodeProperties()
    */
   public function saveNodeProperties($is_new = FALSE) {
-    db_merge('quiz_truefalse_node')->
-      key(array(
+    db_merge('quiz_truefalse_node')
+      ->key(array(
         'nid' => $this->node->nid,
         'vid' => $this->node->vid,
       ))
@@ -109,7 +110,7 @@ class TrueFalseQuestion extends QuizQuestion {
       '#title' => t('Choose one'),
       '#options' => array(
         1 => t('True'),
-        0 => t('False')
+        0 => t('False'),
       ),
     );
 
@@ -156,7 +157,7 @@ class TrueFalseQuestion extends QuizQuestion {
       '#default_value' => isset($this->node->correct_answer) ? $this->node->correct_answer : 1,
       '#required' => TRUE,
       '#weight' => -4,
-      '#description' => t('Choose if the correct answer for this question is "true" or "false".')
+      '#description' => t('Choose if the correct answer for this question is "true" or "false".'),
     );
     return $form;
   }
@@ -185,7 +186,7 @@ class TrueFalseQuestion extends QuizQuestion {
 }
 
 /**
- * Extension of QuizQuestionResponse
+ * Extension of QuizQuestionResponse.
  */
 class TrueFalseResponse extends QuizQuestionResponse {
 
@@ -197,8 +198,8 @@ class TrueFalseResponse extends QuizQuestionResponse {
    *   the user takes a quiz.
    * @param stdClass $question_node
    *   The question node.
-   * @param mixed $values
-   *   Array with values
+   * @param mixed $answer
+   *   The answer.
    */
   public function __construct($result_id, stdClass $question_node, $answer = NULL) {
     parent::__construct($result_id, $question_node, $answer);
@@ -322,7 +323,7 @@ class TrueFalseResponse extends QuizQuestionResponse {
     foreach ($result_answer_ids as $result_answer_id) {
       $ra = entity_load_single('quiz_result_answer', $result_answer_id);
       $question = node_load($ra->question_nid, $ra->question_vid);
-      /** @var $ra_i QuizQuestionResponse */
+      /* @var $ra_i QuizQuestionResponse */
       $ra_i = _quiz_question_response_get_instance($ra->result_id, $question);
       $items[$ra->result_id][] = array('answer' => $ra_i->getResponse() ? t('True') : t('False'));
     }

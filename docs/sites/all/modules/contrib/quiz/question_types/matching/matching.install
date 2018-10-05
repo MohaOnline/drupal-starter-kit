@@ -40,7 +40,7 @@ function matching_schema() {
       ),
     ),
     'primary key' => array(
-      'nid', 'vid'
+      'nid', 'vid',
     ),
   );
 
@@ -141,7 +141,7 @@ function matching_update_7400() {
       ),
     ),
     'primary key' => array(
-      'nid', 'vid'
+      'nid', 'vid',
     ),
   );
 

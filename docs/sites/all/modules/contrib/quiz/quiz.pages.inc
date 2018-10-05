@@ -1,23 +1,27 @@
 <?php
 
 /**
- * User pages.
  * @file
+ * User pages.
  */
 
 /**
- * Show result page for a given result id
+ * Show result page for a given result id.
  *
  * @param $result_id
- *  Result id
+ *  Result id.
  */
 function quiz_user_results($result_id) {
   $quiz_result = quiz_result_load($result_id);
-  return entity_view('quiz_result', array($quiz_result));
+  $view = entity_view('quiz_result', array($quiz_result));
+  if ($quiz_result->is_invalid) {
+    drupal_set_message(t('This result can only be viewed temporarly and will be deleted in the near future.'), 'warning');
+  }
+  return $view;
 }
 
 /**
- * Submit the report form
+ * Submit the report form.
  */
 function quiz_report_form_submit($form, &$form_state) {
   global $user;
@@ -34,11 +38,12 @@ function quiz_report_form_submit($form, &$form_state) {
       }
     }
 
-    // Scores may have been changed. We take the necessary actions
+    // Scores may have been changed. We take the necessary actions.
     quiz_end_scoring($quiz_result->result_id);
     $results_got_deleted = _quiz_maintain_results($quiz, $quiz_result->result_id);
 
-    // Notify the user if results got deleted as a result of him scoring an answer.
+    // Notify the user if results got deleted as a result of him scoring an
+    // answer.
     $add = $quiz->keep_results == QUIZ_KEEP_BEST && $results_got_deleted ? ' ' . t('Note that this @quiz is set to only keep each users best answer.', array('@quiz' => QUIZ_NAME)) : '';
 
     $score_data = quiz_get_score_array($quiz_result->result_id, $quiz->vid, TRUE);
@@ -50,7 +55,7 @@ function quiz_report_form_submit($form, &$form_state) {
 }
 
 /**
- * Helper function to remove the message saying the quiz haven't been scored
+ * Helper function to remove the message saying the quiz haven't been scored.
  */
 function _quiz_remove_unscored_message() {
   if (!empty($_SESSION['messages']['warning'])) {
@@ -60,7 +65,7 @@ function _quiz_remove_unscored_message() {
         unset($_SESSION['messages']['warning'][$key]);
       }
     }
-    // Clean up if the message array was left empty
+    // Clean up if the message array was left empty.
     if (empty($_SESSION['messages']['warning'])) {
       unset($_SESSION['messages']['warning']);
       if (empty($_SESSION['messages'])) {
@@ -71,7 +76,7 @@ function _quiz_remove_unscored_message() {
 }
 
 /**
- * Returns an array of score information for a quiz
+ * Returns an array of score information for a quiz.
  *
  * @param unknown_type $result_id
  * @param unknown_type $quiz_vid

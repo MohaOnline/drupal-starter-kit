@@ -14,39 +14,47 @@ function theme_quiz_answer_result($variables) {
   $options = array();
   $type = $variables['type'];
 
-  switch($type) {
+  switch ($type) {
     case 'correct':
       $options['path'] = 'check_008000_64.png';
       $options['alt'] = t('Correct');
       break;
+
     case 'incorrect':
       $options['path'] = 'times_ff0000_64.png';
       $options['alt'] = t('Incorrect');
       break;
+
     case 'unknown':
       $options['path'] = 'question_808080_64.png';
       $options['alt'] = t('Unknown');
       break;
+
     case 'should':
       $options['path'] = 'check_808080_64.png';
       $options['alt'] = t('Should have chosen');
       break;
+
     case 'should-not':
       $options['path'] = 'times_808080_64.png';
       $options['alt'] = t('Should not have chosen');
       break;
+
     case 'almost':
       $options['path'] = 'check_ffff00_64.png';
       $options['alt'] = t('Almost');
       break;
+
     case 'selected':
       $options['path'] = 'arrow-right_808080_64.png';
       $options['alt'] = t('Selected');
       break;
+
     case 'unselected':
       $options['path'] = 'circle-o_808080_64.png';
       $options['alt'] = t('Unselected');
       break;
+
     default:
       $options['path'] = '';
       $options['alt'] = '';
@@ -67,11 +75,13 @@ function theme_quiz_answer_result($variables) {
  * Theme a progress indicator for use during a quiz.
  *
  * @param $question_number
- *  The position of the current question in the sessions' array.
+ *   The position of the current question in the sessions' array.
  * @param $num_of_question
- *  The number of questions for this quiz as returned by quiz_get_number_of_questions().
+ *   The number of questions for this quiz as returned by
+ *   quiz_get_number_of_questions().
+ *
  * @return
- *  Themed html.
+ *   Themed html.
  *
  * @ingroup themeable
  */
@@ -105,14 +115,14 @@ function theme_quiz_progress($variables) {
 }
 
 /**
- * Theme the stats on the views page
+ * Theme the stats on the views page.
  *
  * @param $node
- *   The quiz node
+ *   The quiz node.
  */
 function theme_quiz_view_stats($variables) {
   $node = $variables['node'];
-  // Fetch data
+  // Fetch data.
   $stats = array(
     array(
       array('header' => TRUE, 'width' => '25%', 'data' => t('Questions')),
@@ -221,7 +231,7 @@ function theme_quiz_pager($variables) {
 }
 
 /**
- * Themes a categorized quiz form
+ * Themes a categorized quiz form.
  */
 function theme_quiz_categorized_form($variables) {
   $form = $variables['form'];
@@ -251,7 +261,11 @@ function theme_quiz_categorized_form($variables) {
       t('Weight'),
     );
     drupal_add_tabledrag('existing-terms', 'order', 'sibling', 'term-weight', NULL, NULL, TRUE);
-    $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'existing-terms')));
+    $output .= theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array('id' => 'existing-terms'),
+    ));
   }
   $output .= drupal_render_children($form);
   drupal_add_js(
@@ -267,8 +281,8 @@ function theme_quiz_categorized_form($variables) {
           $(this).val('');
         }
       });
-    }};}(jQuery));"
-    , array('type' => 'inline', 'group' => JS_DEFAULT));
+    }};}(jQuery));",
+    array('type' => 'inline', 'group' => JS_DEFAULT));
   return $output;
 }
 
@@ -280,8 +294,16 @@ function theme_question_selection_table($variables) {
   drupal_add_tabledrag('question-list', 'match', 'parent', 'qnr-pid', 'qnr-pid', 'qnr-id', TRUE, 1);
   drupal_add_tabledrag('question-list', 'order', 'sibling', 'question-list-weight');
 
-  // Building headers
-  $headers = array(t('Question'), t('Type'), t('Actions'), t('Update'), t('Max score'), t('Auto update max score'), t('Delete'));
+  // Building headers.
+  $headers = array(
+    t('Question'),
+    t('Type'),
+    t('Actions'),
+    t('Update'),
+    t('Max score'),
+    t('Auto update max score'),
+    t('Delete'),
+  );
   if (isset($form['compulsories'])) {
     $headers[] = t('Compulsory');
   }
@@ -292,7 +314,7 @@ function theme_question_selection_table($variables) {
     'class' => array('tabledrag-hide'),
   );
 
-  // Building table body
+  // Building table body.
   $rows = array();
   if (!empty($form['titles'])) {
     foreach (element_children($form['titles']) as $id) {
@@ -301,18 +323,23 @@ function theme_question_selection_table($variables) {
       $form['qnr_pids'][$id]['#attributes']['class'] = array('qnr-pid');
       $rows[] = _quiz_get_question_row($form, $id);
     }
-    // Make sure the same fields aren't rendered twice
+    // Make sure the same fields aren't rendered twice.
     unset($form['types'], $form['view_links'], $form['remove_links'], $form['stayers']);
     unset($form['max_scores'], $form['auto_update_max_scores'], $form['revision'], $form['weights'], $form['titles'], $form['compulsories'], $form['qnr_ids'], $form['qnr_pids']);
   }
   $html_attr = array('id' => 'question-list');
 
-  // We hide the table if no questions have been added so that jQuery can show it the moment the first question is beeing added.
+  // We hide the table if no questions have been added so that jQuery can show
+  // it the moment the first question is beeing added.
   if (isset($form['no_questions'])) {
     $html_attr['style'] = "display:none;";
   }
 
-  $table = theme('table', array('header' => $headers, 'rows' => $rows, 'attributes' => $html_attr));
+  $table = theme('table', array(
+    'header' => $headers,
+    'rows' => $rows,
+    'attributes' => $html_attr
+  ));
 
   return drupal_render($form['random_settings'])
     . $table
@@ -320,7 +347,7 @@ function theme_question_selection_table($variables) {
 }
 
 /**
- * Theme the quiz questions admin page
+ * Theme the quiz questions admin page.
  */
 function theme_quiz_questions_page($variables) {
   // Set page title.

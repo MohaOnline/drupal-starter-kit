@@ -20,7 +20,7 @@
  */
 class ShortAnswerQuestion extends QuizQuestion {
 
-  // Constants for answer matching options
+  // Constants for answer matching options.
   const ANSWER_MATCH = 0;
   const ANSWER_INSENSITIVE_MATCH = 1;
   const ANSWER_REGEX = 2;
@@ -195,7 +195,7 @@ class ShortAnswerQuestion extends QuizQuestion {
         '#markup' => '<p>' .
         t('Regular expressions are an advanced syntax for pattern matching. They allow you to create a concise set of rules that must be met before a value can be considered a match.') .
         '</p><p>' .
-        t('For more on regular expression syntax, visit !url.', array('!url' => l('the PHP regular expressions documentation', 'http://www.php.net/manual/en/book.pcre.php'))) .
+        t('For more on regular expression syntax, visit !url.', array('!url' => l(t('the PHP regular expressions documentation'), 'http://www.php.net/manual/en/book.pcre.php'))) .
         '</p>',
       );
     }
@@ -229,6 +229,7 @@ class ShortAnswerQuestion extends QuizQuestion {
    *
    * @param string $user_answer
    *   The answer given by the user.
+   *
    * @return int
    *   The given score for the answer.
    */
@@ -319,7 +320,8 @@ class ShortAnswerResponse extends QuizQuestionResponse {
    * @see QuizQuestionResponse::save()
    */
   public function save() {
-    // We need to set is_evaluated depending on whether the type requires evaluation.
+    // We need to set is_evaluated depending on whether the type requires
+    // evaluation.
     $this->is_evaluated = (int) ($this->question->correct_answer_evaluation != ShortAnswerQuestion::ANSWER_MANUAL);
     db_merge('quiz_short_answer_user_answers')
       ->key(array('result_answer_id' => $this->result_answer_id))
@@ -382,7 +384,8 @@ class ShortAnswerResponse extends QuizQuestionResponse {
     $data = array();
 
     $data[] = array(
-      // Hide this column. Does not make sense for short answer as there are no choices.
+      // Hide this column. Does not make sense for short answer as there are no
+      // choices.
       'choice' => NULL,
       'attempt' => $this->answer,
       'correct' => $this->question->answers[0]['is_correct'] ? quiz_icon('correct') : '',
