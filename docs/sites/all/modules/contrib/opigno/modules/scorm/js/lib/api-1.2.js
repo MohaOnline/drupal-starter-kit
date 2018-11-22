@@ -602,6 +602,7 @@
       'cmi.core.score.raw',
       'cmi.core.score.max',
       'cmi.core.score.min',
+      'cmi.core.score._children',
       'cmi.core.total_time',
       'cmi.core.exit',
       'cmi.core.session_time',

@@ -215,6 +215,8 @@ function opigno_scorm_ui_opigno_scorm_ui_register_cmi_paths($scorm_version) {
         'cmi.core.lesson_location' => array(),
         'cmi.core.lesson_status' => array(),
         'cmi.core.exit' => array(),
+        'cmi.core.student_name' => array(),
+        'cmi.core.student_id' => array(),
         'cmi.student_preference._children' => array(),
         'cmi.student_preference.audio' => array(),
         'cmi.student_preference.language' => array(),
@@ -259,6 +261,8 @@ function opigno_scorm_ui_opigno_scorm_ui_register_cmi_data($scorm, $scos, $scorm
       $data = array(
         'cmi.core.lesson_location' => opigno_scorm_ui_scorm_cmi_get($user->uid, $scorm->id, 'cmi.core.lesson_location', ''),
         'cmi.core.exit' => opigno_scorm_ui_scorm_cmi_get($user->uid, $scorm->id, 'cmi.core.exit', ''),
+        'cmi.core.student_id' => $user->uid,
+        'cmi.core.student_name' => $learner_name,
         'cmi.student_preference._children' => "audio,language,speed,text",
         'cmi.student_preference.audio' => array(),
         'cmi.student_preference.language' => array(),

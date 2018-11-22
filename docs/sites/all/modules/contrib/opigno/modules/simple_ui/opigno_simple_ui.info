@@ -8,9 +8,8 @@ dependencies[] = apps
 ; We depend on image so we are sure the Apps installation page shows logos and screenshots.
 dependencies[] = image
 
-; Information added by Drupal.org packaging script on 2018-02-09
-version = "7.x-1.19"
+; Information added by Drupal.org packaging script on 2018-10-05
+version = "7.x-1.20"
 core = "7.x"
 project = "opigno"
-datestamp = "1518182893"
-
+datestamp = "1538743087"
