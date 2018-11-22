@@ -875,6 +875,7 @@ function lightbox2_field_formatter_settings_form($field, $instance, $view_mode, 
 
   return $form;
 }
+
 /**
  * Implements hook_field_formatter_settings_summary().
  */
@@ -888,18 +889,25 @@ function lightbox2_field_formatter_settings_summary($field, $instance, $view_mod
 
   $summary = '';
 
-  if(isset($settings['caption']) && isset($settings['type']) && isset($settings['image_style']) && isset($settings['lightbox_style'])) {
-    $summary .= '<strong>'.t('Caption field') . '</strong>: ' . $fields[$settings['caption']] . '<br/>';
-    $summary .= '<strong>'.t('Display') . '</strong>: ' ;
+  if (!isset($image_styles[$settings['image_style']])) {
+    $image_styles[$settings['image_style']] = 0;
+  }
+  if (!isset($image_styles[$settings['lightbox_style']])) {
+    $image_styles[$settings['lightbox_style']] = 0;
+  }
+
+  if (isset($settings['caption']) && isset($settings['type']) && isset($settings['image_style']) && isset($settings['lightbox_style'])) {
+    $summary .= '<strong>' . t('Caption field') . '</strong>: ' . $fields[$settings['caption']] . '<br/>';
+    $summary .= '<strong>' . t('Display') . '</strong>: ';
     $summary .= $types[$settings['type']];
     $summary .= ': ';
     $summary .= $image_styles[$settings['image_style']];
     $summary .= ' => ';
     $summary .= $image_styles[$settings['lightbox_style']];
-  } else {
+  }
+  else {
     $summary = 'Title - Lightbox: original => original';
   }
-
 
   return $summary;
 }

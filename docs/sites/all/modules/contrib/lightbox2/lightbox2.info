@@ -4,7 +4,7 @@ description = Enables Lightbox2 for Drupal
 core = 7.x
 package = User interface
 
-dependencies[] = entity
+dependencies[] = entity:entity
 
 files[] = lightbox2.install
 files[] = lightbox2.module
@@ -14,16 +14,8 @@ files[] = lightbox2_handler_field_lightbox2.inc
 
 configure = admin/config/user-interface/lightbox2
 
-; Information added by drupal.org packaging script on 2010-09-24
-version = "7.x-dev"
+; Information added by Drupal.org packaging script on 2018-10-11
+version = "7.x-2.12"
 core = "7.x"
 project = "lightbox2"
-
-
-
-; Information added by Drupal.org packaging script on 2016-11-25
-version = "7.x-2.10"
-core = "7.x"
-project = "lightbox2"
-datestamp = "1480048986"
-
+datestamp = "1539259093"

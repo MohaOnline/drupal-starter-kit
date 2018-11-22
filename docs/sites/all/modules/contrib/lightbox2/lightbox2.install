@@ -29,6 +29,7 @@ function lightbox2_uninstall() {
   variable_del('lightbox2_image_count_str');
   variable_del('lightbox2_page_count_str');
   variable_del('lightbox2_video_count_str');
+  variable_del('lightbox2_filter_xss_allowed_tags');
   variable_del('lightbox2_disable_resize');
   variable_del('lightbox2_disable_zoom');
   variable_del('lightbox2_enable_login');
@@ -38,6 +39,7 @@ function lightbox2_uninstall() {
   variable_del('lightbox2_flv_player_flashvars');
   variable_del('lightbox2_page_init_action');
   variable_del('lightbox2_page_list');
+  variable_del('lightbox2_image_group_node_id');
   variable_del('lightbox2_disable_these_urls');
   variable_del('lightbox2_imagefield_group_node_id');
   variable_del('lightbox2_imagefield_use_node_title');
@@ -104,11 +106,13 @@ function lightbox2_uninstall() {
  * too late now.
  */
 function lightbox2_update_1() {
-  $ret = array();
-  $ret[] = update_sql('UPDATE {variable} SET name="lightbox2_lite"
-    WHERE name="lightbox2_plus";');
-
-  return $ret;
+  $variable_name = 'lightbox2_plus';
+  $var = variable_get($variable_name);
+  if ($var) {
+    variable_set('lightbox2_lite', $var);
+    variable_del($variable_name);
+  }
+  return array();
 }
 
 /**
@@ -184,11 +188,11 @@ function lightbox2_update_6001() {
  * 'lightbox2_slideshow_pause_on_prev_click'.
  */
 function lightbox2_update_6002() {
-  $vars = variable_init();
-  if (array_key_exists('lightbox2_slideshow_pause_on_prev_click', $vars)) {
-    $value = $vars['lightbox2_slideshow_pause_on_prev_click'];
-    variable_set('lightbox2_slideshow_pause_on_previous_click', $value);
-    variable_del('lightbox2_slideshow_pause_on_prev_click');
+  $variable_name = 'lightbox2_slideshow_pause_on_prev_click';
+  $var = variable_get($variable_name);
+  if ($var) {
+    variable_set('lightbox2_slideshow_pause_on_previous_click', $var);
+    variable_del($variable_name);
   }
   return array();
 }
@@ -199,4 +203,3 @@ function lightbox2_update_6002() {
 function lightbox2_update_6003() {
   return array();
 }
-
