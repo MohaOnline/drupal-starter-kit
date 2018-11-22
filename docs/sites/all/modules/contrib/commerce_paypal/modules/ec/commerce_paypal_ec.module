@@ -260,6 +260,7 @@ function commerce_paypal_ec_default_settings() {
     'show_payment_instructions' => FALSE,
     'update_billing_profiles' => TRUE,
     'enable_bml' => FALSE,
+    'enable_on_cart' => TRUE,
   );
 
   if (module_exists('commerce_shipping')) {
@@ -433,6 +434,12 @@ function commerce_paypal_ec_settings_form($settings = array()) {
     '#markup' => commerce_paypal_ec_bml_help_text(),
   );
 
+  $form['enable_on_cart'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Show the PayPal Express Checkout button on the cart form.'),
+    '#default_value' => $settings['enable_on_cart'],
+  );
+
   return $form;
 }
 
@@ -465,18 +472,20 @@ function commerce_paypal_ec_form_alter(&$form, &$form_state, $form_id) {
     if (!empty($form_state['build_info']['args'][0]->result)) {
       $order = $form_state['order'];
 
-      // And Express Checkout is also available as a payment option in checkout...
+      // And Express Checkout is also available as a payment option in checkout.
       if (commerce_paypal_ec_enabled($order)) {
         // Add the Express Checkout form as a suffix to the cart form.
         $payment_method = commerce_payment_method_instance_load('paypal_ec|commerce_payment_paypal_ec');
 
-        $ec_form = drupal_get_form('commerce_paypal_ec_order_form', $payment_method, $order);
-        $form['#suffix'] .= drupal_render($ec_form);
+        if (!isset($payment_method['settings']['enable_on_cart']) || !empty($payment_method['settings']['enable_on_cart'])) {
+          $ec_form = drupal_get_form('commerce_paypal_ec_order_form', $payment_method, $order);
+          $form['#suffix'] .= drupal_render($ec_form);
 
-        // Add the PayPal Credit form with a separator if enabled.
-        if (!empty($payment_method['settings']['enable_bml'])) {
-          $bml_form = drupal_get_form('commerce_paypal_bml_order_form', $payment_method, $order, TRUE);
-          $form['#suffix'] .= drupal_render($bml_form);
+          // Add the PayPal Credit form with a separator if enabled.
+          if (!empty($payment_method['settings']['enable_bml'])) {
+            $bml_form = drupal_get_form('commerce_paypal_bml_order_form', $payment_method, $order, TRUE);
+            $form['#suffix'] .= drupal_render($bml_form);
+          }
         }
       }
     }
@@ -1319,16 +1328,8 @@ function commerce_paypal_ec_itemize_order($order, $currency_code) {
         'L_PAYMENTREQUEST_0_NAME' . $i => commerce_line_item_title($line_item_wrapper->value()),
         'L_PAYMENTREQUEST_0_AMT' . $i => commerce_paypal_price_amount($l_amt, $currency_code),
         'L_PAYMENTREQUEST_0_QTY' . $i => round($line_item_wrapper->quantity->value()),
+        'L_PAYMENTREQUEST_0_NUMBER' . $i => $line_item_wrapper->line_item_label->value(),
       );
-
-      // If it was a product line item, add the SKU.
-      if (in_array($line_item_wrapper->type->value(), commerce_product_line_item_types())) {
-        $nvp['L_PAYMENTREQUEST_0_NUMBER' . $i] = $line_item_wrapper->line_item_label->value();
-      }
-      else {
-        // Otherwise add the label as the description.
-        $nvp['L_PAYMENTREQUEST_0_NUMBER' . $i] = $line_item_wrapper->line_item_label->value();
-      }
 
       $i++;
     }
@@ -1414,10 +1415,11 @@ function commerce_paypal_ec_customer_profile($order, $profile_type, $response, $
     $address['first_name'] = $response['FIRSTNAME'];
     $address['last_name'] = $response['LASTNAME'];
     $address['name_line'] = $address['first_name'] . ' ' . $address['last_name'];
+    $address['country'] = $response['COUNTRYCODE'];
   }
+  // Otherwise if it's a shipping profile, populate the address with all of
+  // the shipping information returned from PayPal.
   elseif ($profile_type == 'shipping') {
-    // Otherwise if it's a shipping profile, populate the address with all of
-    // the shipping information returned from PayPAl.
 
     // Map addressfield value keys to keys available in the response array.
     $key_map = array(
@@ -1538,14 +1540,17 @@ function commerce_paypal_ec_enabled_rules($enabled = FALSE) {
   $rules = array();
 
   // Loop over all of the enabled payment method rules.
-  foreach (rules_get_cache('event_commerce_payment_methods') as $rule) {
-    // Look in all of the Rule's actions for a payment method settings array
-    // that enables Express Checkout.
-    foreach ($rule->actions() as $action) {
-      if (!empty($action->settings['payment_method']['method_id']) &&
-        $action->settings['payment_method']['method_id'] == 'paypal_ec') {
-        // Add the present rule to the return value.
-        $rules[$rule->name] = $rule->label;
+  $event = rules_get_cache('event_commerce_payment_methods');
+  if (!empty($event)) {
+    foreach ($event as $rule) {
+      // Look in all of the Rule's actions for a payment method settings array
+      // that enables Express Checkout.
+      foreach ($rule->actions() as $action) {
+        if (!empty($action->settings['payment_method']['method_id']) &&
+          $action->settings['payment_method']['method_id'] == 'paypal_ec') {
+          // Add the present rule to the return value.
+          $rules[$rule->name] = $rule->label;
+        }
       }
     }
   }
@@ -1582,7 +1587,7 @@ function commerce_paypal_ec_bml_button_url() {
  * @see https://www.paypal.com/webapps/mpp/logo-center
  */
 function commerce_paypal_ec_mark_url() {
-  return url(drupal_get_path('module', 'commerce_paypal_ec') . '/images/paypal-ec-logo.gif', array('absolute' => TRUE));
+  return file_create_url(drupal_get_path('module', 'commerce_paypal_ec') . '/images/paypal-ec-logo.gif');
 }
 
 
@@ -1723,7 +1728,7 @@ function commerce_paypal_ec_block_configure($delta = '') {
  */
 function commerce_paypal_ec_banners_help_text() {
   return '<p>' . t('Give your sales a boost when you advertise financing!')
-    . '</p><p>' . t('PayPal Credit¹ helps turn browsers into buyers with special financing from PayPal Credit™. Your customers can pay over time, while you get paid up front - at no additional cost to you.')
+    . '</p><p>' . t('PayPal Credit¹ helps turn browsers into buyers with special financing from PayPal Credit. Your customers can pay over time, while you get paid up front - at no additional cost to you.')
     . '</p><p>' . t("Use PayPal Credit's free banners that let you advertise PayPal Credit financing as a payment option when your customers check out with PayPal. When they know they can pay over time for their purchases, shoppers are more likely to make more purchases: 53% of PayPal Credit users say they would not have made all their purchases if PayPal Credit weren't available.²")
     . '</p><p><small>' . t('¹Subject to consumer credit approval.')
     . '</small><br /><small>' . t("²As reported in Nielsen's PayPal Credit Average Order Value study for activity occurring from April 2015 to March 2016 (small merchants) and October 2015 to March 2016 (midsize merchants), which compared PayPal Credit transactions to credit and debit card transactions on websites that offer PayPal Credit as a payment option or within the PayPal Wallet. Nielsen measured 284,890 transactions across 27 mid and small merchants. Copyright Nielsen 2016.")

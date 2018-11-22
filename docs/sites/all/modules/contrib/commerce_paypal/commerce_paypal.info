@@ -10,8 +10,8 @@ core = 7.x
 ; Simple tests
 ; files[] = tests/commerce_paypal.test
 
-; Information added by Drupal.org packaging script on 2018-06-20
-version = "7.x-2.5"
+; Information added by Drupal.org packaging script on 2018-10-22
+version = "7.x-2.6"
 core = "7.x"
 project = "commerce_paypal"
-datestamp = "1529528933"
+datestamp = "1540244884"
