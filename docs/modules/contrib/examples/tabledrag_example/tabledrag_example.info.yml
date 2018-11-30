@@ -1,0 +1,15 @@
+name: Tabledrag Example
+type: module
+description: 'Demonstrates how to create tabledrag forms.'
+package: Example modules
+configure: tabledrag_example.description
+# core: 8.x
+dependencies:
+  - examples:examples
+  - drupal:node
+
+# Information added by Drupal.org packaging script on 2018-09-10
+version: '8.x-1.x-dev'
+core: '8.x'
+project: 'examples'
+datestamp: 1536620584

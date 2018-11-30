@@ -1,0 +1,16 @@
+name: Render Example
+type: module
+description: Provides examples demonstrating Drupal's Render API.
+package: Example modules
+# core: 8.x
+dependencies:
+  - drupal:block
+  - drupal:node
+  - drupal:user
+  - examples:examples
+
+# Information added by Drupal.org packaging script on 2018-09-10
+version: '8.x-1.x-dev'
+core: '8.x'
+project: 'examples'
+datestamp: 1536620584
