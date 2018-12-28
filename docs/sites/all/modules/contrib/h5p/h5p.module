@@ -271,7 +271,7 @@ function h5p_form(&$node, $form_state) {
 
   $form['title'] = array(
     '#type' => 'hidden',
-    '#required' => TRUE,
+    '#required' => FALSE, // Does not get set when using Legacy upload
     '#default_value' => $source_node->title,
     '#attributes' => array('id' => 'h5p-plugin-form-title', 'style' => 'display: none;')
   );
@@ -398,6 +398,16 @@ function _h5p_form_submit($form, &$form_state) {
   else {
     $form_state['values']['json_content'] = json_encode($json_content->params);
     $form_state['values']['metadata'] = $json_content->metadata;
+  }
+
+  if (!empty($_SESSION['h5p_upload'])) { // Legacy upload active
+    if (empty($form_state['values']['metadata']) || empty($form_state['values']['metadata']['title'])) {
+      // Fix for legacy content upload to work.
+      // Fetch title from h5p.json or use a default string if not available
+      $h5p_validator = _h5p_get_instance('validator');
+      $form_state['values']['metadata']['title'] = empty($h5p_validator->h5pC->mainJsonData['title']) ? 'Uploaded Content' : $h5p_validator->h5pC->mainJsonData['title'];
+    }
+    $form_state['values']['title'] = $form_state['values']['metadata']['title']; // Sort of a hack, but there is no JavaScript that sets the value when there is no editor...
   }
 }
 

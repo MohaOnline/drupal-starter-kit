@@ -1767,3 +1767,17 @@ function h5p_update_7120() {
     ));
   }
 }
+
+
+/**
+ * Make the content files permanent
+ */
+function h5p_update_7121() {
+  db_update('file_managed')
+    ->fields(array(
+      'status' => 1,
+    ))
+    ->condition('uri', 'public://h5p/content/%', 'LIKE')
+    ->condition('status', 0)
+    ->execute();
+}
