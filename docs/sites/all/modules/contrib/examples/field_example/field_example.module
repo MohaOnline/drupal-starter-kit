@@ -10,9 +10,6 @@
  * @{
  * Examples using Field Types API.
  *
- * This is updated from Barry Jaspan's presentation at Drupalcon Paris,
- * @link http://acquia.com/community/resources/acquia-tv/intro-field-api-module-developers Video Presentation @endlink
- *
  * Providing a field requires:
  * - Defining a field:
  *   - hook_field_info()
