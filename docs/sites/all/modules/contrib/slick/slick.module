@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Slick carousel integration, the last carousel you'll ever need.
@@ -8,33 +9,19 @@
  * Implements hook_theme().
  */
 function slick_theme($existing, $type, $theme, $path) {
-  $base = array(
-    'file' => 'slick.theme.inc',
-    'path' => $path . '/templates',
-  );
-
   $themes = array();
-  foreach (array('slick', 'item', 'grid', 'media', 'wrapper') as $item) {
-    $key = $item == 'slick' ? $item : "slick_$item";
-    $themes[$key] = $base + array(
+  foreach (array('slick', 'item', 'grid', 'image', 'wrapper') as $item) {
+    $key = $item == 'slick' ? $item : 'slick_' . $item;
+    $functions = in_array($item, array('image', 'wrapper'));
+    $themes[$key] = array(
       'render element' => 'element',
+      'file' => 'slick.theme.inc',
+      'path' => $path . '/templates',
     );
-    if ($item != 'wrapper') {
+    if (!$functions) {
       $themes[$key]['template'] = strtr($key, '_', '-');
     }
   }
-
-  $themes['slick_image_lazy'] = $base + array(
-    'variables' => array(
-      'item'        => NULL,
-      'lazy'        => FALSE,
-      'image_style' => NULL,
-      'url'         => NULL,
-      'attributes'  => array(),
-      'options'     => array(),
-    ),
-  );
-
   return $themes;
 }
 
@@ -48,27 +35,12 @@ function slick_ctools_plugin_api($owner, $api) {
 }
 
 /**
- * Implements hook_hook_info().
- */
-function slick_hook_info() {
-  $hooks['slick_arrows_info'] = array('group' => 'slick');
-  $hooks['slick_dots_info']   = array('group' => 'slick');
-  $hooks['slick_skins_info']  = array('group' => 'slick');
-  return $hooks;
-}
-
-/**
  * Implements hook_library().
  */
 function slick_library() {
-  $library = libraries_get_path('slick');
-  $path = drupal_get_path('module', 'slick');
-  $info = system_get_info('module', 'slick');
+  $library    = libraries_get_path('slick');
+  $path       = drupal_get_path('module', 'slick');
   $components = $path . '/css/components';
-  $common = array(
-    'website' => 'http://drupal.org/project/slick',
-    'version' => !empty($info['version']) ? $info['version'] : '7.x-2.x',
-  );
 
   $libraries['slick'] = array(
     'title' => 'Slick',
@@ -82,118 +54,27 @@ function slick_library() {
     ),
   );
 
-  $libraries['slick.colorbox'] = $common + array(
-    'title' => 'Slick colorbox',
-    'js' => array(
-      $path . '/js/slick.colorbox.min.js' => array('group' => JS_DEFAULT, 'weight' => 1),
-    ),
-    'css' => array(
-      $components . '/slick.colorbox.css' => array(),
-      $components . '/slick.lightbox.css' => array(),
-    ),
-  );
+  foreach (array('colorbox', 'photobox', 'media') as $item) {
+    $css = $item == 'photobox' ? 'lightbox' : $item;
+    $weight = $item == 'media' ? -1 : 1;
+    $libraries['slick.' . $item] = array(
+      'title' => 'Slick ' . $item,
+      'website' => 'http://drupal.org/project/slick',
+      'version' => '7.x-2.x',
+      'js' => array(
+        $path . '/js/slick.' . $item . '.min.js' => array('group' => JS_DEFAULT, 'weight' => $weight),
+      ),
+      'css' => array($components . '/slick.' . $css . '.css' => array()),
+    );
+  }
 
-  $libraries['slick.photobox'] = $common + array(
-    'title' => 'Slick photobox',
-    'js' => array(
-      $path . '/js/slick.photobox.min.js' => array('group' => JS_DEFAULT, 'weight' => 1),
-    ),
-    'css' => array($components . '/slick.lightbox.css' => array()),
-    'dependencies' => array(array('photobox', 'photobox')),
-  );
-
-  $libraries['slick.media'] = $common + array(
-    'title' => 'Slick media',
-    'js' => array(
-      $path . '/js/slick.media.min.js' => array('group' => JS_DEFAULT, 'weight' => -1),
-    ),
-    'css' => array($components . '/slick.media.css' => array()),
-  );
-
+  $libraries['slick.colorbox']['css'][$components . '/slick.lightbox.css'] = array();
+  $libraries['slick.photobox']['dependencies'][] = array('photobox', 'photobox');
   return $libraries;
 }
 
 /**
- * Returns the cacheable supported JS and CSS assets for the given slick.
- *
- * @param array $attach
- *   An array of conditions to load the relevant assets, empty means basic.
- * @param array $settings
- *   An array of settings to check for the supported features.
- *
- * @return array
- *   The cacheable array formatted for the '#attached' property.
- */
-function slick_attach(array $attach, $settings = array()) {
-  $path  = drupal_get_path('module', 'slick');
-  $skins = slick_skins();
-  $load  = array();
-  $load['css'] = $load['js'] = array();
-  $attach += array(
-    'attach_slick_css'  => variable_get('slick_css', TRUE),
-    'attach_module_css' => variable_get('slick_module_css', TRUE),
-    'attach_module_js'  => TRUE,
-  );
-  drupal_alter('slick_attach_info', $attach, $settings);
-
-  if ($easing = libraries_get_path('easing')) {
-    $load['js'] += array($easing . '/jquery.easing.min.js' => array('group' => JS_LIBRARY, 'weight' => -6));
-  }
-
-  $load['library'][] = array('slick', 'slick');
-  if ($attach['attach_module_js']) {
-    $load['js'] += array($path . '/js/slick.load.min.js' => array('weight' => 0));
-  }
-
-  $components = array('colorbox', 'photobox', 'media');
-  foreach ($components as $component) {
-    if (isset($attach['attach_' . $component]) && $attach['attach_' . $component]) {
-      $load['library'][] = array('slick', 'slick.' . $component);
-    }
-  }
-
-  if (isset($attach['attach_skin']) && $skin = $attach['attach_skin']) {
-    if (isset($skins[$skin]['css'])) {
-      if ($attach['attach_slick_css']) {
-        $load['css'] += array(libraries_get_path('slick') . '/slick/slick-theme.css' => array('weight' => -100));
-      }
-      if ($attach['attach_module_css']) {
-        $load['css'] += array($path . '/css/theme/slick.theme.css' => array('weight' => -99));
-      }
-      if (is_array($skins[$skin]['css'])) {
-        $load['css'] += $skins[$skin]['css'];
-      }
-    }
-    if (isset($skins[$skin]['js']) && is_array($skins[$skin]['js'])) {
-      $load['js'] += $skins[$skin]['js'];
-    }
-  }
-
-  $navs = array('thumbnail', 'arrows', 'dots');
-  foreach ($navs as $nav) {
-    if (isset($attach['attach_skin_' . $nav]) && $skin = $attach['attach_skin_' . $nav]) {
-      $nav_skins = $nav == 'arrows' ? slick_arrows() : ($nav == 'dots' ? slick_dots() : $skins);
-      if (isset($nav_skins[$skin]['css']) && is_array($nav_skins[$skin]['css'])) {
-        $load['css'] += $nav_skins[$skin]['css'];
-      }
-    }
-  }
-
-  // Attach default JS settings to allow responsive displays have a lookup,
-  // excluding wasted+/trouble options, e.g.: PHP string vs JS object.
-  $defaults = slick_get_options();
-  $excludes = explode(' ', 'mobileFirst appendArrows appendDots asNavFor prevArrow nextArrow cssEaseBezier cssEaseOverride respondTo');
-  $load['js'][] = array(
-    'data' => array('slick' => array_diff_key($defaults, drupal_map_assoc($excludes))),
-    'type' => 'setting',
-  );
-
-  drupal_alter('slick_attach_load_info', $load, $attach, $skins, $settings);
-  return $load;
-}
-
-/**
- * Returns an array of options available for a Slick instance.
+ * Returns an array of default options available for a Slick instance.
  */
 function slick_get_options() {
   $options = &drupal_static(__FUNCTION__);
@@ -208,9 +89,8 @@ function slick_get_options() {
       'pauseOnHover'     => TRUE,
       'pauseOnDotsHover' => FALSE,
       'arrows'           => TRUE,
-      'appendArrows'     => '$(element)',
-      'prevArrow'        => '<button type="button" data-role="none" class="slick-prev" aria-label="previous">Previous</button>',
-      'nextArrow'        => '<button type="button" data-role="none" class="slick-next" aria-label="next">Next</button>',
+      'prevArrow'        => '<button type="button" data-role="none" class="slick-prev" aria-label="Previous" tabindex="0" role="button">Previous</button>',
+      'nextArrow'        => '<button type="button" data-role="none" class="slick-next" aria-label="Next" tabindex="0" role="button">Next</button>',
       'centerMode'       => FALSE,
       'centerPadding'    => '50px',
       'dots'             => FALSE,
@@ -222,6 +102,8 @@ function slick_get_options() {
       'infinite'         => TRUE,
       'initialSlide'     => 0,
       'lazyLoad'         => 'ondemand',
+      'mousewheel'       => FALSE,
+      'randomize'        => FALSE,
       'respondTo'        => 'window',
       'rtl'              => FALSE,
       'rows'             => 1,
@@ -237,19 +119,23 @@ function slick_get_options() {
       'touchThreshold'   => 5,
       'useCSS'           => TRUE,
       'cssEase'          => 'ease',
-      'cssEaseBezier'    => '',
-      'cssEaseOverride'  => '',
-      'useTransform'     => FALSE,
+      'useTransform'     => TRUE,
       'easing'           => 'linear',
       'variableWidth'    => FALSE,
       'vertical'         => FALSE,
       'verticalSwiping'  => FALSE,
       'waitForAnimate'   => TRUE,
-      'mousewheel'       => FALSE,
     );
-    drupal_alter('slick_options_info', $options);
   }
   return $options;
+}
+
+/**
+ * Implements hook_hook_info().
+ */
+function slick_hook_info() {
+  $hooks['slick_skins_info'] = array('group' => 'slick');
+  return $hooks;
 }
 
 /**
@@ -265,52 +151,74 @@ function slick_skins() {
 }
 
 /**
- * Returns an array of arrow skins registered via hook_slick_arrows_info().
+ * Returns available skins by group.
+ *
+ * @param string $group
+ *   The skin group name: main, thumbnail, overlay, dots, arrows.
+ * @param bool $select
+ *   The flag to limit the skins for form select options.
+ *
+ * @return array
+ *   The associative array of available skins grouped by $group, else all skins.
  */
-function slick_arrows() {
-  $arrows = &drupal_static(__FUNCTION__, NULL);
-  if (!isset($arrows)) {
-    $arrows = module_invoke_all('slick_arrows_info');
-    drupal_alter('slick_arrows_info', $arrows);
+function slick_get_skins_by_group($group = '', $select = FALSE) {
+  $skins = $groups = $ungroups = array();
+  foreach (slick_skins() as $skin => $properties) {
+    $item = $select ? strip_tags($properties['name']) : $properties;
+    if (!empty($group)) {
+      if (isset($properties['group'])) {
+        if ($properties['group'] != $group) {
+          continue;
+        }
+        $groups[$skin] = $item;
+      }
+      elseif (!in_array($group, array('arrows', 'dots'))) {
+        $ungroups[$skin] = $item;
+      }
+    }
+    $skins[$skin] = $item;
   }
-  return $arrows;
+  return $group ? array_merge($ungroups, $groups) : $skins;
 }
 
 /**
- * Returns an array of dot skins registered via hook_slick_dots_info().
+ * Returns the Slick HTML ID.
+ *
+ * @param string $string
+ *   The default HTML ID.
+ * @param string $id
+ *   The given trusted HTML ID.
+ *
+ * @return string
+ *   Returns the trusted HTML ID for a given Slick instance, otherwise dynamic.
  */
-function slick_dots() {
-  $dots = &drupal_static(__FUNCTION__, NULL);
-  if (!isset($dots)) {
-    $dots = module_invoke_all('slick_dots_info');
-    drupal_alter('slick_dots_info', $dots);
-  }
-  return $dots;
+function slick_html_id($string = 'slick', $id = '') {
+  $slick_id = &drupal_static('slick_id', 0);
+  return empty($id) ? str_replace('_', '-', $string . '-' . ++$slick_id) : $id;
 }
 
 /**
- * Fetches the given optionset object identified by $id.
+ * Returns the given optionset object identified by $id.
  *
  * @param string $id
- *   The optionset ID.
+ *   The optionset ID with property name, or default.
  *
  * @return object
  *   Returns the optionset, or else default, if no optionset found.
  */
-function slick_optionset_load($id) {
+function slick_optionset_load($id = 'default') {
   ctools_include('export');
   $optionset = ctools_export_crud_load('slick_optionset', $id);
 
   // Ensures deleted optionset while being used doesn't screw up.
   if (!isset($optionset->name)) {
     $optionset = ctools_export_crud_load('slick_optionset', 'default');
-    watchdog('slick', 'Fallback to default optionset.', array(), WATCHDOG_WARNING);
   }
   return $optionset;
 }
 
 /**
- * Creates a new optionset object without saving it to the database.
+ * Returns a new optionset object without saving it to the database.
  *
  * @param array $values
  *   The values to build the optionset if provided.
@@ -337,7 +245,102 @@ function slick_optionset_create($values = array()) {
 }
 
 /**
- * Returns a cacheable renderable array of a simple slick instance.
+ * Returns the fully cached JS and CSS assets for the given slick.
+ *
+ * @param array $attach
+ *   An array of conditions to load the relevant assets, empty means basic.
+ * @param array $settings
+ *   An array of settings to check for the supported features.
+ *
+ * @return array
+ *   The cacheable array formatted for the '#attached' property.
+ */
+function slick_attach(array $attach, $settings = array()) {
+  $path   = drupal_get_path('module', 'slick');
+  $main   = slick_get_skins_by_group('main');
+  $load   = array();
+  $attach += array(
+    'attach_slick_css'  => variable_get('slick_css', TRUE),
+    'attach_module_css' => variable_get('slick_module_css', TRUE),
+  );
+
+  $load['css'] = $load['js'] = array();
+  if ($easing = libraries_get_path('easing')) {
+    $load['js'] += array($easing . '/jquery.easing.min.js' => array('group' => JS_LIBRARY, 'weight' => -6));
+  }
+
+  if (!empty($settings['mousewheel'])) {
+    if ($mousewheel = libraries_get_path('mousewheel')) {
+      $load['js'] += array($mousewheel . '/jquery.mousewheel.min.js' => array('group' => JS_LIBRARY, 'weight' => -5));
+    }
+  }
+
+  $load['library'][] = array('slick', 'slick');
+  $load['js'] += array($path . '/js/slick.load.min.js' => array('weight' => 0));
+
+  if (!empty($settings['media_switch'])) {
+    $switch = str_replace('-switch', '', $settings['media_switch']);
+    $switch = $switch == 'iframe' ? 'media' : $switch;
+    foreach (array('colorbox', 'photobox', 'media') as $component) {
+      if ($switch == $component) {
+        $load['library'][] = array('slick', 'slick.' . $component);
+      }
+    }
+  }
+
+  if (isset($settings['skin']) && $skin = $settings['skin']) {
+    if (isset($main[$skin]['css'])) {
+      if ($attach['attach_slick_css']) {
+        $load['css'] += array(libraries_get_path('slick') . '/slick/slick-theme.css' => array('weight' => -100));
+      }
+      if ($attach['attach_module_css']) {
+        $load['css'] += array($path . '/css/theme/slick.theme.css' => array('weight' => -99));
+      }
+      if (is_array($main[$skin]['css'])) {
+        $load['css'] += $main[$skin]['css'];
+      }
+    }
+    if (isset($main[$skin]['js']) && is_array($main[$skin]['js'])) {
+      $load['js'] += $main[$skin]['js'];
+    }
+
+    $navs = array('thumbnail', 'arrows', 'dots');
+    foreach ($navs as $nav) {
+      if (isset($settings['skin_' . $nav]) && $skin = $settings['skin_' . $nav]) {
+        $nav_skins = slick_get_skins_by_group($nav);
+        if (!empty($nav_skins) && isset($nav_skins[$skin]['css']) && is_array($nav_skins[$skin]['css'])) {
+          $load['css'] += $nav_skins[$skin]['css'];
+        }
+        unset($nav_skins);
+      }
+    }
+
+    // @todo drop backward compatibility.
+    if (!empty($settings['thumbnail_hover'])) {
+      $settings['thumbnail_effect'] = 'hover';
+    }
+
+    if (!empty($settings['thumbnail_effect'])) {
+      $load['css'] += array($path . '/css/components/slick.thumbnail--' . $settings['thumbnail_effect'] . '.css' => array());
+    }
+  }
+
+  // Attach default JS settings to allow responsive displays have a lookup,
+  // excluding wasted+/trouble options, e.g.: PHP string vs JS object.
+  $defaults     = slick_get_options();
+  $excludes     = explode(' ', 'mobileFirst appendDots asNavFor prevArrow nextArrow respondTo');
+  $js_settings  = array_diff_key($defaults, drupal_map_assoc($excludes));
+  $load['js'][] = array(
+    'data' => array('slick' => $js_settings),
+    'type' => 'setting',
+  );
+
+  drupal_alter('slick_attach_load_info', $load, $attach, $main, $settings);
+  return $load;
+}
+
+/**
+ * Returns a cacheable renderable array of a single slick instance.
  *
  * @param array $items
  *   An array of slick contents: text, image or media.
@@ -348,7 +351,7 @@ function slick_optionset_create($values = array()) {
  * @param array $attach
  *   An array of assets to load using slick_attach($attach), or regular array.
  * @param string $id
- *   An optional ID for the instance.
+ *   A deprecated optional ID. Use $settings['id'] instead to reduce params.
  * @param object $optionset
  *   The cached optionset object to avoid possible multiple invocations.
  *
@@ -360,10 +363,29 @@ function slick_build($items = array(), $options = array(), $settings = array(), 
     return array();
   }
 
-  $slick_id = &drupal_static('slick_id', 0);
-  $fallback = isset($settings['attributes']['id']) ? $settings['attributes']['id'] : 'slick-' . ++$slick_id;
-  $id       = $settings['attributes']['id'] = empty($id) ? $fallback : $id;
-  $display  = empty($settings['current_display']) ? 'main' : $settings['current_display'];
+  $attachments    = array();
+  $display        = empty($settings['current_display']) ? 'main' : $settings['current_display'];
+  $settings['id'] = empty($settings['id']) ? slick_html_id('slick', $id) : $settings['id'];
+
+  $options['mousewheel'] = !empty($settings['mousewheel']);
+  if ($display != 'thumbnail') {
+    $loaded = isset($attach['css']) || isset($attach['js']) || isset($attach['library']);
+    $attachments = $loaded ? $attach : slick_attach($attach, $settings);
+
+    if ($display == 'main') {
+      if (!empty($settings['override'])) {
+        foreach ($settings['overridables'] as $key => $override) {
+          $options[$key] = empty($override) ? FALSE : TRUE;
+        }
+        unset($settings['overridables']);
+      }
+
+      // Build the Slick grid if provided.
+      if (!empty($settings['grid']) && !empty($settings['visible_slides'])) {
+        $items = slick_build_grids($items, $settings);
+      }
+    }
+  }
 
   $slick = array(
     '#theme'     => 'slick',
@@ -371,19 +393,18 @@ function slick_build($items = array(), $options = array(), $settings = array(), 
     '#options'   => $options,
     '#optionset' => $optionset,
     '#settings'  => $settings,
+    '#attached'  => $attachments,
   );
-
-  if ($display != 'thumbnail') {
-    $custom = isset($attach['css']) || isset($attach['js']) || isset($attach['library']);
-    $slick['#attached'] = $custom ? $attach : slick_attach($attach, $settings);
-  }
 
   // Cache the render array if so configured.
   if (!empty($settings['cache'])) {
-    $cid    = empty($settings['cid']) ? $id . ':custom' : $id . ':' . $settings['cid'];
-    $cache  = cache_get($cid, 'cache');
-    $active = $settings['cache'] == 'persistent' ? TRUE : (!$cache ? TRUE : REQUEST_TIME < $cache->expire);
+    $cid = empty($settings['cid']) ? $settings['id'] . ':custom' : $settings['id'] . ':' . $settings['cid'];
+    if ($display == 'thumbnail') {
+      $cid .= ':thumbnail';
+    }
 
+    $cache  = cache_get($cid);
+    $active = $settings['cache'] == 'persistent' ? TRUE : (!$cache ? TRUE : REQUEST_TIME < $cache->expire);
     if (!$cache || $active) {
       $slick['#cache'] = array(
         'cid'    => $cid,

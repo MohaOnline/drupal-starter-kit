@@ -1,46 +1,33 @@
 /**
  * @file
- * Thumbnails inside dots.
- *
- * @deprecated, to drop for thumbnail effects.
+ * Thumbnails hoverable inside dots.
  */
 
 /* The main thumbnail container is slick-dots modifier */
-.slick-dots--thumbnail {
+.slick .slick-dots--thumbnail-hover {
   list-style: none;
-  *zoom: 1;
   overflow: visible;
   position: absolute;
   text-align: center;
-  visibility: hidden;
   white-space: nowrap;
   width: 100%;
   z-index: 3;
 }
 
-.slick-dots--thumbnail::after {
+.slick .slick-dots--thumbnail-hover::after {
   content: "";
   display: table;
   clear: both;
 }
 
-.block .slick-dots--thumbnail {
-  margin-left: 0;
-  padding: 0;
-}
-
-.slick-initialized .slick-dots--thumbnail {
-  visibility: visible;
-}
-
-.slick-dots--thumbnail li {
+.slick .slick-dots--thumbnail-hover li {
   overflow: hidden;
   position: relative;
   vertical-align: top;
   /* Individual thumbnail, adjust accordingly to actual thumbnail size */
 }
 
-.slick-dots--thumbnail li img {
+.slick .slick-dots--thumbnail-hover li img {
   background: #fff;
   border: 2px solid transparent;
   display: block;
@@ -51,7 +38,7 @@
   pointer-events: auto;
 }
 
-.slick-dots--thumbnail li .slick-dots__thumbnail {
+.slick .slick-dots--thumbnail-hover li .slick-dots__thumbnail {
   bottom: 140%;
   left: 50%;
   margin: -60px 0 0 -60px;
@@ -66,11 +53,11 @@
   transition: 0.3s;
 }
 
-.slick-dots--thumbnail li .slick-dots__thumbnail img {
+.slick .slick-dots--thumbnail-hover li .slick-dots__thumbnail img {
   pointer-events: none;
 }
 
-.slick-dots--thumbnail li .slick-dots__thumbnail::after {
+.slick .slick-dots--thumbnail-hover li .slick-dots__thumbnail::after {
   border: 7px solid transparent;
   border-bottom: 0;
   border-top-color: #ff6d2c;
@@ -84,11 +71,11 @@
   width: 0;
 }
 
-.slick-dots--thumbnail li:hover {
+.slick .slick-dots--thumbnail-hover li:hover {
   overflow: visible;
 }
 
-.slick-dots--thumbnail li:hover .slick-dots__thumbnail {
+.slick .slick-dots--thumbnail-hover li:hover .slick-dots__thumbnail {
   bottom: 120%;
   margin-top: -20px;
   opacity: 1;
@@ -98,10 +85,18 @@
   z-index: 3;
 }
 
-.slick-dots--thumbnail li:hover img,
-.slick-dots--thumbnail li.slick-active img {
+.slick .slick-dots--thumbnail-hover li:hover img,
+.slick .slick-dots--thumbnail-hover li.slick-active img {
   border: 2px solid #ff6d2c;
   opacity: 1;
   -webkit-transition-delay: 0s;
   transition-delay: 0s;
+}
+
+/**
+ * Misc.
+ */
+.block .slick .slick-dots--thumbnail-hover {
+  margin-left: 0;
+  padding: 0;
 }

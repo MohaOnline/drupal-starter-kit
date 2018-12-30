@@ -11,7 +11,7 @@
   .slide--caption--split-right .slide__caption {
     left: 0;
     padding: 20px;
-    position: absolute;
+    position: relative;
     top: 10%;
     width: 42%;
   }

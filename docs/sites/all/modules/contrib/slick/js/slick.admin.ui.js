@@ -11,7 +11,8 @@
     $.fn.prop = function (name, value) {
       if (typeof value === "undefined") {
         return this.attr(name);
-      } else {
+      }
+      else {
         return this.attr(name, value);
       }
     };
@@ -38,7 +39,8 @@
           var t = $(this);
           if (t.prop("checked")) {
             t.addClass("on");
-          } else {
+          }
+          else {
             t.removeClass("on");
           }
         });

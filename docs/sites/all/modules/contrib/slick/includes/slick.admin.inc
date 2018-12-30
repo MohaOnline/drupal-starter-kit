@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains optional functions called only if needed by admin pages.
@@ -54,7 +55,6 @@ function slick_clean_options(array $options) {
     'lazyLoad',
     'prevArrow',
     'nextArrow',
-    'appendArrows',
     'dotsClass',
     'appendDots',
     'respondTo',
@@ -114,69 +114,6 @@ function slick_layouts() {
 }
 
 /**
- * Gets supported Slick skins, and additional ones for select options.
- *
- * @param string $group
- *   The skin group name.
- * @param bool $all
- *   The flag to limit the skins, if FALSE only those specified within $group
- *   returned, otherwise $group is excluded.
- *
- * @return array
- *   An array of available skins excluding the $group if specified.
- */
-function slick_skins_options($group = 'lightbox', $all = TRUE) {
-  $skins = $groups = array();
-  foreach (slick_skins() as $skin => $properties) {
-    if (!empty($group) && !empty($properties['group']) && $properties['group'] == $group) {
-      $groups[$skin] = $properties['name'];
-      continue;
-    }
-    $skins[$skin] = $properties['name'];
-  }
-
-  return $group && !$all ? $groups : $skins;
-}
-
-/**
- * Returns supported Slick skin dots for select options.
- *
- * @return array
- *   The associative array of available skin dots.
- */
-function slick_dots_options() {
-  $dots = &drupal_static(__FUNCTION__, NULL);
-
-  if (!isset($dots)) {
-    $dots = array();
-    foreach (slick_dots() as $key => $properties) {
-      $dots[$key] = $properties['name'];
-    }
-  }
-
-  return $dots;
-}
-
-/**
- * Returns supported Slick skin arrows for select options.
- *
- * @return array
- *   The associative array of available skin arrows.
- */
-function slick_arrows_options() {
-  $arrows = &drupal_static(__FUNCTION__, NULL);
-
-  if (!isset($arrows)) {
-    $arrows = array();
-    foreach (slick_arrows() as $key => $properties) {
-      $arrows[$key] = $properties['name'];
-    }
-  }
-
-  return $arrows;
-}
-
-/**
  * Load all slick optionsets as select options.
  *
  * @return array
@@ -227,7 +164,7 @@ function slick_optionset_load_all($reset = FALSE) {
   ctools_include('export');
   $optionsets = ctools_export_crud_load_all('slick_optionset', $reset);
   foreach ($optionsets as $optionset) {
-    // Ensure the optionset is typecast after being loaded from storage.
+    // Ensures the optionset is typecast after being loaded from storage.
     $breakpoints = isset($optionset->breakpoints) ? $optionset->breakpoints : NULL;
     _slick_typecast_optionset($optionset->options, $breakpoints);
   }
@@ -321,7 +258,7 @@ function slick_optionset_delete($optionset) {
  * @param int $breakpoints
  *   The number of breakpoints if specified.
  */
-function _slick_typecast_optionset(&$options = array(), $breakpoints = 0) {
+function _slick_typecast_optionset(array &$options = array(), $breakpoints = 0) {
   if (empty($options)) {
     return;
   }
@@ -364,141 +301,6 @@ function _slick_typecast_optionset(&$options = array(), $breakpoints = 0) {
   }
 
   drupal_alter('slick_typecast_optionset_info', $options, $breakpoints);
-}
-
-/**
- * List of all easing methods available from jQuery Easing v1.3.
- *
- * @return array
- *   An array of available jQuery Easing options as fallback for browsers that
- *   don't support pure CSS easing methods.
- */
-function _slick_easing_options() {
-  $easings = &drupal_static(__FUNCTION__, NULL);
-
-  if (!isset($easings)) {
-    $easings = array(
-      'linear'           => 'Linear',
-      'swing'            => 'Swing',
-      'easeInQuad'       => 'easeInQuad',
-      'easeOutQuad'      => 'easeOutQuad',
-      'easeInOutQuad'    => 'easeInOutQuad',
-      'easeInCubic'      => 'easeInCubic',
-      'easeOutCubic'     => 'easeOutCubic',
-      'easeInOutCubic'   => 'easeInOutCubic',
-      'easeInQuart'      => 'easeInQuart',
-      'easeOutQuart'     => 'easeOutQuart',
-      'easeInOutQuart'   => 'easeInOutQuart',
-      'easeInQuint'      => 'easeInQuint',
-      'easeOutQuint'     => 'easeOutQuint',
-      'easeInOutQuint'   => 'easeInOutQuint',
-      'easeInSine'       => 'easeInSine',
-      'easeOutSine'      => 'easeOutSine',
-      'easeInOutSine'    => 'easeInOutSine',
-      'easeInExpo'       => 'easeInExpo',
-      'easeOutExpo'      => 'easeOutExpo',
-      'easeInOutExpo'    => 'easeInOutExpo',
-      'easeInCirc'       => 'easeInCirc',
-      'easeOutCirc'      => 'easeOutCirc',
-      'easeInOutCirc'    => 'easeInOutCirc',
-      'easeInElastic'    => 'easeInElastic',
-      'easeOutElastic'   => 'easeOutElastic',
-      'easeInOutElastic' => 'easeInOutElastic',
-      'easeInBack'       => 'easeInBack',
-      'easeOutBack'      => 'easeOutBack',
-      'easeInOutBack'    => 'easeInOutBack',
-      'easeInBounce'     => 'easeInBounce',
-      'easeOutBounce'    => 'easeOutBounce',
-      'easeInOutBounce'  => 'easeInOutBounce',
-    );
-  }
-
-  return $easings;
-}
-
-/**
- * Maps existing jQuery easing value to equivalent CSS easing methods.
- *
- * @param string $easing
- *   The name of the human readable easing.
- *
- * @return string
- *   A string of unfriendly bezier equivalent for the Slick, or NULL.
- */
-function _slick_css_easing_mapping($easing = NULL) {
-  $css_easing = '';
-
-  if ($easing) {
-    $easings = _slick_css_easing_options(TRUE);
-    list(, $css_easing) = array_pad(array_map('trim', explode("|", $easings[$easing], 2)), 2, NULL);
-  }
-
-  return $css_easing;
-}
-
-/**
- * List of available pure CSS easing methods.
- *
- * @param bool $all
- *   Flag to output the array as is for further processing.
- *
- * @return array
- *   An array of CSS easings for select options, or all for the mappings.
- *
- * @see https://github.com/kenwheeler/slick/issues/118
- * @see http://matthewlein.com/ceaser/
- * @see http://www.w3.org/TR/css3-transitions/
- */
-function _slick_css_easing_options($all = FALSE) {
-  $css_easings = &drupal_static(__FUNCTION__, NULL);
-
-  if (!isset($css_easings)) {
-    $css_easings = array();
-    $available_easings = array(
-
-      // Defaults/ Native.
-      'ease'           => 'ease|ease',
-      'linear'         => 'linear|linear',
-      'ease-in'        => 'ease-in|ease-in',
-      'ease-out'       => 'ease-out|ease-out',
-      'swing'          => 'swing|ease-in-out',
-
-      // Penner Equations (approximated).
-      'easeInQuad'     => 'easeInQuad|cubic-bezier(0.550, 0.085, 0.680, 0.530)',
-      'easeInCubic'    => 'easeInCubic|cubic-bezier(0.550, 0.055, 0.675, 0.190)',
-      'easeInQuart'    => 'easeInQuart|cubic-bezier(0.895, 0.030, 0.685, 0.220)',
-      'easeInQuint'    => 'easeInQuint|cubic-bezier(0.755, 0.050, 0.855, 0.060)',
-      'easeInSine'     => 'easeInSine|cubic-bezier(0.470, 0.000, 0.745, 0.715)',
-      'easeInExpo'     => 'easeInExpo|cubic-bezier(0.950, 0.050, 0.795, 0.035)',
-      'easeInCirc'     => 'easeInCirc|cubic-bezier(0.600, 0.040, 0.980, 0.335)',
-      'easeInBack'     => 'easeInBack|cubic-bezier(0.600, -0.280, 0.735, 0.045)',
-      'easeOutQuad'    => 'easeOutQuad|cubic-bezier(0.250, 0.460, 0.450, 0.940)',
-      'easeOutCubic'   => 'easeOutCubic|cubic-bezier(0.215, 0.610, 0.355, 1.000)',
-      'easeOutQuart'   => 'easeOutQuart|cubic-bezier(0.165, 0.840, 0.440, 1.000)',
-      'easeOutQuint'   => 'easeOutQuint|cubic-bezier(0.230, 1.000, 0.320, 1.000)',
-      'easeOutSine'    => 'easeOutSine|cubic-bezier(0.390, 0.575, 0.565, 1.000)',
-      'easeOutExpo'    => 'easeOutExpo|cubic-bezier(0.190, 1.000, 0.220, 1.000)',
-      'easeOutCirc'    => 'easeOutCirc|cubic-bezier(0.075, 0.820, 0.165, 1.000)',
-      'easeOutBack'    => 'easeOutBack|cubic-bezier(0.175, 0.885, 0.320, 1.275)',
-      'easeInOutQuad'  => 'easeInOutQuad|cubic-bezier(0.455, 0.030, 0.515, 0.955)',
-      'easeInOutCubic' => 'easeInOutCubic|cubic-bezier(0.645, 0.045, 0.355, 1.000)',
-      'easeInOutQuart' => 'easeInOutQuart|cubic-bezier(0.770, 0.000, 0.175, 1.000)',
-      'easeInOutQuint' => 'easeInOutQuint|cubic-bezier(0.860, 0.000, 0.070, 1.000)',
-      'easeInOutSine'  => 'easeInOutSine|cubic-bezier(0.445, 0.050, 0.550, 0.950)',
-      'easeInOutExpo'  => 'easeInOutExpo|cubic-bezier(1.000, 0.000, 0.000, 1.000)',
-      'easeInOutCirc'  => 'easeInOutCirc|cubic-bezier(0.785, 0.135, 0.150, 0.860)',
-      'easeInOutBack'  => 'easeInOutBack|cubic-bezier(0.680, -0.550, 0.265, 1.550)',
-    );
-
-    foreach ($available_easings as $key => $easing) {
-      list($readable_easing, $bezier) = array_pad(array_map('trim', explode("|", $easing, 2)), 2, NULL);
-      $css_easings[$key] = $all ? $easing : $readable_easing;
-      // Satisfy both phpcs and coder since no skip tolerated.
-      unset($bezier);
-    }
-  }
-
-  return $css_easings;
 }
 
 /**
@@ -547,7 +349,7 @@ function slick_get_view_modes($entity_type, $exclude = TRUE) {
  * Gets a list of fields in the Field collection item.
  */
 function slick_get_fc_fields($instance, $field_types) {
-  $fc_options = array();
+  $options = array();
   $fields = field_info_fields();
   $bundle = 'field_collection_item';
   $bundle_instance = $instance['field_name'];
@@ -555,26 +357,26 @@ function slick_get_fc_fields($instance, $field_types) {
   foreach ($fields as $name => $field) {
     $infos = field_info_instance($bundle, $name, $bundle_instance);
     if ($field_types == '_all') {
-      $fc_options[$name] = $infos['label'];
+      $options[$name] = $infos['label'];
     }
     else {
       if (in_array($bundle, array_keys($field['bundles']))
           && in_array($bundle_instance, $field['bundles'][$bundle])
           && in_array($field['type'], $field_types)) {
-        $fc_options[$name] = $infos['label'];
+        $options[$name] = $infos['label'];
       }
     }
   }
 
-  return $fc_options;
+  return $options;
 }
 
 /**
  * Gets a list of fields in the Media file field.
  */
 function slick_get_media_fields($instance, $widget_types = NULL) {
-  $media_options = array();
-  $types = drupal_map_assoc(array('audio', 'image', 'video'));
+  $options = array();
+  $types = drupal_map_assoc(array('audio', 'image', 'slideshow', 'video'));
 
   // Expose all media sub-fields, and merge them as available options.
   foreach ($types as $media_type) {
@@ -582,15 +384,66 @@ function slick_get_media_fields($instance, $widget_types = NULL) {
     foreach ($fields as $key => $media_field) {
       $type = $media_field['widget']['type'];
       if ($widget_types && in_array($type, $widget_types)) {
-        $media_options[$key] = $media_field['label'];
+        $options[$key] = $media_field['label'];
       }
       else {
-        $media_options[$key] = $media_field['label'];
+        $options[$key] = $media_field['label'];
       }
     }
   }
 
-  return $media_options;
+  return $options;
+}
+
+/**
+ * Gets a list of fields in the Paragraphs item.
+ */
+function slick_get_paragraphs_fields($instance, $bundles, $field_types) {
+  $entity_type = 'paragraphs_item';
+  $paragraphs_options = array();
+  // Add panelizer support.
+  if ($instance['entity_type'] == 'ctools') {
+    foreach ($bundles as $bundle_type => $types) {
+      foreach ($types as $type) {
+        $instance = field_info_instance($bundle_type, $instance['field_name'], $type);
+        $allowed_bundles = $instance['settings']['allowed_bundles'];
+        $paragraphs_options += _slick_get_paragraphs_fields_options($allowed_bundles, $entity_type, $field_types);
+      }
+    }
+  }
+  else {
+    $allowed_bundles = $instance['settings']['allowed_bundles'];
+    $paragraphs_options = _slick_get_paragraphs_fields_options($allowed_bundles, $entity_type, $field_types);
+  }
+
+  return $paragraphs_options;
+}
+
+/**
+ * Helper function to get list of supported field base on field_types.
+ */
+function _slick_get_paragraphs_fields_options($allowed_bundles, $entity_type, $field_types) {
+  $options = array();
+  foreach ($allowed_bundles as $bundle_name => $bundle) {
+    if ($bundle !== -1) {
+      $fields = field_info_instances($entity_type, $bundle_name);
+      foreach ($fields as $name => $field) {
+        $info = field_info_field($name);
+        if ($field_types == '_all') {
+          $options[$name] = $field['label'];
+        }
+        else {
+          if (in_array($entity_type, array_keys($info['bundles']))
+            && in_array($info['type'], $field_types)
+          ) {
+            $options[$name] = $field['label'];
+          }
+        }
+      }
+    }
+  }
+
+  return $options;
 }
 
 /**
@@ -599,7 +452,6 @@ function slick_get_media_fields($instance, $widget_types = NULL) {
 function slick_get_top_elements(array &$elements, $settings, &$form_state) {
   $slick_path = drupal_get_path('module', 'slick');
   $optionsets = slick_optionset_options();
-  $skins      = slick_skins_options();
   $readme     = url($slick_path . '/README.txt');
 
   $elements['optionset'] = array(
@@ -612,7 +464,7 @@ function slick_get_top_elements(array &$elements, $settings, &$form_state) {
   $elements['skin'] = array(
     '#type'        => 'select',
     '#title'       => t('Skin main'),
-    '#options'     => $skins,
+    '#options'     => slick_get_skins_by_group('main', TRUE),
     '#description' => t('Skins allow swappable layouts like next/prev links, split image and caption, etc. with just CSS. However a combination of skins and options may lead to unpredictable layouts, get yourself dirty. See <a href="@url" target="_blank">SKINS section at README.txt</a> for details on Skins. Leave empty to DIY, or use hook_slick_skins_info() to register ones.', array('@url' => $readme)),
   );
 
@@ -626,7 +478,7 @@ function slick_get_top_elements(array &$elements, $settings, &$form_state) {
   $elements['skin_thumbnail'] = array(
     '#type'        => 'select',
     '#title'       => t('Skin thumbnail'),
-    '#options'     => $skins,
+    '#options'     => slick_get_skins_by_group('thumbnail', TRUE),
     '#description' => t('Thumbnail navigation skin. See main <a href="@url" target="_blank">README</a> for details on Skins. Leave empty to not use thumbnail navigation.', array('@url' => $readme)),
   );
 
@@ -634,11 +486,11 @@ function slick_get_top_elements(array &$elements, $settings, &$form_state) {
     '#type'        => 'select',
     '#title'       => t('Skin arrows'),
     '#options'     => array(),
-    '#description' => t('Use hook_slick_arrows_info() to add your own arrows skins, in the same format as hook_slick_skins_info().'),
+    '#description' => t('Use hook_slick_skins_info() with group propery arrows to add your own arrows skins.'),
     '#access'      => FALSE,
   );
 
-  if ($arrows = slick_arrows_options()) {
+  if ($arrows = slick_get_skins_by_group('arrows', TRUE)) {
     $elements['skin_arrows']['#options'] = $arrows;
     $elements['skin_arrows']['#access'] = TRUE;
   }
@@ -647,51 +499,14 @@ function slick_get_top_elements(array &$elements, $settings, &$form_state) {
     '#type'        => 'select',
     '#title'       => t('Skin dots'),
     '#options'     => array(),
-    '#description' => t('Use hook_slick_dots_info() to add your own dots skins, in the same format as hook_slick_skins_info().'),
+    '#description' => t('Use hook_slick_skins_info() with group propery dots to add your own dots skins.'),
     '#access'      => FALSE,
   );
 
-  if ($dots = slick_dots_options()) {
+  if ($dots = slick_get_skins_by_group('dots', TRUE)) {
     $elements['skin_dots']['#options'] = $dots;
     $elements['skin_dots']['#access'] = TRUE;
   }
-
-  $elements['asnavfor_main'] = array(
-    '#type'        => 'textfield',
-    '#title'       => t('asNavFor main'),
-    '#attributes'  => array('class' => array('is-tooltip', 'js-expandable')),
-    '#description' => t('Valid CSS selector (with "." or "#") for the main display. Target the thumbnail display class or ID attributes. See <a href="@url" target="_blank">HTML structure section at README.txt</a> for details on asNavFor targets.', array('@url' => $readme)),
-    '#states' => array(
-      'invisible' => array(
-        array('select[name*="[optionset_thumbnail]"]' => array('value' => '')),
-        array(':input[name*="[asnavfor_auto]"]' => array('checked' => TRUE)),
-      ),
-    ),
-  );
-
-  $elements['asnavfor_thumbnail'] = array(
-    '#type'        => 'textfield',
-    '#title'       => t('asNavFor thumbnail'),
-    '#attributes'  => array('class' => array('is-tooltip', 'js-expandable')),
-    '#description' => t('Valid CSS selector (with "." or "#") for the thumbnail display. Target the main display class or ID attributes.'),
-    '#states' => array(
-      'invisible' => array(
-        array('select[name*="[optionset_thumbnail]"]' => array('value' => '')),
-        array(':input[name*="[asnavfor_auto]"]' => array('checked' => TRUE)),
-      ),
-    ),
-  );
-
-  $elements['asnavfor_auto'] = array(
-    '#title'       => t('asNavFor auto selectors'),
-    '#type'        => 'checkbox',
-    '#description' => t('If checked, asNavFor selectors will be determined by the current field ID selectors automatically. Check if unsure with manual selectors, or needs dynamic selectors for dynamic slicks such as blog/taxonomy-based posts.'),
-    '#states' => array(
-      'invisible' => array(
-        'select[name*="[optionset_thumbnail]"]' => array('value' => ''),
-      ),
-    ),
-  );
 
   $weight = -99;
   foreach (element_children($elements) as $key) {
@@ -699,15 +514,258 @@ function slick_get_top_elements(array &$elements, $settings, &$form_state) {
       $elements[$key]['#weight'] = ++$weight;
     }
   }
+}
 
-  drupal_alter('slick_top_elements_info', $elements, $settings, $form_state);
-  return $elements;
+/**
+ * Returns shared fieldable form elements for Slick field formatter and Views.
+ */
+function slick_get_fieldable_elements(array &$elements, $settings, $definition = array()) {
+  $slick_fields   = url(drupal_get_path('module', 'slick_fields') . '/README.txt');
+  $layout_builtin = slick_layouts();
+
+  $image_options      = isset($definition['images']) ? $definition['images'] : array();
+  $thumb_options      = isset($definition['thumbnails']) ? $definition['thumbnails'] : array();
+  $overlay_options    = isset($definition['overlays']) ? $definition['overlays'] : array();
+  $layout_options     = isset($definition['layouts']) ? $definition['layouts'] : array();
+  $title_options      = isset($definition['titles']) ? $definition['titles'] : array();
+  $link_options       = isset($definition['links']) ? $definition['links'] : array();
+  $caption_options    = isset($definition['captions']) ? $definition['captions'] : array();
+  $tn_caption_options = isset($definition['thumb_captions']) ? $definition['thumb_captions'] : array();
+  $class_options      = isset($definition['classes']) ? $definition['classes'] : array();
+  $fieldable          = isset($definition['fieldable']) || isset($definition['overlays']);
+
+  $elements['slide_layout'] = array(
+    '#type'        => 'select',
+    '#title'       => t('Slide layout'),
+    '#options'     => $layout_options + $layout_builtin,
+    '#prefix'      => '<h3 class="form--slick__title">' . t('Fields') . '</h3>',
+    '#description' => t('Two options: <ol><li>A custom list text field, to control each slide layout. Choose "key" under its Formatter.</li><li>Builtin layouts, to apply uniformly to all slides.</li></ol>Leave empty to DIY. <a href="@url">Read more</a> about layouts.', array('@url' => $slick_fields)),
+    '#access'      => isset($definition['layouts']),
+  );
+
+  if ($fieldable) {
+    $elements['slide_title'] = array(
+      '#type'        => 'select',
+      '#title'       => t('Slide title'),
+      '#options'     => $title_options,
+      '#description' => t('If provided, it will be wrapped with H2 and class .slide__title.'),
+      '#access'      => isset($definition['titles']),
+    );
+  }
+
+  if (isset($definition['images'])) {
+    $elements['slide_image'] = array(
+      '#type'        => 'select',
+      '#title'       => t('Main image'),
+      '#options'     => $image_options,
+      '#description' => t('Main image, treated as background if overlay is provided. It will be lazy-loaded if the Formatter is <strong>Image</strong> and lazyLoad is enabled. Only one image is displayed per slide, even if it is a multi-value field.'),
+      '#access'      => isset($definition['images']),
+    );
+  }
+
+  if (isset($definition['thumbnails'])) {
+    $elements['slide_thumbnail'] = array(
+      '#type'        => 'select',
+      '#title'       => t('Thumbnail image'),
+      '#options'     => $thumb_options,
+      '#description' => t("Only needed if <em>Option set thumbnail</em> is provided. Maybe the same field as the main image, only different instance. Leave empty to not use thumbnail pager."),
+      '#access'      => isset($definition['thumbnails']),
+    );
+  }
+
+  $elements['thumbnail_caption'] = array(
+    '#type'        => 'select',
+    '#title'       => t('Thumbnail caption'),
+    '#options'     => $tn_caption_options,
+    '#description' => t('Thumbnail caption maybe just title/ plain text. If Thumbnail image is not provided, the thumbnail pagers will be just text like regular tabs.'),
+    '#access'      => isset($definition['thumb_captions']),
+  );
+
+  if ($fieldable) {
+    $elements['slide_overlay'] = array(
+      '#type'        => 'select',
+      '#title'       => t('Overlay media/slicks'),
+      '#options'     => $overlay_options,
+      '#description' => t('For audio/video, be sure the display is not image. For nested slicks, use the Slick carousel formatter for this field. Zebra layout is reasonable for overlay and captions.'),
+      '#access'      => isset($definition['overlays']),
+    );
+  }
+
+  if (isset($definition['links'])) {
+    $elements['slide_link'] = array(
+      '#type'        => 'select',
+      '#title'       => t('Link'),
+      '#options'     => $link_options,
+      '#description' => t('Link to content: Read more, View Case Study, etc, wrapped with class .slide__link.'),
+      '#access'      => isset($definition['links']),
+    );
+  }
+
+  if (isset($definition['classes'])) {
+    $elements['slide_classes'] = array(
+      '#title'       => t('Slide class'),
+      '#type'        => 'select',
+      '#options'     => $class_options,
+      '#description' => t('If provided, individual slide will have this class, e.g.: to have different background with transparent images and skin Split, or Slick filtering. Be sure to have a Key, Label or Plain text under Formatter without links accordingly. Supported fields: Node title, Entityreference, Taxonomy term, List, Text.'),
+      '#access'      => isset($definition['classes']),
+    );
+  }
+
+  $slide_captions = is_array($settings['slide_caption']) ? array_values($settings['slide_caption']) : $settings['slide_caption'];
+  $elements['slide_caption'] = array(
+    '#type'          => 'checkboxes',
+    '#title'         => t('Caption fields'),
+    '#description'   => t("Select fields for the caption, excluding those already selected above."),
+    '#options'       => $caption_options,
+    '#default_value' => $slide_captions,
+    '#access'        => isset($definition['captions']),
+  );
+}
+
+/**
+ * Returns shared fieldable form elements for Slick field formatter and Views.
+ */
+function slick_get_media_switch_elements(array &$elements, $settings, $definition = array()) {
+  $is_colorbox  = function_exists('_colorbox_doheader');
+  $is_photobox  = function_exists('photobox_library');
+  $is_token     = function_exists('token_theme');
+  $image_styles = image_style_options(FALSE, PASS_THROUGH);
+  $field_type   = isset($definition['field_type']) ? $definition['field_type'] : '';
+
+  $elements['media_switch'] = array(
+    '#title'       => t('Media switcher'),
+    '#type'        => 'select',
+    '#options'     => array(
+      'content'       => t('Image linked to content'),
+      'iframe-switch' => t('Image to iframe switcher'),
+    ),
+    '#description' => t('Dependent on the enabled supported modules.<ol><li>Link to content: for aggregated small slicks.</li><li>Media file iframe: audio/video is hidden below image until toggled, otherwise iframe is always displayed, and draggable fails. Aspect ratio applies.</li><li>Colorbox.</li><li>Photobox. Be sure to select "Thumbnail style" for the overlay thumbnails.</li></ol>'),
+    '#weight'      => 60,
+    '#prefix'      => '<h3 class="form--slick__title">' . t('Misc') . '</h3>',
+  );
+
+  if ($field_type && in_array($field_type, array('field_collection_item', 'file'))) {
+    $elements['iframe_lazy'] = array(
+      '#type'        => 'checkbox',
+      '#title'       => t('Lazy iframe'),
+      '#description' => t('Check to make the video/audio iframes truly lazyloaded, and speed up loading time. Depends on JS enabled at client side.'),
+      '#weight'      => 61,
+      '#states' => array(
+        'visible' => array(
+          array('select[name*="[media_switch]"]' => array('value' => 'iframe-switch')),
+        ),
+      ),
+    );
+  }
+
+  // http://en.wikipedia.org/wiki/List_of_common_resolutions
+  $ratio = array('1:1', '3:2', '4:3', '8:5', '16:9', 'fluid');
+  $elements['aspect_ratio'] = array(
+    '#type'        => 'select',
+    '#title'       => t('Aspect ratio'),
+    '#options'     => drupal_map_assoc($ratio),
+    '#description' => t('Aspect ratio to get consistently responsive images and iframes within responsive layout, required if using media file to switch between iframe and overlay image, otherwise you have to do it properly. This also fixes layout reflow and excessive height issues with lazyload ondemand. <a href="@dimensions" target="_blank">Image styles and video dimensions</a> must <a href="@follow" target="_blank">follow the ratio</a>, otherwise your images will be unexpectedly distorted. <a href="@link" target="_blank">Learn more</a>, or leave empty if you care not for aspect ratio, or prefer to DIY, etc. Choose fluid if unsure.', array(
+      '@dimensions' => '//size43.com/jqueryVideoTool.html',
+      '@follow'     => '//en.wikipedia.org/wiki/Aspect_ratio_%28image%29',
+      '@link'       => '//www.smashingmagazine.com/2014/02/27/making-embedded-content-work-in-responsive-design/',
+    )),
+    '#weight'       => 62,
+    '#states'       => array(
+      'visible' => array(
+        ':input[name*="[picture]"]' => array('checked' => FALSE),
+      ),
+    ),
+  );
+
+  // Optional colorbox integration.
+  if ($is_colorbox || $is_photobox || isset($definition['lightbox'])) {
+    $lightbox_enabled = array(
+      'visible' => array(
+        array('select[name*="[media_switch]"]' => array('value' => 'colorbox-switch')),
+        array('select[name*="[media_switch]"]' => array('value' => 'photobox-switch')),
+      ),
+    );
+
+    $lightbox_custom = array(
+      'visible' => array(
+        array('select[name*="[media_switch]"]' => array(array('value' => 'colorbox'), array('value' => 'photobox'))),
+        array('select[name$="[box_caption]"]' => array('value' => 'custom')),
+      ),
+    );
+
+    // Re-use the same image style for both boxes.
+    $elements['colorbox_style'] = array(
+      '#title'        => t('Lightbox image style'),
+      '#type'         => 'select',
+      '#empty_option' => t('None (original)'),
+      '#options'      => $image_styles,
+      '#weight'       => 63,
+      '#states'       => $lightbox_enabled,
+    );
+
+    if ($is_colorbox) {
+      $elements['media_switch']['#options']['colorbox-switch'] = t('Image to colorbox');
+    }
+
+    if ($is_photobox) {
+      $elements['media_switch']['#options']['photobox-switch'] = t('Image to photobox');
+    }
+
+    $box_captions = array(
+      'auto'         => t('Automatic'),
+      'alt'          => t('Alt text'),
+      'title'        => t('Title text'),
+      'alt_title'    => t('Alt and Title'),
+      'title_alt'    => t('Title and Alt'),
+      'entity_title' => t('Content title'),
+      'custom'       => t('Custom'),
+    );
+
+    $elements['box_caption'] = array(
+      '#type'        => 'select',
+      '#title'       => t('Lightbox caption'),
+      '#options'     => $box_captions,
+      '#access'      => isset($definition['box_captions']),
+      '#weight'      => 63,
+      '#states'      => $lightbox_enabled,
+      '#description' => t('Automatic will search for Alt text first, then Title text.'),
+    );
+
+    $elements['box_caption_custom'] = array(
+      '#title'       => t('Lightbox custom caption'),
+      '#type'        => 'textfield',
+      '#access'      => isset($definition['box_captions']),
+      '#weight'      => 63,
+      '#states'      => $lightbox_custom,
+      '#description' => t('Multi-value rich text field will be mapped to each image by its delta.'),
+      '#attributes'  => array('class' => array('js-expandable')),
+    );
+
+    if ($is_token) {
+      $token_tree = array(
+        '#theme'       => 'token_tree_link',
+        '#text'        => t('Tokens'),
+        '#token_types' => isset($definition['entity_type']) ? array('user', $definition['entity_type']) : array(),
+      );
+      $elements['box_caption_custom']['#field_suffix'] = drupal_render($token_tree);
+    }
+    else {
+      $elements['box_caption_custom']['#description'] .= ' ' . t('Install Token module to browse available tokens.');
+    }
+  }
 }
 
 /**
  * Returns shared ending form elements across Slick field formatter and Views.
  */
 function slick_get_elements(array &$elements, $settings, &$form_state) {
+  $elements['mousewheel'] = array(
+    '#type'        => 'checkbox',
+    '#title'       => t('Mousewheel'),
+    '#description' => t('Be sure to download the <a href="@url" target="_blank">mousewheel</a> library, and it is available at <em>sites/.../libraries/mousewheel/jquery.mousewheel.min.js</em>.', array('@url' => '//github.com/brandonaaron/jquery-mousewheel')),
+    '#weight'      => 96,
+  );
+
   $a = array(300, 600, 900, 1800, 2700, 3600, 10800, 21600, 32400, 43200, 86400);
   $period = drupal_map_assoc($a, 'format_interval');
   $elements['cache'] = array(
@@ -715,7 +773,7 @@ function slick_get_elements(array &$elements, $settings, &$form_state) {
     '#title'       => t('Cache'),
     '#options'     => $period + array('persistent' => t('Persistent')),
     '#weight'      => 97,
-    '#description' => t('Ditch all the slick logic to cached bare HTML. <ol><li><strong>Persistent</strong>: cached contents will persist (be displayed) till the next cron runs.</li><li><strong>Any number</strong>: expired by the selected expiration time, and fresh contents are fetched till the next cache rebuilt.</li></ol>A working cron job is required to clear stale cache. At any rate, cached contents will be refreshed regardless of the expiration time after the cron hits. <br />Leave it empty to disable caching.<br /><strong>Warning!</strong> Be sure no useless/ sensitive data such as Edit links as they are rendered as is regardless permissions. Only enable it when all is done, otherwise cached options will be displayed while changing them.'),
+    '#description' => t('Ditch all slick logic to cached bare HTML. <ol><li><strong>Persistent</strong>: cached contents will persist (be displayed) till the next cron runs.</li><li><strong>Any number</strong>: expired by the selected expiration time, and fresh contents are fetched till the next cache rebuilt.</li></ol>A working cron job is required to clear stale cache. At any rate, cached contents will be refreshed regardless of the expiration time after the cron hits.<br /><strong>Warning!</strong> Be sure no useless/ sensitive data such as Edit links as they are rendered as is regardless permissions. No permissions are changed, just ugly. Note: Slick is already faster, lighter and less memory than <a href="@similar" target="_blank">similar</a> <a href="@url" target="_blank">solutions</a> for anonymous users with just Drupal cache. This is more useful for authenticated traffic, best with Authcache. Only enable it when all is done, otherwise cached options will be displayed while changing them. Leave empty to disable caching, or if traffics are mostly anonymous.', array('@similar' => 'https://www.drupal.org/node/2313461#comment-10817842', '@url' => 'https://www.drupal.org/node/2463305#comment-10850288')),
   );
 
   // Re-uses one optionset for various displays.
@@ -743,7 +801,6 @@ function slick_get_elements(array &$elements, $settings, &$form_state) {
   );
 
   drupal_alter('slick_elements_info', $elements, $settings, $form_state);
-  return $elements;
 }
 
 /**
@@ -755,7 +812,7 @@ function slick_get_grid_elements(array &$elements, $settings, &$form_state) {
     '#type'        => 'select',
     '#title'       => t('Grid large'),
     '#options'     => $grid_options,
-    '#description' => t('The amount of block grid columns for large monitors 64.063em - 90em. <br /><strong>Requires</strong>:<ol><li>Visible slides,</li><li>Skin Grid for starter,</li><li>A reasonable amount of contents,</li><li>Optionset with Rows and slidesPerRow = 1.</li></ol>This is module feature, older than core Rows, and offers more flexibility. Leave empty to DIY, or to not build grids.'),
+    '#description' => t('The amount of block grid columns for large monitors 64.063em - 90em. <br /><strong>Requires</strong>:<ol><li>Visible slides,</li><li>Skin Grid for starter,</li><li>A reasonable amount of contents,</li><li>Optionset with Rows and slidesPerRow = 1.</li></ol>This is module feature using the Foundation block grid, older than core Rows, and offers more flexibility. Leave empty to DIY, or to not build grids.'),
     '#prefix'      => '<h3 class="form--slick__title">' . t('Group individual slide as block grid?<small>An older alternative to core <strong>Rows</strong> option. Only works if the total items &gt; <strong>Visible slides</strong>. <br />block grid != slidesToShow option, yet both can work in tandem.<br />block grid = Rows option, yet the first is module feature, the later core.</small>') . '</h3>',
   );
 
@@ -787,22 +844,23 @@ function slick_get_grid_elements(array &$elements, $settings, &$form_state) {
   );
 
   drupal_alter('slick_grid_elements_info', $elements, $settings, $form_state);
-  return $elements;
 }
 
 /**
  * Returns reusable logic, styling and assets across Slick fields and Views.
  */
 function slick_get_admin_assets(array &$elements, $settings = array()) {
+  $excludes = array('container', 'fieldset', 'item', 'hidden');
+  $admin_css = variable_get('slick_admin_css', TRUE);
   foreach (element_children($elements) as $key) {
-    if (isset($elements[$key]['#type']) && !in_array($elements[$key]['#type'], array('item', 'hidden'))) {
+    if (isset($elements[$key]['#type']) && !in_array($elements[$key]['#type'], $excludes)) {
       if (!isset($elements[$key]['#default_value']) && isset($settings[$key])) {
         $elements[$key]['#default_value'] = $settings[$key];
       }
       if (!isset($elements[$key]['#attributes']) && isset($elements[$key]['#description'])) {
         $elements[$key]['#attributes'] = array('class' => array('is-tooltip'));
       }
-      if (variable_get('slick_admin_css', TRUE)) {
+      if ($admin_css) {
         if ($elements[$key]['#type'] == 'checkbox' && $elements[$key]['#type'] != 'checkboxes') {
           $elements[$key]['#field_suffix'] = '';
           $elements[$key]['#title_display'] = 'before';
@@ -822,7 +880,7 @@ function slick_get_admin_assets(array &$elements, $settings = array()) {
     }
   }
 
-  if (variable_get('slick_admin_css', TRUE)) {
+  if ($admin_css) {
     if (module_exists('slick_ui')) {
       $elements['#attached']['library'][] = array('slick_ui', 'slick.ui');
     }
@@ -832,30 +890,26 @@ function slick_get_admin_assets(array &$elements, $settings = array()) {
         $slick_path . '/css/admin/slick.admin--ui.css' => array('group' => CSS_THEME + 1),
         $slick_path . '/css/admin/slick.admin--ui--field.css' => array('group' => CSS_THEME + 1),
       );
-      $elements['#attached']['js'][]  = $slick_path . '/js/slick.admin.ui.min.js';
+
+      $elements['#attached']['js'][] = $slick_path . '/js/slick.admin.ui.min.js';
     }
   }
 
   drupal_alter('slick_admin_assets_info', $elements, $settings);
-  return $elements;
 }
 
 /**
  * Returns reusable summaries across Slick field formatters.
  */
 function slick_get_admin_summary($field, $instance, $view_mode, $module) {
-  $display = $instance['display'][$view_mode];
+  $display  = $instance['display'][$view_mode];
   $settings = $display['settings'];
-  $form = call_user_func_array($module . '_field_formatter_settings_form', array(
-    $field,
-    $instance,
-    $view_mode,
-    array(),
-    array(),
-  ));
-  $summary = array();
+  $summary  = $form = $form_state = array();
+  $function = $module . '_field_formatter_settings_form';
+  $elements = $function($field, $instance, $view_mode, $form, $form_state);
+
   foreach ($settings as $key => $setting) {
-    $title = isset($form[$key]['#title']) ? $form[$key]['#title'] : '';
+    $title = isset($elements[$key]['#title']) ? $elements[$key]['#title'] : '';
     if (is_array($setting) || empty($title)) {
       continue;
     }
@@ -864,7 +918,7 @@ function slick_get_admin_summary($field, $instance, $view_mode, $module) {
       $setting = empty($setting) ? t('No') : t('Yes');
     }
     elseif (empty($setting)) {
-      $setting = t('None');
+      continue;
     }
     if (isset($settings[$key])) {
       $summary[] = t('@title: <strong>@setting</strong>', array(

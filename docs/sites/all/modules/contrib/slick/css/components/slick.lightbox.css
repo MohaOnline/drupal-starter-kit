@@ -56,17 +56,18 @@
   background-color: #ff6d2c;
 }
 
-.media:hover .media-icon--lightbox {
+.litebox:hover .media-icon--lightbox {
   -webkit-transition-delay: 0s;
   transition-delay: 0s;
 }
 
-.media:hover .media-icon--lightbox,
-.media--switch .slick__image {
+.litebox:hover .media-icon--lightbox,
+.media--switch .media__image {
   opacity: 1;
   visibility: visible;
 }
 
-.slick__litebox {
+.litebox {
   display: block;
+  position: relative;
 }

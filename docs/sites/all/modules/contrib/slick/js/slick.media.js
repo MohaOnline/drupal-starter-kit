@@ -10,19 +10,19 @@
   Drupal.behaviors.slickMedia = {
     attach: function (context) {
 
-      $(".media--switch--player", context).once("slick-media", function () {
+      $(".media--player", context).once("slick-media", function () {
         var t = $(this),
           $slider = t.closest(".slick__slider"),
           $slick = $slider.closest(".slick"),
           iframe = t.find("iframe"),
           newIframe = iframe.clone(),
           media = newIframe.data("media"),
-          url = newIframe.data("lazy"),
+          url = newIframe.data("lazy") || newIframe.data("src"),
           $nester = '';
 
-          if ($slick.closest(".slick__slider").length) {
-            $nester = $slick.closest(".slick__slider");
-          }
+        if ($slick.closest(".slick__slider").length) {
+          $nester = $slick.closest(".slick__slider");
+        }
 
         // Remove iframe to avoid browser requesting them till clicked.
         iframe.remove();
@@ -41,7 +41,8 @@
             if (auto_play < 0 || auto_play === false) {
               url = param < 0 ? url + "?auto_play=true" : url + "&amp;auto_play=true";
             }
-          } else if (autoplay < 0 || autoplay === 0) {
+          }
+          else if (autoplay < 0 || autoplay === 0) {
             url = param < 0 ? url + "?autoplay=1" : url + "&amp;autoplay=1";
           }
 

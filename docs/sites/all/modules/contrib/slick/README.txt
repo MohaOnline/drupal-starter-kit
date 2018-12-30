@@ -15,8 +15,8 @@ Performant: Slick is stored as plain HTML the first time it is requested, and
 then reused on subsequent requests. Carousels with cacheability and lazyload
 are lighter and faster than those without.
 
-Slick has a gazillion of options, please start with the very basic working
-samples from slick_example [3] only if trouble to build slicks. Be sure to read
+Slick has gazillion options, please start with the very basic working samples
+from slick_example [3] only if trouble to build slicks. Be sure to read
 its README.txt. Spending 5 minutes or so will save you hours in building more
 complex slideshows.
 
@@ -36,7 +36,8 @@ o Random, autoplay, pagers, arrows, dots/text/tabs/thumbnail pagers etc...
 o Supports pure text, responsive image, iframe, video, and audio carousels with
   aspect ratio. No extra jQuery plugin FitVids is required. Just CSS.
 o Exportable via CTools.
-o Works with Views, core and contrib fields: Image, Media or Field collection.
+o Works with Views, core and contrib fields: Image, Media or Field collection,
+  or none of them.
 o Optional and modular skins, e.g.: Carousel, Classic, Fullscreen, Fullwidth,
   Split, Grid or a multi row carousel.
 o Various slide layouts are built with pure CSS goodness.
@@ -56,10 +57,8 @@ VERSIONS
 7.x-2.x supports exportable optionsets via CTools.
 Be sure to run update, when upgrading from 7.x-1.x to 7.x-2.x.
 
-As a CTools plugin, which is future-proof D8 CMI, Slick is easy to customize
-either via UI or code, and can be stored at database, or codebase.
-
-7.x-2.x supports Slick 1.5 above, and dropped supporting Slick 1.4.x and below.
+7.x-2.1+ supports Slick 1.6 above.
+7.x-2.0- supports Slick 1.5.9 below.
 Slick 2.x is just out 9/21/15, and hasn't been officially supported now, 9/27.
 
 
@@ -93,21 +92,16 @@ REQUIREMENTS
     sites/../libraries/slick/slick/slick.min.js
 
 - CTools, for exportable optionsets -- only the main "Chaos tools" is needed.
-  If you have Views installed, CTools is already enabled.
+  If Panels or Views is installed, CTools is already enabled.
 
 - libraries (>=2.x)
 
 - jquery_update with jQuery > 1.7, perhaps 1.8 if trouble with the latest Slick.
 
-- Download jqeasing from http://gsgd.co.uk/sandbox/jquery/easing
-  Rename jquery.easing.1.3.js to jquery.easing.min.js, so available at:
+- Download jqeasing from https://github.com/gdsmith/jquery.easing, so available
+  at:
   sites/../libraries/easing/jquery.easing.min.js
-  This is a fallback for non-supporting browsers.
-
-- A basic knowledge of Drupal site building is required.
-  Please refer to the provided README on each sub-module, and each form item
-  description for more info.
-  Also refer to the supported modules guidelines to be useful for Slick.
+  This is CSS easing fallback for non-supporting browsers.
 
 
 
@@ -140,6 +134,7 @@ To create your optionsets, go to:
 
   admin/config/media/slick
 
+Be sure to enable Slick UI sub-module first, otherwise regular "Access denied".
 These will be available at field formatter "Manage display", and Views UI.
 
 
@@ -179,10 +174,6 @@ slide layout per field to get more control over caption placements. However a
 combination of skins and options may lead to unpredictable layouts, get
 yourself dirty.
 
-Some default complex layout skins applied to desktop only, adjust for the mobile
-accordingly. The provided skins are very basic to support the necessary layouts.
-It is not the module job to match your awesome design requirements.
-
 Optional skins:
 --------------
 - None
@@ -211,14 +202,16 @@ Optional skins:
 - Full width
   Adds additional wrapper to wrap overlay audio/video and captions properly.
   This is designated for large slider in the header or spanning width to window
-  edges at least 1170px width for large monitor.
+  edges at least 1170px width for large monitor. To have a custom full width
+  skin, simply prefix your skin with "full", e.g.: fullstage, fullwindow, etc.
 
 - Boxed
   Added a 0 60px margin to slick-list container and hide neighboring slides.
   An alternative to centerPadding which still reveals neighboring slides.
 
 - Split
-  Caption and image/media are split half, and placed side by side.
+  Caption and image/media are split half, and placed side by side. This requires
+  any layout containing "split", otherwise useless.
 
 - Box carousel
   Added box-shadow to the carousel slides, multiple visible slides. Use
@@ -233,15 +226,15 @@ Optional skins:
   not named Grid. Otherwise overrides skin Grid accordingly.
 
   Requires:
-  Visible slides, Skin Grid for starter, A reasonable amount of slides,
-  Optionset with Rows and slidesPerRow = 1.
-  Avoid variableWidth and adaptiveHeight. Use consistent dimensions.
+  "Visible slides", Skin "Grid" for starter, A reasonable amount of slides,
+  Optionset with "Rows" and "slidesPerRow = 1".
+  Avoid "variableWidth" and "adaptiveHeight". Use consistent dimensions.
   This is module feature, older than core Rows, and offers more flexibility.
   Available at slick_views, and configurable via Views UI.
 
 - Rounded, should be named circle
   This will circle the main image display, reasonable for small carousels, maybe
-  with a small caption below to make it nice. Use slidesToShow option > 2.
+  with a small caption below to make it nice. Use "slidesToShow" option > 2.
   Expecting square images.
 
 If you want to attach extra 3rd libraries, e.g.: image reflection, image zoomer,
@@ -258,17 +251,17 @@ GRID
 To create Slick grid or multiple rows carousel, there are 3 options:
 
 1. One row grid managed by library:
-   Visit admin/config/media/slick,
+   Visit "admin/config/media/slick",
    Edit current optionset, and set
    slidesToShow > 1, and Rows and slidesperRow = 1
 
 2. Multiple rows grid managed by library:
-   Visit admin/config/media/slick,
+   Visit "admin/config/media/slick",
    Edit current optionset, and set
    slidesToShow = 1, Rows > 1 and slidesPerRow > 1
 
 3. Multiple rows grid managed by Module:
-   Visit admin/structure/views/view/slick_x/edit/block_grid from slick_example,
+   Visit "admin/structure/views/view/slick_x/edit/block_grid" at slick_example,
    Be sure to install the Slick example sub-module first.
    Requires skin "Grid", and set
    slidesToShow, Rows and slidesPerRow = 1.
@@ -282,16 +275,6 @@ broken Grid, see skin Grid above for more details.
 HTML STRUCTURE
 --------------------------------------------------------------------------------
 Note, non-BEM classes are added by JS.
-Before Slick 1.4:
------------------
-<div class="slick slick-processed slick-initialized slick-slider">
-  <div class="slick__slide"></div>
-  <nav class="slick__arrow"></nav>
-</div>
-
-
-After Slick 1.4:
------------------
 <div class="slick slick-processed">
   <div class="slick__slider slick-initialized slick-slider">
     <div class="slick__slide"></div>
@@ -299,13 +282,7 @@ After Slick 1.4:
   <nav class="slick__arrow"></nav>
 </div>
 
-At both cases, asNavFor should target slick-initialized class/ID attributes.
-
-
-HOW CAN YOU HELP?
---------------------------------------------------------------------------------
-Please consider helping in the issue queue, provide improvement, or helping with
-documentation.
+asNavFor should target slick-initialized class/ID attributes.
 
 
 BUG REPORTS OR SUPPORT REQUESTS
@@ -387,7 +364,7 @@ KNOWN ISSUES
 
 - The following is not module related, but worth a note:
   o lazyLoad ondemand has issue with dummy image excessive height.
-    Added fixes to suppress it via CSS.
+    Added fixes to suppress it via "Aspect ratio" option.
   o If the total < slidesToShow, Slick behaves. Previously added a workaround to
     fix this, but later dropped and handed over to the core instead.
   o Fade option with slideToShow > 1 will screw up.
@@ -395,12 +372,10 @@ KNOWN ISSUES
   o Too much centerPadding at small device affects slidesToShow.
   o Infinite option will create duplicates or clone slides which look more
     obvious if slidesToShow > 1. Simply disable it if not desired.
-
-
-UNKNOWN ISSUES
---------------------------------------------------------------------------------
-- Anything the maintainers are not aware of.
-  Please report if you find one. Your report and help is any module QA. Thanks.
+  o As of v1.6.0, the parent of nested slicks is not lazyloading ondemand
+    correctly, settings it to progressive will do till the fix is there.
+  o If thumbnail display is Infinite, the main one must be infinite too, else
+    incorrect syncing.
 
 
 PERFORMANCE
@@ -421,39 +396,43 @@ they are always available.
 Most heavy logic were already moved to backend, however slick can be optimized
 more by configuring the "Cache" value per slick instance.
 
-Ditch all the slick logic to cached bare HTML:
-1. Persistent: the cached content will persist (be displayed) till the next
-   cron runs, best for static contents where freshness is no use, such as logo,
-   team, profile video, more permanent home slideshows, etc.
-2. Any number: slick is expired (detached from cached contents) by the selected
-   expiration time, and fetches fresh contents till the next cache rebuilt.
-   If stale cache is not cleared, slick will keep fetching fresh contents.
+Note: Slick is already faster, lighter and less memory than similar[1]
+solutions[2] for anonymous users with just Drupal cache. The builtin Slick Cache
+option is more useful for authenticated traffic, best with Authcache.
+Leave empty to disable caching, or if traffics are mostly anonymous.
 
-Be sure to have a working cron job to clear stale cache, so that slick is loaded
-from the correct cached version. At any rate, cached contents will be refreshed
-regardless of the expiration time after the cron hits due to the nature of cron.
+[1] https://www.drupal.org/node/2313461#comment-10817842
+[2] https://www.drupal.org/node/2463305#comment-10850288
 
 
-CURRENT DEVELOPMENT STATUS
+QUICK PERFORMANCE TIPS
 --------------------------------------------------------------------------------
-A full release should be reasonable after proper feedbacks from the community,
-some code cleanup, and optimization where needed. Patches are very much welcome.
+- Use lazyLoad "ondemand" / "anticipated" for tons of images, not "progressive".
+  Unless within an ajaxified lightbox.
+- Tick "Optimized" option on the top right of Slick optionset edit page.
+- Use image style with regular sizes containing effect "crop" in the name. This
+  way all images will inherit dimensions calculated once.
+- Disable core library "slick-theme.css" as it contains font "slick" which
+  may not be in use when using own icon font at:
+  /admin/config/media/slick/ui
+- Use Blazy multi-serving images, Responsive image, or Picture, accordingly.
+- Uninstall Slick UI at production.
+- Enable Drupal cache, and CSS/ JS assets aggregation.
 
 
-ROADMAP
+HOW CAN YOU HELP?
 --------------------------------------------------------------------------------
-- Bug fixes, code cleanup, optimization, and full release.
-- Get 1.x out of dev.
-- Slick 2.x
-- Drupal 8 port.
+Please consider helping in the issue queue, provide improvement, or helping with
+documentation.
+
+If you find this module helpful, please help back spread the love. Thanks.
 
 
 AUTHOR/MAINTAINER/CREDITS
 --------------------------------------------------------------------------------
-Slick 7.x-2.x-dev by gausarts, inspired by Flexslider with CTools integration.
-Slick 7.x-1.x-dev by arshadcn, the original author.
+Slick 7.x-2.x by gausarts, inspired by Flexslider with CTools integration.
+Slick 7.x-1.x by arshadcn, the original author.
 
-With the help from the community:
 - https://www.drupal.org/node/2232779/committers
 - CHANGELOG.txt for helpful souls with their patches, suggestions and reports.
 

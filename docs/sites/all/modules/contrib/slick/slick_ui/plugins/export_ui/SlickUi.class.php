@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains the CTools export UI integration code.
@@ -16,23 +17,21 @@ class SlickUi extends ctools_export_ui {
     parent::edit_form($form, $form_state);
 
     ctools_form_include($form_state, 'slick.admin', 'slick');
+    ctools_form_include($form_state, 'slick.theme', 'slick', 'templates');
 
     $module_path = drupal_get_path('module', 'slick');
     $optionset = $form_state['item'];
-
     $options = $optionset->options;
-    $slick_options = slick_get_options();
 
     if (variable_get('slick_admin_css', TRUE)) {
       $form['#attached']['library'][] = array('slick_ui', 'slick.ui');
       $form['#attached']['css'][] = $module_path . '/css/admin/slick.admin--vertical-tabs.css';
     }
 
-    // $form['#attributes']['class'][] = 'no-js';
     $form['#attributes']['class'][] = 'form--slick';
     $form['#attributes']['class'][] = 'form--compact';
     $form['#attributes']['class'][] = 'form--optionset';
-    $form['#attributes']['class'][] = 'clearfix';
+    $form['#attributes']['class'][] = 'has-tooltip clearfix';
 
     $form['info']['name']['#attributes']['class'][] = 'is-tooltip';
     $form['info']['label']['#attributes']['class'][] = 'is-tooltip';
@@ -40,7 +39,10 @@ class SlickUi extends ctools_export_ui {
 
     // Skins. We don't provide skin_thumbnail as each optionset may be deployed
     // as main display, or thumbnail navigation.
-    $skins = slick_skins_options();
+    $skins_main = slick_get_skins_by_group('main', TRUE);
+    $skins_thumbnail = slick_get_skins_by_group('thumbnail', TRUE);
+    $skins = array_merge($skins_main, $skins_thumbnail);
+
     $form['skin'] = array(
       '#type' => 'select',
       '#title' => t('Skin'),
@@ -70,6 +72,16 @@ class SlickUi extends ctools_export_ui {
     $form['options'] = array(
       '#type' => 'vertical_tabs',
       '#tree' => TRUE,
+    );
+
+    $is_optimized = $optionset->name == 'default' ? 0 : 1;
+    $form['options']['optimized'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Optimized'),
+      '#attributes' => array('class' => array('is-tooltip')),
+      '#default_value' => isset($options['optimized']) ? $options['optimized'] : $is_optimized,
+      '#description' => t('Check to optimize the stored options. Anything similar to defaults will be excluded, except those required by sub-modules and theme_slick(). Like you hand-code/ cherry-pick the needed options, and frees up memory. The rest are taken care of by JS. Uncheck only if theme_slick() can not satisfy the needs, and more hand-coded preprocess is needed which is less likely in most cases.'),
+      '#access' => $optionset->name != 'default',
     );
 
     // Image styles.
@@ -167,22 +179,30 @@ class SlickUi extends ctools_export_ui {
     );
 
     foreach ($slick_elements as $name => $element) {
+      $element['default'] = isset($element['default']) ? $element['default'] : '';
       $default_value = isset($options['settings'][$name]) ? $options['settings'][$name] : $element['default'];
       $form['options']['settings'][$name] = array(
         '#title' => isset($element['title']) ? $element['title'] : '',
         '#description' => isset($element['description']) ? $element['description'] : '',
-        '#type' => $element['type'],
         '#default_value' => $default_value,
         '#attributes' => array('class' => array('is-tooltip')),
       );
 
-      if (isset($element['field_suffix'])) {
-        $form['options']['settings'][$name]['#field_suffix'] = $element['field_suffix'];
+      if (isset($element['type'])) {
+        $form['options']['settings'][$name]['#type'] = $element['type'];
+
+        if ($element['type'] == 'textfield') {
+          $form['options']['settings'][$name]['#size'] = 20;
+          $form['options']['settings'][$name]['#maxlength'] = 255;
+        }
+
+        if ($element['type'] == 'hidden' && isset($element['states'])) {
+          unset($element['states']);
+        }
       }
 
-      if ($element['type'] == 'textfield') {
-        $form['options']['settings'][$name]['#size'] = 20;
-        $form['options']['settings'][$name]['#maxlength'] = 255;
+      if (isset($element['field_suffix'])) {
+        $form['options']['settings'][$name]['#field_suffix'] = $element['field_suffix'];
       }
 
       if (variable_get('slick_admin_css', TRUE)) {
@@ -319,13 +339,17 @@ class SlickUi extends ctools_export_ui {
                 if ($item && !is_array($item)) {
                   continue;
                 }
+                $item['default'] = isset($item['default']) ? $item['default'] : '';
                 $form['options']['responsives']['responsive'][$i][$key][$k] = array(
                   '#title' => isset($item['title']) ? $item['title'] : '',
                   '#description' => isset($item['description']) ? $item['description'] : '',
-                  '#type' => $item['type'],
                   '#attributes' => array('class' => array('is-tooltip')),
                   '#default_value' => isset($options['responsives']['responsive'][$i][$key][$k]) ? $options['responsives']['responsive'][$i][$key][$k] : $item['default'],
                 );
+
+                if (isset($item['type'])) {
+                  $form['options']['responsives']['responsive'][$i][$key][$k]['#type'] = $item['type'];
+                }
 
                 // Specify proper states for the breakpoint elements.
                 if (isset($item['states'])) {
@@ -406,12 +430,14 @@ class SlickUi extends ctools_export_ui {
   public function edit_form_submit(&$form, &$form_state) {
     parent::edit_form_submit($form, $form_state);
 
-    $options = $form_state['values']['options'];
+    $options   = $form_state['values']['options'];
     $optionset = $form_state['item'];
+    $optimized = isset($options['optimized']) ? $options['optimized'] : FALSE;
+
     // Map and update the friendly CSS easing to its bezier equivalent.
     $override = '';
     if ($form_state['values']['options']['settings']['cssEaseOverride']) {
-      $override = _slick_css_easing_mapping($form_state['values']['options']['settings']['cssEaseOverride']);
+      $override = $this->getBezier($form_state['values']['options']['settings']['cssEaseOverride']);
     }
 
     $optionset->options['settings']['cssEaseBezier'] = $override;
@@ -419,7 +445,7 @@ class SlickUi extends ctools_export_ui {
     if (isset($options['responsives']['responsive'])) {
       foreach ($options['responsives']['responsive'] as $key => $responsive) {
         if (isset($responsive['settings']['cssEaseOverride'])) {
-          $responsive_override = $responsive['settings']['cssEaseOverride'] ? _slick_css_easing_mapping($responsive['settings']['cssEaseOverride']) : '';
+          $responsive_override = $responsive['settings']['cssEaseOverride'] ? $this->getBezier($responsive['settings']['cssEaseOverride']) : '';
           $optionset->options['responsives']['responsive'][$key]['settings']['cssEaseBezier'] = $responsive_override;
         }
       }
@@ -427,6 +453,31 @@ class SlickUi extends ctools_export_ui {
 
     // Typecast the values.
     _slick_typecast_optionset($optionset->options, $form_state['values']['breakpoints']);
+
+    // Optimized if so configured.
+    if (!empty($optimized)) {
+      $defaults = slick_get_options();
+      $required = $this->getOptionsRequiredByTemplate();
+      $main     = array_diff_assoc($defaults, $required);
+      $settings = $optionset->options['settings'];
+
+      // Remove wasted dependent options if disabled, empty or not.
+      slick_remove_wasted_dependent_options($settings);
+      $optionset->options['settings'] = array_diff_assoc($settings, $main);
+
+      if (isset($options['responsives']['responsive'])) {
+        $responsives = &$optionset->options['responsives']['responsive'];
+        foreach ($responsives as $key => &$responsive) {
+          if (!empty($responsive['unslick'])) {
+            $responsives[$key]['settings'] = array();
+          }
+          else {
+            slick_remove_wasted_dependent_options($responsives[$key]['settings']);
+            $responsives[$key]['settings'] = array_diff_assoc($responsives[$key]['settings'], $defaults);
+          }
+        }
+      }
+    }
 
     // Remove useless option.
     if (isset($options['options__active_tab'])) {
@@ -582,13 +633,18 @@ class SlickUi extends ctools_export_ui {
         'type' => 'textfield',
       );
 
+      $lazies = array('anticipated', 'ondemand', 'progressive');
       $elements['lazyLoad'] = array(
         'title' => t('Lazy load'),
-        'description' => t("Set lazy loading technique. 'ondemand' will load the image as soon as you slide to it, 'progressive' loads one image after the other when the page loads. Note: dummy image is no good for ondemand. If ondemand fails to generate images, try progressive instead. Or use <a href='@url' target='_blank'>imageinfo_cache</a>. To share images for Pinterest, leave empty, otherwise no way to read actual image src.", array('@url' => '//www.drupal.org/project/imageinfo_cache')),
+        'description' => t("Set lazy loading technique. 'ondemand' will load the image as soon as you slide to it, 'progressive' loads one image after the other when the page loads. 'anticipated' preloads images, and requires Slick 1.6.1+. Note: dummy image is no good for ondemand. If ondemand fails to generate images, try progressive instead. Or use <a href='@url' target='_blank'>imageinfo_cache</a>. To share images for Pinterest, leave empty, otherwise no way to read actual image src.", array('@url' => '//www.drupal.org/project/imageinfo_cache')),
         'type' => 'select',
-        'options' => drupal_map_assoc(array('ondemand', 'progressive')),
+        'options' => drupal_map_assoc($lazies),
         'empty_option' => t('- None -'),
       );
+
+      if (module_exists('blazy')) {
+        $elements['lazyLoad']['options']['blazy'] = 'Blazy';
+      }
 
       $elements['respondTo'] = array(
         'title' => t('Respond to'),
@@ -693,7 +749,7 @@ class SlickUi extends ctools_export_ui {
         'title' => t('CSS ease override'),
         'description' => t('If provided, this will override the CSS ease with the pre-defined CSS easings based on <a href="@ceaser">CSS Easing Animation Tool</a>. Leave it empty to use your own CSS ease.', array('@ceaser' => '//matthewlein.com/ceaser/')),
         'type' => 'select',
-        'options' => _slick_css_easing_options(),
+        'options' => $this->getCssEasingOptions(),
         'empty_option' => t('- None -'),
         'states' => array('visible' => array(':input[name*="options[settings][useCSS]"]' => array('checked' => TRUE))),
       );
@@ -708,7 +764,7 @@ class SlickUi extends ctools_export_ui {
         'title' => t('jQuery easing'),
         'description' => t('Add easing for jQuery animate as fallback. Use with <a href="@easing">easing</a> libraries or default easing methods. This will be ignored and replaced by CSS ease for supporting browsers, or effective if useCSS is disabled.', array('@easing' => '//gsgd.co.uk/sandbox/jquery/easing/')),
         'type' => 'select',
-        'options' => _slick_easing_options(),
+        'options' => $this->getJsEasingOptions(),
         'empty_option' => t('- None -'),
       );
 
@@ -737,12 +793,11 @@ class SlickUi extends ctools_export_ui {
         'type' => 'checkbox',
       );
 
-      // Clone the default values.
-      $slick_options = slick_get_options();
-      foreach ($slick_options as $name => $value) {
-        if (isset($elements[$name])) {
-          $elements[$name]['default'] = $value;
-        }
+      // Defines the default values if available.
+      $defaults = slick_get_options();
+      foreach ($elements as $name => $element) {
+        $default = $element['type'] == 'checkbox' ? FALSE : '';
+        $elements[$name]['default'] = isset($defaults[$name]) ? $defaults[$name] : $default;
       }
 
       // Allows form elements information to be altered.
@@ -801,6 +856,41 @@ class SlickUi extends ctools_export_ui {
   }
 
   /**
+   * Defines options required by theme_slick(), used with optimized option.
+   */
+  public function getOptionsRequiredByTemplate() {
+    $options = array(
+      'asNavFor'         => '',
+      'dotsClass'        => 'slick-dots',
+      'focusOnSelect'    => FALSE,
+      'initialSlide'     => 0,
+      'lazyLoad'         => 'ondemand',
+      'mousewheel'       => FALSE,
+      'prevArrow'        => '<button type="button" data-role="none" class="slick-prev" aria-label="Previous" tabindex="0" role="button">Previous</button>',
+      'nextArrow'        => '<button type="button" data-role="none" class="slick-next" aria-label="Next" tabindex="0" role="button">Next</button>',
+      'rtl'              => FALSE,
+      'rows'             => 1,
+      'slidesPerRow'     => 1,
+      'slide'            => '',
+      'slidesToShow'     => 1,
+    );
+
+    drupal_alter('slick_ui_options_required_by_template_info', $options);
+    return $options;
+  }
+
+  /**
+   * Overrides parent::list_form.
+   */
+  public function list_form(&$form, &$form_state) {
+    parent::list_form($form, $form_state);
+
+    $form['slick description']['#prefix'] = '<div class="ctools-export-ui-row ctools-export-ui-slick-description clearfix">';
+    $form['slick description']['#markup'] = t("<p>Manage the Slick optionsets. Optionsets are Config Entities.</p><p>By default, when this module is enabled, a single optionset is created from configuration. Install Slick example module to speed up by cloning them. Use the Operations column to edit, clone and delete optionsets.<br /><strong class='error'>Important!</strong> Avoid overriding Default optionset as it is meant for Default -- checking and cleaning. Use Clone, or Add, instead. If you did, please clone it and revert, otherwise messes are yours.<br />Slick doesn't need Slick UI to run. It is always safe to uninstall (not only disable) Slick UI once done with optionsets, either stored at codes, or database.</p>");
+    $form['slick description']['#suffix'] = '</div>';
+  }
+
+  /**
    * Overrides parent::list_build_row.
    */
   public function list_build_row($item, &$form_state, $operations) {
@@ -813,7 +903,7 @@ class SlickUi extends ctools_export_ui {
     $skin_name = $skin ? check_plain($skin) : t('None');
 
     if ($skin) {
-      $description = isset($skins[$skin]['description']) && $skins[$skin]['description'] ? filter_xss_admin($skins[$skin]['description']) : '';
+      $description = isset($skins[$skin]['description']) && $skins[$skin]['description'] ? filter_xss($skins[$skin]['description']) : '';
       if ($description) {
         $skin_name .= '<br /><em>' . $description . '</em>';
       }
@@ -846,6 +936,162 @@ class SlickUi extends ctools_export_ui {
     array_splice($headers, 3, 0, $skin_header);
 
     return $headers;
+  }
+
+  /**
+   * Overrides parent::build_operations.
+   */
+  public function build_operations($item) {
+    $allowed_operations = parent::build_operations($item);
+
+    if ($item->name == 'default') {
+      if (isset($allowed_operations['enable'])) {
+        unset($allowed_operations['enable']);
+      }
+      if (isset($allowed_operations['edit'])) {
+        unset($allowed_operations['edit']);
+      }
+      if (isset($allowed_operations['disable'])) {
+        unset($allowed_operations['disable']);
+      }
+    }
+
+    return $allowed_operations;
+  }
+
+  /**
+   * List of all easing methods available from jQuery Easing v1.3.
+   *
+   * @return array
+   *   An array of available jQuery Easing options as fallback for browsers that
+   *   don't support pure CSS easing methods.
+   */
+  public function getJsEasingOptions() {
+    $easings = &drupal_static(__METHOD__, NULL);
+
+    if (!isset($easings)) {
+      $easings = array(
+        'linear'           => 'Linear',
+        'swing'            => 'Swing',
+        'easeInQuad'       => 'easeInQuad',
+        'easeOutQuad'      => 'easeOutQuad',
+        'easeInOutQuad'    => 'easeInOutQuad',
+        'easeInCubic'      => 'easeInCubic',
+        'easeOutCubic'     => 'easeOutCubic',
+        'easeInOutCubic'   => 'easeInOutCubic',
+        'easeInQuart'      => 'easeInQuart',
+        'easeOutQuart'     => 'easeOutQuart',
+        'easeInOutQuart'   => 'easeInOutQuart',
+        'easeInQuint'      => 'easeInQuint',
+        'easeOutQuint'     => 'easeOutQuint',
+        'easeInOutQuint'   => 'easeInOutQuint',
+        'easeInSine'       => 'easeInSine',
+        'easeOutSine'      => 'easeOutSine',
+        'easeInOutSine'    => 'easeInOutSine',
+        'easeInExpo'       => 'easeInExpo',
+        'easeOutExpo'      => 'easeOutExpo',
+        'easeInOutExpo'    => 'easeInOutExpo',
+        'easeInCirc'       => 'easeInCirc',
+        'easeOutCirc'      => 'easeOutCirc',
+        'easeInOutCirc'    => 'easeInOutCirc',
+        'easeInElastic'    => 'easeInElastic',
+        'easeOutElastic'   => 'easeOutElastic',
+        'easeInOutElastic' => 'easeInOutElastic',
+        'easeInBack'       => 'easeInBack',
+        'easeOutBack'      => 'easeOutBack',
+        'easeInOutBack'    => 'easeInOutBack',
+        'easeInBounce'     => 'easeInBounce',
+        'easeOutBounce'    => 'easeOutBounce',
+        'easeInOutBounce'  => 'easeInOutBounce',
+      );
+    }
+
+    return $easings;
+  }
+
+  /**
+   * List of available pure CSS easing methods.
+   *
+   * @param bool $all
+   *   Flag to output the array as is for further processing.
+   *
+   * @return array
+   *   An array of CSS easings for select options, or all for the mappings.
+   *
+   * @see https://github.com/kenwheeler/slick/issues/118
+   * @see http://matthewlein.com/ceaser/
+   * @see http://www.w3.org/TR/css3-transitions/
+   */
+  public function getCssEasingOptions($all = FALSE) {
+    $css_easings = &drupal_static(__METHOD__, NULL);
+
+    if (!isset($css_easings)) {
+      $css_easings = array();
+      $available_easings = array(
+
+        // Defaults/ Native.
+        'ease'           => 'ease|ease',
+        'linear'         => 'linear|linear',
+        'ease-in'        => 'ease-in|ease-in',
+        'ease-out'       => 'ease-out|ease-out',
+        'swing'          => 'swing|ease-in-out',
+
+        // Penner Equations (approximated).
+        'easeInQuad'     => 'easeInQuad|cubic-bezier(0.550, 0.085, 0.680, 0.530)',
+        'easeInCubic'    => 'easeInCubic|cubic-bezier(0.550, 0.055, 0.675, 0.190)',
+        'easeInQuart'    => 'easeInQuart|cubic-bezier(0.895, 0.030, 0.685, 0.220)',
+        'easeInQuint'    => 'easeInQuint|cubic-bezier(0.755, 0.050, 0.855, 0.060)',
+        'easeInSine'     => 'easeInSine|cubic-bezier(0.470, 0.000, 0.745, 0.715)',
+        'easeInExpo'     => 'easeInExpo|cubic-bezier(0.950, 0.050, 0.795, 0.035)',
+        'easeInCirc'     => 'easeInCirc|cubic-bezier(0.600, 0.040, 0.980, 0.335)',
+        'easeInBack'     => 'easeInBack|cubic-bezier(0.600, -0.280, 0.735, 0.045)',
+        'easeOutQuad'    => 'easeOutQuad|cubic-bezier(0.250, 0.460, 0.450, 0.940)',
+        'easeOutCubic'   => 'easeOutCubic|cubic-bezier(0.215, 0.610, 0.355, 1.000)',
+        'easeOutQuart'   => 'easeOutQuart|cubic-bezier(0.165, 0.840, 0.440, 1.000)',
+        'easeOutQuint'   => 'easeOutQuint|cubic-bezier(0.230, 1.000, 0.320, 1.000)',
+        'easeOutSine'    => 'easeOutSine|cubic-bezier(0.390, 0.575, 0.565, 1.000)',
+        'easeOutExpo'    => 'easeOutExpo|cubic-bezier(0.190, 1.000, 0.220, 1.000)',
+        'easeOutCirc'    => 'easeOutCirc|cubic-bezier(0.075, 0.820, 0.165, 1.000)',
+        'easeOutBack'    => 'easeOutBack|cubic-bezier(0.175, 0.885, 0.320, 1.275)',
+        'easeInOutQuad'  => 'easeInOutQuad|cubic-bezier(0.455, 0.030, 0.515, 0.955)',
+        'easeInOutCubic' => 'easeInOutCubic|cubic-bezier(0.645, 0.045, 0.355, 1.000)',
+        'easeInOutQuart' => 'easeInOutQuart|cubic-bezier(0.770, 0.000, 0.175, 1.000)',
+        'easeInOutQuint' => 'easeInOutQuint|cubic-bezier(0.860, 0.000, 0.070, 1.000)',
+        'easeInOutSine'  => 'easeInOutSine|cubic-bezier(0.445, 0.050, 0.550, 0.950)',
+        'easeInOutExpo'  => 'easeInOutExpo|cubic-bezier(1.000, 0.000, 0.000, 1.000)',
+        'easeInOutCirc'  => 'easeInOutCirc|cubic-bezier(0.785, 0.135, 0.150, 0.860)',
+        'easeInOutBack'  => 'easeInOutBack|cubic-bezier(0.680, -0.550, 0.265, 1.550)',
+      );
+
+      foreach ($available_easings as $key => $easing) {
+        list($readable_easing, $bezier) = array_pad(array_map('trim', explode("|", $easing, 2)), 2, NULL);
+        $css_easings[$key] = $all ? $easing : $readable_easing;
+        // Satisfy both phpcs and coder since no skip tolerated.
+        unset($bezier);
+      }
+    }
+
+    return $css_easings;
+  }
+
+  /**
+   * Maps existing jQuery easing value to equivalent CSS easing methods.
+   *
+   * @param string $easing
+   *   The name of the human readable easing.
+   *
+   * @return string
+   *   A string of unfriendly bezier equivalent for the Slick, or NULL.
+   */
+  public function getBezier($easing = NULL) {
+    $css_easing = '';
+
+    if ($easing) {
+      $easings = $this->getCssEasingOptions(TRUE);
+      list(, $css_easing) = array_pad(array_map('trim', explode("|", $easings[$easing], 2)), 2, NULL);
+    }
+
+    return $css_easing;
   }
 
 }

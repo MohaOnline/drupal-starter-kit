@@ -390,7 +390,7 @@ html.js .form--slick .collapsed .fieldset-legend .fieldset-legend-prefix::after 
   font-size: 13px;
   line-height: 1.2;
   min-height: 40px;
-  max-width: 320px;
+  max-width: 100%;
   min-width: 210px;
   position: absolute !important;
   padding: 12px !important;
@@ -578,6 +578,7 @@ html.js .form--slick .collapsed .fieldset-legend .fieldset-legend-prefix::after 
   background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.6) 0%, #fafafa 100%);
   border-bottom: 1px solid #dadada;
   border-top: 1px solid white;
+  clear: none;
   float: left;
   font-size: 13px;
   font-size: 0.8125rem;
@@ -922,7 +923,7 @@ html.js .form--slick .collapsed .fieldset-legend .fieldset-legend-prefix::after 
 }
 
 .form--slick__header {
-  margin-bottom: 15px;
+  margin-bottom: 30px;
 }
 
 .form--slick .form--slick__header .form-item {
@@ -942,8 +943,10 @@ html.js .form--slick .collapsed .fieldset-legend .fieldset-legend-prefix::after 
 }
 
 .form--slick .form--slick__header .form-item label {
+  display: block;
   float: none;
   text-align: left;
+  width: auto;
 }
 
 .form--slick .form--slick__header .form-item-label {
@@ -1062,6 +1065,11 @@ html.js .form--slick .collapsed .fieldset-legend .fieldset-legend-prefix::after 
   width: 100%;
 }
 
+/* Fix for adminimal theme token browser below views ui dialog. */
+.views-ui-dialog + .ui-dialog {
+  z-index: 1001;
+}
+
 @media screen and (min-width: 1280px) {
   #overlay .form--slick .form-item label {
     width: 140px;
@@ -1071,13 +1079,14 @@ html.js .form--slick .collapsed .fieldset-legend .fieldset-legend-prefix::after 
     width: 200px;
   }
 
-  #overlay .form--slick .form-type-checkboxes > label  {
+  #overlay .form--slick .form-type-checkboxes > label {
     width: 100%;
   }
 
   .navbar-tray-open .form--slick .vertical-tabs .form-item {
     width: 49.8888%;
   }
+
   .navbar-tray-open .form--slick .vertical-tabs .form-type-checkboxes {
     width: 100%;
   }
@@ -1183,6 +1192,7 @@ html.js .form--slick .collapsed .fieldset-legend .fieldset-legend-prefix::after 
   .form--slick .vertical-tabs .fieldset-wrapper {
     margin: 0;
   }
+
   .form--slick.form--compact .form-item,
   .form--slick .vertical-tabs-panes .form-item {
     border-left: 0;

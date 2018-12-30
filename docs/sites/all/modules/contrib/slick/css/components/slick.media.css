@@ -3,70 +3,15 @@
  * Provides media integration with pure CSS fluid video wrapper.
  */
 
-.media {
-  overflow: hidden;
-  position: relative;
-}
-
 .media__iframe,
-.slick__litebox,
+.litebox,
 .slick__slide picture {
-  border: 0 none;
+  border: 0;
   display: block;
   max-width: 100%;
 }
 
-.media--ratio--on {
-  height: 0;
-}
-
-/* 1:1 ratio */
-.media--ratio--11 {
-  padding-bottom: 100%;
-}
-
-/* 4:3 ratio */
-.media--ratio--43 {
-  padding-bottom: 75%;
-}
-
-/* 16:9 ratio */
-.media--ratio--169 {
-  padding-bottom: 56.25%;
-}
-
-.media--ratio--on > iframe {
-  /* background: rgba(0, 0, 0, 0.8); */
-  max-width: 100%;
-}
-
-/* Ensures not affecting iframe only without media swicther */
-.media--player.media--ratio--on > iframe {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.media--ratio--on > iframe,
-.media--ratio--on > img,
-.media--ratio--on > picture,
-.media--ratio--on > .slick__litebox {
-  border: 0 none;
-  display: block;
-  height: 100%;
-  left: 0;
-  position: absolute;
-  top: 0;
-  width: 100%;
-  z-index: 0;
-}
-
-.media--ratio--on > picture img,
-.media--ratio--on > .slick__litebox img {
-  height: auto;
-  padding-bottom: 0;
-}
-
-.media--ratio--on iframe,
+.media--ratio iframe,
 .media-icon {
   -webkit-transition: visibility 0s linear 0.5s, opacity 0.5s linear;
   transition: visibility 0s linear 0.5s, opacity 0.5s linear;
@@ -143,6 +88,10 @@
   top: 50%;
 }
 
+.media--loading .media-icon--play::before {
+  display: none;
+}
+
 .media-icon--play:hover {
   border-color: #ff6d2c;
 }
@@ -156,10 +105,16 @@
   transition-delay: 0s;
 }
 
-.media--switch .slick__image,
+/* Ensures not affecting iframe only without media swicther */
+.media--player.media--ratio > iframe {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.media--switch .media__image,
 .media-icon--play,
 .is-playing .media__iframe,
-.is-playing.media--ratio--on > iframe,
+.is-playing.media--ratio > iframe,
 .is-playing:hover .media-icon--close {
   opacity: 1;
   visibility: visible;
@@ -170,9 +125,9 @@
 }
 
 .is-playing > img,
-.is-playing .slick__image,
+.is-playing .media__image,
 .is-playing.media--switch + .slide__pattern,
-.is-playing.media--switch .slick__image,
+.is-playing.media--switch .media__image,
 .is-playing .media-icon--play,
 .is-playing:hover .media-icon--play {
   opacity: 0;
@@ -186,9 +141,9 @@
 }
 
 /**
- * Fallback non-JS.
+ * Fallback non-JS, if no-js class is provided by theme.
  */
-.no-js .media--switch .slick__image,
+.no-js .media--switch .media__image,
 .no-js .media--switch .media-icon {
   opacity: 0;
   visibility: hidden;

@@ -6,9 +6,8 @@ package = Slick
 dependencies[] = image
 dependencies[] = slick
 
-; Information added by Drupal.org packaging script on 2015-12-12
-version = "7.x-2.0"
+; Information added by Drupal.org packaging script on 2018-12-19
+version = "7.x-2.1"
 core = "7.x"
 project = "slick"
-datestamp = "1449932983"
-
+datestamp = "1545225486"

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Default theme implementation for the Slick grid template.
@@ -9,8 +10,10 @@
  * - $settings: A renderable array containing cherry-picked seetings.
  */
 ?>
-<?php print render($wrapper_prefix); ?>
-<?php foreach($items as $delta => $item): ?>
-  <?php print render($item); ?>
-<?php endforeach; ?>
-<?php print render($wrapper_suffix); ?>
+<ul<?php print $attributes; ?>>
+  <?php foreach($items as $delta => $item): ?>
+    <li<?php print $item_attributes[$delta]; ?>>
+      <div class="grid__content"><?php print render($item); ?></div>
+    </li>
+  <?php endforeach; ?>
+</ul>

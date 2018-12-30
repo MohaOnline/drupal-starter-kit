@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Slick default preset API include file.
@@ -10,13 +11,15 @@
 function slick_slick_default_presets() {
   $presets = array();
 
-  $preset = slick_optionset_create();
-  $preset->disabled = FALSE;
+  $values = array(
+    'name' => 'default',
+    'label' => 'Default',
+    'breakpoints' => 0,
+    'skin' => '',
+  );
+  $preset = slick_optionset_create($values);
+  $preset->disabled = TRUE;
   $preset->api_version = 1;
-  $preset->name = 'default';
-  $preset->label = 'Default';
-  $preset->breakpoints = 0;
-  $preset->skin = '';
   $presets['default'] = $preset;
 
   return $presets;

@@ -3,6 +3,14 @@
  * Re-used rules for Fullscreen and Fullwidth.
  */
 
+.slide__constrained {
+  pointer-events: none;
+}
+
+.slide__constrained > .slide__caption {
+  pointer-events: auto;
+}
+
 @media (min-width: 64em) {
   .slick--skin--fullwidth  .slide__constrained > .slide__caption,
   .slick--skin--fullscreen  .slide__constrained > .slide__caption {

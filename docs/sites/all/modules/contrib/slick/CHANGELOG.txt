@@ -1,4 +1,176 @@
 
+Slick 7.x-2.1-dev, 2018-12-19
+-----------------------------
+- Yeeeha! 7.x-2.1 is out after 3 years of dev storms.
+- Issue #2850792 by gausarts, giupenni, dasginganinja, Zythyr, xlin: Plan for
+  7.x-2.1 release.
+- Added support for HTML within lightbox captions.
+
+Slick 7.x-2.0-dev, 2017-06-01
+-----------------------------
+- #2867683 by msgph: Fix fatal error when referenced image does not exist
+  anymore.
+
+Slick 7.x-2.0-dev, 2017-04-08
+-----------------------------
+- Fixed for hidden element at Slick UI page.
+- Added recommendation to uninstall Slick UI at production, and QUICK
+  PERFORMANCE TIPS section.
+
+Slick 7.x-2.0-dev, 2016-12-09
+-----------------------------
+- Fixed for coding standards.
+- Backported FOUC fix.
+
+Slick 7.x-2.0-dev, 2016-12-01
+-----------------------------
+- Added lazyLoad anticipated option.
+
+Slick 7.x-2.0-dev, 2016-11-15
+-----------------------------
+- Backported temp fix for when total <= slidesToShow.
+
+Slick 7.x-2.0-dev, 2016-11-10
+-----------------------------
+- #2811703 by GeduR: Remove unused $slick_options variable SlickUi.class.php.
+- Optimized slick Grid, and made it re-usable for non-list items.
+- Fixed for Views preview with adminimal-theme and slick Grid.
+- Fixed for broken grid display CSS being overridden by Seven theme.
+- Removed useless/unwanted extra nested slick__slide wrapper for grid items.
+- A couple of cleanups.
+
+Slick 7.x-2.0-dev, 2016-09-06
+-----------------------------
+- Changed RTL placement from content_attributes to attributes to allow
+  correcting arrow placement which is placed outside slider.
+- Allowed a few reasonable HTML tags within slide title.
+
+Slick 7.x-2.0-dev, 2016-08-03
+-----------------------------
+- #2766399 by nmalinoski: CSS affects ALL images, not just Slick images.
+- Removed unsed $media_widget.
+- Added support for data-src iframe lazy.
+- Fixed for regression with classes_array and attributes_array.
+
+Slick 7.x-2.0-dev, 2016-07-14
+-----------------------------
+- #2764893 by PhilY: Error message when using Drupal 7.50.
+- Fixed for edge case with EntityMalformedException: Missing bundle property.
+- Fixed for broken unslick with the new unslick approach when caption and image
+  are both present.
+
+Slick 7.x-2.0-dev, 2016-06-20
+-----------------------------
+- Added lightbox caption option.
+
+Slick 7.x-2.0-dev, 2016-06-19
+-----------------------------
+- Re-used form-elements for Slick fields and Slick views.
+- Backported thumbnail_effect option as a replacement for thumbnail_hover.
+- Allowed Slick to run at least the lazyload on an unslick.
+- Fixed for unslick images.
+
+Slick 7.x-2.0-dev, 2016-06-16
+-----------------------------
+- Fixed for the never-done-right slick_get_dimensions().
+- Fixed for .media-icon--lightbox hover.
+- Optimized slick_optionset_load() to not load from DB by default.
+- Added Optimized option to optimize the storage of the Optionsets by excluding
+  options similar to defaults.
+- Merged slick.fields.inc contents into slick.global.inc to reduce one include.
+
+Slick 7.x-2.0-dev, 2016-06-10
+-----------------------------
+- #2745803 by 3blake7: Undefined index: path in slick_fields_field_formatter_view().
+- Added "Use CSS background" option to simplify the cumbersome "inline css"
+  normally provided via hook_slick_skins_info(), and fully lazyloaded as well.
+  Be sure to re-save the formatter and enable "Use CSS background" if previously
+  using "inline css".
+
+Slick 7.x-2.0-dev, 2016-06-07
+-----------------------------
+- Fixed for regression with a mix of image/video/audio with lightboxes.
+- #2719051 by gausarts: Merge theme_slick_media() and theme_slick_image_lazy().
+- #2726913 by usdv, tyler.frankenstein: FireFox throws a 404 on default img src.
+- #2738711 by klausi: PHP7 - Uniform Variable Syntax.
+
+Slick 7.x-2.0-dev, 2016-05-07
+-----------------------------
+- Updated arrows defaults values which was letfover.
+- Fixed for broken dots.
+- Update arrows defaults values.
+- Updated slick.load.min.js to v1.6.0.
+- Fixed for slick_get_dimensions() to execute once.
+- Removed _slick_build_slide() to reduce function calls.
+- Removed slick_get_available_skins() for slick_get_skins_by_group().
+- Removed trivial iframe $alternative_content for old browsers.
+- Removed a few trivial drupal_alters which can be done via theme/preprocess or
+  UI, or core drupal_alters, or has no real benefit:
+  - slick_image_info_alter()
+  - slick_inline_css_info_alter()
+  - slick_element_default_settings_info_alter()
+  - slick_attach_info_alter()
+  - slick_options_info_alter()
+- Micro optimization.
+
+Slick 7.x-2.0-dev, 2016-04-23
+-----------------------------
+- #2711809: Move slick grid logic out of slide into grid.
+
+Slick 7.x-2.0-dev, 2016-04-20
+-----------------------------
+- #2705439 by lolhonk: PHP < 5.4 compatibility.
+- #2709519 by slefevre1: slick_ui help references slick_example, which is part
+  of slick_extras.
+- Various description cleanup.
+- Added (assumed) "Slideshow" file type support like Media Entity Slideshow.
+
+Slick 7.x-2.0-dev, 2016-03-28
+-----------------------------
+- Cleaned up arrows and dots skins from the Slick UI form Skin selection.
+- A few more cleanups.
+
+Slick 7.x-2.0-dev, 2016-03-23
+-----------------------------
+- #2692887: Remove redundant asNavFor selectors.
+- #2692569: Use grouping to simplify skins.
+- The following functions are moved out of slick.admin.inc to match D8 into
+  SlickUi.php where they belong to:
+  - _slick_css_easing_mapping() into SlickUi::getBezier().
+  - _slick_css_easing_mapping() into SlickUi::getCssEasingOptions().
+  - _slick_easing_options() into SlickUi::getJsEasingOptions().
+- Updated useTransform to TRUE to reflect post v1.5.9.
+- Simplified thumbnail building to use a single function call instead.
+- Fixed for fullscreen inline css not being generated.
+- Updated slick.load.min.js.
+- Backported 'fluid' aspect ratio to fix lazyload ondemand excessive height.
+- Simplified slick_format_image(), slick_format_media(),
+  slick_format_field_collection() parameters.
+- Simplified theme_image_lazy() to use render element like the rest of themes.
+- Made aspect ratio available to all formatters to allow fixing ondemand
+  lazyload excessive height issue with a more elegant solution via aspect ratio
+  rather than using the now removed .slick--ondemand class.
+- Removed trivial slick_classes: .slick--center, .slick--float, .slick--ondemand
+  classes.
+- Simplified recommended ID addition to use $settings['id'] instead before
+  the rest are deprecated/removed:
+  - $settings['attributes']['id'],
+  - slick_build($items, $options, $settings, $attach, $id).
+- Removed a few fail safes, not all.
+- Added slick_html_id() to reduce DRY stuffs.
+- Moved a few DRY stuffs into slick.module.
+- Micro optimizations, be sure to clear cache if any issue.
+
+Slick 7.x-2.0-dev, 2016-01-18
+-----------------------------
+- #2647968 by lardfw: Slick not showing block reference field as option for
+  caption
+- #2637470 by kyletaylored: Support PHP 7
+
+Slick 7.x-2.0-dev, 2015-12-19
+-----------------------------
+- #2637706 by kyletaylored: Support when using Slick as field in BEAN/Taxonomy.
+
 Slick 7.x-2.0-dev, 2015-12-12
 -----------------------------
 - Fixed for nested slicks with videos. The videos should be turned off when
@@ -328,7 +500,7 @@ Slick 7.x-2.0-dev, 2015-6-19
 - Fixed slide--current class for the most complex slicks, i.e.: asNavFor with
   the main display containing nested slicks.
 
-- Renamed not-clear .slick__capture (based on icon) class to .slick__litebox.
+- Renamed not-clear .slick__capture (based on icon) class to .litebox.
 
 - Renamed 'attach_slick_element' to more meaningful 'attach_slick_css'.
   Be sure to update it if you disable slick-theme.css.

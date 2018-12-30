@@ -160,6 +160,24 @@
   border: 0;
 }
 
+.form--slick .vertical-tabs div[class*="options-optimized"] {
+  background: none;
+  border: 0;
+  right: 0;
+  margin: 0;
+  min-height: 20px;
+  min-width: 180px;
+  padding: 0 22px 0 0;
+  position: absolute;
+  top: -32px;
+  width: auto;
+  z-index: 9;
+}
+
+.form--slick .vertical-tabs div[class*="options-optimized"] .description {
+  min-width: 320px;
+}
+
 @media all and (max-width: 900px) {
   .form--slick div.vertical-tabs .vertical-tabs-list {
     width: 30%;
