@@ -1,0 +1,15 @@
+name = RedHen Registration
+description = Integrates the Entity Registrations module.
+package = RedHen
+core = 7.x
+
+dependencies[] = drupal:system (>= 7.40)
+dependencies[] = redhen:redhen_contact
+dependencies[] = registration:registration (>=2.0)
+
+; Information added by Drupal.org packaging script on 2016-12-31
+version = "7.x-1.13"
+core = "7.x"
+project = "redhen"
+datestamp = "1483143188"
+

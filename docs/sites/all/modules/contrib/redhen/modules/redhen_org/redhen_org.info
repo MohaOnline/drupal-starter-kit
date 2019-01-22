@@ -1,0 +1,26 @@
+name = RedHen Organizations
+description = Defines the base organization entity and features.
+package = RedHen
+core = 7.x
+
+dependencies[] = redhen
+
+; Classes
+files[] = lib/redhen_org.controller.inc
+files[] = lib/redhen_org.entity.inc
+files[] = lib/redhen_org.metadata.inc
+files[] = lib/redhen_org.views.inc
+files[] = lib/redhen_org_type.controller.inc
+files[] = lib/redhen_org_type.entity.inc
+files[] = lib/redhen_org_type.ui_controller.inc
+files[] = lib/redhen_org.inline_entity_form.inc
+files[] = includes/views/redhen_org_views_handler_field_redhen_org_link.inc
+files[] = includes/views/redhen_org_views_handler_field_redhen_org_link_edit.inc
+files[] = includes/views/redhen_org_views_handler_field_redhen_org_link_delete.inc
+
+; Information added by Drupal.org packaging script on 2016-12-31
+version = "7.x-1.13"
+core = "7.x"
+project = "redhen"
+datestamp = "1483143188"
+
