@@ -10,14 +10,13 @@ dependencies[] = rules
 dependencies[] = rules_conditional
 dependencies[] = rules_i18n
 dependencies[] = views
-dependencies[] = views_php
 dependencies[] = better_exposed_filters
 dependencies[] = image
 
 files[] = tests/OpignoWebTestCase.test
 files[] = views/opigno_filter_own_groups.inc
-; Information added by Drupal.org packaging script on 2018-10-05
-version = "7.x-1.20"
+; Information added by Drupal.org packaging script on 2019-01-07
+version = "7.x-1.21"
 core = "7.x"
 project = "opigno"
-datestamp = "1538743087"
+datestamp = "1546856884"
