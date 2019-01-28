@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * @file
+ * Empty placeholder module file.
+ */
+
+/**
+ * Implements hook_user_logout().
+ */
+function session_proxy_user_logout($account) {
+  //
+  // As per session_destroy() documentation, PHP does not clear the cookie by
+  // itself. All implementations will do, except for the native one: since we
+  // act as a proxy toward Drupal implementation, but leave the responsability
+  // to PHP itself via its own session handler to handle it, we cannot hook
+  // over the session_destroy() method - we need to find another way. The most
+  // accurate one being via hook_user_logout().
+  //
+  // This is sad, but there's a few other session_destroy() calls in core on
+  // which we cannot act upon, such as user account cancelation if the user is
+  // the same as logged in one - a very rare case where the only side effect is
+  // the user keeping the cookie, but as it will be deactivated anyway, it won't
+  // be able to use the site as a logged in user (no security issue).
+  //
+  SessionProxy_Helper::getInstance()->getBackend()->deleteCurrentSessionCookie();
+}
