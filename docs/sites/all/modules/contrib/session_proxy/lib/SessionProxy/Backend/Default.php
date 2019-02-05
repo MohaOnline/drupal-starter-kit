@@ -23,9 +23,15 @@ class SessionProxy_Backend_Default extends SessionProxy_Backend_Base {
    * Session destroy will require us to update the current logged in user.
    */
   public function destroyProxy($sessionId) {
-    $this->storage->destroy($sessionId);
-    $this->deleteCurrentSessionCookie();
-    $this->refreshAfterSessionChange();
+    try {
+      $this->storage->destroy($sessionId);
+      $this->deleteCurrentSessionCookie();
+      $this->refreshAfterSessionChange();
+    }
+    catch (Exception $e) {
+      return FALSE;
+    }
+    return TRUE;
   }
 
   /**
@@ -117,7 +123,12 @@ class SessionProxy_Backend_Default extends SessionProxy_Backend_Base {
   }
 
   public function destroy() {
-    session_destroy();
+    // When user logout, session_destroy() has been invoked, no need to execute again.
+    $session_status = session_status();
+    if ($session_status == PHP_SESSION_ACTIVE) {
+      session_destroy();
+    }
+
     // PHP 5.2 bug: When session_destroy() is called, you need to reset
     // session handlers, else PHP loose them. See
     // http://php.net/manual/en/function.session-set-save-handler.php#22194
@@ -126,7 +137,8 @@ class SessionProxy_Backend_Default extends SessionProxy_Backend_Base {
   }
 
   public function destroyAllForUser($uid) {
-    $this->storage->destroyFor(array('uid', $uid));
+    // Update function parameter per interface and its implements.
+    $this->storage->destroyFor('uid', $uid);
   }
 
   public function __construct(SessionProxy_Storage_Interface $storage) {
