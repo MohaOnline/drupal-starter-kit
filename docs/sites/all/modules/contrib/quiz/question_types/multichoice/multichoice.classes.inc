@@ -1019,10 +1019,16 @@ class MultichoiceResponse extends QuizQuestionResponse {
    * @see views_handler_field_prerender_list for the expected return value.
    */
   public static function viewsGetAnswers(array $result_answer_ids = array()) {
+    $ras = entity_load('quiz_result_answer', $result_answer_ids);
     $items = array();
-    foreach ($result_answer_ids as $result_answer_id) {
-      $ra = entity_load_single('quiz_result_answer', $result_answer_id);
-      $question = node_load($ra->question_nid, $ra->question_vid);
+    $nids = db_select('quiz_node_results_answers', 'qra')
+      ->fields('qra', array('question_nid'))
+      ->condition('result_answer_id', $result_answer_ids)
+      ->execute()
+      ->fetchAllKeyed(0,0);
+    $nodes = node_load_multiple($nids);
+    foreach ($ras as $ra) {
+      $question = $nodes[$ra->question_nid];
       /* @var $ra_i QuizQuestionResponse */
       $ra_i = _quiz_question_response_get_instance($ra->result_id, $question);
 

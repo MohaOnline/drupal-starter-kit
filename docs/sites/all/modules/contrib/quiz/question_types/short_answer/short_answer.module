@@ -121,7 +121,7 @@ function short_answer_score_an_answer($values, $update_total = TRUE) {
 
   db_merge('quiz_short_answer_user_answers')
     ->fields(array(
-      'score' => $score / $ratio,
+      'score' => !empty($score) && !empty($ratio) ? $score / $ratio : 0,
       'is_evaluated' => 1,
       'answer_feedback' => empty($answer_feedback['value']) ? '' : $answer_feedback['value'],
       'answer_feedback_format' => empty($answer_feedback['format']) ? '' : $answer_feedback['format'],

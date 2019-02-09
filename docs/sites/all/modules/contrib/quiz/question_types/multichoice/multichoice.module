@@ -175,7 +175,7 @@ function multichoice_remove_alternative_submit($form, &$form_state) {
   $def_num_of_alts = variable_get('multichoice_def_num_of_alts', 2);
   $choice_count = $form_state['choice_count'];
   if ($choice_count <= $def_num_of_alts) {
-    drupal_set_message(t('Multiple choice must have at least !num alternatives.', ['!num' => $def_num_of_alts]), 'error');
+    drupal_set_message(t('Multiple choice must have at least !num alternatives.', array('!num' => $def_num_of_alts)), 'error');
   }
   else {
     $button = $form_state['triggering_element'];

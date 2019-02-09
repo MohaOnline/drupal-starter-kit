@@ -1723,80 +1723,6 @@ function quiz_type_confirm($node, $op = NULL) {
 }
 
 /**
- * Return highest score data for given quizzes.
- *
- * @param $nids
- *   nids for the quizzes we want to collect scores from.
- * @param $uid
- *   uid for the user we want to collect score for.
- * @param $include_num_questions
- *   Do we want to collect information about the number of questions in a quiz?
- *   This adds a performance hit.
- *
- * @return
- *   Array of score data.
- *   For several takes on the same quiz, only returns highest score.
- */
-function quiz_get_score_data($nids, $uid, $include_num_questions = FALSE) {
-  // Validate that the nids are integers.
-  foreach ($nids as $key => $nid) {
-    if (!_quiz_is_int($nid)) {
-      unset($nids[$key]);
-    }
-  }
-  if (empty($nids)) {
-    return array();
-  }
-
-  // Fetch score data for the validated nids.
-  $to_return = array();
-  $vids = array();
-  $sql = 'SELECT n.title, n.nid, n.vid, p.number_of_random_questions as num_random_questions, r.score AS percent_score, p.max_score, p.pass_rate AS percent_pass
-          FROM {node} n
-          JOIN {quiz_node_properties} p
-          ON n.vid = p.vid
-          LEFT OUTER JOIN {quiz_node_results} r
-          ON r.nid = n.nid AND r.uid = :uid
-          LEFT OUTER JOIN (
-            SELECT nid, max(score) as highest_score
-            FROM {quiz_node_results}
-            GROUP BY nid
-          ) rm
-          ON n.nid = rm.nid AND r.score = rm.highest_score
-          WHERE n.nid in (' . implode(', ', $nids) . ')
-          ';
-  $res = db_query($sql, array(':uid' => $uid));
-  foreach ($res as $res_o) {
-    if (!$include_num_questions) {
-      unset($res_o->num_random_questions);
-    }
-    if (!isset($to_return[$res_o->vid]) || $res_o->percent_score > $to_return[$res_o->vid]->percent_score) {
-      // Fetch highest score.
-      $to_return[$res_o->vid] = $res_o;
-    }
-    // $vids will be used to fetch number of questions.
-    $vids[] = $res_o->vid;
-  }
-  if (empty($vids)) {
-    return array();
-  }
-
-  // Fetch total number of questions.
-  if ($include_num_questions) {
-    $res = db_query('SELECT COUNT(*) AS num_always_questions, parent_vid
-            FROM {quiz_node_relationship}
-            WHERE parent_vid IN (' . implode(', ', $vids) . ')
-            AND question_status = ' . QUIZ_QUESTION_ALWAYS . '
-            GROUP BY parent_vid');
-    foreach ($res as $res_o) {
-      $to_return[$res_o->parent_vid]->num_questions = $to_return[$res_o->parent_vid]->num_random_questions + $res_o->num_always_questions;
-    }
-  }
-
-  return $to_return;
-}
-
-/**
  * Finds out the number of questions for the quiz.
  *
  * Good example of usage could be to calculate the % of score.
@@ -4147,13 +4073,6 @@ function quiz_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
       '#title' => t('Show this field on @quiz start.', array('@quiz' => QUIZ_NAME)),
       '#default_value' => !empty($form['#instance']['settings']['quiz_result_show_field']),
       '#description' => t('If checked, this field will be presented when starting a course.'),
-    );
-  }
-  else {
-    // Add the value to the form so it isn't lost.
-    $form['instance']['settings']['quiz_result'] = array(
-      '#type' => 'value',
-      '#value' => !empty($form['#instance']['settings']['quiz_result']),
     );
   }
 }

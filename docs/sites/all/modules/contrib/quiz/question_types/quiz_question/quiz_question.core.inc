@@ -344,7 +344,6 @@ abstract class QuizQuestion {
     if (variable_get('quiz_auto_revisioning', 1) && quiz_has_been_answered($quiz_node)) {
       // We need to revise the quiz node if it has been answered.
       $quiz_node->revision = 1;
-      $quiz_node->auto_created = TRUE;
       $quiz_node->log = t('The current revision has been answered. We create a new revision so that the reports from the existing answers stays correct.');
       node_save($quiz_node);
       drupal_set_message(t('New revision has been created for the @quiz %n', array('%n' => $quiz_node->title, '@quiz' => QUIZ_NAME)));
