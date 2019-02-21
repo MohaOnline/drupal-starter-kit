@@ -387,7 +387,7 @@ function elfinder_admin_dir_form($delta, $values = array(), $votes = 0) {
 
   $form['volume_settings'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Volume @n (@p)', array('@n' => ($delta + 1), '@p' => $values['path'])),
+    '#title' => t('Volume @n (@p)', array('@n' => ($delta + 1), '@p' => isset($values['path']) ? $values['path'] : '')),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
   );

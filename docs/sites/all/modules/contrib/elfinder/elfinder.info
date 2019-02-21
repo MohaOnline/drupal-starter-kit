@@ -10,5 +10,5 @@ project status url = https://drupal-elfinder.sourceforge.io/release-history.php
 version = "7.x-2.x-dev"
 core = "7.x"
 project = "elfinder"
-datestamp = "1540820403"
+datestamp = "1543844033"
 

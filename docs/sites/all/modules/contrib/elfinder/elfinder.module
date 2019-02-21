@@ -602,6 +602,7 @@ function elfinder_filesystemconnector($mode = 'default') {
     'userProfile' => $p,
     'jpgQuality' => variable_get('image_jpeg_quality', 75),
     'dispInlineRegex' => variable_get('elfinder_settings_filesystem_inlinepreviewregex', '^$'),
+    'statCorrector' => 'elFinderVolumeDrupal::stat_corrector',
   );
 
   if (is_object($pubFiles) && user_access('access public files')) {

@@ -40,15 +40,16 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
     $pvtpath = drupal_realpath('private://');
     $pubpath = drupal_realpath('public://');
     $tmppath = drupal_realpath('temporary://');
+    $final_path = DIRECTORY_SEPARATOR !== '/' ? str_replace(DIRECTORY_SEPARATOR, '/', $path) : $path;
 
     $uri = '';
 
-    if (strpos($path, $pvtpath) === 0) {
-      $uri = 'private://' . substr($path, strlen($pvtpath) + 1);
-    } elseif (strpos($path, $tmppath) === 0) {
-      $uri = 'temporary://' . substr($path, strlen($tmppath) + 1);
+    if (strpos($final_path, $pvtpath) === 0) {
+      $uri = 'private://' . substr($final_path, strlen($pvtpath) + 1);
+    } elseif (strpos($final_path, $tmppath) === 0) {
+      $uri = 'temporary://' . substr($final_path, strlen($tmppath) + 1);
     } else {
-      $uri = 'public://' . substr($path, strlen($pubpath) + 1);
+      $uri = 'public://' . substr($final_path, strlen($pubpath) + 1);
     }
 
     return @file_stream_wrapper_uri_normalize($uri);
@@ -404,6 +405,10 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
       return $owner;
     }
     return FALSE;
+  }
+
+  public static function stat_corrector(&$stat, $path, $statOwner, $volumeDriveInstance) {
+    $stat['owner'] = $volumeDriveInstance->owner($volumeDriveInstance->encode($path));
   }
 
   public function desc($target, $newdesc = NULL) {

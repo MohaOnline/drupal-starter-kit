@@ -169,7 +169,6 @@
     elFinder.prototype._options.contextmenu.files = newContextMenuFiles;
     elFinder.prototype._options.contextmenu.navbar = newContextMenuNavbar;
 
-
     //elFinder.prototype._options.ui.push('mouseover');
   });
 
@@ -324,6 +323,9 @@
                 });
             }
           };
+
+          elFinder.prototype._options.uiOptions.cwd.listView.columns.push('owner');
+          elFinder.prototype._options.uiOptions.cwd.listView.columnsCustomName['owner'] = Drupal.t('Owner');
 
         }
 
