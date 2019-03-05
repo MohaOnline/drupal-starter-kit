@@ -1,0 +1,489 @@
+<?php
+
+/**
+ * @file
+ * Module for the Model Entity - a starting point to create your own Entity
+ * and associated administration interface
+ */  
+
+
+/**
+ * Implement hook_entity_info().
+ *
+ * We define two entities here - the actual entity that will hold our domain
+ * specific information and an entity that holds information about the different
+ * types of entities. See here: http://drupal.org/node/977380 for a discussion on this
+ * choice.
+ */
+function model_entity_info() {
+  $return['model'] = array(
+    'label' => t('Model'),
+    // The entity class and controller class extend the classes provided by the
+    // Entity API
+    'entity class' => 'Model',
+    'controller class' => 'ModelController',
+    'base table' => 'model',
+    'fieldable' => TRUE,
+    'entity keys' => array(
+        'id' => 'model_id',
+        'bundle' => 'type',
+    ),
+    // Bundles are defined by the model types below
+    'bundles' => array(),
+    // Bundle keys tell the FieldAPI how to extract information from the bundle objects
+    'bundle keys' => array(
+      'bundle' => 'type',
+    ),
+    'label callback' => 'entity_class_label',
+    'uri callback' => 'entity_class_uri',
+    'creation callback' => 'model_create',
+    'access callback' => 'model_access',
+    'module' => 'model',
+    // The information below is used by the ModelUIController (which extends the EntityDefaultUIController)
+    'admin ui' => array(
+      'path' => 'admin/content/models',
+      'file' => 'model.admin.inc',
+      'controller class' => 'ModelUIController',
+      'menu wildcard' => '%model',
+    ),
+  );
+  // The entity that holds information about the entity types	  
+  $return['model_type'] = array(
+    'label' => t('Model Type'),
+    'entity class' => 'ModelType',
+    'controller class' => 'ModelTypeController',
+    'base table' => 'model_type',
+    'fieldable' => FALSE,
+    'bundle of' => 'model',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'type',
+      'label' => 'label',
+    ),
+    'access callback' => 'model_type_access',
+    'module' => 'model',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/structure/model_types',
+      'file' => 'model_type.admin.inc',
+      'controller class' => 'ModelTypeUIController',
+    ),
+  );
+
+  return $return;
+}
+
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * We are adding the info about the model types via a hook to avoid a recursion
+ * issue as loading the model types requires the entity info as well.
+ *
+ * @todo This needs to be improved
+ */
+function model_entity_info_alter(&$entity_info) {
+  foreach (model_get_types() as $type => $info) {
+    $entity_info['model']['bundles'][$type] = array(
+      'label' => $info->label,
+      'admin' => array(
+        'path' => 'admin/structure/model_types/manage/%model_type',
+        'real path' => 'admin/structure/model_types/manage/' . $type,
+        'bundle argument' => 4,
+        'access arguments' => array('administer model types'),
+      ),
+    );
+  }
+}
+  
+
+/**
+ * Implements hook_permission().
+ */
+function model_permission() {
+  // We set up permisssions to manage entity types, manage all entities and the
+  // permissions for each individual entity
+  $permissions = array(
+    'administer model types' => array(
+      'title' => t('Administer model types'),
+      'description' => t('Create and delete fields for model types, and set their permissions.'),
+    ),
+    'administer models' => array(
+      'title' => t('Administer models'),
+      'description' => t('Edit and delete all models'),
+    ),  
+  );
+  
+  //Generate permissions per model 
+  foreach (model_get_types() as $type) {
+    $type_name = check_plain($type->type);
+    $permissions += array(
+      "edit any $type_name model" => array(
+        'title' => t('%type_name: Edit any model', array('%type_name' => $type->label)),
+      ),
+      "view any $type_name model" => array(
+        'title' => t('%type_name: View any model', array('%type_name' => $type->label)),
+      ),
+    );
+  }
+  return $permissions;  
+}
+
+
+/**
+ * Determines whether the given user has access to a model.
+ *
+ * @param $op
+ *   The operation being performed. One of 'view', 'update', 'create', 'delete'
+ *   or just 'edit' (being the same as 'create' or 'update').
+ * @param $model
+ *   Optionally a model or a model type to check access for. If nothing is
+ *   given, access for all models is determined.
+ * @param $account
+ *   The user to check for. Leave it to NULL to check for the global user.
+ * @return boolean
+ *   Whether access is allowed or not.
+ */
+function model_access($op, $model = NULL, $account = NULL) {
+  if (user_access('administer models', $account)) {
+    return TRUE;
+  }
+  if (isset($model) && $type_name = $model->type) {
+    $op = ($op == 'view') ? 'view' : 'edit';
+    if (user_access("$op any $type_name model", $account)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+
+/**
+ * Access callback for the entity API.
+ */
+function model_type_access($op, $type = NULL, $account = NULL) {
+  return user_access('administer model types', $account);
+}
+
+
+/**
+ * Gets an array of all model types, keyed by the type name.
+ *
+ * @param $type_name
+ *   If set, the type with the given name is returned.
+ * @return ModelType[]
+ *   Depending whether $type isset, an array of model types or a single one.
+ */
+function model_get_types($type_name = NULL) {
+  // entity_load will get the Entity controller for our model entity and call the load
+  // function of that object - we are loading entities by name here.
+  $types = entity_load_multiple_by_name('model_type', isset($type_name) ? array($type_name) : FALSE);
+  return isset($type_name) ? reset($types) : $types;
+}
+
+
+/**
+ * Menu argument loader; Load a model type by string.
+ *
+ * @param $type
+ *   The machine-readable name of a model type to load.
+ * @return
+ *   A model type array or FALSE if $type does not exist.
+ */
+function model_type_load($type) {
+  return model_get_types($type);
+}
+
+
+/**
+ * Fetch a model object. Make sure that the wildcard you choose 
+ * in the model entity definition fits the function name here.
+ *
+ * @param $model_id
+ *   Integer specifying the model id.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   A fully-loaded $model object or FALSE if it cannot be loaded.
+ *
+ * @see model_load_multiple()
+ */
+function model_load($model_id, $reset = FALSE) {
+  $models = model_load_multiple(array($model_id), array(), $reset);
+  return reset($models);
+}
+
+
+/**
+ * Load multiple models based on certain conditions.
+ *
+ * @param $model_ids
+ *   An array of model IDs.
+ * @param $conditions
+ *   An array of conditions to match against the {model} table.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   An array of model objects, indexed by model_id.
+ *
+ * @see entity_load()
+ * @see model_load()
+ */
+function model_load_multiple($model_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('model', $model_ids, $conditions, $reset);
+}
+
+
+/**
+ * Deletes a model.
+ */
+function model_delete(Model $model) {
+  $model->delete();
+}
+
+
+/**
+ * Delete multiple models.
+ *
+ * @param $model_ids
+ *   An array of model IDs.
+ */
+function model_delete_multiple(array $model_ids) {
+  entity_get_controller('model')->delete($model_ids);
+}
+
+
+/**
+ * Create a model object.
+ */
+function model_create($values = array()) {
+  return entity_get_controller('model')->create($values);
+}
+
+
+/**
+ * Saves a model to the database.
+ *
+ * @param $model
+ *   The model object.
+ */
+function model_save(Model $model) {
+  return $model->save();
+}
+
+
+/**
+ * Saves a model type to the db.
+ */
+function model_type_save(ModelType $type) {
+  $type->save();
+}
+
+
+/**
+ * Deletes a model type from the db.
+ */
+function model_type_delete(ModelType $type) {
+  $type->delete();
+}
+
+
+/**
+ * URI callback for models
+ */
+function model_uri(Model $model){
+  return array(
+    'path' => 'model/' . $model->model_id,
+  );
+}
+
+
+/**
+ * Menu title callback for showing individual entities
+ */
+function model_page_title(Model $model){
+  return $model->name;
+}
+
+
+/**
+ * Sets up content to show an individual model
+ * @todo - get rid of drupal_set_title();
+ */
+function model_page_view($model, $view_mode = 'full') {    
+  $controller = entity_get_controller('model');  
+  $content = $controller->view(array($model->model_id => $model));
+  drupal_set_title($model->name);
+  return $content;
+}
+
+
+/**
+ * Implements hook_views_api().
+ */
+function model_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'model') . '/views',
+  );
+}
+
+
+/**
+ * Implement hook_theme().
+ */
+function model_theme() {
+  return array(
+    'model_add_list' => array(
+      'variables' => array('content' => array()),
+      'file' => 'model.admin.inc',
+    ),
+    'model' => array(
+      'render element' => 'elements',
+      'template' => 'model',
+    ),
+   'model_sample_data' => array(
+      'variables' => array('model_sample_data', 'model' => NULL),
+      'template' => 'model-sample-data',
+    ),
+
+
+  );
+}  
+
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function model_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  // Add action link 'admin/structure/models/add' on 'admin/structure/models'.
+  if ($root_path == 'admin/content/models') {
+    $item = menu_get_item('admin/content/models/add');
+    if ($item['access']) {
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}
+
+
+/**
+ * The class used for model entities
+ */
+class Model extends Entity {
+  
+  public function __construct($values = array()) {
+    parent::__construct($values, 'model');
+  }
+
+  protected function defaultLabel() {
+    return $this->name;
+  }
+
+  protected function defaultUri() {
+    return array('path' => 'model/' . $this->model_id);
+  }
+  
+  
+}
+
+
+/**
+ * The class used for model type entities
+ */
+class ModelType extends Entity {
+  
+  public $type;
+  public $label;
+  
+  public function __construct($values = array()) {
+    parent::__construct($values, 'model_type');
+  }
+  
+}
+
+
+/**
+ * The Controller for Model entities
+ */
+class ModelController extends EntityAPIController {
+  public function __construct($entityType) {
+    parent::__construct($entityType);
+  }
+
+
+  /**
+   * Create a model - we first set up the values that are specific
+   * to our model schema but then also go through the EntityAPIController
+   * function.
+   * 
+   * @param $type
+   *   The machine-readable type of the model.
+   *
+   * @return
+   *   A model object with all default fields initialized.
+   */
+  public function create(array $values = array()) {
+    // Add values that are specific to our Model
+    $values += array( 
+      'model_id' => '',
+      'is_new' => TRUE,
+      'title' => '',
+      'created' => '',
+      'changed' => '',
+      'data' => '',
+    );
+    
+    $model = parent::create($values);
+    return $model;
+  }
+  
+  /**
+   * Overriding the buldContent function to add entity specific fields
+   */
+  public function buildContent($entity, $view_mode = 'full', $langcode = NULL, $content = array()) {
+    $content = parent::buildContent($entity, $view_mode, $langcode, $content);
+    $content['model_sample_data'] =  array(
+      '#markup' => theme('model_sample_data', array('model_sample_data' => check_plain($entity->data['sample_data']), 'model' => $entity)),
+    );
+
+    return $content;
+  }
+  
+}
+
+
+/**
+ * The Controller for Model entities
+ */
+class ModelTypeController extends EntityAPIControllerExportable {
+  public function __construct($entityType) {
+    parent::__construct($entityType);
+  }
+  
+   /**
+   * Create a model type - we first set up the values that are specific
+   * to our model type schema but then also go through the EntityAPIController
+   * function.
+   * 
+   * @param $type
+   *   The machine-readable type of the model.
+   *
+   * @return
+   *   A model type object with all default fields initialized.
+   */
+  public function create(array $values = array()) {
+    // Add values that are specific to our Model
+    $values += array( 
+      'id' => '',
+      'is_new' => TRUE,
+      'data' => '',
+    );
+    $model_type = parent::create($values);
+    return $model_type;
+  }
+
+}
