@@ -1,0 +1,14 @@
+core = 7.x
+dependencies[] = "print"
+dependencies[] = "print_pdf"
+description = "Provides PDF certificates with criteria-based selection."
+name = "Certificate"
+project = "certificate"
+
+files[] = certificate.test
+
+; Information added by Drupal.org packaging script on 2019-01-09
+version = "7.x-2.4"
+core = "7.x"
+project = "certificate"
+datestamp = "1547057159"
