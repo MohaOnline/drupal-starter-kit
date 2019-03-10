@@ -39,9 +39,8 @@ files[] = uc_order.info.inc
 configure = admin/store/settings/orders
 stylesheets[all][] = uc_order.css
 
-; Information added by Drupal.org packaging script on 2018-02-12
-version = "7.x-3.11"
+; Information added by Drupal.org packaging script on 2019-03-06
+version = "7.x-3.12"
 core = "7.x"
 project = "ubercart"
-datestamp = "1518404594"
-
+datestamp = "1551862392"
