@@ -1,0 +1,178 @@
+<?php
+/**
+ * @file
+ * Module provides extended Private Files system support for IMCE.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function imce_private_files_menu() {
+  $items = array();
+  $items['admin/config/media/imce/private_files'] = array(
+    'title' => 'IMCE Private Files',
+    'description' => 'IMCE Private Files settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('imce_private_files_settings_form'),
+    'access arguments' => array('administer imce'),
+    'file' => 'imce_private_files.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_help().
+ */
+function imce_private_files_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#imce_private_files':
+      $path = dirname(__FILE__) . '/README.md';
+      if (file_exists($path)) {
+        $readme = file_get_contents($path);
+      }
+      if (!isset($readme)) {
+        return NULL;
+      }
+      if (module_exists('markdown')) {
+        $filters = module_invoke('markdown', 'filter_info');
+        $info = $filters['filter_markdown'];
+
+        if (function_exists($info['process callback'])) {
+          $output = $info['process callback']($readme, NULL);
+        }
+        else {
+          $output = '<pre>' . $readme . '</pre>';
+        }
+      }
+      else {
+        $output = '<pre>' . $readme . '</pre>';
+      }
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_file_download().
+ */
+function imce_private_files_file_download($uri) {
+
+  if ((file_uri_scheme($uri) == 'private') && imce_private_files_check_uri($uri)) {
+    if (variable_get('imce_private_files_mode') == 1) {
+      // Pass-through mode: return file headers if IMCE says it's browsable.
+      return imce_private_files_passthrough($uri);
+    }
+    else {
+      // Simple mode; return file headers if user has the designated role.
+      return imce_private_files_simple($uri);
+    }
+  }
+}
+
+/**
+ * Simple test mode.
+ *
+ * Choose one role, if the user has it, they may download. If debug mode is on,
+ * also log to the watchdog table each time a user is approved or rejected for
+ * a particular URI.
+ *
+ * @param string $uri
+ *    URI of the file to test, as listed in the file_managed table.
+ *
+ * @return int|null
+ *    Returns NULL for "pass", -1 for "fail".
+ */
+function imce_private_files_simple($uri) {
+  global $user;
+  if (user_has_role(variable_get('imce_private_files_role'))) {
+    if (variable_get('imce_private_files_debug')) {
+      watchdog('imce_private',
+        'Simple: %user downloaded %uri with role %role', array(
+          '%role' => variable_get('imce_private_files_role'),
+          '%user' => $user->name,
+          '%uri' => $uri,
+        )
+      );
+    }
+    return NULL;
+  }
+  else {
+    if (variable_get('imce_private_files_debug')) {
+      watchdog('imce_private',
+        'Simple: %user attempted to download %uri without role: %role', array(
+          '%role' => variable_get('imce_private_files_role'),
+          '%user' => $user->name,
+          '%uri' => $uri,
+        )
+      );
+    }
+    return -1;
+  }
+}
+
+/**
+ * Pass-through mode.
+ *
+ * Checks the user's IMCE Profile against the path of the file they wish to
+ * download. If the file is within one of the directories listed on the IMCE
+ * Profiles page, and the user's role grants them that Profile, the download is
+ * approved. If debug mode is on, also log to the watchdog table showing what
+ * regular expression was used for this request.
+ *
+ * @param string $uri
+ *   URI of the file to test, as listed in the file_managed table.
+ *
+ * @return int|null
+ *    Returns NULL for "pass", -1 for "fail".
+ */
+function imce_private_files_passthrough($uri) {
+  global $user;
+  $profile = imce_user_profile($user, 'private');
+  foreach ($profile['directories'] as $dir) {
+    if ($dir['browse']) {
+      $file = parse_url(dirname($uri));
+	  $filepath = $file['host'];
+	  if ( isset($file['path']) ){
+		$filepath = $file['host'] . $file['path'];
+	  }
+      if ($dir['subnav']) {
+        $pattern = "!^" . $dir['name'] . "(/.*)?$!";
+      }
+      else {
+        $pattern = "!^" . $dir['name'] . "\z!";
+      }
+      if (variable_get('imce_private_files_debug')) {
+        watchdog('imce_private',
+          'Passthrough: Searching for %filepath in %pattern',
+          array(
+            '%filepath' => $filepath,
+            '%pattern' => $pattern,
+          )
+        );
+      }
+      if (preg_match("$pattern", $filepath)) {
+        return NULL;
+      }
+    }
+  }
+  return -1;
+}
+
+/**
+ * Checks to see if this file is actually managed by IMCE.
+ *
+ * @param string $uri
+ *    URI of the file to test, as listed in the file_managed table.
+ *
+ * @return bool
+ *    Return TRUE if this file is managed by IMCE, FALSE otherwise.
+ */
+function imce_private_files_check_uri($uri) {
+  if (variable_get('imce_private_files_skip_check')) {
+    return true;
+  }
+  $files = file_load_multiple(array(), array('uri' => $uri));
+  $file = reset($files);
+  $usage = file_usage_list($file);
+  return array_key_exists("imce", $usage);
+}

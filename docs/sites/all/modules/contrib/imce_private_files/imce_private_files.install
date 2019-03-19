@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file
+ * Uninstallation functions.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function imce_private_files_uninstall() {
+  variable_del('imce_private_files_debug');
+  variable_del('imce_private_files_mode');
+  variable_del('imce_private_files_role');
+}
