@@ -1,0 +1,117 @@
+<?php
+
+/**
+ * @file
+ * Tests for amp_context.module.
+ */
+
+class AmpTestContext extends DrupalWebTestCase {
+  protected $admin_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'AMP Context',
+      'description' => 'Tests for the AMP Context module.',
+      'group' => 'AMP',
+    );
+  }
+
+  protected function setUp() {
+    // Enable modules.
+    parent::setUp('field_ui', 'amp_context_test');
+    // Clean registry to make plugin available.
+    registry_update();
+
+    // Create Admin user.
+    $this->adminUser = $this->drupalCreateUser(
+      array(
+        'access administration pages',
+        'administer content types',
+        'administer site configuration',
+        'administer contexts',
+        'administer fields',
+        'create article content',
+      )
+    );
+    $this->drupalLogin($this->adminUser);
+
+    // Enable AMP display on article content.
+    $this->drupalGet("admin/structure/types/manage/article/display");
+    $this->assertResponse(200);
+    $edit = ["view_modes_custom[amp]" => '1'];
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Create a context programmatically.
+    ctools_include('export');
+    $context = ctools_export_new_object('context');
+    $context->name = 'is_amp_page';
+    $context->description = 'Evaluates if the current page is an AMP page';
+    $context->tag = 'AMP';
+    $context->conditions = array(
+      'is_amp_request' => array(
+        'values' => array(1 => 1),
+      ),
+    );
+    $context->reactions = array(
+      'debug' => array(
+        'debug' => TRUE,
+      )
+    );
+    context_save($context);
+
+    // Create a sitewide context.
+    ctools_include('export');
+    $context = ctools_export_new_object('context');
+    $context->name = 'sitewide';
+    $context->description = 'Sitewide context';
+    $context->tag = 'AMP';
+    $context->conditions = array(
+      'sitewide' => array(
+        'values' => array(1 => 1),
+      )
+    );
+    $context->reactions = array(
+      'debug' => array(
+        'debug' => TRUE,
+      )
+    );
+    context_save($context);
+
+  }
+
+  /**
+   * Test the AMP context condition.
+   */
+  public function testAmpContextCondition() {
+    // Login as an admin user.
+    $this->drupalLogin($this->adminUser);
+
+    // Create a node to test AMP metadata.
+    $node = $this->drupalCreateNode(array('type' => 'article'));
+
+    // Check context on non amp page.
+    $this->drupalGet('node/' . $node->nid);
+    $this->assertResponse(200);
+    $this->assertNoPattern("|Active context:.*<a href.*is_amp_page<\/a>|");
+
+    // With ?amp.
+    $this->drupalGet('node/' . $node->nid, array('query' => array('amp' => TRUE)));
+    $this->assertResponse(200);
+    $this->assertPattern("|Active context:.*<a href.*is_amp_page<\/a>|");
+    // Sitewide context should not appear on AMP page.
+    $this->assertNoPattern("|Active context:.*<a href.*sitewide<\/a>|");
+
+    // Turn off global switch to disable non AMP contexts.
+    $this->drupalGet('admin/config/content/amp');
+    $this->assertResponse(200);
+    $edit = ['amp_context_disable_non_amp_contexts' => FALSE];
+    $this->drupalPost(NULL, $edit, t('Save configuration'));
+
+    // Sitewide context will now appear on AMP pages.
+    $this->drupalGet('node/' . $node->nid, array('query' => array('amp' => TRUE)));
+    $this->assertResponse(200);
+    $this->assertPattern("|Active context:.*<a href.*is_amp_page<\/a>|");
+    $this->assertPattern("|Active context:.*<a href.*sitewide<\/a>|");
+  }
+
+}

@@ -1,0 +1,15 @@
+name = Accelerated Mobile Pages (AMP)
+description = Google AMP integration
+core = 7.x
+configure = admin/config/content/amp
+php = 5.5
+dependencies[] = token
+dependencies[] = ctools
+files[] = tests/amp.test
+files[] = tests/amp_node.test
+
+; Information added by Drupal.org packaging script on 2018-11-01
+version = "7.x-1.1"
+core = "7.x"
+project = "amp"
+datestamp = "1541034798"

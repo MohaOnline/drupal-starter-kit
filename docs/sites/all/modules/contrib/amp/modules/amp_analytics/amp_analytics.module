@@ -1,0 +1,134 @@
+<?php
+/**
+ * @file
+ * AMP Analytics submodule.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function amp_analytics_menu() {
+  $items = array();
+
+  $items['admin/config/content/amp/analytics'] = array(
+    'title' => 'AMP Analytics',
+    'description' => 'Configure AMP Analytics',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('amp_analytics_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'amp_analytics.admin.inc',
+    'weight' => '3',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function amp_analytics_theme($existing, $type, $theme, $path) {
+  $theme =  array(
+    'amp_analytics' => array(
+      'variables' => array(
+        'content' => NULL,
+        'analytics' => NULL,
+        'analytics_attributes' => NULL,
+        'analytics_attributes_array' => array()
+      ),
+      'template' => 'amp-analytics'
+    ),
+  );
+
+  return $theme;
+}
+
+/**
+ * Implements hook_preprocess_amp_analytics().
+ */
+function amp_analytics_preprocess_amp_analytics(&$variables) {
+  $variables['analytics_attributes'] = drupal_attributes($variables['analytics_attributes_array']);
+  $variables['analytics'] = array(
+    'vars' => array(
+      'account' => variable_get('amp_google_analytics_id'),
+    ),
+    'triggers' => array(
+      'trackAmpview' => array(
+        'on' => 'visible',
+        'request' => 'pageview',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_process_amp_analytics().
+ */
+function amp_analytics_process_amp_analytics(&$variables) {
+  $variables['content'] = json_encode($variables['analytics']);
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function amp_analytics_element_info() {
+  // AMP Analytics element
+  $types['amp_analytics'] = array(
+    '#account' => NULL,
+    '#analytics_attributes_array' => [],
+    '#pre_render' => array('_amp_analytics_pre_render'),
+    '#theme' => 'amp_analytics',
+  );
+
+  return $types;
+}
+
+/**
+ * #pre_render callback to render amp_analytics with js library added to head.
+ *
+ * @param $elements
+ *   A render array for amp analytics elements.
+ *
+ * @return
+ *   The passed-in element with the js library necessary for the amp-analytics
+ *   element added to head.
+ */
+function _amp_analytics_pre_render($element) {
+  $head_js = array(
+    '#tag' => 'script',
+    '#type' => 'html_tag',
+    '#attributes' => array(
+      'src' => 'https://cdn.ampproject.org/v0/amp-analytics-0.1.js',
+      'async' => "",
+      'custom-element' => 'amp-analytics'
+    ),
+  );
+  drupal_add_html_head($head_js, 'amp-analytics');
+
+  return $element;
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function amp_analytics_page_alter(array &$page) {
+  if (amp_is_amp_request()) {
+    $google_analytics_id = variable_get('amp_google_analytics_id');
+    if (!empty($google_analytics_id)) {
+      $amp_analytics = array(
+        '#type' => 'amp_analytics',
+        '#analytics_attributes_array' => array(
+          'type' => 'googleanalytics'
+        )
+      );
+      $page['page_bottom']['amp_analytics'] = $amp_analytics;
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function amp_analytics_uninstall() {
+  variable_del('amp_google_analytics_id');
+}

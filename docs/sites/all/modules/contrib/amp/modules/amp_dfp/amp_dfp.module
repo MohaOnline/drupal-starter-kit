@@ -1,0 +1,205 @@
+<?php
+/**
+ * @file
+ *  AMP integration for the DFP module.
+ */
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function amp_dfp_block_view_alter(&$data, $block) {
+  if ($block->module == 'dfp') {
+    if (amp_is_amp_request()) {
+      $data['content']['dfp_wrapper']['tag']['#theme'] = 'amp_dfp_tag';
+    }
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function amp_dfp_theme($existing, $type, $theme, $path) {
+  $theme = array(
+    'amp_dfp_tag' => array(
+      'variables' => array(
+        'tag' => NULL,
+        'slug' => NULL,
+      ),
+      'template' => 'amp-dfp-tag',
+    ),
+  );
+
+  return $theme;
+}
+
+/**
+ * Implements hook_preprocess_amp_dfp_tag().
+ */
+function amp_dfp_preprocess_amp_dfp_tag(&$variables) {
+  if (!amp_is_amp_request()) {
+    return;
+  }
+  $variables['layout'] = $variables['tag']->settings['amp_layout'];
+  $size = _amp_dfp_get_amp_size($variables['tag']);
+  if (empty($size)) {
+    // Provide a default if there is a problem, so validation does not break.
+    $variables['width'] = $variables['height'] = 1;
+  } else {
+    $variables['width'] = $size['width'];
+    $variables['height'] = $size['height'];
+  }
+
+  $tag = _dfp_prepare_adunit($variables['tag']);
+  $tag->adunit = dfp_token_replace('[dfp_tag:network_id]/' . $tag->adunit, $tag, array('sanitize' => TRUE, 'clear' => TRUE));
+
+  // We add global targeting to each dfp tag to simplify implementation.
+  $global_targeting = variable_get('dfp_targeting', array());
+  drupal_alter('dfp_global_targeting', $global_targeting);
+  $tag->global_targeting = $global_targeting;
+
+  $variables['slot'] = $tag->adunit;
+
+  // Prepare targeting arrays for JSON formatting
+  $targeting = array();
+  foreach ($tag->targeting as $target) {
+    $targeting[$target['target']] = dfp_token_replace($target['value'], $tag, array('sanitize' => TRUE, 'clear' => TRUE));
+  }
+
+  $global_targeting = array();
+  foreach ($tag->global_targeting as $target) {
+    $global_targeting[$target['target']] = dfp_token_replace($target['value'], $tag, array('sanitize' => TRUE, 'clear' => TRUE));
+  }
+
+  // Give preference to tag specific targeting values
+  $targeting = $targeting + $global_targeting;
+
+  $to_json = array('targeting' => $targeting);
+  $variables['amp_ad_json'] = drupal_json_encode($to_json);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Add an AMP Size option to the DFP tag configuration page.
+ */
+function amp_dfp_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state) {
+
+  // Create a default tag object.
+  if ($form_state['plugin']['schema'] == 'dfp_tags') {
+    $tag = ($form_state['op'] == 'add' ? $form_state['item'] : $form_state['item']->raw);
+
+    $options = array('fill', 'fixed', 'fixed-height', 'flex-item', 'nodisplay', 'responsive');
+    $form['tag_settings']['amp_layout'] = array(
+      '#type' => 'select',
+      '#title' => t('AMP Layout'),
+      '#description' => t('Select the layout.'),
+      '#options' => drupal_map_assoc($options),
+      '#weight' => 0,
+      '#default_value' => isset($tag->settings['amp_layout']) ? $tag->settings['amp_layout'] : 'responsive',
+    );
+    $form['tag_settings']['amp_size'] = array(
+      '#type' => 'textfield',
+      '#title' => t('AMP Size'),
+      '#description' => t('Enter the size for this tag when displayed on AMP pages. If not entered, the smallest size will be used. Example: 300x250'),
+      '#weight' => 0,
+      '#default_value' => isset($tag->settings['amp_size']) ? $tag->settings['amp_size'] : '',
+    );
+
+    $form['#validate'][] = 'amp_dfp_ctools_export_ui_edit_item_form_validate';
+    array_unshift($form['#submit'], 'amp_dfp_ctools_export_ui_edit_item_form_submit');
+  }
+}
+
+/**
+ * Validation handler to check the format of anything entered into the AMP Size
+ * field.
+ */
+function amp_dfp_ctools_export_ui_edit_item_form_validate(&$form, &$form_state) {
+  if (!empty($form_state['values']['amp_size'])) {
+    $pixels = _amp_dfp_get_pixel_sizes($form_state['values']['amp_size']);
+    if (empty($pixels)) {
+      form_set_error('amp_size', 'AMP Size is in an invalid format.');
+    }
+  }
+}
+
+/**
+ * Submit handler so the amp size gets saved to the database.
+ */
+function amp_dfp_ctools_export_ui_edit_item_form_submit(&$form, &$form_state) {
+  if (isset($form_state['values']['amp_size'])) {
+    $form_state['values']['settings']['amp_layout'] = $form_state['values']['amp_layout'];
+    $form_state['values']['settings']['amp_size'] = $form_state['values']['amp_size'];
+  }
+}
+
+/**
+ * Extract the height and width given a resolution string in the form of 300x250.
+ *
+ * @param $size
+ *  A string to test.
+ *
+ * @return array|bool
+ *  An array keyed by 'width' and 'height', FALSE if there is no match.
+ */
+function _amp_dfp_get_pixel_sizes($size) {
+  preg_match('/^(\d+)x(\d+)$/i', $size, $match);
+  if (!empty($match)) {
+    return array(
+      'width' => $match[1],
+      'height' => $match[2],
+    );
+  }
+  return FALSE;
+}
+
+/**
+ * Given a DFP tag object, return the size that should be used for an amp-ad element.
+ */
+function _amp_dfp_get_amp_size($tag) {
+  if (!empty($tag->settings['amp_size'])) {
+    return _amp_dfp_get_pixel_sizes($tag->settings['amp_size']);
+  } else {
+    // Grab the lowest resolution from the DFP size property
+    $lowest = _amp_dfp_get_lowest_resolution($tag->size);
+    return _amp_dfp_get_pixel_sizes($lowest);
+  }
+}
+
+/**
+ * @param $sizes
+ *  A string of comma-separated resolution sizes. Ex. 300x250
+ *
+ * @return mixed
+ *  A string of lowest sized resolution.
+ */
+function _amp_dfp_get_lowest_resolution($sizes) {
+  $resolutions = explode(',', $sizes);
+  return array_reduce($resolutions, '_amp_dfp_size_reduce_callback');
+}
+
+/**
+ * Callback for the array_reduced used to determine lowest resolution.
+ * @see _amp_dfp_get_lowest_resolution().
+ */
+function _amp_dfp_size_reduce_callback($carry, $item) {
+  if ($carry == NULL) {
+    return $item;
+  }
+
+  $carry_sizes = _amp_dfp_get_pixel_sizes($carry);
+  $item_sizes = _amp_dfp_get_pixel_sizes($item);
+
+  $carry_total = $carry_sizes['width'] * $carry_sizes['height'];
+  $item_total = $item_sizes['width'] * $item_sizes['height'];
+
+  return ($carry_total > $item_total) ? $item : $carry;
+}
+
+/**
+ * AMP wrapper for the dfp_tag function, setting the #theme key to amp_dfp_tag.
+ */
+function amp_dfp_tag($machinename) {
+  $render_array = dfp_tag($machinename);
+  $render_array['dfp_wrapper']['tag']['#theme'] = 'amp_dfp_tag';
+  return $render_array;
+}

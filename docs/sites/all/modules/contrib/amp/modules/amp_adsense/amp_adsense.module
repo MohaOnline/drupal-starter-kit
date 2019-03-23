@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @file
+ *  AMP integration for the Adsense module.
+ */
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function amp_adsense_block_view_alter(&$data, $block) {
+  if ($block->module == 'adsense_managed') {
+    if (amp_is_amp_request()) {
+
+      // Gather information about the block.
+      $block_config = _adsense_managed_get_block_config($block->delta);
+      // The block key are not named. The 2nd item in the array is format.
+      $format = $block_config[1];
+      $ad = adsense_ad_formats($format);
+
+      // Get the required block variables.
+      $height = $ad['height'];
+      $width = $ad['width'];
+      $data_ad_client = variable_get('adsense_basic_id');
+      // The block key are not named. The 3nd item in the array is ad slot.
+      $data_ad_slot = $block_config[2];
+
+      $data['content'] = array(
+        '#theme' => 'amp_ad',
+        '#adtype' => 'adsense',
+        '#height' => $height,
+        '#width' => $width,
+        '#slot_attributes_array' => array(
+          'data-ad-client'  => $data_ad_client,
+          'data-ad-slot'  => $data_ad_slot,
+        ),
+      );
+    }
+  }
+}

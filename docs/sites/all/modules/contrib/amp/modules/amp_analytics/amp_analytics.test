@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ * Tests for amp_analytics.module.
+ */
+
+class AmpAnalyticsTestCase extends DrupalWebTestCase {
+  protected $admin_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'AMP Analytics',
+      'description' => 'Tests for the AMP Analytics module.',
+      'group' => 'AMP',
+    );
+  }
+
+  protected function setUp() {
+    // Enable AMP module.
+    parent::setUp('field_ui', 'amp_test', 'amp_analytics');
+
+    // Create Admin user.
+    $this->admin_user = $this->drupalCreateUser(array(
+        'administer content types',
+        'administer fields',
+        'administer site configuration',
+      )
+    );
+    $this->drupalLogin($this->admin_user);
+
+    // Install the AMP theme.
+    theme_enable(array('amptheme', 'ampsubtheme_example'));
+  }
+
+  /**
+   * Test AMP analytics.
+   */
+  public function testAmpAnalytics() {
+    // Login as an admin user.
+    $this->drupalLogin($this->admin_user);
+
+    // Configure AMP analytics.
+    $this->drupalGet('admin/config/content/amp/analytics');
+    $this->assertResponse(200);
+    $edit = [
+      "amp_google_analytics_id" => 'UA-11111-1',
+    ];
+    $this->drupalPost(NULL, $edit, t('Save configuration'));
+
+    // Create a node to test AMP metadata.
+    $node = $this->drupalCreateNode(array('type' => 'article'));
+
+    // Enable AMP display on article content.
+    $this->drupalGet("admin/structure/types/manage/article/display");
+    $this->assertResponse(200);
+    $edit = ["view_modes_custom[amp]" => '1'];
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Check the full display.
+    $this->drupalGet('node/' . $node->nid);
+    $this->assertResponse(200);
+    $this->assertNoRaw('<amp-analytics  type="googleanalytics">');
+
+    // Check the AMP display.
+    $this->drupalGet('node/' . $node->nid, array('query' => array('amp' => TRUE)));
+    $this->assertResponse(200);
+    $this->assertRaw('<script src="https://cdn.ampproject.org/v0/amp-analytics-0.1.js" async="" custom-element="amp-analytics" />');
+    $this->assertRaw('<amp-analytics  type="googleanalytics">');
+    $this->assertRaw('<script type="application/json">');
+    $this->assertRaw('{"vars":{"account":"UA-11111-1"},"triggers":{"trackAmpview":{"on":"visible","request":"pageview"}}}');
+    $this->assertRaw('</amp-analytics>');
+  }
+}

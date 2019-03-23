@@ -1,0 +1,78 @@
+<?php
+
+/**
+ * @file
+ * Tests for amp.module.
+ */
+
+class AmpNodeTestCase extends DrupalWebTestCase {
+  protected $admin_user;
+
+  public static function getInfo() {
+    return array(
+      'name' => 'AMP node switch',
+      'description' => 'Tests AMP switch on node level.',
+      'group' => 'AMP',
+    );
+  }
+
+  protected function setUp() {
+    // Enable AMP module.
+    parent::setUp('field_ui', 'amp_test');
+
+    // Create Admin user.
+    $this->admin_user = $this->drupalCreateUser(array(
+        'administer content types',
+        'administer nodes',
+        'edit any article content',
+        'administer fields',
+      )
+    );
+    $this->drupalLogin($this->admin_user);
+  }
+
+  /**
+   * Test the AMP view mode.
+   */
+  public function testAmpNodeSwitch() {
+    // Login as an admin user.
+    $this->drupalLogin($this->admin_user);
+
+    // Create a node to test AMP metadata.
+    $node = $this->drupalCreateNode(array('type' => 'article'));
+
+    // Enable AMP display on article content.
+    $this->drupalGet("admin/structure/types/manage/article/display");
+    $this->assertResponse(200);
+    $edit = ["view_modes_custom[amp]" => '1'];
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // Amp version of node should be enabled by default.
+    $this->drupalGet('node/' . $node->nid);
+    $this->assertResponse(200);
+    // Check amphtml link.
+    $this->assertRaw('<link rel="amphtml"');
+    // Visit amp page.
+    $this->drupalGet('node/' . $node->nid, array('query' => array('amp' => TRUE)));
+    $this->assertResponse(200);
+    $this->assertText($node->body[LANGUAGE_NONE][0]['value']);
+    // Check canonical link.
+    $pattern = '|<link rel="canonical" href="http(.*):\/\/(.*)node\/1"\s\/>|';
+    $this->assertPattern($pattern, 'Check that link rel="canonical" is present on the page.');
+
+    // Edit the node and turn off AMP.
+    $this->drupalGet('node/' . $node->nid . '/edit');
+    $this->assertResponse(200);
+    $edit = [
+      'amp_enabled' => FALSE,
+    ];
+    $this->drupalPost(NULL, $edit, t('Save'));
+
+    // View node.
+    $this->drupalGet('node/' . $node->nid);
+    $this->assertResponse(200);
+    // Check that amphtml link is not present.
+    $pattern = '|<link rel="amphtml" href="http(.*):\/\/(.*)node\/1\?.*amp"|';
+    $this->assertNoPattern($pattern, 'Check that link rel="amphtml" is present on the page.');
+  }
+}

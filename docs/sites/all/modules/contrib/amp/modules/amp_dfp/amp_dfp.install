@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Contains amp_dfp.install.
+ */
+
+/**
+ * Implements requirements().
+ */
+function amp_dfp_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if (!function_exists('dfp_token_replace')) {
+    $requirements['amp_dfp'] = array(
+      'title' => $t('Invalid DFP version.'),
+      'value' => $t('This module requires DFP >= 1.4'),
+      'severity' => REQUIREMENT_ERROR,
+    );
+  }
+
+  return $requirements;
+}

@@ -1,0 +1,1743 @@
+<?php
+
+/**
+ * @file
+ * Contains amp.module.
+ */
+
+require_once dirname(__FILE__).'/amp.admin.inc';
+require_once dirname(__FILE__) . '/includes/amp.db.inc';
+
+use Lullabot\AMP\AMP;
+use Lullabot\AMP\Validate\Scope;
+
+/**
+ * Implements hook_help().
+ */
+function amp_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#amp':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Google AMP integration') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function amp_menu() {
+  $items = array();
+
+  $items['admin/config/amp/library/test'] = array(
+    'title' => 'Test the AMP Library',
+    'description' => 'Test the AMP Library',
+    'page callback' => 'amp_library_test',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/content/amp'] = array(
+    'title' => 'AMP Configuration',
+    'description' => 'Configure the AMP module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('amp_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'amp.admin.inc',
+  );
+
+  $items['admin/config/content/amp/config'] = array(
+    'title' => 'AMP Configuration',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'file' => 'amp.admin.inc',
+  );
+
+  $items['admin/config/content/amp/metadata'] = array(
+    'title' => 'AMP Metadata',
+    'description' => 'Configure AMP Metadata',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('amp_admin_metadata_form'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'amp.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Test the AMP Library
+ * @return type
+ */
+function amp_library_test() {
+    $html_header = PHP_EOL . PHP_EOL . 'OUTPUT HTML'. PHP_EOL;
+    $html_header .= '-------------' . PHP_EOL;
+    $html = '<p><a href="javascript:run();">Run</a></p>' . PHP_EOL .
+    '<p><a style="margin: 2px;" href="http://www.cnn.com" target="_parent">CNN</a></p>' . PHP_EOL .
+    '<p><a href="http://www.bbcnews.com" target="_blank">BBC</a></p>' . PHP_EOL .
+    '<p><INPUT type="submit" value="submit"></p>' . PHP_EOL .
+    '<p>This is a <!-- test comment -->sample <div onmouseover="hello();">sample</div> paragraph</p>';
+
+    $amp = _amp_create_amp_converter();
+    $amp->loadHtml($html);
+    $amp_html = htmlspecialchars($amp->convertToAmpHtml());
+    $original_html = PHP_EOL . PHP_EOL . 'ORIGINAL TEST HTML INPUT'. PHP_EOL;
+    $original_html .=                    '-------------------------' . PHP_EOL;
+    $original_html .= htmlspecialchars($html);
+    return array(
+        '#type' => 'markup',
+        '#markup' => "<h3>The Library is working fine</h3><pre>$html_header $amp_html $original_html" .  $amp->warningsHumanHtml() . "</pre>"
+    );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function amp_theme() {
+  $theme =  array(
+    'amp_ad' => array(
+      'variables' => array(
+        'adtype' => NULL,
+        'height' => NULL,
+        'width' => NULL,
+        'slot_attributes' => NULL,
+        'slot_attributes_array' => array()
+      ),
+      'template' => 'templates/amp-ad'
+    ),
+    'amp_iframe' => array(
+      'variables' => array(
+        'iframe' => NULL
+      ),
+      'template' => 'templates/amp-iframe'
+    ),
+    'amp_pixel' => array(
+      'variables' => array(
+        'domain' => NULL,
+        'query_string' => NULL,
+        'subs' => array(
+          'AMPDOC_HOST' => array(
+            'active' => FALSE
+          ),
+          'AMPDOC_URL' => array(
+            'active' => FALSE
+          ),
+          'CANONICAL_HOST' => array(
+            'active' => FALSE
+          ),
+          'CANONICAL_PATH' => array(
+            'active' => FALSE
+          ),
+          'CANONICAL_URL' => array(
+            'active' => FALSE
+          ),
+          'SOURCE_URL' => array(
+            'active' => FALSE
+          ),
+          'SOURCE_HOST' => array(
+            'active' => FALSE
+          ),
+          'DOCUMENT_CHARSET' => array(
+            'active' => FALSE
+          ),
+          'DOCUMENT_REFERRER' => array(
+            'active' => FALSE
+          ),
+          'TITLE' => array(
+            'active' => FALSE
+          ),
+          'VIEWER' => array(
+            'active' => FALSE
+          ),
+          'CONTENT_LOAD_TIME' => array(
+            'active' => FALSE
+          ),
+          'DOMAIN_LOOKUP_TIME' => array(
+            'active' => FALSE
+          ),
+          'DOM_INTERACTIVE_TIME' => array(
+            'active' => FALSE
+          ),
+          'PAGE_DOWNLOAD_TIME' => array(
+            'active' => FALSE
+          ),
+          'PAGE_LOAD_TIME' => array(
+            'active' => FALSE
+          ),
+          'REDIRECT_TIME' => array(
+            'active' => FALSE
+          ),
+          'SERVER_RESPONSE_TIME' => array(
+            'active' => FALSE
+          ),
+          'TCP_CONNECT_TIME' => array(
+            'active' => FALSE
+          ),
+          'AVAILABLE_SCREEN_HEIGHT' => array(
+            'active' => FALSE
+          ),
+          'AVAILABLE_SCREEN_WIDTH' => array(
+            'active' => FALSE
+          ),
+          'BROWSER_LANGUAGE' => array(
+            'active' => FALSE
+          ),
+          'SCREEN_COLOR_DEPTH' => array(
+            'active' => FALSE
+          ),
+          'VIEWPORT_HEIGHT' => array(
+            'active' => FALSE
+          ),
+          'VIEWPORT_WIDTH' => array(
+            'active' => FALSE
+          ),
+          'PAGE_VIEW_ID' => array(
+            'active' => FALSE
+          ),
+          'RANDOM' => array(
+            'active' => FALSE
+          ),
+          'TIMESTAMP' => array(
+            'active' => FALSE
+          ),
+          'TOTAL_ENGAGED_TIME' => array(
+            'active' => FALSE
+          )
+        )
+      ),
+      'template' => 'templates/amp-pixel'
+    ),
+    'amp_video' => array(
+      'variables' => array(
+        'file' => NULL,
+        'src' => NULL,
+        'description' => NULL,
+        'video_attributes_array' => array(),
+        'fallback_text' => '',
+      ),
+      'template' => 'templates/amp-video'
+    )
+  );
+
+  return $theme;
+}
+
+/**
+ * Implementation of hook_ctools_plugin_directory().
+ */
+function amp_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'ctools' && $plugin_type == 'access') {
+    return 'plugins/' . $plugin_type;
+  }
+}
+
+/**
+ * Implements hook_preprocess_amp_ad().
+ */
+function amp_preprocess_amp_ad(&$variables) {
+  $variables['slot_attributes'] = drupal_attributes($variables['slot_attributes_array']);
+}
+
+/**
+ * Implements hook_preprocess_amp_video().
+ */
+function amp_preprocess_amp_video(&$variables) {
+  $file = $variables['file'];
+
+  // Set the SRC from the file URI if available.
+  if (empty($variables['src']) && is_object($file)) {
+    $variables['src'] = file_create_url($file->uri);
+  }
+
+  // amp-video can only be displayed if the src for the video is https.
+  $variables['scheme'] = file_uri_scheme($variables['src']);
+
+  // Use the description as the title text if available.
+  if (empty($variables['description']) && is_object($file)) {
+    $title_text = $file->filename;
+  }
+  else {
+    $title_text = check_plain($variables['description']);
+  }
+  $variables['video_attributes_array']['title'] = $title_text;
+
+  // Set the fallback text.
+  if (empty($variables['fallback_text'])) {
+    $variables['fallback_text'] = t("This browser does not support the video element.");
+  }
+}
+
+/**
+ * Implements hook_process_amp_video().
+ */
+function amp_process_amp_video(&$variables) {
+  // Turn attributes array into a string.  Run this after all preprocessors have
+  // had their way with the array.
+  $variables['video_attributes'] = drupal_attributes($variables['video_attributes_array']);
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function amp_entity_info_alter(&$entity_info) {
+  $entity_info['node']['view modes']['amp'] = array(
+    'label' => t('AMP'),
+    'custom settings' => FALSE,
+  );
+}
+
+/**
+ * Determines whether a request should return AMP HTML.
+ */
+function amp_is_amp_request() {
+  $result = &drupal_static(__FUNCTION__);
+
+  if (!isset($result)) {
+    $result = FALSE;
+
+    // The current request must have '?amp' in the query string.
+    if (isset($_GET['amp'])) {
+      // Ensure that there is a node loaded from the current request, and that
+      // it is a node type which has the AMP view mode enabled.
+      $node = menu_get_object();
+      if ($node && in_array($node->type, amp_get_enabled_types())) {
+        // Node level check.
+        if (amp_node_is_enabled($node->nid)) {
+          // Do an additional check to ensure the current path is actually the
+          // node's public URI. Without this check, this function would return
+          // TRUE on the node's edit form.
+          $uri = entity_uri('node', $node);
+          if ($uri['path'] == current_path()) {
+            // Only if all of the above conditions are true is this a valid AMP
+            // request.
+            $result = TRUE;
+          }
+        }
+      }
+    }
+
+    // Allow other modules to create a custom logic
+    // of amp request identification.
+    drupal_alter('is_amp_request', $result);
+  }
+
+  return $result;
+}
+
+/**
+ * Implements hook_custom_theme().
+ */
+function amp_custom_theme() {
+  if (amp_is_amp_request()) {
+    return variable_get('amp_theme', 'ampsubtheme_example');
+  }
+}
+
+/**
+ * Implements hook_entity_view_mode_alter().
+ *
+ * Switches view mode to 'amp' for AMP requests.
+ */
+function amp_entity_view_mode_alter(&$view_mode, $context) {
+  if ($view_mode === 'full' && amp_is_amp_request()) {
+    $view_mode = 'amp';
+  }
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function amp_form_node_form_alter(&$form, &$form_state, $form_id) {
+  $view_mode_settings = field_view_mode_settings('node', $form_state['node']->type);
+  // For content type with an AMP view mode, add a "Save and view AMP" button.
+  if (isset($view_mode_settings['amp']) && $view_mode_settings['amp']['custom_settings'] == TRUE) {
+    // Add the buttong between "Preview" (weight of 10) and "Delete" (15).
+    $form['actions']['save_view_amp'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save and view AMP page'),
+      '#submit' => array('node_form_submit', 'amp_node_enabled_form_submit', 'amp_node_form_submit'),
+      '#weight' => 12,
+      '#access' => TRUE,
+    );
+    // Add the buttong between "Preview" (weight of 10) and "Delete" (15).
+    $form['actions']['save_view_amp_warnfix'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save and view AMP page and see any AMP formatter warnings'),
+        '#submit' => array('node_form_submit', 'amp_node_enabled_form_submit', 'amp_node_form_submit_warnfix'),
+        '#weight' => 13,
+        '#access' => TRUE,
+    );
+
+    // Option to disable AMP.
+    // When adding new nodes, AMP will be turned on by default.
+    $amp_enabled = 1;
+    // If we are editing an existing node, get the value from database.
+    if (isset($form_state['node']->nid) && !amp_db_is_node_enabled($form_state['node']->nid)) {
+      $amp_enabled = 0;
+    }
+    $form['options']['amp_enabled'] = array(
+      '#title' => t('Published (AMP)'),
+      '#type' => 'checkbox',
+      '#default_value' => $amp_enabled,
+    );
+
+    // Form callback for node enabled.
+    $form['actions']['submit']['#submit'][] = 'amp_node_enabled_form_submit';
+  }
+}
+
+/**
+ * Form callback to save the enabled status.
+ */
+function amp_node_enabled_form_submit(&$form, $form_state) {
+  if (isset($form_state['node']->nid)) {
+    $node_id = $form_state['node']->nid;
+    if ($form_state['values']['amp_enabled'] == 1) {
+      amp_db_enable_amp($node_id);
+    }
+    else {
+      amp_db_disable_amp($node_id);
+    }
+    amp_clear_cache($node_id);
+  }
+}
+
+/**
+ * Submit handler for viewing the AMP page.
+ */
+function amp_node_form_submit(&$form, $form_state) {
+  if (!empty($form_state['node']->path['alias'])) {
+    $current_path = $form_state['node']->path['alias'];
+  }
+  else {
+    $current_path = 'node/' . $form_state['node']->nid;
+  }
+
+  // We need to remove destination if its there
+  unset($_GET['destination']);
+
+  // We must pass amp => null as there is no value to the amp parameter
+  drupal_goto($current_path, array('query' => array('amp' => null)));
+}
+
+/**
+ * Submit handler for viewing the AMP page with warnings/fixes messages
+ */
+function amp_node_form_submit_warnfix(&$form, $form_state) {
+  if (!empty($form_state['node']->path['alias'])) {
+    $current_path = $form_state['node']->path['alias'];
+  }
+  else {
+    $current_path = 'node/' . $form_state['node']->nid;
+  }
+
+  // We need to remove destination if its there
+  unset($_GET['destination']);
+
+  // We must pass amp => null as there is no value to the amp parameter
+  drupal_goto($current_path, array('query' => array('amp' => null, 'warnfix' => null)));
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function amp_form_node_type_form_alter(&$form, &$form_state, $form_id) {
+  $enabled_types = amp_get_enabled_types();
+  if (in_array($form['#node_type']->type, $enabled_types)) {
+    $form['amp_metadata'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('AMP Metadata'),
+      '#group' => 'additional_settings',
+      '#weight' => 100,
+    );
+
+    $form['amp_metadata']['description'] = array(
+      '#type' => 'item',
+      '#title' => 'Content information',
+      '#description' => t('Provide information about your content for use in the Top Stories carousel in Google Search.'),
+    );
+
+
+    $form['amp_metadata']['amp_metadata_options'] = array(
+      '#type' => 'container',
+      '#tree' => 'true',
+    );
+
+    $amp_metadata_fields = _amp_get_metadata_type_fields();
+
+    $settings = variable_get('amp_metadata_options_' . $form['#node_type']->type);
+
+    foreach ($amp_metadata_fields as $name => $field) {
+      $form_options['amp_metadata_config_' . $name] = array(
+        '#type' => 'textfield',
+        '#title' => t('@title', array('@title' => ucfirst($name))),
+        '#default_value' => isset($settings['amp_metadata_config_' . $name]) ? $settings['amp_metadata_config_' . $name] : $field['value'],
+      );
+      switch ($name) {
+        case 'schemaType':
+          $schema_type_options = array(
+            'Article' => 'Article',
+            'NewsArticle' => 'NewsArticle',
+            'BlogPosting' => 'BlogPosting',
+          );
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'AMP schema type';
+          $form_options['amp_metadata_config_' . $name]['#type'] = 'select';
+          $form_options['amp_metadata_config_' . $name]['#options'] = $schema_type_options;
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('The type of schema to use on AMP pages');
+          break;
+        case 'headline':
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'Article headline';
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('
+          <p>A short headline for an AMP article, using fewer than 110 characters and no HTML markup.</p>
+          <p>Use tokens to provide the correct headline for each article page. Suggested token: [node:title].'
+          );
+          $form_options['amp_metadata_config_' . $name]['#attributes'] = ['placeholder' => '[node:title]'];
+          break;
+        case 'datePublished':
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'Date published';
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('
+          <p>The date an article was published.</p>
+          <p>Use tokens to provide the correct published date for each article. Suggested token: [node:created].'
+          );
+          $form_options['amp_metadata_config_' . $name]['#attributes'] = ['placeholder' => '[node:created]'];
+          break;
+        case 'dateModified':
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'Date modified';
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('
+          <p>The date an article was most recently modified date.</p>
+          <p>Use tokens to provide the correct modification date for each article. Suggested token: [node:changed].'
+          );
+          $form_options['amp_metadata_config_' . $name]['#attributes'] = ['placeholder' => '[node:changed]'];
+          break;
+        case 'author':
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'Author';
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('
+          <p>The name of the author to use on AMP pages.</p>
+          <p>Use tokens to provide the correct author for each article. Token output should be text only, no HTML markup. Suggested token: [node:author:name].'
+          );
+          $form['amp_metadata_config_' . $name]['#attributes'] = ['placeholder' => '[node:author:name]'];
+          break;
+        case 'description':
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'Article description';
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('
+          <p>A short description of an AMP article, using fewer than 150 characters and no HTML markup.</p>
+          <p>Use tokens to provide the correct description for each article. Suggested token: [node:summary].'
+          );
+          $form_options['amp_metadata_config_' . $name]['#attributes'] = ['placeholder' => '[node:summary]'];
+          break;
+        case 'image':
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'Article image for carousel';
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('
+          <p>An article image to appear in the Top Stories carousel.</p>
+          <p>Images must be at least 696px wide: refer to <a href="@image_guidelines">article image guidelines</a> for further details.</p>
+          <p>Use tokens to provide the correct image for each article. Example token: [node:field_image]. The image field token likely varies by content type.',
+            array('@image_guidelines' => 'https://developers.google.com/search/docs/data-types/articles#article_types')
+          );
+          $form_options['amp_metadata_config_' . $name]['#attributes'] = ['placeholder' => '[node:field_image]'];
+          break;
+        case 'imageStyle':
+          $form_options['amp_metadata_config_' . $name]['#title'] = 'Article image style';
+          $form_options['amp_metadata_config_' . $name]['#type'] = 'select';
+          $form_options['amp_metadata_config_' . $name]['#options'] = image_style_options(TRUE);
+          $form_options['amp_metadata_config_' . $name]['#description'] = t('<p>The image style to use for the article image</p>');
+          break;
+      }
+    }
+
+    $form['amp_metadata']['amp_metadata_options'] += $form_options;
+
+    $form['amp_metadata']['amp_metadata_token_tree'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array('node'),
+      '#dialog' => TRUE,
+    );
+
+    $form['#submit'][] = 'amp_metadata_node_type_submit';
+  }
+}
+
+/**
+ * Additional submit handler for the node type form.
+ */
+function amp_metadata_node_type_submit(&$form, $form_state) {
+  variable_set('amp_metadata_options_' . $form['#node_type']->type, $form_state['values']['amp_metadata_options']);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function amp_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'field_ui_display_overview_form') {
+    $form['#submit'][] = 'amp_view_modes_submit';
+  }
+}
+
+/**
+ * Submit handler for enabling or disabling AMP view modes.
+ */
+function amp_view_modes_submit(&$form, $form_state) {
+  $new_values = array();
+  $old_values = array();
+  if (isset($form_state['values']['view_modes_custom'])) {
+    $new_values = array_filter($form_state['values']['view_modes_custom']);
+  }
+  if (isset($form_state['complete form']['modes']['view_modes_custom']['#default_value'])) {
+    $old_values = $form_state['complete form']['modes']['view_modes_custom']['#default_value'];
+  }
+  $removed = array_diff($old_values, $new_values);
+  $added = array_diff($new_values, $old_values);
+  if (is_array($removed) && in_array('amp', $removed)) {
+    // If the AMP view was removed, clear cache of AMP-enabled content.
+    cache_clear_all('amp_enabled_types', 'cache');
+  }
+  if (is_array($added) && in_array('amp', $added)) {
+    // If the AMP view was added, clear cache of AMP-enabled content.
+    cache_clear_all('amp_enabled_types', 'cache');
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function amp_page_alter(array &$page) {
+  if (amp_is_amp_request()) {
+    if (variable_get('amp_pixel')) {
+      $domain = variable_get('amp_pixel_domain_name');
+      $query_string = variable_get('amp_pixel_query_string');
+      $subs_random = FALSE;
+
+      if (!empty($domain) && !empty($query_string)) {
+        $subs_random = variable_get('amp_pixel_random_number');
+      }
+
+      $subs = array(
+        'RANDOM' => array(
+          'active' => $subs_random ? TRUE : FALSE
+        )
+      );
+
+      $amp_pixel = array(
+        '#theme' => 'amp_pixel',
+        '#domain' => $domain,
+        '#query_string' => $query_string,
+        '#subs' => $subs
+      );
+
+      $page['page_bottom']['amp_pixel'] = $amp_pixel;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function amp_node_view($node, $view_mode, $langcode) {
+  if ($node = menu_get_object()) {
+    if (!in_array($node->type, amp_get_enabled_types()) || !amp_node_is_enabled($node->nid)) {
+      return;
+    }
+  }
+
+  // Show amphtml links on AMP-enabled nodes so search engines can find AMP.
+  if ($view_mode == 'full' && node_is_page($node)) {
+    $uri = entity_uri('node', $node);
+    $uri['options']['query']['amp'] = NULL;
+    $uri['options']['absolute'] = TRUE;
+    drupal_add_html_head_link(array('rel' => 'amphtml', 'href' => url($uri['path'], $uri['options'])), TRUE);
+  }
+
+  // Add AMP metadata.
+  if ($view_mode == 'amp' && node_is_page($node)) {
+    $metadata = variable_get('amp_metadata_options_' . $node->type);
+    $amp_metadata_type_fields = _amp_get_metadata_type_fields();
+
+    $metadata_json['@context'] = 'http://schema.org';
+
+    $main_uri = entity_uri('node', $node);
+    $main_uri['options']['absolute'] = TRUE;
+    $metadata_json['mainEntityOfPage'] = url($main_uri['path'], $main_uri['options']);
+
+    foreach ($amp_metadata_type_fields as $name => $values) {
+      if ($values['type'] == 'schema') {
+        $metadata_json['@type'] = $metadata['amp_metadata_config_' . $name];
+      }
+      elseif ($values['type'] == 'text') {
+        $metadata_json[$name] = $metadata['amp_metadata_config_' . $name];
+      }
+      elseif ($values['type'] == 'date') {
+        $metadata_json[$name] = $metadata['amp_metadata_config_' . $name];
+      }
+      elseif ($values['type'] == 'Person') {
+        $metadata_json[$name] = array(
+          '@type' => 'Person',
+          'name' => $metadata['amp_metadata_config_' . $name],
+        );
+      }
+      elseif ($values['type'] == 'ImageObject') {
+        $image_url = token_replace($metadata['amp_metadata_config_' . $name], array('node' => $node));
+
+        // Provide backup parsing of image element if token does not output a URL.
+        if (strip_tags($image_url) != $image_url) {
+          // Force path to be absolute.
+          if (strpos($image_url, 'img src="/') !== FALSE) {
+            global $base_root;
+            $image_url = str_replace('img src="/', 'img src="' . $base_root . '/', $image_url);
+          }
+
+          $matches = array();
+          preg_match('/src="([^"]*)"/', $image_url, $matches);
+          if (!empty($matches[1])) {
+            $image_url = $matches[1];
+          }
+        }
+
+        // Obtain URI of absolute URL.
+        $uri = 'public://';
+        $public_stream_base_url= file_create_url($uri);
+        $image_uri = '';
+        if (substr($image_url, 0, strlen($public_stream_base_url)) == $public_stream_base_url) {
+          $image_uri = file_build_uri(substr($image_url, strlen($public_stream_base_url)));
+        }
+
+        if (!empty($image_url) && !empty($image_uri)) {
+          if (!isset($metadata['amp_metadata_config_imageStyle']) || empty($image_style_id = $metadata['amp_metadata_config_imageStyle'])) {
+            $image_style_id = '';
+          }
+          if (!empty($image_info = _amp_get_image_information($image_url, $image_uri, $image_style_id))) {
+            $metadata_json[$name] = array(
+              '@type' => 'ImageObject',
+              'url' => $image_info['url'],
+              'width' => $image_info['width'],
+              'height' => $image_info['height'],
+            );
+          }
+        }
+      }
+    }
+
+    // Add global publisher info.
+    $metadata_json['publisher'] = array(
+      '@type' => 'Organization',
+      'name' => variable_get('amp_metadata_organization_name', ''),
+    );
+
+    $logo_fid = variable_get('amp_metadata_organization_logo', NULL);
+    if ($logo_fid) {
+      $logo = file_load($logo_fid);
+      $logo_uri = $logo->uri;
+      $logo_url = file_create_url($logo_uri);
+      if (!empty($logo_url) && !empty($logo_uri)) {
+        $logo_style_id = variable_get('amp_metadata_organization_logo_image_style_id', '');
+        if (!empty($logo_info = _amp_get_image_information($logo_url, $logo_uri, $logo_style_id))) {
+          $metadata_json['publisher']['logo'] = array(
+            '@type' => 'ImageObject',
+            'url' => $logo_info['url'],
+            'width' => $logo_info['width'],
+            'height' => $logo_info['height'],
+          );
+        }
+      }
+    }
+
+    drupal_alter('amp_metadata', $metadata_json, $node, $type);
+
+    // Replace the tokens.
+    array_walk_recursive($metadata_json, function(&$value) use ($node) {
+      $value = strip_tags(token_replace($value, ['node' => $node]));
+      $value = str_replace("\n", "", $value);
+      $value = str_replace("\r", "", $value);
+    });
+
+    $element = array(
+      '#tag' => 'script',
+      '#type' => 'html_tag',
+      '#attributes' => array(
+        'type' => 'application/ld+json',
+      ),
+      '#value' => json_encode($metadata_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT), array('node' => $node),
+    );
+    drupal_add_html_head($element, 'amp_metadata');
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function amp_block_info() {
+  $blocks = array();
+  $block_ids = array(1, 2, 3, 4);
+  $amp_adsense_installed = module_exists('amp_adsense');
+  $amp_dfp_installed = module_exists('amp_dfp');
+  foreach ($block_ids as $block_id) {
+    if (!$amp_adsense_installed) {
+      $blocks['amp_google_adsense_' . $block_id] = array(
+        'info' => t('AMP Google Adsense ' . $block_id),
+        'cache' => DRUPAL_NO_CACHE,
+      );
+    }
+
+    if (!$amp_dfp_installed) {
+      $blocks['amp_google_doubleclick_' . $block_id] = array(
+        'info' => t('AMP Google DoubleClick for Publishers ' . $block_id),
+        'cache' => DRUPAL_NO_CACHE,
+      );
+    }
+
+  }
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function amp_block_configure($delta = '') {
+  $form = array();
+  $adsense_blocks = _amp_get_adsense_block_ids();
+  $doubleclick_blocks = _amp_get_doubleclick_block_ids();
+  if (in_array($delta, $adsense_blocks) || in_array($delta, $doubleclick_blocks)) {
+    $form['width'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Width'),
+      '#default_value' => variable_get($delta . '_width'),
+      '#maxlength' => 25,
+      '#size' => 20,
+    );
+    $form['height'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Height'),
+      '#default_value' => variable_get($delta . '_height'),
+      '#maxlength' => 25,
+      '#size' => 20,
+    );
+    $form['data_ad_slot'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Data ad slot'),
+      '#default_value' => variable_get($delta . '_data_ad_slot'),
+      '#maxlength' => 25,
+      '#size' => 20,
+    );
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function amp_block_save($delta = '', $edit = array()) {
+  $adsense_blocks = _amp_get_adsense_block_ids();
+  $doubleclick_blocks = _amp_get_doubleclick_block_ids();
+  if (in_array($delta, $adsense_blocks) || in_array($delta, $doubleclick_blocks)) {
+    variable_set($delta . '_width', $edit['width']);
+    variable_set($delta . '_height', $edit['height']);
+    variable_set($delta . '_data_ad_slot', $edit['data_ad_slot']);
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function amp_block_view($delta = '') {
+  $block = array();
+  $adsense_blocks = _amp_get_adsense_block_ids();
+  $doubleclick_blocks = _amp_get_doubleclick_block_ids();
+  if (in_array($delta, $adsense_blocks)) {
+    // Start by getting global Adsense configuration.
+    $adsense_id = variable_get('amp_google_adsense_id', '');
+    if (!empty($adsense_id)) {
+      $width = variable_get($delta . '_width', '');
+      $height = variable_get($delta . '_height', '');
+      $data_ad_slot = variable_get($delta . '_data_ad_slot', '');
+      if (empty($width) || empty($height) || empty($data_ad_slot)) {
+        $block['content'] = array(
+          'message' => array(
+            '#type' => 'markup',
+            '#markup' => t('This Adsense block requires a width, height, and data ad slot.'),
+            '#suffix' => '',
+          ),
+        );
+      }
+      else {
+        $block['content']['amp_adsense'] = array(
+          '#theme' => 'amp_ad',
+          '#adtype' => 'adsense',
+          '#height' => $height,
+          '#width' => $width,
+          '#slot_attributes_array' => array(
+            'data-ad-client'  => $adsense_id,
+            'data-ad-slot'  => $data_ad_slot,
+          ),
+        );
+      }
+    }
+    else {
+      $block['content'] = array(
+        'message' => array(
+          '#type' => 'markup',
+          '#markup' => t('This DoubleClick block requires a Google Adsense ID.'),
+          '#suffix' => '',
+        ),
+      );
+    }
+  }
+  elseif (in_array($delta, $doubleclick_blocks)) {
+    $doubleclick_id = variable_get('amp_google_doubleclick_id', '');
+    if (!empty($doubleclick_id) && $doubleclick_id != "/") {
+      $width = variable_get($delta . '_width', '');
+      $height = variable_get($delta . '_height', '');
+      $data_ad_slot = variable_get($delta . '_data_ad_slot', '');
+      if (!empty($width) && !empty($height) && !empty($data_ad_slot)) {
+        $block['content']['amp_doubleclick'] = array(
+          '#theme' => 'amp_ad',
+          '#adtype' => 'doubleclick',
+          '#height' => $height,
+          '#width' => $width,
+          '#slot_attributes_array' => array(
+            'data-slot'  => $doubleclick_id . '/' . $data_ad_slot,
+          ),
+        );
+      }
+      else {
+        $block['content'] = array(
+          'message' => array(
+            '#type' => 'markup',
+            '#markup' => t('This block requires a width, height, and data ad slot.'),
+            '#suffix' => '',
+          ),
+        );
+      }
+    }
+    else {
+      $block['content'] = array(
+        'message' => array(
+          '#type' => 'markup',
+          '#markup' => t('This block requires a Google DoubleClick ID.'),
+          '#suffix' => '',
+        ),
+      );
+    }
+  }
+  return $block;
+}
+
+/**
+* Implements hook_field_formatter_info().
+*/
+function amp_field_formatter_info() {
+  return array(
+    'amp_text' => array(
+      'label' => t('AMP text'),
+      'description' => t('Display AMP text.'),
+      'field types' => array('text', 'text_long', 'text_with_summary'),
+    ),
+    // The amp_text_trimmed formatter displays the trimmed version of the
+    // full element of the field. It is intended to be used with text
+    // and text_long fields. It also works with text_with_summary
+    // fields though the text_summary_or_trimmed formatter makes more
+    // sense for that field type.
+    'amp_text_trimmed' => array(
+      'label' => t('AMP trimmed text'),
+      'description' => t('Display AMP trimmed text.'),
+      'field types' => array('text', 'text_long', 'text_with_summary'),
+      'settings' => array('trim_length' => 600),
+    ),
+    // The 'summary or trimmed' field formatter for text_with_summary
+    // fields displays returns the summary element of the field or, if
+    // the summary is empty, the trimmed version of the full element
+    // of the field.
+    'amp_text_summary_or_trimmed' => array(
+      'label' => t('AMP summary or trimmed'),
+      'description' => t('Display AMP summary or trimmed text.'),
+      'field types' => array('text_with_summary'),
+      'settings' => array('trim_length' => 600),
+    ),
+    'amp_video' => array(
+      'label' => t('AMP video'),
+      'description' => t('Display an AMP video file.'),
+      'field types' => array('file'),
+      'settings' => array('amp_video_height' => '175', 'amp_video_width' => '350'),
+    ),
+    'amp_image' => array(
+      'label' => t('AMP image'),
+      'description' => t('Display an AMP image file.'),
+      'field types' => array('image'),
+      'settings' => array('image_style' => '', 'image_link' => '', 'amp_layout' => 'responsive', 'amp_fixed_height' => '300'),
+    ),
+    'amp_iframe' => array(
+      'label' => t('AMP iframe'),
+      'description' => t('Display amp-iframe content.'),
+      'field types' => array('text', 'text_long', 'text_with_summary'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function amp_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $element = array();
+
+  if (strpos($display['type'], '_trimmed') !== FALSE) {
+    $element['trim_length'] = array(
+      '#title' => t('Trimmed limit'),
+      '#type' => 'textfield',
+      '#field_suffix' => t('characters'),
+      '#size' => 10,
+      '#default_value' => $settings['trim_length'],
+      '#element_validate' => array('element_validate_integer_positive'),
+      '#description' => t('If the summary is not set, the trimmed %label field will be shorter than this character limit.', array('%label' => $instance['label'])),
+      '#required' => TRUE,
+    );
+  }
+
+  if ($display['type'] == 'amp_image') {
+    $image_styles = image_style_options(FALSE, PASS_THROUGH);
+    $element['image_style'] = array(
+      '#title' => t('Image style'),
+      '#type' => 'select',
+      '#default_value' => $settings['image_style'],
+      '#empty_option' => t('None (original image)'),
+      '#options' => $image_styles,
+    );
+
+    $link_types = array(
+      'content' => t('Content'),
+      'file' => t('File'),
+    );
+    $element['image_link'] = array(
+      '#title' => t('Link image to'),
+      '#type' => 'select',
+      '#default_value' => $settings['image_link'],
+      '#empty_option' => t('Nothing'),
+      '#options' => $link_types,
+    );
+
+    $layout_url = 'https://www.ampproject.org/docs/guides/responsive/control_layout.html#size-and-position-elements';
+    $layout_options = _amp_get_layouts();
+
+    $element['amp_layout'] = array(
+      '#title' => t('AMP Layout'),
+      '#type' => 'select',
+      '#default_value' => $settings['amp_layout'],
+      '#empty_option' => t('None (no layout)'),
+      '#options' => $layout_options,
+      '#description' => t('<a href="@url" target="_blank">Layout Information</a>', array('@url' => $layout_url)),
+      '#required' => TRUE,
+    );
+
+    $element['amp_fixed_height'] = array(
+      '#title' => t('Layout Height (used for fixed-height only)'),
+      '#type' => 'textfield',
+      '#states' => array(
+        'visible' => array(
+          ':input[name="fields[' .$field['field_name'] . '][settings_edit_form][settings][amp_layout]"]' =>
+            array('value' => 'fixed-height'))
+      ),
+      '#size' => 10,
+      '#default_value' => $settings['amp_fixed_height'],
+    );
+  }
+
+  if ($display['type'] == 'amp_video') {
+    $element['amp_video_height'] = array(
+      '#title' => t('Height'),
+      '#type' => 'textfield',
+      '#size' => 10,
+      '#default_value' => $settings['amp_video_height'],
+      '#element_validate' => array('element_validate_integer_positive'),
+      '#description' => t('The height of the video is used to determine the aspect ratio in a responsive layout.'),
+      '#required' => TRUE,
+    );
+
+    $element['amp_video_width'] = array(
+      '#title' => t('Width'),
+      '#type' => 'textfield',
+      '#size' => 10,
+      '#default_value' => $settings['amp_video_width'],
+      '#element_validate' => array('element_validate_integer_positive'),
+      '#description' => t('The width of the video is used to determine the aspect ratio in a responsive layout.'),
+      '#required' => TRUE,
+    );
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function amp_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+
+  if (strpos($display['type'], '_trimmed') !== FALSE) {
+    $summary[] = t('Trimmed limit: @trim_length characters', array('@trim_length' => $settings['trim_length']));
+  }
+
+  if (strpos($display['type'], 'amp_video') !== FALSE) {
+    $summary[] = t('Dimensions for aspect ratio: @width' . 'px x @height' . 'px', array('@width' => $settings['amp_video_width'], '@height' => $settings['amp_video_height']));
+  }
+
+  if (strpos($display['type'], 'amp_image') !== FALSE) {
+    $image_styles = image_style_options(FALSE, PASS_THROUGH);
+    // Unset possible 'No defined styles' option.
+    unset($image_styles['']);
+    // Styles could be lost because of enabled/disabled modules that defines
+    // their styles in code.
+    if (isset($image_styles[$settings['image_style']])) {
+      $summary[] = t('Image style: @style', array('@style' => $image_styles[$settings['image_style']]));
+    }
+    else {
+      $summary[] = t('Original image');
+    }
+
+    $link_types = array(
+      'content' => t('Linked to content'),
+      'file' => t('Linked to file'),
+    );
+    // Display this setting only if image is linked.
+    if (isset($link_types[$settings['image_link']])) {
+      $summary[] = $link_types[$settings['image_link']];
+    }
+
+    $layout_options = _amp_get_layouts();
+    $layout_setting = $settings['amp_layout'];
+
+    if (isset($layout_options[$layout_setting])) {
+      $summary[] =  t('Layout: @setting', array('@setting' => $layout_options[$layout_setting]));
+
+      if ($layout_options[$layout_setting] === 'fixed-height') {
+        $summary[] = t('Fixed height: @height', array('@height' => $settings['amp_fixed_height']));
+      }
+    }
+  }
+
+  return implode('<br />', $summary);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function amp_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'amp_iframe':
+      foreach ($items as $delta => $item) {
+        $output = _text_sanitize($instance, $langcode, $item, 'value');
+        $amp_content = _amp_convert_markup_to_amp($output);
+        $element[$delta] = array(
+          '#markup' => $output,
+          '#iframe' => array(
+            '#markup' => $amp_content['amp_markup']
+          )
+        );
+      }
+      amp_add_component_libraries($amp_content['amp_components']);
+      break;
+
+    case 'amp_text':
+      foreach ($items as $delta => $item) {
+        $output = _text_sanitize($instance, $langcode, $item, 'value');
+        $amp_content = _amp_convert_markup_to_amp($output);
+        $element[$delta] = array('#markup' => $amp_content['amp_markup']);
+        if (isset($_GET['warnfix']) || variable_get('amp_library_warnings_display', false)) {
+          $element[$delta]['#markup'] .= '<pre>' . $amp_content['amp_warnings'] . '</pre>';
+        }
+        amp_add_component_libraries($amp_content['amp_components']);
+      }
+      break;
+
+    case 'amp_text_trimmed':
+      foreach ($items as $delta => $item) {
+        $output = _text_sanitize($instance, $langcode, $item, 'value');
+        if ($display['type'] == 'amp_text_trimmed') {
+          $output = text_summary($output, $instance['settings']['text_processing'] ? $item['format'] : NULL, $display['settings']['trim_length']);
+        }
+        $amp_content = _amp_convert_markup_to_amp($output);
+        $element[$delta] = array('#markup' => $amp_content['amp_markup']);
+        if (isset($_GET['warnfix']) || variable_get('amp_library_warnings_display', false)) {
+          $element[$delta]['#markup'] .= '<pre>' . $amp_content['amp_warnings'] . '</pre>';
+        }
+        amp_add_component_libraries($amp_content['amp_components']);
+      }
+      break;
+
+    case 'amp_summary_or_trimmed':
+      foreach ($items as $delta => $item) {
+        if (!empty($item['summary'])) {
+          $output = _text_sanitize($instance, $langcode, $item, 'summary');
+        }
+        else {
+          $output = _text_sanitize($instance, $langcode, $item, 'value');
+          $output = text_summary($output, $instance['settings']['text_processing'] ? $item['format'] : NULL, $display['settings']['trim_length']);
+        }
+        $amp_content = _amp_convert_markup_to_amp($output);
+        $element[$delta] = array('#markup' => $amp_content['amp_markup']);
+        if (isset($_GET['warnfix']) || variable_get('amp_library_warnings_display', false)) {
+          $element[$delta]['#markup'] .= '<pre>' . $amp_content['amp_warnings'] . '</pre>';
+        }
+        amp_add_component_libraries($amp_content['amp_components']);
+      }
+      break;
+
+    case 'amp_image':
+      // Check if the formatter involves a link.
+      if ($display['settings']['image_link'] == 'content') {
+        $uri = entity_uri($entity_type, $entity);
+      }
+      elseif ($display['settings']['image_link'] == 'file') {
+        $link_file = TRUE;
+      }
+
+      foreach ($items as $delta => $item) {
+        if (isset($link_file)) {
+          $uri = array(
+            'path' => file_create_url($item['uri']),
+            'options' => array(),
+          );
+        }
+
+        $element[$delta] = array(
+          '#theme' => 'image_formatter',
+          '#item' => $item,
+          '#image_style' => $display['settings']['image_style'],
+          '#path' => isset($uri) ? $uri : '',
+        );
+
+        $element[$delta]['#item']['attributes']['layout'] = $display['settings']['amp_layout'];
+
+        if ($display['settings']['amp_layout'] == 'fixed-height') {
+          $element[$delta]['#item']['attributes']['height'] = $display['settings']['amp_fixed_height'];
+          $element[$delta]['#item']['attributes']['width'] = 'auto';
+        }
+      }
+      break;
+
+    case 'amp_video':
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#theme' => 'amp_video',
+          '#file' => (object) $item,
+          '#video_attributes_array' => array(
+            'height' => $display['settings']['amp_video_height'],
+            'width' => $display['settings']['amp_video_width']
+          )
+        );
+
+      }
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Helper function to return a list of AMP layouts.
+ */
+function _amp_get_layouts() {
+  return array(
+    'nodisplay' => 'nodisplay',
+    'fixed' => 'fixed',
+    'responsive' => 'responsive',
+    'fixed-height' => 'fixed-height',
+    'fill' => 'fill',
+    'container' => 'container',
+  );
+}
+
+/**
+ * Use AMP class from library for conversion of text to AMP HTML.
+ *
+ * @return AMP
+ */
+function _amp_create_amp_converter() {
+  $amp = new AMP();
+  drupal_alter('amp_converter', $amp);
+
+  return $amp;
+}
+
+
+/**
+ * Use AMP class from library for conversion of text to AMP HTML.
+ *
+ * @param string $markup
+ *   The markup to be converted.
+ * @return array $amp_content
+ *   An array containing the following:
+ *   - amp_markup: The AMP HTML.
+ *   - amp_warnings: The AMP warning messages.
+ *   - amp_components: An array of AMP JS components.
+ */
+function _amp_convert_markup_to_amp($markup) {
+  $amp = _amp_create_amp_converter();
+  $amp->loadHtml($markup);
+  $amp_content = array(
+    'amp_markup' => $amp->convertToAmpHtml(),
+    'amp_warnings' => $amp->warningsHumanHtml(),
+    'amp_components' => $amp->getComponentJs()
+  );
+
+  return $amp_content;
+}
+
+/**
+ * Given an array of components e.g. amp-iframe, add these components to head.
+ */
+function amp_add_component_libraries(array $components) {
+  $component_definitions = _amp_get_amp_js_list();
+
+  /**
+   * @var string $component_name
+   * @var string $component_url
+   */
+  foreach ($components as $component_name => $component_url) {
+    if (isset($component_definitions[$component_name])) {
+      $element = array(
+        '#tag' => 'script',
+        '#type' => 'html_tag',
+        '#attributes' => array(
+          'src' => $component_definitions[$component_name],
+          'async' => "",
+          'custom-element' => $component_name
+        ),
+      );
+      drupal_add_html_head($element, $component_name);
+    }
+  }
+}
+
+/**
+ * Previous private version of amp_add_component_libraries().
+ *
+ * Use amp_add_component_libraries() instead.
+ *
+ * @deprecated since 1.0
+ */
+function _amp_add_component_libraries(array $components) {
+  amp_add_component_libraries($components);
+}
+
+/**
+ * Return info on AMP JS components returned from the AMP library.
+ *
+ * @return array $amp_js
+ *   An array containing AMP components, with the key as the AMP component name
+ */
+function _amp_get_amp_js_list() {
+  $amp_js =& drupal_static(__FUNCTION__, array());
+  if ($amp_js) {
+    return $amp_js;
+  }
+
+  // Mirrors the order of https://www.ampproject.org/docs/reference/components.
+  $amp_js = array(
+    // Ads and analytics.
+    'amp-ad' => 'https://cdn.ampproject.org/v0/amp-ad-0.1.js',
+    'amp-ad-exit' => 'https://cdn.ampproject.org/v0/amp-ad-exit-0.1.js',
+    'amp-analytics' => 'https://cdn.ampproject.org/v0/amp-analytics-0.1.js',
+    'amp-auto-ads' => 'https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js',
+    'amp-call-tracking' => 'https://cdn.ampproject.org/v0/amp-call-tracking-0.1.js',
+    'amp-experiment' => 'https://cdn.ampproject.org/v0/amp-experiment-0.1.js',
+    'amp-sticky-ad' => 'https://cdn.ampproject.org/v0/amp-sticky-ad-0.1.js',
+
+    // Dynamic content.
+    'amp-access-laterpay' => 'https://cdn.ampproject.org/v0/amp-access-laterpay-0.1.js',
+    'amp-access' => 'https://cdn.ampproject.org/v0/amp-access-0.1.js',
+    'amp-bind' => 'https://cdn.ampproject.org/v0/amp-bind-0.1.js',
+    'amp-byside-content' => 'https://cdn.ampproject.org/v0/amp-byside-content-0.1.js',
+    'amp-consent' => 'https://cdn.ampproject.org/v0/amp-consent-0.1.js',
+    'amp-date-picker' => 'https://cdn.ampproject.org/v0/amp-date-picker-0.1.js',
+    'amp-form' => 'https://cdn.ampproject.org/v0/amp-form-0.1.js',
+    'amp-geo' => 'https://cdn.ampproject.org/v0/amp-geo-0.1.js',
+    'amp-gist' => 'https://cdn.ampproject.org/v0/amp-gist-0.1.js',
+    'amp-google-document-embed' => 'https://cdn.ampproject.org/v0/amp-google-document-embed-0.1.js',
+    'amp-install-serviceworker' => 'https://cdn.ampproject.org/v0/amp-install-serviceworker-0.1.js',
+    'amp-list' => 'https://cdn.ampproject.org/v0/amp-list-0.1.js',
+    'amp-live-list' => 'https://cdn.ampproject.org/v0/amp-live-list-0.1.js',
+    'amp-mustache' => 'https://cdn.ampproject.org/v0/amp-mustache-0.2.js',
+    'amp-next-page' => 'https://cdn.ampproject.org/v0/amp-next-page-0.1.js',
+    'amp-selector' => 'https://cdn.ampproject.org/v0/amp-selector-0.1.js',
+    'amp-user-notification' => 'https://cdn.ampproject.org/v0/amp-user-notification-0.1.js',
+    'amp-web-push' => 'https://cdn.ampproject.org/v0/amp-web-push-0.1.js',
+
+    // Layout.
+    'amp-accordion' => 'https://cdn.ampproject.org/v0/amp-accordion-0.1.js',
+    'amp-app-banner' => 'https://cdn.ampproject.org/v0/amp-app-banner-0.1.js',
+    'amp-carousel' => 'https://cdn.ampproject.org/v0/amp-carousel-0.1.js',
+    'amp-fx-flying-carpet' => 'https://cdn.ampproject.org/v0/amp-fx-flying-carpet-0.1.js',
+    'amp-fx-collection' => 'https://cdn.ampproject.org/v0/amp-fx-collection-0.1.js',
+    'amp-iframe' => 'https://cdn.ampproject.org/v0/amp-iframe-0.1.js',
+    'amp-image-lightbox' => 'https://cdn.ampproject.org/v0/amp-image-lightbox-0.1.js',
+    'amp-lightbox' => 'https://cdn.ampproject.org/v0/amp-lightbox-0.1.js',
+    'amp-lightbox-gallery' => 'https://cdn.ampproject.org/v0/amp-lightbox-gallery-0.1.js',
+    'amp-orientation-observer' => 'https://cdn.ampproject.org/v0/amp-orientation-observer-0.1.js',
+    'amp-position-observer' => 'https://cdn.ampproject.org/v0/amp-position-observer-0.1.js',
+    'amp-sidebar' => 'https://cdn.ampproject.org/v0/amp-sidebar-0.1.js',
+
+    // Media.
+    'amp-3d-gltf' => 'https://cdn.ampproject.org/v0/amp-3d-gltf-0.1.js',
+    'amp-3q-player' => 'https://cdn.ampproject.org/v0/amp-3q-player-0.1.js',
+    'amp-anim' => 'https://cdn.ampproject.org/v0/amp-anim-0.1.js',
+    'amp-apester-media' => 'https://cdn.ampproject.org/v0/amp-apester-media-0.1.js',
+    'amp-audio' => 'https://cdn.ampproject.org/v0/amp-audio-0.1.js',
+    'amp-bodymovin-animation' => 'https://cdn.ampproject.org/v0/amp-bodymovin-animation-0.1.js',
+    'amp-brid-player' => 'https://cdn.ampproject.org/v0/amp-brid-player-0.1.js',
+    'amp-brightcove' => 'https://cdn.ampproject.org/v0/amp-brightcove-0.1.js',
+    'amp-dailymotion' => 'https://cdn.ampproject.org/v0/amp-dailymotion-0.1.js',
+    'amp-embedly-card' => 'https://cdn.ampproject.org/v0/amp-embedly-card-0.1.js',
+    'amp-google-vrview-image' => 'https://cdn.ampproject.org/v0/amp-google-vrview-image-0.1.js',
+    'amp-hulu' => 'https://cdn.ampproject.org/v0/amp-hulu-0.1.js',
+    'amp-ima-video' => 'https://cdn.ampproject.org/v0/amp-ima-video-0.1.js',
+    'amp-imgur' => 'https://cdn.ampproject.org/v0/amp-imgur-0.1.js',
+    'amp-izlesene' => 'https://cdn.ampproject.org/v0/amp-izlesene-0.1.js',
+    'amp-jwplayer' => 'https://cdn.ampproject.org/v0/amp-jwplayer-0.1.js',
+    'amp-kaltura-player' => 'https://cdn.ampproject.org/v0/amp-kaltura-player-0.1.js',
+    'amp-nexxtv-player' => 'https://cdn.ampproject.org/v0/amp-nexxtv-player-0.1.js',
+    'amp-o2-player' => 'https://cdn.ampproject.org/v0/amp-o2-player-0.1.js',
+    'amp-ooyala-player' => 'https://cdn.ampproject.org/v0/amp-ooyala-player-0.1.js',
+    'amp-playbuzz' => 'https://cdn.ampproject.org/v0/amp-playbuzz-0.1.js',
+    'amp-reach-player' => 'https://cdn.ampproject.org/v0/amp-reach-player-0.1.js',
+    'amp-soundcloud' => 'https://cdn.ampproject.org/v0/amp-soundcloud-0.1.js',
+    'amp-springboard-player' => 'https://cdn.ampproject.org/v0/amp-springboard-player-0.1.js',
+    'amp-video' => 'https://cdn.ampproject.org/v0/amp-video-0.1.js',
+    'amp-vimeo' => 'https://cdn.ampproject.org/v0/amp-vimeo-0.1.js',
+    'amp-wistia-player' => 'https://cdn.ampproject.org/v0/amp-wistia-player-0.1.js',
+    'amp-yotpo' => 'https://cdn.ampproject.org/v0/amp-yotpo-0.1.js',
+    'amp-youtube' => 'https://cdn.ampproject.org/v0/amp-youtube-0.1.js',
+
+    // Presentation.
+    'amp-animation' => 'https://cdn.ampproject.org/v0/amp-animation-0.1.js',
+    'amp-date-countdown' => 'https://cdn.ampproject.org/v0/amp-date-countdown-0.1.js',
+    'amp-dynamic-css-classes' => 'https://cdn.ampproject.org/v0/amp-dynamic-css-classes-0.1.js',
+    'amp-fit-text' => 'https://cdn.ampproject.org/v0/amp-fit-text-0.1.js',
+    'amp-font' => 'https://cdn.ampproject.org/v0/amp-font-0.1.js',
+    'amp-mathml' => 'https://cdn.ampproject.org/v0/amp-mathml-0.1.js',
+    'amp-pan-zoom' => 'https://cdn.ampproject.org/v0/amp-pan-zoom-0.1.js',
+    'amp-story' => 'https://cdn.ampproject.org/v0/amp-story-0.1.js',
+    'amp-timeago' => 'https://cdn.ampproject.org/v0/amp-timeago-0.1.js',
+    'amp-viz-vega' => 'https://cdn.ampproject.org/v0/amp-viz-vega-0.1.js',
+
+    // Social.
+    'amp-beopinion' => 'https://cdn.ampproject.org/v0/amp-beopinion-0.1.js',
+    'amp-addthis' => 'https://cdn.ampproject.org/v0/amp-addthis-0.1.js',
+    'amp-facebook-comments' => 'https://cdn.ampproject.org/v0/amp-facebook-comments-0.1.js',
+    'amp-facebook-like' => 'https://cdn.ampproject.org/v0/amp-facebook-like-0.1.js',
+    'amp-facebook-page' => 'https://cdn.ampproject.org/v0/amp-facebook-page-0.1.js',
+    'amp-facebook' => 'https://cdn.ampproject.org/v0/amp-facebook-0.1.js',
+    'amp-gfycat' => 'https://cdn.ampproject.org/v0/amp-gfycat-0.1.js',
+    'amp-instagram' => 'https://cdn.ampproject.org/v0/amp-instagram-0.1.js',
+    'amp-pinterest' => 'https://cdn.ampproject.org/v0/amp-pinterest-0.1.js',
+    'amp-reddit' => 'https://cdn.ampproject.org/v0/amp-reddit-0.1.js',
+    'amp-riddle-quiz' => 'https://cdn.ampproject.org/v0/amp-riddle-quiz-0.1.js',
+    'amp-social-share' => 'https://cdn.ampproject.org/v0/amp-social-share-0.1.js',
+    'amp-twitter' => 'https://cdn.ampproject.org/v0/amp-twitter-0.1.js',
+    'amp-vine' => 'https://cdn.ampproject.org/v0/amp-vine-0.1.js',
+    'amp-vk' => 'https://cdn.ampproject.org/v0/amp-vk-0.1.js',
+  );
+
+  drupal_alter('amp_js_list', $amp_js);
+  return $amp_js;
+}
+
+/**
+ * Return array of adsense block ids.
+ */
+function _amp_get_adsense_block_ids() {
+  return array(
+    'amp_google_adsense_1',
+    'amp_google_adsense_2',
+    'amp_google_adsense_3',
+    'amp_google_adsense_4',
+  );
+}
+
+/**
+ * Return array of doubleclick block ids.
+ */
+function _amp_get_doubleclick_block_ids() {
+  return array(
+    'amp_google_doubleclick_1',
+    'amp_google_doubleclick_2',
+    'amp_google_doubleclick_3',
+    'amp_google_doubleclick_4',
+  );
+}
+
+/**
+ * Processes the Full Page HTML through the AMP PHP Library if enabled on the AMP Configuration
+ *
+ * NOTE: This function is mainly interested in full page AMP output, for all other cases e.g. menu statuses it passes
+ *       on the task to drupal_deliver_html_page(). This is for separation of concerns.
+ *
+ * @see drupal_deliver_html_page()
+ */
+function amp_deliver_html_page($page_callback_result) {
+  if (is_int($page_callback_result) || !isset($page_callback_result)) { // Pass on to drupal_deliver_html_page()
+    drupal_deliver_html_page($page_callback_result);
+  }
+  else {
+    // We're not going use drupal_deliver_html_page() from now on. So we'll have to do the tasks it did
+    // before finishing i.e. outputting headers, final html output and call to drupal_page_footer() for cleanup.
+
+    // Output http headers like in drupal_deliver_html_page()
+    global $language;
+    if (is_null(drupal_get_http_header('Content-Type'))) {
+      drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+    }
+    drupal_add_http_header('Content-Language', $language->language);
+
+    // Render the page as a full html string
+    $full_html_unprocessed = drupal_render_page($page_callback_result);
+
+    // First check the config if full html processing is enabled, if not then don't process the html
+    if (!variable_get('amp_library_process_full_html', false)) {
+      $final_html =  $full_html_unprocessed;
+    } else {
+      // Setup of AMP conversion
+      $amp = _amp_create_amp_converter();
+      $options = array('scope' => Scope::HTML_SCOPE);
+      if (variable_get('amp_library_process_statistics', false)) {
+        $options += array('add_stats_html_comment' => true);
+      }
+      $amp->loadHtml($full_html_unprocessed, $options);
+
+      // Get AMP converted html
+      $full_html_processed = $amp->convertToAmpHtml();
+
+      // Add warnings to watchdog if enabled
+      $request_uri = url(current_path(), array('absolute' => true));
+      $heading = "<h3>AMP PHP Library messages for $request_uri</h3>" . PHP_EOL;
+      $heading .= 'To disable these notices goto <a href="/admin/config/content/amp">AMP configuration</a> and uncheck '
+          . '<em>Debugging: Add a notice in the Drupal log...</em>  in the AMP PHP Library Configuration fieldset' . PHP_EOL;
+      if (variable_get('amp_library_process_full_html_warnings', false)) {
+        // Add any warnings that were generated
+        watchdog('amp', "$heading <pre>" . $amp->warningsHumanHtml() . '</pre>');
+      }
+
+      $final_html = $full_html_processed;
+    }
+
+    // Output html to browser
+    print $final_html;
+
+    // Cleanup
+    drupal_page_footer();
+  }
+}
+
+/**
+ * Implements hook_page_delivery_callback_alter().
+ *
+ * Allows our custom page callback to be used
+ */
+function amp_page_delivery_callback_alter(&$deliver_callback) {
+  if (amp_is_amp_request()) {
+    $deliver_callback = 'amp_deliver_html_page';
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function amp_node_delete($node) {
+  if (in_array($node->type, amp_get_enabled_types())) {
+    // We don't need the amp table for this node if it gets removed.
+    amp_db_remove($node->nid);
+    amp_clear_cache($node->nid);
+  }
+}
+
+/**
+ * Clear cache with id $id
+ *
+ * @param $id
+ *   ID of the cache to clear.
+ */
+function amp_clear_cache($id) {
+  // Clear bins as we have fresh data.
+  cache_clear_all('amp:node_enabled:' . $id, 'cache');
+}
+
+/**
+ * Get if the node is enabled.
+ *
+ * @param $node_id
+ *   Node id to check.
+ *
+ * @return bool
+ *   TRUE if enabled, FALSE otherwise.
+ */
+function amp_node_is_enabled($node_id, $cache_override = FALSE) {
+  // Setup a cache ID
+  $cid = 'amp:node_enabled:' . $node_id;
+
+  // If a cached entry exists, return it
+  if (($cache = cache_get($cid, 'cache')) && $cache_override != TRUE) {
+    $is_enabled = $cache->data;
+  }
+  else {
+    $is_enabled = amp_db_is_node_enabled($node_id);
+    // Cache the result.
+    cache_set($cid, $is_enabled, 'cache');
+  }
+
+  return $is_enabled;
+}
+
+/**
+ * Implements hook_html_head_alter().
+ */
+function amp_html_head_alter(&$head_elements) {
+  // Make canonical links absolute for AMP content.
+  if (amp_is_amp_request()) {
+    foreach ($head_elements as $key => &$tag) {
+      if (strpos($key, 'drupal_add_html_head_link:canonical:') === 0) {
+        if (isset($tag['#attributes']['href'])) {
+          $amphtml_url = $tag['#attributes']['href'];
+          // Double check that the URL is relative.
+          if ($amphtml_url == drupal_get_normal_path($amphtml_url)) {
+            $absolute_url = url($amphtml_url, array('absolute' => TRUE));
+            $tag['#attributes']['href'] = $absolute_url;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_image_default_styles().
+ */
+function amp_image_default_styles() {
+  $styles = array();
+
+  $styles['amp_metadata_content_image_min_696px_wide'] = array(
+    'label' => 'AMP Metadata: Content image (696px wide)',
+    'effects' => array(
+      array(
+        'name' => 'image_scale',
+        'data' => array(
+          'width' => 696,
+          'height' => NULL,
+          'upscale' => 1,
+        ),
+        'weight' => 0,
+      ),
+    ),
+  );
+
+  $styles['amp_metadata_logo_600x60'] = array(
+    'label' => 'AMP Metadata: Logo (600x60)',
+    'effects' => array(
+      array(
+        'name' => 'image_scale',
+        'data' => array(
+          'width' => 600,
+          'height' => 60,
+          'upscale' => 0,
+        ),
+        'weight' => 0,
+      ),
+    ),
+  );
+
+  return $styles;
+}
+
+/**
+ * Helper function to return information about metadata node type fields.
+ *
+ * @return array
+ */
+function _amp_get_metadata_type_fields() {
+
+  return array(
+    'schemaType' => array('value' => 'NewsArticle', 'type' => 'schema'),
+    'headline' => array('value' => '[node:title]', 'type' => 'text'),
+    'datePublished' => array('value' => '[node:created]', 'type' => 'date'),
+    'dateModified' => array('value' => '[node:changed]', 'type' => 'date'),
+    'description' => array('value' => '[node:summary]', 'type' => 'text'),
+    'author' => array('value' => '[node:author:name]', 'type' => 'Person'),
+    'image' => array('value' => '', 'type' => 'ImageObject'),
+    'imageStyle' => array('value' => '', 'type' => 'ImageStyle'),
+  );
+}
+
+/**
+ * Gets image information.
+ *
+ * @param string $image_url
+ *   The absolute URL of the image. URL should include 'http'.
+ * @param string $image_uri
+ *   The URI of the image. URI should begin with 'public://'.
+ * @param string $image_style_id
+ *   The optional ID of the image style.
+ *
+ * @return array
+ *   The array containing information about the image. Return an empty array
+ *   if there is a problem getting information about the image. Otherwise the
+ *   image inforation array includes the following keys:
+ *   - url
+ *   - width
+ *   - height
+ */
+function _amp_get_image_information($image_url, $image_uri, $image_style_id) {
+  $image_width = '';
+  $image_height = '';
+
+  if (!empty($image_uri) && FALSE !== image_get_info($image_uri)) {
+    $image_info = image_get_info($image_uri);
+    $image_dimensions = array(
+      'width' => $image_info['width'],
+      'height' => $image_info['height'],
+    );
+
+    if (!empty($image_style_id)) {
+      $image_url = image_style_url($image_style_id, $image_uri);
+      image_style_transform_dimensions($image_style_id, $image_dimensions);
+    }
+
+    $image_width = $image_dimensions['width'];
+    $image_height = $image_dimensions['height'];
+  }
+
+  if (!empty($image_url) && !empty($image_width) & !empty($image_height)) {
+    return array(
+      'url' => $image_url,
+      'width'=> $image_width,
+      'height' => $image_height,
+    );
+  }
+  else {
+    return array();
+  }
+}
+
+/**
+ * Implements hook_ctools_render_alter().
+ */
+function amp_ctools_render_alter($info, $page, $context) {
+  if (!$page || 'node_view' != $context['task']['name']) {
+    return;
+  }
+
+  // Show amphtml links on AMP-enabled nodes (handled by page manager),
+  // so search engines can find AMP.
+  foreach ($context['contexts'] as $ctools_context) {
+    if (in_array('node', $ctools_context->type) && !empty($ctools_context->data) && in_array($ctools_context->data->type, amp_get_enabled_types())) {
+        $uri = entity_uri('node', $ctools_context->data);
+        $uri['options']['query']['amp'] = NULL;
+        $uri['options']['absolute'] = TRUE;
+        drupal_add_html_head_link(array('rel' => 'amphtml', 'href' => url($uri['path'], $uri['options'])), TRUE);
+        break;
+    }
+  }
+}

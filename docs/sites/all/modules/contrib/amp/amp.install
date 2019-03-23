@@ -1,0 +1,124 @@
+<?php
+
+/**
+ * @file
+ * Contains amp.install.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function amp_requirements($phase) {
+  $requirements = array();
+  if ($phase == 'runtime') {
+    if (!class_exists('\Lullabot\AMP\AMP')) {
+      $requirements['amp_library'] = array(
+        'title' => t('AMP'),
+        'value' => t('Not available'),
+        'description' => t('The AMP module requires the PHP <a href="@library">AMP library</a>. Install using <a href="@composer_manager">composer manager</a>',
+            array('@library' => 'https://github.com/Lullabot/amp-library', '@composer_manager' => 'https://www.drupal.org/project/composer_manager')),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    if (!module_exists('token')) {
+      $requirements['amp_token'] = array(
+        'title' => t('Token module required for AMP'),
+        'value' => t('Not installed'),
+        'description' => t('The AMP module requires the <a href="@module">Token</a> module as a dependency. Please download and install Token to prevent errors with AMP.', array('@module' => 'https://www.drupal.org/project/token')),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    if (!module_exists('ctools')) {
+      $requirements['amp_ctools'] = array(
+        'title' => t('ctools module required for AMP'),
+        'value' => t('Not installed'),
+        'description' => t('The AMP module requires the <a href="@module">ctools</a> module as a dependency. Please download and install ctools to prevent errors with AMP.', array('@module' => 'https://www.drupal.org/project/ctools')),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    $themes = list_themes();
+    if (empty($themes['amptheme']) || empty($themes['amptheme']->status)) {
+      $requirements['amptheme'] = array(
+        'title' => t('AMP Base Theme'),
+        'value' => t('Not installed'),
+        'description' => t('The AMP module requires the <a href="@theme">AMP Base Theme</a> to be installed.', array('@theme' => 'https://www.drupal.org/project/amptheme')),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install.
+ *
+ * Add new table for unpublished AMP nodes.
+ */
+function amp_schema() {
+  $schema['amp_node'] = array(
+    'description' => 'Stores preferences for amp nodes.',
+    'primary key' => array('aid'),
+    'fields' => array(
+      'aid' => array(
+        'description' => 'The {amp}.id of the amp node.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        'description' => 'Boolean indicating whether the node is AMP enabled by default.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+      ),
+    ),
+    'indexes' => array(
+      'aid' => array('aid'),
+      'status' => array('status'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function amp_uninstall() {
+  // Delete variables.
+  variable_del('amp_theme');
+  variable_del('amp_google_adsense_id');
+  variable_del('amp_google_doubleclick_id');
+  variable_del('amp_pixel');
+  variable_del('amp_pixel_domain_name');
+  variable_del('amp_pixel_query_string');
+  variable_del('amp_pixel_random_number');
+  variable_del('amp_library_warnings_display');
+  variable_del('amp_library_process_full_html');
+  variable_del('amp_library_process_statistics');
+  variable_del('amp_library_process_full_html_warnings');
+  variable_del('amp_library_warnings_display');
+  variable_del('amp_metadata_organization_name');
+  variable_del('amp_metadata_organization_logo');
+  variable_del('amp_metadata_organization_logo_image_style_id');
+}
+
+/**
+ * Enable submodule amp_analytics.
+ */
+function amp_update_7001() {
+  // For backwards compatibility since the code has been moved to a submodule.
+  module_enable(array('amp_analytics'));
+}
+
+/**
+ * Add new table to track unpublished AMP nodes.
+ */
+function amp_update_7002() {
+  if (!db_table_exists('amp_node')) {
+    drupal_install_schema('amp');
+  }
+}

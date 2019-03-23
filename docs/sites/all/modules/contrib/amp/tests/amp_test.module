@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * @file
+ * Contains amp_test.module.
+ */
+
+// This is a little trick to make drupal CI work without composer manager.
+// See https://www.drupal.org/node/2597778#comment-11838528
+require_once DRUPAL_ROOT . '/vendor/autoload.php';
