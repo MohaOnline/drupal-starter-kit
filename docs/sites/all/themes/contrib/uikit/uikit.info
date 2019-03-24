@@ -1,0 +1,39 @@
+name = UIkit
+description = A lightweight frontend framework with a comprehensive collection of HTML, CSS, and JS components.
+core = 7.x
+
+stylesheets[all][] = css/overrides.css
+scripts[] = js/overrides.js
+
+regions[header] = 'Page heading'
+regions[highlighted] = 'Highlighted'
+regions[help] = 'Help'
+regions[content] = 'Content'
+regions[sidebar_first] = 'Sidebar first'
+regions[sidebar_second] = 'Sidebar second'
+regions[footer] = 'Footer'
+
+settings[meta_charset] = 'utf-8'
+settings[x_ua_compatible] = 0
+settings[viewport_device_width_ratio] = 'device-width'
+settings[viewport_device_height_ratio] = 'device-height'
+settings[viewport_initial_scale] = 1
+settings[viewport_maximum_scale] = 0
+settings[viewport_minimum_scale] = 0
+settings[viewport_user_scalable] = 1
+settings[standard_sidebar_positions] = 'holy-grail'
+settings[tablet_sidebar_positions] = 'sidebar-left-stacked'
+settings[mobile_sidebar_positions] = 'sidebars-stacked'
+settings[page_container] = 1
+settings[page_margin] = 'uk-margin'
+settings[primary_tasks_style] = 'uk-tab'
+settings[secondary_tasks_style] = 'uk-subnav'
+settings[display_breadcrumbs] = 1
+settings[breakcrumbs_home_link] = 1
+settings[breakcrumbs_current_page] = 0
+
+; Information added by Drupal.org packaging script on 2019-01-14
+version = "7.x-3.4"
+core = "7.x"
+project = "uikit"
+datestamp = "1547480293"

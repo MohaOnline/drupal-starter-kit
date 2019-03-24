@@ -1,0 +1,19 @@
+{
+  "name": "drupal/uikit",
+  "description": "A lightweight frontend framework with a comprehensive collection of HTML, CSS, and JS components.",
+  "type": "drupal-theme",
+  "license": "GPL-2.0",
+  "homepage": "https://www.drupal.org/project/uikit",
+  "authors": [
+    {
+      "name": "Richard Buchanan (richard-buchanan)",
+      "homepage": "https://www.drupal.org/u/richard-buchanan",
+      "role": "Maintainer"
+    }
+  ],
+  "support": {
+    "docs": "http://uikit-drupal.com",
+    "issues": "https://www.drupal.org/project/issues/uikit",
+    "source": "http://cgit.drupalcode.org/uikit"
+  }
+}

@@ -1,0 +1,430 @@
+/**
+ * @file
+ * Drupal style overrides and custom styles.
+ *
+ * Some Drupal core modules provide styling to elements which disrupt the
+ * consistent styling of UIkit. This stylesheet makes minor changes to Drupal
+ * core styles to rememdy that.
+ *
+ * It also provides additional custom styles UIkit does not provide by default,
+ * such as source ordering based on device size.
+ */
+
+/**
+ * `uk-push-*` and `uk-pull-*`
+ *
+ * UIkit does not currently support source ordering based on device size. These
+ * added utility classes add that support in.
+ */
+[class*='uk-push'],
+[class*='uk-pull'],
+[class*='uk-push-pull'] {
+  position: relative;
+}
+/* Mobile source ordering. */
+@media (min-width: 640px) {
+  .uk-push-pull-\@s {
+    left: 0;
+  }
+  .uk-push-1-2\@s,
+  .uk-push-2-4\@s,
+  .uk-push-3-6\@s,
+  .uk-push-5-10\@s {
+    left: 50%;
+  }
+  .uk-push-1-3\@s,
+  .uk-push-2-6\@s {
+    left: 33.333%;
+  }
+  .uk-push-2-3\@s,
+  .uk-push-4-6\@s {
+    left: 66.666%;
+  }
+  .uk-push-1-4\@s {
+    left: 25%;
+  }
+  .uk-push-3-4\@s {
+    left: 75%;
+  }
+  .uk-push-1-5\@s,
+  .uk-push-2-10\@s {
+    left: 20%;
+  }
+  .uk-push-2-5\@s,
+  .uk-push-4-10\@s {
+    left: 40%;
+  }
+  .uk-push-3-5\@s,
+  .uk-push-6-10\@s {
+    left: 60%;
+  }
+  .uk-push-4-5\@s,
+  .uk-push-8-10\@s {
+    left: 80%;
+  }
+  .uk-push-1-6\@s {
+    left: 16.666%;
+  }
+  .uk-push-5-6\@s {
+    left: 83.333%;
+  }
+  .uk-push-1-10\@s {
+    left: 10%;
+  }
+  .uk-push-3-10\@s {
+    left: 30%;
+  }
+  .uk-push-7-10\@s {
+    left: 70%;
+  }
+  .uk-push-9-10\@s {
+    left: 90%;
+  }
+  .uk-pull-1-2\@s,
+  .uk-pull-2-4\@s,
+  .uk-pull-3-6\@s,
+  .uk-pull-5-10\@s {
+    left: -50%;
+  }
+  .uk-pull-1-3\@s,
+  .uk-pull-2-6\@s {
+    left: -33.333%;
+  }
+  .uk-pull-2-3\@s,
+  .uk-pull-4-6\@s {
+    left: -66.666%;
+  }
+  .uk-pull-1-4\@s {
+    left: -25%;
+  }
+  .uk-pull-3-4\@s {
+    left: -75%;
+  }
+  .uk-pull-1-5\@s,
+  .uk-pull-2-10\@s {
+    left: -20%;
+  }
+  .uk-pull-2-5\@s,
+  .uk-pull-4-10\@s {
+    left: -40%;
+  }
+  .uk-pull-3-5\@s,
+  .uk-pull-6-10\@s {
+    left: -60%;
+  }
+  .uk-pull-4-5\@s,
+  .uk-pull-8-10\@s {
+    left: -80%;
+  }
+  .uk-pull-1-6\@s {
+    left: -16.666%;
+  }
+  .uk-pull-5-6\@s {
+    left: -83.333%;
+  }
+  .uk-pull-1-10\@s {
+    left: -10%;
+  }
+  .uk-pull-3-10\@s {
+    left: -30%;
+  }
+  .uk-pull-7-10\@s {
+    left: -70%;
+  }
+  .uk-pull-9-10\@s {
+    left: -90%;
+  }
+}
+/* Tablet source ordering. */
+@media (min-width: 960px) {
+  .uk-push-pull-\@m {
+    left: 0;
+  }
+  .uk-push-1-2\@m,
+  .uk-push-2-4\@m,
+  .uk-push-3-6\@m,
+  .uk-push-5-10\@m {
+    left: 50%;
+  }
+  .uk-push-1-3\@m,
+  .uk-push-2-6\@m {
+    left: 33.333%;
+  }
+  .uk-push-2-3\@m,
+  .uk-push-4-6\@m {
+    left: 66.666%;
+  }
+  .uk-push-1-4\@m {
+    left: 25%;
+  }
+  .uk-push-3-4\@m {
+    left: 75%;
+  }
+  .uk-push-1-5\@m,
+  .uk-push-2-10\@m {
+    left: 20%;
+  }
+  .uk-push-2-5\@m,
+  .uk-push-4-10\@m {
+    left: 40%;
+  }
+  .uk-push-3-5\@m,
+  .uk-push-6-10\@m {
+    left: 60%;
+  }
+  .uk-push-4-5\@m,
+  .uk-push-8-10\@m {
+    left: 80%;
+  }
+  .uk-push-1-6\@m {
+    left: 16.666%;
+  }
+  .uk-push-5-6\@m {
+    left: 83.333%;
+  }
+  .uk-push-1-10\@m {
+    left: 10%;
+  }
+  .uk-push-3-10\@m {
+    left: 30%;
+  }
+  .uk-push-7-10\@m {
+    left: 70%;
+  }
+  .uk-push-9-10\@m {
+    left: 90%;
+  }
+  .uk-pull-1-2\@m,
+  .uk-pull-2-4\@m,
+  .uk-pull-3-6\@m,
+  .uk-pull-5-10\@m {
+    left: -50%;
+  }
+  .uk-pull-1-3\@m,
+  .uk-pull-2-6\@m {
+    left: -33.333%;
+  }
+  .uk-pull-2-3\@m,
+  .uk-pull-4-6\@m {
+    left: -66.666%;
+  }
+  .uk-pull-1-4\@m {
+    left: -25%;
+  }
+  .uk-pull-3-4\@m {
+    left: -75%;
+  }
+  .uk-pull-1-5\@m,
+  .uk-pull-2-10\@m {
+    left: -20%;
+  }
+  .uk-pull-2-5\@m,
+  .uk-pull-4-10\@m {
+    left: -40%;
+  }
+  .uk-pull-3-5\@m,
+  .uk-pull-6-10\@m {
+    left: -60%;
+  }
+  .uk-pull-4-5\@m,
+  .uk-pull-8-10\@m {
+    left: -80%;
+  }
+  .uk-pull-1-6\@m {
+    left: -16.666%;
+  }
+  .uk-pull-5-6\@m {
+    left: -83.333%;
+  }
+  .uk-pull-1-10\@m {
+    left: -10%;
+  }
+  .uk-pull-3-10\@m {
+    left: -30%;
+  }
+  .uk-pull-7-10\@m {
+    left: -70%;
+  }
+  .uk-pull-9-10\@m {
+    left: -90%;
+  }
+}
+/* Standard source ordering. */
+@media (min-width: 1200px) {
+  .uk-push-pull-\@l {
+    left: 0;
+  }
+  .uk-push-1-2\@l,
+  .uk-push-2-4\@l,
+  .uk-push-3-6\@l,
+  .uk-push-5-10\@l {
+    left: 50%;
+  }
+  .uk-push-1-3\@l,
+  .uk-push-2-6\@l {
+    left: 33.333%;
+  }
+  .uk-push-2-3\@l,
+  .uk-push-4-6\@l {
+    left: 66.666%;
+  }
+  .uk-push-1-4\@l {
+    left: 25%;
+  }
+  .uk-push-3-4\@l {
+    left: 75%;
+  }
+  .uk-push-1-5\@l,
+  .uk-push-2-10\@l {
+    left: 20%;
+  }
+  .uk-push-2-5\@l,
+  .uk-push-4-10\@l {
+    left: 40%;
+  }
+  .uk-push-3-5\@l,
+  .uk-push-6-10\@l {
+    left: 60%;
+  }
+  .uk-push-4-5\@l,
+  .uk-push-8-10\@l {
+    left: 80%;
+  }
+  .uk-push-1-6\@l {
+    left: 16.666%;
+  }
+  .uk-push-5-6\@l {
+    left: 83.333%;
+  }
+  .uk-push-1-10\@l {
+    left: 10%;
+  }
+  .uk-push-3-10\@l {
+    left: 30%;
+  }
+  .uk-push-7-10\@l {
+    left: 70%;
+  }
+  .uk-push-9-10\@l {
+    left: 90%;
+  }
+  .uk-pull-1-2\@l,
+  .uk-pull-2-4\@l,
+  .uk-pull-3-6\@l,
+  .uk-pull-5-10\@l {
+    left: -50%;
+  }
+  .uk-pull-1-3\@l,
+  .uk-pull-2-6\@l {
+    left: -33.333%;
+  }
+  .uk-pull-2-3\@l,
+  .uk-pull-4-6\@l {
+    left: -66.666%;
+  }
+  .uk-pull-1-4\@l {
+    left: -25%;
+  }
+  .uk-pull-3-4\@l {
+    left: -75%;
+  }
+  .uk-pull-1-5\@l,
+  .uk-pull-2-10\@l {
+    left: -20%;
+  }
+  .uk-pull-2-5\@l,
+  .uk-pull-4-10\@l {
+    left: -40%;
+  }
+  .uk-pull-3-5\@l,
+  .uk-pull-6-10\@l {
+    left: -60%;
+  }
+  .uk-pull-4-5\@l,
+  .uk-pull-8-10\@l {
+    left: -80%;
+  }
+  .uk-pull-1-6\@l {
+    left: -16.666%;
+  }
+  .uk-pull-5-6\@l {
+    left: -83.333%;
+  }
+  .uk-pull-1-10\@l {
+    left: -10%;
+  }
+  .uk-pull-3-10\@l {
+    left: -30%;
+  }
+  .uk-pull-7-10\@l {
+    left: -70%;
+  }
+  .uk-pull-9-10\@l {
+    left: -90%;
+  }
+}
+
+/**
+ * Forms.
+ */
+sup.form-required {
+  top: .1em;
+  font-size: 20px;
+}
+
+/**
+ * Navs
+ *
+ * 1. By default UIkit does not support 3rd level menu items in navbars, and 2nd level headers and dividers in offcanvas
+ *    menus, so we hide them. We keep them in the DOM so themers can override these selectors if they wish to.
+ * 2. Stacked offcanvas menus will show too much border and box-shadow, so we remove them so stacked menus blend well.
+ */
+.uk-dropdown .uk-nav ul,
+.uk-nav-default .uk-nav-sub .uk-nav-header,
+.uk-nav-default .uk-nav-sub .uk-nav-divider {
+  display: none; /* 1 */
+}
+.uk-nav-defaults+.uk-nav-default>li:first-of-type>a {
+  border-top: none;
+  box-shadow: none;
+}
+
+/**
+ * Table filter tips
+ */
+.table-filter-tips td.get {
+  white-space: nowrap;
+}
+.table-filter-tips td.type>code {
+  display: block;
+  font: 12px/18px Consolas, monospace, serif;
+  -moz-tab-size: 4;
+  tab-size: 4;
+  overflow: auto;
+  white-space: normal;
+  border: 1px solid #e5e5e5;
+  border-radius: 3px;
+  padding: 10px;
+}
+
+/**
+ * Node links
+ */
+.node-links .uk-subnav > * > * {
+  color: #07d;
+}
+
+/**
+ * Alerts
+ */
+.uk-alert > ul {
+  margin-top: 0;
+}
+
+/**
+ * Search form
+ */
+#search-form #edit-basic #edit-submit,
+#search-form #edit-advanced #edit-submit--2 {
+  margin-top: 15px;
+}

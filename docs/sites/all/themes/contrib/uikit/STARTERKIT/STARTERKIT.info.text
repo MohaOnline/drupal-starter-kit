@@ -1,0 +1,7 @@
+name = STARTERKIT
+description = 'UIkit Sub-theme'
+core = 7.x
+base theme = uikit
+
+stylesheets[all][] = css/STARTERKIT.css
+scripts[] = js/STARTERKIT.js
