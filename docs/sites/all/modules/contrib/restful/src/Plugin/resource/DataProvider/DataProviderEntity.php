@@ -346,6 +346,7 @@ class DataProviderEntity extends DataProvider implements DataProviderEntityInter
    * {@inheritdoc}
    */
   public function entityValidate(\EntityDrupalWrapper $wrapper) {
+    $this->validateFields($wrapper);
     if (!module_exists('entity_validator')) {
       // Entity validator doesn't exist.
       return;
@@ -409,6 +410,23 @@ class DataProviderEntity extends DataProvider implements DataProviderEntityInter
 
     // Throw the exception.
     throw $exception;
+  }
+
+  /**
+   * Validates an entity's fields before they are saved.
+   *
+   * @param \EntityDrupalWrapper $wrapper
+   *   A metadata wrapper for the entity.
+   *
+   * @throws \Drupal\restful\Exception\RestfulException
+   */
+  protected function validateFields($wrapper) {
+    try {
+      field_attach_validate($wrapper->type(), $wrapper->value());
+    }
+    catch (\FieldValidationException $e) {
+      throw new UnprocessableEntityException($e->getMessage());
+    }
   }
 
   /**
