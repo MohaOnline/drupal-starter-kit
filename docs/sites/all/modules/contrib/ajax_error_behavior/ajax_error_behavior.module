@@ -15,6 +15,7 @@ function ajax_error_behavior_menu() {
     'description' => 'Save AJAX error to the watchdog.',
     'access callback' => TRUE,
     'page callback' => 'ajax_error_behavior_log',
+    'type' => MENU_CALLBACK,
   );
 
   return $items;

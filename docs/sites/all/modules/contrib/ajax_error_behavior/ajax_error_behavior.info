@@ -5,9 +5,8 @@ core = 7.x
 scripts[] = ajax_error_behavior.js
 configure = admin/config/development/logging
 
-; Information added by Drupal.org packaging script on 2016-10-03
-version = "7.x-1.1"
+; Information added by Drupal.org packaging script on 2019-04-01
+version = "7.x-1.2"
 core = "7.x"
 project = "ajax_error_behavior"
-datestamp = "1475535543"
-
+datestamp = "1554119893"
