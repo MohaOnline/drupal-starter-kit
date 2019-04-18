@@ -2,7 +2,7 @@
 /**
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2019, Alexey Sukhotin. All rights reserved.
  */
 
 define('ELFINDER_POPUP_WIDTH', 700);
@@ -501,8 +501,19 @@ function elfinder_get_user_profile() {
           $first_profile = $profile;
         } else if (isset($profile->settings['volume'])) {
           /* Adding all available to current user volumes from other profiles */
+
+          $found = FALSE;
+
           foreach ($profile->settings['volume'] as $volume) {
-            $first_profile->settings['volume'][] = $volume;
+            foreach ($first_profile->settings['volume'] as $fp_volume) {
+              if ($volume['path'] == $fp_volume['path'] && $volume['label'] == $fp_volume['label']) {
+                $found = TRUE;
+              }
+            }
+
+            if (!$found) {
+              $first_profile->settings['volume'][] = $volume;
+            }
           }
         }
       }
@@ -643,16 +654,9 @@ function elfinder_filesystemconnector($mode = 'default') {
         'alias' => $volume['label'],
       );
 
-      $is_subdir = FALSE;
-
       $rootpath = '';
 
-
       if (isset($volume['path']) && substr($volume['path'], 0, 1) != DIRECTORY_SEPARATOR) {
-        $is_subdir = TRUE;
-      }
-
-      if ($is_subdir) {
 
         $root['driver'] = 'Drupal';
 
@@ -667,26 +671,27 @@ function elfinder_filesystemconnector($mode = 'default') {
         }
 
         $rootpath = $volume['path'];
+        $rootpath = elfinder_parse_path_tokens($rootpath);
+        $relpath = '';
 
         if ($pos = strpos($rootpath, '://')) {
-          $rootpath = substr($rootpath, $pos + 3);
+          $relpath = substr($rootpath, $pos + 3);
+        } else {
+          $relpath = $rootpath;
         }
 
         $streamWrapper = file_stream_wrapper_get_instance_by_scheme($scheme);
+        $volpath = '';
 
         if (is_object($streamWrapper)) {
+          $streamWrapper->setUri($streamWrapper->getUri() . $relpath);
           $volpath = $streamWrapper->realpath();
           $volurl = $mode == 'relative' ? base_path() . $streamWrapper->getDirectoryPath() : $streamWrapper->getExternalUrl();
           $url = isset($volume['url']) && $volume['url'] != '' ? elfinder_parse_path_tokens($volume['url']) : $volurl;
         }
-        $rootpath = elfinder_parse_path_tokens($rootpath);
 
-        $trimmedpath = ltrim($rootpath, './');
-
-        $rootpath = $volpath . DIRECTORY_SEPARATOR . $trimmedpath;
+        $rootpath = $volpath;
         $url = rtrim($url, '/');
-
-        //$url .= "/$trimmedpath";
 
         if (!file_prepare_directory($rootpath, FILE_CREATE_DIRECTORY)) {
           drupal_set_message(t('Error. Cannot initialize directory %dir', array('%dir' => $rootpath)), 'error');
@@ -1464,4 +1469,5 @@ function elfinder_get_installed_version() {
     return 'unknown';
   }
 }
+
 

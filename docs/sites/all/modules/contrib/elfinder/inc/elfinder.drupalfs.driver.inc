@@ -408,7 +408,9 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   }
 
   public static function stat_corrector(&$stat, $path, $statOwner, $volumeDriveInstance) {
-    $stat['owner'] = $volumeDriveInstance->owner($volumeDriveInstance->encode($path));
+    if (method_exists($volumeDriveInstance, 'owner')) {
+      $stat['owner'] = $volumeDriveInstance->owner($volumeDriveInstance->encode($path));
+    }
   }
 
   public function desc($target, $newdesc = NULL) {
