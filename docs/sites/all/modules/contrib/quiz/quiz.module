@@ -3356,9 +3356,22 @@ function _quiz_show_finish_button($quiz) {
   $quiz_result = quiz_result_load($_SESSION['quiz'][$quiz->nid]['result_id']);
   $current = $_SESSION['quiz'][$quiz->nid]['current'];
   $layout = $quiz_result->getLayout();
+
+  // Get a list of all the node types in bulk, because the question type isn't
+  // provided by getLayout(). We don't use to use VID here, since types never
+  // change.
+  $nids = array();
   foreach ($layout as $idx => $question) {
-    $question_node = node_load($question['nid'], $question['vid']);
-    if ($question_node->type == 'quiz_page') {
+    $nids[] = $question['nid'];
+  }
+  $question_node_types = db_select('node', 'n')
+    ->fields('n', array('nid', 'type'))
+    ->condition('nid', $nids)
+    ->execute()
+    ->fetchAllAssoc('nid');
+
+  foreach ($layout as $idx => $question) {
+    if ($question_node_types[$question['nid']]->type == 'quiz_page') {
       if ($current == $idx) {
         // Found a page that we are on.
         $in_page = TRUE;

@@ -374,6 +374,7 @@ function quiz_schema() {
       'child_id' => array('child_vid'),
       'parent_nid' => array('parent_nid'),
       'child_nid' => array('child_nid'),
+      'qnr_pid' => array('qnr_pid'),
     ),
   );
 
@@ -1353,5 +1354,14 @@ function quiz_update_7523() {
 function quiz_update_7524() {
   if (db_field_exists('quiz_node_properties', 'tid')) {
     db_drop_field('quiz_node_properties', 'tid');
+  }
+}
+
+/**
+ * Add index to qnr_pid.
+ */
+function quiz_update_7525() {
+  if (!db_index_exists('quiz_node_relationship', 'qnr_pid')) {
+    db_add_index('quiz_node_relationship', 'qnr_pid', array('qnr_pid'));
   }
 }

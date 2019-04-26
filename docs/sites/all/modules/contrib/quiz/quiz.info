@@ -42,8 +42,8 @@ files[] = tests/QuizTestCase.test
 files[] = tests/QuizTimerTestCase.test
 files[] = tests/QuizUpgradeTestCase.test
 
-; Information added by Drupal.org packaging script on 2019-01-03
-version = "7.x-5.4"
+; Information added by Drupal.org packaging script on 2019-04-25
+version = "7.x-5.5"
 core = "7.x"
 project = "quiz"
-datestamp = "1546535293"
+datestamp = "1556201287"
