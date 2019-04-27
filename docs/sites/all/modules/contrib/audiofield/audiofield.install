@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall functionality for Audio Field module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function audiofield_install() {
+  // Set default audio player.
+  variable_set('audiofield_audioplayer', 'html5');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function audiofield_uninstall() {
+  db_delete('variable')
+    ->condition('name', 'audiofield_%%', 'LIKE')
+    ->execute();
+}
+
+/**
+ * Update settings to use the new field displays.
+ */
+function audiofield_update_7500() {
+  // Find all of the fields which are using the audio display types.
+  $query = db_select('field_config_instance', 'fci');
+  $query->innerJoin('field_config', 'fc', 'fc.id = fci.field_id');
+  $query->condition('fc.type', 'file', '=');
+  $query->condition('fci.deleted', '0', '=');
+  $query->fields('fci', array('id', 'data'));
+  $results = $query->execute();
+  foreach ($results as $row) {
+    $data = unserialize($row->data);
+
+    // Check each display type.
+    foreach ($data['display'] as &$display) {
+      // If this is an old audiofield type, we need to update it.
+      if (in_array($display['type'], array(
+        'audiofield_embedded',
+        'audiofield_nodownload',
+        'audiofield_details',
+      ))) {
+        // Update the display file details.
+        $display['settings']['display_file_details'] = 0;
+        if ($display['type'] == 'audiofield_details') {
+          $display['settings']['display_file_details'] = 1;
+        }
+        // Update the display file download.
+        $display['settings']['download_link'] = 0;
+        if ($display['type'] == 'audiofield_embedded') {
+          $display['settings']['download_link'] = 1;
+        }
+        // Update to the new display type.
+        $display['type'] = 'audiofield_player';
+        // Set the correct audio player settings.
+        foreach (array(
+          'mp3',
+          'mp4',
+          'ogg',
+          'wav',
+          'opus',
+          'webm',
+          'flac',
+          'oga',
+        ) as $player_type) {
+          $old_setting = variable_get('audiofield_audioplayer_' . $player_type);
+          if (!empty($old_setting)) {
+            $display['settings']['audiofield_audioplayer_' . $player_type] = $old_setting;
+          }
+        }
+        // Update the detail settings.
+        $display['settings']['audiofield_detail'] = variable_get('audiofield_detail');
+      }
+    }
+
+    // Reserialize data for storage.
+    $data = serialize($data);
+    // Update the field configuration.
+    db_update('field_config_instance')
+      ->fields(array(
+        'data' => $data,
+      ))
+      ->condition('id', $row->id, '=')
+      ->execute();
+  }
+  // Reset the audiofield_details to only hold the ffprobe path.
+  $old_details_var = variable_get('audiofield_detail');
+  foreach ($old_details_var as $key => $val) {
+    if ($key != 'ffprobe_path') {
+      unset($old_details_var[$key]);
+    }
+  }
+  variable_set('audiofield_detail', $old_details_var);
+  // Delete the old variables.
+  foreach (array('mp3', 'mp4', 'ogg', 'wav', 'opus', 'webm', 'flac', 'oga') as $player_type) {
+    variable_del('audiofield_audioplayer_' . $player_type);
+  }
+}

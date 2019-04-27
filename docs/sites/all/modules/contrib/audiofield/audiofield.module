@@ -1,0 +1,403 @@
+<?php
+
+/**
+ * @file
+ * Audio Field module for displaying audio files as usable players.
+ */
+
+// Load all Field module hooks for Audio.
+module_load_include('inc', 'audiofield', 'audio.field');
+module_load_include('inc', 'audiofield', 'audiofield.players');
+
+/**
+ * Implements hook_menu().
+ */
+function audiofield_menu() {
+  $items['admin/config/media/audiofield'] = array(
+    'title' => 'Audio Field',
+    'description' => 'Configure Audiofield.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('audiofield_admin_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'audiofield.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function audiofield_permission() {
+  return array(
+    'download own audio files' => array(
+      'title' => t('Download Own Audio Files'),
+      'description' => t('Let the users download their own audio files.'),
+    ),
+    'download all audio files' => array(
+      'title' => t('Download All Audio Files'),
+      'description' => t('Let the users download any audio files.'),
+    ),
+  );
+}
+
+/**
+ * Accessible command line tool: ffprobe.
+ */
+function audiofield_accessible_ffprobe($path = '') {
+  if (!$path) {
+    $audiofield_detail = variable_get('audiofield_detail');
+    if (isset($audiofield_detail['ffprobe_path'])) {
+      $path = $audiofield_detail['ffprobe_path'];
+    }
+  }
+  $arg = array('which', ' ', $path, 'ffprobe');
+  if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    $arg[3] = 'ffprobe.exe';
+  }
+  $command = implode('', $arg);
+  exec($command, $output, $result);
+  if ($result == 0 && count($output) == 1) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Accessible Drupal module and tool: getid3.
+ */
+function audiofield_accessible_getid3() {
+  return module_exists('getid3') && getid3_load() && class_exists('getid3');
+}
+
+/**
+ * Implements hook_theme().
+ */
+function audiofield_theme() {
+  // We keep this info in the players file for easier reading.
+  return _audiofield_theme();
+}
+
+/**
+ * FFProbe analyze.
+ */
+function audiofield_ffprobe_analyze($audio_path) {
+  $audiofield_detail = variable_get('audiofield_detail');
+  if (empty($audiofield_detail['ffprobe_path'])) {
+    return FALSE;
+  }
+
+  $file_path = drupal_realpath($audio_path);
+  $command = $audiofield_detail['ffprobe_path'] . 'ffprobe -v quiet -print_format json -show_format -show_streams "' . $file_path . '"';
+  exec($command, $output, $result);
+  if ($result == 0) {
+    $array = json_decode(implode("\n", $output), TRUE);
+    if (isset($array['streams'])) {
+      // Find first audio stream.
+      foreach ($array['streams'] as $s) {
+        if (isset($s['codec_type']) && $s['codec_type'] == 'audio') {
+          $array['_audio'] = $s;
+          break;
+        }
+      }
+    }
+    return $array;
+  }
+  return FALSE;
+}
+
+/**
+ * Get getid3_analyze.
+ */
+function audiofield_getid3_analyze($audio_path) {
+  if (audiofield_accessible_getid3()) {
+    if (!class_exists('getid3')) {
+      drupal_set_message(t('Missing class getid3! Check getid3 module installation.'), 'error', FALSE);
+      return FALSE;
+    }
+    else {
+      $file_path = drupal_realpath($audio_path);
+      $getID3 = getid3_instance();
+      if (!file_exists($file_path)) {
+        return array();
+      }
+      return $getID3->analyze($file_path);
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Get details formater.
+ */
+function audiofield_details_formatter($audio_path, $audiofield_detail) {
+  $details = array(
+    'list' => array(),
+  );
+  // Display filename.
+  switch ($audiofield_detail['filename']) {
+    // Actual filename.
+    case 1:
+      $details['list']['filename'] = t('Filename: @filename', array(
+        '@filename' => drupal_basename($audio_path),
+      ));
+      break;
+
+    // File name (remove extension).
+    case 2:
+      $details['list']['filename'] = t('Filename: @filename', array(
+        '@filename' => pathinfo($audio_path, PATHINFO_FILENAME),
+      ));
+      break;
+
+    // Only extension.
+    case 3:
+      $details['list']['filename'] = t('Extension: @extension', array(
+        '@extension' => pathinfo($audio_path, PATHINFO_EXTENSION),
+      ));
+      break;
+  }
+
+  // File size.
+  if (!empty($audiofield_detail['filesize'])) {
+    $filesize = filesize(drupal_realpath($audio_path));
+    if ($audiofield_detail['filesize'] == '1') {
+      $filesize = format_size($filesize);
+    }
+    $details['list']['filesize'] = t('Filesize: @filesize', array(
+      '@filesize' => $filesize,
+    ));
+  }
+
+  foreach ($audiofield_detail as $key => $val) {
+    if ($val && !in_array($key, array('ffprobe_path', 'filename', 'filesize'))) {
+      $file_info['getid3'] = audiofield_getid3_analyze($audio_path);
+      $file_info['ffprobe'] = audiofield_ffprobe_analyze($audio_path);
+      // Return existing details if we don't have a way to read tags.
+      if (!$file_info) {
+        return $details;
+      }
+      switch ($key) {
+        case 'filename':
+          // Add the filename from the tags if we couldn't load it directly.
+          if (empty($details['list']['filename'])) {
+            $details['list']['filename'] = t('Filename: @filename', array(
+              '@filename' => $file_info['getid3']['filename'],
+            ));
+          }
+          break;
+
+        case 'filesize':
+          // Add the filesize from the tags if we couldn't load it directly.
+          if (empty($details['list']['filesize'])) {
+            $details['list']['filesize'] = t('Filesize: $filesize', array(
+              '@filesize' => ($val == '1' ? format_size($file_info['getid3']['filesize']) : $file_info['getid3']['filesize']),
+            ));
+          }
+          break;
+
+        case 'codec':
+          $codec = '';
+          $codec_long = '';
+          if (!empty($file_info['ffprobe']['_audio']['codec_name'])) {
+            $codec = $file_info['ffprobe']['_audio']['codec_name'];
+            $codec_long = $file_info['ffprobe']['_audio']['codec_long_name'];
+          }
+          elseif (!empty($file_info['getid3']['audio']['codec'])) {
+            $codec = $file_info['getid3']['audio']['codec'] . ' (' . (isset($file_info['getid3']['audio']['encoder_settings']) ? $file_info['getid3']['audio']['encoder_settings'] : @$file_info['getid3']['audio']['dataformat']) . ')';
+            $codec_long = $codec;
+          }
+          $details['list'][] = t('Codec: @codec', array(
+            '@codec' => ($val == '2' ? $codec_long : $codec),
+          ));
+          break;
+
+        case 'length':
+          $length_timeformat = '';
+          $length_sec = '';
+          if (!empty($file_info['ffprobe']['format']['duration'])) {
+            $length_timeformat = gmdate('H:i:s', $file_info['ffprobe']['format']['duration']);
+            if (substr($length_timeformat, 0, 3) == '00:') {
+              $length_timeformat = substr($length_timeformat, 3);
+            }
+            $length_sec = $file_info['ffprobe']['format']['duration'];
+          }
+          elseif (!empty($file_info['getid3']['playtime_seconds'])) {
+            $length_timeformat = $file_info['getid3']['playtime_string'];
+            $length_sec = $file_info['getid3']['playtime_seconds'];
+          }
+          $details['list'][] = t('Length: @length', array(
+            '@length' => ($val == '2' ? round($length_sec, 3) . ' ' . t('seconds') : $length_timeformat),
+          ));
+          break;
+
+        case 'channelmode':
+          $channelmode = '';
+          if (!empty($file_info['ffprobe']['_audio']['channel_layout'])) {
+            $channelmode = $file_info['ffprobe']['_audio']['channel_layout'];
+          }
+          elseif (!empty($file_info['getid3']['audio']['channelmode'])) {
+            $channelmode = $file_info['getid3']['audio']['channelmode'];
+          }
+          $details['list'][] = t('Channel mode: @channelmode', array(
+            '@channelmode' => $channelmode,
+          ));
+          break;
+
+        case 'samplerate':
+          $samplerate = '';
+          if (!empty($file_info['ffprobe']['_audio']['sample_rate'])) {
+            $samplerate = $file_info['ffprobe']['_audio']['sample_rate'];
+          }
+          elseif (!empty($file_info['getid3']['audio']['sample_rate'])) {
+            $samplerate = $file_info['getid3']['audio']['sample_rate'];
+          }
+          $details['list'][] = t('Sample rate: @samplerate Hz', array(
+            '@samplerate' => $samplerate,
+          ));
+          break;
+
+        case 'bitrate':
+          $bitrate = '';
+          if (!empty($file_info['ffprobe']['_audio']['bit_rate'])) {
+            $bitrate = $file_info['ffprobe']['_audio']['bit_rate'];
+          }
+          elseif (!empty($file_info['getid3']['bitrate'])) {
+            $bitrate = $file_info['getid3']['bitrate'];
+          }
+          $details['list'][] = t('Bitrate: @bitrate', array(
+            '@bitrate' => ((substr($val, 0, 1) == 'k') ? substr($bitrate, 0, -3) : $bitrate) . ' ' . $val,
+          ));
+          break;
+
+        case 'tags_id3':
+          $tags = array();
+          if ($val == 'id3') {
+            if (isset($file_info['getid3']['id3v2']['comments'])) {
+              $id3_encoding = $file_info['getid3']['id3v2']['encoding'];
+              $id3 = $file_info['getid3']['id3v2']['comments'];
+            }
+            elseif (isset($file_info['getid3']['id3v1']['comments'])) {
+              $id3_encoding = $file_info['getid3']['id3v1']['encoding'];
+              $id3 = $file_info['getid3']['id3v1']['comments'];
+            }
+            if (!empty($id3)) {
+              foreach ($id3 as $key => $val) {
+                if (is_array($val)) {
+                  if (in_array($id3_encoding, array('ISO-8859-1'))) {
+                    $id3[$key] = utf8_encode(implode('', $val));
+                  }
+                  else {
+                    $id3[$key] = implode('', $val);
+                  }
+                }
+              }
+              $tags[] = '<code class="audiofield_id3">' . json_encode($id3) . '</code>';
+            }
+          }
+          else {
+            $get_tags = explode('-', $val);
+            foreach ($get_tags as $tag) {
+              if (isset($file_info['getid3']['id3v2']['comments'][$tag])) {
+                $tags[$tag] = implode(';', $file_info['getid3']['id3v2']['comments'][$tag]);
+              }
+              elseif (isset($file_info['getid3']['id3v1'][$tag])) {
+                $tags[$tag] = $file_info['getid3']['id3v1'][$tag];
+              }
+            }
+          }
+          $details['list']['tags'] = t('ID3 tags: !tags', array(
+            '!tags' => implode(' - ', $tags),
+          ));
+          break;
+
+        case 'tags_id3_picture':
+          if (isset($file_info['getid3']['id3v2']['APIC'][0]['data'])) {
+            if ($val != 'original') {
+              $img_size = explode('x', $val);
+              $details['img']['attributes'] = array('width' => $img_size[0], 'height' => $img_size[1]);
+            }
+            $src = 'data:' . $file_info['getid3']['id3v2']['APIC'][0]['image_mime'] . ';charset=utf-8;base64,' . base64_encode($file_info['getid3']['id3v2']['APIC'][0]['data']);
+            $details['img']['attributes']['src'] = $src;
+          }
+          break;
+
+        default:
+          $details['list'][] = $key . ': not support';
+          break;
+      }
+    }
+  }
+  return $details;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function audiofield_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+  $instance = $form['#instance'];
+
+  if ($instance['widget']['type'] == 'audiofield_widget' && $form['instance']['settings']['file_extensions']['#default_value'] == 'txt') {
+    $form['instance']['settings']['file_extensions']['#default_value'] = 'mp3';
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Modify the add new field form to change the default formatter.
+ */
+function audiofield_form_field_ui_field_settings_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'audiofield_form_content_field_overview_submit';
+}
+
+/**
+ * Submit handler to set a new field's formatter to "audiofield_embedded".
+ */
+function audiofield_form_content_field_overview_submit(&$form, &$form_state) {
+  $entity_type = 'node';
+  $field_name = $form_state['values']['field']['field_name'];
+  $bundle = $form_state['complete form']['#bundle'];
+  $instance = field_read_instance($entity_type, $field_name, $bundle);
+
+  if ($instance['widget']['module'] == 'audiofield') {
+    foreach ($instance['display'] as $display_type => $display_settings) {
+      if ($instance['display'][$display_type]['type'] == 'file_default') {
+        $instance['display'][$display_type]['type'] = 'audiofield_embedded';
+      }
+    }
+    field_update_instance($instance);
+  }
+}
+
+/**
+ * Implements hook_field_conditional_state_settings_alter().
+ *
+ * Add support for Field Conditional States.
+ */
+function audiofield_field_conditional_state_settings_alter(&$settings) {
+  $settings['audiofield_widget'] = array(
+    'form_elements' => array(0 => array(0, 'upload')),
+    'field_data' => array(0),
+    'reprocess_from_root' => TRUE,
+    'field_states' => array(
+      'enabled',
+      'disabled',
+      'required',
+      'optional',
+      'visible',
+      'invisible',
+    ),
+    'trigger_states' => array('empty', 'filled'),
+    'trigger_value_widget' => '_field_conditional_state_default_trigger_value_widget',
+    'trigger_value_submit' => '_field_conditional_state_default_trigger_value_submit',
+  );
+}
+
+/**
+ * Implements hook_filefield_sources_widgets().
+ *
+ * This returns a list of widgets that are compatible with FileField Sources.
+ */
+function audiofield_filefield_sources_widgets() {
+  return array('audiofield_widget');
+}

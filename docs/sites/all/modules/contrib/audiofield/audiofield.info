@@ -1,0 +1,12 @@
+name = AudioField
+description = Handle audio upload using fields.
+package = Fields
+core = 7.x
+dependencies[] = file
+configure = admin/config/media/audiofield
+
+; Information added by Drupal.org packaging script on 2018-06-13
+version = "7.x-1.5"
+core = "7.x"
+project = "audiofield"
+datestamp = "1528904932"
