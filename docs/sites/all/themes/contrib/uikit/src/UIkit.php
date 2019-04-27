@@ -19,7 +19,7 @@ class UIkit {
    *
    * @var string
    */
-  const UIKIT_LIBRARY_VERSION = '3.0.1';
+  const UIKIT_LIBRARY_VERSION = '3.1.4';
 
   /**
    * The Drupal project page for the UIkit base theme.
