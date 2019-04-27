@@ -1,0 +1,49 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the PowerTagging SeeAlso Engine module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function powertagging_similar_schema() {
+  $schema['powertagging_similar_widgets'] = array(
+    'description' => 'Table that stores the configuration of the PowerTagging SeeAlso widgets.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary Key: Unique ID of the PowerTagging SeeAlso Widgets.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'Title of the PowerTagging SeeAlso widget.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'powertagging_id' => array(
+        'description' => 'The PowerTagging ID this widget is connected to.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'config' => array(
+        'description' => 'Additional configuration of the widget.',
+        'type' => 'blob',
+        'size' => 'big',
+        'serialize' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'powertagging_id' => array('powertagging_id'),
+    ),
+  );
+
+  return $schema;
+}

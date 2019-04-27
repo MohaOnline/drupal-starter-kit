@@ -1,0 +1,339 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the PowerTagging module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function powertagging_schema() {
+  $schema['powertagging'] = array(
+    'description' => 'Table that stores the configuration of the PowerTagging.',
+    'fields' => array(
+      'powertagging_id' => array(
+        'description' => 'Primary Key: Unique PowerTagging ID.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'Title of the PowerTagging configuration.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'connection_id' => array(
+        'description' => 'ID of the Semantic Connector Connection.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'project_id' => array(
+        'description' => 'The ID of the PoolParty project.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'config' => array(
+        'description' => 'Additional configuration of the configuration set.',
+        'type' => 'blob',
+        'size' => 'big',
+        'serialize' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('powertagging_id'),
+    'indexes' => array(
+      'project_id' => array('project_id'),
+    ),
+  );
+
+  $schema['powertagging_entity_extraction_cache'] = array(
+    'description' => 'Table that stores field values containing extracted entities.',
+    'fields' => array(
+      'entity_type' => array(
+        'description' => 'The entity type, e.g. "node".',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'bundle' => array(
+        'description' => 'The bundle of the entity.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'entity_id' => array(
+        'description' => 'The ID of the entity.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'language' => array(
+        'description' => 'The language of the entity.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'field_name' => array(
+        'description' => 'The name of the field.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'delta' => array(
+        'description' => 'The sequence number for this data item, used for multi-value fields.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'html' => array(
+        'description' => 'The rendered HTML containing the extracted entities.',
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'translatable' => FALSE,
+      ),
+    ),
+    'primary key' => array('entity_type', 'entity_id', 'field_name', 'language', 'delta'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Adds new column for the project ID.
+ */
+function powertagging_update_7001() {
+  $spec = array(
+    'description' => 'The ID of the PoolParty project.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  );
+
+  if (!db_field_exists('powertagging', 'project_id')) {
+    db_add_field('powertagging', 'project_id', $spec);
+    db_add_index('powertagging', 'project_id', array('project_id'));
+  }
+}
+
+/**
+ * Adds last batch time variables for all PowerTagging configurations.
+ */
+function powertagging_update_7002() {
+  $configs = powertagging_config_load();
+
+  $current_time = time();
+  foreach ($configs as $config) {
+    variable_set('powertagging_last_batch_tagging_' . $config->powertagging_id, $current_time);
+  }
+}
+
+/**
+ * Adds the new data properties settings to all PowerTagging configurations.
+ */
+function powertagging_update_7003() {
+  $configs = powertagging_config_load();
+
+  foreach ($configs as $config) {
+    $config->config['data_properties'] = array('skos:altLabel', 'skos:hiddenLabel', 'skos:exactMatch');
+    db_update('powertagging')
+      ->fields(array(
+        'config' => serialize($config->config),
+      ))
+      ->condition('powertagging_id', $config->powertagging_id)
+      ->execute();
+  }
+}
+
+/**
+ * Adds a new table for saving html with extracted entities.
+ * Updates how the global PowerTagging configuration is saved.
+ */
+function powertagging_update_7004() {
+  $schema = powertagging_schema();
+  db_create_table('powertagging_entity_extraction_cache', $schema['powertagging_entity_extraction_cache']);
+
+  // Create a single tag glossary variable out of all the old ones.
+  $tag_glossary_config = [
+    'items_max' => variable_get('powertagging_tag_glossary_items_max', 3),
+    'use_dbpedia_definition' => variable_get('powertagging_tag_glossary_use_dbpedia_definition', FALSE),
+    'definition_max_characters' => variable_get('powertagging_tag_glossary_definition_max_characters', 300),
+  ];
+  variable_set('powertagging_tag_glossary_settings', $tag_glossary_config);
+
+  // Delete old tag glossary variables.
+  variable_del('powertagging_tag_glossary_definition_max_characters');
+  variable_del('powertagging_tag_glossary_items_max');
+  variable_del('powertagging_tag_glossary_use_dbpedia_definition');
+}
+
+/**
+ * Updates field_alt_labels into multi-value fields instead of a comma-separated text field.
+ */
+function powertagging_update_7005(&$sandbox) {
+  _powertagging_update_labels($sandbox, 'field_alt_labels');
+}
+
+/**
+ * Updates field_hidden_labels into multi-value fields instead of a comma-separated text field.
+ */
+function powertagging_update_7006(&$sandbox) {
+  _powertagging_update_labels($sandbox, 'field_hidden_labels');
+}
+
+/**
+ * Updates labels into multi-value fields instead of a comma-separated text field.
+ *
+ * @param array $sandbox
+ *   Associative array containing properties to share between batch sessions.
+ * @param string $field_name
+ *   The name of the field to update the labels for.
+ */
+function _powertagging_update_labels(&$sandbox, $field_name) {
+  if (!isset($sandbox['progress'])) {
+    $sandbox['progress'] = 0;
+    $sandbox['current_id'] = 0;
+
+    $check_field_query = db_select('field_config', 'f');
+    $check_field_query->fields('f', ['cardinality', 'data'])
+      ->condition('field_name', $field_name);
+    $field_config = $check_field_query->execute()->fetchAssoc();
+    // In case the field doesn't exist yet or already was changed just return.
+    if ($field_config === FALSE || $field_config['cardinality'] === -1) {
+      $sandbox['#finished'] = 1;
+      return;
+    }
+
+    // Update field config and cardinality.
+    $field_config_data = unserialize($field_config['data']);
+    $field_config_data['settings']['max_length'] = 1024;
+    db_update('field_config')
+      ->fields(array(
+        'data' => serialize($field_config_data),
+        'cardinality' => -1,
+      ))
+      ->condition('field_name', $field_name)
+      ->execute();
+
+    $label_query = db_select('field_data_' . $field_name, 'f');
+    $label_query->fields('f', ['entity_id'])
+      ->condition('entity_type', 'taxonomy_term');
+    $sandbox['max_items'] = $label_query->countQuery()->execute()->fetchField();
+  }
+
+  $label_query = db_select('field_data_' . $field_name, 'f');
+  $label_query->fields('f')
+    ->condition('entity_type', 'taxonomy_term')
+    ->condition('entity_id', $sandbox['current_id'], '>')
+    ->orderBy('entity_id', 'ASC')
+    ->range(0, 10);
+  $labels_data = $label_query->execute()->fetchAll(PDO::FETCH_ASSOC);
+
+  // There are still labels to change.
+  if (!empty($labels_data)) {
+    $sandbox['#finished'] = 0;
+    foreach ($labels_data as $label_data) {
+      $sandbox['current_id'] = $label_data['entity_id'];
+      $sandbox['#finished'] = ($sandbox['progress'] / $sandbox['max_items']);
+      $sandbox['progress']++;
+      $label_values = explode(',', $label_data[$field_name . '_value']);
+      // A multi-value field has to be created
+      if (count($label_values) > 1) {
+        // Delete old row from values and revision.
+        db_delete('field_data_' . $field_name)
+          ->condition('entity_type', $label_data['entity_type'])
+          ->condition('entity_id', $label_data['entity_id'])
+          ->condition('revision_id', $label_data['revision_id'])
+          ->execute();
+        db_delete('field_revision_' . $field_name)
+          ->condition('entity_type', $label_data['entity_type'])
+          ->condition('entity_id', $label_data['entity_id'])
+          ->condition('revision_id', $label_data['revision_id'])
+          ->execute();
+
+        // Add new rows for values and revision.
+        $insert_value_query = db_insert('field_data_' . $field_name)->fields(array_keys($label_data));
+        $insert_revision_query = db_insert('field_revision_' . $field_name)->fields(array_keys($label_data));
+        $label_data['delta'] = 0;
+        foreach ($label_values as $label_value) {
+          $label_data[$field_name . '_value'] = $label_value;
+          $insert_value_query->values($label_data);
+          $insert_revision_query->values($label_data);
+          $label_data['delta']++;
+        }
+        $insert_value_query->execute();
+        $insert_revision_query->execute();
+      }
+    }
+
+    // Show progress message if in drush.
+    if (function_exists('drush_log')) {
+      drush_log(t('Finished updating @done / @max labels for @field.', array('@done' => $sandbox['progress'], '@max' => $sandbox['max_items'], '@field' => $field_name)), 'success');
+    }
+  }
+  // All labels were changed.
+  else {
+    // At the end change value length to 1024 characters.
+    $field_value_spec = array(
+      'type' => 'varchar',
+      'length' => 1024,
+      'not null' => FALSE,
+    );
+
+    db_change_field('field_data_' . $field_name, $field_name . '_value', $field_name . '_value', $field_value_spec);
+    db_change_field('field_revision_' . $field_name, $field_name . '_value', $field_name . '_value', $field_value_spec);
+
+    $sandbox['#finished'] = 1;
+  }
+}
+
+/**
+ * Implements hook_field_schema().
+ */
+function powertagging_field_schema($field) {
+  switch ($field['type']) {
+    case 'powertagging':
+      $columns = array(
+        'tid' => array(
+          'description' => 'The id of the referenced term.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => FALSE,
+        ),
+      );
+      break;
+  }
+  return array(
+    'columns' => $columns,
+  );
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * Delete all variables used by the PowerTagging module.
+ */
+function powertagging_uninstall() {
+  drupal_load('module', 'powertagging');
+  $configs = powertagging_config_load();
+
+  foreach ($configs as $config) {
+    variable_del('powertagging_last_batch_tagging_' . $config->powertagging_id);
+  }
+
+  variable_del('powertagging_entity_extraction_settings');
+  variable_del('powertagging_tag_glossary_settings');
+}

@@ -1,0 +1,3052 @@
+<?php
+
+/**
+ * @file
+ * The module file of the PowerTagging module.
+ */
+
+require_once dirname(__FILE__) . '/includes/powertagging.field.inc';
+require_once dirname(__FILE__) . '/includes/powertagging_solr_search.inc';
+
+define('UPLOAD_MAX_FILE_SIZE', 2); // Unit is in MB.
+define('UPLOAD_MAX_FILE_COUNT', 5);
+
+/**
+ * Implements hook_help().
+ */
+function powertagging_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#powertagging':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The PowerTagging module is able to analyze content from Drupal nodes including file attachements. PowerTagging annotates content automatically with concepts from a thesaurus or taxonomy by using all their names (incl. synonyms). Users can curate all suggested tags or can also index collections of Drupal content nodes automatically resulting in a semantic index. This makes search more comfortable than ever before.') . '</p>';
+      $output .= '<p>';
+      $output .= '<h3>' . t('Possibilities') . '</h3>';
+      $output .= '<ul>';
+      $output .= '<li>' . t('Automatically annotate content in Drupal based on controlled vocabularies.') . '</li>';
+      $output .= '<li>' . t('Categorize content by selected concepts (tags).') . '</li>';
+      $output .= '<li>' . t('Enhance search by considering synonyms.') . '</li>';
+      $output .= '</ul></p>';
+      $output .= '<p>' . t('Additional details on how to use this module can be found in the <a href="@url" target="_blank">Drupal Module Documentation Space</a>.', ['@url' => 'https://www.drupal.org/docs/7/modules/semantic-connector/powertagging']) . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function powertagging_permission() {
+  return array(
+    'administer powertagging' => array(
+      'title' => t('Administer PowerTagging'),
+      'description' => t('Perform administration tasks for PowerTagging.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function powertagging_menu() {
+  $items['admin/config/semantic-drupal/powertagging'] = array(
+    'title' => 'PowerTagging',
+    'description' => 'Manage PowerTagging configurations',
+    'page callback' => 'powertagging_list',
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/connections'] = array(
+    'title' => 'List of PowerTagging configurations',
+    'description' => 'Manage PowerTagging configurations',
+    'page callback' => 'powertagging_list',
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/config'] = array(
+    'title' => 'Global Configuration',
+    'description' => 'Global configuration of the PowerTagging module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_configuration_form'),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/add'] = array(
+    'title' => 'Add a PowerTagging configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_connection_form'),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+
+  // Add a PowerTagging configuration for a preselected PP server and project.
+  // @arg 5 The connection ID of the PoolParty server.
+  // @arg 6 The project ID.
+  $items['admin/config/semantic-drupal/powertagging/add/%/%'] = array(
+    'title' => 'Add a PowerTagging configuration for a specified connection',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_add_config_for_fixed_connection_form', 5, 6),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config'] = array(
+    'title callback' => 'powertagging_config_title',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config/edit'] = array(
+    'title' => 'Edit a PowerTagging configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config/edit_connection'] = array(
+    'title' => 'Edit the connected PoolParty server configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_connection_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config/clone'] = array(
+    'title' => 'Clone a PowerTagging configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_clone_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config/delete'] = array(
+    'title' => 'Delete a PowerTagging configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_delete_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config/index'] = array(
+    'title callback' => 'powertagging_bulk_indexing_title',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_index_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config/update-taxonomy'] = array(
+    'title callback' => 'powertagging_update_taxonomy_title',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_update_taxonomy_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/%powertagging_config/refresh-extraction-model'] = array(
+    'title callback' => 'powertagging_refresh_extraction_model_title',
+    'title arguments' => array(4),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_refresh_extraction_model_form', 4),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['powertagging/autocomplete-taxonomies'] = array(
+    'title' => 'Get the taxonomies matching a string',
+    'page callback' => 'powertagging_autocomplete_taxonomies',
+    'access callback' => TRUE,
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['powertagging/extract'] = array(
+    'title' => 'Extract concepts and terms from content',
+    'page callback' => 'powertagging_extraction',
+    'access callback' => 'user_is_logged_in',
+    'file' => 'includes/powertagging.field.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  // @arg 2 ID of the PowerTagging configuration.
+  // @arg 3 language of the content.
+  $items['powertagging/autocomplete-tags/%powertagging_config/%'] = array(
+    'title' => 'Get the tags for a PowerTagging configuration matching a string',
+    'page callback' => 'powertagging_autocomplete_tags',
+    'access callback' => TRUE,
+    'page arguments' => array(2, 3),
+    'file' => 'includes/powertagging.field.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['powertagging/get-visualmapper-data/%powertagging_config'] = array(
+    'title' => 'Get Visual Mapper data for a PowerTagging configuration',
+    'page callback' => '_powertagging_get_visual_mapper_data',
+    'page arguments' => array(2, TRUE),
+    'access callback' => TRUE,
+    'file' => 'includes/powertagging.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['powertagging/get-visualmapper-data-slim/%powertagging_config'] = array(
+    'title' => 'Get Visual Mapper data in JSON format without any relations for a PowerTagging configuration',
+    'page callback' => '_powertagging_get_visual_mapper_data',
+    'page arguments' => array(2, FALSE),
+    'access callback' => TRUE,
+    'file' => 'includes/powertagging.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['powertagging/get-concept-tids'] = array(
+    'title' => 'Get Visual Mapper data for a PowerTagging configuration',
+    'page callback' => '_powertagging_get_concept_uris',
+    'access callback' => TRUE,
+    'file' => 'includes/powertagging.field.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  // @arg 2 Entity type.
+  // @arg 3 Bundle.
+  $items['powertagging/extract-entity-tags/%/%'] = array(
+    'title callback' => 'powertagging_extract_entities_batch_form_title',
+    'title arguments' => array(2, 3),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_extract_entities_batch_form', 2, 3),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function powertagging_form_alter(&$form, &$form_state, $form_id) {
+  // Alter the field instance configuration of the powertagging field.
+  if ($form_id == 'field_ui_field_edit_form' && $form['#field']['type'] == 'powertagging') {
+    // Fix the cardinality to "Unlimited".
+    $form['field']['cardinality']['#options'] = array(
+      FIELD_CARDINALITY_UNLIMITED => $form['field']['cardinality']['#options'][FIELD_CARDINALITY_UNLIMITED],
+    );
+    $form['field']['cardinality']['#default_value'] = FIELD_CARDINALITY_UNLIMITED;
+  }
+}
+
+/**
+ * Implements hook_taxonomy_term_update().
+ *
+ * @todo:
+ *   * Check if entity is indexed
+ */
+function powertagging_taxonomy_term_update($term) {
+  $entity_ids = powertagging_get_entity_ids($term);
+  powertagging_update_solr_index($entity_ids);
+}
+
+/**
+ * Implements hook_taxonomy_term_delete().
+ */
+function powertagging_taxonomy_term_delete($term) {
+  // Get the PowerTagging field names.
+  $entity_ids = powertagging_get_entity_ids($term);
+  $field_names = powertagging_get_field_name();
+  foreach ($field_names as $field_name) {
+    $table = 'field_data_' . $field_name;
+    $column = $field_name . '_tid';
+
+    // Delete the reference from a PowerTagging field to this term.
+    db_delete($table)
+      ->condition($column, $term->tid)
+      ->execute();
+  }
+
+  // Clean up the {taxonomy_index} table when terms are deleted.
+  if (variable_get('taxonomy_maintain_index_table', TRUE)) {
+    db_delete('taxonomy_index')->condition('tid', $term->tid)->execute();
+  }
+
+  powertagging_update_solr_index($entity_ids);
+}
+
+/**
+ * Implementation of hook_features_api().
+ *
+ * Allow exporting of Powertagging configurations with the Features module.
+ */
+function powertagging_features_api() {
+  return array(
+    'powertagging_config' => array(
+      'name' => t('PowerTagging configurations'),
+      'feature_source' => TRUE,
+      'default_hook' => 'powertagging_config_features_settings',
+      'default_file' => FEATURES_DEFAULTS_INCLUDED,
+      'file' => drupal_get_path('module', 'powertagging') . '/includes/powertagging.features.inc',
+    )
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function powertagging_block_info() {
+  $blocks = array('powertagging_tag_glossary' => array(
+    'info' => 'PowerTagging Tag Glossary',
+  ));
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function powertagging_block_view($block_name) {
+  $block = array();
+
+  if ($block_name == 'powertagging_tag_glossary') {
+    $block_content = _powertagging_tag_glossary();
+
+    if (!empty($block_content)) {
+      $block = array(
+        'subject' => t('Tag Glossary'),
+        'content' => array(
+          '#type' => 'markup',
+          '#markup' => $block_content,
+        ),
+      );
+    }
+  }
+
+  return $block;
+}
+
+/**
+ * Loads all PowerTagging configurations or one if $powertagging_id is given.
+ *
+ * @param int $powertagging_id
+ *   ID of the PowerTagging configuration.
+ * @param int $connection_id
+ *   ID of the Semantic Connector connection.
+ * @param bool $only_available_services
+ *   Get only PoolParty servers, which currently can be reached.
+ *
+ * @return array|object
+ *   Return an array with all configuration sets or a single configuration set
+ *   if $powertagging_id is given.
+ */
+function powertagging_config_load($powertagging_id = NULL, $connection_id = NULL, $only_available_services = FALSE) {
+  $sql = "SELECT * FROM {powertagging} ";
+  $attributes = array();
+  if (!is_null($powertagging_id) && (int) $powertagging_id > 0) {
+    $sql .= "WHERE powertagging_id = :powertagging_id ";
+    $attributes[':powertagging_id'] = $powertagging_id;
+  }
+  elseif(!is_null($connection_id) && (int) $connection_id > 0) {
+    $sql .= "WHERE connection_id = :connection_id ";
+    $attributes[':connection_id'] = $connection_id;
+  }
+  $sql .= "ORDER BY powertagging_id";
+  $powertagging_configs = db_query($sql, $attributes)->fetchAll();
+
+  // Replace overridden values.
+  if (!empty($powertagging_configs)) {
+    $connection_overrides = variable_get('powertagging_override_connections', array());
+    foreach ($powertagging_configs as &$powertagging_config) {
+      if (isset($connection_overrides[$powertagging_config->powertagging_id])) {
+
+        $overrides = $connection_overrides[$powertagging_config->powertagging_id];
+
+        if (isset($overrides['connection_id'])) {
+          $powertagging_config->connection_id = $overrides['connection_id'];
+        }
+        if (isset($overrides['project_id'])) {
+          $old_project_id = $powertagging_config->project_id;
+          $powertagging_config->project_id = $overrides['project_id'];
+        }
+        if (isset($overrides['title'])) {
+          $powertagging_config->title = $overrides['title'];
+        }
+      }
+      unset($powertagging_config);
+    }
+  }
+
+  $config = array();
+  if ($only_available_services) {
+    foreach ($powertagging_configs as $powertagging_config) {
+      $powertagging_config->connection = SemanticConnector::getConnection('pp_server', $powertagging_config->connection_id);
+      if ($powertagging_config->connection->available()) {
+        $config[] = $powertagging_config;
+      }
+    }
+  }
+  else {
+    foreach ($powertagging_configs as $powertagging_config) {
+      $powertagging_config->connection = SemanticConnector::getConnection('pp_server', $powertagging_config->connection_id);
+      $config[] = $powertagging_config;
+    }
+  }
+
+  foreach ($config as &$single_config) {
+    $single_config->config = unserialize($single_config->config);
+
+    // Config overrides.
+    $connection_overrides = variable_get('powertagging_override_connections', array());
+    if (isset($connection_overrides[$single_config->powertagging_id])) {
+      $overrides = $connection_overrides[$single_config->powertagging_id];
+
+      if (isset($overrides['project_id'])) {
+        $single_config->config['projects'][$single_config->project_id] = $single_config->config['projects'][$old_project_id];
+      }
+
+      if (isset($overrides['corpus_id'])) {
+        $single_config->config['projects'][$single_config->project_id]['corpus_id'] = $overrides['corpus_id'];
+      }
+      if (isset($overrides['taxonomy_id'])) {
+        $single_config->config['projects'][$single_config->project_id]['taxonomy_id'] = $overrides['taxonomy_id'];
+      }
+    }
+
+    if ($single_config->config === FALSE) {
+      $single_config->config = array();
+    }
+    $single_config = (object) powertagging_array_merge_recursive_simple((array) powertagging_default_config_load(), (array) $single_config);
+
+    if (!empty($single_config->config['projects'])) {
+      foreach ($single_config->config['projects'] as &$project) {
+        // Get for each project the taxonomy name if taxonomy id is given.
+        // The taxonomy name can by changed in the meantime.
+        if (isset($project['taxonomy_id']) && $project['taxonomy_id'] > 0) {
+          $taxonomy = taxonomy_vocabulary_load($project['taxonomy_id']);
+          $project['taxonomy_name'] = ($taxonomy !== FALSE && property_exists($taxonomy, 'name') ? $taxonomy->name : '');
+        }
+
+        if (!isset($project['mode'])) {
+          $project['mode'] = 'annotation';
+        }
+      }
+    }
+    unset($single_config);
+  }
+
+  return (is_null($powertagging_id) || !isset($config[0])) ? $config : $config[0];
+}
+
+/**
+ * Loads the default values for a PowerTagging configuration.
+ *
+ * @return object
+ *   Return a configuration set object containing the default values.
+ */
+function powertagging_default_config_load() {
+  $config = new StdClass();
+  $config->title = '';
+  $config->connection_id = 0;
+  $config->project_id = NULL;
+  $config->connection = SemanticConnector::getConnection('pp_server', $config->connection_id);
+  $config->config = array(
+    'concepts_per_extraction' => 20,
+    'concepts_threshold' => 10,
+    'freeterms_per_extraction' => 0,
+    'freeterms_threshold' => 50,
+    'projects' => array(),
+    'concept_scheme_restriction' => [],
+    'data_properties' => [],
+  );
+
+  return $config;
+}
+
+/**
+ * Adds the form for the global limits.
+ *
+ * @param array $form
+ *   The form where the global limits form will be added.
+ * @param int $concepts_per_extraction
+ *   The value of the max concepts per extraction.
+ * @param int $concepts_threshold
+ *   The threshold level for the concepts.
+ * @param int $freeterms_per_extraction
+ *   The value of the max concepts per extraction.
+ * @param int $freeterms_threshold
+ *   The threshold level for the free terms.
+ * @param array $parents
+ *   Explicit parents for all the fields if required.
+ */
+function powertagging_global_limits_form(array &$form, $concepts_per_extraction, $concepts_threshold, $freeterms_per_extraction, $freeterms_threshold, array $parents = array()) {
+  $form['concepts'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Concept / Category settings'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#description' => t('Concepts are available in the thesaurus.'),
+    '#tree' => FALSE,
+  );
+
+  $form['concepts']['concepts_per_extraction'] = array(
+    '#title' => t('Max concepts / categories per extraction'),
+    '#type' => 'slider',
+    '#default_value' => $concepts_per_extraction,
+    '#slider_style' => 'concept',
+    '#range' => 'min',
+    '#min' => 0,
+    '#max' => 100,
+    '#step' => 1,
+    '#display_inputs' => FALSE,
+    '#display_values' => TRUE,
+    '#slider_length' => '500px',
+    '#description' => t('Maximum number of concepts (or categories when the PowerTagging mode is set to "Classification") to be displayed as a tagging result.'),
+  );
+
+  $form['concepts']['concepts_threshold'] = array(
+    '#title' => t('Threshold level for the concepts'),
+    '#type' => 'slider',
+    '#default_value' => $concepts_threshold,
+    '#slider_style' => 'concept',
+    '#range' => 'min',
+    '#min' => 1,
+    '#max' => 100,
+    '#step' => 1,
+    '#display_inputs' => FALSE,
+    '#display_values' => TRUE,
+    '#slider_length' => '500px',
+    '#description' => t('Only concepts with a minimum score of the chosen value will be displayed as a tagging result.'),
+  );
+
+  $form['freeterms'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Free term settings'),
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+    '#description' => t('Free terms are extracted terms, which are not available in the thesaurus.!brNote: Usage of a good corpus (set in Project Settings) can improve your free terms considerably.', array('!br' => '<br />')),
+    '#tree' => FALSE,
+  );
+
+  $form['freeterms']['freeterms_per_extraction'] = array(
+    '#title' => t('Max free terms per extraction'),
+    '#type' => 'slider',
+    '#default_value' => $freeterms_per_extraction,
+    '#slider_style' => 'freeterm',
+    '#range' => 'min',
+    '#min' => 0,
+    '#max' => 100,
+    '#step' => 1,
+    '#display_inputs' => FALSE,
+    '#display_values' => TRUE,
+    '#slider_length' => '500px',
+    '#description' => t('Maximum number of free terms for tagging.'),
+  );
+
+  $form['freeterms']['freeterms_threshold'] = array(
+    '#title' => t('Threshold level for the free terms'),
+    '#type' => 'slider',
+    '#default_value' => $freeterms_threshold,
+    '#slider_style' => 'freeterm',
+    '#range' => 'min',
+    '#min' => 1,
+    '#max' => 100,
+    '#step' => 1,
+    '#display_inputs' => FALSE,
+    '#display_values' => TRUE,
+    '#slider_length' => '500px',
+    '#description' => t('Only free terms with a minimum score of the chosen value will be used for tagging.!linebreakWARNING: A threshold below 40 may reduce the quality of free term extractions!', array('!linebreak' => '<br />')),
+  );
+
+  if (!empty($parents)) {
+    $form['concepts']['concepts_per_extraction']['#parents'] = array_merge($parents, array('concepts_per_extraction'));
+    $form['concepts']['concepts_threshold']['#parents'] = array_merge($parents, array('concepts_threshold'));
+    $form['freeterms']['freeterms_per_extraction']['#parents'] = array_merge($parents, array('freeterms_per_extraction'));
+    $form['freeterms']['freeterms_threshold']['#parents'] = array_merge($parents, array('freeterms_threshold'));
+  }
+}
+
+/**
+ * Deletes a PowerTagging configuration.
+ *
+ * @param int $powertagging_id
+ *   ID of the PowerTagging configuration.
+ */
+function powertagging_config_delete($powertagging_id) {
+  $powertagging_id = (int) $powertagging_id;
+
+  if ($powertagging_id > 0) {
+    // Offer a hook for doing something before finally deleting the configuration.
+    module_invoke_all('powertagging_config_delete', $powertagging_id);
+
+    // Delete any fields configured with this PowerTagging configuration.
+    $field_instances = powertagging_get_tagging_field_instances($powertagging_id);
+    $delete_fields = array();
+    foreach ($field_instances as $field_instance) {
+      if (!in_array($field_instance['field_name'], $delete_fields)) {
+        $delete_fields[] = $field_instance['field_name'];
+      }
+    }
+    foreach ($delete_fields as $delete_field) {
+      field_delete_field($delete_field);
+      drupal_set_message(t('Field "%fieldid" has been deleted.', array('%fieldid' => $delete_field)));
+    }
+
+    // Delete the PowerTagging configuration itself.
+    db_delete('powertagging')
+      ->condition('powertagging_id', $powertagging_id)
+      ->execute();
+  }
+}
+
+/**
+ * Get a PoolPartyApi-object from a powerTagging-config-id.
+ *
+ * @param int $config_id
+ *   The ID of the PowerTagging config.
+ *
+ * @return object
+ *   The PoolPartyApi-object.
+ */
+function powertagging_getPoolPartyApi($config_id) {
+  $config = powertagging_config_load($config_id);
+  return $config->connection->getApi('PPX');
+}
+
+/**
+ * Start the indexing-process for a PowerTagging configuration.
+ *
+ * @param object $powertagging_config
+ *   The powertagging configuration.
+ * @param array $settings
+ *   Array of indexing settings --> Required settings: "content_types" and
+ *   "skip_tagged_content".
+ * @param string $batch_finished_callback
+ *   The function to call after the batch is finished.
+ *
+ * @return bool
+ *   TRUE on success, FALSE on error.
+ */
+function powertagging_index($powertagging_config, array $settings, $batch_finished_callback = 'powertagging_update_entity_tags_finished') {
+  if (!isset($settings['content_types']) || !isset($settings['skip_tagged_content'])) {
+    watchdog('PowerTagging', 'Incorrect settings-configuration in "powertagging_index"', array(), WATCHDOG_ERROR);
+    return FALSE;
+  }
+
+  $entities_per_request = $settings['entities_per_request'];
+  $start_time = time();
+  $total = 0;
+  $batch = array(
+    'title' => t('Index entities'),
+    'operations' => array(),
+    'init_message' => t('Start with the indexing of the entities.'),
+    'progress_message' => '',
+    'finished' => $batch_finished_callback,
+  );
+
+  foreach ($settings['content_types'] as $content_type) {
+    list($entity_type, $bundle, $field_name) = explode(' ', $content_type);
+
+    // If the entity type is not supported, throw an error and continue.
+    if (!in_array($entity_type, array('node', 'user', 'taxonomy_term'))) {
+      drupal_set_message(t('Entity type "%entitytype" is not supported in bulk tagging.', array('%entitytype' => $entity_type)), 'error');
+      continue;
+    }
+
+    // Build the tag settings.
+    $instance = field_info_instance($entity_type, $field_name, $bundle);
+    $tag_settings = _powertagging_build_tag_settings($powertagging_config, $instance, array('skip_tagged_content' => $settings['skip_tagged_content']));
+
+    // Remove PowerTagging Config object from the settings for more memory
+    // resources during the batch process.
+    unset($tag_settings['powertagging_config']);
+
+    // Get all entities for the given content type.
+    switch ($entity_type) {
+      case 'node':
+        $result = db_select('node', 'n')
+          ->fields('n', array('nid'))
+          ->condition('n.type', $bundle)
+          ->execute();
+        $count = $result->rowCount();
+        $entity_ids = $result->fetchCol();
+        break;
+
+      case 'user':
+        $result = db_select('users', 'u')
+          ->fields('u', array('uid'))
+          ->condition('u.status', 0, '>')
+          ->execute();
+        $count = $result->rowCount();
+        $entity_ids = $result->fetchCol();
+        break;
+
+      case 'taxonomy_term':
+        $query = db_select('taxonomy_term_data', 't');
+        $query->join('taxonomy_vocabulary', 'v', 't.vid = v.vid');
+        $result = $query->fields('t', array('tid'))
+          ->condition('v.machine_name', $bundle)
+          ->execute();
+        $count = $result->rowCount();
+        $entity_ids = $result->fetchCol();
+        break;
+
+      default:
+        $count = 0;
+        $entity_ids = array();
+    }
+
+    $total += $count;
+    for ($i = 0; $i < $count; $i += $entities_per_request) {
+      $entity_ids_slice = array_slice($entity_ids, $i, $entities_per_request);
+      $batch['operations'][] = array(
+        'powertagging_update_entity_tags',
+        array($entity_ids_slice, $entity_type, $field_name, $tag_settings),
+      );
+    }
+  }
+
+  // Add for each operation some info data.
+  $batch_info = array(
+    'total' => $total,
+    'start_time' => $start_time,
+    'inform_user_email' => $settings['inform_user_email'],
+  );
+  foreach ($batch['operations'] as &$operation) {
+    $operation[1][] = $batch_info;
+  }
+
+  batch_set($batch);
+
+  return TRUE;
+}
+
+/**
+ * Build the settings required for the tagging process.
+ *
+ * @param object $powertagging_config
+ *   The PowerTagging configuration
+ * @param array $instance
+ *   The field instance of the PowerTagging field.
+ * @param array $settings
+ *   Optional: additional associative array containing settings to add to the
+ *   returned array of tag settings.
+ *
+ * @return array
+ *   An associative array of tag settings containing following keys:
+ *   - powertagging_id (int) --> The ID of the PowerTagging configuration.
+ *   - powertagging_config (object) --> The PowerTagging configuration.
+ *   - taxonomy_id (int) --> The vocabulary ID used for the tagging.
+ *   - concepts_per_extraction (int) --> The number of concepts per extraction.
+ *   - concepts_threshold (int) --> The threshold of concepts.
+ *   - freeterms_per_extraction (int) --> The number of treeterms per extraction.
+ *   - freeterms_threshold (int) --> The threshold of freeterms.
+ *   - fields (array) --> An associative array of tag fields by field ID,
+ *     containing keys "module" and "type".
+ *   - skip_tagged_content (bool) --> Whether to skip already tagged content or
+ *     tag it anyway.
+ *   - default_tags_field (array) --> The field names of fields that should be
+ *     used as the default value for the tags.
+ *   - ... anything added by the $settings parameter.
+ */
+function _powertagging_build_tag_settings($powertagging_config, array $instance, array $settings = []) {
+  // Get the fields to use for tagging in the correct format.
+  $tag_fields = array();
+  foreach ($instance['settings']['fields'] as $tag_field_name) {
+    if ($tag_field_name) {
+      // Cut down entity reference fields to their field name.
+      $pipe_position = strpos($tag_field_name, '|');
+      if ($pipe_position !== false) {
+        $tag_field_name = substr($tag_field_name, 0, $pipe_position);
+      }
+
+      if (!isset($tag_fields[$tag_field_name])) {
+        $field_instance = field_info_instance($instance['entity_type'], $tag_field_name, $instance['bundle']);
+        $tag_fields[$tag_field_name] = array(
+          'module' => $field_instance ? $field_instance['widget']['module'] : 'standard field',
+          'type' => $field_instance ? $field_instance['widget']['type'] : '',
+        );
+      }
+    }
+  }
+
+  $project_settings = $powertagging_config->config['projects'][$powertagging_config->project_id];
+  // Build the tag settings array.
+  $tag_settings = array(
+    'powertagging_id' => $powertagging_config->powertagging_id,
+    'powertagging_config' => $powertagging_config,
+    'field_name' => $instance['field_name'],
+    'use_fields' => array_keys(array_filter($instance['settings']['fields'])),
+    'taxonomy_id' => $powertagging_config->config['projects'][$powertagging_config->project_id]['taxonomy_id'],
+    'concepts_per_extraction' => $instance['settings']['concepts_per_extraction']['value'],
+    'concepts_threshold' => $instance['settings']['concepts_threshold']['value'],
+    'freeterms_per_extraction' => $instance['settings']['freeterms_per_extraction']['value'],
+    'freeterms_threshold' => $instance['settings']['freeterms_threshold']['value'],
+    // Free terms can not be added manually in the classification mode.
+    'custom_freeterms' => ($project_settings['mode'] == 'annotation' ? (isset($instance['settings']['custom_freeterms']) ? $instance['settings']['custom_freeterms'] : TRUE) : FALSE),
+    'use_shadow_concepts' => ($project_settings['mode'] == 'annotation' ? (isset($instance['settings']['use_shadow_concepts']) ? $instance['settings']['use_shadow_concepts'] : FALSE) : FALSE),
+    'concept_scheme_restriction' => (isset($powertagging_config->config['concept_scheme_restriction']) ? $powertagging_config->config['concept_scheme_restriction'] : []),
+    'data_properties' => $powertagging_config->config['data_properties'],
+    'fields' => $tag_fields,
+    'skip_tagged_content' => (isset($settings['skip_tagged_content']) ? $settings['skip_tagged_content'] : FALSE),
+    'default_tags_field' => (isset($instance['settings']['default_tags_field']) ? $instance['settings']['default_tags_field'] : ''),
+    'max_file_size' => (isset($instance['settings']['file_upload']['max_file_size']) ? $instance['settings']['file_upload']['max_file_size'] : (UPLOAD_MAX_FILE_SIZE * 1048576)),
+    'max_file_count' => (isset($instance['settings']['file_upload']['max_file_count']) ? $instance['settings']['file_upload']['max_file_count'] : UPLOAD_MAX_FILE_COUNT),
+    'ac_add_matching_label' => (isset($instance['settings']['ac_add_matching_label']) ? $instance['settings']['ac_add_matching_label'] : FALSE),
+    'ac_add_context' => (isset($instance['settings']['ac_add_context']) ? $instance['settings']['ac_add_context'] : FALSE),
+  );
+
+  // Merge in the additional settings.
+  $tag_settings = array_merge($tag_settings, $settings);
+
+  return $tag_settings;
+}
+
+/**
+ * Update the powertagging tags of one powertagging field of a single entity.
+ *
+ * @param array $entity_ids
+ *   A single ID or an array of IDs of entitys, depending on the entity type
+ *   (e.g. nid, uid, ...).
+ * @param string $entity_type
+ *   The entity type of the entity (e.g. node, user, ...).
+ * @param string $field_name
+ *   The field name of the powertagging field.
+ * @param array $tag_settings
+ *   An array of settings used during the process of extraction. Use
+ *   _powertagging_build_tag_settings() to build it.
+ * @param array $batch_info
+ *   An associative array of information about the batch process.
+ * @param array $context
+ *   The Batch context to transmit data between different calls.
+ */
+function powertagging_update_entity_tags($entity_ids, $entity_type, $field_name, array $tag_settings, array $batch_info, &$context) {
+  if (!isset($context['results']['processed'])) {
+    $context['results']['processed'] = 0;
+    $context['results']['tagged'] = 0;
+    $context['results']['skipped'] = 0;
+    $context['results']['error_count'] = 0;
+    $context['results']['error'] = array();
+    $context['results']['powertagging_id'] = $tag_settings['powertagging_id'];
+  }
+
+  // Add the PowerTagging configuration object to the $tag_settings.
+  $powertagging_config = powertagging_config_load($tag_settings['powertagging_id']);
+  $tag_settings['powertagging_config'] = $powertagging_config;
+
+  // Load the entities.
+  $entities = [];
+  try {
+    switch ($entity_type) {
+      case 'node':
+        $entities = node_load_multiple($entity_ids);
+        break;
+
+      case 'user':
+        $entities = user_load_multiple($entity_ids);
+        break;
+
+      case 'taxonomy_term':
+        $entities = taxonomy_term_load_multiple($entity_ids);
+        break;
+    }
+  }
+  catch (Exception $e) {
+    watchdog_exception('PowerTagging Batch Process', $e, 'Unable to load entities with ids: %ids. ' . $e->getMessage(), array('%ids' => print_r($entity_ids, TRUE)));
+    $context['results']['processed'] += count($entity_ids);
+    $context['results']['error_count'] += count($entity_ids);
+    $context['results']['error']['loading'] = array_merge($context['results']['error']['loading'], $entity_ids);
+  }
+
+  // Go through all the entities
+  foreach ($entities as $entity) {
+    $context['results']['processed']++;
+
+    switch ($entity_type) {
+      case 'node':
+        $entity_id = $entity->nid;
+        break;
+      case 'user':
+        $entity_id = $entity->uid;
+        break;
+      case 'taxonomy_term':
+        $entity_id = $entity->tid;
+        break;
+      default:
+        $entity_id = 0;
+    }
+
+    // Return if this entity does not need to be tagged.
+    if ($tag_settings['skip_tagged_content'] && isset($entity->{$field_name}) && !empty($entity->{$field_name})) {
+      $context['results']['skipped']++;
+      continue;
+    }
+
+    // Extract tags from all fields of the entity.
+    $field_value_tids = [];
+    try {
+      $tids = powertagging_extract_tags_of_entity($entity, $tag_settings);
+
+      // Bring the tids into the correct format for the entity.
+      foreach ($tids as $tid) {
+        $field_value_tids[] = [
+          'tid' => (string) $tid,
+        ];
+      }
+    }
+    catch (Exception $e) {
+      watchdog_exception('PowerTagging Batch Process', $e, 'Unable to extract concepts from %type with id: %id. ' . $e->getMessage(), array('%type' => $entity_type, '%id' => $entity_id));
+      $context['results']['error_count']++;
+      $context['results']['error']['extracting'][$entity_type][] = $entity_id;
+    }
+
+    // Save the PowerTagging tags to the entity.
+    try {
+      switch ($entity_type) {
+        case 'node':
+          if (!empty($field_value_tids)) {
+            $entity->{$field_name}[LANGUAGE_NONE] = $field_value_tids;
+          }
+          else {
+            $entity->{$field_name} = [];
+          }
+          node_save($entity);
+
+          //drupal_set_message(t('Node "%entitytitle" was retagged successfully.', array('%entitytitle' => $entity->title)));
+          break;
+
+        case 'user':
+          $user_edit_data = [];
+          if (!empty($field_value_tids)) {
+            $user_edit_data[$field_name][LANGUAGE_NONE] = $field_value_tids;
+          }
+          else {
+            $user_edit_data[$field_name] = [];
+          }
+          user_save($entity, $user_edit_data);
+
+          //drupal_set_message(t('User "%entitytitle" was retagged successfully.', array('%entitytitle' => $entity->name)));
+          break;
+
+        case 'taxonomy_term':
+          if (!empty($field_value_tids)) {
+            $entity->{$field_name}[LANGUAGE_NONE] = $field_value_tids;
+          }
+          else {
+            $entity->{$field_name} = [];
+          }
+          taxonomy_term_save($entity);
+
+          //drupal_set_message(t('Taxonomy term "%entitytitle" was retagged successfully.', array('%entitytitle' => $entity->name)));
+          break;
+      }
+      $context['results']['tagged']++;
+    }
+    catch (Exception $e) {
+      watchdog_exception('PowerTagging Batch Process', $e, 'Unable to save entity with id: %id. ' . $e->getMessage(), array('%id' => $entity_id));
+      $context['results']['error_count']++;
+      $context['results']['error']['saving'][$entity_type][] = $entity_id;
+    }
+  }
+
+  $context['results']['end_time'] = time();
+  // Send the inform e-mail when the process is finished.
+  if (module_exists('background_batch') && ($context['results']['processed'] >= $batch_info['total'])) {
+    if (!empty($batch_info['inform_user_email'])) {
+      $params = [
+        'config_id' => $powertagging_config->powertagging_id,
+        'config_title' => $powertagging_config->title,
+        'start_time' => $batch_info['start_time'],
+      ];
+      $params = array_merge($context['results'], $params);
+      drupal_mail('powertagging_batch_process', 'index_batch', $batch_info['inform_user_email'], language_default(), $params);
+    }
+  }
+
+  unset($entities);
+  unset($powertagging_config);
+
+  // Show the remaining time as a batch message.
+  $time_string = '';
+  if ($context['results']['processed'] > 0) {
+    $remaining_time = floor((time() - $batch_info['start_time']) / $context['results']['processed'] * ($batch_info['total'] - $context['results']['processed']));
+    if ($remaining_time > 0) {
+      $time_string = (floor($remaining_time / 86400)) . 'd ' . (floor($remaining_time / 3600) % 24) . 'h ' . (floor($remaining_time / 60) % 60) . 'm ' . ($remaining_time % 60) . 's';
+    }
+    else {
+      $time_string = t('Done.');
+    }
+  }
+
+  $context['message'] = t('Processed entities: %current_entities of %total_entities (tagged: %tagged_entities, skipped: %skipped_entities, errors: %error_entities)', array(
+    '%current_entities' => $context['results']['processed'],
+    '%total_entities' => $batch_info['total'],
+    '%tagged_entities' => $context['results']['tagged'],
+    '%skipped_entities' => $context['results']['skipped'],
+    '%error_entities' => $context['results']['error_count'])
+  ) . '<br />' . t('Remaining time: %remaining_time.', array('%remaining_time' => $time_string));
+}
+
+/**
+ * Batch 'finished' callback used by PowerTagging Bulk Tagging.
+ */
+function powertagging_update_entity_tags_finished($success, $results, $operations) {
+  if ($success) {
+    $message = t('Successfully finished content tagging of %total_entities entities on %date:', [
+        '%total_entities' => $results['processed'],
+        '%date' => format_date($results['end_time'])
+      ]) . '<br />';
+    $message .= t('<ul><li>tagged: %tagged_entities</li><li>skipped: %skipped_entities</li><li>errors: !error_entities</li></ul>', [
+      '%tagged_entities' => $results['tagged'],
+      '%skipped_entities' => $results['skipped'],
+      '!error_entities' => powertagging_create_error_list($results['error']),
+    ]);
+    drupal_set_message($message);
+
+    if (isset($results['powertagging_id'])) {
+      // Update the last batch tagging variable.
+      variable_set('powertagging_last_batch_tagging_' . $results['powertagging_id'], time());
+
+      // If there are any global notifications and they could be caused by a
+      // missing retagging action, refresh the notifications.
+      $notifications = variable_get('semantic_connector_global_notifications', array());
+      if (!empty($notifications)) {
+        $notification_config = _semantic_connector_get_global_notification_config();
+        if (isset($notification_config['actions']['powertagging_retag_content']) && $notification_config['actions']['powertagging_retag_content']) {
+          _semantic_connector_global_notification_check(TRUE);
+        }
+      }
+    }
+  }
+  else {
+    $error_operation = reset($operations);
+    $message = t('An error occurred while processing %error_operation on %date', array(
+        '%error_operation' => $error_operation[0],
+        '%date' => format_date($results['end_time']),
+      )) . '<br />';
+    $message .= t('<ul><li>arguments: %arguments</li></ul>', array(
+      '@arguments' => print_r($error_operation[1], TRUE),
+    ));
+    drupal_set_message($message, 'error');
+  }
+}
+
+/**
+ * Extract the tags of an entity.
+ *
+ * @param object $entity
+ *   The entity to extract the tags for.
+ * @param array $tag_settings
+ *   An array of settings used during the process of extraction. Use
+ *   _powertagging_build_tag_settings() to build it.
+ *
+ * @return int[]
+ *   Array of term IDs of the tags.
+ */
+function powertagging_extract_tags_of_entity($entity, array $tag_settings) {
+  // Build the content.
+  $tag_contents = powertagging_extract_entity_content($entity, $tag_settings['fields']);
+
+  // Get the language of the entity.
+  $tag_settings['entity_language'] = (powertagging_translation_possible() && isset($entity->language)) ? $entity->language : LANGUAGE_NONE;
+
+  try {
+    $extraction_result = powertagging_extract($tag_contents['text'], $tag_contents['file_ids'], $tag_contents['entities'], $tag_settings);
+  }
+  catch (Exception $e) {
+    $extraction_result['suggestion'] = [
+      'concepts' => [],
+      'freeterms' => [],
+    ];
+  }
+
+  // Add already existing terms if required.
+  if (!empty($tag_settings['default_tags_field']) && !empty($entity->{$tag_settings['default_tags_field']})) {
+    $language_keys = array_keys($entity->{$tag_settings['default_tags_field']});
+    $field_values = $entity->{$tag_settings['default_tags_field']}[$language_keys[0]];
+    if (!empty($field_values)) {
+      $default_tags_info_field = field_info_field($tag_settings['default_tags_field']);
+      $keys = array_keys($default_tags_info_field['columns']);
+      unset($default_tags_info_field);
+      $default_terms_ids = array();
+      foreach ($field_values as $field_value) {
+        if (isset($field_value[$keys[0]])) {
+          $default_terms_ids[] = $field_value[$keys[0]];
+        }
+      }
+
+      $terms = taxonomy_term_load_multiple($default_terms_ids);
+      foreach ($terms as $term) {
+        $low_term_name = strtolower($term->name);
+        $unique = TRUE;
+        foreach ($extraction_result['suggestion']['concepts'] as $concept) {
+          if (isset($term->field_uri) && !empty($term->field_uri[LANGUAGE_NONE]) && $term->field_uri[LANGUAGE_NONE][0]['value'] == $concept['uri']) {
+            $unique = FALSE;
+            break;
+          }
+          elseif (strtolower($concept['label']) == $low_term_name) {
+            $unique = FALSE;
+            break;
+          }
+        }
+        if ($unique) {
+          foreach ($extraction_result['suggestion']['freeterms'] as $freeterm) {
+            if (strtolower($freeterm['label']) == $low_term_name) {
+              $unique = FALSE;
+              break;
+            }
+          }
+          if ($unique) {
+            if (isset($term->field_uri) && !empty($term->field_uri[LANGUAGE_NONE])) {
+              $extraction_result['suggestion']['concepts'][] = array(
+                'tid' => 0,
+                'uri' => $term->field_uri[LANGUAGE_NONE][0]['value'],
+                'label' => $term->name,
+                'score' => 100,
+                'type' => 'concept',
+              );
+            }
+            else {
+              $extraction_result['suggestion']['freeterms'][] = array(
+                'tid' => 0,
+                'uri' => '',
+                'label' => $term->name,
+                'score' => 100,
+                'type' => 'freeterm',
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return _powertagging_extraction_result_to_tids($tag_settings['powertagging_config'], $extraction_result, $tag_settings['taxonomy_id'], $tag_settings['entity_language']);
+}
+
+/**
+ * Extract the content of an entity.
+ *
+ * @param object $entity
+ *   The entity to extract the content for.
+ * @param array $fields
+ *   An associative array of tag fields by field ID, containing keys "module"
+ *   and "type"
+ *
+ * @return array
+ *   An associative array of the extracted content containing following keys:
+ *   - text (string) --> The extracted text from the entity.
+ *   - file_ids (array) --> An array of file IDs that were extracted.
+ *   - entities (array) --> Associative array of referenced entity IDs keyed by
+ *     field name.
+ */
+function powertagging_extract_entity_content($entity, $fields) {
+  $entity_content = array(
+    'text' => '',
+    'file_ids' => [],
+    'entities' => [],
+  );
+
+  $text_parts = array();
+  foreach ($fields as $tag_field_name => $tag_type) {
+    if (!property_exists($entity, $tag_field_name)) {
+      continue;
+    }
+
+    // Standard fields like "title".
+    if ($tag_type['module'] == 'standard field') {
+      $text_parts[] = trim(strip_tags($entity->{$tag_field_name}));
+    }
+    // Custom fields
+    else {
+      if (empty($entity->{$tag_field_name})) {
+        continue;
+      }
+      $language_keys = array_keys($entity->{$tag_field_name});
+      $field_value_language = $entity->{$tag_field_name}[$language_keys[0]];
+      if (!empty($field_value_language) && is_array($field_value_language[0])) {
+        switch ($tag_type['module']) {
+          case 'text':
+            $tag_content = trim(strip_tags($field_value_language[0]['value']));
+            if ($tag_type['type'] == 'text_textarea_with_summary') {
+              $tag_summary = trim(strip_tags($field_value_language[0]['summary']));
+              if ($tag_summary != $tag_content) {
+                $text_parts[] = $tag_summary;
+              }
+            }
+            $text_parts[] = $tag_content;
+            break;
+
+          case 'file':
+          case 'media':
+            if (isset($field_value_language[0]['fid'])) {
+              foreach ($field_value_language as $file) {
+                $entity_content['file_ids'][] = $file['fid'];
+              }
+            }
+            break;
+
+          case 'entityreference':
+            if (isset($field_value_language[0]['target_id'])) {
+              $entity_content['entities'][$tag_field_name] = [];
+              foreach ($field_value_language as $entity_id) {
+                $entity_content['entities'][$tag_field_name][] = $entity_id['target_id'];
+              }
+            }
+            break;
+        }
+      }
+    }
+  }
+
+  if (!empty($text_parts)) {
+    $entity_content['text'] = implode(' ', $text_parts);
+  }
+
+  return $entity_content;
+}
+
+/**
+ * Get the taxonomy term ids of an extraction result.
+ *
+ * @param object $powertagging_config
+ *   The current PowerTagging configuration.
+ * @param array $extraction_result
+ *   The extracted terms (result of powertagging_extract()).
+ * @param int $taxonomy_id
+ *   The ID of the taxonomy to save the terms in.
+ * @param string $language
+ *   The language of terms that need to be created.
+ * @param boolean $update_existing_terms
+ *   If this parameter is TRUE, the PPT API will be used to get the newest data
+ *   of existing taxonomy terms and update them in case they are out of date.
+ *
+ * @return array
+ *   Array of taxonomy term ids for the extracted concepts.
+ */
+function _powertagging_extraction_result_to_tids($powertagging_config, array $extraction_result, $taxonomy_id, $language, $update_existing_terms = TRUE) {
+  $tids = array();
+  $new_terms = array();
+  // Add tids of concepts.
+  foreach ($extraction_result["suggestion"]['concepts'] as $concept) {
+    if ($concept['tid'] > 0) {
+      $tids[] = $concept['tid'];
+    }
+    else {
+      $new_terms[] = $concept['label'] . '|' . $concept['uri'];
+    }
+  }
+  // Add tids of freeterms.
+  foreach ($extraction_result["suggestion"]['freeterms'] as $concept) {
+    if ($concept['tid'] > 0) {
+      $tids[] = $concept['tid'];
+    }
+    else {
+      $new_terms[] = $concept['label'] . '|';
+    }
+  }
+
+  // Update existing taxonomy terms if required.
+  if (!empty($tids) && $update_existing_terms) {
+    $terms = taxonomy_term_load_multiple($tids);
+    $existing_terms_by_uri = array();
+    foreach ($terms as $existing_term) {
+      if (!empty($existing_term->field_uri) && isset($existing_term->field_uri[LANGUAGE_NONE])) {
+        $existing_terms_by_uri[$existing_term->field_uri[LANGUAGE_NONE][0]['value']] = $existing_term;
+      }
+    }
+
+    if (!empty($existing_terms_by_uri)) {
+      $concepts_detail_data = powertagging_get_concept_details($powertagging_config, array_keys($existing_terms_by_uri));
+      foreach ($concepts_detail_data as $concept_detail_data) {
+        if (isset($existing_terms_by_uri[$concept_detail_data->uri])) {
+          $existing_term = $existing_terms_by_uri[$concept_detail_data->uri];
+          $term_data_changed = powertagging_update_term_concept_details($existing_term, $concept_detail_data);
+          // Only save the taxonomy term if any information has changed.
+          if ($term_data_changed) {
+            taxonomy_term_save($existing_term);
+          }
+        }
+      }
+    }
+  }
+
+  // Create taxonomy terms for new tags.
+  if (!empty($new_terms)) {
+    $new_term_ids = powertagging_add_new_tag($powertagging_config, $new_terms, $taxonomy_id, $language);
+    // Merge existing and new terms.
+    $tids = array_merge($tids, $new_term_ids);
+  }
+
+  return $tids;
+}
+
+/**
+ * Update the powertagging tags of one powertagging field of a single entity.
+ *
+ * @param array $tids
+ *   Array of taxonomy term IDs to update
+ * @param int $powertagging_id
+ *   The PowerTagging configuration ID
+ * @param array $batch_info
+ *   An associative array of information about the batch process.
+ * @param array $context
+ *   The Batch context to transmit data between different calls
+ */
+function powertagging_update_taxonomy_batch($tids, $powertagging_id, $batch_info, &$context) {
+  if (!isset($context['results']['processed'])) {
+    $context['results']['processed'] = 0;
+    $context['results']['updated'] = 0;
+    $context['results']['skipped'] = 0;
+  }
+
+  $terms = taxonomy_term_load_multiple($tids);
+  $powertagging_config = powertagging_config_load($powertagging_id);
+
+  $existing_terms_by_uri = array();
+  foreach ($terms as $existing_term) {
+    if (!empty($existing_term->field_uri) && isset($existing_term->field_uri[LANGUAGE_NONE])) {
+      $existing_terms_by_uri[$existing_term->field_uri[LANGUAGE_NONE][0]['value']] = $existing_term;
+    }
+  }
+  unset($terms);
+
+  $updated_this_batch_count = 0;
+  if (!empty($existing_terms_by_uri)) {
+    $concepts_detail_data = powertagging_get_concept_details($powertagging_config, array_keys($existing_terms_by_uri));
+    foreach ($concepts_detail_data as $concept_detail_data) {
+      if (isset($existing_terms_by_uri[$concept_detail_data->uri])) {
+        $existing_term = $existing_terms_by_uri[$concept_detail_data->uri];
+        $term_data_changed = powertagging_update_term_concept_details($existing_term, $concept_detail_data);
+        // Only save the taxonomy term if any information has changed.
+        if ($term_data_changed) {
+          taxonomy_term_save($existing_term);
+          $updated_this_batch_count++;
+        }
+      }
+    }
+  }
+
+  $context['results']['processed'] += count($tids);
+  $context['results']['updated'] += $updated_this_batch_count;
+  $context['results']['skipped'] += (count($tids) - $updated_this_batch_count);
+  $context['results']['end_time'] = time();
+
+  // Send the inform e-mail when the process is finished.
+  if (module_exists('background_batch') && ($context['results']['processed'] >= $batch_info['total'])) {
+    if (!empty($batch_info['inform_user_email'])) {
+      $params = [
+        'config_id' => $powertagging_config->powertagging_id,
+        'config_title' => $powertagging_config->title,
+        'start_time' => $batch_info['start_time'],
+      ];
+      $params = array_merge($context['results'], $params);
+      drupal_mail('powertagging_batch_process', 'update_taxonomy_batch', $batch_info['inform_user_email'], language_default(), $params);
+    }
+  }
+
+  unset($existing_terms_by_uri);
+  unset($powertagging_config);
+
+  // Show the remaining time as a batch message.
+  $time_string = '';
+  if ($context['results']['processed'] > 0) {
+    $remaining_time = floor((time() - $batch_info['start_time']) / $context['results']['processed'] * ($batch_info['total'] - $context['results']['processed']));
+    if ($remaining_time > 0) {
+      $time_string = (floor($remaining_time / 86400)) . 'd ' . (floor($remaining_time / 3600) % 24) . 'h ' . (floor($remaining_time / 60) % 60) . 'm ' . ($remaining_time % 60) . 's';
+    }
+    else {
+      $time_string = t('Done.');
+    }
+  }
+
+  $context['message'] = t('Processed taxonomy terms: %current_entities of %total_entities (updated: %updated_entities, skipped: %skipped_entities)', array(
+    '%current_entities' => $context['results']['processed'],
+    '%total_entities' => $batch_info['total'],
+    '%updated_entities' => $context['results']['updated'],
+    '%skipped_entities' => $context['results']['skipped'])
+  ) . '<br />' . t('Remaining time: %remaining_time.', array('%remaining_time' => $time_string));
+}
+
+/**
+ * Batch 'finished' callback used by PowerTagging Bulk Tagging.
+ */
+function powertagging_update_taxonomy_batch_finished($success, $results, $operations) {
+  if ($success) {
+    $message = t('Successfully finished updating %total_entities taxonomy terms on %date:', [
+        '%total_entities' => $results['processed'],
+        '%date' => format_date($results['end_time'])
+      ]) . '<br />';
+    $message .= t('<ul><li>updated: %updated_entities</li><li>skipped: %skipped_entities</li></ul>', [
+      '%updated_entities' => $results['updated'],
+      '%skipped_entities' => $results['skipped']
+    ]);
+    drupal_set_message($message);
+  }
+  else {
+    $error_operation = reset($operations);
+    $message = t('An error occurred while processing %error_operation on %date', array(
+      '%error_operation' => $error_operation[0],
+      '%date' => format_date($results['end_time']),
+    )) . '<br />';
+    $message .= t('<ul><li>arguments: %arguments</li></ul>', array(
+      '@arguments' => print_r($error_operation[1], TRUE),
+    ));
+    drupal_set_message($message, 'error');
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function powertagging_batch_process_mail($key, &$message, $params) {
+  $langcode = $message['language']->language;
+  $summary = '';
+  switch ($key) {
+    case 'index_batch':
+      $message['body'][] = t('The "Tag content" batch process for the PowerTagging configuration "@config_title" is finished:', ['@config_title' => $params['config_title']], ['langcode' => $langcode]);
+      $summary .= t('Process started: !date', ['!date' => format_date($params['start_time'])]) . "\n";
+      $summary .= t('Process ended: !date', ['!date' => format_date($params['end_time'])]) . "\n";
+      $summary .= t('Entities in total: !total', ['!total' => $params['processed']], ['langcode' => $langcode]) . "\n";
+      $summary .= t('Entities tagged: !tagged', ['!tagged' => $params['tagged']], ['langcode' => $langcode]) . "\n";
+      $summary .= t('Entities skipped: !skipped', ['!skipped' => $params['skipped']], ['langcode' => $langcode]) . "\n";
+      if (!empty($params['error'])) {
+        $summary .= powertagging_create_error_list($params['error']);
+      }
+      $link = url('admin/config/semantic-drupal/powertagging/' . $params['config_id'] . '/index', array('absolute' => TRUE));
+      break;
+
+    case 'update_taxonomy_batch':
+      $message['body'][] = t('The "Update vocabulary" batch process for the PowerTagging configuration "@config_title" is finished:', ['@config_title' => $params['config_title']], ['langcode' => $langcode]);
+      $summary .= t('Process started: !date', ['!date' => format_date($params['start_time'])]) . "\n";
+      $summary .= t('Process ended: !date', ['!date' => format_date($params['end_time'])]) . "\n";
+      $summary .= t('Taxonomy terms in total: !total', ['!total' => $params['processed']], ['langcode' => $langcode]) . "\n";
+      $summary .= t('Taxonomy terms updated: !updated', ['!updated' => $params['updated']], ['langcode' => $langcode]) . "\n";
+      $summary .= t('Taxonomy terms skipped: !skipped', ['!skipped' => $params['skipped']], ['langcode' => $langcode]) . "\n";
+      $link = url('admin/config/semantic-drupal/powertagging/' . $params['config_id'] . '/update-taxonomy', array('absolute' => TRUE));
+      break;
+  }
+  $message['subject'] = t('Batch process notification - @site_title', ['@site_title' => variable_get('site_name')], ['langcode' => $langcode]);
+  $message['body'][] = $summary;
+  $message['body'][] = t('Link to the batch form: !link', ['!link' => $link], ['langcode' => $langcode]);
+}
+
+/**
+ * Creates an error list with links to entities.
+ *
+ * @param array $errors
+ *   A list of entity-ids grouped by entity type and error type.
+ *
+ * @return string
+ *   An unsorted list of links to entities.
+ */
+function powertagging_create_error_list($errors) {
+  if (empty($errors)) {
+    return '0';
+  }
+  $item_types = array();
+  foreach ($errors as $error_type => $entities) {
+    $items = array();
+    foreach ($entities as $entity_type => $ids) {
+      $entities = entity_load($entity_type, $ids);
+      foreach ($entities as $entity) {
+        switch ($entity_type) {
+          case 'node':
+            $items[] = '<li>' . l($entity->title, 'node/' . $entity->nid) . '</li>';
+            break;
+
+          case 'user':
+            $items[] = '<li>' . l($entity->name, 'node/' . $entity->uid) . '</li>';
+            break;
+
+          case 'taxonomy_term':
+            $items[] = '<li>' . l($entity->name, 'taxonomy/term/' . $entity->tid) . '</li>';
+            break;
+        }
+      }
+    }
+    $item_types[] = '<li>' . t($error_type) . ': <ul>' . implode('', $items) . '</ul></li>';
+  }
+
+  return '<ul>' . implode('', $item_types) . '</ul>';
+}
+
+/**
+ * Returns one or all field names with the type 'poolparty'.
+ *
+ * @param string $bundle
+ *   The name of a bundle.
+ *
+ * @return array | string
+ *   All field names or only one depending on the $bundle.
+ */
+function powertagging_get_field_name($bundle = '') {
+  $field_names = &drupal_static(__FUNCTION__);
+  if (!isset($field_names)) {
+    $field_names = array();
+  }
+  if (empty($bundle)) {
+    $bundle = '#all';
+    if (!isset($field_names[$bundle])) {
+      $field_map = field_info_field_map();
+      $field_names[$bundle] = array();
+      foreach ($field_map as $field_name => $map) {
+        if ($map['type'] != 'powertagging') {
+          continue;
+        }
+        $field_names[$bundle][] = $field_name;
+      }
+      $field_names[$bundle] = array_unique($field_names[$bundle]);
+    }
+  }
+  else {
+    if (!isset($field_names[$bundle])) {
+      $field_names[$bundle] = '';
+      $fields = field_read_fields(array('bundle' => $bundle));
+      foreach ($fields as $field) {
+        if ($field['type'] == 'powertagging') {
+          $field_names[$bundle] = $field['field_name'];
+          break;
+        }
+      }
+    }
+  }
+
+  return $field_names[$bundle];
+}
+
+/**
+ * Returns a list with Power Tagging fields as a option list.
+ *
+ * @param array $field_instances
+ *   An array of field instances with "PowerTagging Tags" fields.
+ * @param boolean $add_field_id (optional)
+ *   Adds the machine name of the field if the value is TRUE.
+ * @param boolean $add_entity_count (optional)
+ *   Adds the count of entities if the value is TRUE.
+ *
+ * @return array
+ *   Option list with Power Tagging fields.
+ */
+function powertagging_get_tagging_field_options_list($field_instances, $add_field_id = FALSE, $add_entity_count = FALSE) {
+  $content_type_options = array();
+  if (!empty($field_instances)) {
+    $node_type_names = node_type_get_names();
+    $taxonomy_names = taxonomy_vocabulary_get_names();
+
+    foreach ($field_instances as $field_instance) {
+      $option_title = '';
+
+      // Build the title of the option.
+      switch ($field_instance['entity_type']) {
+        case 'node':
+          if ($add_entity_count) {
+            $option_title = t('!count nodes from content type "@name"', array(
+              '!count' => powertagging_get_entity_count('node', $field_instance['bundle']),
+              '@name' => $node_type_names[$field_instance['bundle']],
+            ));
+          }
+          else {
+            $option_title = t('Content type "@name"', array('@name' => $node_type_names[$field_instance['bundle']]));
+          }
+
+          if ($add_field_id) {
+            $option_title .= ' (' . $field_instance['field_name'] . ')';
+          }
+          break;
+
+        case 'user':
+          if ($add_entity_count) {
+            $option_title = t('!count users', array(
+              '!count' => powertagging_get_entity_count('user'),
+            ));
+          }
+          else {
+            $option_title = t('User');
+          }
+
+          if ($add_field_id) {
+            $option_title .= ' (' . $field_instance['field_name'] . ')';
+          }
+          break;
+
+        case 'taxonomy_term':
+          if ($add_entity_count) {
+            $option_title = t('!count terms from vocabulary "@name"', array(
+              '!count' => powertagging_get_entity_count('taxonomy_term', $field_instance['bundle']),
+              '@name' => $taxonomy_names[$field_instance['bundle']]->name,
+            ));
+          }
+          else {
+            $option_title = t('Vocabulary "@name"', ['@name' => $taxonomy_names[$field_instance['bundle']]->name]);
+          }
+
+          if ($add_field_id) {
+            $option_title .= ' (' . $field_instance['field_name'] . ')';
+          }
+          break;
+
+        default:
+          // If the entity type is not supported, throw an error and continue.
+          drupal_set_message(t('Entity type "%entitytype" is not supported.', array('%entitytype' => $field_instance['entity_type'])), 'warning');
+          continue;
+      }
+
+      // Add the option.
+      $content_type_options[$field_instance['entity_type'] . ' ' . $field_instance['bundle'] . ' ' . $field_instance['field_name']] = $option_title;
+    }
+  }
+  ksort($content_type_options);
+
+  return $content_type_options;
+}
+
+/**
+ * Calculates the count of entities of a specific entity type.
+ *
+ * @param string $entity_type
+ *   The entity type.
+ * @param string $bundle
+ *   The bundle.
+ *
+ * @return int
+ *   The count of entities.
+ */
+function powertagging_get_entity_count($entity_type, $bundle='') {
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', $entity_type);
+  if (!empty($bundle)) {
+    $query->entityCondition('bundle', $bundle);
+  }
+  $query->count();
+
+  return $query->execute();
+}
+
+/**
+ * Get all powertagging field instances.
+ *
+ * @param int $powertagging_id
+ *   The ID of the PowerTagging configuration to filter for.
+ *
+ * @return array
+ *   Array of field instances that match the filters.
+ */
+function powertagging_get_tagging_field_instances($powertagging_id = 0) {
+  $fields = field_read_fields(array('type' => 'powertagging'));
+
+  $field_options = array();
+  foreach ($fields as $field_name => $field_data) {
+    if ($powertagging_id > 0 && $field_data['settings']['powertagging_id'] != $powertagging_id) {
+      continue;
+    }
+
+    $field_instances = field_read_instances(array('field_name' => $field_name));
+    foreach ($field_instances as $field_instance) {
+      if (powertagging_check_field_instance($field_instance)) {
+        $field_options[] = $field_instance;
+      }
+    }
+  }
+
+  return $field_options;
+}
+
+/**
+ * Check if a powertagging-field-instance is correctly configured to allow tags.
+ *
+ * @param array $instance
+ *   The field instance to check.
+ *
+ * @return bool
+ *   TRUE if the field instance was configured correctly, FALSE if not.
+ */
+function powertagging_check_field_instance(array $instance) {
+  if ($instance['widget']['type'] == 'powertagging_ui' || $instance['widget']['type'] == 'powertagging_invisible') {
+    // Check if the "Number of values" was set to "Unlimited".
+    $field = field_info_field($instance['field_name']);
+    if ($field['cardinality'] == FIELD_CARDINALITY_UNLIMITED) {
+      // Check if fields are set.
+      $fields_to_check = array();
+      foreach ($instance['settings']['fields'] as $field_id) {
+        if ($field_id != FALSE) {
+          $fields_to_check[] = $field_id;
+        }
+      }
+      if (!empty($fields_to_check)) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Title callback for PowerTagging configurations.
+ *
+ * @param object $powertagging_config
+ *   The PowerTagging deserialized configuration object.
+ * @return string
+ *   The title.
+ */
+function powertagging_config_title($powertagging_config) {
+  if (empty($powertagging_config)) {
+    return t('Edit PowerTagging configuration "unknown"');
+  }
+  return t('Edit PowerTagging configuration "@title"', array('@title' => $powertagging_config->title));
+}
+
+/**
+ * Get the title for a bulk indexing page.
+ *
+ * @param object $powertagging_config
+ *   The PowerTagging configuration.
+ *
+ * @return string
+ *   The title of the bulk indexing page.
+ */
+function powertagging_bulk_indexing_title($powertagging_config) {
+  if (empty($powertagging_config)) {
+    return t('Bulk indexing of PowerTagging configuration "unknown"');
+  }
+  return t('Bulk indexing of PowerTagging configuration "@title"', array('@title' => $powertagging_config->title));
+}
+
+/**
+ * Get the title for a taxonomy updating page.
+ *
+ * @param object $powertagging_config
+ *   The PowerTagging configuration.
+ *
+ * @return string
+ *   The title of the taxonomy updating page.
+ */
+function powertagging_update_taxonomy_title($powertagging_config) {
+  if (empty($powertagging_config)) {
+    return t('Updating taxonomy terms of PowerTagging configuration "unknown"');
+  }
+  return t('Updating taxonomy terms of PowerTagging configuration "@title"', array('@title' => $powertagging_config->title));
+}
+
+/**
+ * Get the title for a PowerTagging synchronization page.
+ *
+ * @param object $powertagging_config
+ *   The PowerTagging configuration.
+ *
+ * @return string
+ *   The title of the project synchronization page.
+ */
+function powertagging_synchronization_title($powertagging_config) {
+  if (empty($powertagging_config)) {
+    return t('Taxonomy synchronization of project "unknown" in PowerTagging configuration "unknown"');
+  }
+  return t('Taxonomy synchronization of project "@project" in PowerTagging configuration "@title"', array(
+    '@project' => $powertagging_config->config['projects'][$powertagging_config->project_id]['label'],
+    '@title' => $powertagging_config->title)
+  );
+}
+
+/**
+ * Get the title for a extraction model refreshing page.
+ *
+ * @param object $powertagging_config
+ *   The PowerTagging configuration.
+ *
+ * @return string
+ *   The title of the extraction model refreshing page.
+ */
+function powertagging_refresh_extraction_model_title($powertagging_config) {
+  if (empty($powertagging_config)) {
+    return t('Refreshing the extraction model for PowerTagging configuration "unknown"');
+  }
+  return t('Refreshing the extraction model for PowerTagging configuration "@title"', array('@title' => $powertagging_config->title));
+}
+
+/**
+ * Check if translation of powertagging-concepts is possible in Drupal.
+ *
+ * @return bool
+ *   TRUE if taxonomy translation is available, FALSE if not.
+ */
+function powertagging_translation_possible() {
+  return module_exists('i18n_taxonomy');
+}
+
+/**
+ * Check if there are any unfulfilled requirements of this module.
+ *
+ * @return array
+ *   Array of error-messages if there are unfulfilled requirements.
+ */
+function powertagging_check_requirements() {
+  $errors = array();
+
+  if (!function_exists('curl_version')) {
+    $errors[] = t('cURL needs to be installed on the server to use this module.');
+  }
+
+  return $errors;
+}
+
+/**
+ * Merge an array recursively, but the way normal array_merge() works.
+ */
+function powertagging_array_merge_recursive_simple() {
+  if (func_num_args() < 2) {
+    trigger_error(__FUNCTION__  . ' needs two or more array arguments', E_USER_WARNING);
+    return;
+  }
+  $arrays = func_get_args();
+  $merged = array();
+  while ($arrays) {
+    $array = array_shift($arrays);
+    if (!is_array($array)) {
+      trigger_error(__FUNCTION__  . ' encountered a non array argument', E_USER_WARNING);
+      return;
+    }
+
+    if (!$array) {
+      continue;
+    }
+
+    foreach ($array as $key => $value) {
+      if (is_string($key)) {
+        if (is_array($value) && array_key_exists($key, $merged) && is_array($merged[$key])) {
+          $merged[$key] = call_user_func(__FUNCTION__, $merged[$key], $value);
+        }
+        else {
+          $merged[$key] = $value;
+        }
+      }
+      else {
+        $merged[] = $value;
+      }
+    }
+  }
+  return $merged;
+}
+
+/**
+ * Get detail information for a list of concepts.
+ *
+ * @param object $powertagging_config
+ *   The current PowerTagging configuration.
+ * @param array $uris
+ *   An Array or URIs of the concepts.
+ *
+ * @return array
+ *   An associative array of concept detail information.
+ */
+function powertagging_get_concept_details($powertagging_config, array $uris) {
+  $properties = $powertagging_config->config['data_properties'];
+  $properties[] = 'skos:prefLabel';
+  $properties[] = 'skos:definition';
+  return $powertagging_config->connection->getApi('PPT')->getConcepts($powertagging_config->project_id, $uris, $properties);
+}
+
+/**
+ * Update a taxonomy term with data received from the PPT API.
+ *
+ * @param object $term
+ *   The object of the taxonomy term, which will receive the new detail data.
+ * @param object $concept
+ *   An array of concept detail data to update the term with.
+ *
+ * @return bool
+ *   TRUE if data has changed, FALSE if everything was up to date already.
+ */
+function powertagging_update_term_concept_details(&$term, $concept) {
+  $term_setialized = serialize($term);
+
+  // Set the name.
+  $term->name = $concept->prefLabel;
+  // Set the description.
+  $term->description = empty($concept->definitions) ? '' : implode(' ', $concept->definitions);
+
+  // Set the alternative labels.
+  $term->field_alt_labels[LANGUAGE_NONE][0]['value'] = '';
+  if (!empty($concept->altLabels)) {
+    $alt_labels = implode(',', $concept->altLabels);
+    // Remove multibyte-characters.
+    $term->field_alt_labels[LANGUAGE_NONE][0]['value'] = preg_replace('/[[:^print:]]/', "", $alt_labels);
+  }
+
+  // Set the hidden labels.
+  $term->field_hidden_labels[LANGUAGE_NONE][0]['value'] = '';
+  if (!empty($concept->hiddenLabels)) {
+    $hidden_labels = implode(',', $concept->hiddenLabels);
+    // Remove multibyte-characters.
+    $term->field_hidden_labels[LANGUAGE_NONE][0]['value'] = preg_replace('/[[:^print:]]/', "", $hidden_labels);
+  }
+
+  // Set the scope notes.
+  if (empty($concept->scopeNotes)) {
+    $term->field_scope_notes = [];
+  }
+  elseif (!isset($term->field_scope_notes) || !_powertagging_compare_concept_details($term->field_scope_notes, $concept->scopeNotes)) {
+    $term->field_scope_notes[LANGUAGE_NONE] = [];
+    foreach ($concept->scopeNotes as $notes) {
+      $term->field_scope_notes[LANGUAGE_NONE][] = ['value' => $notes];
+    }
+  }
+
+  // Set the related concepts.
+  if (empty($concept->relateds)) {
+    $term->field_related_concepts = [];
+  }
+  elseif (!isset($term->field_related_concepts) || !_powertagging_compare_concept_details($term->field_related_concepts, $concept->relateds)) {
+    $term->field_related_concepts[LANGUAGE_NONE] = [];
+    foreach ($concept->relateds as $related) {
+      $term->field_related_concepts[LANGUAGE_NONE][] = ['value' => $related];
+    }
+  }
+
+  // Set the exact matches.
+  if (empty($concept->exactMatch)) {
+    $term->field_exact_match = [];
+  }
+  elseif (!isset($term->field_exact_match) ||!_powertagging_compare_concept_details($term->field_exact_match, $concept->exactMatch)) {
+    $term->field_exact_match[LANGUAGE_NONE] = array();
+    foreach ($concept->exactMatch as $exactMatch) {
+      $term->field_exact_match[LANGUAGE_NONE][] = array('value' => $exactMatch);
+    }
+  }
+
+  return (serialize($term) != $term_setialized);
+}
+
+/**
+ * Checks if an array field of a content type is equal to a data array.
+ *
+ * @param array $field
+ *   The field of a content type.
+ * @param array $data
+ *   The data array.
+ *
+ * @return bool
+ *   Returns TRUE if the field has the same data as the data array,
+ *   otherwise returns FALSE.
+ */
+function _powertagging_compare_concept_details(array $field, array $data) {
+  if (empty($field)) {
+    return empty($data);
+  }
+  if (count($field[LANGUAGE_NONE]) != count($data)) {
+    return FALSE;
+  }
+  foreach ($field[LANGUAGE_NONE] as $field_data) {
+    if (!in_array($field_data['value'], $data)) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+/**
+ * Get the configuration for the entity extraction.
+ *
+ * @param string $entity_type
+ *   The type of the entity to get the extraction settings for
+ * @param string $bundle
+ *   The bundle of the entity to get the extraction settings for
+ *
+ * @return array
+ *   An associative array for the entity extraction configuration for the
+ *   requested entities.
+ */
+function _powertagging_get_entity_extraction_settings($entity_type, $bundle) {
+  $extraction_config = variable_get('powertagging_entity_extraction_settings', []);
+  $default_config = [
+    'enabled' => FALSE,
+    'connection_id' => '',
+    'languages' => [],
+    'fields' => [],
+    'types' => ['person', 'organization', 'location'],
+    'display_entities' => FALSE,
+  ];
+
+  if (isset($extraction_config[$entity_type]) && isset($extraction_config[$entity_type][$bundle])) {
+    return array_merge($default_config, $extraction_config[$entity_type][$bundle]);
+  }
+  else {
+    return $default_config;
+  }
+}
+
+/**
+ * Get the configuration of the tag glossary block.
+ *
+ * @return array
+ *   An associative array for the configuration of the tag glossary.
+ */
+function _powertagging_get_tag_glossary_settings() {
+  $default_config = [
+    'items_max' => 3,
+    'use_dbpedia_definition' => FALSE,
+    'definition_max_characters' => 300,
+  ];
+
+  return array_merge($default_config, variable_get('powertagging_tag_glossary_settings', []));
+}
+
+/**
+ * Theme a PowerTagging glossary for the currently viewed entity.
+ *
+ * Creates the HTML for a list of the most frequently used concepts for the
+ * currently viewed entity. Supported entity types are "node", "user" and
+ * "taxonomy_term".
+ *
+ * @return string
+ *   The HTML content of the glossary for the currently viewed entity.
+ */
+function _powertagging_tag_glossary() {
+  $block_html = '';
+
+  // A node is currently displayed.
+  if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) === NULL) {
+    $entity = node_load(arg(1));
+    $entity_type = 'node';
+    $bundle = $entity->type;
+  }
+  // A user is currently displayed.
+  elseif (arg(0) == 'user' && is_numeric(arg(1)) && arg(2) === NULL) {
+    $entity = user_load(arg(1));
+    $entity_type = 'user';
+    $bundle = 'user';
+  }
+  // A taxonomy term is currently displayed.
+  elseif (arg(0) == 'taxonomy' && arg(1) == 'term' && is_numeric(arg(2)) && arg(3) === NULL) {
+    $entity = taxonomy_term_load(arg(2));
+    $entity_type = 'taxonomy_term';
+    $bundle = $entity->vocabulary_machine_name;
+  }
+
+  // One of the supported entities is being displayed at the moment.
+  if (isset($entity_type)) {
+    $field_name_query = db_select('field_config_instance', 'i')
+      ->fields('i', array('field_name', 'data'))
+      ->condition('i.entity_type', $entity_type)
+      ->condition('i.bundle', $bundle);
+
+    $field_name_query->join('field_config', 'c', 'i.field_id = c.id');
+    $field_name_query->condition('c.type', 'powertagging');
+
+    $field_configurations = $field_name_query->execute()
+      ->fetchAllKeyed();
+
+    // Tag fields are available for this node.
+    if (!empty($field_configurations)) {
+      $tag_ids = array();
+      foreach ($field_configurations as $field_name => &$field_config) {
+        $field_config = unserialize($field_config);
+        if (!isset($field_config['settings']['include_in_tag_glossary'])) {
+          $field_config['settings']['include_in_tag_glossary'] = TRUE;
+        }
+        if ($field_config['settings']['include_in_tag_glossary'] && isset($entity->{$field_name}) && !empty($entity->{$field_name})) {
+          foreach ($entity->{$field_name}[LANGUAGE_NONE] as $tid_value) {
+            $tag_ids[] = $tid_value['tid'];
+          }
+        }
+      }
+
+      // Tags are available for this node.
+      if (!empty($tag_ids)) {
+        $tag_glossary_settings = _powertagging_get_tag_glossary_settings();
+        $term_counts = array();
+        foreach ($field_configurations as $field_name => $field_config) {
+          if ($field_config['settings']['include_in_tag_glossary']) {
+            // Get the most frequent tags.
+            $term_count_query = db_select('field_data_' . $field_name, 'd')
+              ->fields('d', array($field_name . '_tid'))
+              ->condition('d.' . $field_name . '_tid', $tag_ids)
+              ->orderBy('count', 'DESC');
+
+            // Terms need to have an URI --> no free terms.
+            $term_count_query->join('field_data_field_uri', 'u', 'd.' . $field_name . '_tid = u.entity_id AND u.entity_type = \'taxonomy_term\'');
+
+            // The term needs to have a description.
+            //$term_count_query->join('taxonomy_term_data', 'ttd', 'd.' . $field_name . '_tid = ttd.tid');
+            //$term_count_query->condition('ttd.description', '', '<>');
+
+            $term_count_query->groupBy('d.' . $field_name . '_tid')
+              ->addExpression('count(\'' . $field_name . '_tid\')', 'count');
+
+            $term_counts += $term_count_query //->range(0, $max_items)
+              ->execute()
+              ->fetchAllKeyed();
+          }
+        }
+        arsort($term_counts);
+
+        $terms = taxonomy_term_load_multiple(array_keys($term_counts));
+        $potential_terms = array();
+        $dbpedia_check_terms = array();
+        foreach ($terms as $term) {
+          if (!empty($term->description)) {
+            $potential_terms[$term->tid] = $term;
+          }
+          elseif (!empty($term->field_exact_match)) {
+            foreach ($term->field_exact_match[LANGUAGE_NONE] as $exact_match_value) {
+              if (strpos($exact_match_value['value'], 'http://dbpedia.org') !== FALSE) {
+                // For correct sorting (by score) it is required to add all
+                // possible terms here and remove the ones without a description
+                // in the later process.
+                $potential_terms[$term->tid] = $term;
+                $dbpedia_check_terms[$exact_match_value['value']] = $term->tid;
+                break;
+              }
+            }
+          }
+        }
+
+        // Get missing definitions from DBpedia if possible.
+        if ($tag_glossary_settings['use_dbpedia_definition'] && !empty($dbpedia_check_terms)) {
+          $dbpedia_store_connection = new SemanticConnectorSparqlEndpointConnection();
+          $dbpedia_store_connection->setURL('http://dbpedia.org/sparql');
+          $dbpedia_store = $dbpedia_store_connection->getApi();
+
+          // Define the SPARQL query.
+          $query = "
+    PREFIX onto:<http://dbpedia.org/ontology/>
+
+    SELECT ?uri, ?definition
+    WHERE {
+      ?uri onto:abstract ?definition FILTER (lang(?definition) = 'en').
+      VALUES ?uri { <" . implode('> <', array_keys($dbpedia_check_terms)) . "> }
+    }";
+
+          // Fetch the DBpedia definitions and update the terms.
+          try {
+            $rows = $dbpedia_store->query($query);
+
+            if ($rows->numRows()) {
+              foreach ($rows as $row) {
+                $dbpedia_definition = $row->definition->getValue();
+                if (!empty($dbpedia_definition)) {
+                  $potential_terms[$dbpedia_check_terms[$row->uri->getURI()]]->description = $dbpedia_definition;
+                }
+              }
+            }
+          }
+          catch (Exception $e) {
+            watchdog('PowerTagging', 'Error during fetching definitions from DBpedia in the PowerTagging tag glossary block: <pre>%errors</pre>', array('%errors' => $e->getMessage()), WATCHDOG_ERROR);
+          }
+        }
+
+        // Limit the terms to the maximum number of terms and remove terms
+        // without a definition.
+        $final_terms_counts = array();
+        $final_terms = array();
+        $displayed_tags_count = 0;
+        foreach ($potential_terms as $tid => $term) {
+          if (!empty($term->description)) {
+            $final_terms_counts[$tid] = $term_counts[$tid];
+            $final_terms[$tid] = $term;
+            $displayed_tags_count++;
+            if ($displayed_tags_count >= $tag_glossary_settings['items_max']) {
+              break;
+            }
+          }
+        }
+
+        // Theme the terms.
+        if (!empty($final_terms)) {
+          // Offer a hook for customizing the block output.
+          $custom_content = module_invoke_all('powertagging_tag_glossary_output', $final_terms, $final_terms_counts);
+
+          // Build the block content.
+          if (empty($custom_content)) {
+            $block_html .= '<div id="powertagging_glossary_terms">';
+            foreach (array_keys($final_terms_counts) as $tid) {
+              if (isset($final_terms[$tid])) {
+                $term = $final_terms[$tid];
+                $block_html .= '<div class="powertagging_glossary_terms_term">';
+                $block_html .= '<h3>' . $term->name . '</h3>';
+                if (!empty($term->description)) {
+                  $block_html .= '<p>' . ($tag_glossary_settings['definition_max_characters'] ? views_trim_text(
+                    array(
+                      'max_length' => $tag_glossary_settings['definition_max_characters'],
+                      'word_boundary' => TRUE,
+                      'ellipsis' => TRUE,
+                      'html' => TRUE,
+                    ),
+                    $term->description) : $term->description) . '</p>';
+                }
+                $block_html .= '</div>';
+              }
+            }
+            $block_html .= '</div>';
+          }
+          // Custom tag glossary block content (hooked).
+          else {
+            $block_html .= reset($custom_content);
+          }
+        }
+      }
+    }
+  }
+
+  return $block_html;
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function powertagging_entity_presave($entity, $type) {
+  // One of the supported entities is being created at the moment.
+  if (in_array($type, array('node', 'user', 'taxonomy_term'))) {
+    $bundle = ($type == 'node' ? $entity->type : ($type == 'user' ? 'user' : $entity->vocabulary_machine_name));
+
+    foreach (field_info_instances($type, $bundle) as $instance) {
+      $field_name = $instance['field_name'];
+      // It is a PowerTagging field with automatic tagging activated.
+      if ($instance['widget']['module'] == 'powertagging') {
+        $language = (isset($entity->language) && !empty($entity->language)) ? $entity->language : LANGUAGE_NONE;
+
+        $tag_entity = FALSE;
+        switch ($instance['widget']['type']) {
+          case 'powertagging_ui':
+            // Only tag new entities and only if the auto-tag is enabled.
+            if (!isset($entity->original) && isset($instance['settings']['automatically_tag_new_entities']) && $instance['settings']['automatically_tag_new_entities']) {
+              // Only go on if the entity doesn't have values for that field yet.
+              if (!property_exists($entity, $field_name) || empty($entity->{$field_name}) || !isset($entity->{$field_name}[$language]) || empty($entity->{$field_name}[$language])) {
+                $tag_entity = TRUE;
+              }
+            }
+            break;
+          case 'powertagging_invisible':
+            $tag_entity = TRUE;
+            break;
+        }
+
+        if ($tag_entity) {
+          // Build the tag settings.
+          $powertagging_config = powertagging_config_load($instance['settings']['powertagging_id']);
+          $tag_settings = _powertagging_build_tag_settings($powertagging_config, $instance);
+
+          // Extract the tags.
+          $tids = powertagging_extract_tags_of_entity($entity, $tag_settings);
+
+          // Bring the tids into the correct format for an entity.
+          $field_value_tids = array();
+          foreach ($tids as $tid) {
+            $field_value_tids[] = array(
+              'tid' => (string) $tid,
+            );
+          }
+
+          // Update the field value.
+          $entity->{$field_name}[$language] = $field_value_tids;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_view_alter().
+ */
+function powertagging_entity_view_alter(&$build, $type) {
+  $entity_id = 0;
+  $language = LANGUAGE_NONE;
+  switch ($type) {
+    case 'node':
+      $entity_id = $build['#node']->nid;
+      $language = $build['#node']->language;
+      break;
+  }
+
+  $extraction_config = _powertagging_get_entity_extraction_settings($type, $build['#bundle']);
+  if ($extraction_config['enabled']) {
+    // Get all cache values for the current entity.
+    $cached_values_query = db_select('powertagging_entity_extraction_cache', 'c');
+    $cached_values_query->fields('c', ['field_name', 'delta', 'html'])
+      ->condition('entity_type', $type)
+      ->condition('entity_id', $entity_id)
+      ->condition('language', $language);
+    $cached_values = $cached_values_query->execute()
+      ->fetchAll(PDO::FETCH_ASSOC);
+
+    // Replace the markups with the cached values.
+    foreach ($cached_values as $cached_value) {
+      if (isset($build[$cached_value['field_name']]) && isset($build[$cached_value['field_name']][$cached_value['delta']])) {
+        if ($extraction_config['display_entities']) {
+          $cached_value['html'] = '<span class="powertagging-display-entities"></span>' . $cached_value['html'];
+        }
+        $build[$cached_value['field_name']][$cached_value['delta']]['#markup'] = $cached_value['html'];
+      }
+    }
+  }
+}
+
+/**
+ * @defgroup powertagging_taxonomy_index Taxonomy indexing
+ * @{
+ * Functions to maintain taxonomy indexing.
+ *
+ * @see taxonomy_build_node_index
+ */
+
+/**
+ * Implements hook_node_insert().
+ */
+function powertagging_node_insert($node) {
+  // Add taxonomy index entries for the node.
+  powertagging_taxonomy_build_node_index($node);
+
+  // Add the node to the entity extraction cache.
+  powertagging_build_entity_extraction_cache('node', $node);
+}
+
+/**
+ * Implements hook_entity_update().
+ *
+ * @info It was taken the hook_entity_update() instead of hook_node_update()
+ * because the taxonomy module has removed the data after the insertion.
+ */
+function powertagging_entity_update($entity, $type) {
+  // Always rebuild the node's taxonomy index entries on node save.
+  if ($type == 'node') {
+    powertagging_taxonomy_delete_node_index($entity);
+    powertagging_taxonomy_build_node_index($entity);
+
+    // Update the node in the entity extraction cache.
+    powertagging_delete_entity_extraction_cache($type, $entity);
+    powertagging_build_entity_extraction_cache($type, $entity);
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function powertagging_node_delete($node) {
+  // Clean up the {taxonomy_index} table when nodes are deleted.
+  powertagging_taxonomy_delete_node_index($node);
+
+  // Remove the node from the entity extraction cache.
+  powertagging_delete_entity_extraction_cache('node', $node);
+}
+
+/**
+ * Implements hook_field_delete_instance().
+ */
+function powertagging_field_delete_instance($instance) {
+  // Remove everything from the field in the entity extraction cache.
+  db_delete('powertagging_entity_extraction_cache')
+    ->condition('entity_type', $instance['entity_type'])
+    ->condition('bundle', $instance['bundle'])
+    ->condition('field_name', $instance['field_name'])
+    ->execute();
+
+  // Remove the field from the extraction configuration.
+  $extraction_variable = variable_get('powertagging_entity_extraction_settings', []);
+  if (isset($extraction_variable[$instance['entity_type']]) && isset($extraction_variable[$instance['entity_type']][$instance['bundle']]) && in_array($instance['field_name'], $extraction_variable[$instance['entity_type']][$instance['bundle']]['fields'])) {
+    $extraction_variable[$instance['entity_type']][$instance['bundle']]['fields'] = array_diff($extraction_variable[$instance['entity_type']][$instance['bundle']]['fields'], [$instance['field_name']]);
+    variable_set('powertagging_entity_extraction_settings', $extraction_variable);
+  }
+}
+
+/**
+ * Implements hook_node_type_delete().
+ */
+function powertagging_node_type_delete($info) {
+  // Remove the node type from the PowerTagging entity extraction cache.
+  db_delete('powertagging_entity_extraction_cache')
+    ->condition('entity_type', 'node')
+    ->condition('bundle', $info->type)
+    ->execute();
+
+  // Remove the node type from the extraction configuration.
+  $extraction_variable = variable_get('powertagging_entity_extraction_settings', []);
+  if (isset($extraction_variable['node']) && isset($extraction_variable['node'][$info->type])) {
+    unset($extraction_variable['node'][$info->type]);
+    variable_set('powertagging_entity_extraction_settings', $extraction_variable);
+  }
+}
+
+/**
+ * Builds and inserts entity extraction entries for a given entity.
+ *
+ * @param string $entity_type
+ *   The entity type, e.g. "node"
+ * @param object $entity
+ *   The entity object.
+ */
+function powertagging_build_entity_extraction_cache($entity_type, $entity) {
+  switch ($entity_type) {
+    case 'node':
+      $entity_extraction_settings = _powertagging_get_entity_extraction_settings($entity_type, $entity->type);
+      // Entities need to be extracted for this type of entity.
+      if ($entity_extraction_settings['enabled'] && !empty($entity_extraction_settings['fields'])) {
+        $threshold = 0;
+        $connection = SemanticConnector::getConnection('pp_server', $entity_extraction_settings['connection_id']);
+        /** @var \SemanticConnectorPPXApi $ppx_api */
+        $ppx_api = $connection->getApi('PPX');
+
+        $fields = $entity_extraction_settings['fields'];
+        foreach ($fields as $field_id) {
+          if (property_exists ($entity, $field_id)) {
+            foreach ($entity->{$field_id} as $language => $language_values) {
+              if (isset($entity_extraction_settings['languages'][$language]) && !empty($entity_extraction_settings['languages'][$language])) {
+                foreach ($language_values as $delta => $field_value) {
+                  $extracted_entities = $ppx_api->extractNamedEntities(utf8_encode($field_value['value']), $entity_extraction_settings['languages'][$language], $entity_extraction_settings['types'], [], 'text');
+                  if (!empty($extracted_entities)) {
+                    $to_replace = [];
+                    foreach ($extracted_entities as $extracted_entity) {
+                      if ($extracted_entity['score'] > $threshold) {
+                        foreach ($extracted_entity['positions'] as $position) {
+                          $to_replace[$position['beginningIndex'] . '_' . $position['endIndex']] = $extracted_entity;
+                        }
+                      }
+                    }
+
+                    $schemaorg_properties = [
+                      'organization' => [
+                        'type' => 'Organization',
+                        'property' => 'name',
+                      ],
+                      'person' => [
+                        'type' => 'Person',
+                        'property' => 'name',
+                      ],
+                      'location' => [
+                        'type' => 'Place',
+                        'property' => 'name',
+                      ]
+                    ];
+
+                    // Replace strings from the back.
+                    krsort($to_replace, SORT_NUMERIC);
+                    $result_html = $field_value['value'];
+                    foreach ($to_replace as $position => $extracted_entity) {
+                      $position = explode('_', $position);
+                      if (substr($result_html, $position[0], strlen($extracted_entity['textValue'])) === $extracted_entity['textValue']) {
+                        $new_markup = substr($result_html, 0, $position[0]);
+                        $new_markup .= '<span class="powertagging-ner powertagging-ner-' . $extracted_entity['type'] . '" vocab="http://schema.org/" typeof="' . $schemaorg_properties[$extracted_entity['type']]['type'] . '"><span property="' . $schemaorg_properties[$extracted_entity['type']]['property'] . '">' . $extracted_entity['textValue'] . '</span></span>';
+                        $new_markup .= substr($result_html, $position[1] + 1);
+                        $result_html = $new_markup;
+                      }
+                    }
+
+                    // Save the HTML to the entity extraction cache.
+                    db_insert('powertagging_entity_extraction_cache')
+                      ->fields(array(
+                        'entity_type' => $entity_type,
+                        'bundle' => $entity->type,
+                        'entity_id' => $entity->nid,
+                        'language' => $entity->language,
+                        'field_name' => $field_id,
+                        'delta' => $delta,
+                        'html' => $result_html,
+                      ))
+                      ->execute();
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      break;
+  }
+}
+
+/**
+ * Deletes all entity extraction entries for a given entity.
+ *
+ * @param string $entity_type
+ *   The entity type, e.g. "node"
+ * @param object $entity
+ *   The entity object.
+ */
+function powertagging_delete_entity_extraction_cache($entity_type, $entity) {
+  switch ($entity_type) {
+    case 'node':
+      db_delete('powertagging_entity_extraction_cache')
+        ->condition('entity_type', $entity_type)
+        ->condition('entity_id', $entity->nid)
+        ->condition('language', $entity->language)
+        ->execute();
+      break;
+  }
+}
+
+/**
+ * Builds and inserts taxonomy index entries for a given node.
+ *
+ * The index lists all terms that are related to a given node entity, and is
+ * therefore maintained at the entity level.
+ *
+ * @param object $node
+ *   The node object.
+ */
+function powertagging_taxonomy_build_node_index($node) {
+  // We maintain a denormalized table of term/node relationships, containing
+  // only data for current, published nodes.
+  $status = NULL;
+  $sticky = 0;
+  if (variable_get('taxonomy_maintain_index_table', TRUE)) {
+    // If a node property is not set in the node object when node_save() is
+    // called, the old value from $node->original is used.
+    if (!empty($node->original)) {
+      $status = (int)(!empty($node->status) || (!isset($node->status) && !empty($node->original->status)));
+      $sticky = (int)(!empty($node->sticky) || (!isset($node->sticky) && !empty($node->original->sticky)));
+    }
+    else {
+      $status = (int)(!empty($node->status));
+      $sticky = (int)(!empty($node->sticky));
+    }
+  }
+  // We only maintain the taxonomy index for published nodes.
+  if ($status) {
+    // Collect a unique list of all the term IDs from all node fields.
+    $tid_all = array();
+    foreach (field_info_instances('node', $node->type) as $instance) {
+      $field_name = $instance['field_name'];
+      $field = field_info_field($field_name);
+      if ($field['module'] == 'powertagging' && $field['storage']['type'] == 'field_sql_storage') {
+        // If a field value is not set in the node object when node_save() is
+        // called, the old value from $node->original is used.
+        if (isset($node->{$field_name})) {
+          $items = $node->{$field_name};
+        }
+        elseif (isset($node->original->{$field_name})) {
+          $items = $node->original->{$field_name};
+        }
+        else {
+          continue;
+        }
+        foreach (field_available_languages('node', $field) as $langcode) {
+          if (!empty($items[$langcode])) {
+            foreach ($items[$langcode] as $item) {
+              if (isset($item['tid']) && is_numeric($item['tid'])) {
+                $tid_all[$item['tid']] = $item['tid'];
+              }
+            }
+          }
+        }
+      }
+    }
+    // Insert index entries for all the node's terms.
+    if (!empty($tid_all)) {
+      $query = db_insert('taxonomy_index')->fields(array('nid', 'tid', 'sticky', 'created'));
+      foreach ($tid_all as $tid) {
+        $query->values(array(
+          'nid' => $node->nid,
+          'tid' => $tid,
+          'sticky' => $sticky,
+          'created' => $node->created,
+        ));
+      }
+      $query->execute();
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function powertagging_form_node_type_form_alter(&$form, &$form_state) {
+  $content_type = $form['#node_type']->type;
+
+  // Add a custom validation handler.
+  $form['#validate'][] = 'powertagging_form_node_type_form_validate';
+
+  // Add a new vertical tab for the PowerTagging entity extraction settings.
+  $form['powertagging_entity_extraction'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('PowerTagging entity extraction'),
+    '#group' => 'additional_settings',
+  );
+
+  // Build nodes counts.
+  $total_nodes_query = db_select('node', 'n');
+  $total_nodes_query->fields('n', ['nid'])
+    ->condition('n.type', $content_type);
+  $total_count = $total_nodes_query->countQuery()->execute()->fetchField();
+
+  $extraction_nodes_query = db_select('node', 'n');
+  $extraction_nodes_query->fields('n', ['nid'])
+    ->condition('n.type', $content_type);
+  $extraction_nodes_query->join('powertagging_entity_extraction_cache', 'c', 'c.entity_id = n.nid AND c.entity_type = \'node\'');
+  $extraction_nodes_query->distinct();
+  $extracted_count = $extraction_nodes_query->countQuery()->execute()->fetchField();
+
+  $form['powertagging_entity_extraction']['powertagging_entity_extraction_info'] = array(
+    '#type' => 'markup',
+    '#markup' => '<p><b>' . t('Nodes of this type with extracted entities') . ': ' . $extracted_count . ' / ' . $total_count . '</b></p>',
+  );
+
+  $extraction_settings = _powertagging_get_entity_extraction_settings('node', $content_type);
+  $form['powertagging_entity_extraction']['powertagging_extraction_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable Schema.org Entity Extraction'),
+    '#description' => t('If this option is enabled, every time a node gets created or updated, the markup of selected fields will be enriched with Schema.org annotations for entities extracted by PoolParty.') . '<br />' . t('Note: This feature requires PoolParty 7.0+ and will result in an increased time to save nodes.'),
+    '#default_value' => $extraction_settings['enabled'],
+  );
+
+  // Batch operation link.
+  $form['powertagging_entity_extraction']['operations'] = array(
+    '#type' => 'container',
+    '#states' => array(
+      'visible' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  $form['powertagging_entity_extraction']['operations']['powertagging_extraction_batch_extract'] = array(
+    '#type' => 'markup',
+    '#markup' => '<ul class="action-links"><li>' . l(t('Extract entities for all nodes of this type'), 'powertagging/extract-entity-tags/node/' . $content_type, ['query' => ['destination' => isset($_GET['destination']) ? $_GET['destination'] : '<front>']]) . '</li></ul>',
+  );
+
+  $connections = SemanticConnector::getConnectionsByType('pp_server');
+  $connection_options = array();
+  if (!empty($connections)) {
+    /** @var \SemanticConnectorPPServerConnection $connection */
+    foreach ($connections as $connection) {
+      $connection_options[$connection->getId()] = $connection->getTitle();
+    }
+  }
+
+  $form['powertagging_entity_extraction']['powertagging_extraction_connection_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Select the PoolParty connection to use'),
+    '#description' => t('If you haven\'t created a PoolParty server connection yet, you can do so in the Semantic Connector module !link first.', [
+      '!link' => l('here', 'admin/config/semantic-drupal/semantic-connector/add-connection/pp-server', ['query' => ['destination' => isset($_GET['destination']) ? $_GET['destination'] : '']])
+    ]),
+    '#options' => $connection_options,
+    '#empty_option' => '-- Select a connection --',
+    '#default_value' =>  $extraction_settings['connection_id'],
+    '#states' => array(
+      'visible' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  // Language mapping
+  $form['powertagging_entity_extraction']['languages'] = array(
+    '#type' => 'item',
+    '#title' => t('Map the Drupal languages with the PoolParty languages'),
+    '#states' => array(
+      'visible' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  $available_languages = array(
+    LANGUAGE_NONE => (object) array(
+      'language' => LANGUAGE_NONE,
+      'name' => 'Language neutral',
+      'enabled' => TRUE,
+    ),
+  );
+  $available_languages = array_merge($available_languages, language_list());
+  // Currently only English is supported by our entity extraction engine.
+  $project_language_options = array('en' => 'English (en)');
+  foreach ($available_languages as $lang) {
+    if ($lang->enabled) {
+      $form['powertagging_entity_extraction']['languages'][$lang->language] = array(
+        '#type' => 'select',
+        '#title' => $lang->name,
+        '#options' => $project_language_options,
+        '#empty_option' => '',
+        '#parents' => ['powertagging_extraction_languages', $lang->language],
+        '#default_value' => (isset($extraction_settings['languages'][$lang->language]) ? $extraction_settings['languages'][$lang->language] : ''),
+      );
+    }
+  }
+
+  $fields = field_info_instances('node', $content_type);
+  // Get all text area fields of the bundle.
+  $bundle_fields = [];
+  foreach ($fields as $field_id => $field) {
+    if (isset($field['label']) && isset($field['widget']) && in_array($field['widget']['type'], ['text_textarea', 'text_textarea_with_summary'])) {
+      $bundle_fields[$field_id] = $field['label'];
+    }
+  }
+
+  $form['powertagging_entity_extraction']['powertagging_extraction_fields'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Fields to extract entities for'),
+    '#options' => $bundle_fields,
+    '#default_value' => $extraction_settings['fields'],
+    '#states' => array(
+      'visible' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  $form['powertagging_entity_extraction']['powertagging_extraction_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Types of entities to extract'),
+    '#options' => [
+      'location' => t('Locations'),
+      'organization' => t('Organizations'),
+      'person' => t('People'),
+      ],
+    '#default_value' => $extraction_settings['types'],
+    '#states' => array(
+      'visible' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+      'required' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  $form['powertagging_entity_extraction']['powertagging_extraction_display_entities'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Display extracted entities'),
+    '#description' => t('If this option is enabled, every extracted entity in the text will be visibly marked, otherwise extracted entities get added invisible to users.'),
+    '#default_value' => $extraction_settings['display_entities'],
+    '#states' => array(
+      'visible' => array(
+        '#edit-powertagging-extraction-enabled' => array('checked' => TRUE),
+      ),
+    ),
+  );
+}
+
+/**
+ * Custom validator handler for the node type form.
+ *
+ * Join all PoolParty GraphSearch settings into one variable instead of
+ * the standard multiple variables.
+ */
+function powertagging_form_node_type_form_validate($form, &$form_state) {
+  $content_type = $form['#node_type']->type;
+  $old_extraction_config = _powertagging_get_entity_extraction_settings('node', $content_type);
+
+  $values = $form_state['values'];
+  if ($values['powertagging_extraction_enabled']) {
+    if (empty($values['powertagging_extraction_connection_id'])) {
+      form_set_error('powertagging_extraction_connection_id', t('Please select a connection to use for entity extraction.'));
+    }
+
+    $extraction_languages = array_filter($values['powertagging_extraction_languages']);
+    if (empty($extraction_languages)) {
+      form_set_error('powertagging_extraction_languages', t('Please select an extraction language for at least one Drupal language.'));
+    }
+
+    $fields = array_keys(array_filter($values['powertagging_extraction_fields']));
+    if (empty($fields)) {
+      form_set_error('powertagging_extraction_fields', t('Please select at least one field to extract entities from.'));
+    }
+
+    $extraction_types = array_keys(array_filter($values['powertagging_extraction_types']));
+    if (empty($extraction_types)) {
+      form_set_error('powertagging_extraction_types', t('Please select at least one type of entities to extract.'));
+    }
+
+    // Save the configuration in case there was no error.
+    if (!form_get_errors()) {
+      $extraction_config = [
+        'enabled' => $values['powertagging_extraction_enabled'],
+        'connection_id' => $values['powertagging_extraction_connection_id'],
+        'languages' => $values['powertagging_extraction_languages'],
+        'fields' => $fields,
+        'types' => $extraction_types,
+        'display_entities' => $values['powertagging_extraction_display_entities'],
+      ];
+      $extraction_variable = variable_get('powertagging_entity_extraction_settings', []);
+      $extraction_variable['node'][$content_type] = $extraction_config;
+      variable_set('powertagging_entity_extraction_settings', $extraction_variable);
+
+      // Clean all entries for this content type in case the extraction types
+      // are getting changed.
+      if (count($old_extraction_config['types']) != count($extraction_types) || array_diff($old_extraction_config['types'], $extraction_types)) {
+        db_delete('powertagging_entity_extraction_cache')
+          ->condition('entity_type', 'node')
+          ->condition('bundle', $content_type)
+          ->execute();
+      }
+      // Otherwise check if a subset of cached entries needs to be deleted.
+      else {
+        // Clean all entries for fields, which are not required anymore.
+        $fields_to_remove = array_diff($old_extraction_config['fields'], $fields);
+        if (!empty($fields_to_remove)) {
+          db_delete('powertagging_entity_extraction_cache')
+            ->condition('entity_type', 'node')
+            ->condition('bundle', $content_type)
+            ->condition('field_name', $fields_to_remove, 'IN')
+            ->execute();
+        }
+
+        // Clean all entries for removed languages.
+        $old_languages = array_keys(array_filter($old_extraction_config['languages']));
+        $new_languages = array_keys(array_filter($values['powertagging_extraction_languages']));
+        $languages_to_remove = array_diff($old_languages, $new_languages);
+        if (!empty($languages_to_remove)) {
+          db_delete('powertagging_entity_extraction_cache')
+            ->condition('entity_type', 'node')
+            ->condition('bundle', $content_type)
+            ->condition('language', $languages_to_remove, 'IN')
+            ->execute();
+        }
+      }
+    }
+  }
+  else {
+    // If it was enabled before, remove the configuration and clean entries.
+    if ($old_extraction_config) {
+      $extraction_variable = variable_get('powertagging_entity_extraction_settings', []);
+      unset($extraction_variable['node'][$content_type]);
+      variable_set('powertagging_entity_extraction_settings', $extraction_variable);
+
+      db_delete('powertagging_entity_extraction_cache')
+        ->condition('entity_type', 'node')
+        ->condition('bundle', $content_type)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Deletes taxonomy index entries for a given node.
+ *
+ * @param object $node
+ *   The node object.
+ */
+function powertagging_taxonomy_delete_node_index($node) {
+  if (variable_get('taxonomy_maintain_index_table', TRUE)) {
+    // Get the the term ids for the given node.
+    $tid_all = array();
+    foreach (field_info_instances('node', $node->type) as $instance) {
+      $field_name = $instance['field_name'];
+      $field = field_info_field($field_name);
+      if ($field['module'] == 'powertagging' && $field['storage']['type'] == 'field_sql_storage') {
+        // If a field value is not set in the node object when node_save() is
+        // called, the old value from $node->original is used.
+        if (isset($node->{$field_name})) {
+          $items = $node->{$field_name};
+        }
+        elseif (isset($node->original->{$field_name})) {
+          $items = $node->original->{$field_name};
+        }
+        else {
+          continue;
+        }
+        foreach (field_available_languages('node', $field) as $langcode) {
+          if (!empty($items[$langcode])) {
+            foreach ($items[$langcode] as $item) {
+              $tid_all[$item['tid']] = $item['tid'];
+            }
+          }
+        }
+      }
+    }
+
+    if (!empty($tid_all)) {
+      // Remove the selected terms from the taxonomy index.
+      db_delete('taxonomy_index')
+        ->condition('nid', $node->nid)
+        ->condition('tid', $tid_all)
+        ->execute();
+    }
+  }
+}
+
+/**
+ * @} End of "defgroup powertagging_taxonomy_index".
+ */
+
+/**
+ * Implements hook_semantic_connector_global_notification_actions().
+ */
+function powertagging_semantic_connector_global_notification_actions() {
+  return array(
+    array(
+      'id' => 'powertagging_refresh_extraction_model',
+      'title' => t('Required extraction model updates'),
+      'description' => t("PowerTagging with the latest state of the PoolParty thesaurus is only possible if the extraction model is up to date."),
+      'default_value' => TRUE,
+      'callback' => '_powertagging_check_extraction_models',
+    ),
+    array(
+      'id' => 'powertagging_retag_content',
+      'title' => t('Required retagging of content'),
+      'description' => t("After the extraction model was refreshed, content has to be retagged in order to tagged with the most up to date concepts."),
+      'default_value' => TRUE,
+      'callback' => '_powertagging_check_retagging_required',
+    ),
+  );
+}
+
+/**
+ * Check if any extraction model has to be refreshed.
+ *
+ * @param \stdClass $powertagging_config
+ *   Optional; A specific PowerTagging configuration to check for PoolParty
+ *   updates. If none is given, all PowerTagging configurations get checked.
+ * @param bool $add_config_info
+ *   If set to TRUE, information about what PowerTagging configuration uses the
+ *   the extraction model will be added to the notification.
+ *
+ * @return string[]
+ *   Array of notification strings.
+ */
+function _powertagging_check_extraction_models($powertagging_config = NULL, $add_config_info = TRUE) {
+  $notifications = array();
+
+  if (!is_null($powertagging_config)) {
+    $configs = array($powertagging_config);
+  }
+  else {
+    $configs = powertagging_config_load();
+  }
+
+  /** @var \stdClass $config */
+  foreach ($configs as $config) {
+    /** @var \SemanticConnectorPPTApi $ppt_api */
+    $ppt_api = $config->connection
+      ->getApi('PPT');
+
+    $extraction_model_info = $ppt_api->getExtractionModelInfo($config->project_id);
+    if (is_array($extraction_model_info) && !$extraction_model_info['upToDate']) {
+      // Get the project label.
+      $connection_config = $config->connection->getConfig();
+      $project_label = t('Project label not found');
+      if (isset($connection_config['projects'])) {
+        foreach ($connection_config['projects'] as $project) {
+          if ($project->id == $config->project_id) {
+            $project_label = $project->title;
+            break;
+          }
+        }
+      }
+
+      // Add the notification.
+      $notifications[] = t('The extraction model for the PoolParty project "%project" is outdated', array('%project' => $project_label)) . ($add_config_info ? ' ' . t('(used in PowerTagging configuration "%powertaggingtitle")', array('%powertaggingtitle' => $config->title)) : '') . '. ' . l('refresh it now', 'admin/config/semantic-drupal/powertagging/' . $config->powertagging_id . '/refresh-extraction-model');
+    }
+  }
+
+  return $notifications;
+}
+
+/**
+ * Check if any content has to be retagged (after an extraction mode update).
+ *
+ * @param \stdClass $powertagging_config
+ *   Optional; A specific PowerTagging configuration to check for required
+ *   retagging. If none is given, all PowerTagging configurations get checked.
+ *
+ * @return string[]
+ *   Array of notification strings.
+ */
+function _powertagging_check_retagging_required($powertagging_config = NULL) {
+  $notifications = array();
+
+  if (!is_null($powertagging_config)) {
+    $configs = array($powertagging_config);
+  }
+  else {
+    $configs = powertagging_config_load();
+  }
+
+  foreach ($configs as $config) {
+    /** @var \SemanticConnectorPPTApi $ppt_api */
+    $ppt_api = $config->connection
+      ->getApi('PPT');
+
+    $last_batch_time = variable_get('powertagging_last_batch_tagging_' . $config->powertagging_id, time());
+    $extraction_model_info = $ppt_api->getExtractionModelInfo($config->project_id);
+    // The extraction model was refreshed recently.
+    if (is_array($extraction_model_info) && strtotime($extraction_model_info['lastBuildTime']) > $last_batch_time) {
+      // Check if the PowerTagging configuration is already connected with content / fields.
+      $instances = powertagging_get_tagging_field_instances($config->powertagging_id);
+      if (!empty($instances)) {
+        // Get the project label.
+        $connection_config = $config->connection->getConfig();
+        $project_label = t('Project label not found');
+        if (isset($connection_config['projects'])) {
+          foreach ($connection_config['projects'] as $project) {
+            if ($project->id == $config->project_id) {
+              $project_label = $project->title;
+              break;
+            }
+          }
+        }
+
+        // Add the notification.
+        $notifications[] = t('The extraction model for the PoolParty project "%project" was updated, your content can now be retagged with PowerTagging configuration "%powertaggingtitle".', array('%project' => $project_label, '%powertaggingtitle' => $config->title)) . ' ' . l('retag content', 'admin/config/semantic-drupal/powertagging/' . $config->powertagging_id . '/index');
+      }
+    }
+  }
+
+  return $notifications;
+}
+
+/**
+ * Build the title of the entity extraction batch form.
+ *
+ * @param string $entity_type
+ *   The type of content to extract entities for.
+ * @param string $bundle
+ *   The bundle to extract entities for.
+ *
+ * @return string
+ *   The title of the form.
+ */
+function powertagging_extract_entities_batch_form_title($entity_type, $bundle) {
+  if ($entity_type == 'node') {
+    return t('Extract entities for node type "@nodetype"', ['@nodetype' => node_type_get_name($bundle)]);
+  }
+  else {
+    return t('Extract entities for "@type"', ['@type' => $entity_type . ' --> ' . $bundle]);
+  }
+}
+
+/**
+ * The batch job to extract entities for content.
+ *
+ * @param string $entity_type
+ *   The type of content to extract entities for.
+ * @param int $entity_id
+ *   The ID of the content to extract entities for
+ * @param array $context
+ *   The Batch context to transmit data between different calls.
+ */
+function powertagging_extract_entities_batch($entity_type, $entity_id, &$context) {
+  $entity = entity_load($entity_type, [$entity_id]);
+  if (!empty($entity)) {
+    powertagging_build_entity_extraction_cache($entity_type, reset($entity));
+  }
+}
+
+/**
+ * Batch 'finished' callback used by PowerTagging bulk entitiy extraction.
+ */
+function powertagging_extract_entities_batch_finished($success, $results, $operations) {
+  drupal_set_message(t('Successfully finished extracting entities for the selected content.'), 'status');
+  drupal_goto((isset($_GET['destination']) ? $_GET['destination'] : '<front>'));
+}

@@ -1,0 +1,539 @@
+<?php
+
+/**
+ * @file
+ * The module-file of the PowerTagging SeeAlso Engine module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function powertagging_similar_menu() {
+
+  $items = array();
+
+  $items['admin/config/semantic-drupal/powertagging/powertagging-similar'] = array(
+    'title' => 'SeeAlso Engine',
+    'description' => 'Settings for the PowerTagging SeeAlso Engine module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_similar_admin_settings'),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_similar.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 3,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/powertagging-similar/add-widget'] = array(
+    'title' => 'Add a PowerTagging SeeAlso widget',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_similar_widget_form'),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_similar.admin.inc',
+    'type' => MENU_LOCAL_ACTION,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/powertagging-similar/widgets/%powertagging_similar_widget'] = array(
+    'title' => 'Edit a PowerTagging SeeAlso widget',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_similar_widget_form', 6),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_similar.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/config/semantic-drupal/powertagging/powertagging-similar/widgets/%powertagging_similar_widget/edit'] = array(
+    'title' => 'Edit a PowerTagging SeeAlso widget',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_similar_widget_form', 6),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_similar.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/powertagging-similar/widgets/%powertagging_similar_widget/delete'] = array(
+    'title' => 'Delete a PowerTagging SeeAlso widget',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_similar_widget_delete_form', 6),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_similar.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function powertagging_similar_theme($existing, $type, $theme, $path) {
+  return array(
+    'powertagging_similar_widget_form' => array(
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function powertagging_similar_block_info() {
+  $blocks = array();
+
+  $widgets = powertagging_similar_widget_load();
+  foreach ($widgets as $widget) {
+    $blocks['powertagging_similar_widget_' . $widget->id] = array(
+      'info' => 'PowerTagging SeeAlso widget "' . $widget->title . '"',
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function powertagging_similar_block_view($block_name = '') {
+  $block = array();
+
+  // Get the configuration set ID from the the block name.
+  if (strpos($block_name, 'powertagging_similar_widget_') !== FALSE) {
+    $widget_id = str_replace('powertagging_similar_widget_', '', $block_name);
+    $widget = powertagging_similar_widget_load($widget_id);
+    if (!empty($widget)) {
+      $entity_type = arg(0);
+      // Check if a valid entity is currently displayed.
+      if ((in_array($entity_type, array(
+            'node',
+            'user'
+          )) && is_numeric(arg(1))) || ($entity_type == 'taxonomy' && arg(1) == 'term' && is_numeric(arg(2)))) {
+        $entity_id = ($entity_type != 'taxonomy' ? arg(1) : arg(2));
+        $block = array(
+          'subject' => '',
+          'content' => array(
+            '#type' => 'markup',
+            '#markup' => _powertagging_similar_display_widget($widget, $entity_type, $entity_id),
+            '#contextual_links' => array(
+              'powertagging_similar' => array(
+                'admin/config/semantic-drupal/powertagging/powertagging-similar/widgets',
+                array($widget_id),
+              ),
+            ),
+            '#attached' => array(
+              'library' => array(
+                array('system', 'ui.accordion')
+              ),
+              'js' => array(
+                drupal_get_path('module', 'powertagging_similar') . '/js/powertagging_similar.js',
+              ),
+              'css' => array(
+                drupal_get_path('module', 'powertagging_similar') . '/css/powertagging_similar.css',
+              ),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  return $block;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function powertagging_similar_entity_info_alter(&$entity_info) {
+  $entity_info['node']['view modes']['powertagging_similar_widget'] = array(
+    'label' => t('PowerTagging SeeAlso content'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['user']['view modes']['powertagging_similar_widget'] = array(
+    'label' => t('PowerTagging SeeAlso content'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['taxonomy_term']['view modes']['powertagging_similar_widget'] = array(
+    'label' => t('PowerTagging SeeAlso content'),
+    'custom settings' => TRUE,
+  );
+}
+
+/**
+ * Loads all PowerTagging Similiar Content widgets or one if $widget_id is given.
+ *
+ * @param int $widget_id
+ *   ID of the PowerTagging configuration.
+ * @param int $powertagging_id
+ *   ID of the connected Powertagging configuration.
+ *
+ * @return array
+ *   Return a array with all (or one) configuration set.
+ */
+function powertagging_similar_widget_load($widget_id = NULL, $powertagging_id = NULL) {
+  $sql = "SELECT * FROM {powertagging_similar_widgets} ";
+  $attributes = array();
+  if (!is_null($widget_id) && (int) $widget_id > 0) {
+    $sql .= "WHERE id = :widget_id ";
+    $attributes[':widget_id'] = $widget_id;
+  }
+  elseif(!is_null($powertagging_id) && (int) $powertagging_id > 0) {
+    $sql .= "WHERE powertagging_id = :powertagging_id ";
+    $attributes[':powertagging_id'] = $powertagging_id;
+  }
+  $sql .= "ORDER BY id";
+  $widgets = db_query($sql, $attributes)->fetchAll();
+  foreach ($widgets as &$widget) {
+    $widget->config = unserialize($widget->config);
+
+    if ($widget->config === FALSE) {
+      $widget->config = array();
+    }
+    $widget = (object) powertagging_array_merge_recursive_simple((array) powertagging_similar_widget_default_config_load(), (array) $widget);
+    unset($widget);
+  }
+
+  return (is_null($widget_id) || !isset($widgets[0])) ? $widgets : $widgets[0];
+}
+
+/**
+ * Loads the default values for a PowerTagging SeeAlso widget.
+ *
+ * @return object
+ *   An object containing all the default values.
+ */
+function powertagging_similar_widget_default_config_load() {
+  $config = new StdClass();
+  $config->title = '';
+  $config->powertagging_id = 0;
+  $config->config = array(
+    'content_types' => NULL,
+    'display_type' => 'default',
+    'merge_content' => FALSE,
+    'merge_content_count' => 5,
+  );
+
+  return $config;
+}
+
+/**
+ * Implements hook_powertagging_config_delete().
+ */
+function powertagging_similar_powertagging_config_delete($powertagging_id) {
+  $delete_widget_titles = db_select('powertagging_similar_widgets', 'p')
+    ->fields('p', array('title'))
+    ->condition('powertagging_id', $powertagging_id)
+    ->execute()
+    ->fetchCol();
+
+  // Delete all widgets conntected to the deleted PowerTagging configuration.
+  db_delete('powertagging_similar_widgets')
+    ->condition('powertagging_id', $powertagging_id)
+    ->execute();
+
+  foreach ($delete_widget_titles as $delete_widget_title) {
+    drupal_set_message(t('PowerTagging SeeAlso widget "%title" has been deleted.', array('%title' => $delete_widget_title)));
+  }
+}
+
+/**
+ * Deletes a PowerTagging SeeAlso widget.
+ *
+ * @param int $widget_id
+ *   ID of the PowerTagging SeeAlso widget.
+ */
+function powertagging_similar_widget_delete($widget_id) {
+  $widget_id = (int) $widget_id;
+  if ($widget_id > 0) {
+    db_delete('powertagging_similar_widgets')
+      ->condition('id', $widget_id)
+      ->execute();
+  }
+}
+
+/**
+ * Display a PowerTagging Simliar Content widget.
+ *
+ * @param object $widget
+ *   The widget object to display.
+ * @param string $entity_type
+ *   The entity type of the entity to show similar content for.
+ * @param int $entity_id
+ *   The ID of the entity to show similar content for.
+ *
+ * @return string
+ *   The HTML of the widget.
+ */
+function _powertagging_similar_display_widget($widget, $entity_type, $entity_id) {
+  $content = '';
+  $entity = entity_load(($entity_type != 'taxonomy' ? $entity_type : 'taxonomy_term'), array($entity_id));
+  $entity = reset($entity);
+
+  $field_instances = powertagging_get_tagging_field_instances($widget->powertagging_id);
+
+  // Get all the tags of the current entity.
+  $entity_tids = array();
+  foreach ($field_instances as $field_instance) {
+    if (isset($entity->{$field_instance['field_name']}) && !empty($entity->{$field_instance['field_name']})) {
+      foreach ($entity->{$field_instance['field_name']}[LANGUAGE_NONE] as $tag_item) {
+        $entity_tids[] = $tag_item['tid'];
+      }
+    }
+  }
+
+  // Return if the original entity was not tagged yet.
+  if (empty($entity_tids)) {
+    return $content;
+  }
+
+  $content_types = $widget->config['content_types'][$widget->powertagging_id];
+  // Content gets loaded and displayed by content type.
+  if (!$widget->config['merge_content']) {
+    $tab_content = '';
+    $content_types_to_add = array();
+    foreach ($content_types as $content_type) {
+      if (!$content_type['show']) {
+        continue;
+      }
+      $exploded_field_key = explode(' ', $content_type['entity_key']);
+      $similar_entity_scores = powertagging_similar_get_similar_content(
+        $entity_tids,
+        array(
+          array(
+            'entity_type' => $exploded_field_key[0],
+            'bundle' => $exploded_field_key[1],
+            'field_id' => $exploded_field_key[2]
+          )
+        ),
+        $content_type['count'],
+        array(
+          array(
+            'entity_type' => $entity_type,
+            'entity_id' => $entity_id,
+          )
+        )
+      );
+
+      if (!empty($similar_entity_scores)) {
+        $content_types_to_add[] = $content_type['entity_key'];
+
+        // Load all the entities.
+        $entities_to_load = array();
+        foreach (array_keys($similar_entity_scores) as $entity_info) {
+          $exploded_entity_info = explode('|', $entity_info);
+          $entities_to_load[$exploded_entity_info[0]][] = $exploded_entity_info[1];
+        }
+        $loaded_entities = array();
+        foreach ($entities_to_load as $entity_type => $entity_ids) {
+          $entities = entity_load($entity_type, $entity_ids);
+          foreach ($entities as $entity_id => $entity) {
+            $loaded_entities[$entity_type . '|' . $entity_id] = $entity;
+          }
+        }
+
+        // Display the content.
+        //$tab_content .= '<div id="powertagging-similar-widget-' . $widget->id . '-tabs-' . str_replace(' ', '-', $content_type['entity_key']) . '"><ul>';
+        $tab_content .= '<h3>' . $content_type['title'] . '</h3><div><ul>';
+        foreach ($similar_entity_scores as $similar_entity_info => $score) {
+          // If the scored entity could be loaded.
+          if (isset($loaded_entities[$similar_entity_info])) {
+            $similar_entity = $loaded_entities[$similar_entity_info];
+            $exploded_entity_info = explode('|', $similar_entity_info);
+            $tab_content .= '<li>' . powertagging_similar_theme_item($similar_entity, $exploded_entity_info[0], $widget->config) . '</li>';
+          }
+        }
+        $tab_content .= '</ul></div>';
+      }
+    }
+
+    if (!empty($tab_content)) {
+      // Add the tabs menu.
+      /*$content .= '<div class="powertagging-similar-widget-tabs" id="powertagging-similar-widget-' . $widget->id . '-tabs"><ul>';
+      foreach ($content_types as $content_type) {
+        if (in_array($content_type['entity_key'], $content_types_to_add)) {
+          $content .= '<li><a href="#powertagging-similar-widget-' . $widget->id . '-tabs-' . str_replace(' ', '-', $content_type['entity_key']) . '">' . $content_type['title'] . '</a></li>';
+        }
+      }
+
+      // Add the tab contents.
+      $content .= '</ul>' . $tab_content . '</div>';*/
+      
+      $content .= '<div class="powertagging-similar-widget-accordion" id="powertagging-similar-widget-' . $widget->id . '-accordion">' . $tab_content . '</div>';
+    }
+  }
+  // Content gets loaded and displayed all together.
+  else {
+    $similar_content_types = array();
+    foreach ($content_types as $content_type) {
+      if (!$content_type['show']) {
+        continue;
+      }
+      $exploded_field_key = explode(' ', $content_type['entity_key']);
+      $similar_content_types[] = array(
+        'entity_type' => $exploded_field_key[0],
+        'bundle' => $exploded_field_key[1],
+        'field_id' => $exploded_field_key[2]
+      );
+    }
+
+    $similar_entity_scores = powertagging_similar_get_similar_content(
+      $entity_tids,
+      $similar_content_types,
+      $widget->config['merge_content_count'],
+      array(
+        array(
+          'entity_type' => $entity_type,
+          'entity_id' => $entity_id,
+        )
+      )
+    );
+
+    if (!empty($similar_entity_scores)) {
+      // Load all the entities.
+      $entities_to_load = array();
+      foreach (array_keys($similar_entity_scores) as $entity_info) {
+        $exploded_entity_info = explode('|', $entity_info);
+        $entities_to_load[$exploded_entity_info[0]][] = $exploded_entity_info[1];
+      }
+      $loaded_entities = array();
+      foreach ($entities_to_load as $entity_type => $entity_ids) {
+        $entities = entity_load($entity_type, $entity_ids);
+        foreach ($entities as $entity_id => $entity) {
+          $loaded_entities[$entity_type . '|' . $entity_id] = $entity;
+        }
+      }
+
+      // Display the content.
+      $content .= '<ul>';
+      foreach ($similar_entity_scores as $similar_entity_info => $score) {
+        // If the scored entity could be loaded.
+        if (isset($loaded_entities[$similar_entity_info])) {
+          $similar_entity = $loaded_entities[$similar_entity_info];
+          $exploded_entity_info = explode('|', $similar_entity_info);
+          $content .= '<li>' . powertagging_similar_theme_item($similar_entity, $exploded_entity_info[0], $widget->config) . '</li>';
+        }
+      }
+      $content .= '</ul>';
+    }
+  }
+  return $content;
+}
+
+/**
+ * Theme a single item in the list of similar content.
+ *
+ * @param object $entity
+ *   The entity object
+ * @param string $entity_type
+ *   The entity type
+ * @param array $config
+ *   The configuration of the similar content widget
+ *
+ * @return string
+ *   The rendered HTML content
+ */
+function powertagging_similar_theme_item($entity, $entity_type, $config) {
+  $content = '';
+
+  if ($config['display_type'] == 'default') {
+    $entity_uri = entity_uri($entity_type, $entity);
+    $content = l(($entity_type == 'node' ? $entity->title : $entity->name), $entity_uri['path']);
+  }
+  elseif ($config['display_type'] == 'view_mode') {
+    $themeable_array = [];
+    switch ($entity_type) {
+      case 'node':
+        $themeable_array = node_view($entity, 'powertagging_similar_widget');
+        break;
+
+      case 'user':
+        $themeable_array = user_view($entity, 'powertagging_similar_widget');
+        break;
+
+      case 'taxonomy_term':
+        $themeable_array = taxonomy_term_view($entity, 'powertagging_similar_widget');
+        break;
+    }
+
+    if (!empty($themeable_array)) {
+      $content = drupal_render($themeable_array);
+    }
+  }
+
+  return $content;
+}
+
+/**
+ * Get entities similar to a list of taxonomy term ids.
+ *
+ * @param array $tags
+ *   Array of taxonomy terms to get similar content for.
+ * @param array $entities_to_check
+ *   An array of entities to ignore, each value is an array itself containing following keys:
+ *     'entity_type' => The entity type of entities to get.
+ *     'bundle' => The bundle of entities to get.
+ *     'field_id' => The field to check for similar tags.
+ * @param int $count
+ *   The maximum number of items to return.
+ * @param array $entities_to_ignore
+ *   An array of entities to ignore, each value is an array itself containing following keys:
+ *     'entity_type' => The entity type of the entity to ignore.
+ *     'entity_id' => The ID of the entity to ignore.
+ *
+ * @return array
+ *   Array of similar entity ids (=key) and their scores (=value).
+ */
+function powertagging_similar_get_similar_content(array $tags, array $entities_to_check, $count, array $entities_to_ignore = array()) {
+  $entity_scores = array();
+
+  foreach ($entities_to_check as $entity_information) {
+    $all_tags = db_select('field_data_' . $entity_information['field_id'], 'f')
+      ->fields('f', array('entity_id', $entity_information['field_id'] . '_tid'))
+      ->condition('entity_type', $entity_information['entity_type'])
+      ->condition('bundle', $entity_information['bundle']);
+
+    if ($entity_information['entity_type'] == 'node') {
+      $all_tags->join('node', 'n', 'f.entity_id = n.nid');
+      $all_tags->condition('n.status', 1);
+    }
+    elseif ($entity_information['entity_type'] == 'user') {
+      $all_tags->join('users', 'u', 'f.entity_id = u.uid');
+      $all_tags->condition('u.status', 1);
+    }
+
+    $all_tags = $all_tags->execute()->fetchAll();
+
+    $sorted_tags = array();
+    foreach ($all_tags as $tag) {
+      $sorted_tags[$tag->entity_id][] = $tag->{$entity_information['field_id'] . '_tid'};
+    }
+
+
+    foreach ($sorted_tags as $check_entity_id => $check_entity_tids) {
+      $intersection = array_intersect($tags, $check_entity_tids);
+      if (count($intersection) > 0) {
+        $entity_scores[$entity_information['entity_type'] . '|' . $check_entity_id] = count($intersection) / count($check_entity_tids);
+      }
+    }
+  }
+  arsort($entity_scores);
+
+  $scores_by_entity = array();
+  foreach (array_keys($entity_scores) as $similar_entity_id) {
+    // Check if this entity has to be ignored.
+    $ignore_entity = FALSE;
+    foreach ($entities_to_ignore as $entity_to_ignore) {
+      if ($similar_entity_id == $entity_to_ignore['entity_type'] . '|' . $entity_to_ignore['entity_id']) {
+        $ignore_entity = TRUE;
+        break;
+      }
+    }
+    if ($ignore_entity) {
+      continue;
+    }
+
+    // Only add as many items as count says maximum.
+    $scores_by_entity[$similar_entity_id] = $entity_scores[$similar_entity_id];
+    if (count($scores_by_entity) >= $count) {
+      break;
+    }
+  }
+
+  return $scores_by_entity;
+}

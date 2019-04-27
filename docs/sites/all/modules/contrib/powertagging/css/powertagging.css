@@ -1,0 +1,276 @@
+/**
+ * @file
+ * Stylesheets for the PowerTagging module for the frontend.
+ */
+
+fieldset#edit-batch-jobs .ui-progressbar {
+  position: relative;
+}
+
+fieldset#edit-batch-jobs .powertagging-progress-label {
+  position: absolute;
+  left: 50%;
+  top: 4px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #fff;
+}
+
+/* =============================================================================
+ *   Tags
+ * ========================================================================== */
+
+.field-type-powertagging fieldset label {
+  color: #1196d1;
+  padding-bottom: 5px;
+  margin-bottom: 0px;
+}
+
+.powertagging-extracted-tags .powertagging-extracted-tags-area {
+  margin: 0px;
+  padding-bottom: 10px;
+}
+
+.powertagging-extracted-tags .powertagging-extraction-label {
+  font-weight: bold;
+  color: #666;
+  border-bottom: 1px solid #CCC;
+  margin: 10px 0 3px;
+}
+
+.field-type-powertagging fieldset ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.field-type-powertagging fieldset li {
+  list-style-type:none;
+  padding:0;
+	margin: 8px 5px 0 0;
+	display: inline-block;
+}
+
+.field-type-powertagging fieldset li div {
+  padding: 1px 10px;
+  border-radius: 5px;
+  font-size: 88%;
+  color: #5c5c5c;
+}
+
+.field-type-powertagging fieldset li .concept,
+.concept .ui-slider-range,
+.field-type-powertagging #powertagging-legend-item-colorbox-concept {
+  background: #c3e2f7;
+}
+
+.field-type-powertagging fieldset li .freeterm,
+.freeterm .ui-slider-range,
+.field-type-powertagging #powertagging-legend-item-colorbox-freeterm {
+  background: #fff199;
+}
+
+.field-type-powertagging fieldset li .concept.disabled,
+.field-type-powertagging fieldset li .freeterm.disabled,
+.field-type-powertagging #powertagging-legend-item-colorbox-disabled {
+  background: #cccccc;
+}
+
+.powertagging-extracted-tags li div.powertagging-tag.concept:hover,
+.powertagging-extracted-tags li div.powertagging-tag.concept:focus {
+  cursor: pointer;
+}
+
+.powertagging-extracted-tags li div.powertagging-tag.freeterm:hover,
+.powertagging-extracted-tags li div.powertagging-tag.freeterm:focus {
+  cursor: pointer;
+}
+
+.field-type-powertagging fieldset .powertagging-tag-result li .concept {
+  background: url("../images/remove11.svg") top 6px right 4px no-repeat #c3e2f7;
+  background-size:18px auto;
+  padding: 1px 23px 1px 10px;
+}
+
+.field-type-powertagging fieldset .powertagging-tag-result li .concept:hover,
+.field-type-powertagging fieldset .powertagging-tag-result li .concept:focus {
+  background: url("../images/remove11.svg") top 6px right 4px no-repeat #ccc;
+  background-size:18px auto;
+  cursor: pointer;
+  padding: 1px 23px 1px 10px;
+}
+
+.field-type-powertagging fieldset .powertagging-tag-result li .freeterm {
+  background: url("../images/remove11.svg") top 6px right 4px no-repeat #fff199;
+  background-size:18px auto;
+  padding: 1px 23px 1px 10px;
+}
+
+.field-type-powertagging fieldset .powertagging-tag-result li .freeterm:hover,
+.field-type-powertagging fieldset .powertagging-tag-result li .freeterm:focus {
+  background: url("../images/remove11.svg") top 6px right 4px no-repeat #ccc;
+  background-size:18px auto;
+  cursor: pointer;
+  padding: 1px 23px 1px 10px;
+}
+
+.field-type-powertagging .ui-autocomplete-loading,
+.powertagging-browse-tags-area .ui-autocomplete-loading {
+  background: url('../images/throbber.gif') no-repeat scroll right -18px transparent;
+}
+
+.field-type-powertagging .throbber {
+  padding-left: 20px;
+}
+
+.field-type-powertagging .powertagging-legend {
+  float: right;
+}
+
+.field-type-powertagging .powertagging-legend-item {
+  float: left;
+  margin-right: 10px;
+}
+
+.field-type-powertagging .powertagging-legend-item-colorbox {
+  margin-right: 5px;
+  width: 15px;
+  min-width: 15px;
+  height: 15px;
+  border: 1px solid #CCC;
+  display: inline-block;
+  border-radius: 5px;
+}
+
+.field-type-powertagging .form-type-textfield,
+.field-type-powertagging .form-type-item {
+  clear:both;
+}
+
+.powertagging-browse-tags-vm {
+clear: both;
+}
+
+.powertagging-browse-tags-vm .chart-header .button {
+  float: right;
+}
+
+.powertagging-browse-tags-vm .chart-header .button a,
+.powertagging-browse-tags-vm .chart-header .button a:link,
+.powertagging-browse-tags-vm .chart-header .button a:visited,
+.powertagging-browse-tags-vm .chart-header .button a:hover,
+.powertagging-browse-tags-vm .chart-header .button a:focus,
+.powertagging-browse-tags-vm .chart-header .button a:active {
+  background: #0099CC;
+  border-radius: 12px;
+  -webkit-border-radius: 12px;
+  -moz-border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  display: block;
+  height: auto;
+  line-height: 2.1em;
+  margin: 0;
+  padding: 0.2em 1em 0;
+  position: relative;
+  text-align: center;
+  text-transform: uppercase;
+  width: auto;    
+  font-size: 10px;
+}
+
+.powertagging-browse-tags-vm .chart-header .button a:hover{
+  text-decoration: none;
+  background:#0285B1;
+}
+
+.powertagging-browse-tags-vm .chart-header .button .powertagging-browse-tags-add-concept.active {
+  background: #B5BCBF;
+  color:#fff;
+}
+
+.powertagging-browse-tags-search{
+  float:left;
+}
+.powertagging-browse-tags-search input.form-text{
+  width: 300px;
+  padding: 0.3em 0.5em;
+  font-size: 14px;
+}
+
+.powertagging-browse-tags-selection{
+  float: right;
+}
+.powertagging-browse-tags-selection-results{
+  border: 1px solid #ddd;
+  padding: 2px 7px;
+  margin-bottom: 5px;
+  background: #f6f6f2;
+  width: 500px;
+  min-height: 22px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+}
+.powertagging-browse-tags-selection > p{
+  font-weight: bold;
+}
+
+.powertagging-browse-tags-selection .powertagging-browse-tags-tag{
+  background: url("../images/remove11.svg") top 6px right 4px no-repeat #c3e2f7;
+  background-size:18px auto;
+  padding: 1px 23px 1px 10px;
+  margin: 2px 5px 2px 0;
+  border-radius: 5px;
+  font-size: 88%;
+  color: #5c5c5c;
+  display: inline-block;
+  cursor:pointer;
+}
+
+.powertagging-browse-tags-selection .powertagging-browse-tags-tag:hover,
+.powertagging-browse-tags-selection .powertagging-browse-tags-tag:focus{
+background-color: #ccc;
+}
+
+#block-views-articles-for-powertagging-block .views-field-title a {
+  color: #0099CC;
+  font-family: helvetica,arial,sans-serif;
+  font-size: 1.15em;
+  font-weight: normal;
+  line-height: 1.2em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+#block-views-articles-for-powertagging-block .views-field-title a:hover,
+#block-views-articles-for-powertagging-block .views-field-title a:focus {
+  color: #666666;
+}
+
+/* =============================================================================
+ *   PowerTagging Tag Glossary block
+ * ========================================================================== */
+
+.powertagging_glossary_terms_term h3 {
+  font-weight: bold;
+}
+
+.powertagging_glossary_terms_term:not(:last-child) {
+  border-bottom: 1px solid #CCC;
+}
+
+/* =============================================================================
+ *   Named Entity Recognition
+ * ========================================================================== */
+
+.powertagging-ner {
+  position: relative;
+  display: inline-block;
+}
+
+.powertagging-entity-extraction-show .powertagging-ner {
+  color: #f00;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}

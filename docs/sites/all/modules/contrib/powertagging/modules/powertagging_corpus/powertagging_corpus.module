@@ -1,0 +1,212 @@
+<?php
+
+/**
+ * @file
+ * The module-file of the PowerTagging Corpus Management module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function powertagging_corpus_menu() {
+
+  $items = array();
+
+  $items['admin/config/semantic-drupal/powertagging/powertagging-corpus'] = array(
+    'title' => 'Corpus Management',
+    'description' => 'Settings for PowerTagging Corpus Management',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_corpus_list_corpora'),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_corpus.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 2,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/powertagging-corpus/add-content-to-corpus/%/%/%'] = array(
+    'title' => 'Push content into a corpus',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_corpus_add_content_form', 6, 7, 8),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_corpus.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/semantic-drupal/powertagging/powertagging-corpus/analyze-corpus/%/%/%'] = array(
+    'title' => 'Perform an analysis on a corpus',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('powertagging_corpus_analyze_corpus_form', 6, 7, 8),
+    'access arguments' => array('administer powertagging'),
+    'file' => 'includes/powertagging_corpus.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Push a set of entities into the corpus of a PoolParty project in a batch.
+ *
+ * @param array $entities_info
+ *   Array of entity information, each item is an ssociative array itself
+ *   containing following properties:
+ *   - "id" --> The ID of the entity.
+ *   - "entity_type" --> The entity type.
+ *   - "bundle" --> The bundle of the entity.
+ *   - "content_type" --> basically the bundle, but using the vocabulary ID for
+ *     taxonomy terms instead of the machine name.
+ * @param array $content_selected
+ *   Associative array of content and fields to push into the corpus:
+ *   entity type --> content type --> field id --> field id
+ * @param array $corpus_details
+ *   Associative array of information about the corpus containing following
+ *   properties:
+ *   - "connection_id" --> The ID of the PowerTagging connection to use.
+ *   - "project_id" --> The ID of the project to use.
+ *   - "corpus_id" --> The ID of the corpus to use.
+ * @param array $batch_info
+ *   An associative array of information about the batch process.
+ * @param array $context
+ *   The Batch context to transmit data between different calls.
+ */
+function powertagging_corpus_push_entity_batch(array $entities_info, array $content_selected, array $corpus_details, array $batch_info, &$context) {
+  if (!isset($context['results']['processed'])) {
+    $context['results']['processed'] = 0;
+  }
+
+  foreach ($entities_info as $entity_info) {
+    $fields_to_use = array_keys($content_selected[$entity_info['entity_type']][$entity_info['content_type']]);
+    powertagging_corpus_push_entity($entity_info, $fields_to_use, $corpus_details);
+    $context['results']['processed']++;
+  }
+
+  $context['results']['end_time'] = time();
+  // Send the inform e-mail when the process is finished.
+  if (module_exists('background_batch') && ($context['results']['processed'] >= $batch_info['total'])) {
+    if (!empty($batch_info['inform_user_email'])) {
+      $params = [
+        'start_time' => $batch_info['start_time'],
+      ];
+      $params = array_merge($corpus_details, $params);
+      $params = array_merge($context['results'], $params);
+      drupal_mail('powertagging_corpus_batch_process', 'push_content_batch', $batch_info['inform_user_email'], language_default(), $params);
+    }
+
+
+  }
+}
+
+/**
+ * Push a single entity into the corpus of a PoolParty project.
+ *
+ * @param array $entity_info
+ *   Associative array of information about the entity containing following
+ *   properties:
+ *   - "id" --> The ID of the entity.
+ *   - "entity_type" --> The entity type.
+ *   - "bundle" --> The bundle of the entity.
+ *   - "content_type" --> basically the bundle, but using the vocabulary ID for
+ *     taxonomy terms instead of the machine name.
+ * @param array $field_ids
+ *   Array of field IDs to use as the content which gets pushed into the corpus.
+ * @param array $corpus_details
+ *   Associative array of information about the corpus containing following
+ *   properties:
+ *   - "connection_id" --> The ID of the PowerTagging connection to use.
+ *   - "project_id" --> The ID of the project to use.
+ *   - "corpus_id" --> The ID of the corpus to use.
+ */
+function powertagging_corpus_push_entity($entity_info, $field_ids, $corpus_details) {
+  $entity = entity_load($entity_info['entity_type'], array($entity_info['id']));
+  if (!is_array($entity) || empty($entity)) {
+    return;
+  }
+  // entity_load returns an associative array --> only use the first item.
+  $entity = reset($entity);
+
+  // Get the fields to use for the content pushing in the correct format.
+  $field_config = array();
+  foreach ($field_ids as $tag_field_name) {
+    if ($tag_field_name) {
+      $field_instance = field_info_instance($entity_info['entity_type'], $tag_field_name, $entity_info['bundle']);
+      $field_config[$tag_field_name] = array(
+        'module' => $field_instance ? $field_instance['widget']['module'] : 'standard field',
+        'type' => $field_instance ? $field_instance['widget']['type'] : '',
+      );
+    }
+  }
+
+  // Extract the text to push into the corpus.
+  $entity_content = powertagging_extract_entity_content($entity, $field_config);
+
+  $connection = SemanticConnector::getConnection('pp_server', $corpus_details['connection_id']);
+  /** @var \SemanticConnectorPPTApi $ppt_api */
+  $ppt_api = $connection->getApi('PPT');
+  // Add the text to the corpus.
+  if (!empty($entity_content['text'])) {
+    if ($entity_info['entity_type'] == 'node') {
+      $title = $entity->title;
+    }
+    else {
+      $title = $entity->name;
+    }
+
+    $ppt_api->addDataToCorpus($corpus_details['project_id'], $corpus_details['corpus_id'], $title, $entity_content['text'], 'text');
+  }
+
+  // Add files into the corpus if any were extracted.
+  if (!empty($entity_content['file_ids'])) {
+    foreach ($entity_content['file_ids'] as $file_id) {
+      $file = file_load($file_id);
+      // Use only existing files.
+      if (file_exists($file->uri)) {
+        $ppt_api->addDataToCorpus($corpus_details['project_id'], $corpus_details['corpus_id'], $file->filename, $file, 'file');
+      }
+    }
+  }
+}
+
+/**
+ * Batch 'finished' callback for pushing entities into a PoolParty corpus.
+ */
+function powertagging_corpus_push_entity_batch_finished($success, $results, $operations) {
+  if ($success) {
+    $message = t('Successfully finished pushing %total_entities entities into the selected corpus on %date:', [
+      '%total_entities' => $results['processed'],
+      '%date' => format_date($results['end_time'])
+    ]);
+    drupal_set_message($message);
+  }
+  else {
+    $error_operation = reset($operations);
+    $message = t('An error occurred while processing %error_operation on %date', array(
+        '%error_operation' => $error_operation[0],
+        '%date' => format_date($results['end_time']),
+      )) . '<br />';
+    $message .= t('<ul><li>arguments: %arguments</li></ul>', array(
+      '@arguments' => print_r($error_operation[1], TRUE),
+    ));
+    drupal_set_message($message, 'error');
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function powertagging_corpus_batch_process_mail($key, &$message, $params) {
+  $langcode = $message['language']->language;
+  $summary = '';
+  $link = '';
+  switch ($key) {
+    case 'push_content_batch':
+      $message['body'][] = t('The "Corpus Content Push" batch process is finished:', array(), ['langcode' => $langcode]);
+      $summary .= t('Process started: !date', ['!date' => format_date($params['start_time'])], ['langcode' => $langcode]) . "\n";
+      $summary .= t('Process ended: !date', ['!date' => format_date($params['end_time'])], ['langcode' => $langcode]) . "\n";
+      $summary .= t('Entities pushed into the corpus: !total', ['!total' => $params['processed']], ['langcode' => $langcode]) . "\n";
+      $link = url('admin/config/semantic-drupal/powertagging/powertagging_corpus', array('absolute' => TRUE));
+      break;
+  }
+  $message['subject'] = t('Batch process notification - @site_title', ['@site_title' => variable_get('site_name')], ['langcode' => $langcode]);
+  $message['body'][] = $summary;
+  $message['body'][] = t('Link to the batch form: !link', ['!link' => $link], ['langcode' => $langcode]);
+}

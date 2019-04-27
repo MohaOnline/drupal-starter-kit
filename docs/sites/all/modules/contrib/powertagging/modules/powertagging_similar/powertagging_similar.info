@@ -1,0 +1,13 @@
+name = PowerTagging SeeAlso Engine
+description = Show content similar to nodes tagged with PowerTagging in a widget.
+package = Semantic Drupal
+core = 7.x
+
+configure = admin/config/semantic-drupal/powertagging/powertagging-similar
+
+dependencies[] = powertagging
+; Information added by Drupal.org packaging script on 2019-01-11
+version = "7.x-2.8"
+core = "7.x"
+project = "powertagging"
+datestamp = "1547205788"
