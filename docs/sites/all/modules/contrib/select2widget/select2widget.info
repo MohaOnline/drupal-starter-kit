@@ -1,0 +1,17 @@
+name = Select2Widget
+description = Module provides widget for select fields that allow to use Select2 (is a jQuery based replacement for select boxes).
+core = 7.x
+package = Fields
+
+dependencies[] = field
+dependencies[] = options
+dependencies[] = libraries
+dependencies[] = jquery_update
+dependencies[] = entity
+
+; Information added by Drupal.org packaging script on 2017-04-05
+version = "7.x-2.10"
+core = "7.x"
+project = "select2widget"
+datestamp = "1491381188"
+
