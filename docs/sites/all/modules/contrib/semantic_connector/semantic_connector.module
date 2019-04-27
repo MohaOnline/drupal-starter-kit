@@ -1,0 +1,834 @@
+<?php
+/**
+ * @file
+ * The module file of the PoolParty Semantic Connector for Drupal.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function semantic_connector_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#semantic_connector':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Semantic Connector module is the central module that is needed to add external semantic services (PoolParty servers, GraphSearch instances, SPARQL endpoints) to your Drupal integration. The Semantic Connector is where you would configure your connection to a PoolParty server and through its API it allows interconnections between other PoolParty Drupal modules.') . '</p>';
+      $output .= '<p>';
+      $output .= t('These are the main modules using the Semantic Connector:');
+      $output .= '<ul>';
+      $output .= '<li>' . t('<a href="@url" target="_blank">PowerTagging</a>', ['@url' => 'https://www.drupal.org/project/powertagging']) . '</li>';
+      $output .= '<li>' . t('<a href="@url" target="_blank">PoolParty GraphSearch</a>', ['@url' => 'https://www.drupal.org/project/sonr_webmining']) . '</li>';
+      $output .= '<li>' . t('<a href="@url" target="_blank">PoolParty Taxonomy Manager</a>', ['@url' => 'https://www.drupal.org/project/pp_taxonomy_manager']) . '</li>';
+      $output .= '<li>' . t('<a href="@url" target="_blank">Smart Glossary</a>', ['@url' => 'https://www.drupal.org/project/smart_glossary']) . '</li>';
+      $output .= '</ul></p>';
+      $output .= '<p>' . t('Additional details on how to use this module can be found in the <a href="@url" target="_blank">Drupal Module Documentation Space</a>.', ['@url' => 'https://www.drupal.org/docs/7/modules/semantic-connector-modules/semantic-connector']) . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function semantic_connector_permission() {
+  return array(
+    'administer semantic connector' => array(
+      'title' => t('Administer the PoolParty Semantic Connector'),
+      'description' => t('Perform administration tasks for the PoolParty Semantic Connector.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function semantic_connector_menu() {
+  $items['admin/config/semantic-drupal'] = array(
+    'title' => 'Semantic Drupal',
+    'description' => 'Configuration of all Semantic Drupal modules and services.',
+    'position' => 'left',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/config/semantic-drupal/semantic-connector'] = array(
+    'title' => 'PoolParty Semantic Connector',
+    'description' => 'Manage the collaboration of Semantic Drupal modules installed on your site.',
+    'page callback' => 'semantic_connector_overview',
+    'access arguments' => array('administer semantic connector'),
+    'file' => 'includes/semantic_connector.admin.inc',
+    'weight' => -10,
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/semantic-drupal/semantic-connector/connections'] = array(
+    'title' => 'Connection Overview',
+    'description' => 'Manage the collaboration of Semantic Drupal modules installed on your site',
+    'page callback' => 'semantic_connector_overview',
+    'access arguments' => array('administer semantic connector'),
+    'file' => 'includes/semantic_connector.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  $items['admin/config/semantic-drupal/semantic-connector/config'] = array(
+    'title' => 'Configuration',
+    'description' => 'General configuration of the Semantic Connector',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('semantic_connector_configuration_form'),
+    'access arguments' => array('administer semantic connector'),
+    'file' => 'includes/semantic_connector.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+
+  $connection_types = array(
+    'pp-server' => 'PoolParty Server',
+    'sparql-endpoint' => 'SPARQL Endpoint',
+  );
+
+  foreach ($connection_types as $connection_type => $connection_label) {
+    $items['admin/config/semantic-drupal/semantic-connector/add-connection/' . $connection_type] = array(
+      'title' => 'Add a ' . $connection_label . ' connection',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('semantic_connector_connection_add_form', 5),
+      'access arguments' => array('administer semantic connector'),
+      'file' => 'includes/semantic_connector.admin.inc',
+      'type' => MENU_LOCAL_ACTION,
+    );
+
+    $items['admin/config/semantic-drupal/semantic-connector/connections/' . $connection_type . '/%'] = array(
+      'title' => 'Edit a ' . $connection_label . ' connection',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('semantic_connector_connection_edit_form', 5, 6),
+      'access arguments' => array('administer semantic connector'),
+      'file' => 'includes/semantic_connector.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $items['admin/config/semantic-drupal/semantic-connector/connections/' . $connection_type . '/%/available'] = array(
+      'title' => 'Check if a ' . $connection_label . ' is available',
+      'page callback' => '_semantic_connector_connection_available',
+      'page arguments' => array(5, 6, 'ajax'),
+      'access arguments' => array('administer semantic connector'),
+      'type' => MENU_CALLBACK,
+    );
+
+    $items['admin/config/semantic-drupal/semantic-connector/connections/' . $connection_type . '/%/delete'] = array(
+      'title' => 'Delete a ' . $connection_label . ' connection',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('semantic_connector_connection_delete_form', 5, 6),
+      'access arguments' => array('administer semantic connector'),
+      'file' => 'includes/semantic_connector.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $items['admin/config/semantic-drupal/semantic-connector/connections/' . $connection_type . '/%/refresh'] = array(
+      'title' => 'Refresh the information of a ' . $connection_label . ' connection',
+      'page callback' => 'semantic_connector_refresh_connection',
+      'page arguments' => array(5, 6),
+      'access arguments' => array('administer semantic connector'),
+      'file' => 'includes/semantic_connector.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+  }
+
+  $items['semantic-connector/refresh-notifications'] = array(
+    'title' => 'Refresh notifications',
+    'page callback' => '_semantic_connector_refresh_notifications_callback',
+    'access arguments' => array('administer semantic connector'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function semantic_connector_theme($existing, $type, $theme, $path) {
+  return array(
+    'semantic_connector_configuration_form' => array(
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
+ * Implements hook_taxonomy_term_view_alter().
+ */
+function semantic_connector_taxonomy_term_view_alter(&$build) {
+  if (isset($build['#term']->field_uri) && module_exists('powertagging')) {
+    drupal_set_title(t('All articles for the topic: @termname', array('@termname' => $build['#term']->name)));
+
+    foreach (powertagging_config_load() as $config) {
+      if (isset($config->config['projects'])) {
+        if ($config->config['projects'][$config->project_id]['taxonomy_id'] == $build['#term']->vid) {
+          $build['semantic_connector_links'] = array(
+            '#type' => 'item',
+            '#markup' => '<div id="semantic_connector_taxonomy_term_links">' . semantic_connector_theme_concepts(array(
+              array(
+                'html' => 'Show connected content',
+                'uri' => $build['#term']->field_uri[LANGUAGE_NONE][0]['value'],
+              )
+            ), $config->connection->getId(), $config->project_id, '', array('taxonomy_term_detail_page')) . '</div>',
+          );
+          break;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function semantic_connector_init() {
+  // Global notifications (don't check on AJAX requests and during batches).
+  if (current_path() != 'batch' && (empty($_SERVER['HTTP_X_REQUESTED_WITH']) || !strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')) {
+    $notifications = _semantic_connector_global_notification_check(current_path() == 'semantic-connector/refresh-notifications', TRUE);
+
+    // Check if existing notification messages have to be replaced / removed.
+    $messages = drupal_get_messages('warning');
+    if (!empty($warning_messages) && isset($messages['warning'])) {
+      foreach ($messages['warning'] as $warning_message) {
+        if (strpos($warning_message, '<ul class="semantic_connector_notifications">') === FALSE) {
+          drupal_set_message($warning_message, 'warning');
+        }
+      }
+    }
+
+    if (!empty($notifications)) {
+      $notification_config = _semantic_connector_get_global_notification_config();
+      foreach ($notification_config['roles'] as $rid) {
+        if (user_has_role($rid)) {
+          $notification_message = t('Semantic Connector notifications:') . '<ul class="semantic_connector_notifications"><li>' . implode('</li><li>', $notifications) . '</li></ul>';
+
+          // Add the possibility to refresh the notifications.
+          if (user_access('administer semantic connector')) {
+            $notification_message .= '<br />' . l('Refresh the notifications', 'semantic-connector/refresh-notifications', array('query' => array('destination' => current_path()))) . ' | ' . l('Go to the notification settings', 'admin/config/semantic-drupal/semantic-connector/config', array('query' => array('destination' => current_path())));
+          }
+
+          drupal_set_message($notification_message, 'warning');
+          break;
+        }
+      }
+
+      if (!empty($notification_config['mail_to'])) {
+        // @todo: send mails.
+      }
+    }
+  }
+}
+
+/**
+ * Check if a Semantic Connector connection is available.
+ *
+ * @param string $connection_type
+ *   The type of the connection ("pp_server" or "sparql_endpoint")
+ * @param int $connection_id
+ *   The ID of the connection
+ * @param string $return_type
+ *   How to return the value ("ajax" or "boolean")
+ *
+ * @return bool
+ *   TRUE if the connection is available, FALSE if not
+ */
+function _semantic_connector_connection_available($connection_type, $connection_id, $return_type = 'boolean') {
+  $available = FALSE;
+  $connection = SemanticConnector::getConnection(str_replace('-', '_', $connection_type), $connection_id);
+  if (!is_null($connection)) {
+    $available = $connection->available();
+  }
+
+  if ($return_type == 'ajax') {
+    echo $available ? 1 : 0;
+    exit();
+  }
+  else {
+    return $available;
+  }
+}
+
+/**
+ * Get an array of available destinations to go to from a concept link.
+ *
+ * @return array
+ *   The array of destinations keyed by the destination-id, each one is an array
+ *   with following keys:
+ *   - "weight" --> The weight that defines the order of this destination in the
+ *     list of available destinations.
+ *   - "label" --> A label describing this destination.
+ *   - "list_title" --> The title of the destination for the users in the list
+ *     of available destinations.
+ *   - "use" --> TRUE if this destination has to be used, FALSE if not.
+ */
+function _semantic_connector_get_destinations() {
+  // An array of available destinations with their default values.
+  $available_destinations = array(
+    'taxonomy_term_detail_page' => array(
+      'weight' => 1,
+      'label' => t('Taxonomy Term Detail Page'),
+      'list_title' => 'Taxonomy Term Detail Page',
+      'use' => FALSE,
+    ),
+  );
+  if (module_exists('smart_glossary')) {
+    $available_destinations['smart_glossary_detail_page'] = array(
+      'weight' => 0,
+      'label' => t('Smart Glossary Detail Page'),
+      'list_title' => 'Smart Glossary Detail Page',
+      'use' => FALSE,
+    );
+  }
+  if (module_exists('sonr_webmining')) {
+    $available_destinations['sonr_webmining'] = array(
+      'weight' => 2,
+      'label' => t('PoolParty GraphSearch Page'),
+      'list_title' => 'PoolParty GraphSearch Page',
+      'use' => FALSE,
+    );
+  }
+
+  // Replace the default values with actual saved values.
+  $term_destination_options = variable_get('semantic_connector_term_click_destinations', array());
+  foreach ($term_destination_options as $destination_id => $destination) {
+    if (isset($available_destinations[$destination_id])) {
+      foreach (array_keys($available_destinations[$destination_id]) as $destination_property) {
+        if (isset($destination[$destination_property])) {
+          $available_destinations[$destination_id][$destination_property] = $destination[$destination_property];
+        }
+      }
+    }
+  }
+
+  // Order the destinations by weight.
+  uasort($available_destinations, 'drupal_sort_weight');
+
+  return $available_destinations;
+}
+
+/**
+ * Theme concepts with all their possible destinations.
+ *
+ * @param array $concepts
+ *   An associative array containing following keys:
+ *   - "html" --> The HTML of a concept, that will be used as the link text
+ *   - "uri" --> The URI of the concept; if the URI is left empty, this item
+ *     will be handled as a free term (no linking, but still added to the list)
+ *   - "alt_labels" --> The alt labels to be added into the hidden box
+ *   - "hidden_labels" --> The hidden labels to be added into the hidden box
+ * @param int $connection_id
+ *   The ID of the Semantic Connector connection.
+ * @param string $project_id
+ *   The ID of the project this concept is from.
+ * @param string $separator
+ *   If more than one concept is given, the list of concepts will will be
+ *   separated with this string.
+ * @param array $ignore_destinations
+ *   An array of destination IDs, which should not be displayed.
+ *
+ * @return string
+ *   The themed list of concepts.
+ */
+function semantic_connector_theme_concepts(array $concepts, $connection_id, $project_id, $separator = ', ', array $ignore_destinations = array()) {
+  global $base_path;
+  $themed_items = array();
+  $destinations = _semantic_connector_get_destinations();
+
+  if (!empty($concepts)) {
+    drupal_add_js(drupal_get_path('module', 'semantic_connector') . '/js/semantic_connector.js');
+    // Get all URI --> tid connections to avoid lots of database requests.
+    $uri_tid_mapping = array();
+    if ($destinations['taxonomy_term_detail_page']['use'] && !in_array('taxonomy_term_detail_page', $ignore_destinations)) {
+      $uri_tid_mapping = db_select('field_data_field_uri', 'u')
+        ->fields('u', array('field_uri_value', 'entity_id'))
+        ->condition('u.entity_type', 'taxonomy_term')
+        ->execute()
+        ->fetchAllKeyed();
+    }
+    $pp_server_connection = SemanticConnector::getConnection('pp_server', $connection_id);
+
+    $smart_glossary_destinations = array();
+    if (isset($destinations['smart_glossary_detail_page']) && $destinations['smart_glossary_detail_page']['use'] && !in_array('smart_glossary_detail_page', $ignore_destinations)) {
+      $server_config = $pp_server_connection->getConfig();
+      if (isset($server_config['projects']) && !empty($server_config['projects'])) {
+        foreach ($server_config['projects'] as $project) {
+          if ($project->id == $project_id) {
+            if (isset($project->sparql_endpoint_url)) {
+              $query = db_select('semantic_connector_connections', 'c')
+                ->condition('c.type', 'sparql_endpoint')
+                ->condition('c.url', $project->sparql_endpoint_url);
+              $query->join('smart_glossary', 'g', 'g.connection_id = c.connection_id');
+              $query->fields('g', array('sg_id', 'title', 'base_path', 'language_mapping', 'advanced_settings'));
+              $smart_glossary_configs = $query->execute()
+                ->fetchAllAssoc('sg_id');
+
+              foreach ($smart_glossary_configs as $smart_glossary_config) {
+                $language_mapping = unserialize($smart_glossary_config->language_mapping);
+                $advanced_settings = unserialize($smart_glossary_config->advanced_settings);
+                //@todo: add multilanguage support.
+                if (isset($language_mapping[language_default('language')]) && !empty($language_mapping[language_default('language')]['glossary_languages'][0]) && (!isset($advanced_settings['semantic_connection']['show_in_destinations']) || $advanced_settings['semantic_connection']['show_in_destinations'])) {
+                  $smart_glossary_destinations[$smart_glossary_config->base_path . '/' . $language_mapping[language_default('language')]['glossary_languages'][0]] =  $smart_glossary_config->title;
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    $sonr_webmining_destinations = array();
+    if (isset($destinations['sonr_webmining']) && $destinations['sonr_webmining']['use'] && !in_array('sonr_webmining', $ignore_destinations)) {
+      global $theme;
+      $connection_config = $pp_server_connection->getConfig();
+      if (isset($connection_config["sonr_configuration"]) && !empty($connection_config["sonr_configuration"])) {
+        if (isset($connection_config["sonr_configuration"]['projects'][$project_id])) {
+          $search_space_ids = array_keys($connection_config["sonr_configuration"]['projects'][$project_id]['search_spaces']);
+
+          // Get all block paths of PoolParty GraphSearch blocks, which use the given
+          // connection ID and project ID.
+          $query = db_select('sonr_webmining_sets', 's')
+            ->fields('s', array('swid', 'title', 'config'))
+            ->condition('s.connection_id', $connection_id)
+            ->condition('s.search_space_id', $search_space_ids, 'IN');
+          $query->join('block', 'b', 'b.delta = CONCAT(\'sonr_webmining_content_\', s.swid) AND theme = \'' . $theme . '\'');
+          $query->fields('b', array('pages'))
+            ->condition('b.visibility', 1);
+          $sonr_webmining_configs = $query->execute()
+            ->fetchAllAssoc('swid');
+
+          foreach ($sonr_webmining_configs as $sonr_webmining_config) {
+            $advanced_settings = unserialize($sonr_webmining_config->config);
+            if (!isset($advanced_settings['semantic_connection']['show_in_destinations']) || $advanced_settings['semantic_connection']['show_in_destinations']) {
+              // Use the first concrete path of the block.
+              $sonr_webmining_block_path_list = explode(PHP_EOL, $sonr_webmining_config->pages);
+              foreach ($sonr_webmining_block_path_list as $sonr_webmining_block_path) {
+                if (strpos($sonr_webmining_block_path, '*') === FALSE) {
+                  $sonr_webmining_destinations[($sonr_webmining_block_path == '<front>' ? '' : $sonr_webmining_block_path)] = $sonr_webmining_config->title;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    foreach ($concepts as $concept) {
+      if (!isset($concept['uri']) | !isset($concept['html'])) {
+        continue;
+      }
+
+      // Free terms.
+      if (empty($concept['uri'])) {
+        $themed_items[] = $concept['html'];
+      }
+      // Real concepts.
+      else {
+        $destination_links = array();
+        // Destinations are ordered by weight already, so we don't have to check
+        // this property here.
+        foreach ($destinations as $destination_id => $destination) {
+          if ($destination['use']) {
+            switch ($destination_id) {
+              case 'taxonomy_term_detail_page':
+                if (isset($uri_tid_mapping[$concept['uri']])) {
+                  $destination_links['taxonomy/term/' . $uri_tid_mapping[$concept['uri']]] = $destination['list_title'];
+                }
+                break;
+              case 'smart_glossary_detail_page':
+                foreach ($smart_glossary_destinations as $smart_glossary_path => $smart_glossary_title) {
+                  $destination_links[$smart_glossary_path . '/concept?uri=' . $concept['uri']] = $destination['list_title'] . (count($smart_glossary_destinations) > 1 ? ' (' . $smart_glossary_title . ')' : '');
+                }
+                break;
+              case 'sonr_webmining':
+                foreach ($sonr_webmining_destinations as $sonr_webmining_path => $sonr_webmining_title) {
+                  $destination_links[$sonr_webmining_path . '?uri=' . $concept['uri']] = $destination['list_title'] . (count($sonr_webmining_destinations) > 1 ? ' (' . $sonr_webmining_title . ')' : '');
+                }
+                break;
+            }
+          }
+        }
+
+        // Theme the item.
+        $themed_item_content = '';
+        if (empty($destination_links)) {
+          $themed_item_content .= $concept['html'];
+        }
+        else {
+          $themed_item_content .= '<div class="semantic-connector-concept"><ul class="semantic-connector-concept-menu"><li><a class="semantic-connector-concept-link" href="' . $base_path . key($destination_links) . '">' . $concept['html'] . '</a>';
+          if (count($destination_links) > 1) {
+            $themed_item_content .= '<ul class="semantic-connector-concept-destination-links">';
+            foreach ($destination_links as $destination_link_path => $destination_link_label) {
+              $themed_item_content .= '<li class="semantic-connector-concept-destination-link"><a href="' . $base_path . $destination_link_path . '">' . $destination_link_label . '</a></li>';
+            }
+            $themed_item_content .= '</ul>';
+          }
+
+          $hidden_box_content = '';
+          if (isset($concept['alt_labels']) && !empty($concept['alt_labels'])) {
+            $hidden_box_content .= implode(', ', $concept['alt_labels']);
+          }
+          if (isset($concept['hidden_labels']) && !empty($concept['hidden_labels'])) {
+            $hidden_box_content .= (!empty($hidden_box_content) ? ', ' : '') . implode(', ', $concept['hidden_labels']);
+          }
+          $themed_item_content .= '</li></ul>' . (!empty($hidden_box_content) ? '<div class="semantic-connector-concept-hidden-box">' . $hidden_box_content . '</div>' : '') . '</div>';
+        }
+        $themed_items[] = $themed_item_content;
+      }
+    }
+  }
+
+  return implode($separator, $themed_items);
+}
+
+/**
+ * Get detailed information about SPARQL endpoints from a PoolParty server.
+ *
+ * @param $connection_id
+ *   The ID of the SPARQL endpoint connection
+ *
+ * @return array|bool
+ *   Array of information found found for this SPARQL endpoint containing
+ *   following keys:
+ *   - "pp_connection_id" --> The ID of the corresponding PoolParty server
+ *     connection containing the SPARQL endpoint.
+ *   - "project_id" --> The ID of the project using the SPARQL endpoint.
+ *   or FALSE if no information was found or if this connection does not exist.
+ */
+function _semantic_connector_get_sparql_connection_details($connection_id) {
+  $sparql_connection = SemanticConnector::getConnection('sparql_endpoint', $connection_id);
+  if (!is_null($sparql_connection)) {
+    $pp_server_connections = SemanticConnector::getConnectionsByType('pp_server');
+    /** @var \SemanticConnectorPPServerConnection $pp_server_connection */
+    foreach ($pp_server_connections as $pp_server_connection) {
+      $server_config = $pp_server_connection->getConfig();
+      if (isset($server_config['projects']) && !empty($server_config['projects'])) {
+        foreach ($server_config['projects'] as $project) {
+          if (isset($project->sparql_endpoint_url) && $project->sparql_endpoint_url == $sparql_connection->getUrl()) {
+            return array(
+              'pp_connection_id' => $pp_server_connection->getId(),
+              'project_id' => $project->id,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Get the search spaces of a GraphSearch config.
+ *
+ * @param array $graphsearch_config
+ *   The GraphSearch configuration including the search space data.
+ * @param string $search_space_id_filter
+ *   Optional; The ID of the search space.
+ * @param string $project_id_filter
+ *   Optional; The ID of the search PoolParty project used in the search space.
+ * @param string $language_filter
+ *   Optional; The language of the search space.
+ *
+ * @return array
+ *   An array of search spaces by their ID, each item contains following keys:
+ *   - "id": The ID of the search space
+ *   - "name": The name of the search space
+ *   - "language": The language used in the search space
+ *   - "project_ids": An array of project ID string the search space contains
+ */
+function semantic_connector_get_graphsearch_search_spaces(array $graphsearch_config, $search_space_id_filter = '', $project_id_filter = '', $language_filter = '') {
+  $search_spaces = array();
+
+  if (isset($graphsearch_config['projects'])) {
+    // Create a list of all search spaces first.
+    foreach ($graphsearch_config['projects'] as $graphsearch_project) {
+      foreach ($graphsearch_project['search_spaces'] as $search_space) {
+        if (!isset($search_spaces[$search_space['id']])) {
+          $search_spaces[$search_space['id']] = $search_space;
+          $search_spaces[$search_space['id']]['project_ids'] = array();
+        }
+        $search_spaces[$search_space['id']]['project_ids'][] = $graphsearch_project['id'];
+      }
+    }
+
+    // Remove wrong search spaces then.
+    foreach ($search_spaces as $search_space_id => $search_space) {
+      if (
+        (!empty($search_space_id_filter) && $search_space_id_filter != $search_space_id)
+        || (!empty($project_id_filter) && !in_array($project_id_filter, $search_space['project_ids']))
+        || (!empty($language_filter) && $language_filter != $search_space['language'])
+      ) {
+        unset($search_spaces[$search_space_id]);
+      }
+    }
+  }
+
+  return $search_spaces;
+}
+
+/**
+ * Get the configuration for the global notifications.
+ *
+ * @return array
+ *   An associative array of notification settings.
+ */
+function _semantic_connector_get_global_notification_config() {
+  $notification_config = variable_get('semantic_connector_notifications', array());
+
+  // Merge with the default values.
+  $default_values = array(
+    'enabled' => TRUE,
+    'interval' => '86400',
+    'roles' => array(),
+    'mail_to' => '',
+    'actions' => array(),
+  );
+
+  if (empty($notification_config)) {
+    $user_roles = user_roles();
+    $default_role = array_search('administrator', $user_roles);
+    $default_values['roles'] = array($default_role);
+  }
+
+  $notification_config = $notification_config + $default_values;
+  return $notification_config;
+}
+
+/**
+ * Get the configuration for the global notifications.
+ *
+ * @return array
+ *   An array of associative action arrays.
+ *   Every action has following properties:
+ *   - id: string that gets used as the key of the action
+ *   - title
+ *   - description
+ *   - default_value: boolean default value
+ *   - callback: the function to call to check for the notification
+ */
+function _semantic_connector_get_global_notification_actions() {
+  $actions = array();
+
+  $default_action = array(
+    'id' => '',
+    'title' => '',
+    'description' => '',
+    'default_value' => TRUE,
+    'callback' => '',
+  );
+
+  foreach (module_implements('semantic_connector_global_notification_actions') as $module) {
+    $module_actions = module_invoke($module, 'semantic_connector_global_notification_actions');
+    foreach ($module_actions as $module_action) {
+      $module_action = $module_action + $default_action;
+      // At least ID, title and callback have to be given.
+      if (!empty($module_action['id']) && !empty($module_action['title']) && !empty($module_action['callback'])) {
+        $actions[] = $module_action;
+      }
+    }
+  }
+  return $actions;
+}
+
+/**
+ * Check all global notifications.
+ *
+ * @param bool $force_check
+ *   Check for notifications, even if interval is not yet over.
+ * @param bool $send_mail
+ *   TRUE if mails should be sent out (if mail addresses are provided in the
+ *   notification settings.
+ *
+ * @return string[]
+ *   Array of notification strings.
+ */
+function _semantic_connector_global_notification_check($force_check = FALSE, $send_mail = FALSE) {
+  $notifications = array();
+  $notification_config = _semantic_connector_get_global_notification_config();
+  $notification_config_update_required = FALSE;
+
+  if ($notification_config['enabled']) {
+    $last_notification_check = variable_get('semantic_connector_global_notification_last_check', 0);
+    // Find out if a check is already required.
+    if ((time() - $last_notification_check) >= $notification_config['interval'] || $force_check) {
+      $actions = _semantic_connector_get_global_notification_actions();
+      foreach ($actions as $action) {
+        // Use the default value in case there is no value yet.
+        if (!isset($notification_config['actions'][$action['id']])) {
+          $notification_config['actions'][$action['id']] = $action['default_value'];
+          $notification_config_update_required = TRUE;
+        }
+
+        // Find out if this specfic check has to be done.
+        if ($notification_config['actions'][$action['id']]) {
+          $action_notifications = call_user_func($action['callback']);
+          $notifications = array_merge($notifications, $action_notifications);
+        }
+      }
+
+      // Update the notifications and update the notificiation config if required.
+      variable_set('semantic_connector_global_notifications', $notifications);
+      if ($notification_config_update_required) {
+        variable_set('semantic_connector_notifications', $notification_config);
+      }
+
+      // Send mails if required.
+      if (!empty($notifications) && $send_mail && !empty($notification_config['mail_to'])) {
+        $params = array(
+          'notifications' => $notifications,
+        );
+        drupal_mail('semantic_connector', 'global_notifications', $notification_config['mail_to'], language_default(), $params);
+      }
+
+      // Set the current timestamp as last check and update the notifications.
+      variable_set('semantic_connector_global_notification_last_check', time());
+    }
+    // If no check is required use the existing notifications.
+    else {
+      $notifications = variable_get('semantic_connector_global_notifications', array());
+    }
+  }
+
+  return $notifications;
+}
+
+/**
+ * A callback to refresh the notifications; the logic is done by hook_init.
+ */
+function _semantic_connector_refresh_notifications_callback() {
+  $destination = drupal_get_destination();
+  // Clear the messages and return to the page where the user came from.
+  drupal_get_messages();
+  drupal_set_message('Successfully refreshed the global notifications.');
+  drupal_goto($destination['destination'] != current_path() ? $destination : '');
+}
+
+/**
+ * Implements hook_mail().
+ */
+function semantic_connector_mail($key, &$message, $params) {
+  $langcode = $message['language']->language;
+  switch ($key) {
+    case 'global_notifications':
+      $message['body'][] = t('Semantic Connector notifications:', array(), ['langcode' => $langcode]);
+      $notification_text = '';
+      foreach ($params['notifications'] as $notification) {
+        $notification_text .= '- ' . $notification . "\n";
+      }
+      $message['body'][] = $notification_text;
+
+      $link_text = t('Link to refresh the notifications: !link', ['!link' => url('semantic-connector/refresh-notifications', array('absolute' => TRUE))], ['langcode' => $langcode]) . "\n";
+      $link_text .= t('Link to change the notification settings: !link', ['!link' => url('admin/config/semantic-drupal/semantic-connector/config', array('absolute' => TRUE))], ['langcode' => $langcode]);
+      $message['body'][] = $link_text;
+
+      $message['subject'] = t('Semantic Connector notifications - @site_title', ['@site_title' => variable_get('site_name')], ['langcode' => $langcode]);
+      break;
+  }
+}
+
+/**
+ * Implements hook_semantic_connector_global_notification_actions().
+ */
+function semantic_connector_semantic_connector_global_notification_actions() {
+  return array(
+    array(
+      'id' => 'semantic_connector_poolparty_license_check',
+      'title' => t('PoolParty licenses expiration'),
+      'description' => t("If a PoolParty license is about to expire in the next 14 days or is already expired this notification gets triggered."),
+      'default_value' => TRUE,
+      'callback' => '_semantic_connector_check_poolparty_licenses',
+    )
+  );
+}
+
+/**
+ * Check if any extraction model has to be refreshed.
+ *
+ * @param \SemanticConnectorPPServerConnection $connection
+ *   Optional; A specific PoolParty Server Connection to check for a valid
+ *   license.
+ * @param array $license
+ *   Optional; A fixed license to check against instead of fetching the actual
+ *   license used by the server.
+ * @param bool $class_only
+ *   If set to TRUE, instead of a message only "warning" or "error" will be
+ *   returned, depending on the date of expiration.
+ *
+ * @return string[]
+ *   Array of notification strings.
+ */
+function _semantic_connector_check_poolparty_licenses($connection = NULL, $license = NULL, $class_only = FALSE) {
+  $notifications = array();
+
+  if (!is_null($connection)) {
+    $pp_server_connections = array($connection);
+  }
+  else {
+    $pp_server_connections = SemanticConnector::getConnectionsByType('pp_server');
+  }
+
+  /** @var \SemanticConnectorPPServerConnection $pp_server_connection */
+  foreach ($pp_server_connections as $pp_server_connection) {
+    // Load the license information if required.
+    if (!is_null($license)) {
+      $license_information = $license;
+    }
+    else {
+      $license_information = $pp_server_connection->getApi('PPT')->getLicense();
+    }
+
+    if (isset($license_information['expiryDateInMillis'])) {
+      $current_time = time();
+      // License already expired.
+      if (($license_information['expiryDateInMillis'] / 1000) <= $current_time) {
+        if (!$class_only) {
+          // Add the notification.
+          $notifications[] = t('The PoolParty license for connection "%connection" is outdated.', array('%connection' => $pp_server_connection->getTitle()));
+        }
+        else {
+          $notifications[] = 'license-expired';
+        }
+      }
+      // License expires in the next 14 days.
+      elseif (($license_information['expiryDateInMillis'] / 1000) <= ($current_time + 1209600)) {
+        if (!$class_only) {
+          // Add the notification.
+          $notifications[] = t('The PoolParty license for connection "%connection" is about to run out on %expiration.', array('%connection' => $pp_server_connection->getTitle(), '%expiration' => date('j. M Y', $license_information['expiryDateInMillis'] / 1000)));
+        }
+        else {
+          $notifications[] = 'license-almost-expired';
+        }
+      }
+    }
+  }
+
+  return $notifications;
+}
+
+/**
+ * Find out if the Visual Mapper exists.
+ *
+ * @return bool
+ *   TRUE if the Visual Mapper exists, FALSE if not
+ *
+ * @deprecated No longer used since the VisualMapper library was included in
+ *   the Semantic Connector in version 7.x-2.10. Use
+ *   _semantic_connector_visual_mapper_usable() instead.
+ */
+function _semantic_connector_visual_mapper_exists() {
+  return _semantic_connector_visual_mapper_usable();
+}
+
+/**
+ * Find out if the Visual Mapper can be used.
+ *
+ * @return bool
+ *   TRUE if the Visual Mapper can be used, FALSE if not
+ */
+function _semantic_connector_visual_mapper_usable() {
+  return (module_exists('libraries') && file_exists(libraries_get_path('d3js') . "/d3.min.js"));
+}

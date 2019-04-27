@@ -1,0 +1,240 @@
+/******************************************************************
+ * Chart-Header
+ *****************************************************************/
+
+.chart-header {
+  display: block;
+  margin: auto;
+  margin-top: 20px;
+  padding: 10px;
+  display: block;
+  -webkit-border-radius: 22px;
+  -moz-border-radius: 22px;
+  border-radius: 22px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  font-size: 0.85em;
+  font-weight: bold;
+  height: 2em;
+  line-height: 2.1em;
+  border: 1px solid #DEE4DB;
+}
+
+.chart-header.collapsed {
+  border-radius: 22px;
+  -webkit-border-radius: 22px;
+  -moz-border-radius: 22px;
+}
+
+.region-content .chart-type-selection ul,
+.chart-type-selection ul{
+  background: #fff;
+  border: 1px solid #DEE4DB;
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  border-radius: 16px;
+  line-height: 30px;
+width: 230px;
+}
+
+.region-content .chart-type-selection ul{
+  margin: 0;
+}
+
+
+.chart-type-selection ul li{
+  list-style: none;
+float: left;
+  width: 50%;
+  font-size: 12px;
+  line-height: 30px;
+  color: #000;
+  text-align: center;
+  cursor: pointer;
+  position: inherit;
+  border-radius: 30px;
+  z-index: 10;
+  transition: background-color 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+  will-change: transform;
+}
+.chart-type-selection ul li.active{
+  height: 30px;
+  width: 50%;
+  font-size: 12px;
+  line-height: 30px;
+  cursor: pointer;
+  background-color: #0099CC;
+  border-radius: 30px;
+  color:#fff;
+  transition: background-color 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+  will-change: transform;
+}
+.chart-type-selection ul li:hover {
+  cursor: pointer;
+  background-color: rgb(238, 240, 235);
+}
+
+.chart-type-selection ul li.active,
+.chart-type-selection ul li.active:hover {
+  cursor: default;
+  font-weight: bold;
+  background-color: #0099CC;
+}
+
+.chart-header {
+  clear: both;
+}
+
+.chart-header .glossary-root-button {
+  background: #0099CC;
+  border-radius: 12px;
+  -webkit-border-radius: 12px;
+  -moz-border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  height: auto;
+  line-height: 2.1em;
+  margin: 0 10px 0 0;
+  padding: 0.2em 1em 0;
+  position: relative;
+  text-align: center;
+  text-transform: uppercase;
+  width: auto;    
+  font-size: 10px;
+}
+
+.chart-header .glossary-root-button:hover {
+  cursor: pointer;
+  background:#0285B1;
+}
+
+.chart-breadcrumb ul {
+  margin: 0px;
+  padding: 0px;
+}
+
+.chart-breadcrumb ul li{
+  list-style: none outside none;
+  display: inline;
+  line-height: inherit;
+}
+
+.chart-breadcrumb ul li a{
+  font-size: 16px;
+}
+.chart-breadcrumb ul li a.active {
+  font-weight: bold;
+}
+.chart-breadcrumb ul li a.active:hover {
+  color: #000;
+  cursor: default;
+}
+
+/******************************************************************
+ * SVG
+ *****************************************************************/
+
+svg.visual-mapper-svg {
+  display: block;
+  margin: auto;
+}
+
+
+svg.visual-mapper-svg text {
+  font-size: 11px;
+}
+
+svg.visual-mapper-svg rect {
+  fill: none;
+  pointer-events: all;
+}
+
+svg.visual-mapper-svg .node {
+  border: solid 1px white;
+  font: 10px sans-serif;
+  line-height: 12px;
+  overflow: hidden;
+  position: absolute;
+  text-indent: 2px;
+}
+
+svg.visual-mapper-svg .cell.has-children:hover rect {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+svg.visual-mapper-svg .pagination-page-container.active:hover {
+  cursor: default;
+}
+
+svg.visual-mapper-svg .pagination-page-container:hover {
+  cursor: pointer;
+}
+
+svg.visual-mapper-svg .page-container {
+  visibility: hidden;
+}
+
+svg.visual-mapper-svg .page-container.active {
+  visibility: visible;
+}
+
+svg.visual-mapper-svg circle.invisibleConceptCircle,
+svg.visual-mapper-svg circle.invisibleExportCircle {
+  opacity: 0;
+  fill: #000;
+}
+
+svg.visual-mapper-svg circle.invisibleConceptCircle:hover,
+svg.visual-mapper-svg circle.invisibleExportCircle:hover {
+  opacity: 0.1;
+  fill: #000;
+  cursor: pointer;
+}
+
+.export-canvas, svg.visual-mapper-svg.export-svg {
+  display: none;
+}
+
+
+
+/******************************************************************
+ * Tree Visualisation styles
+ *****************************************************************/
+
+
+.visual-mapper-tree .concept rect {
+  fill: #eee;
+  fill-opacity: .5;
+  stroke: #fff;
+  stroke-width: 1px;
+}
+.visual-mapper-tree .concept rect.concept-no-child{
+  fill-opacity:0.25
+}
+.visual-mapper-tree .concept rect{
+  cursor: pointer;
+}
+
+.visual-mapper-tree .concept text {
+  font: 10px sans-serif;
+  pointer-events: none;
+}
+
+.visual-mapper-tree path.link {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 1.5px;
+}
+
+.visual-mapper-tree .collapse-toggle {
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+

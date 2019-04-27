@@ -1,0 +1,73 @@
+/* =============================================================================
+ *   Semantic Connector - Main Elements
+ * ========================================================================== */
+
+#health_info {
+    margin-bottom: 20px;
+}
+
+.semantic-connector-table-title {
+    margin: 50px 0 0 0;
+    border-bottom: 1px solid #bebfb9;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.semantic-connector-table-title .messages {
+    margin-bottom: 15px;
+    font: normal 81.3%/1.538em "Lucida Grande", "Lucida Sans Unicode", sans-serif;
+}
+
+.semantic-connector-table-title .semantic-connector-url {
+    float: right;
+    margin: 5px 3px 0 0;
+    font: normal 81.3%/1.538em "Lucida Grande", "Lucida Sans Unicode", sans-serif;
+}
+
+.pp-server-projects-table {
+    margin-top: 10px;
+    table-layout: fixed;
+}
+
+.pp-server-projects-table td {
+    vertical-align: baseline;
+}
+
+.pp-server-projects-table .add-configuration {
+    padding-top: 5px;
+}
+
+.pp-server-projects-table hr {
+    margin: 5px 0;
+    padding: 0;
+}
+
+.semantic-connector-connection-buttons a,
+.semantic-connector-connection-buttons a.semantic-connector-connection-buttons-delete,
+.semantic-connector-connection-buttons a.semantic-connector-connection-buttons-refresh,
+.semantic-connector-connection-buttons .semantic-connector-connection-version,
+.semantic-connector-connection-buttons .semantic-connector-connection-license {
+    font-size: 0.923em;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+.semantic-connector-connection-buttons .semantic-connector-connection-license.license-almost-expired {
+    background-color: #ffff00;
+    box-shadow: #000 0 0px 0px 0px, inset #460 0 0px 5px, #ff0 0 0px 5px;
+    border-radius: 10px;
+    padding: 0px 8px;
+    color: #000;
+}
+
+.semantic-connector-connection-buttons .semantic-connector-connection-license.license-expired {
+    background-color: #ff0000;
+    box-shadow: #000 0 0px 0px 0px, inset #600 0 0px 5px, #f00 0 0px 5px;
+    border-radius: 10px;
+    padding: 0px 8px;
+    color: #000;
+}
+
+.semantic-connector-connection-buttons a.semantic-connector-connection-buttons-edit {
+    margin-left: 0px;
+}

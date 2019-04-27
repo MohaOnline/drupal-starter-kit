@@ -1,0 +1,23 @@
+name = PoolParty Semantic Connector
+description = The core of semantic power for Drupal: APIs, connections, module collaboration.
+package = Semantic Drupal
+core = 7.x
+
+configure = admin/config/semantic-drupal/semantic-connector
+
+files[] = includes/semantic_connector.class.inc
+files[] = includes/semantic_connector_curl_connection.class.inc
+files[] = includes/semantic_connector_ppx_api.class.inc
+files[] = includes/semantic_connector_ppt_api.class.inc
+files[] = includes/semantic_connector_sonr_api.class.inc
+files[] = includes/semantic_connector_sparql_api.class.inc
+files[] = includes/semantic_connector_watchdog.class.inc
+
+stylesheets[all][] = css/semantic_connector.css
+scripts[] = js/semantic_connector.js
+
+; Information added by Drupal.org packaging script on 2019-01-11
+version = "7.x-2.10"
+core = "7.x"
+project = "semantic_connector"
+datestamp = "1547205190"

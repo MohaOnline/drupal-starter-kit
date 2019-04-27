@@ -1,0 +1,151 @@
+/* =============================================================================
+ *   Semantic Connector - Common Styles
+ * ========================================================================== */
+
+.clearBoth {
+  clear: both;
+}
+
+/* =============================================================================
+ *   Semantic Connector - Main Elements
+ * ========================================================================== */
+
+.semantic-connector-italic {
+  font-style: italic;
+  color: #666;
+}
+
+.semantic-connector-led {
+  width: 12px;
+  height: 12px;
+  float: left;
+  margin: 3px 10px 0 0;
+  background-color: #999999;
+  border-radius: 50%;
+  box-shadow: #000 0 -1px 4px 1px, inset #444 0 -1px 5px, #999 0 2px 5px;
+}
+
+.led-red {
+  background-color: #ff0000;
+  box-shadow: #000 0 0px 0px 0px, inset #600 0 0px 5px, #f00 0 0px 5px;
+}
+
+.led-green {
+  background-color: #00ff00;
+  box-shadow: #000 0 0px 0px 0px, inset #460 0 0px 5px, #0f0 0 0px 5px;
+}
+
+.led-yellow {
+  background-color: #ffff00;
+  box-shadow: #000 0 0px 0px 0px, inset #460 0 0px 5px, #ff0 0 0px 5px;
+}
+
+.semantic-connector-overridden-value {
+  color: red;
+}
+
+/* =============================================================================
+ *   Semantic Connector - Tablesorter Styles
+ * ========================================================================== */
+
+table.semantic-connector-tablesorter thead tr .header {
+  background-image: url(../images/tablesorter_sort.gif);
+  background-repeat: no-repeat;
+  background-position: center right;
+  cursor: pointer;
+}
+
+table.semantic-connector-tablesorter thead tr .headerSortUp {
+  background-image: url(../images/tablesorter_asc.gif);
+}
+
+table.semantic-connector-tablesorter thead tr .headerSortDown {
+  background-image: url(../images/tablesorter_desc.gif);
+}
+
+table.semantic-connector-tablesorter thead tr .headerSortDown,
+table.semantic-connector-tablesorter thead tr .headerSortUp {
+  background-color: #BDBEB9;
+}
+
+/* =============================================================================
+ *   Semantic Connector - Content Elements
+ * ========================================================================== */
+
+.semantic-connector-concept {
+  display: inline-block;
+}
+
+.semantic-connector-concept ul.semantic-connector-concept-menu {
+  list-style: none;
+  margin: 0 0 5px 0;
+  padding: 0;
+}
+
+.semantic-connector-concept ul.semantic-connector-concept-menu a.semantic-connector-concept-link {
+  display: block;
+  text-decoration: none;
+  background: #f0efe6;
+  border: 1px solid #e5e5dc;
+  border-radius:5px;
+  color: #0099cc;
+  font-size: 12px;
+  line-height: 12px;
+  padding: 3px 8px 2px;
+}
+
+.semantic-connector-concept ul.semantic-connector-concept-menu li {
+  position: relative;
+  margin: 0;
+  padding: 0
+}
+
+.semantic-connector-concept ul.semantic-connector-concept-menu li a.semantic-connector-concept-link:hover,
+.semantic-connector-concept ul.semantic-connector-concept-menu li a.semantic-connector-concept-link:active  {
+  background: #EEE;
+}
+
+.semantic-connector-concept ul.semantic-connector-concept-menu ul {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding: 5px 0;
+  margin: 0;
+  z-index: 20;
+  border-radius:5px;
+}
+.semantic-connector-concept ul.semantic-connector-concept-menu ul {
+  background: #0099cc;
+  border: 1px solid #e5e5dc;
+}
+
+.semantic-connector-concept ul.semantic-connector-concept-menu ul li {
+  list-style: none;
+  width: 143px
+}
+
+.semantic-connector-concept ul.semantic-connector-concept-menu ul a {
+  line-height: 120%;
+  color:#fff;
+  font-size: 12px;
+  padding: 5px 8px
+}
+
+.semantic-connector-concept-hidden-box {
+  display: none;
+}
+
+/* =============================================================================
+ *   Semantic Connector - Shared Elements
+ * ========================================================================== */
+
+.ui-autocomplete .ui-menu-item-metadata {
+  font-size: 80%;
+  color: #999;
+  margin-left: 15px;
+}
+
+.ui-autocomplete .ui-menu-item-metadata-label {
+  margin: 0 5px 0 -5px;
+}

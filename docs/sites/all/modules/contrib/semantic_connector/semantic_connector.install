@@ -1,0 +1,156 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the PoolParty Semantic Connector.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function semantic_connector_schema() {
+  $schema['semantic_connector_connections'] = array(
+    'description' => 'Table that stores the configurations of the PoolParty Semantic Connector.',
+    'fields' => array(
+      'connection_id' => array(
+        'description' => 'Primary Key: Unique PoolParty Semantic Connector connection ID.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'Type of the connection (SPARQL Endpoint, GraphSearch server, ...)',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'url' => array(
+        'description' => 'URL of the connection',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'title' => array(
+        'description' => 'Title of the connection',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'username' => array(
+        'description' => 'Name of a user for the credentials',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+      ),
+      'password' => array(
+        'description' => 'Password of a user for the credentials',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+      ),
+      'config' => array(
+        'description' => 'Additional configuration of the connection.',
+        'type' => 'blob',
+        'size' => 'big',
+        'serialize' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('connection_id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function semantic_connector_uninstall() {
+  variable_del('semantic_connector_version_checking');
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function semantic_connector_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  if ($phase == 'runtime' && !in_array('curl', get_loaded_extensions())) {
+    $requirements['semantic_connector'] = array(
+      'title' => $t('cURL'),
+      'value' => $t('Not enabled'),
+      'description' => $t('The PoolParty Semantic Connector module is unable to connect to the PoolParty servers. Please ensure that the PHP library <a href="http://php.net/manual/de/book.curl.php" target="_blank">cURL</a> is correctly enabled.'),
+      'severity' => REQUIREMENT_ERROR,
+    );
+  }
+
+  return $requirements;
+}
+
+/**
+ * Changes the saved PoolParty GraphSearch connection because of the PPGS 6.1.
+ */
+function semantic_connector_update_7200() {
+  $connections = SemanticConnector::getConnectionsByType('pp_server');
+  /** @var \SemanticConnectorPPServerConnection $connection */
+  foreach ($connections as $connection) {
+    $config = $connection->getConfig();
+    $sonr_config = $config['sonr_configuration'];
+    if (!empty($sonr_config['project'])) {
+      $new_sonr_config = array(
+        'projects' => array(
+          $sonr_config['project'] => array(
+            'id' => $sonr_config['project'],
+            'search_spaces' => array(
+              'id' => $sonr_config['project'],
+              'name' => '',
+              'language' => $sonr_config['language'],
+            ),
+          ),
+        ),
+      );
+      if (isset($sonr_config['version'])) {
+        $new_sonr_config['version'] = $sonr_config['version'];
+      }
+      $config['sonr_configuration'] = $new_sonr_config;
+      db_update('semantic_connector_connections')
+        ->fields(array(
+          'config' => serialize($config),
+        ))
+        ->condition('connection_id', $connection->getId())
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Adds the correct PoolParty connection ID to the Sparql-Endpoint config.
+ */
+function semantic_connector_update_7201() {
+  $connections = SemanticConnector::getConnectionsByType('pp_server');
+  /** @var \SemanticConnectorPPServerConnection $connection */
+  foreach ($connections as $connection) {
+    $config = $connection->getConfig();
+    if (!empty($config['projects'])) {
+      foreach ($config['projects'] as $project) {
+        if (property_exists($project, 'sparql_endpoint_url')) {
+          $config = db_select('semantic_connector_connections', 'c')
+            ->fields('c', array('config'))
+            ->condition('type', 'sparql_endpoint')
+            ->condition('url', $project->sparql_endpoint_url)
+            ->execute()
+            ->fetchField();
+          $config = unserialize($config);
+          $config['pp_server_id'] = $connection->getId();
+          db_update('semantic_connector_connections')
+            ->fields(array(
+              'config' => serialize($config),
+            ))
+            ->condition('type', 'sparql_endpoint')
+            ->condition('url', $project->sparql_endpoint_url)
+            ->execute();
+        }
+      }
+    }
+  }
+}
