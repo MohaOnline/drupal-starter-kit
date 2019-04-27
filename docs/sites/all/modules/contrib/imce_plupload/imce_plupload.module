@@ -1,0 +1,116 @@
+<?php
+/**
+ * @file
+ * IMCE_plupload main file
+ *
+ * Responsible for altering the IMCE upload form and handling the uploaded files
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter() for imce_upload_form().
+ */
+function imce_plupload_form_imce_upload_form_alter(&$form, &$form_state, $form_id) {
+  $module_path = drupal_get_path('module', 'imce_plupload');
+  $imce = &$form_state['build_info']['args'][0]['imce'];
+
+  // Change the upload type to plupload to support multi-file uploads.
+  $form['fset_upload']['imce']['#type'] = 'plupload';
+
+  // If imce tells us not to validate extensions, don't set extensions, plupload's default will kick in.
+  if ($imce['extensions'] !== '*') {
+    // Set the extensions as supplied by imce.
+    $validators['file_validate_extensions'] = array($imce['extensions']);
+  }
+  $validators['imce_validate_all'] = array(&$imce);
+  $form['fset_upload']['imce']['#upload_validators'] = $validators;
+
+  // Reroute the form to our own function so we can handle all the files.
+  $form['fset_upload']['upload']['#submit'][0] = 'imce_plupload_upload_submit';
+
+  // We don't need size for the plupload, so remove it.
+  unset($form['fset_upload']['imce']['#size']);
+
+  // This javascript file is needed to trigger upload complete.
+  drupal_add_js($module_path . '/imce_plupload.js', 'file');
+
+  // IMCE uses an asterisk in their CSS which messes up some of the formatting
+  // for plupload. Attach our own stylesheet here.
+  $form['#attached']['css'] = array($module_path . '/plupload.css');
+}
+
+/**
+ * Based on imce_upload_submit()
+ */
+function imce_plupload_upload_submit($form, &$form_state) {
+  $form_state['redirect'] = FALSE;
+  $imce =& $form_state['build_info']['args'][0]['imce'];
+  $diruri = imce_dir_uri($imce);
+
+  // Save uploaded file.
+  $replace = variable_get('imce_settings_replace', FILE_EXISTS_RENAME);
+  foreach ($form_state['values']['imce'] as $upload) {
+    $tmp = plupload_file_uri_to_object($upload['tmppath']);
+    if ($file = file_move($tmp, $diruri . $upload['name'], $replace)) {
+
+      // Core bug #54223: Original filename shown to user instead of renamed filename
+      // Also IMCE_plupload bug #2037775: Incorrect filename stored when IMCE is configured to replace existing files
+      // Because plupload uses file_save_upload we use file_move here instead of file_save_upload as IMCE does:
+      // Check if the filename is correct
+      $name = basename($file->uri);
+      if ($name != $file->filename) {
+        $file->filename = $name;
+
+        // Notify the user if this rename was due to an existing file (this is done by plupload/imce hooks)
+        if ($replace == FILE_EXISTS_RENAME) {
+          drupal_set_message(t('The file has been renamed to %filename.', array('%filename' => $file->filename)));
+        }
+      }
+
+      // Global user may not be the owner.
+      $file->uid = $imce['uid'];
+      $file->status = FILE_STATUS_PERMANENT;
+      $file->filemime = file_get_mimetype($file->uri);
+      file_save($file);
+      imce_file_register($file);
+      drupal_set_message(t('%filename has been uploaded.', array('%filename' => $file->filename)));
+
+      // Update file list.
+      $img = imce_image_info($file->uri);
+      $file->width = $img ? $img['width'] : 0;
+      $file->height = $img ? $img['height'] : 0;
+      imce_add_file($file, $imce);
+
+      // Create thumbnails.
+      if (isset($form_state['values']['thumbnails']) && $img) {
+        imce_create_thumbnails($file->filename, $imce, $form_state['values']['thumbnails']);
+      }
+    }
+    else {
+      drupal_set_message(t('Upload failed.'), 'error');
+    }
+  }
+}
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function imce_plupload_element_info_alter(&$type) {
+  if (isset($type['plupload'])) {
+    $type['plupload']['#process'][] = 'imce_plupload_element_process';
+  }
+}
+
+/**
+ * Process plupload element.
+ */
+function imce_plupload_element_process($element) {
+  global $user;
+  $imce_profile = imce_user_profile($user);
+
+  // Remove extension validation if using IMCE.
+  if ($imce_profile['extensions'] === '*') {
+    unset($element['#upload_validators']['file_validate_extensions']);
+  }
+
+  return $element;
+}
