@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install / Uninstall hook for Roost.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function roost_install() {
+  variable_set('roost_auto_push', TRUE);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function roost_uninstall() {
+  variable_del('roost_key');
+  variable_del('roost_secret');
+  variable_del('roost_name');
+  variable_del('roost_auto_push');
+}

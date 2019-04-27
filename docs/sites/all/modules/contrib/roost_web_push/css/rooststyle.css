@@ -1,0 +1,666 @@
+body.page-admin-config-administration-roost #branding {
+  background: url('../images/roost-red-logo.png') center center no-repeat #e0e0d8;
+}
+
+body.page-admin-config-administration-roost #overlay-content #branding {
+  background: url('../images/roost-red-logo.png') center center no-repeat;
+  padding: 25px 0;
+}
+
+body.page-admin-config-administration-roost fieldset,
+body.page-admin-config-administration-roost #overlay-content fieldset {
+  min-width: 1000px;
+}
+
+.rooster_box {
+  width: 435px;
+  margin: 0 auto;
+  margin-top: 50px;
+  min-height: 650px;
+}
+
+#roostLoginForm {
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+  height: 365px;
+}
+
+#roostLoginForm #edit-submit {
+  margin-right: 20px;
+}
+
+#roostForgotPassword {
+  margin-left: 20px;
+}
+
+#rooster {
+  margin: 0;
+  background: #f1f1f1;
+  color: black;
+  font-family: 'Open Sans', sans-serif;
+  text-align: center;
+  font-size: 14px;
+}
+.rooster_text {
+  padding: 20px 0;
+}
+#rooster #logo {
+  height: 80px;
+  background: url('../images/roost_logo.png') center center no-repeat #e25351;
+}
+
+#roostLoginForm .form-item {
+  padding: 9px 20px;
+}
+
+#roostLoginForm input {
+  height: 25px;
+}
+
+#rooster select {
+  margin: 5px 0 0;
+  cursor: pointer;
+  font-family: 'Open Sans', sans-serif;
+}
+
+#rooster a,
+#rooster a:link,
+#rooster a:visited {
+  text-decoration: none;
+  color: rgb(46, 162, 204);
+}
+
+#rooster a:hover {
+  text-decoration: underline;
+}
+
+.rooster_box input.form-text {
+  width: 370px;
+  padding: 0 10px;
+}
+.rooster_box input.form-submit {
+  float: right;
+}
+
+#rooster input:disabled,
+#rooster select:disabled,
+#rooster textarea:disabled,
+#rooster submit:disabled {
+  background: #d4d7d9;
+  cursor: not-allowed;
+}
+
+#rooster_manual_push {
+  margin-top: 50px;
+}
+
+#rooster_settings .form-type-checkbox label {
+  font-weight: bold;
+  float: left;
+  width: 165px;
+}
+
+#rooster_settings .description {
+  display: inline;
+}
+
+#rooster_manual_push input.form-submit,
+#rooster_settings input.form-submit {
+  float: right;
+}
+
+#rooster_all_time fieldset div div {
+  display: inline-block;
+  width: 33%;
+  font-size: 14px;
+  text-align: center;
+  color: #444;
+  white-space: nowrap;
+  padding-top: 25px;
+  border-right: 1px solid #aaa;
+  height: 70px;
+  vertical-align: middle;
+}
+#rooster_all_time fieldset div div:last-child {
+  border-right: none;
+}
+#rooster_all_time .roost-stat {
+  font-size: 55px;
+  display: block;
+  margin-bottom: 25px;
+  color: #aaa;
+}
+
+#rooster_all_time .roost-stat .roost-stat-tag {
+  font-size: 35px;
+}
+
+#roost_top_right {
+  text-align: right;
+}
+#roost_top_right div {
+  display: inline-block;
+  font-weight: bold;
+}
+#roost_top_right a {
+  margin-left: 30px;
+  padding: 5px 10px;
+  color: black;
+  background-color: #f0f0f0;
+  border: 1px solid gray;
+  border-radius: 15px;
+}
+
+#roost-plugin-form div fieldset {
+  overflow: hidden;
+}
+
+#roost-plugin-form div fieldset .fieldset-legend {
+  width: 100%;
+  background-color: #ddd;
+  margin: 0;
+  padding: 5px;
+  text-transform: none;
+}
+
+#rooster_settings .form-item {
+  display: inline-block;
+  position: relative;
+  width: 100%;
+  margin: 20px auto 0;
+}
+
+#rooster_settings .description {
+  display: block;
+  width: 80%;
+  position: relative;
+  left: 175px;
+  top: -19px;
+}
+
+#adminmenu li.current .wp-menu-image img,
+#adminmenu li.wp-not-current-submenu .wp-menu-image img {
+  opacity: 1;
+}
+
+hr {
+  height: 1px;
+  background: #d4d7d9;
+  border: 0;
+  margin: 15px 0 20px;
+}
+
+.type-submit {
+  font-size: 13px;
+  border-radius: 3px;
+  background: #2ea2cc;
+  color: #fff;
+  box-shadow: none;
+  border: 1px solid;
+  border-color: #0074a2;
+  padding: 5px 0 6px;
+  width: 94px;
+  cursor: pointer;
+}
+
+.left-link {
+  float: left;
+  font-size: 14px;
+}
+
+input.type-text {
+  width: 340px;
+  height: 36px;
+  padding: 0 10px;
+  font-family: 'Open Sans', sans-serif;
+}
+
+#roost-manual-send-section {
+  height: 225px;
+}
+
+#roost-manual-send-wrapper {
+  margin-top: 15px;
+}
+
+#roost-manual-send-wrapper .type-text {
+  display: block;
+  width: 895px;
+  height: 27px;
+}
+
+#roostHeader {
+  display: inline-block;
+  position: relative;
+  height: 36px;
+  width: 100%;
+  margin-top: 7px;
+  padding: 16px 0 0 0;
+}
+
+#roostHeaderRight {
+  float: right;
+  width: 550px;
+  margin: 5px;
+}
+
+#roostUsername {
+  color: #666666;
+  font-size: 15px;
+  margin-top: -4px;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
+  display: inline-block;
+  width: 425px;
+  float: right;
+  margin-right: 20px;
+  text-align: right;
+}
+
+#roostLogOut {
+  color: #666666;
+  background: #f7f7f7;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1px solid #cccccc;
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  width: 90px;
+  display: block;
+  float: right;
+}
+
+.roost-wrapper {
+  margin: 0 auto;
+  width: 1066px;
+}
+
+.roost-wrappper-override {
+  margin: 0 auto;
+  width: 90px;
+}
+
+#roost-main-wrapper {
+  margin: -1px auto 0;
+  width: 1066px;
+  min-height: 1200px;
+}
+
+.roost-primary-wrapper {
+  background: #fff;
+  width: 366px;
+  margin: 100px auto;
+  box-shadow: 0px 1px 3px rgba(0,0,0,0.2);
+}
+
+#roost-primary-logo {
+  height: 64px;
+  background: rgb(226, 83, 81);
+  text-align: center;
+}
+
+#roost-primary-logo img {
+  height: 40px;
+  width: 72px;
+  margin-top: 12px;
+}
+
+.roost-primary-heading {
+  background: #fafafa;
+  height: 35px;
+  text-align: center;
+  padding: 19px 30px;
+  border-bottom: 1px solid #d4d7d9;
+}
+
+.roost-primary-footer {
+  background: #fff;
+  height: 35px;
+  text-align: center;
+  padding: 14px 30px 20px;
+}
+
+.roost-login-input {
+  display: inline-block;
+  width: 100%;
+  margin: 10px 0;
+  position: relative;
+}
+
+.roost-primary-wrapper input.type-text {
+  width: 214px;
+  height: 26px;
+  float: right;
+  margin-top: -2px;
+}
+
+.roost-primary-wrapper select {
+  width: 100%;
+  background: #fff url('../images/drop-down-arrows.png') no-repeat 340px center !important;
+}
+
+.roostDisclaimer {
+  font-family: 'Open Sans', sans-serif;
+  font-size: 11px;
+  font-style: italic;
+  display: inline-block;
+  width: 290px;
+  margin: 5px 0 0 5px;
+}
+
+.roost-primary-cta,
+.roost-secondary-cta {
+  display: block;
+}
+
+.roost-primary-cta {
+  font-size: 13px;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
+  line-height: 10px;
+  color: #222222;
+  margin-bottom: 10px;
+}
+
+.roost-secondary-cta {
+  font-size: 13px;
+  color: #666666;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.roost-section-wrapper {
+  background: #f3f4f5;
+  margin: 25px 0;
+  box-shadow: 0px 3px 5px rgba(0,0,0,0.2);
+}
+
+.roost-section-heading {
+  color: #222222;
+  border-bottom: 1px solid #daddde;
+  background: #fff;
+  width: 100%;
+  display: inline-block;
+  position: relative;
+  height: 17px;
+  padding: 10px 0 10px 0;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-indent: 13px;
+}
+
+.roost-section-expansion {
+  width: 11px;
+  height: 6px;
+  display: block;
+  position: relative;
+  background: url('../images/roost-arrow.png') no-repeat;
+  right: 13px;
+  float: right;
+  top: -21px;
+  cursor: pointer;
+}
+
+.roost-section-expansion {
+  transition-duration: 0.2s;
+}
+
+.roost-section-expansion.collapsed {
+  -webkit-transform: rotate(180deg);
+  -moz-transform: rotate(180deg);
+  -ms-transform: rotate(180deg);
+  -o-transform: rotate(180deg);
+  transform: rotate(180deg);
+  zoom: 1;
+}
+
+.roost-section-content {
+  padding: 30px 30px 0 30px;
+}
+
+.roost-section-secondary {
+  padding: 13px 0 0 13px;
+  background-color: #fff;
+}
+
+.roost-section-secondary .type-submit {
+  float: right;
+  width: 130px;
+  margin: 2px 0 0 0;
+}
+
+#roost-all-stats {
+  padding: 0;
+  margin: 0;
+}
+
+#roost-all-stats {
+  background: url('../images/stats-placeholder.png') no-repeat;
+  background-size: cover;
+  background-color: #fff;
+  height: 135px;
+}
+
+.roost-no-collapse {
+  position: relative;
+  width: 1025px;
+  display: inline-block;
+}
+
+#roost-registration-points {
+  list-style: none;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 13px;
+}
+
+#roost-registration-points li {
+  display: inline-block;
+  width: 240px;
+  height: 40px;
+  margin-right: 38px;
+}
+
+#roost-registration-points li:last-of-type {
+  margin-right: 0;
+}
+
+.roost-step {
+  color: #fff;
+  background: #e25351;
+  display: inline-block;
+  padding: 10px 9px 8px 9px;
+  width: 18px;
+  height: 18px;
+  position: relative;
+  border-radius: 20px;
+  text-indent: 5px;
+  margin-right: 10px;
+}
+
+#roost-vert-wedge {
+  display: inline-block;
+  width: 180px;
+  top: 8px;
+  position: relative;
+}
+
+.roost-input-text {
+  width: 100%;
+  position: relative;
+  display: inline-block;
+  height: 71px;
+}
+
+.roost-input-text .roost-label,
+#roost-block .roost-label {
+  width: 110px;
+  margin-right: 14px;
+  display: block;
+  float: left;
+}
+
+#roost-block .roost-label {
+  width: 175px;
+  margin-right: 25px;
+  position: relative;
+  top: -4px;
+}
+
+.roost-input-caption {
+  font-style: italic;
+  font-size: 13px;
+  display: block;
+  margin-top: 5px;
+}
+
+.roost-input-wrapper,
+.roost-setting-wrapper {
+  display: block;
+  width: 890px;
+  float: left;
+}
+
+.roost-setting-wrapper {
+  width: 100%;
+  height: 35px;
+  margin-bottom: 12px;
+}
+
+.roost-setting-wrapper:nth-child(2) {
+  margin-bottom: 30px;
+}
+
+.roost-setting-wrapper:nth-child(3) {
+  margin-bottom: 8px;
+}
+
+.roost-setting-wrapper input {
+  float: left;
+  top: 5px;
+  margin-right: 10px;
+  position: relative;
+}
+
+.roost-setting-caption {
+  font-style: italic;
+  width: 775px;
+  display: block;
+  float: left;
+}
+
+.roost-label {
+  display: inline-block;
+  margin: 4px 0 1px 5px;
+  font-size: 13px;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 600;
+}
+
+#roost-block {
+  display: inline-block;
+  width: 100%;
+  position: relative;
+  height: 210px;
+  padding: 15px 0 0;
+}
+
+.roost-os-bold {
+  font-weight: 600;
+}
+
+#rooster-status {
+  background: #fff;
+  width: 1022px;
+  color: #222222;
+  font-size: 13px;
+  padding: 17px 20px;
+  margin: 15px auto;
+  display: block;
+  border-left: 4px solid rgb(226, 83, 81);
+}
+
+#rooster-status-text {
+  width: 910px;
+  display: inline-block;
+}
+
+#rooster-status-close {
+  font-family: 'Open Sans', sans-serif;
+  color: rgb(46, 162, 204);
+  height: 16px;
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  float: right;
+}
+
+#roost-middle-save {
+  display: block;
+  float: right;
+}
+
+.rooster-custom-script {
+  width: 220px;
+  padding: 10px;
+  height: 75px;
+}
+
+.roost-text-pinch {
+  width: 200px;
+  margin-top: 50px;
+  display: inline-block;
+}
+#roostUserLogo {
+  display: inline-block;
+  top: 6px;
+  position: relative;
+  border-radius: 3px;
+  height: 24px;
+  margin-right: 15px;
+}
+
+#roostUserLogo img {
+  border: 1px solid #cccccc;
+  border-radius: 3px;
+}
+
+.roost-stats-metric {
+  display: block;
+  height: 75px;
+  width: 265px;
+  float: left;
+  padding: 42px 0 17px;
+  border-right: 1px solid #eeeeee;
+  position: relative;
+  top: -6px;
+}
+
+.roost-stats-metric:last-of-type {
+  border-right: none;
+}
+
+.roost-stat {
+  color: #aaaaaa;
+  display: block;
+  text-align: center;
+  font-weight: 300;
+  font-size: 60px;
+}
+
+.roost-stat-label {
+  display: block;
+  width: 215px;
+  margin: 25px auto 0;
+  text-align: center;
+  color: #222222;
+}
+
+#roost-all-stats .roost-no-collapse {
+  width: 100%;
+}
+
+#roost-time-label {
+  font-size: 30px;
+}

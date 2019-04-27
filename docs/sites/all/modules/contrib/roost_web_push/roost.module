@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * @file
+ * Adds Roost notification override with posting content.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function roost_menu() {
+  $items = array();
+  $items['admin/config/administration/roost'] = array(
+    'title' => 'Roost configuration',
+    'page callback' => 'roost_admin_page',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'roost.admin.inc',
+  );
+  $items['admin/config/administration/roost/signout'] = array(
+    'page callback' => 'roost_admin_signout',
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_CALLBACK,
+    'file' => 'roost.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function roost_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form_state['node']) && (($form_state['node']->title === NULL) || ($form_state['node']->title !== NULL && $form_state['node']->status == 0))) {
+    $roost_app_key = variable_get('roost_key', '');
+    if ($roost_app_key && isset($form['type']['#value']) && in_array($form['type']['#value'], array('article', 'blog'))) {
+      $form['roost'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Roost'),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+      );
+      $form['roost']['not_send'] = array(
+        '#type' => 'checkbox',
+        '#default_value' => variable_get('roost_auto_push', TRUE) === 0 ? TRUE : FALSE,
+        '#title' => t('<strong>Do NOT</strong> send notification with <strong>Roost</strong>'),
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function roost_init() {
+  $roost_app_key = variable_get('roost_key', '');
+  $is_admin = path_is_admin(current_path());
+  if (!empty($roost_app_key) && !$is_admin) {
+    drupal_add_js("https://cdn.goroost.com/roostjs/$roost_app_key", array(
+      'type' => 'external',
+      'async' => TRUE,
+    ));
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function roost_node_insert($node) {
+  roost_build_note($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function roost_node_update($node) {
+  if ($node->original->status == 0 && $node->status == 1) {
+    roost_build_note($node);
+  }
+}
+
+/**
+ * Function to build a notification to send via Roost API.
+ *
+ * Function called from roost_node_insert and
+ * roost_node_update.
+ */
+function roost_build_note($node) {
+  $nid = $node->nid;
+  $status = $node->status;
+  $public = node_access('view', $node, drupal_anonymous_user());
+  if ($status == TRUE && $public == TRUE) {
+    $roost_app_key = variable_get('roost_key', '');
+    $roost_app_secret = variable_get('roost_secret', '');
+    if ($roost_app_key && !isset($_POST['not_send']) && (($node->type === 'article') || ($node->type === 'blog'))) {
+      $node->{'roosted'}[LANGUAGE_NONE][0]['value'] = 1;
+      $url = url('node/' . $nid, array('absolute' => TRUE));
+      $alert = $node->title;
+      $roost_image_url = FALSE;
+      module_load_include('inc', 'roost', 'roost.api');
+      roost_send_notification($alert, $url, $roost_image_url, $roost_app_key, $roost_app_secret);
+    }
+  }
+}
