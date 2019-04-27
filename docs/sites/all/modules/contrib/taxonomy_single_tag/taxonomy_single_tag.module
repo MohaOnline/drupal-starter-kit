@@ -1,0 +1,162 @@
+<?php
+/**
+ * @file
+ * Allows the use of commas in taxonomy autocomplete fields
+ *
+ * Provides a Fields API widget to allow autocomplete fields accept commas by
+ * restricting the field to a single tag.
+ */
+
+/**
+ * Implementation of hook_enable().
+ */
+function taxonomy_single_tag_enable() {
+  // higher weight than: taxonomy
+  db_query("UPDATE {system} SET weight = 20 WHERE name = 'taxonomy_single_tag' AND type = 'module'");
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function taxonomy_single_tag_menu() {
+  $items['taxonomy_single_tag/autocomplete'] = array(
+    'title' => 'Autocomplete taxonomy_single_tag',
+    'page callback' => 'taxonomy_single_tag_autocomplete',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_field_widget_info()
+ *
+ * Exposes our autocomplete option to the Fields API
+ */
+function taxonomy_single_tag_field_widget_info() {
+  return array(
+    'taxonomy_single_tag_autocomplete' => array(
+      'label' => t('Single tag autocomplete text field'),
+      'description' => t('Allows the use of commas in an autocomplete field by forcing the field to a single term.'),
+      'field types' => array('taxonomy_term_reference'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form
+ *
+ * Adds our autocomplete form to the node edit form
+ */
+function taxonomy_single_tag_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  // Translate the tid for this textfield instance into a human-readable term name
+  $tag = '';
+  if (isset($items[$delta])) {
+    $term = taxonomy_term_load($items[$delta]['tid']);
+    if (!empty($term)) {
+      $tag = $term->name;
+    }
+  }
+
+  // Build autocomplete textfield widget
+  $element += array(
+    '#type' => 'textfield',
+    '#default_value' => $tag,
+    '#autocomplete_path' => 'taxonomy_single_tag/autocomplete/' . $field['field_name'],
+    '#size' => 60,
+    '#maxlength' => 1024,
+    '#element_validate' => array('taxonomy_single_tag_autocomplete_validate'),
+  );
+
+  return $element;
+}
+
+/**
+ * Validation function for our autocomplete widget.  Converts a term into a
+ * taxonomy object.
+ *
+ * @see http://api.drupal.org/api/drupal/modules--taxonomy--taxonomy.module/function/taxonomy_autocomplete_validate/7
+ */
+function taxonomy_single_tag_autocomplete_validate($element, &$form_state) {
+  // Autocomplete widgets do not send their tids in the form, so we must detect
+  // them here and process them independently.
+  $value = '';
+  if ($tag = $element['#value']) {
+    // Collect candidate vocabularies.
+    $field = field_widget_field($element, $form_state);
+    $vocabularies = array();
+    foreach ($field['settings']['allowed_values'] as $tree) {
+      if ($vocabulary = taxonomy_vocabulary_machine_name_load($tree['vocabulary'])) {
+        $vocabularies[$vocabulary->vid] = $vocabulary;
+      }
+    }
+
+    // Translate term names into actual terms.
+    // See if the term exists in the chosen vocabulary and return the tid;
+    // otherwise, create a new 'autocreate' term for insert/update.
+    if ($possibilities = taxonomy_term_load_multiple(array(), array('name' => trim($tag), 'vid' => array_keys($vocabularies)))) {
+      $term = array_pop($possibilities);
+    }
+    else {
+      $vocabulary = reset($vocabularies);
+      $term = array(
+        'tid' => 'autocreate',
+        'vid' => $vocabulary->vid,
+        'name' => $tag,
+        'vocabulary_machine_name' => $vocabulary->machine_name,
+      );
+    }
+    $value = (array) $term;
+  }
+  form_set_value($element, $value, $form_state);
+}
+
+
+/**
+ * Autocompletion callback
+ */
+function taxonomy_single_tag_autocomplete($field_name, $tag_typed = '') {
+  // similar to taxonomy_autocomplete, but without taking care of commas
+  // since only a single value is allowed
+  $field = field_info_field($field_name);
+  $tag = drupal_strtolower($tag_typed);
+
+  $matches = array();
+  if ($tag != '') {
+
+    // Part of the criteria for the query come from the field's own settings.
+    $vids = array();
+    $vocabularies = taxonomy_vocabulary_get_names();
+    foreach ($field['settings']['allowed_values'] as $tree) {
+      $vids[] = $vocabularies[$tree['vocabulary']]->vid;
+    }
+
+    $query = db_select('taxonomy_term_data', 't');
+    $query->addTag('translatable');
+    $query->addTag('term_access');
+
+    // Select rows that match by term name.
+    $tags_return = $query
+      ->fields('t', array('tid', 'name'))
+      ->condition('t.vid', $vids)
+      ->condition('t.name', '%' . db_like($tag) . '%', 'LIKE')
+      ->range(0, 10)
+      ->execute()
+      ->fetchAllKeyed();
+
+    $term_matches = array();
+    foreach ($tags_return as $tid => $name) {
+      $n = $name;
+      // TODO: needed?
+      // Term names containing commas or quotes must be wrapped in quotes.
+      // if (strpos($name, ',') !== FALSE || strpos($name, '"') !== FALSE) {
+        // $n = '"' . str_replace('"', '""', $name) . '"';
+      // }
+      // else {
+      $term_matches[$name] = check_plain($name);
+      // }
+    }
+  }
+
+  drupal_json_output($term_matches);
+}

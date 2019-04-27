@@ -1,0 +1,13 @@
+name = Taxonomy single tag
+description = Provides scalable autocomplete widget to handle non-multiple vocabularies desiring to use tags autocomplete for a single value.
+core = 7.x
+dependencies[] = taxonomy
+package = 'Taxonomy'
+
+files[] = taxonomy_single_tag.module
+; Information added by drupal.org packaging script on 2013-04-17
+version = "7.x-1.1"
+core = "7.x"
+project = "taxonomy_single_tag"
+datestamp = "1366174579"
+

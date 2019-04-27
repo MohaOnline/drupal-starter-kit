@@ -1,0 +1,12 @@
+
+Taxonomy Single Term change log
+-------------------------------
+
+Taxonomy Single Term 7.x-1.0-xxxxx  22 July, 2011
+-------------------------------------------------
+Issue #1237088 by mikeker: Fixes issue with multiple escaping of quotes and commas.
+
+
+Taxonomy Single Term 7.x-1.0-beta1  22 July, 2011
+-------------------------------------------------
+Issue #1225866 by mikeker: Initial port.
