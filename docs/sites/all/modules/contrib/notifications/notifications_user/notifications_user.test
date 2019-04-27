@@ -1,0 +1,110 @@
+<?php
+
+/**
+ * Notifications User test case suite.
+ *
+ * @author Amarnath Ravikumar <amar@theteamie.com>
+ */
+class NotificationsUserTestCase extends DrupalWebTestCase {
+
+   public static function getInfo() {
+    return array(
+      'name' => 'Notifications User',
+      'description' => 'Verifies that users can subscribe to and be notified of posts by a given author of a given content type.',
+      'group' => 'Notifications',
+    );
+  }
+
+  function setUp() {
+    parent::setUp('notifications_user', 'messaging_simple', 'messaging_mail', 'notifications_ui', 'notifications_account');
+    $this->drupalCreateContentType(array(
+      'type' => 'simple',
+      'name' => 'Simple Content Type',
+      'description' => 'A really simple content type'
+    ));
+    $this->publisher = $this->drupalCreateUser(
+      array(
+        'access content',
+        'create simple content',
+        'skip notifications'
+      )
+    );
+    $this->subscriber = $this->drupalCreateUser(
+      array(
+        'access content',
+        'create subscriptions',
+        'subscribe to content type',
+        'subscribe to author',
+        'maintain own subscriptions'
+      )
+    );
+    variable_set('notifications_content_type', array('simple'));
+    variable_set('notifications_content_per_type', FALSE);
+    // Set up trigger assignments
+    $record1 = array(
+      'hook' => 'node_insert',
+      'aid' => 'notifications_content_node_post_action'
+    );
+    drupal_write_record('trigger_assignments', $record1);
+  }
+
+  function testNotificationDelivery() {
+    // Log the subscriber in..
+    $this->drupalLogin($this->subscriber);
+    // Subscribe to the publisher..
+    $query = array($this->publisher->uid);
+    $this->drupalGet('notifications/subscribe/user_content', array('query' => $query));
+    $edit = array();
+    $edit['send_method'] = 'simple';
+    $this->drupalPost(NULL, $edit, t('Create subscription'));
+    // Validate subscription..
+    $this->drupalGet('user/' . $this->subscriber->uid . '/notifications');
+    $this->assertText('You have 1 active subscriptions.', t('Subscription addition has been verified.'));
+
+    // A.
+    // Publish on behalf of the publisher..
+    $this->drupalCreateNode(array(
+      'type' => 'simple',
+      'title' => t('First published node'),
+      'uid' => $this->publisher->uid
+    ));
+    // Ensure notifications has been received by the subscriber..
+    $this->drupalGet('user/' . $this->subscriber->uid . '/messages');
+    $this->assertText(t('First published node'), t('Notification has been received by the subscriber'));
+
+    // B.
+    $draft = $this->drupalCreateNode(array(
+      'type' => 'simple',
+      'title' => t('Second unpublished node'),
+      'uid' => $this->publisher->uid,
+      'status' => 0
+    ));
+    // Ensure notifications has not been received by the subscriber..
+    $this->drupalGet('user/' . $this->subscriber->uid . '/messages');
+    $this->assertNoText(t('Second unpublished node'), t('Notification has not been received by the subscriber'));
+    $draft->title = t('Second published node');
+    $draft->notifications_status = TRUE;
+    $draft->notifications_content_disable = FALSE;
+    $draft->status = NODE_PUBLISHED;
+    node_save($draft);
+    // Ensure notifications has been received by the subscriber..
+    $this->drupalGet('user/' . $this->subscriber->uid . '/messages');
+    $this->assertText(t('Second published node'), t('Notification has been received by the subscriber'));
+
+    // C. Ensure notifications skipping is respected..
+    $this->drupalCreateNode(array(
+      'type' => 'simple',
+      'title' => t('Third published node'),
+      'uid' => $this->publisher->uid,
+      'status' => NODE_PUBLISHED,
+      'notifications_content_disable' => TRUE
+    ));
+    // Ensure notifications has not been received by the subscriber..
+    $this->drupalGet('user/' . $this->subscriber->uid . '/messages');
+    $this->assertNoText(t('Third published node'), t('Notification has not been received by the subscriber'));
+
+    // Log the subscriber out..
+    $this->drupalLogout();
+  }
+
+};
