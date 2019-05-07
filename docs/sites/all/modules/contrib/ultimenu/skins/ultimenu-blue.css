@@ -1,0 +1,31 @@
+/**
+ * @file
+ * Skin based on safe CSS file name: ultimenu-blue.
+ */
+.ultimenu-blue .block:first-child {
+  float: left;
+  width: 45%;
+}
+
+.ultimenu-blue .block:nth-child(2) {
+  margin-left: 48%;
+}
+
+.ultimenu-blue .ultimenu-flyout {
+  background-color: #0779bf;
+  -webkit-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -moz-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -ms-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -o-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  box-shadow: 0 2px 2px rgba(0,0,0,.2);
+}
+
+.ultimenu-blue .region {
+  background: #fff;
+  padding: 20px;
+}
+
+.ultimenu-blue .block {
+  display: block;
+  padding: 1em;
+}

@@ -1,0 +1,238 @@
+/**
+ * @file
+ * This file contains all Ultimenu layout and very basic styling.
+ * Classes:
+ * .ultimenu: the menu UL tag.
+ * .ultimenu > li: the menu LI tag.
+ * .ultimenu-flyout: the ultimenu region container aka flyout.
+ * .ultimenu-item: the menu-item A tag.
+ * .ultimenu > li.hover: keep persistent highlighting on hover menu item
+ *    whenever :hover fails.
+ */
+/**
+ * Menu list style.
+ */
+.ultimenu {
+  list-style: none;
+  min-height: 40px;
+  padding: 0;
+  position: relative; /*make flyout relative to UL for wide flyout */
+  z-index: 99;
+}
+
+/* Add position: relative; to make flyout relative to LI for smaller flyout */
+.ultimenu > li {
+  display: inline-block;
+  margin: 0 -4px 0 0; /* LTR */
+}
+
+/**
+ * Orientation.
+ */
+.ultimenu.vertical {
+  height: auto;
+}
+
+.ultimenu.vertical > li {
+  display: block;
+  float: none;
+  position: relative;
+}
+
+.ultimenu-vtr .ultimenu-flyout {
+  left: 100%; /* LTR */
+  top: 0;
+}
+
+.ultimenu-vtl .ultimenu-flyout {
+  left: auto; /* LTR */
+  right: 100%;  /* LTR */
+  top: 0;
+}
+
+.ultimenu-htt .ultimenu-flyout {
+  bottom: 100%;
+  margin-bottom: 20px;
+  top: auto;
+}
+
+/**
+ * Ultimenu flyout.
+ * Never display: none, bad for animation.
+ */
+.ultimenu-flyout {
+  -moz-transition: visibility 0s linear 0.5s, opacity .5s linear, margin .5s ease;
+  -ms-transition: visibility 0s linear 0.5s, opacity .5s linear, margin .5s ease;
+  -o-transition: visibility 0s linear 0.5s, opacity .5s linear, margin .5s ease;
+  -webkit-transition: visibility 0s linear 0.5s, opacity .5s linear, margin .5s ease;
+  display: block;
+  left: 0; /* LTR */
+  line-height: 1.4;
+  margin: 20px 0 0;
+  opacity: 0;
+  padding: 20px 0;
+  position: absolute;
+  top: 100%;
+  transition: visibility 0s linear 0.5s, opacity .5s linear, margin .5s ease;
+  visibility: hidden;
+  z-index: 102;
+}
+
+.ultimenu > li:hover > .ultimenu-flyout,
+.ultimenu > li.hover > .ultimenu-flyout {
+  -moz-transition-delay: 0s;
+  -ms-transition-delay: 0s;
+  -o-transition-delay: 0s;
+  -webkit-transition-delay: 0s;
+  display: block;
+  margin-top: 0;
+  opacity: 1;
+  transition-delay: 0s;
+  visibility: visible;
+}
+
+.vertical  .ultimenu-flyout {
+  margin-top: 0;
+}
+
+.ultimenu-vtl .ultimenu-flyout,
+.ultimenu-vtl .ultimenu-flyout {
+  margin-right: 20px; /* LTR */
+}
+
+.ultimenu-vtr .ultimenu-flyout,
+.ultimenu-vtr .ultimenu-flyout {
+  margin-left: 20px; /* LTR */
+}
+
+.ultimenu-vtl > li:hover > .ultimenu-flyout,
+.ultimenu-vtl > li.hover > .ultimenu-flyout {
+  margin-right: 10px; /* LTR */
+}
+
+.ultimenu-vtr > li:hover > .ultimenu-flyout,
+.ultimenu-vtr > li.hover > .ultimenu-flyout {
+  margin-left: 10px; /* LTR */
+}
+
+.ultimenu-htt > li:hover > .ultimenu-flyout,
+.ultimenu-htt > li.hover > .ultimenu-flyout {
+  margin-bottom: 10px;
+}
+
+/**
+ * IE fixes for disappearing flyout on hover.
+ * .ie class is added into HTML tag via jQuery to support hovering issue.
+ * Most popular themes support more fine-grained classes, e.g.: .lt-ie9, etc.
+ * To properly display some space between the flyout and A tag, please adjust
+ * the A tag padding instead.
+ * Vertical to bottom orientation has no issue, but other orientations do.
+ * Basically we need to remove the gap between the LI and its flyout.
+ * The class .ie is left to supported themes, like Omega4. You can implement
+ * your ie class.
+ */
+.ie .ultimenu-vtl > li.hover > .ultimenu-flyout {
+  margin-right: 0; /* LTR */
+}
+
+.ie .ultimenu-vtr > li.hover > .ultimenu-flyout {
+  margin-left: 0; /* LTR */
+}
+
+.ie .ultimenu-htt > li.hover > .ultimenu-flyout {
+  margin-bottom: 0;
+}
+
+/**
+ * Smaller medium.
+ */
+@media all and (max-width: 59em) {
+  .ultimenu > li,
+  .ultimenu > li > a {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .ultimenu-flyout,
+  .ultimenu-vtl .ultimenu-flyout,
+  .ultimenu-vtr .ultimenu-flyout,
+  .ultimenu-htt .ultimenu-flyout {
+    bottom: auto;
+    height: auto;
+    left: auto;
+    margin: 0;
+    right: auto;
+    top: auto;
+    width: 100%;
+  }
+
+  .ultimenu > li:hover > .ultimenu-flyout,
+  .ultimenu > li.hover > .ultimenu-flyout  {
+    display: block;
+    position: relative;
+  }
+
+}/*/mediaqueries*/
+
+/**
+ * Larger medium
+ */
+@media all and (min-width: 59em) {
+
+  .ultimenu-flyout {
+    border-radius: 5px;
+  }
+
+  .ultimenu.horizontal > li.last > .ultimenu-flyout {
+    left: auto; /* LTR */
+    right: 0;  /* LTR */
+  }
+
+}/*/mediaqueries*/
+
+/**
+ * Basic skins.
+ * Based on bartik if region navigation is replacing theme_links()
+ */
+#header .ultimenu-flyout,
+#footer .ultimenu-flyout {
+  min-width: 600px;
+}
+
+.sidebar .ultimenu-flyout {
+  min-width: 500px;
+}
+
+.ultimenu-flyout {
+  color: #777;
+}
+
+.ultimenu > li > a {
+  -moz-transition: background-color .5s, color .5s;
+  -ms-transition: background-color .5s, color .5s;
+  -o-transition: background-color .5s, color .5s;
+  -webkit-transition: background-color .5s, color .5s;
+  display: block;
+  line-height: 1.4;
+  padding: .5em 1.25em;
+  transition: background-color .5s, color .5s;
+}
+
+.ultimenu.vertical > li > a {
+  padding: .5em 0;
+}
+
+.ultimenu > li > a small {
+  display: block;
+  font-size: 70%;
+  line-height: 1;
+}
+
+/**
+ * Core bartik do not have clearfix for region, add support for floating blocks.
+ */
+.ultimenu .region:after {
+  clear: both;
+  content: " ";
+  display: table;
+}

@@ -1,0 +1,321 @@
+<?php
+/**
+ * @file
+ * Build Ultimenu regions based on enabled menu and its available menu items.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function ultimenu_help($path, $arg) {
+  if ($path == 'admin/help#ultimenu') {
+    return '<p>' . t('Ultimenu adds ultimenu regions based on available menu items designated for Ultimenu. You can manage the blocks via block/context admin and assign them into Ultimenu regions without having to define them in your theme. Visit <a href="@url">admin/structure/ultimenu</a> to manage the Ultimenu blocks, regions and a few goodies.', array('@url' => url('admin/structure/ultimenu'))) . '</p>';
+  }
+}
+
+/**
+ * Implements hook_ultimenu_theme().
+ */
+function ultimenu_theme(&$existing, $type, $theme, $path) {
+  $base = array(
+    'file' => 'ultimenu.theme.inc',
+    'path' => $path . '/templates',
+  );
+
+  return array(
+    'ultimenu' => $base + array(
+      'render element' => 'element',
+      'pattern' => 'ultimenu__',
+      'template' => 'ultimenu',
+    ),
+    'ultimenu_link' => $base + array(
+      'render element' => 'element',
+      'pattern' => 'ultimenu_link__',
+    ),
+    'ultimenu_region' => $base + array(
+      'render element' => 'element',
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function ultimenu_menu() {
+  $items = array();
+
+  $items['admin/structure/ultimenu'] = array(
+    'title' => 'Ultimenu',
+    'description' => 'Configure Ultimenu.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ultimenu_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer ultimenu'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/ultimenu.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function ultimenu_permission() {
+  return array(
+    'administer ultimenu' => array(
+      'title' => t('Administer Ultimenu'),
+      'description' => t('Manage settings for Ultimenu module'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_system_info_alter().
+ */
+function ultimenu_system_info_alter(&$info, $file, $type) {
+  if ($type == 'theme' && isset($info['regions']) && $regions = ultimenu_regions_enabled()) {
+
+    // Append the Ultimenu regions into the theme defined regions.
+    foreach ($regions as $key => $region) {
+      $info['regions'] += array($key => $region);
+    }
+
+    // Force remove unwanted Ultimenu regions from theme .info if so configured.
+    if (($theme_regions = ultimenu_remove_ultimenu_theme_info()) !== FALSE) {
+      foreach ($theme_regions as $key => $region) {
+        unset($info['regions'][$key]);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function ultimenu_block_info() {
+  $blocks = array();
+  $block_items = ultimenu_get_blocks();
+
+  foreach ($block_items as $delta => $info) {
+    $blocks[$delta] = array(
+      'info' => t('Ultimenu: @title', array('@title' => $info)),
+      'cache' => DRUPAL_CACHE_PER_PAGE,
+      'status' => 0,
+      'region' => 'none',
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function ultimenu_block_configure($delta = '') {
+  module_load_include('inc', 'ultimenu', 'includes/ultimenu.admin');
+  return _ultimenu_block_configure($delta);
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function ultimenu_block_save($delta = '', $edit = array()) {
+  module_load_include('inc', 'ultimenu', 'includes/ultimenu.admin');
+  return _ultimenu_block_save($delta, $edit);
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function ultimenu_block_view($delta = '') {
+  $config = ultimenu_get_config($delta);
+
+  // If no menu link was found, don't display the block.
+  if (empty($config['menu_name'])) {
+    return array();
+  }
+
+  static $already_added = FALSE;
+  $path = drupal_get_path('module', 'ultimenu');
+
+  if (!$already_added) {
+    $already_added = TRUE;
+    drupal_add_js($path . '/js/ultimenu.js');
+    drupal_add_css($path . '/css/ultimenu.css');
+  }
+
+  if (!empty($config['skin'])) {
+    drupal_add_css($config['skin']);
+  }
+
+  // Get the full, un-pruned tree.
+  // @todo use menu_navigation_links() since we don't support sub-menus,
+  // or use menu_build_tree() for future exploration.
+  // @see toolbar_get_menu_tree().
+  $tree = menu_tree_all_data($config['menu_name']);
+
+  // Allow alteration of the tree and config before we begin operations on it.
+  drupal_alter('ultimenu_tree', $tree, $config);
+
+  // Localize the tree.
+  if (module_exists('i18n_menu')) {
+    $tree = i18n_menu_localize_tree($tree);
+  }
+
+  // Render the tree.
+  $data = array();
+  if (($content = ultimenu_tree_output($tree, $config)) !== NULL) {
+    $data['subject'] = NULL;
+    $data['content']['#content'] = $content;
+    $data['content']['#theme'] = array(
+      'ultimenu__' . str_replace('-', '_', $config['menu_name']),
+      'ultimenu',
+    );
+    $data['content']['#config'] = $config;
+    $data['content']['#delta']  = $config['menu_name'];
+  }
+
+  return $data;
+}
+
+/**
+ * We use tree for future integration with regular dropdown so far.
+ *
+ * This is a copy of menu_tree_output() with additional classes added to the
+ * output. This is a copy of the amazing menu_block.module with a tweak to
+ * hold a region inside data below, and a few other modifications.
+ *
+ * @param array $tree
+ *   The array data structure representing the tree as from menu_tree_data.
+ *
+ * @param array $config
+ *   The array config for the current Ultimenu block.
+ *
+ * @return string
+ *   The rendered HTML of that data structure.
+ */
+function ultimenu_tree_output(&$tree, $config = array()) {
+  $build   = array();
+  $items   = array();
+
+  // Create context if no config was provided.
+  if (empty($config)) {
+    $config['delta'] = 0;
+    // Grab any menu item to find the menu_name for this tree.
+    $menu_item = current($tree);
+    $config['menu_name'] = $menu_item['link']['menu_name'];
+  }
+
+  $goodies = ultimenu_get_settings('goodies');
+  $hook_menu_name = str_replace('-', '_', $config['menu_name']);
+
+  // Pull out just the menu items we are going to render so that we
+  // get an accurate count for the first/last classes.
+  foreach ($tree as $key => &$value) {
+    if (!$tree[$key]['link']['hidden']) {
+      $items[] = $tree[$key];
+    }
+  }
+
+  $num_items = count($items);
+  foreach ($items as $i => &$data) {
+    $class = array();
+    if ($i == 0) {
+      $class[] = 'first';
+    }
+    if ($i == $num_items - 1) {
+      $class[] = 'last';
+    }
+    // Set a class if the link is in the active trail.
+    // @todo drop if we don't support submenus at all via menu_navigation_links.
+    if ($data['link']['in_active_trail']) {
+      $class[] = 'active-trail';
+      $data['link']['localized_options']['attributes']['class'][] = 'active-trail';
+    }
+    if ($data['link']['href'] == $_GET['q'] || ($data['link']['href'] == '<front>' && drupal_is_front_page())) {
+      $class[] = 'active';
+    }
+
+    // Allow menu-specific theme overrides.
+    // We don't use regular menu_link to avoid issue with a theme that provides
+    // a fully customized menu_link.
+    $element['#theme'] = array(
+      'ultimenu_link__' . $hook_menu_name,
+      'ultimenu_link',
+    );
+
+    $title_stripped = isset($data['link']['title']) ? strip_tags($data['link']['title']) : '';
+    $element['#attributes']['class'] = $class;
+    $element['#title'] = $data['link']['title'];
+    $element['#href'] = $data['link']['href'];
+    $element['#localized_options'] = !empty($data['link']['localized_options']) ? $data['link']['localized_options'] : array();
+    $element['#original_link'] = $data['link'];
+    $element['#bid'] = array(
+      'module' => 'ultimenu',
+      'delta' => $config['delta'],
+      'region' => NULL,
+    );
+    $element['#below'] = '';
+
+    // Flyout regions.
+    // Attach our Ultimenu region if we can find blocks in this item.
+    $menu_item_id = !empty($goodies['ultimenu-mlid']) ? $data['link']['mlid'] : ultimenu_truncate_menu_property($title_stripped, 28);
+    $menu_name_id = ultimenu_truncate_menu_property($config['menu_name']);
+
+    $variables['region'] = 'ultimenu_' . $menu_name_id . '_' . $menu_item_id;
+
+    // @todo add option to contain submenus, or better leave it to menu_block.
+    // @todo a better flag. 744
+    if ($regions = ultimenu_get_settings('regions')) {
+      if (!empty($regions[$variables['region']])) {
+        $element['#bid']['region'] = $variables['region'];
+
+        if (!$element['#bid']['region']) {
+          continue;
+        }
+
+        $variables['config'] = $config;
+        $element['#below']   = ultimenu_build_data_region($variables);
+      }
+    }
+
+    // Index using the link's unique mlid.
+    $build[$data['link']['mlid']] = $element;
+  }
+  if ($build) {
+    // Make sure drupal_render() does not re-order the links.
+    $build['#sorted'] = TRUE;
+  }
+
+  return $build;
+}
+
+/**
+ * Build a renderable array for Ultimenu regions.
+ *
+ * @see ultimenu_tree_output()
+ */
+function ultimenu_build_data_region(&$variables) {
+  $build = array();
+  if ($content = ultimenu_block_get_blocks_by_region($variables['region'])) {
+    $build['content'] = $content;
+    $build['#config'] = $variables['config'];
+    $build['#sorted'] = TRUE;
+    $build['#region'] = $variables['region'];
+
+    // Add the theme wrapper for the Ultimenu flyout aka region wrapper.
+    // Note the order: ultimenu_region should wrap region.
+    $build['#theme_wrappers'] = array(
+      'region',
+      'ultimenu_region',
+    );
+  }
+
+  return $build;
+}
+
+/**
+ * Off-load the following functions to another file.
+ */
+require_once dirname(__FILE__) . '/includes/ultimenu.utilities.inc';

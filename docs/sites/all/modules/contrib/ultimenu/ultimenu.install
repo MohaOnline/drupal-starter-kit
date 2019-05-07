@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the ultimenu module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function ultimenu_install() {
+  db_update('system')
+    ->fields(array(
+      'weight' => 11,
+    ))
+    ->condition('type', 'module')
+    ->condition('name', 'ultimenu')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function ultimenu_uninstall() {
+  db_query("DELETE FROM {variable} WHERE name LIKE 'ultimenu_%'");
+}

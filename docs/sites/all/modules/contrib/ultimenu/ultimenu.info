@@ -1,0 +1,15 @@
+name = Ultimenu
+description = Provides Ultimenu regions based on menu system.
+
+core = 7.x
+dependencies[] = menu
+dependencies[] = block
+
+configure = admin/structure/ultimenu
+
+; Information added by Drupal.org packaging script on 2015-06-18
+version = "7.x-1.2"
+core = "7.x"
+project = "ultimenu"
+datestamp = "1434648181"
+

@@ -1,0 +1,87 @@
+/**
+ * @file
+ * Skin based on safe CSS file name: ultimenu-htb-tabs.
+ */
+.ultimenu-htb-tabs .block:first-child {
+  float: left;
+  width: 45%;
+}
+
+.ultimenu-htb-tabs .block:nth-child(2) {
+  margin-left: 48%;
+}
+
+.ultimenu-htb-tabs .ultimenu-flyout {
+  background-color: #0779bf;
+  -webkit-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -moz-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -ms-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -o-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  box-shadow: 0 2px 2px rgba(0,0,0,.2);
+}
+
+.ultimenu-htb-tabs .region {
+  background: #fff;
+  font-size: 13px;
+  padding: 20px;
+}
+
+.ultimenu-htb-tabs .block {
+  display: block;
+  padding: 1em;
+}
+
+.ultimenu-htb-tabs > li > a {
+  border-top: 1px solid transparent;
+  font-family: Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 0.5em 1.5em 0.75em;
+  position: relative;
+  z-index: 103; /*Above the flyout z-index: 102*/
+}
+
+.ultimenu-htb-tabs > li > a > small {
+  font-weight: 400;
+}
+
+.ultimenu-htb-tabs > li:hover > a,
+.ultimenu-htb-tabs > li.hover > a,
+.ultimenu-htb-tabs > li > a.active {
+  background-color: #0779bf;
+  border-radius: 5px;
+  border-top: 1px solid #48a9e4;
+}
+
+.ultimenu-htb-tabs > li > a.active {
+  background-color: #0779bf;
+  border-radius: 5px;
+}
+
+.ultimenu-htb-tabs > li.has-ultimenu:hover > a,
+.ultimenu-htb-tabs > li.has-ultimenu.hover > a {
+  background-color: #0779bf;
+  border-radius: 5px 5px 0 0;
+}
+
+.ultimenu-htb-tabs > li:hover .ultimenu-flyout,
+.ultimenu-htb-tabs > li.hover .ultimenu-flyout {
+  margin-top: -6px;
+}
+
+.ultimenu-htb-tabs .ultimenu-flyout {
+  border-top: 1px solid #48a9e4;
+}
+
+/**
+ * Bartik header has links white
+ */
+.ultimenu-htb-tabs .ultimenu-flyout a:link,
+.ultimenu-htb-tabs .ultimenu-flyout a:visited {
+  color: #0071b3;
+}
+
+.ultimenu-htb-tabs .ultimenu-flyout a:hover,
+.ultimenu-htb-tabs .ultimenu-flyout a:active {
+  color: #018fe2;
+}

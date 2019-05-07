@@ -1,0 +1,23 @@
+/**
+ * @file
+ * Skin based on safe CSS file name: ultimenu-basic.
+ */
+.ultimenu-basic .ultimenu-flyout {
+  background-color: #eaeaea;
+  -webkit-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -moz-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -ms-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  -o-box-shadow: 0 2px 2px rgba(0,0,0,.2);
+  box-shadow: 0 2px 2px rgba(0,0,0,.2);
+}
+
+.ultimenu-basic .region {
+  background: #fff;
+  padding: 20px;
+}
+
+.ultimenu-basic .block {
+  display: inline-block;
+  margin-right: -4px;
+  padding: 1em;
+}

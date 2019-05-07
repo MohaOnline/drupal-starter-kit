@@ -1,0 +1,21 @@
+/**
+ * @file
+ * ultimenu.admin.css
+ */
+#ultimenu-admin-settings .form-checkboxes .form-item {
+  display: inline-block;
+  margin-right: -4px; /* LTR */
+  width: 47%;
+}
+
+#edit-markups textarea {
+  min-height: 120px;
+  width: 100%;
+}
+
+#edit-regions .form-type-checkbox .field-suffix {
+  color: red;
+  display: block;
+  float: right; /* LTR */
+  font-size: small;
+}
