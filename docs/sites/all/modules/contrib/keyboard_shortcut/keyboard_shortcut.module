@@ -1,0 +1,482 @@
+<?php
+
+/**
+ * @file
+ * Provides keyboard shortcuts to the pages.
+ * 
+ * Develop by Nestor Mata nestor@achieveinternet.com.
+ * AchieveInternet http://www.achieveinternet.com.
+ */
+
+define('SHORTCUT_TYPE_PATH',        0);
+define('SHORTCUT_TYPE_FUNCTION',    1);
+
+define('SHORTCUT_MASK_ALT',         1);
+define('SHORTCUT_MASK_CTRL',        2);
+define('SHORTCUT_MASK_SHIFT',       4);
+define('SHORTCUT_MASK_WIN',         8);
+
+/**
+ * Node info Hook
+ */
+function keyboard_shortcut_node_info() {
+  return array(
+    'keyboard_shortcut' => array(
+      'name' => t('Keyboard Shortcut'),
+      'base' => 'keyboard_shortcut',
+      'has_title' => true,
+      'has_body' => false,
+      'title_label' => t('Description'),
+      'description' => t("A keyboard shortcut to an internal or external page or a javascript function."),
+    )
+  );
+}
+
+/**
+ * Permissions hook
+ */
+function keyboard_shortcut_permission() {
+  return array(
+    'admin keyboard shortcuts' => array(
+      'title' => t('Administer shortcuts'),
+      'description' => t('Allow user to add, edit or remove keyboard shortcuts'),
+      'restrict access' => TRUE,
+    ), 
+    'view keyboard shortcuts' => array(
+      'title' => t('View/Use shortcuts'),
+      'description' => t('Allow user to view and use the shortcuts'),
+    ),
+  );
+}
+
+/**
+ * Help hook
+ */
+function keyboard_shortcut_help($section) {
+  switch($section) {
+    case 'admin/settings/shortcut':
+      return t('Shortcuts enable the posibility to assign keyboard shortcuts to an action or a link.');
+  }
+}
+
+/**
+ * Access hook
+ */
+function keyboard_shortcut_node_access($node, $op, $account) {
+  $type = is_string($node) ? $node : $node->type;
+
+  if ($type == 'keyboard_shortcut' && ($op == 'create' || $op == 'update' || $op == 'delete') && user_access('admin keyboard shortcuts', $account)) {
+    return NODE_ACCESS_ALLOW;
+  }
+  if ($type == 'keyboard_shortcut' && $op == 'view' && user_access('view keyboard shortcuts', $account)) {
+    return NODE_ACCESS_ALLOW;
+  }
+
+  return NODE_ACCESS_IGNORE;
+}
+
+/**
+ * Menu Hook
+ */
+function keyboard_shortcut_menu() {
+  // Menu definitions
+  $items = array();
+  $items['admin/config/user-interface/keyboard-shortcut'] = array(
+    'title' => t('Keyboard Shortcuts'),
+    'page callback' => 'keyboard_shortcut_page_form',
+    'access arguments' => array('admin keyboard shortcuts'),
+    'description' => t('Administer keyboard shortcuts.'),
+  );
+  return $items;
+}
+
+function keyboard_shortcut_init() {
+  // Load scripts
+  keyboard_shortcut_load_scripts();
+}
+
+/**
+ * Create the shortcuts page form
+ */
+function keyboard_shortcut_page_form() {
+  $shortcuts = keyboard_shortcut_get_list();
+  return theme('keyboard_shortcut_admin_list', $shortcuts);
+}
+
+/**
+ * Form Hook.
+ * Definition of the customized form to add/edit shortcuts
+ */
+function keyboard_shortcut_form($node, &$form_state) {
+  $form['title'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Description'),
+      '#required' => TRUE,
+      '#default_value' => $node->title,
+      '#description' => t('A description about what this shortcut does.'),
+  );
+  $form['key_masks_values'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Meta Keys'),
+        '#default_value' => array(
+            isset($node->keys_mask)?$node->keys_mask & SHORTCUT_MASK_ALT:0,
+            isset($node->keys_mask)?$node->keys_mask & SHORTCUT_MASK_CTRL:0,
+            isset($node->keys_mask)?$node->keys_mask & SHORTCUT_MASK_SHIFT:0,
+         ),
+        '#required' => FALSE,
+        '#options' => array(
+           SHORTCUT_MASK_ALT => t('ALT Key'), 
+           SHORTCUT_MASK_CTRL => t('CTRL Key'), 
+           SHORTCUT_MASK_SHIFT => t('SHIFT Key')
+  ),
+        '#description' => t('You can specify which meta keys are part of the shortcut.'),
+  );
+  $form['key'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Key'),
+        '#description' => t('Key letter or code to use. Only one can be used at the same time. If you are using meta keys is probably recomended to use the key code instead of the letter.'),
+  );
+  $form['key']['char_text'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Letter'),
+        '#default_value' => isset($node->char_text)?$node->char_text:'',
+        '#maxlength' => 1,
+        '#size' => 1,
+        '#required' => FALSE,
+        '#description' => t('If the shortcut uses a letter enter it here'),
+  );
+  $form['key']['char_code'] = array(
+        '#type' => 'select',
+        '#title' => t('Character Code'),
+        '#default_value' => isset($node->char_code)?$node->char_code:0,
+        '#required' => FALSE,
+        '#options' => get_key_codes_array(),
+        '#description' => t('If the shortcut uses a key code selected it here'),
+  );
+  $form['s_type'] = array(
+        '#type' => 'select',
+        '#title' => t('Type of action or URL'),
+        '#default_value' => isset($node->s_type)?$node->s_type:SHORTCUT_TYPE_FUNCTION,
+        '#required' => TRUE,
+        '#options' => array(
+          SHORTCUT_TYPE_FUNCTION => t('Call a JS function'), 
+          SHORTCUT_TYPE_PATH => t('Go to an internal/external URL')
+        ),
+        '#description' => t('The type of action that will be executed when the shortcut get raised, it can be a call to a javascript function, or go to an internal drupal address or go to an externa internet address.'),
+  );
+  $form['s_action'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Action to take'),
+        '#default_value' => isset($node->s_action)?$node->s_action:'',
+        '#required' => TRUE,
+        '#description' => t('The action to be taken depends on the type of action, if the type is "Call a JS function" then enter here the name of the function "example: javascript_function();", if the type is an internal address entered here (for example "node/25" or "&lt;front&gt;") and if the type is an external address entered here and include the http://.'),
+  );
+  return $form;
+}
+
+/**
+ * Hook Insert
+ */
+function keyboard_shortcut_insert($node) {
+  db_insert('keyboard_shortcut')
+    ->fields(array(
+      'nid' => $node->nid,
+      'keys_mask' => array_sum($node->key_masks_values),
+      'char_text' => $node->char_text,
+      'char_code' => (empty($node->char_code)?NULL:$node->char_code),
+      's_type' => $node->s_type,
+      's_action' => $node->s_action,
+    ))->execute();
+}
+
+/**
+ * Hook update
+ */
+function keyboard_shortcut_update($node) {
+  db_update('keyboard_shortcut')
+    ->fields(array(
+      'nid' => $node->nid,
+      'keys_mask' => array_sum($node->key_masks_values),
+      'char_text' => $node->char_text,
+      'char_code' => (empty($node->char_code)?NULL:$node->char_code),
+      's_type' => $node->s_type,
+      's_action' => $node->s_action,
+    ))
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Hook delete
+ */
+function keyboard_shortcut_delete($node) {
+  db_delete('keyboard_shortcut')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Hook load
+ */
+function keyboard_shortcut_load($nodes) {
+  $res = db_select('keyboard_shortcut', 'k')
+    ->fields('k')
+    ->condition('nid', array_keys($nodes), 'IN')
+    ->execute();
+  while($record = $res->fetchAssoc()) {
+    $nodes[$record['nid']]->keys_mask = $record['keys_mask'];
+    $nodes[$record['nid']]->char_text = $record['char_text'];
+    $nodes[$record['nid']]->char_code = $record['char_code'];
+    $nodes[$record['nid']]->s_type = $record['s_type'];
+    $nodes[$record['nid']]->s_action = $record['s_action'];
+  }
+}
+
+/**
+ * Hook Block Info
+ */
+function keyboard_shortcut_block_info() {
+  $blocks['shortcut-list'] = array(
+    'info' => t('The list of shortcuts'),
+  );
+  return $blocks;
+}
+
+/**
+ * Hook Block View
+ */
+function keyboard_shortcut_block_view($delta = '') {
+  switch ($delta) {
+    case 'shortcut-list':
+      $block = array(
+        'subject' => t('Shortcuts'),
+        'content' => keyboard_shortcut_display_block_shortcuts(), 
+      );
+      break;
+  }
+  return $block;
+}
+
+
+function keyboard_shortcut_theme(){
+  $functions = array(
+    'keyboard_shortcut_block' => array('arguments' => array('shortcuts' => array())),
+    'keyboard_shortcut_admin_list' => array('arguments' => array('shortcuts' => array())),
+  );
+  return $functions;
+}
+
+/**
+ * Theme for the shortcuts block.
+ */
+function theme_keyboard_shortcut_block($shortcuts = array()) {
+  $output = '<div class=\'shortcuts-block\'> <ul>';
+  foreach ($shortcuts as $shortcut) {
+    $shortcut_string = keyboard_shortcut_shortcut_to_string($shortcut);
+    $output .= '<li><span class=\'shortcuts-keys\'>'
+    .$shortcut_string.':</span> <span class=\'shortcuts-description\'>'
+    .$shortcut['title'].'</span></li>';
+  }
+  $output .= '</ul> </div>';
+  return $output;
+}
+
+function theme_keyboard_shortcut_admin_list($shortcuts = array()) {
+  $headers = array(t('Shortcut'), t('Description'), t('Actions'));
+  $rows = array();
+  $destination = drupal_get_destination();
+  foreach ($shortcuts as $shortcut) {
+    $shortcut_string = keyboard_shortcut_shortcut_to_string($shortcut);
+    $rows[] = array(
+        $shortcut_string,
+        $shortcut['title'],
+        l(t('Edit'), 'node/' . $shortcut['nid'] . '/edit', array('query' => $destination)) 
+        . ' | '
+        . l(t('Remove'), 'node/' . $shortcut['nid'] . '/delete', array('query' => $destination))
+      );
+  }
+  $output = l(t('Create keyboard shortcut'), 'node/add/keyboard-shortcut', array('query' => $destination));
+  $output .= theme('table', array('header' => $headers, 'rows' => $rows, 'attributes' => array('class' => array('shortcut_admin_list'))));
+  return $output;
+}
+
+/**
+ * This function return the output for the shortcuts block.
+ */
+function keyboard_shortcut_display_block_shortcuts() {
+  $shortcuts = keyboard_shortcut_get_list();
+  $out = theme('keyboard_shortcut_block', $shortcuts);
+  return $out;
+}
+
+/**
+ * Get an array of arrays containing the actual shortcuts.
+ */
+function keyboard_shortcut_get_list() {
+  $shortcuts = array();
+  $query = db_select('keyboard_shortcut', 'k');
+  $query->join('node', 'n', 'k.nid = n.nid');
+  $res = $query->fields('k', array('nid', 'keys_mask', 'char_text', 'char_code', 's_type', 's_action'))
+    ->fields('n', array('title'))
+    ->execute();
+  while ($row = $res->fetchAssoc()) {
+    $shortcuts[] = $row;
+  }
+  return $shortcuts;
+}
+
+/**
+ * Loads the javascript required for the shortcut to work on the page.
+ */
+function keyboard_shortcut_load_scripts() {
+  if (!user_access('view keyboard shortcuts')) {
+    return;
+  }
+  // Load the javascript code
+  $use_clean_url = variable_get('clean_url', 0);
+  $path = drupal_get_path('module', 'keyboard_shortcut');
+  drupal_add_js($path . '/keyboard_shortcut.js', 'file');
+  drupal_add_js('var shortcut_debug = false;', 'inline');
+  // Generate the javascript with the shortcut info.
+  $shortcuts_script = '';
+  $res = db_select('keyboard_shortcut', 'k')
+    ->fields('k')
+    ->execute();
+  while ($row = $res->fetchAssoc()) {
+    $masks = (int) $row['keys_mask'];
+    $function_call_path = $row['s_type'] == SHORTCUT_TYPE_FUNCTION ? strtr($row['s_action'], array('"' => '\"')) : 'shortcut_call_absolute_path' ;
+    $url = $row['s_type'] == SHORTCUT_TYPE_FUNCTION ? '' : url($row['s_action'], array('absolute' => TRUE));
+    if (empty($row['char_code'])) {
+      $shortcuts_script .= 'shortcutsPress.push({alt:' . ( $masks & SHORTCUT_MASK_ALT ? 'true' : 'false')
+      .', ctrl:'.( $masks & SHORTCUT_MASK_CTRL ? 'true' : 'false')
+      .', shift:'.( $masks & SHORTCUT_MASK_SHIFT ? 'true' : 'false')
+      .', win:'.( $masks & SHORTCUT_MASK_WIN ? 'true' : 'false')
+      .', char_text:"'.$row['char_text']
+      .'", func_name:"'. $function_call_path
+      .'", param:"'. $url .'" });'."\n";//chr(13);
+    }
+    else {
+      $shortcuts_script .= 'shortcutsDown.push({alt:' . ( $masks & SHORTCUT_MASK_ALT ? 'true' : 'false')
+      .', ctrl:'.( $masks & SHORTCUT_MASK_CTRL ? 'true' : 'false')
+      .', shift:'.( $masks & SHORTCUT_MASK_SHIFT ? 'true' : 'false')
+      .', win:'.( $masks & SHORTCUT_MASK_WIN ? 'true' : 'false')
+      .', char_code:'.$row['char_code']
+      .', func_name:"'. $function_call_path
+      .'", param:"'. $url .'" });'."\n";//chr(13);
+    }
+  }
+  drupal_add_js($shortcuts_script, 'inline');
+  drupal_add_js('shortcuts_parent_path = "' . url('', array('absolute' => false) ) . '";', 'inline');
+}
+
+/**
+ * Get an associated array with the key code and name for the keys.
+ *
+ * @return array key codes and name array
+ */
+function get_key_codes_array() {
+  return array(
+  '' => '',
+  8 => 'BACKSPACE',
+  9 => 'TAB',
+  13 => 'RETURN',
+  27 => 'ESC',
+  33 => 'PAGE UP',
+  34 => 'PAGE DOWN',
+  35 => 'END',
+  36 => 'HOME',
+  112 => 'F1',
+  113 => 'F2',
+  114 => 'F3',
+  115 => 'F4',
+  116 => 'F5',
+  117 => 'F6',
+  118 => 'F7',
+  119 => 'F8',
+  120 => 'F9',
+  121 => 'F10',
+  122 => 'F11',
+  123 => 'F12',
+  65 => 'A',
+  66 => 'B',
+  67 => 'C',
+  68 => 'D',
+  69 => 'E',
+  70 => 'F',
+  71 => 'G',
+  72 => 'H',
+  73 => 'I',
+  74 => 'J',
+  75 => 'K',
+  76 => 'L',
+  77 => 'M',
+  78 => 'N',
+  79 => 'O',
+  80 => 'P',
+  81 => 'Q',
+  82 => 'R',
+  83 => 'S',
+  84 => 'T',
+  85 => 'U',
+  86 => 'V',
+  87 => 'W',
+  88 => 'X',
+  89 => 'Y',
+  90 => 'Z',
+  );
+}
+
+/**
+ * This function returns a string with the shortcut formated.
+ * The format is if any meta key then printed and at the end the key all 
+ * separated with a + sign. For example CTRL+ALT+C.
+ */
+function keyboard_shortcut_shortcut_to_string($shortcut = array()) {
+  $codes_array = get_key_codes_array();
+  $masks_string = keyboard_shortcut_get_mask_array($shortcut['keys_mask']);
+  if ($shortcut['char_code']) {
+    if (array_key_exists($shortcut['char_code'], $codes_array)) {
+      $char = $codes_array[$shortcut['char_code']];
+    }
+    else {
+      $char = chr($shortcut['char_code']);
+    }
+  }
+  else {
+    $char = $shortcut['char_text'];
+  }
+  return $masks_string.$char;
+}
+
+/**
+ * Return a string of the meta keys formated from a shortcut.
+ */
+function keyboard_shortcut_get_mask_array($mask) {
+  $masks_string = '';
+  $masks_array = array(
+    SHORTCUT_MASK_ALT, 
+    SHORTCUT_MASK_CTRL, 
+    SHORTCUT_MASK_SHIFT, 
+    SHORTCUT_MASK_WIN
+  );
+  foreach ($masks_array as $actual_mask) {
+    switch ($mask & $actual_mask) {
+      case SHORTCUT_MASK_ALT:
+        $masked_text = t('ALT') . '+';
+        break;
+      case SHORTCUT_MASK_CTRL:
+        $masked_text = t('CTRL') . '+';
+        break;
+      case SHORTCUT_MASK_WIN:
+        $masked_text = t('WIN') . '+';
+        break;
+      case SHORTCUT_MASK_SHIFT:
+        $masked_text = t('SHIFT') . '+';
+        break;
+      default:
+        $masked_text = '';
+    }
+    $masks_string .= $masked_text;
+  }
+  return $masks_string;
+}

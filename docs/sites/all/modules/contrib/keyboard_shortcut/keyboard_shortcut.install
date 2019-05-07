@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Implementation of hook_install().
+ */
+function keyboard_shortcut_install() {
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function keyboard_shortcut_uninstall() {
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function keyboard_shortcut_schema() {
+  $schema['keyboard_shortcut'] = array(
+    'fields' => array(
+      'nid'    => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0, 'description' => 'The node id associated.'),
+      'keys_mask' => array('type' => 'int', 'not null' => TRUE, 'size' => 'tiny', 'default' => 0, 'description' => 'Mask containing the meta keys.'),
+      'char_text' => array('type' => 'char', 'not null' => FALSE, 'length' => 1, 'description' => 'Character key. Optional, could be used the char code instead.'),
+      'char_code' => array('type' => 'int', 'not null' => FALSE, 'size' => 'tiny', 'description' => 'Key code. Optional, could be used the char text instead.'),
+      's_type' => array('type' => 'int', 'not null' => TRUE, 'size' => 'tiny', 'default' => 0, 'description' => 'Integer that indicates the type of action.'),
+      's_action' => array('type' => 'varchar', 'not null' => TRUE, 'length' => 255, 'description' => 'The text that contains the action path or function name.'),
+    ),
+    'unique key' => array(
+      'masks' => array('key_mask', 'char_text', 'char_code'),
+    ),
+    'primary key' => array('nid'),
+    'description' => 'The extra information for each shortcut.',
+  );
+  return $schema;
+}

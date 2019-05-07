@@ -1,0 +1,13 @@
+name = Keyboard Shortcut Utility
+description = Add functionality to register and handle keyboard events in an easy way
+core = 7.x
+version = VERSION
+package = Navigation
+configure = admin/config/user-interface/keyboard-shortcut
+
+; Information added by drupal.org packaging script on 2013-03-25
+version = "7.x-1.2"
+core = "7.x"
+project = "keyboard_shortcut"
+datestamp = "1364234411"
+
