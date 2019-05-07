@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update functions for jquery_colorpicker.
+ */
+
+/**
+ * Implements hook_requirements()
+ */
+function jquery_colorpicker_requirements($phase) {
+  $errors = array();
+  // Set the base path for the module, and use this to check the existence of files.
+  $path = drupal_get_path('module', 'jquery_colorpicker') . '/';
+  if ($phase == 'install') {
+    if (!function_exists('libraries_get_path')) {
+      module_load_include('module', 'libraries');
+    }
+    $path = libraries_get_path('colorpicker') ? libraries_get_path('colorpicker') : 'sites/all/libraries/colorpicker';
+    // The first file we check is the 3rd party integration. Without this file, the module will not work. Other.
+    // files are also required, but the assumption is made that if they got this file, they will have gotten all the other files.
+    // This is done to keep code relatively streamlined.
+    if (!is_file($path . '/js/colorpicker.js')) {
+      $t = get_t();
+      $errors['jquery_colorpicker_missing_files'] = array(
+        'title' => $t('Required files missing'),
+        'description' => $t(
+          'You are missing the required files for the Jquery Colorpicker. Please download the colorpicker.zip from !eyecon and unzip the CSS, JS and IMAGES folders to !colorpicker_path. After doing this, confirm that the following path exists: !colorpicker_js_path.',
+          array(
+            '!eyecon' => l(
+              'http://www.eyecon.ro/colorpicker/',
+              'http://www.eyecon.ro/colorpicker/',
+              array(
+                'external' => TRUE,
+              )
+            ),
+            '!colorpicker_path' => '<strong>' . $path . '</strong>',
+            '!colorpicker_js_path' => '<strong>' . $path . '/js/colorpicker.js</strong>',
+          )
+        ),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+
+  return $errors;
+}
+
+/**
+ * Implements hook_field_schema()
+ */
+function jquery_colorpicker_field_schema($field) {
+  $columns = array(
+    'jquery_colorpicker' => array(
+      'type' => 'varchar',
+      'length' => 6,
+      'not null' => FALSE,
+    ),
+  );
+  return array(
+    'columns' => $columns,
+  );
+}
