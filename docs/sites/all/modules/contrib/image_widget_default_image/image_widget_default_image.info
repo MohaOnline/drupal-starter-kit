@@ -1,0 +1,14 @@
+name = Image widget default image
+description = Displays the default image, if configured, in the preview part of the image widget.
+core = 7.x
+dependencies[] = image
+package = Fields
+
+files[] = tests/image_widget_default_image.test
+
+; Information added by Drupal.org packaging script on 2014-08-21
+version = "7.x-1.0"
+core = "7.x"
+project = "image_widget_default_image"
+datestamp = "1408614833"
+

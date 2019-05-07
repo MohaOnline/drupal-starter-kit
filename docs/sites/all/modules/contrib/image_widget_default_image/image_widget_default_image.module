@@ -1,0 +1,90 @@
+<?php
+
+/**
+ * @file
+ * Displays the default image of an image field as part of the image widget.
+ */
+
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function image_widget_default_image_field_widget_form_alter(&$element, &$form_state, $context) {
+  $instance = $context['instance'];
+  if ($instance['widget']['type'] == 'image_image') {
+    foreach (element_children($element) as $delta) {
+      $element[$delta]['#process'][] = 'image_widget_default_image_widget_process';
+    }
+  }
+}
+/**
+ * An element #process callback for the image_image field type.
+ *
+ * Shows the default image in the 'preview' section of the widget.
+ *
+ * @see image_field_widget_process()
+ * @see image_field_prepare_view()
+ */
+function image_widget_default_image_widget_process($element, &$form_state, $form) {
+  // Do not do anything if the element already contains a 'preview' section.
+  if (isset($element['preview'])) {
+    return $element;
+  }
+
+  $field = field_widget_field($element, $form_state);
+  $instance = field_widget_instance($element, $form_state);
+
+  $widget_settings = $instance['widget']['settings'];
+
+  $fid = FALSE;
+  // Use the default for the instance if one is available.
+  if (!empty($instance['settings']['default_image'])) {
+    $fid = $instance['settings']['default_image'];
+  }
+  // Otherwise, use the default for the field.
+  elseif (!empty($field['settings']['default_image'])) {
+    $fid = $field['settings']['default_image'];
+  }
+
+  // Add the default image preview.
+  if ($fid && ($file = file_load($fid)) && $widget_settings['preview_image_style']) {
+    $variables = array(
+      'style_name' => $widget_settings['preview_image_style'],
+      'path' => $file->uri,
+    );
+
+    // Determine image dimensions.
+    if (isset($element['#value']['width']) && isset($element['#value']['height'])) {
+      $variables['width'] = $element['#value']['width'];
+      $variables['height'] = $element['#value']['height'];
+    }
+    else {
+      $info = image_get_info($file->uri);
+
+      if (is_array($info)) {
+        $variables['width'] = $info['width'];
+        $variables['height'] = $info['height'];
+      }
+      else {
+        $variables['width'] = $variables['height'] = NULL;
+      }
+    }
+
+    $element['preview'] = array(
+      '#type' => 'markup',
+      '#markup' => theme('image_style', $variables),
+    );
+
+    // Store the dimensions in the form so the file doesn't have to be accessed
+    // again. This is important for remote files.
+    $element['width'] = array(
+      '#type' => 'hidden',
+      '#value' => $variables['width'],
+    );
+    $element['height'] = array(
+      '#type' => 'hidden',
+      '#value' => $variables['height'],
+    );
+  }
+
+  return $element;
+}

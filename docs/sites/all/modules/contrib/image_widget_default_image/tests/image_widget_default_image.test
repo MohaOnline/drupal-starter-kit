@@ -1,0 +1,221 @@
+<?php
+
+/**
+ * @file
+ * Contains tests for the Image widget default image module.
+ */
+
+/**
+ * Tests that the default image preview is displayed in the image widget.
+ *
+ * @todo Test that the preview image style is used properly.
+ * @todo Test that width and height of the image are stored properly.
+ */
+class ImageWidgetDefaultImageWebTest extends DrupalWebTestCase {
+
+  /**
+   * The path to add a node of the node type used in this test.
+   *
+   * @var string
+   */
+  protected $nodeAddPath;
+
+  /**
+   * The path to edit a node of the node type used in this test.
+   *
+   * @var string
+   */
+  protected $nodeEditPath;
+
+  /**
+   * The image field used in this test.
+   *
+   * @var array
+   */
+  protected $field;
+
+  /**
+   * The field instance of the image field used in this test.
+   *
+   * @var array
+   */
+  protected $instance;
+
+  /**
+   * Provides information about this test class to the Simpletest UI.
+   *
+   * @return array
+   *   An array of information about this test, containing the following keys:
+   *   - name: A human-readable, untranslated name for this test.
+   *   - description: A human-readable, untranslated description for this test.
+   *   - group: A human-readable, untranslated group for this test.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Default image preview',
+      'description' => 'Tests that the default image is displayed as a preview as part of the image widget.',
+      'group' => 'Image widget default image',
+    );
+  }
+
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp() {
+    parent::setUp('file', 'image', 'image_widget_default_image');
+
+    // Create a node type with an image field.
+    $node_type = $this->drupalCreateContentType();
+    $this->nodeAddPath = 'node/add/' . str_replace('_', '-', $node_type->type);
+    $this->field = field_create_field(array(
+      'field_name' => strtolower($this->randomName(8)),
+      'type' => 'image',
+    ));
+    $this->instance = field_create_instance(array(
+      'entity_type' => 'node',
+      'bundle' => $node_type->type,
+      'field_name' => $this->field['field_name'],
+    ));
+
+    // Perform the test as a user that is allowed to add and edit nodes.
+    $account = $this->drupalCreateUser(array(
+      "create {$node_type->type} content",
+      "edit own {$node_type->type} content"
+    ));
+    $this->drupalLogin($account);
+
+    // Create a node with an image to make sure the default image does not
+    // get displayed in that case.
+    $file = $this->addManagedFileFromMisc('druplicon.png');
+    $node = $this->drupalCreateNode(array(
+      'type' => $node_type->type,
+      $this->field['field_name'] => array(LANGUAGE_NONE => array(
+        array('fid' => $file->fid),
+      )),
+    ));
+    $this->nodeEditPath = 'node/' . $node->nid . '/edit';
+  }
+
+  /**
+   * Test that no image is displayed if no default image exists.
+   */
+  public function testNoDefaultImage() {
+    // Neither the field nor the field instance have a default image by default.
+    $this->drupalGet($this->nodeAddPath);
+    $this->assertNoPreviewImage();
+    $this->drupalGet($this->nodeEditPath);
+    $this->assertPreviewImage('public://druplicon.png');
+  }
+
+  /**
+   * Test that the field's default image is displayed.
+   */
+  public function testFieldDefaultImage() {
+    // Add a default image to the field.
+    $file = $this->addManagedFileFromMisc('powered-blue-135x42.png');
+    $this->field['settings']['default_image'] = $file->fid;
+    field_update_field($this->field);
+
+    $this->drupalGet($this->nodeAddPath);
+    $this->assertPreviewImage('public://powered-blue-135x42.png');
+    $this->drupalGet($this->nodeEditPath);
+    $this->assertPreviewImage('public://druplicon.png');
+  }
+
+  /**
+   * Test that the field instance's image is displayed.
+   */
+  public function testInstanceDefaultImage() {
+    // Add a default image to the field instance.
+    $file = $this->addManagedFileFromMisc('powered-blue-135x42.png');
+    $this->instance['settings']['default_image'] = $file->fid;
+    field_update_instance($this->instance);
+
+    $this->drupalGet($this->nodeAddPath);
+    $this->assertPreviewImage('public://powered-blue-135x42.png');
+    $this->drupalGet($this->nodeEditPath);
+    $this->assertPreviewImage('public://druplicon.png');
+  }
+
+  /**
+   * Test that the field instance's image wins over the field's image.
+   */
+  public function testFieldAndInstanceDefaultImage() {
+    // Add a default images to both the field and the field instance.
+    $file = $this->addManagedFileFromMisc('powered-gray-135x42.png');
+    $this->field['settings']['default_image'] = $file->fid;
+    field_update_field($this->field);
+    $file = $this->addManagedFileFromMisc('powered-blue-135x42.png');
+    $this->instance['settings']['default_image'] = $file->fid;
+    field_update_instance($this->instance);
+
+    $this->drupalGet($this->nodeAddPath);
+    $this->assertPreviewImage('public://powered-blue-135x42.png');
+    $this->drupalGet($this->nodeEditPath);
+    $this->assertPreviewImage('public://druplicon.png');
+  }
+
+  /**
+   * Asserts that no preview image is shown in the image widget.
+   *
+   * @return bool
+   *   TRUE if the assertion succeeded; FALSE otherwise.
+   */
+  protected function assertNoPreviewImage() {
+    $widget = $this->getImageWidget();
+    $elements = $widget->xpath('//*[contains(@class, "image-preview")]');
+    $this->assertIdentical(array(), $elements, 'No image preview found.');
+
+  }
+
+  /**
+   * Asserts that the specified image is shown as a preview in the image widget.
+   *
+   * @param string $uri
+   *   The URI of the preview image.
+   *
+   * @return bool
+   *   TRUE if the assertion succeeded; FALSE otherwise.
+   */
+  protected function assertPreviewImage($uri) {
+    $widget = $this->getImageWidget();
+    $url = image_style_url('thumbnail', $uri);
+    $xpath = sprintf('//*[contains(@class, "image-preview")]/img[@src="%s"]', $url);
+    $elements = $widget->xpath($xpath);
+    $this->assertIdentical(1, count($elements), 'Found image preview in the image widget.');
+  }
+
+  /**
+   * Copies a file from Drupal's misc directory and adds it as a managed file.
+   *
+   * @param string $filename
+   *   The file name of the file to copy.
+   *
+   * @return \stdClass $file
+   *   The managed file object.
+   */
+  public function addManagedFileFromMisc($filename) {
+    file_unmanaged_copy(DRUPAL_ROOT . "/misc/$filename", "public://$filename", FILE_EXISTS_REPLACE);
+    $file = (object) array(
+      'filename' => $filename,
+      'uri' => "public://$filename",
+      'filemime' => 'image/png',
+      'status' => 1,
+    );
+    return file_save($file);
+  }
+
+  /**
+   * Returns the image widget element of the current page, if found.
+   *
+   * @return SimpleXMLElement|false
+   */
+  protected function getImageWidget() {
+    $elements = $this->xpath('//*[contains(@class, "field-widget-image-image")]');
+    $this->assertIdentical(1, count($elements), 'Found image widget on the page.');
+    return reset($elements);
+  }
+
+
+}
