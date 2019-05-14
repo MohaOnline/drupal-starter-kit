@@ -1,0 +1,58 @@
+// Admin fixes for Drupal using Bootstrap
+
+body.admin-menu {
+  margin-top: 28px !important;
+  .navbar-fixed-top {
+    top: 30px;
+  }
+}
+
+body #admin-menu {
+  z-index: 4500 !important;
+}
+
+#admin-menu .dropdown li li.expandable ul {
+  margin-top: -29px;
+}
+
+// Glazed button in toolbar
+
+#glazed-button-wrapper {
+  float: right;
+  .glazed-button {
+    display: inline-block;
+    background: #fff;
+    color: #333;
+    line-height: 20px;
+    padding: 0 4px;
+    border-radius: 3px;
+    opacity: 0.9;
+  }
+  img {
+    margin-right: 3px;
+    vertical-align: middle;
+  }
+}
+
+// selects fix
+.form-item-field-settings-granularity {
+  .option.checkbox.control-label { float: left; margin-right: 2em; }
+  .help-block { clear: both; }
+}
+
+.type-preview {
+  background: #fefffe;
+  color: #55555;
+  h1, h2, h3, h4, h5, h6, .navbar-brand, th, .nav-tabs > li > a {
+    color: #333333;
+  }
+  .type-container {
+    padding: 40px 80px;
+  }
+  .type-title-container {
+    background: #01b0ef;
+    h1 {
+      color: #fffeff;
+    }
+  }
+}

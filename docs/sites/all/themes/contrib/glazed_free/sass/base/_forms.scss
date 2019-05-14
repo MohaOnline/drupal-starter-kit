@@ -1,0 +1,79 @@
+//
+// Author: Jurriaan Roelofs for SooperThemes. Copyright SooperThemes.
+//
+
+.form-control,
+input[type=text],
+input[type=file],
+input[type=password],
+textarea,
+select {
+  box-shadow: none;
+  border-radius: 3px;
+  background: transparent;
+  border: 1px solid $gray-lighter;
+  height: auto;
+  padding: 12px;
+  &:focus {
+    box-shadow: none;
+    outline: none;
+    border-color: $primary;
+  }
+}
+
+.form-type-select {
+  position: relative;
+  &::after {
+    pointer-events: none;
+    color: $gray-lighter;
+    content: "<";
+    font-size: 18px;
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    transition: transform 0.2s ease 0s;
+    transform: translateZ(0) rotate(-90deg) scaleY(1.8); //http://stackoverflow.com/questions/15464055/css-transition-effect-makes-image-blurry-moves-image-1px-in-chrome
+    backface-visibility: hidden;
+  }
+  &:hover::after {
+    color: $primary;
+    transform: translateY(.2em) rotate(-90deg) scaleY(1.5);
+  }
+}
+
+.filter-wrapper .form-type-select:after {
+  bottom: .2em;
+}
+
+.form-select {
+  padding: 12px;
+  appearance: none;
+  option {
+    background: #fff;
+    border: none;
+    outline: none;
+    &:focus,
+    &::-moz-focus-inner {
+      outline: none;
+      border: none;
+    }
+  }
+  &.input-sm {
+    padding: 0 10px;
+  }
+}
+
+// This hides native dropdown button arrow in IE
+select::-ms-expand {
+  display: none;
+}
+
+.input-group {
+  .form-control {
+    padding: 8px 12px 7px 12px;
+  }
+}
+
+.cke_editable_themed {
+  padding: 5px;
+}

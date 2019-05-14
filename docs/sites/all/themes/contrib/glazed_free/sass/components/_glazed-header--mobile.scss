@@ -1,0 +1,114 @@
+// Glazed Header Mobile layout
+
+body.body--glazed-nav-mobile--open {
+  // this is disabled because it has nasty side effects on mobile in combination with owl carousel
+  // position: fixed; // prevent scrolling body when menu is open
+  overflow: hidden; // let's hope this new fix stop the body and menu toggle from scrolling without breaking stuff elsewehere
+}
+
+.body--glazed-nav-mobile {
+  &.body--glazed-header-fixed.body--glazed-header-not-overlay {
+    padding-top: 0;
+  }
+
+  .page-title-full-width-container {
+    padding-top: 0;
+  }
+
+  #logo {
+    max-height: 50px;
+  }
+
+  .glazed-header {
+    position: static;
+    li {
+      clear: both;
+    }
+    .navbar-header {
+      float: none;
+      .wrap-branding {
+        display: table;
+        float:left;
+        height: 60px;
+        .logo,
+        .navbar-brand {
+          display: table-cell;
+          vertical-align: middle;
+        }
+      }
+    }
+    #block-glazed-helper-full-screen-search {
+      height: 60px;
+      line-height: 60px;
+    }
+    .navbar-left,.navbar-right {
+        float: none !important;
+    }
+    #glazed-menu-toggle {
+      cursor: pointer;
+      padding: 10px 32px 16px 0;
+      margin: 15px 0;
+      float: right;
+      position: relative;
+      outline: none;
+      z-index: 4100;
+      span,
+      span:before,
+      span:after {
+        cursor: pointer;
+        border-radius: 1px;
+        height: 4px;
+        width: 100%;
+        background: $primary;
+        position: absolute;
+        display: block;
+        content: '';
+        transition: all 0.3s;
+        backface-visibility: hidden;
+      }
+      span:before {
+        top: -8px;
+      }
+      span:after {
+        bottom: -8px;
+        }
+      &.navbar-toggle--active span {
+        background-color: transparent;
+        &:before {
+          top: 0;
+          transform: rotate(45deg);
+        }
+        &:after {
+          top: 0;
+          transform: rotate(-45deg);
+        }
+      }
+    }
+    .navbar-collapse {
+        border-top: none;
+        clear: both;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .navbar-fixed-top {
+      top: 0;
+      border-width: 0 0 1px;
+    }
+    .navbar-collapse.collapse {
+      display: none!important;
+    }
+    .nav {
+      float: none!important;
+      margin-top: 7.5px;
+    }
+    .nav > li {
+      float: none;
+    }
+    .nav > li > a {
+      padding-top: 10px;
+      padding-bottom: 10px;
+    }
+    .collapse.in {
+      display: block !important;
+    }
+  }
+}

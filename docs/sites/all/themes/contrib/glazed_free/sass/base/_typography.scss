@@ -1,0 +1,130 @@
+//
+// Author: Jurriaan Roelofs for SooperThemes. Copyright SooperThemes.
+//
+
+
+body, html {
+  color: $text;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-weight: normal;
+}
+.block-title {
+  font-size: $font-size-h3;
+}
+
+h3.field-label {
+  font-size: $font-size-h4;
+  margin-bottom: 0;
+}
+h3.field-label + div,
+h3.field-label + ul {
+  margin-bottom: 10px;
+}
+
+.content .list-inline  {
+  li {
+    &:after {
+      content: ','
+    }
+    &:last-child:after {
+      content: '';
+    }
+  }
+  a {
+    color: $text;
+  }
+}
+
+a,
+.btn-link {
+  color: $primary;
+}
+
+a {
+  transition: color 200ms;
+  &:hover,
+  &:focus {
+    outline: none;
+  }
+}
+
+a:hover, a:focus,
+.btn-link:hover, .btn-link:focus  {
+  text-decoration: underline;
+  color: $accent1;
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand, th, .nav-tabs > li > a {
+  color: $text-headings;
+  a {
+    color: $text-headings;
+    &:hover,
+    &:focus {
+      text-decoration: none;
+      color: $primary;
+    }
+  }
+}
+
+.block-revslider img { /* This selector specifity should keep images in check but allow special circumstances like revolution slider image effects */
+  max-width: 100%;
+}
+
+hr {
+  height: 4px;
+  background: $well; // well background color
+  margin-bottom: 20px;
+  margin-top: 20px;
+  border: none;
+}
+.region-sidebar-first hr,
+.region-sidebar-second hr {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.glazed-footer hr {
+  background: $footer-text;
+}
+.well hr,
+.jumbotron hr {
+  background: $well-text; // well text color
+}
+
+.submitted {
+  color: $gray-light;
+  a {
+    color: $gray-light;
+    text-decoration: underline;
+    &:hover, &:focus {
+      text-decoration: none;
+    }
+  }
+}
+
+.node .links {
+  clear: both;
+}
+
+.main-container .block-menu-block .nav {
+  > li {
+    float: none;
+    > a {
+      &:hover,
+      &:focus,
+      &.active {
+      }
+    }
+  }
+}
+
+.region-sidebar-first,
+.region-sidebar-second {
+  color: $gray-light;
+  a {
+    color: $text;
+  }
+}

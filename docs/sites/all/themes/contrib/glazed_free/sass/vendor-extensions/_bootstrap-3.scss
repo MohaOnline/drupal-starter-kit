@@ -1,0 +1,377 @@
+//
+// Author: Jurriaan Roelofs for SooperThemes. Copyright SooperThemes.
+//
+
+// Fixing weird stuff in the bootstrap basetheme
+// @see https://www.drupal.org/node/2559219
+// @see https://www.drupal.org/node/2414935
+
+.block:first-child h2.block-title {
+    margin-top: 10px;
+}
+.region-sidebar-second .block:first-child h2.block-title,
+.region-sidebar-first .block:first-child h2.block-title {
+    margin-top: 0;
+}
+p:last-child {
+    margin-bottom: 10px;
+}
+
+.container {
+  width: 100%;
+  max-width: 1170px;
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+// This will all users to create multiple full width backgrounds per container
+.container-fluid {
+  padding-left :0;
+  padding-right: 0;
+}
+
+.row {
+  margin-bottom: 0;
+  // Prevent horizontal scrolling on small devices
+  // Also important for SEO, needed for mobile-friendly test
+  @media screen and (max-width: 768px) {
+    overflow: hidden;
+    overflow-y: visible;
+  }
+}
+
+.column {
+  margin-bottom: 30px;
+}
+
+// Bootstrap long dropdown multi-column helper
+// @see glazed.js
+.dropdown-menu {
+  min-width: 160px;
+  li {
+    float: left;
+    min-width: 160px;
+    display: block;
+  }
+}
+
+div.lead {
+  margin-bottom: 0;
+}
+
+// 3d effect
+.btn {
+  border: none;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.12);
+  border-left: 3px solid rgba(0,0,0,0.08);
+  border-radius: 4px;
+  padding: 8px 18px;
+  &:hover,
+  &:focus {
+    border-bottom-color: rgba(0,0,0,0.4);
+    border-left-color: rgba(0,0,0,0.3);
+  }
+}
+
+.btn-lg {
+  padding: 16px 22px;
+}
+
+.btn-sm {
+  padding: 2px 8px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+
+$btn-primary-color: $silver;
+$btn-primary-hover-color: $accent1;
+$btn-primary-bg: $primary;
+$btn-primary-border: $primary;
+
+.btn-default,
+.btn-group > .btn-default,
+.btn-primary,
+.btn-group > .btn-primary {
+  background: $primary;
+  color: #fff;
+  a {
+    color: #fff;
+  }
+}
+
+.btn-default:hover,
+.btn-default:focus,
+.btn-default.focus,
+.btn-default:active,
+.btn-default.active,
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary.focus,
+.btn-primary:active,
+.btn-primary.active,
+a.bg-primary:hover,
+a.bg-primary:focus {
+  background-color: $accent1;
+  color: #fff;
+  a {
+    color: #fff;
+  }
+}
+a.text-primary:hover,
+a.text-primary:focus {
+  color: $accent1;
+}
+
+.btn-link {
+  background: transparent;
+  color: $primary;
+  border: none;
+  box-shadow: none;
+}
+
+.wrap-containers .nav > li > a.active {
+  background-color: #eeeeee;
+  color: $primary;
+  text-decoration: none;
+}
+
+.block .nav > li > a .glyphicon {
+  margin-left: -13px;
+  display: inline-block;
+  font-size: $font-size-small;
+  padding-right: 4px;
+}
+
+.well, .jumbotron {
+  background-color: $well;
+  color: $well-text;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  a {
+    color: $well-text;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: $well-text;
+  }
+  .nav > li > a {
+    .glyphicon {
+      color: $accent1;
+    }
+  }
+  .nav > li > a:hover,
+  .nav > li > a:focus,
+  .nav > li > a.active {
+    color: $silver;
+    background: $primary;
+    .glyphicon {
+      color: $silver;
+    }
+  }
+}
+
+.list-inline {
+  margin: 0;
+  padding: 0;
+  > li {
+    padding: 0;
+  }
+}
+
+blockquote {
+  border-color: $silver;
+}
+blockquote footer, blockquote small, blockquote .small {
+  color: inherit;
+}
+
+// Panel theming is limited to .content because it's also use a lot in admin forms
+.content .panel {
+  line-height: 2em;
+  background: #000;
+  background: rgba(0,0,0,0.6);
+  border-radius: 0;
+  color: $silver;
+  padding:30px;
+  border: none;
+  h1, h2, h3, h4, h5, h6 {
+    color: $silver;
+  }
+}
+
+.content .panel-group .panel {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  box-shadow: none;
+  .panel-heading {
+    background: transparent;
+    border:none;
+    padding-left:0;
+    padding-right:0;
+    .panel-title:before {
+      content: '+';
+      display: inline;
+      padding-right:1em;
+    }
+  }
+  .panel-body {
+    border: none;
+    padding-left:0;
+    padding-right:0;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: $text;
+  }
+}
+
+.img-circle, .img-rounded, .img-thumbnail {
+  border: 3px solid $gray-lighter;
+}
+
+.center-block {
+  float: none!important;
+}
+
+
+// Modals
+// -------------------------
+
+// Disabling the background on Modal Windows
+// Backdrops only work well when modal content is attached to the end of the page
+// In practice glazed builder and custo html snippets will add modals to the body
+// which has a lower z-index so the modal can appear behind the backdrop.
+.modal-backdrop {
+    z-index: -1!important;
+    width: 1px!important;
+    height: 1px!important;
+}
+.modal {
+    .modal-dialog {
+        margin-top: 80px;
+        color: $text; // White background is defined but text color is not, this prevents
+        // white text when modal is added within a dark section
+        h1, h2, h3, h4, h5, h6 {
+            color: $text;
+        }
+        ul {
+            padding-left: 10px;
+            // li {
+            //   padding-bottom: 5px;
+            // }
+        }
+    }
+    .modal-content {
+        border-radius: 0;
+        border: none;
+    }
+    &:before {
+        content: ' ';
+        z-index: 4610;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: #000000;
+        opacity: 0.3;
+    }
+}
+
+// Tabs
+// -------------------------
+
+// Give the tabs something to sit on
+.html .main-container .nav-tabs {
+  border-bottom: 1px solid $gray-lighter;
+  > li {
+    margin-bottom: 0;
+    > a {
+      border: 1px solid transparent;
+      border-radius: 0;
+      padding: 10px 15px;
+      background-color: transparent;
+      &:hover {
+        color: $gray-lighter;
+      }
+    }
+    &.active {
+      position: relative;
+      bottom: -1px; // more reliable than margin-bbottom. e.g. in sooperthemes checkout form
+      a {
+        color: $primary;
+        border: 1px solid $gray-lighter;
+        border-bottom-color: white;
+        &:hover,
+        &:focus {
+          color: $primary;
+          cursor: default;
+          outline: none;
+        }
+      }
+    }
+  }
+  &.tabs--primary {
+    > li {
+      position: relative;
+      z-index: 4100; // fix covered buttons under header when page title is hidden (e.g. landscaper demo homepage)
+      > a {
+        background-color: white;
+      }
+    }
+  }
+}
+
+// Tabbable tabs
+// -------------------------
+
+// Hide tabbable panes to start, show them when `.active`
+.tab-content {
+  > .tab-pane {
+    display: none;
+  }
+  > .active {
+    display: block;
+  }
+}
+
+.tabs-left>.tab-content, .tabs-right>.tab-content {
+  padding: 20px;
+}
+
+// Progress Bar
+// -------------------------
+
+.progress {
+  border-radius: 0;
+  height: 3px;
+  margin-top: 2px;
+  overflow: visible;
+  box-shadow: none;
+}
+
+.progress-bar {
+  background-color: $primary;
+  line-height: 4px;
+  box-shadow: none;
+}
+
+// Bootstrap carousel
+
+.carousel-control.right,
+.carousel-control.left {
+  opacity: 0.5;
+}
+
+// fix display on white background
+.carousel-indicators li {
+  background: #777777;
+  &.active {
+    border: 1px solid #777777;
+    margin: 1px;
+    width: 10px;
+    height: 10px;
+  }
+}

@@ -1,0 +1,38 @@
+name = Glazed STARTERKIT Example
+description = For basic customization just use Glazed and theme settings. Use this STARTERKIT example if you need to build extra css files and templates on top of Glazed Theme.
+core = 7.x
+version = 7.x-2.601
+base theme = glazed_free
+
+; Regions
+regions[navigation]     = 'Navigation'
+regions[secondary_header] = 'Secondary Header'
+regions[slider]         = 'Hero Region'
+regions[header]         = 'Page Title'
+regions[highlighted]    = 'Highlighted'
+regions[help]           = 'Help'
+regions[content_top]    = 'Content Top'
+regions[content]        = 'Content'
+regions[content_bottom] = 'Content Bottom'
+regions[sidebar_first]  = 'Primary'
+regions[sidebar_second] = 'Secondary'
+regions[footer]         = 'Footer'
+
+settings[jquery_update_jquery_version] = 2.1
+
+;;;;;;;;;;;;;;;;;;;;;
+;; Stylesheets
+;;;;;;;;;;;;;;;;;;;;;
+
+stylesheets[all][] = css/glazed_free_subtheme.css
+
+; If you update glazed theme you also need to copy this css file again
+; from the basetheme. Its a Drupal color module issue.
+stylesheets[all][] = css/glazed.css
+
+; Information added by Drupal.org packaging script on 2017-01-10
+version = "7.x-2.601"
+core = "7.x"
+project = "glazed_free"
+datestamp = "1484053994"
+

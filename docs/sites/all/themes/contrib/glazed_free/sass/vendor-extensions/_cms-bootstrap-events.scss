@@ -1,0 +1,45 @@
+//
+// Author: Jurriaan Roelofs for SooperThemes. Copyright SooperThemes.
+//
+.node-event {
+	.content > img {
+		margin-bottom: 30px;
+	}
+	.top-fields {
+		h3.field-label {
+			font-size: $font-size-base;
+			font-weight: bold;
+		}
+		.row {
+			margin-bottom: 0;
+			padding: 0;
+		}
+		h3, [class^="field-event-"] {
+			line-height: 1.6em;
+			padding-top: 0.3em;
+			padding-bottom: 0.3em;
+			margin:0;
+		}
+		[class^="field-event-"] {
+			a {
+				color: $primary;
+			}
+		}
+	}
+}
+
+.view-cms-events {
+	h3 > .date-display-single {
+		font-size: $font-size-h4;
+		text-transform: uppercase;
+	}
+	.field-content a {
+		color: $primary;
+	}
+	.col-sm-3,
+	.col-sm-6 {
+		line-height: 30px;
+		margin-top: 0;
+		margin-bottom: 0;
+	}
+}

@@ -1,0 +1,147 @@
+//
+// Author: Jurriaan Roelofs for SooperThemes. Copyright SooperThemes.
+//
+
+// Pager
+
+.pagination {
+  border-radius: 0;
+  > li {
+    > a,
+    > span {
+      color: $gray-light;
+      background-color: transparent;
+      border-color: $silver;
+      opacity: 0.6;
+      padding: 1em 1.4em;
+    }
+    &:first-child {
+      > a,
+      > span {
+        border-radius: 0;
+      }
+    }
+    &:last-child {
+      > a,
+      > span {
+        border-radius: 0;
+      }
+    }
+  }
+
+  > li > a,
+  > li > span {
+    &:hover,
+    &:focus {
+      color: $gray-light;
+      background-color: transparent;
+      border-color: $silver;
+      opacity: 1;
+    }
+  }
+
+  > .active > a,
+  > .active > span {
+    &,
+    &:hover,
+    &:focus {
+      color: $gray-light;
+      background-color: transparent;
+      border-color:  $silver;
+      opacity: 1;
+    }
+  }
+
+  > .disabled {
+    > span,
+    > span:hover,
+    > span:focus,
+    > a,
+    > a:hover,
+    > a:focus {
+      color:  $gray-lighter;
+      background-color: $gray-light;
+      border-color: transparent;
+    }
+  }
+}
+
+// Mini Pager
+
+.pager {
+  li > a,
+  li > span {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 5px 10px;
+    &:hover,
+    &:focus {
+      background: transparent;
+    }
+    &:active {
+      ouline: none;
+    }
+  }
+}
+
+// Next / Previous Pager
+
+.html .prev-next {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 20px 0;
+  .prev, .next {
+    width: 48%;
+  }
+  a.nextprev-link {
+    display: table;
+    width: 100%;
+  }
+  i, .nextprev-text {
+    display: table-cell;
+    vertical-align: middle;
+  }
+  i {
+    font-size: 18px;
+    width: 1em;
+    height: auto;
+  }
+  .nextprev-text {
+    transition: transform 0.2s ease 0s;
+    transform: translateZ(0); //http://stackoverflow.com/questions/15464055/css-transition-effect-makes-image-blurry-moves-image-1px-in-chrome
+    backface-visibility: hidden;
+    margin-bottom: -1px;
+  }
+  .prev {
+    text-align: left;
+    i {
+      padding-right: 15px;
+    }
+  }
+  .prev .nextprev-link:hover,
+  .prev .nextprev-link:focus {
+    .nextprev-text {
+      transform: translateX(-5px);
+    }
+  }
+  .next {
+    text-align: right;
+    i {
+      padding-left: 15px;
+    }
+  }
+  .next .nextprev-link:hover,
+  .next .nextprev-link:focus {
+    .nextprev-text {
+      transform: translateX(5px);
+    }
+  }
+  a {
+    text-decoration: none;
+    &:hover,
+    &:focus {
+      text-decoration: none;
+    }
+  }
+}

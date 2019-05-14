@@ -1,0 +1,58 @@
+//
+// Author: Jurriaan Roelofs for SooperThemes. Copyright SooperThemes.
+//
+
+
+.field-blog-tags,
+.tagclouds-term {
+  a {
+    display: inline-block;
+    background: $silver;
+    color: $gray-light;
+    line-height: 1em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 7px 7px 8px;
+    margin: 0 5px 5px 0;
+    &:hover,
+    &:focus {
+      text-decoration: none;
+      background: $gray-light;
+      color: $silver;
+    }
+  }
+}
+
+.field-blog-tags a {
+  font-size: $font-size-small;
+}
+
+.cms-blog-links .row {
+  padding-bottom: 0;
+}
+
+.view-display-id-blog_classic .field-blog-image,
+.node-blog .field-blog-image {
+  margin-bottom: 10px;
+}
+
+.cms-blog-links {
+  border: solid #ededed;
+  border-width: 1px 0;
+  padding:0;
+  .col-sm-4 {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-bottom: 0;
+  }
+  .glazed-service-links {
+    border: solid #ededed;
+    border-width: 0 1px;
+    .fa {
+      padding: 5px;
+    }
+  }
+  a {
+    color: #333333;
+  }
+}
