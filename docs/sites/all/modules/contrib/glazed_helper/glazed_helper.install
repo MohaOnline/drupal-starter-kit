@@ -1,0 +1,36 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the module.
+ */
+
+/**
+ * Implements hook_enable().
+ */
+function glazed_helper_enable() {
+  if (drupal_get_path('theme', 'glazed')) {
+    variable_set('media_dialog_theme', 'glazed');
+  }
+  elseif (drupal_get_path('theme', 'glazed_free')) {
+    variable_set('media_dialog_theme', 'glazed_free');
+  }
+}
+
+/**
+ * Implements hook_enable().
+ */
+function glazed_helper_disable() {
+  variable_set('media_dialog_theme', '');
+}
+
+/**
+ * Theme Media Library Popup
+ */
+function glazed_helper_update_7002() {
+  if (drupal_get_path('theme', 'glazed')) {
+    variable_set('media_dialog_theme', 'glazed');
+  }
+  elseif (drupal_get_path('theme', 'glazed_free')) {
+    variable_set('media_dialog_theme', 'glazed_free');
+  }
+}

@@ -1,0 +1,114 @@
+<?php
+/**
+ * @file
+ * Code for the Glazed Configuration feature.
+ */
+
+include_once 'glazed_helper.features.inc';
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * Inject code to create the white "Theme Settings" button in the admin toolbar
+ */
+function glazed_helper_preprocess_page(&$vars) {
+  global $user;
+  if ($user->uid == 1 || user_access('access administration pages')) {
+    $themes = list_themes();
+    if (isset($themes['glazed'])) {
+      $glazed = 'glazed';
+    }
+    elseif (isset($themes['glazed_free'])) {
+      $glazed = 'glazed_free';
+    }
+    if ($glazed) {
+      $theme_path = drupal_get_path('theme', $glazed);
+      drupal_add_js(array('glazed' => array('glazedPath' => $theme_path)), 'setting');
+      drupal_add_js(array('glazedDefaultTheme' => variable_get('theme_default')), 'setting');
+      drupal_add_js($theme_path .'/js/minified/' . $glazed . '.admin.min.js', 'file');
+      drupal_add_css($theme_path .'/css/' . $glazed . '.admin.css');
+    }
+  }
+}
+
+/**
+ * Implements hook_admin_paths().
+ *
+ * If we don't set admin_path to FALSE our hook_custom_theme code doesn't work
+ * @see glazed_helper_custom_theme()
+ */
+function glazed_helper_admin_paths() {
+  $paths = array();
+  $paths['admin/appearance/settings/*'] = FALSE;
+  return $paths;
+}
+
+/**
+ * Implements hook_custom_theme().
+ *
+ * Enable Glazed theme for preview in Glazed theme settings
+ * @see glazed_helper_admin_paths()
+ */
+function glazed_helper_custom_theme() {
+  if (arg(0) == 'admin' && arg(1) == 'appearance' && arg(2) == 'settings' && arg(3)) {
+    $current_theme = check_plain(arg(3));
+    return $current_theme;
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function glazed_helper_block_info() {
+  $blocks = array();
+  $blocks['full_screen_search'] = array(
+    'info' => t('Full screen search'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function glazed_helper_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'full_screen_search':
+      if(user_access('search content')) {
+        $block['content'] = _glazed_helper_search_block_content();
+        return $block;
+      }
+      break;
+  }
+}
+
+/**
+ * Helper function to generate content for full_screen_search
+ */
+function _glazed_helper_search_block_content() {
+  $search_form = drupal_get_form('search_block_form');
+  $search_form['search_block_form']['#prefix'] = '<div class="full-screen-search-form-input">';
+  $search_form['search_block_form']['#prefix'].= '<label class="text-primary">' . t('Type and Press “enter” to Search') . '</label>';
+  $search_form['search_block_form']['#suffix'] = '</div>';
+  $search_form['search_block_form']['#attributes']['placeholder'] = '';
+  $search_form['search_block_form']['#attributes']['autocomplete'] = 'off';
+  $search_form['search_block_form']['#attributes']['class'][] = 'search-query';
+  $search_form['#attributes']['class'][] = 'element-invisible';
+  $search_form['#attributes']['class'][] = 'full-screen-search-form';
+  $search_form['#attributes']['class'][] = 'element-invisible';
+  // Remove bootstrap_bootstrap_search_form_wrapper
+  $search_form['search_block_form']['#theme_wrappers'] = array();
+
+  // Main search button
+  $content['full_screen_search_button'] = array(
+    '#type' => 'button',
+    '#button_type' => 'button',
+    '#value' => '<span class="icon glyphicon glyphicon-search"><div class="screenreader-text element-invisible">Search</div></span>',
+    '#attributes' => array('class' => array('btn-link', 'full-screen-search-button')),
+  );
+  $content['search_form'] = $search_form;
+
+  return $content;
+}
