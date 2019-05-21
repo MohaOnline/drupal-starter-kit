@@ -2,7 +2,7 @@
 /**
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2019, Alexey Sukhotin. All rights reserved.
  */
 
 /**
@@ -11,16 +11,24 @@
  * elFinder conenctor class
  */
 class elFinderDrupal extends elFinder {
+
+  protected $elFinderDrupalLibVersion;
+  protected $elFinderDrupalLibRevision;
+
   public function __construct($opts) {
     if (is_callable(array($this, 'version'))) {
 
-      $ver = floatval($this->version());
+      $this->elFinderDrupalLibVersion = floatval($this->version());
 
       if (isset(elFinder::$ApiVersion)) {
-        $ver = elFinder::$ApiVersion;
+        $this->elFinderDrupalLibVersion = elFinder::$ApiVersion;
       }
 
-      if ($ver == 2.1 && is_callable(array($this, 'revision')) && $this->revision() < 37) {
+      if (is_callable(array($this, 'revision'))) {
+        $this->elFinderDrupalLibRevision = $this->revision();
+      }
+
+      if ($this->elFinderDrupalLibVersion == 2.1 && is_callable(array($this, 'revision')) && $this->revision() < 37) {
         $this->connector_unsupported_error();
       }
 
@@ -35,7 +43,6 @@ class elFinderDrupal extends elFinder {
     }
 
   }
-
 
   public function connector_unsupported_error() {
     $this->connector_error(t('Unsupported elFinder library version. Please upgrade.'));
@@ -180,6 +187,11 @@ class elFinderDrupal extends elFinder {
    * @author Dmitry (dio) Levashov
    * */
   protected function file($args) {
+
+    if ($this->elFinderDrupalLibVersion >= 2.1 && $this->elFinderDrupalLibRevision > 38) {
+      return parent::file($args);
+    }
+
     $target = $args['target'];
     $download = !empty($args['download']);
     $h403 = 'HTTP/1.x 403 Access Denied';

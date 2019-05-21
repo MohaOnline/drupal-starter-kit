@@ -253,7 +253,7 @@ function elfinder_file_browser($browser_mode = 'default') {
       $sysuiver = $sys_ui_lib['version'];
     }
 
-    if (preg_match('/1\.(4|5|6|8|9|10)\.?/', $sysjqver) || preg_match('/1\.(8|9)\.?/', $sysuiver)) {
+    if (preg_match('/1\.(4|5|6|8|9|10|11|12)\.?/', $sysjqver) || preg_match('/1\.(8|9|10)\.?/', $sysuiver)) {
       if (property_exists('elFinder', 'ApiVersion')) {
         drupal_add_js($path . '/js/elfinder.jquery.min.js');
         drupal_add_js($path . '/js/elfinder.jquery-ui.min.js');

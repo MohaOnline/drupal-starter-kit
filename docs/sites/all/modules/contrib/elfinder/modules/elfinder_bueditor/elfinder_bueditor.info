@@ -12,5 +12,5 @@ dependencies[] = elfinder
 version = "7.x-2.x-dev"
 core = "7.x"
 project = "elfinder"
-datestamp = "1554918723"
+datestamp = "1555577224"
 

@@ -1,7 +1,7 @@
 /*
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2019, Alexey Sukhotin. All rights reserved.
  */
 
 function elfinder_ckeditor_callback(arg1) {
@@ -38,7 +38,7 @@ function elfinder_ckeditor_callback(arg1) {
   // Avoid beforeunload event when selecting an image.
   // See https://github.com/Studio-42/elFinder/issues/1340
   // Maybe remove this when elfinder js library gets updated.
-  $(window).off('beforeunload');
+  jQuery(window).off('beforeunload');
 
   window.close();
 }
