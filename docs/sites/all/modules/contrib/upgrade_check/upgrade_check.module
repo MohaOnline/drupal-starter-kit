@@ -1,0 +1,152 @@
+<?php
+
+/**
+ * @file
+ * This is module file for drupal 8 upgrade evaluation.
+ */
+
+require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'upgrade_check') . '/includes/EvaluationImplementation.php';
+
+define('UPGRADE_CHECK_URL', 'https://golems.top/');
+define('UPGRADE_CHECK_PATH', 'admin/config/upgrade-check');
+define('UPGRADE_CHECK_EVALUATION', UPGRADE_CHECK_PATH . '/evaluation');
+define('UPGRADE_CHECK_RESULT', UPGRADE_CHECK_PATH . '/result');
+define('UPGRADE_CHECK_JSON', UPGRADE_CHECK_PATH . '/json-download');
+define('UPGRADE_CHECK_ACCESS', 'administer upgrade check');
+define('UPGRADE_CHECK_SETTINGS_FORM', 'upgrade_check_settings_form');
+define('UPGRADE_CHECK_REPLACE_ENTITY_NAME', UPGRADE_CHECK_SETTINGS_FORM . '_enity_name');
+
+/**
+ * Implements hook_menu().
+ */
+function upgrade_check_menu() {
+  $items[UPGRADE_CHECK_PATH] = array(
+    'title' => 'Drupal 8 upgrade',
+    'description' => 'Drupal 8 upgrade.',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items[UPGRADE_CHECK_EVALUATION] = array(
+    'title' => 'Drupal 8 upgrade evaluation',
+    'description' => 'Drupal 8 upgrade evaluation.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_upgrade_check_form'),
+    'access arguments' => array(UPGRADE_CHECK_ACCESS),
+  );
+  $items[UPGRADE_CHECK_PATH . '/settings'] = array(
+    'title' => 'Drupal 8 upgrade settings',
+    'description' => 'Drupal 8 upgrade settings page.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_upgrade_check_settings_form'),
+    'access arguments' => array(UPGRADE_CHECK_ACCESS),
+  );
+  $items[UPGRADE_CHECK_RESULT] = array(
+    'title' => 'Drupal 8 upgrade user data',
+    'description' => 'User data for authorisation.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_upgrade_check_result_form'),
+    'access arguments' => array(UPGRADE_CHECK_ACCESS),
+  );
+  $items[UPGRADE_CHECK_JSON] = array(
+    'title' => 'Download json result',
+    'description' => 'Download json result page.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_upgrade_check_json_form'),
+    'access arguments' => array(UPGRADE_CHECK_ACCESS),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function upgrade_check_permission() {
+  return array(
+    UPGRADE_CHECK_ACCESS => array(
+      'title' => t('Administer upgrade check'),
+      'description' => t('Access data import page.')),
+  );
+}
+
+/**
+ * Implements hook_form().
+ */
+function _upgrade_check_form() {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckForm();
+}
+
+/**
+ * Implement hook_form_submit
+ */
+function _upgrade_check_form_submit($form, &$form_state) {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckFormSubmit($form_state);
+}
+
+/**
+ * Calculates modules.
+ */
+function _upgrade_check_modules_evaluation($module, &$context) {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckModulesEvaluation($module, $context);
+}
+
+/**
+ * Calculates themes.
+ */
+function _upgrade_check_themes_evaluation($theme, &$context) {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckThemesEvaluation($theme, $context);
+}
+
+/**
+ * Creating Json file.
+ */
+function _upgrade_check_create_json($data, &$context) {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckCreateJson($data, $context);
+}
+
+/**
+ * Function called after batch processing.
+ */
+function _upgrade_check_json_finished($success, $results, $operations) {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckJsonFinished($success);
+}
+
+/**
+ * Function download json.
+ */
+function _upgrade_check_json_form() {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckJsonForm();
+}
+
+/**
+ * Function download json.
+ */
+function _upgrade_check_settings_form() {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckSettingsForm();
+}
+
+/**
+ * Function for authomatic transfer json data.
+ */
+function _upgrade_check_result_form() {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckResultForm();
+}
+
+/**
+ * Function download json submit.
+ */
+function _upgrade_check_json_form_submit() {
+  return \Upgrade_check\EvaluationImplementation::upgradeCheckJsonFormSubmit();
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function upgrade_check_preprocess_html(&$vars) {
+  if (drupal_is_front_page()) {
+    return \Upgrade_check\EvaluationImplementation::upgradeCheckAddMetatag($vars);
+  }
+  return FALSE;
+}
