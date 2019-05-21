@@ -250,7 +250,7 @@ function _office_hours_field_settings_form_validate($element, &$form_state) {
  * Implements hook_field_is_empty().
  */
 function office_hours_field_is_empty($item, $field) {
-  if ($item['starthours'] == '' || $item['endhours'] == '' || !isset($item['day'])) {
+  if ($item['starthours'] == '' || $item['endhours'] == '' || !isset($item['day']) || $item['day'] === '') {
     return TRUE;
   }
   return FALSE;

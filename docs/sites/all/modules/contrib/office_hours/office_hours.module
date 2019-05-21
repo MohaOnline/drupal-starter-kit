@@ -51,7 +51,7 @@ function office_hours_element_info() {
         //   drupal_get_path('module', 'office_hours') . '/office_hours.css',
         // ),
         'js' => array(
-          drupal_get_path('module', 'office_hours') . '/office_hours.js',
+          drupal_get_path('module', 'office_hours') . '/js/office_hours.widget.js',
         ),
       ),
       // '#pre_render' => array('_office_hours_pre_render_element'),
