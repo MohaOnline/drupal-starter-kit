@@ -1,0 +1,194 @@
+<?php
+
+/**
+ * @file
+ * Custom menu toolbar module.
+ *
+ * Created by: Topsitemakers
+ * http://www.topsitemakers.com/
+ */
+
+require_once dirname(__FILE__) . '/custom_menu_toolbar.helpers.inc';
+
+/**
+ * Constants.
+ */
+define('CUSTOM_MENU_TOOLBAR_PERMISSION_ACCESS_TOOLBAR', 'access custom menu toolbar');
+define('CUSTOM_MENU_TOOLBAR_PERMISSION_MANAGE_TOOLBAR', 'manage custom menu toolbar');
+define('CUSTOM_MENU_TOOLBAR_DEFAULT_COLOR_TEXT', '#FFF');
+define('CUSTOM_MENU_TOOLBAR_DEFAULT_COLOR_BG', '#111');
+define('CUSTOM_MENU_TOOLBAR_DEFAULT_COLOR_BG_ACTIVE', '#0678be');
+define('CUSTOM_MENU_TOOLBAR_DEFAULT_TOGGLE_TEXT', 'Admin Menu');
+
+/**
+ * Implements hook_menu().
+ */
+function custom_menu_toolbar_menu() {
+  $items = array();
+
+  $items['admin/config/administration'] = array(
+    'title' => 'Administration',
+    'description' => 'Administration tools.',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array(CUSTOM_MENU_TOOLBAR_PERMISSION_MANAGE_TOOLBAR),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/administration/custom-menu-toolbar'] = array(
+    'title' => 'Custom Menu Toolbar',
+    'description' => 'Select menus that should be used as toolbars for different user roles and change general settings of the Custom Menu Toolbar module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('custom_menu_toolbar_menu_settings_form'),
+    'access arguments' => array(CUSTOM_MENU_TOOLBAR_PERMISSION_MANAGE_TOOLBAR),
+    'file' => 'custom_menu_toolbar.admin.inc',
+    'weight' => 100,
+  );
+  $items['admin/config/administration/custom-menu-toolbar/menus'] = array(
+    'title' => 'Menus',
+    'description' => 'Select menus that should be used as toolbars for different user roles.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('custom_menu_toolbar_menu_settings_form'),
+    'access arguments' => array(CUSTOM_MENU_TOOLBAR_PERMISSION_MANAGE_TOOLBAR),
+    'file' => 'custom_menu_toolbar.admin.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/administration/custom-menu-toolbar/configure'] = array(
+    'title' => 'Configure',
+    'description' => 'Change general settings of the Custom Menu Toolbar module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('custom_menu_toolbar_admin_settings_form'),
+    'access arguments' => array(CUSTOM_MENU_TOOLBAR_PERMISSION_MANAGE_TOOLBAR),
+    'file' => 'custom_menu_toolbar.admin.inc',
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function custom_menu_toolbar_permission() {
+  return array(
+    CUSTOM_MENU_TOOLBAR_PERMISSION_ACCESS_TOOLBAR => array(
+      'title' => 'Access Custom Menu Toolbar',
+    ),
+    CUSTOM_MENU_TOOLBAR_PERMISSION_MANAGE_TOOLBAR => array(
+      'title' => 'Manage Custom Menu Toolbar',
+    ),
+  );
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function custom_menu_toolbar_preprocess_html(&$vars) {
+  $toolbar_menu = _custom_menu_toolbar_get_menu_for_current_user();
+  if ($toolbar_menu) {
+    // Add an extra class to the body element.
+    $vars['classes_array'][] = 'custom-menu-toolbar';
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function custom_menu_toolbar_page_alter(&$page) {
+  $toolbar_menu = _custom_menu_toolbar_get_menu_for_current_user();
+  if ($toolbar_menu) {
+    $path = drupal_get_path('module', 'custom_menu_toolbar');
+    // Configurable styles.
+    $color_text = variable_get('custom_menu_toolbar_var_color_text', CUSTOM_MENU_TOOLBAR_DEFAULT_COLOR_TEXT);
+    $color_bg = variable_get('custom_menu_toolbar_var_color_bg', CUSTOM_MENU_TOOLBAR_DEFAULT_COLOR_BG);
+    $color_bg_active = variable_get('custom_menu_toolbar_var_color_bg_active', CUSTOM_MENU_TOOLBAR_DEFAULT_COLOR_BG_ACTIVE);
+    $styles = array();
+    $styles[] = '#custom-menu-toolbar {color: ' . filter_xss($color_text) . '}';
+    $styles[] = '#custom-menu-toolbar, #custom-menu-toolbar li {background: ' . filter_xss($color_bg) . '}';
+    $styles[] = '@media (min-width: 980px) {#custom-menu-toolbar li:hover {background: ' . filter_xss($color_bg_active) . '}}';
+    $inline_css = implode(PHP_EOL, $styles);
+    // Prepare the text for toggle.
+    $toggle_text_raw = variable_get('custom_menu_toolbar_var_other_toggle_text', CUSTOM_MENU_TOOLBAR_DEFAULT_TOGGLE_TEXT);
+    $toggle_text = filter_xss($toggle_text_raw);
+    // Add our CSS.
+    drupal_add_css($path . '/custom_menu_toolbar.css');
+    drupal_add_css($inline_css, array('type' => 'inline'));
+    // Add our JS.
+    drupal_add_js($path . '/custom_menu_toolbar.js');
+    // Render the menu.
+    $page['page_top']['custom_menu_toolbar'] = array(
+      '#prefix' => '<div id="custom-menu-toolbar" class="user-role-' . $toolbar_menu->rid . '">',
+      '#suffix' => '</div>',
+    );
+    $page['page_top']['custom_menu_toolbar']['toggle'] = array(
+      '#prefix' => '<a id="custom-menu-toolbar-toggle">',
+      '#markup' => '<span id="custom-menu-toolbar-toggle-stripes"><i></i><i></i><i></i></span><span id="custom-menu-toolbar-toggle-text">' . $toggle_text . '</span>',
+      '#suffix' => '</a>',
+    );
+    $page['page_top']['custom_menu_toolbar']['menu'] = array(
+      'content' => menu_tree($toolbar_menu->menu_name),
+    );
+  }
+}
+
+/**
+ * Implements hook_user_role_insert().
+ */
+function custom_menu_toolbar_user_role_insert($role) {
+  db_insert('custom_menu_toolbar_role_menus')
+    ->fields(array('rid' => $role->rid))
+    ->execute();
+}
+
+/**
+ * Implements hook_user_role_delete().
+ */
+function custom_menu_toolbar_user_role_delete($role) {
+  db_delete('custom_menu_toolbar_role_menus')
+    ->condition('rid', $role->rid)
+    ->execute();
+}
+
+/**
+ * Implements hook_theme().
+ */
+function custom_menu_toolbar_theme() {
+  return array(
+    'custom_menu_toolbar_menu_settings_form' => array(
+      'render element' => 'form',
+      'file' => 'custom_menu_toolbar.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Theme function for the custom_menu_toolbar_menu_settings_form() form.
+ */
+function theme_custom_menu_toolbar_menu_settings_form($variables) {
+  $form = $variables['form'];
+
+  $rows = array();
+  foreach (element_children($form['menus']) as $rid) {
+    $form['menus'][$rid]['weight']['#attributes']['class'] = array('role-menu-weight');
+    $rows[] = array(
+      'data' => array(
+        drupal_render($form['menus'][$rid]['name']),
+        drupal_render($form['menus'][$rid]['menu']),
+        drupal_render($form['menus'][$rid]['weight']),
+      ),
+      'class' => array('draggable'),
+    );
+  }
+
+  $header = array(t('Role'), t('Menu'), t('Weight'));
+  $table_id = 'role-menus-table';
+  $output = theme('table', array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array('id' => $table_id),
+  ));
+  $output .= drupal_render_children($form);
+  drupal_add_tabledrag($table_id, 'order', 'sibling', 'role-menu-weight');
+
+  return $output;
+}

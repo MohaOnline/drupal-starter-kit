@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update functions.
+ *
+ * Created by: Topsitemakers
+ * http://www.topsitemakers.com/
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function custom_menu_toolbar_schema() {
+  $schema['custom_menu_toolbar_role_menus'] = array(
+    'description' => 'Stores information about user roles and corresponding toolbar menus.',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary key.',
+      ),
+      'rid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Foreign Key - Role ID.',
+      ),
+      'menu_name' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '_none',
+        'description' => 'Foreign Key: Menu Name.',
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Weight determines the order in which the module will decide which toolbar menu to show for users that have multiple roles.',
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function custom_menu_toolbar_install() {
+  $roles = user_roles();
+  $count = 1;
+  foreach ($roles as $rid => $role_name) {
+    db_insert('custom_menu_toolbar_role_menus')
+      ->fields(array(
+        'rid' => $rid,
+        'weight' => $count,
+      ))
+      ->execute();
+    $count++;
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function custom_menu_toolbar_uninstall() {
+  // Remove our variables.
+  variable_del('custom_menu_toolbar_var_color_text');
+  variable_del('custom_menu_toolbar_var_color_bg');
+  variable_del('custom_menu_toolbar_var_color_bg_active');
+}
