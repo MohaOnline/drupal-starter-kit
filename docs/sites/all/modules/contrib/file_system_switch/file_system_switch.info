@@ -1,0 +1,14 @@
+name = File System Switch
+description = Provides the possibility to switch the file system from public to private for the file fields.
+core = 7.x
+package = "File System Switch"
+version = "7.x-1.x"
+configure = admin/config/media/file-system-switch
+dependencies[] = filefield_paths
+
+; Information added by Drupal.org packaging script on 2017-09-06
+version = "7.x-1.0-alpha1"
+core = "7.x"
+project = "file_system_switch"
+datestamp = "1504729149"
+

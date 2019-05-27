@@ -1,0 +1,343 @@
+<?php
+
+/**
+ * @file
+ * File system switch.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function file_system_switch_permission() {
+  return array(
+    'administer file_system_switch' => array(
+      'title' => t('Administer File System Switch'),
+      'description' => t('Allows an user to administer the file system switch module.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function file_system_switch_menu() {
+
+  $items['admin/config/media/file-system-switch'] = array(
+    'title' => 'File system switch',
+    'description' => 'Provides the possibility to switch the file system from public to private for the file fields.',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer file_system_switch'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/config/media/file-system-switch/settings'] = array(
+    'title' => 'File system switch settings',
+    'description' => 'Provides the possibility to switch the file system from public to private for the file fields.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('file_system_switch_form'),
+    'access arguments' => array('administer file_system_switch'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/media/file-system-switch/settings/%'] = array(
+    'title' => 'Content type fields',
+    'title callback' => 'get_ct_label',
+    'description' => 'Provides the possibility to switch the file system from public to private for the file fields.',
+    'page callback' => 'file_system_switch_ct_fields',
+    'page arguments' => array(5),
+    'access arguments' => array('administer file_system_switch'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/media/file-system-switch/backup/%/%'] = array(
+    'title' => 'Create the table backup',
+    'description' => 'Creates the table backup for the selected field.',
+    'page callback' => 'file_system_switch_create_backup',
+    'page arguments' => array(5, 6),
+    'access arguments' => array('administer file_system_switch'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/media/file-system-switch/switch-process/%/%'] = array(
+    'title' => 'Switch file system',
+    'description' => 'Switch file system for the selected field.',
+    'page callback' => 'file_system_switch_switch_process',
+    'page arguments' => array(5, 6),
+    'access arguments' => array('administer file_system_switch'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/config/media/file-system-switch/delete-backup/%/%'] = array(
+    'title' => 'Delete the table backup',
+    'description' => 'Deletes the table backup for the selected field.',
+    'page callback' => 'file_system_switch_delete_backup',
+    'page arguments' => array(5, 6),
+    'access arguments' => array('administer file_system_switch'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Function to retrieve the content type label.
+ */
+function get_ct_label() {
+  return t('Content type @type fields', array('@type' => node_type_get_name(arg(5))));
+}
+
+/**
+ * Settings form for the File System Switch module.
+ */
+function file_system_switch_form($node, &$form_state) {
+  $form = array();
+
+  $form['file_system_switch_form']['content_types'] = array(
+    '#type' => 'select',
+    '#title' => t('Content types'),
+    '#options' => file_system_switch_get_ct(),
+    '#default_value' => arg(5),
+    '#description' => t('Select the content type to check.'),
+  );
+
+  $form['file_system_switch_form']['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+/**
+ * File and image field details for the selected content type.
+ */
+function file_system_switch_ct_fields($ct) {
+  if (variable_get('maintenance_mode') != 1) {
+    drupal_set_message(t("Please put the site into <a target='_blank' href='/admin/config/development/maintenance'>@maintenance_mode</a> before executing any of these operations.", array("@maintenance_mode" => "Maintenance mode")), "warning");
+  }
+  $fss_form = drupal_get_form('file_system_switch_form');
+  $page = '';
+  $page .= drupal_render($fss_form);
+  $field_list = file_system_switch_get_ct_fields($ct);
+
+  $header = array(
+    t('Name'),
+    t('Machine name'),
+    t('Type'),
+    t('File system'),
+    t('Status'),
+    t('Operations'),
+  );
+  $rows = array();
+
+  foreach ($field_list as $field) {
+    $field_info = field_info_field($field['field_name']);
+    $type = $field_info['type'];
+    if (($type == 'file') || ($type == 'image')) {
+      $status = file_system_switch_get_status($field['field_name'], $ct);
+      $operations = file_system_switch_get_operations($field['field_name'], $ct);
+      $rows[] = array(
+        $field['label'],
+        $field['field_name'],
+        $field['widget']['module'],
+        $field_info['settings']['uri_scheme'],
+        $status,
+        $operations,
+      );
+    }
+  }
+
+  $table = theme('table', array('header' => $header, 'rows' => $rows));
+  $page .= $table;
+
+  return $page;
+}
+
+/**
+ * Submit function for the File System Switch module settings form.
+ */
+function file_system_switch_form_submit($form, &$form_state) {
+  drupal_goto('admin/config/media/file-system-switch/settings/' . $form_state['values']['content_types']);
+}
+
+/**
+ * Returns the existing content types.
+ */
+function file_system_switch_get_ct() {
+  $cts = array();
+  $content_types = node_type_get_types();
+
+  foreach ($content_types as $key => $content_type) {
+    $cts[$content_type->type] = $content_type->name;
+  }
+
+  return $cts;
+}
+
+/**
+ * Returns the selected content type fields.
+ */
+function file_system_switch_get_ct_fields($ct) {
+  $fields = field_info_instances('node', $ct);
+
+  return $fields;
+}
+
+/**
+ * Returns the field status.
+ */
+function file_system_switch_get_status($field_name, $ct) {
+  // TODO.
+  if ((empty(variable_get("BACKUP_" . $field_name . "_" . $ct))) && (empty(variable_get("SWITCH_" . $field_name . "_" . $ct))) && (empty(variable_get("UPDATE_" . $field_name . "_" . $ct))) &&(empty(variable_get("DELETE_" . $field_name . "_" . $ct)))) {
+    $field_info = field_info_field($field_name);
+    if ($field_info['settings']['uri_scheme'] == "public") {
+      $status = t("The file system is public, ready for switch.");
+    }
+    else {
+      $status = t("The file system is private.");
+    }
+  }
+
+  if ((empty(variable_get("SWITCH_" . $field_name . "_" . $ct))) && ((variable_get("BACKUP_" . $field_name . "_" . $ct)) == 1)) {
+    $status = t("The @field table backup is created.", array("@field" => $field_name));
+  }
+
+  if ((empty(variable_get("UPDATE_" . $field_name . "_" . $ct))) && ((variable_get("SWITCH_" . $field_name . "_" . $ct)) == 1)) {
+    $status = t("The @field file system is switched.", array("@field" => $field_name));
+  }
+
+  if ((empty(variable_get("DELETE_" . $field_name . "_" . $ct))) && ((variable_get("UPDATE_" . $field_name . "_" . $ct)) == 1)) {
+    $status = t("The @field table backup is updated. The backup can be safely deleted.", array("@field" => $field_name));
+  }
+
+  return $status;
+}
+
+/**
+ * Returns the field operations.
+ */
+function file_system_switch_get_operations($field_name, $ct) {
+  if ((empty(variable_get("BACKUP_" . $field_name . "_" . $ct))) && (empty(variable_get("SWITCH_" . $field_name . "_" . $ct))) && (empty(variable_get("UPDATE_" . $field_name . "_" . $ct))) &&(empty(variable_get("DELETE_" . $field_name . "_" . $ct)))) {
+    $link_backup_0 = l(t("Backup Original Table"), "/admin/config/media/file-system-switch/backup/" . $field_name . "/" . $ct);
+  }
+  else {
+    $link_backup_0 = t("Backup Original Table");
+  }
+
+  if ((empty(variable_get("SWITCH_" . $field_name . "_" . $ct))) && ((variable_get("BACKUP_" . $field_name . "_" . $ct)) == 1)) {
+    $link_backup_1 = l(t("Switch Field File System"), "/admin/config/media/file-system-switch/switch-process/" . $field_name . "/" . $ct);
+  }
+  else {
+    $link_backup_1 = t("Switch Field File System");
+  }
+
+  if ((empty(variable_get("UPDATE_" . $field_name . "_" . $ct))) && ((variable_get("SWITCH_" . $field_name . "_" . $ct)) == 1)) {
+    $link_backup_2 = l(t("Update File Paths"), "/admin/structure/types/manage/" . $ct . "/fields/" . $field_name . "/file-system-switch");
+  }
+  else {
+    $link_backup_2 = t("Update File Paths");
+  }
+
+  if ((empty(variable_get("DELETE_" . $field_name . "_" . $ct))) && ((variable_get("UPDATE_" . $field_name . "_" . $ct)) == 1)) {
+    $link_backup_3 = l(t("Delete Backup"), "/admin/config/media/file-system-switch/delete-backup/" . $field_name . "/" . $ct);
+  }
+  else {
+    $link_backup_3 = t("Delete Backup");
+  }
+
+  $links = $link_backup_0 . " | " . $link_backup_1 . " | " . $link_backup_2 . " | " . $link_backup_3;
+
+  if ((variable_get('file_public_path') == NULL) || (variable_get('file_private_path') == NULL) || (variable_get('file_temporary_path') == NULL)) {
+    $links = t("Please set the correct <a target='_blank' href='/admin/config/media/file-system'>@file_system</a> paths (public / private / temporary).", array("@file_system" => "File system"));
+  }
+
+  return $links;
+}
+
+/**
+ * Function to create the table backup for the selected field.
+ */
+function file_system_switch_create_backup($field_name, $ct) {
+  db_query("CREATE TABLE IF NOT EXISTS field_data_" . $field_name . "_bk LIKE field_data_" . $field_name);
+  db_query("CREATE TABLE IF NOT EXISTS field_revision_" . $field_name . "_bk LIKE field_revision_" . $field_name);
+  db_query("INSERT IGNORE field_data_" . $field_name . "_bk SELECT * FROM field_data_" . $field_name);
+  db_query("INSERT IGNORE field_revision_" . $field_name . "_bk SELECT * FROM field_revision_" . $field_name);
+
+  drupal_set_message(t("Backup created and populated for table field_data_@field", array("@field" => $field_name)));
+  drupal_set_message(t("Backup created and populated for table field_revision_@field", array("@field" => $field_name)));
+
+  variable_set("BACKUP_" . $field_name . "_" . $ct, 1);
+
+  drupal_goto("admin/config/media/file-system-switch/settings/" . $ct);
+}
+
+/**
+ * Function to delete the table backup for the selected field.
+ */
+function file_system_switch_switch_process($field_name, $ct) {
+  $field = field_info_field($field_name);
+
+  // Empty the original file tables.
+  db_query("TRUNCATE field_data_" . $field_name);
+  db_query("TRUNCATE field_revision_" . $field_name);
+
+  // Switch the file system once the field tables are empty.
+  if ($field['settings']['uri_scheme'] == 'public') {
+    $field['settings']['uri_scheme'] = 'private';
+    field_update_field($field);
+  }
+
+  // Repopulate the file tables.
+  db_query("INSERT IGNORE field_data_" . $field_name . " SELECT * FROM field_data_" . $field_name . "_bk");
+  db_query("INSERT IGNORE field_revision_" . $field_name . " SELECT * FROM field_revision_" . $field_name . "_bk");
+
+  drupal_set_message(t("File system has been switched for field_data_@field", array("@field" => $field_name)));
+
+  variable_del("BACKUP_" . $field_name . "_" . $ct);
+  variable_set("SWITCH_" . $field_name . "_" . $ct, 1);
+
+  drupal_goto("admin/config/media/file-system-switch/settings/" . $ct);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function file_system_switch_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'field_ui_field_edit_form') {
+    if (arg(7) == "file-system-switch") {
+      drupal_set_message("Save the form. The settings have been applied and the files will be moved automatically to the private file system.");
+      $form['instance']['settings']['filefield_paths']['retroactive_update']['#default_value'] = 1;
+    }
+  }
+}
+
+/**
+ * Function to delete the table backup for the selected field.
+ */
+function file_system_switch_delete_backup($field_name, $ct) {
+  db_query("DROP TABLE IF EXISTS field_data_" . $field_name . "_bk");
+  db_query("DROP TABLE IF EXISTS field_revision_" . $field_name . "_bk");
+
+  drupal_set_message(t("Backup deleted for table field_data_@field", array("@field" => $field_name)));
+  drupal_set_message(t("Backup deleted for table field_revision_@field", array("@field" => $field_name)));
+
+  variable_del("UPDATE_" . $field_name . "_" . $ct);
+  variable_del("BACKUP_" . $field_name . "_" . $ct);
+
+  drupal_goto("admin/config/media/file-system-switch/settings/" . $ct);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function file_system_switch_batch_alter(&$batch) {
+  if ($batch['sets'][0]['title'] == "Updating File (Field) Paths") {
+    $path = explode("/", $batch['source_url']);
+    variable_del("SWITCH_" . $path[6] . "_" . $path[4]);
+    variable_set("UPDATE_" . $path[6] . "_" . $path[4], 1);
+    if ($path[7] == "file-system-switch") {
+      $batch['redirect'] = 'admin/config/media/file-system-switch/settings/' . $path[4];
+    }
+  }
+}
