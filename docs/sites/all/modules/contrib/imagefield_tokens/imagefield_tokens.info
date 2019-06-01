@@ -1,0 +1,17 @@
+name = ImageField Tokens
+description = Adds additional settings to the Image field alt/title attributes.
+core = 7.x
+package = Fields
+dependencies[] = image
+dependencies[] = token
+
+; Testing Framework settings.
+files[] = tests/imagefield_tokens.test
+test_dependencies[] = token:token
+testing_api = 2.x
+
+; Information added by Drupal.org packaging script on 2019-04-16
+version = "7.x-1.11"
+core = "7.x"
+project = "imagefield_tokens"
+datestamp = "1555421389"
