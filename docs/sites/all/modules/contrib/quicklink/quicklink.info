@@ -1,0 +1,11 @@
+name = Quicklink
+description = Installs Quicklink JS library to prefetch linked pages.
+core = 7.x
+package = Performance and Scalability
+configure = admin/config/development/performance/quicklink
+
+; Information added by Drupal.org packaging script on 2019-05-11
+version = "7.x-1.0-rc1"
+core = "7.x"
+project = "quicklink"
+datestamp = "1557583989"

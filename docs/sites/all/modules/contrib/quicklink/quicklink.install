@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * Converts variables to use 'quicklink_' namespace.
+ */
+function quicklink_update_7001() {
+  global $conf;
+  $variables = array(
+    'ignore_admin_paths',
+    'ignore_ajax_links',
+    'ignore_hashes',
+    'ignore_file_ext',
+    'url_patterns_to_ignore',
+    'selector',
+    'allowed_domains',
+    'prefetch_only_paths',
+    'no_load_when_authenticated',
+    'no_load_when_session',
+    'no_load_content_types',
+    'load_polyfill',
+    'enable_debug_mode',
+  );
+  foreach ($variables as $variable) {
+    if (isset($conf[$variable])) {
+      variable_set('quicklink_' . $variable, $conf[$variable]);
+      variable_del($variable);
+    }
+  }
+}

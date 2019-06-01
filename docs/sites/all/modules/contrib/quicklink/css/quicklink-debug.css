@@ -1,0 +1,25 @@
+.quicklink-ignore:hover,
+.quicklink-ignore:focus {
+  position: relative !important;
+}
+
+.quicklink-ignore:hover:after,
+.quicklink-ignore:focus:after {
+  content: attr(data-quicklink-match) !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 100% !important;
+  z-index: 100 !important;
+  transform: translatey(-50%) !important;
+  display: block !important;
+  width: 140px !important;
+  padding: 4px 8px !important;
+  border: solid 1px #aaa !important;
+  background-color: white !important;
+  font-family: sans-serif !important;
+  color: #333 !important;
+  text-align: left !important;
+  text-indent: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+}
