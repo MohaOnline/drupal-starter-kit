@@ -1,0 +1,211 @@
+<?php
+
+/**
+ * @file
+ * Allows site owner to add share buttons/recommendations on their website
+ */
+
+define('SHAREAHOLIC_DIR', drupal_get_path('module', 'shareaholic'));
+define('SHAREAHOLIC_ASSET_DIR', $GLOBALS['base_url'] . '/' . SHAREAHOLIC_DIR . '/assets/');
+define('SHAREAHOLIC_DEBUG', getenv('SHAREAHOLIC_DEBUG'));
+
+// Caching
+if( !defined( 'SHARE_COUNTS_CHECK_CACHE_LENGTH' ) ) define( 'SHARE_COUNTS_CHECK_CACHE_LENGTH', 180 ); // 180 seconds
+
+// Required global files
+module_load_include('php', 'shareaholic', 'utilities');
+module_load_include('php', 'shareaholic', 'admin');
+module_load_include('php', 'shareaholic', 'public');
+module_load_include('php', 'shareaholic', 'content_manager');
+module_load_include('php', 'shareaholic', 'content_settings');
+module_load_include('php', 'shareaholic', 'cache');
+
+// Include files
+module_load_include('php', 'shareaholic', 'includes/node');
+module_load_include('php', 'shareaholic', 'includes/shareaholic_tos_modal');
+module_load_include('php', 'shareaholic', 'includes/shareaholic_failure_modal');
+module_load_include('php', 'shareaholic', 'includes/shareaholic_advanced_settings_form');
+module_load_include('php', 'shareaholic', 'includes/shareaholic_reset_plugin_form');
+module_load_include('php', 'shareaholic', 'includes/shareaholic_apps_configuration_form');
+
+/**
+ * Implements hook_init()
+ * This gets called at the beginning of a non-cached page request
+ * Ideal for setting response headers
+ *
+ * Force edge mode for IE so that our apps will look nicer
+ *
+ */
+function shareaholic_init() {
+  ShareaholicPublic::set_xua_compatible_header();
+  if(!ShareaholicUtilities::is_admin_page()) {
+    ShareaholicPublic::insert_dns_snippet();
+    ShareaholicPublic::insert_content_meta_tags();
+    ShareaholicPublic::insert_script_tag();
+    ShareaholicPublic::insert_og_tags();
+  } else {
+    // execute post install functions
+    ShareaholicAdmin::post_install();
+  }
+}
+
+/**
+ * Implementation of hook_menu()
+ *
+ * Establishes "routes" for the Shareaholic module
+ *
+ * @return The menu structure containing link to settings page
+ */
+function shareaholic_menu() {
+
+  // this creates the block for shareaholic in config page
+  $menu['admin/config/shareaholic'] = array(
+    'title' => 'Shareaholic',
+    'description' => 'Shareaholic Module Settings',
+    'weight' => 1,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+    'position' => 'left',
+  );
+
+  // Path to the shareaholic advanced page
+  $menu['admin/config/shareaholic/advanced'] = array(
+    'title' => 'Shareaholic Advanced Settings',
+    'description' => 'Advanced settings for the Shareaholic module',
+    'page callback' => 'shareaholic_admin_advanced',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 2
+  );
+
+  // Path to the shareaholic app manager page
+  $menu['admin/config/shareaholic/settings'] = array(
+    'title' => 'Shareaholic App Manager',
+    'description' => 'Manage various Social Tools like Share Buttons and Related Posts',
+    'page callback' => 'shareaholic_admin_settings',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 1
+  );
+
+  // Path for the shareaholic share count API
+  $menu['shareaholic/api/share_counts/v1'] = array(
+    'page callback' => 'shareaholic_share_counts_api',
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+  );
+
+  return $menu;
+}
+
+
+/**
+ * Renders page for shareaholic advanced settings
+ *
+ * @return The theme to render the advanced settings page
+ */
+function shareaholic_admin_advanced() {
+  // check for module update
+  ShareaholicAdmin::update_check();
+  return theme('shareaholic_admin_advanced');
+}
+
+/**
+ * Renders page for shareaholic app manager settings
+ *
+ * @return The theme to render the app manager page
+ */
+function shareaholic_admin_settings() {
+  // check for module update
+  ShareaholicAdmin::update_check();
+  ShareaholicUtilities::share_counts_api_connectivity_check();
+  return theme('shareaholic_admin_settings');
+}
+
+
+/**
+ * Implements hook_theme().
+ *
+ * Defines the themes for each template in this module
+ *
+ * @return array An array that includes themes implemented for shareaholic
+ * templates
+ */
+function shareaholic_theme() {
+  return array(
+    'shareaholic_admin_advanced' => array(
+      'path' => SHAREAHOLIC_DIR . '/templates',
+      'template' => 'shareaholic_admin_advanced',
+    ),
+    'shareaholic_admin_settings' => array(
+      'path' => SHAREAHOLIC_DIR . '/templates',
+      'template' => 'shareaholic_admin_settings',
+    ),
+    'shareaholic_tos_modal' => array(
+      'render element' => 'form',
+      'path' => SHAREAHOLIC_DIR . '/templates',
+      'template' => 'shareaholic_tos_modal',
+    ),
+    'shareaholic_failure_modal' => array(
+      'render element' => 'form',
+      'path' => SHAREAHOLIC_DIR . '/templates',
+      'template' => 'shareaholic_failure_modal',
+    ),
+    'shareaholic_apps_configuration' => array(
+      'render element' => 'form',
+      'path' => SHAREAHOLIC_DIR . '/templates',
+      'template' => 'shareaholic_apps_configuration'
+    ),
+    'shareaholic_verify_api_key' => array(
+      'path' => SHAREAHOLIC_DIR . '/templates',
+      'template' => 'shareaholic_verify_api_key',
+    ),
+  );
+}
+
+
+
+/**
+ * Implements hook_process_html()
+ *
+ * Add the ToS notice to the page in admin pages only
+ */
+function shareaholic_process_html(&$vars) {
+  ShareaholicAdmin::show_terms_of_service_notice($vars);
+  ShareaholicAdmin::show_pending_update_notice($vars);
+}
+
+
+/**
+ * Prepares the form for use in the templates
+ * by storing the form as strings in the $variables object
+ * that can be printed in the template
+ */
+function _prepare_template_form_variables(&$variables, $form_id) {
+  $variables[$form_id] = array();
+  $hidden = array();
+  foreach (element_children($variables['form']) as $key) {
+    $type = $variables['form'][$key]['#type'];
+    if ($type == 'hidden' || $type == 'token') {
+      $hidden[] = drupal_render($variables['form'][$key]);
+    }
+    else {
+      $variables[$form_id][$key] = drupal_render($variables['form'][$key]);
+    }
+  }
+  $variables[$form_id]['hidden'] = implode($hidden);
+}
+
+
+/**
+ * Returns the share counts for the given url and services
+ * Requires the url and services to be passed into GET params
+ *
+ * @return String json response of services => share counts
+ */
+function shareaholic_share_counts_api() {
+  ShareaholicPublic::share_counts_api();
+}
+

@@ -1,0 +1,84 @@
+<?php
+/**
+ * @file
+ * Install and uninstall functions for the Shareaholic module.
+ *
+ * When the module is uninstalled, we need to clear any data we store in the
+ * in the database.
+ */
+
+module_load_include('php', 'shareaholic', 'utilities');
+module_load_include('php', 'shareaholic', 'content_manager');
+module_load_include('php', 'shareaholic', 'content_settings');
+
+/**
+ * Implements hook_install().
+ * When the user installs the module,
+ * log the event
+ */
+function shareaholic_install() {
+  ShareaholicUtilities::log_event('Install_Fresh');
+  ShareaholicUtilities::set_version(ShareaholicUtilities::get_version());
+  // If they already accepted ToS, then get or create api key
+  if (ShareaholicUtilities::has_accepted_terms_of_service()) {
+    ShareaholicUtilities::get_or_create_api_key();
+  }
+  // Add post install flag
+  variable_set('Installed_Module_Shareaholic', 'shareaholic');
+}
+
+/**
+ * Implements hook_uninstall().
+ * When the user uninstalls the module,
+ * delete all shareaholic settings
+ *
+ */
+function shareaholic_uninstall() {
+  ShareaholicUtilities::log_event('Uninstall');
+  ShareaholicUtilities::destroy_settings();
+}
+
+/**
+ * Implements hook_enable().
+ * When the module is enabled, call CM single domain worker
+ * and log the enable event
+ */
+function shareaholic_enable() {
+  if(ShareaholicUtilities::has_accepted_terms_of_service() &&
+      ShareaholicUtilities::get_option('api_key')) {
+    ShareaholicContentManager::single_domain_worker();
+  }
+  ShareaholicUtilities::log_event('Activate');
+}
+
+/**
+ * Implements hook_disable().
+ * When the module is disabled,
+ * and log the enable event
+ */
+function shareaholic_disable() {
+  ShareaholicUtilities::log_event('Deactivate');
+}
+
+/**
+ * Implements hook_schema().
+ * Defines the shareaholic_content_settings schema
+ *
+ */
+function shareaholic_schema() {
+  return ShareaholicContentSettings::schema();
+}
+
+
+/**
+ * This update will add the new shareaholic content settings table
+ * for installs 7.x-3.3 and earlier
+ */
+function shareaholic_update_7300() {
+  if (!db_table_exists('shareaholic_content_settings')) {
+    $schema = ShareaholicContentSettings::schema();
+    db_create_table('shareaholic_content_settings', $schema['shareaholic_content_settings']);
+  }
+  return t('Database table shareaholic_content_settings created');
+}
+

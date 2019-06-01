@@ -1,0 +1,19 @@
+name = Share Buttons, Analytics, Related Posts - Shareaholic
+description = Get people sharing your content, keep them on your site longer, grow your fans, monetize, and know who's reading your content. Powered by <a href='https://www.shareaholic.com/' target='_blank'>Shareaholic</a>.
+configure = admin/config/shareaholic/settings
+core = 7.x
+project = "shareaholic"
+files[] = shareaholic.module
+files[] = tests/shareaholic.test
+files[] = tests/utilities.test
+files[] = tests/admin.test
+files[] = tests/public.test
+files[] = tests/http.test
+files[] = tests/cache.test
+files[] = tests/public_js.test
+
+; Information added by Drupal.org packaging script on 2019-05-13
+version = "7.x-3.31"
+core = "7.x"
+project = "shareaholic"
+datestamp = "1557776593"
