@@ -1,0 +1,284 @@
+<?php
+
+/**
+ * @file
+ * Main module file.
+ */
+
+/**
+ * Implements hook_libraries_info().
+ */
+function field_timer_libraries_info() {
+  return array(
+    'county' => array(
+      'name' => t('County'),
+      'vendor url' => 'https://github.com/brilsergei/county',
+      'download url' => 'https://github.com/brilsergei/county/archive/master.zip',
+      'version' => '1.0',
+      'files' => array(
+        'js' => array(
+          'js/county.js',
+        ),
+        'css' => array(
+          'css/county.css',
+        ),
+      ),
+    ),
+    'jquery.countdown' => array(
+      'name' => t('jQuery Countdown'),
+      'vendor url' => 'http://keith-wood.name/countdown.html',
+      'download url' => 'http://keith-wood.name/countdown.html',
+      'version arguments' => array(
+        'file'  => 'js/jquery.countdown.js',
+        'pattern' => '/Countdown for jQuery v(2.1.[0-9])/',
+        'lines' => 2,
+      ),
+      'files' => array(
+        'js' => array(
+          'js/jquery.plugin.min.js',
+          'js/jquery.countdown.min.js',
+        ),
+        'css' => array(
+          'css/jquery.countdown.css',
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_info().
+ */
+function field_timer_field_info() {
+  return array(
+    'field_timer' => array(
+      'label' => t('Timer Field'),
+      'description' => t('Timer or countdown.'),
+      'settings' => array(),
+      'default_widget' => 'field_timer_simple_date',
+      'default_formatter' => 'field_timer_text',
+      'property_type' => 'date',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function field_timer_field_widget_info() {
+  return array(
+    'field_timer_simple_date' => array(
+      'label' => t('Date Popup'),
+      'field types' => array('field_timer'),
+      'settings' => array(),
+      'weight' => -1,
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_info_alter().
+ */
+function field_timer_field_widget_info_alter(&$info) {
+  $info['options_select']['field types'][] = 'field_timer';
+  $info['options_buttons']['field types'][] = 'field_timer';
+}
+
+/**
+ * Implements hook_options_list().
+ */
+function field_timer_options_list($field, $instance, $entity_type, $entity) {
+  return field_timer_entity_properties($entity_type);
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function field_timer_field_widget_form(&$form, &$form_state, $field, $instance,
+        $langcode, $items, $delta, $element) {
+
+  switch ($instance['widget']['type']) {
+    case 'field_timer_simple_date':
+      $default_value = NULL;
+      // Default value from database is timestamp, default value set by admin
+      // at field configuration page is formatted date string.
+      if (isset($items[$delta]['timestamp'])) {
+        if (is_numeric($items[$delta]['timestamp'])) {
+          $default_value = date('Y-m-d H:i:s', $items[$delta]['timestamp']);
+        }
+        else {
+          $default_value = $items[$delta]['timestamp'];
+        }
+      }
+      $widget = array(
+        '#type' => 'date_popup',
+        '#title' => $element['#title'],
+        '#default_value' => $default_value,
+      );
+      $element['timestamp'] = $widget;
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function field_timer_field_formatter_info() {
+  $field_types = array('field_timer', 'datestamp', 'date', 'datetime');
+  $formatter_types = array(
+    'field_timer_text',
+    'field_timer_county',
+    'field_timer_jquery_countdown',
+    'field_timer_jquery_countdown_led',
+  );
+  $formatters = array();
+
+  foreach ($formatter_types as $formatter) {
+    foreach ($field_types as $field) {
+      $class = $formatter . '_' . $field;
+      $handler = new $class();
+      if ($handler->enableFormatter()) {
+        if (!isset($formatters[$formatter])) {
+          $formatters[$formatter] = $handler->getFormatterDefinition();
+          $formatters[$formatter]['field types'] = array();
+          $formatters[$formatter]['settings'] = array();
+        }
+        $formatters[$formatter]['field types'][] = $field;
+        $formatters[$formatter]['settings'] += $handler->getDefaultSettings();
+      }
+    }
+  }
+
+  return $formatters;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function field_timer_field_formatter_view($entity_type, $entity, $field, $instance,
+        $langcode, $items, $display) {
+
+  $class = $display['type'] . '_' . $field['type'];
+  $handler = new $class();
+  return $handler->renderItems($entity_type, $entity, $field, $instance, $langcode, $items, $display);
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function field_timer_field_is_empty($item, $field) {
+   return empty($item['timestamp']) && empty($item['entity_property_name']);
+}
+
+/**
+ * Implements hook_field_presave().
+ */
+function field_timer_field_presave($entity_type, $entity, $field, $instance,
+        $langcode, &$items) {
+
+  // Date popup widget return date as formatted string. We need to convert it to
+  // timestamp.
+  if ($field['type'] == 'field_timer') {
+    foreach ($items as $delta => $item) {
+      if (!empty($item['timestamp'])) {
+        $timestamp = strtotime($item['timestamp']);
+        if ($timestamp) {
+          $items[$delta]['timestamp'] = $timestamp;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_load().
+ */
+function field_timer_field_load($entity_type, $entities, $field, $instances,
+        $langcode, &$items, $age) {
+
+  // Set timestamp for field item if an entity property used as target/end date.
+  foreach ($entities as $id => $entity) {
+    foreach ($items[$id] as $delta => $item) {
+      if (empty($item['timestamp']) && !empty($item['entity_property_name']) &&
+        isset($entity->{$item['entity_property_name']})) {
+        $items[$id][$delta]['timestamp'] = $entity->{$item['entity_property_name']};
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function field_timer_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $class = $display['type'] . '_' . $field['type'];
+  $handler = new $class();
+  return implode('<br/>', $handler->getSettingsSummary($settings, $field));
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function field_timer_field_formatter_settings_form($field, $instance, $view_mode,
+        $form, $form_state) {
+
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $class = $display['type'] . '_' . $field['type'];
+  $handler = new $class();
+  return $handler->getSettingsForm($settings, $field);
+}
+
+/**
+ * Implements hook_field_timer_entity_properties().
+ */
+function field_timer_field_timer_entity_properties() {
+  $properties = array(
+    'node' => array(
+      'created' => t('Node create date'),
+      'changed' => t('Node last change date'),
+    ),
+    'comment' => array(
+      'created' => t('Comment create date'),
+      'changed' => t('Comment last change date'),
+    ),
+    'file' => array(
+      'timestamp' => t('File upload date'),
+    ),
+    'taxonomy_term' => array(),
+    'taxonomy_vocabulary' => array(),
+    'user' => array(
+      'created' => t('User create date'),
+      'access' => t('User last access date'),
+      'login' => t('User last login date'),
+    ),
+  );
+
+  return $properties;
+}
+
+/**
+ * Loads entity properties which represent a date.
+ *
+ * @param string $entity_type
+ *   Entity type machine name or empty string.
+ *
+ * @return array
+ * Returns an array of entity's properties which represent a date keyed by
+ * entity types if $entity_type is empty, array of properties of given entity
+ * type otherwise.
+ */
+function field_timer_entity_properties($entity_type = '') {
+  $properties = module_invoke_all('field_timer_entity_properties');
+  drupal_alter('field_timer_entity_properties', $properties);
+  if (!empty($entity_type)) {
+    return $properties[$entity_type];
+  }
+  return $properties;
+}

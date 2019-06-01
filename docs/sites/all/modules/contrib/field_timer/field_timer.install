@@ -1,0 +1,60 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Field Timer module.
+ */
+
+/**
+ * Implements hook_field_schema().
+ */
+function field_timer_field_schema($field) {
+  if ($field['type'] == 'field_timer') {
+    return array(
+      'columns' => array(
+        'timestamp' => array(
+          'type' => 'int',
+          'not null' => FALSE,
+          'unsigned' => TRUE,
+        ),
+        'entity_property_name' => array(
+          'type' => 'varchar',
+          'length' => 100,
+          'not null' => FALSE,
+        ),
+      ),
+    );
+  }
+}
+
+/**
+ * Update existing instances with new formatter settings.
+ */
+function field_timer_update_7201(&$sandbox) {
+  foreach (field_info_field_map() as $field_name => $short_info) {
+    foreach ($short_info['bundles'] as $entity_type => $bundles) {
+      foreach ($bundles as $bundle) {
+        if (in_array($short_info['type'], array('field_timer', 'datestamp', 'date', 'datetime'))) {
+          $instance = field_info_instance($entity_type, $field_name, $bundle);
+          foreach ($instance['display'] as $display_name => $display) {
+            if ($display['type'] == 'field_timer_text') {
+              $instance['display'][$display_name]['settings']['granularity_auto'] = $instance['display'][$display_name]['settings']['granularity'];
+              unset($instance['display'][$display_name]['settings']['granularity']);
+              $instance['display'][$display_name]['settings']['granularity_type'] = 'auto';
+              $instance['display'][$display_name]['settings']['granularity_manual'] = array('day' => 'day');
+
+              if (isset($instance['display'][$display_name]['settings']['granularity2'])) {
+                $instance['display'][$display_name]['settings']['granularity_auto2'] = $instance['display'][$display_name]['settings']['granularity2'];
+                unset($instance['display'][$display_name]['settings']['granularity2']);
+                $instance['display'][$display_name]['settings']['granularity_type2'] = 'auto';
+                $instance['display'][$display_name]['settings']['granularity_manual2'] = array('day' => 'day');
+              }
+
+              field_update_instance($instance);
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,112 @@
+span.jquery-countdown,
+span.jquery-countdown-led {
+  display: inline-block;
+}
+span.jquery-countdown .countdown-section {
+  padding: 0 3px;
+  width: auto;
+}
+span.jquery-countdown .countdown-row {
+  padding: 0;
+}
+
+.jquery-countdown-led.hasCountdown {
+  border: none;
+  background: none;
+}
+.jquery-countdown-led span.green {
+  display: block;
+  float: left;
+  width: 10px;
+  height: 21px;
+}
+.jquery-countdown-led .jquery-countdown-led-display-wrapper {
+  height: 21px;
+}
+.jquery-countdown-led span.green.image0 {
+  background-position: -0px 0px;
+}
+.jquery-countdown-led span.green.image1 {
+  background-position: -10px 0px;
+}
+.jquery-countdown-led span.green.image2 {
+  background-position: -20px 0px;
+}
+.jquery-countdown-led span.green.image3 {
+  background-position: -30px 0px;
+}
+.jquery-countdown-led span.green.image4 {
+  background-position: -40px 0px;
+}
+.jquery-countdown-led span.green.image5 {
+  background-position: -50px 0px;
+}
+.jquery-countdown-led span.green.image6 {
+  background-position: -60px 0px;
+}
+.jquery-countdown-led span.green.image7 {
+  background-position: -70px 0px;
+}
+.jquery-countdown-led span.green.image8 {
+  background-position: -80px 0px;
+}
+.jquery-countdown-led span.green.image9 {
+  background-position: -90px 0px;
+}
+.jquery-countdown-led span.green.imageDay {
+  background-position: -100px 0px;
+}
+.jquery-countdown-led span.green.imageSep {
+  background-position: -110px 0px;
+}
+.jquery-countdown-led span.green.imageSpace {
+  background-position: -120px 0px;
+}
+.jquery-countdown-led span.blue {
+  display: block;
+  float: left;
+  width: 34px;
+  height: 50px; 
+}
+.jquery-countdown-led span.blue.image0 {
+  background-position: -0px 0px;
+}
+.jquery-countdown-led span.blue.image1 {
+  background-position: -34px 0px;
+}
+.jquery-countdown-led span.blue.image2 {
+  background-position: -68px 0px;
+}
+.jquery-countdown-led span.blue.image3 {
+  background-position: -102px 0px;
+}
+.jquery-countdown-led span.blue.image4 {
+  background-position: -136px 0px;
+}
+.jquery-countdown-led span.blue.image5 {
+  background-position: -170px 0px;
+}
+.jquery-countdown-led span.blue.image6 {
+  background-position: -204px 0px;
+}
+.jquery-countdown-led span.blue.image7 {
+  background-position: -238px 0px;
+}
+.jquery-countdown-led span.blue.image8 {
+  background-position: -272px 0px;
+}
+.jquery-countdown-led span.blue.image9 {
+  background-position: -306px 0px;
+}
+.jquery-countdown-led span.blue.imageDay {
+  background-position: -340px 0px;
+}
+.jquery-countdown-led span.blue.imageSep {
+  background-position: -374px 0px;
+}
+.jquery-countdown-led span.blue.imageSpace {
+  background-position: -408px 0px;
+}
+.jquery-countdown-led.is-countdown {
+  border: none;
+}
