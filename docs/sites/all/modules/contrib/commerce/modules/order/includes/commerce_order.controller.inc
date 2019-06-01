@@ -71,6 +71,12 @@ class CommerceOrderEntityController extends DrupalCommerceEntityController {
         if (empty($order->created)) {
           $order->created = REQUEST_TIME;
         }
+        if (empty($order->changed)) {
+          $order->changed = REQUEST_TIME;
+        }
+        if (empty($order->revision_timestamp)) {
+          $order->revision_timestamp = REQUEST_TIME;
+        }
         if (empty($order->hostname)) {
           $order->hostname = ip_address();
         }
@@ -89,11 +95,12 @@ class CommerceOrderEntityController extends DrupalCommerceEntityController {
         if ($order->hostname === '') {
           unset($order->hostname);
         }
+
+        $time = time();
+        $order->changed = $time;
+        $order->revision_timestamp = $time;
       }
 
-      $order->changed = REQUEST_TIME;
-
-      $order->revision_timestamp = REQUEST_TIME;
       $order->revision_hostname = ip_address();
       $order->revision_uid = $user->uid;
 
@@ -139,5 +146,40 @@ class CommerceOrderEntityController extends DrupalCommerceEntityController {
     // Call the default attachLoad() method. This will add fields and call
     // hook_commerce_order_load().
     parent::attachLoad($queried_orders, $revision_id);
+  }
+
+  /**
+   * Deletes multiple orders by ID.
+   *
+   * @param $order_ids
+   *   An array of order IDs to delete.
+   * @param $transaction
+   *   An optional transaction object.
+   *
+   * @return boolean
+   *   TRUE on success, FALSE otherwise.
+   */
+  public function delete($order_ids, DatabaseTransaction $transaction = NULL) {
+    if (!empty($order_ids)) {
+      $orders = $this->load($order_ids, array());
+
+      // Ensure the orders can actually be deleted.
+      foreach ((array) $orders as $order_id => $order) {
+        if (in_array(FALSE, module_invoke_all('commerce_order_can_delete', $order))) {
+          unset($orders[$order_id]);
+        }
+      }
+
+      // If none of the specified orders can be deleted, return FALSE.
+      if (empty($orders)) {
+        return FALSE;
+      }
+
+      parent::delete($order_ids, $transaction);
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
   }
 }
