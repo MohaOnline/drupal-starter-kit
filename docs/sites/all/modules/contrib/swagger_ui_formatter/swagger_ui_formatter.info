@@ -1,0 +1,10 @@
+name = Swagger UI Field Formatter
+description = Provides a field formatter for file fields with Swagger YAML or JSON files uploaded.
+core = 7.x
+dependencies[] = libraries
+
+; Information added by Drupal.org packaging script on 2019-03-07
+version = "7.x-2.0"
+core = "7.x"
+project = "swagger_ui_formatter"
+datestamp = "1551947008"
