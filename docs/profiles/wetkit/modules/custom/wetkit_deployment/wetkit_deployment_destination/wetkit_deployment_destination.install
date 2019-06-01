@@ -1,0 +1,26 @@
+<?php
+/**
+ * @file
+ * wetkit_deployment_destination.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_deployment_destination_install() {
+  variable_get('wetkit_deployment_destination_enable_cron', FALSE);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_deployment_destination_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_deployment_destination_') === 0) {
+      variable_del($key);
+    }
+  }
+}

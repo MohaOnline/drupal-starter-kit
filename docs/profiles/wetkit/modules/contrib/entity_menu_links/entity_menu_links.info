@@ -1,0 +1,14 @@
+name = Entity menu links
+description = "Converts menu_links to entities."
+core = 7.x
+dependencies[] = entity
+dependencies[] = menu
+dependencies[] = uuid
+files[] = entity_menu_links.controller.inc
+
+; Information added by Drupal.org packaging script on 2015-06-22
+version = "7.x-1.0-alpha3"
+core = "7.x"
+project = "entity_menu_links"
+datestamp = "1435012388"
+

@@ -1,0 +1,11 @@
+name = WetKit Update
+description = Configures the core update module needed for the WetKit Installation Profile.
+core = 7.x
+dependencies[] = update
+package = WetKit
+
+; Information added by Drupal.org packaging script on 2019-05-29
+version = "7.x-4.34"
+core = "7.x"
+project = "wetkit_core"
+datestamp = "1559169792"

@@ -1,0 +1,30 @@
+/**
+ * Stylesheet for WetKit Bean
+ */
+
+.region-pearson-top {
+  .wet-boew-share {
+    a {
+      font-size: 12px;
+      font-weight: 400;
+    }
+    h2 {
+      margin: 0px;
+    }
+  }
+}
+
+#slide-panel {
+    width:300px;
+    float: right;
+    height:300px;
+    padding:10px;
+    background:#eee;
+    margin-top: 175px;
+    margin-right:-300px;
+}
+#opener {
+    float:left;
+    margin:-10px 0px 0px -50px;
+    border-radius:0;
+}

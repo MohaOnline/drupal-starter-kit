@@ -1,0 +1,56 @@
+<?php
+/**
+ * @file
+ * wetkit_language.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_language_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_language_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Implements hook_update_n().
+ */
+function wetkit_language_update_7101() {
+  if (!module_exists('entity_translation_i18n_menu')) {
+    module_enable(array('entity_translation_i18n_menu'));
+  }
+}
+
+/**
+ * i18n support has been included in panels.
+ *
+ * Replace wetkit_i18n_panels with i18n_panels.
+ */
+function wetkit_language_update_7102() {
+  if (!module_exists('i18n_panels')) {
+    module_enable(array('i18n_panels'));
+  }
+}
+
+/**
+ * Implementations of hook_update_N().
+ */
+
+/**
+ * Enable new module for 4.x branch.
+ */
+function wetkit_language_update_7401() {
+  // Enable new module for 4.x  branch.
+  $modules = array('language_switch');
+  foreach ($modules as $module) {
+    if (!module_exists($module)) {
+      module_enable(array($module));
+    }
+  }
+}

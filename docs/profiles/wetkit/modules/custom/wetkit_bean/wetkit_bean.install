@@ -1,0 +1,66 @@
+<?php
+/**
+ * @file
+ * wetkit_bean.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_bean_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_bean_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Implements hook_update_n().
+ */
+function wetkit_bean_update_7101() {
+  if (module_exists('bean_panels')) {
+    module_disable(array('bean_panels'));
+    drupal_uninstall_modules(array('bean_panels'));
+  }
+}
+
+/**
+ * Update bean slider default options.
+ */
+ function wetkit_bean_update_7401() {
+  // Update the bean slider default options.
+  $results = db_query("SELECT bid, vid, data FROM {bean} WHERE type = 'wetkit_slide'");
+  foreach ($results as $bean) {
+    // The bean slider's options are serialized.
+    $data = unserialize($bean->data);
+
+    unset($data['plugin_settings']['rotate_effect']);
+    unset($data['plugin_settings']['tabs_style_effect']);
+    $data['plugin_settings']['animate_effect'] = 'fade';
+    $data['plugin_settings']['rotate_speed'] = 'slow';
+    $data['plugin_settings']['carousel'] = 'carousel-s2';
+
+    // Execute query.
+    db_update('bean')
+      ->fields(array(
+        'data' => serialize($data),
+      ))
+      ->condition('bid', $bean->bid)
+      ->condition('vid', $bean->vid)
+      ->execute();
+
+    db_update('bean_revision')
+      ->fields(array(
+        'data' => serialize($data),
+      ))
+      ->condition('bid', $bean->bid)
+      ->condition('vid', $bean->vid)
+      ->execute();
+
+    bean_reset(TRUE, TRUE);
+  }
+}

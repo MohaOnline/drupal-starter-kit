@@ -1,0 +1,263 @@
+<?php
+
+/**
+ * @file
+ * Main module file for WetKit Navbar.
+ */
+
+
+/**
+ * Implements hook_page_build().
+ */
+function wetkit_navbar_page_build() {
+  drupal_add_js(drupal_get_path('module', 'wetkit_navbar') . '/js/wetkit-navbar.js');
+}
+
+/**
+ * Implements hook_permission().
+ */
+function wetkit_navbar_permission() {
+  return array(
+    'flush caches' => array(
+      'title' => t('Flush caches'),
+      'description' => t('Access links to flush caches in navbar.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function wetkit_navbar_menu() {
+  $items['admin/flush-cache'] = array(
+    'title' => 'Flush Cache',
+    'description' => 'Clear system caches.',
+    'page callback' => 'wetkit_navbar_flush_cache',
+    'access arguments' => array('flush caches'),
+    'file' => 'wetkit_navbar.cache.inc',
+    'file path' => drupal_get_path('module', 'wetkit_navbar') . '/includes',
+    'weight' => -100,
+  );
+
+  $caches = module_invoke_all('wetkit_navbar_cache_info');
+  foreach ($caches as $name => $cache) {
+    $items['admin/flush-cache/' . $name] = array(
+      'title' => $cache['title'],
+      'page callback' => 'wetkit_navbar_flush_cache',
+      'page arguments' => array($name),
+      'access arguments' => array('flush caches'),
+      'file path' => drupal_get_path('module', 'wetkit_navbar') . '/includes',
+      'file' => 'wetkit_navbar.cache.inc',
+      'weight' => -100,
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_libraries_info_alter().
+ */
+function wetkit_navbar_libraries_info_alter(&$libraries) {
+  // WxT already provides us with Modernizr so we need to
+  // override Navbar's default detection.
+  unset($libraries['modernizr']);
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function wetkit_navbar_menu_alter(&$items) {
+  // Flush client-side caches whenever the menu is rebuilt.
+  wetkit_navbar_flush_caches();
+}
+
+/**
+ * Implements hook_menu_link_insert().
+ */
+function wetkit_navbar_menu_link_insert($link) {
+  // Flush all of our caches to pick up the link.
+  wetkit_navbar_flush_caches();
+}
+
+/**
+ * Implements hook_menu_link_update().
+ */
+function wetkit_navbar_menu_link_update($link) {
+  // Flush all of our caches to pick up the link.
+  wetkit_navbar_flush_caches();
+}
+
+/**
+ * Implements hook_menu_link_delete().
+ */
+function wetkit_navbar_menu_link_delete($link) {
+  // Flush all of our caches to pick up the link.
+  wetkit_navbar_flush_caches();
+}
+
+/**
+ * Implements hook_flush_caches().
+ *
+ * Flushes client-side caches.
+ */
+function wetkit_navbar_flush_caches($uid = NULL) {
+  $cid = 'navbar_menu:';
+  if (isset($uid)) {
+    $cid .= $uid . ':';
+  }
+
+  // Flush client-side cache hashes.
+  drupal_static_reset('wetkit_navbar_cache_get');
+}
+
+/**
+ * Implements hook_navbar().
+ */
+function wetkit_navbar_navbar() {
+  $items = array();
+
+  // Devel Integration.
+  if (module_exists('devel') && user_access('access devel information')) {
+    $tree = menu_tree('devel');
+    foreach ($tree as $i => $item) {
+      if (!is_numeric($i)) continue;
+      $tree[$i]['#localized_options']['attributes']['class'][] = 'navbar-menu-item';
+    }
+    $items['devel'] = array(
+      '#type' => 'navbar_item',
+      'tab' => array(
+        '#type' => 'link',
+        '#title' => t('Devel'),
+        '#href' => 'devel/settings',
+        '#options' => array(
+          'attributes' => array(
+            'title' => t('Development'),
+            'class' => array('navbar-icon', 'navbar-icon-development'),
+          ),
+        ),
+      ),
+      'tray' => array(
+        '#heading' => t('Development'),
+        '#wrapper_attributes' => array(
+          'class' => array('navbar-tray-devel'),
+        ),
+        'development_menu' => $tree,
+      ),
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'wetkit_navbar') . '/css/wetkit-navbar-dev.css',
+        ),
+      ),
+    );
+  }
+
+  // Node Integration.
+  global $user;
+  $types = node_type_get_names();
+  $links = array();
+  foreach ($types as $machine_name => $name) {
+    if (module_exists('i18n')) {
+      $name = i18n_node_type_name($machine_name, $name);
+    }
+    if ((module_exists('og') && og_node_access($machine_name, 'create', $user)) || user_access('create ' . $machine_name . ' content')) {
+      $links[] = '<div class="navbar-box">' . l($name, 'node/add/' . str_replace('_', '-', $machine_name), array('attributes' => array('class' => array('navbar-menu-item')))) . '</div>';
+    }
+  }
+  if ($links) {
+    array_unshift($links, '<div class="navbar-box">'
+      . l(t('Add content'), 'node/add', array(
+          'attributes' => array(
+            'class' => array('navbar-menu-item', 'navbar-icon', 'navbar-icon-content')
+          )
+        ))
+      . '</div>');
+    $items['add_content'] = array(
+      '#type' => 'navbar_item',
+      'tab' => array(
+        '#type' => 'link',
+        '#title' => t('Add content'),
+        '#href' => 'node/add',
+        '#options' => array(
+          'html' => FALSE,
+          'attributes' => array(
+            'title' => t('Add content'),
+            'class' => array('navbar-icon', 'navbar-icon-add-content'),
+          ),
+        ),
+      ),
+      'tray' => array(
+        '#heading' => t('Add content (types)'),
+        '#wrapper_attributes' => array(
+          'class' => array('navbar-tray-content'),
+        ),
+        'add_content_menu' => array(
+          '#theme' => 'item_list',
+          '#items' => $links,
+          '#attributes' => array(
+            'class' => array('navbar-menu', 'navbar-menu-add-content', 'navbar-menu-processed', 'navbar-menu-root', 'navbar-root'),
+          )
+        ),
+      ),
+      '#attached' => array(
+        'css' => array(
+          drupal_get_path('module', 'wetkit_navbar') . '/css/wetkit-navbar-add.css',
+        ),
+      ),
+    );
+  }
+
+  // Bean Integration.
+  if (module_exists('bean')) {
+    $types = bean_get_types();
+    $links = array();
+    foreach ($types as $name) {
+      if (user_access('create any ' . $name->type . ' bean')) {
+        $links[] = '<div class="navbar-box">' . l($name->getLabel(), 'block/add/' . $name->buildURL(), array('attributes' => array('class' => array('navbar-menu-item')))) . '</div>';
+      }
+    }
+    if ($links) {
+      array_unshift($links, '<div class="navbar-box">'
+        . l(t('Add bean'), 'block/add', array(
+            'attributes' => array(
+              'class' => array('navbar-menu-item', 'navbar-icon', 'navbar-icon-content')
+            )
+          ))
+        . '</div>');
+      $items['add_bean'] = array(
+        '#type' => 'navbar_item',
+        'tab' => array(
+          '#type' => 'link',
+          '#title' => t('Add bean'),
+          '#href' => 'block/add',
+          '#options' => array(
+            'html' => FALSE,
+            'attributes' => array(
+              'title' => t('Add bean'),
+              'class' => array('navbar-icon', 'navbar-icon-add-bean'),
+            ),
+          ),
+        ),
+        'tray' => array(
+          '#heading' => t('Add bean (types)'),
+          '#wrapper_attributes' => array(
+            'class' => array('navbar-tray-bean'),
+          ),
+          'add_bean_menu' => array(
+            '#theme' => 'item_list',
+            '#items' => $links,
+            '#attributes' => array(
+              'class' => array('navbar-menu', 'navbar-menu-add-bean', 'navbar-menu-processed', 'navbar-menu-root', 'navbar-root'),
+            )
+          ),
+        ),
+        '#attached' => array(
+          'css' => array(
+            drupal_get_path('module', 'wetkit_navbar') . '/css/wetkit-navbar-add.css',
+          ),
+        ),
+      );
+    }
+  }
+  return $items;
+}

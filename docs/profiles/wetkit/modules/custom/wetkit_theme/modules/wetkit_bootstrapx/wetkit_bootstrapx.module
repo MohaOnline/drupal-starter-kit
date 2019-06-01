@@ -1,0 +1,237 @@
+<?php
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ * @param $module
+ * @param $plugin
+ * @return string
+ */
+function wetkit_bootstrapx_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'panels') {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_preprocess_panels_pane().
+ */
+function wetkit_bootstrapx_preprocess_panels_pane(&$vars) {
+  $pane_id = $vars['pane']->pid;
+  $pane_title = &drupal_static($pane_id . '_title');
+  $pane_title = $vars['title'];
+
+  drupal_add_js(drupal_get_path('module', 'wetkit_bootstrapx') . '/js/horizontal_tabs.js', 'file');
+  drupal_add_css(drupal_get_path('module', 'wetkit_bootstrapx') . '/css/horizontal_tabs.css', 'file');
+}
+
+/**
+ * Implements hook_view_block_alter().
+ */
+function wetkit_bootstrapx_block_view_workbench_block_alter(&$data, $block) {
+  $items = module_invoke_all('workbench_block');
+  if (empty($items)) {
+    return;
+  }
+  $data = array(
+    'subject' => '',
+    'content' => array(
+      '#markup' => theme('container', array('element' => array(
+      	'#children' => "<a class=\"close\" data-dismiss=\"alert\" href=\"#\">&times;</a>\n" . implode('<br />', $items),
+      	'#attributes' => array('class' => 'alert alert-block alert-info')))),
+    ),
+  );
+  return $data;
+}
+
+/**
+ * Implements hook_admin_paths_alter().
+ */
+function wetkit_bootstrapx_admin_paths_alter(&$paths) {
+  // Render following admin pages in Bootstrap.
+  if (!variable_get('wetkit_theme_admin_paths', FALSE)) {
+    $paths['admin'] = FALSE;
+    $paths['admin/*'] = FALSE;
+    $paths['admin/appearance'] = FALSE;
+    $paths['admin/appearance/*'] = FALSE;
+    $paths['admin/advanced_help'] = FALSE;
+    $paths['admin/advanced_help/*'] = FALSE;
+    $paths['admin/content'] = FALSE;
+    $paths['admin/content/*'] = FALSE;
+    $paths['admin/config'] = FALSE;
+    $paths['admin/config/*'] = FALSE;
+    $paths['admin/dashboard'] = FALSE;
+    $paths['admin/dashboard/*'] = FALSE;
+    $paths['admin/help'] = FALSE;
+    $paths['admin/help/*'] = FALSE;
+    $paths['admin/help/ah/*'] = FALSE;
+    $paths['admin/people'] = FALSE;
+    $paths['admin/people/*'] = FALSE;
+    $paths['admin/structure'] = FALSE;
+    $paths['admin/structure/*'] = FALSE;
+    $paths['admin/wetkit'] = FALSE;
+    $paths['admin/wetkit/*'] = FALSE;
+    $paths['admin/workbench'] = FALSE;
+    $paths['admin/workbench/*'] = FALSE;
+    $paths['admin/reports'] = FALSE;
+    $paths['admin/reports/*'] = FALSE;
+    $paths['block/*'] = FALSE;
+    $paths['block/*/edit'] = FALSE;
+    $paths['block/*/edit/*'] = FALSE;
+    $paths['devel/*'] = FALSE;
+    $paths['devel/*/edit'] = FALSE;
+    $paths['devel/*/edit/*'] = FALSE;
+    $paths['file/*'] = FALSE;
+    $paths['file/*/edit'] = FALSE;
+    $paths['file/*/edit/*'] = FALSE;
+    $paths['media/*/edit'] = FALSE;
+    $paths['media/*/edit/*'] = FALSE;
+    $paths['taxonomy'] = FALSE;
+    $paths['taxonomy/term/*'] = FALSE;
+    $paths['user/*/*'] = FALSE;
+
+    // Views currently does not style well in Bootstrap.
+    $paths['admin/structure/views'] = FALSE;
+    $paths['admin/structure/views/*'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_custom_theme().
+ */
+function wetkit_bootstrapx_custom_theme() {
+    // Render following views admin pages in Bootstrap.
+  if (!variable_get('wetkit_theme_admin_paths', FALSE)) {
+    $theme = variable_get('views_ui_custom_theme', '_default');
+
+    if ($theme != '_default') {
+      $available = list_themes();
+
+      if (isset($available[$theme]) && $available[$theme]->status && preg_match('/^admin\/structure\/views\/view/', current_path())) {
+        return $theme;
+      }
+
+      // Views UI itself currently can't support Bootstrap
+      // but the admin/structure/views is able to.
+      if (isset($available[$theme]) && $available[$theme]->status && preg_match('/^admin\/structure\/views$/', current_path())) {
+        return 'wetkit_bootstrap';
+      }
+    }
+  }
+}
+
+/**
+ * Implementation of hook_theme()
+ */
+function wetkit_bootstrapx_theme() {
+  $theme = array();
+
+  $theme['panels_bootstrap_pane'] = array(
+    'variables' => array(
+      'output' => array(),
+      'pane' => array(),
+      'display' => array()
+    ),
+    'path' => drupal_get_path('module', 'wetkit_bootstrapx') . '/theme',
+    'file' => 'theme.inc',
+    'template' => 'panels-bootstrap-pane',
+  );
+
+  $theme['panels_bootstrap_region'] = array(
+    'variables' => array(
+      'output' => array(),
+      'panes' => array(),
+      'display' => array()
+    ),
+    'path' => drupal_get_path('module', 'wetkit_bootstrapx') . '/theme',
+    'file' => 'theme.inc',
+    'template' => 'panels-bootstrap-region',
+  );
+  return $theme;
+}
+
+/**
+ * Retrieves a single or all substyles.
+ * @param string $name
+ * @return array
+ */
+function wetkit_bootstrapx_bootstrap_styles_load_substyles($name = NULL) {
+  $substyles = &drupal_static(__FUNCTION__, array());
+
+  if (empty($substyles)) {
+    $substyles = module_invoke_all('wetkit_bootstrapx_substyles');
+    $default = array(
+      'description' => '',
+      // Default elements.
+      'wrapper_element' => 'div',
+      'header_element' => 'div',
+      'title_element' => 'h2',
+      'content_element' => 'div',
+      'links_element' => 'div',
+      'footer_element' => 'div',
+    );
+    foreach ($substyles as $id => &$substyle) {
+      $substyle = $default + $substyle;
+      $substyle['title'] = !empty($substyle['title']) ? $substyle['title'] : $id;
+      $substyle['name'] = !empty($substyle['name']) ? $substyle['name'] : $id;
+    }
+  }
+
+  if ($name) {
+    return $substyles[$name];
+  }
+  return $substyles;
+}
+
+/**
+ * Implements hook_panels_bootstrap_substyles.
+ */
+function wetkit_bootstrapx_wetkit_bootstrapx_substyles() {
+
+  $styles = array(
+    'panel' => array(
+      'name' => 'panel',
+      'title' => t('Panel'),
+      'description' => t('Renders as bootstrap panel class.'),
+      'panes' => TRUE,
+      'regions' => TRUE,
+      'collapsible' => TRUE,
+      'modifier_classes' => TRUE,
+      'hide_classes' => TRUE,
+      'additional_classes' => TRUE,
+    ),
+    'jumbotron' => array(
+      'name' => 'jumbotron',
+      'title' => t('Jumbotron'),
+      'description' => t('Renders as bootstrap jumbotron class.'),
+      'panes' => TRUE,
+      'regions' => TRUE,
+      'collapsible' => FALSE,
+      'modifier_classes' => FALSE,
+      'hide_classes' => TRUE,
+      'additional_classes' => TRUE,
+    ),
+    'well' => array(
+      'name' => 'well',
+      'title' => t('Well'),
+      'description' => t('Renders as bootstrap well class.'),
+      'panes' => TRUE,
+      'regions' => TRUE,
+      'collapsible' => FALSE,
+      'modifier_classes' => FALSE,
+      'hide_classes' => TRUE,
+      'additional_classes' => TRUE,
+    ),
+    'alert' => array(
+      'name' => 'alert',
+      'title' => t('Alert'),
+      'description' => t('Renders as alert class.'),
+      'panes' => TRUE,
+      'regions' => FALSE,
+      'collapsible' => FALSE,
+      'modifier_classes' => TRUE,
+      'hide_classes' => TRUE,
+      'additional_classes' => TRUE,
+    ),
+  );
+  return $styles;
+}

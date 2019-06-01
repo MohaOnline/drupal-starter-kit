@@ -1,0 +1,28 @@
+/* l10n Client Styles */
+
+#l10n-client {
+  z-index: 501;
+  h2 {
+    border-left: none;
+    font-size: 1.2em;
+    color: white;
+    height: inherit;
+  }
+  #l10n-client-form {
+    .form-submit { display: inline; }
+    .form-textarea {
+      border-radius: inherit;
+      margin-top: 1em;
+      height: 15em;
+      width: 100%;
+    }
+  }
+  #l10n-client-search-form {
+    height: inherit;
+  }
+  .labels {
+    .label {
+      border: none;
+    }
+  }
+}

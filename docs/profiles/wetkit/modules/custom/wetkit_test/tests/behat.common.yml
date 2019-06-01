@@ -1,0 +1,78 @@
+default:
+  suites:
+    default:
+      paths:
+        features: 'features'
+      filters:
+        tags: "~@chrome"
+      contexts:
+        - FeatureContext
+        - Drupal\DrupalExtension\Context\DrupalContext
+        - Drupal\DrupalExtension\Context\MinkContext
+        - Drupal\DrupalExtension\Context\MarkupContext
+        - Drupal\DrupalExtension\Context\DrushContext
+  extensions:
+    Behat\MinkExtension:
+      goutte: ~
+      selenium2: ~
+      #base_url: http://mydrupalsite.com
+      #files_path: './profiles/wetkit/modules/wetkit/wetkit_test/tests'
+    Drupal\DrupalExtension:
+      blackbox: ~
+      #drush:
+      #  root: '/path/to/drupal/root'
+      #drupal:
+      #  drupal_root: '/path/to/drupal/root'
+      api_driver: 'drupal'
+      region_map:
+        # The region on wetkit_page where the body appears (frequently
+        # customized on child distributions).
+        Breadcrumb: "ol.breadcrumb"
+        Content Well: "main.container"
+        Left Sidebar: "#wb-sec"
+        Mega Menu: ".wb-menu"
+        Tabs: ".tabs--primary"
+        Language Bar: "#wb-lng"
+        # Panels Layout Regions for Drupal WxT
+        Pearson Content: ".region-pearson-first"
+        Pearson Sidebar: ".region-pearson-second"
+        # For Metatag specific regions
+        Edit Metatags: "#edit-metatags"
+        # For Panels / CTools specific regions.
+        CTools modal: "#modalContent"
+        Live preview: "fieldset.widget-preview"
+        Linkit modal: "#linkit-modal"
+        # For the Media Browser
+        Media web tab: '#media-tab-media_internet'
+        Media upload tab: '#media-tab-upload'
+        Media library tab: '#media-tab-media_default--media_browser_1'
+        # For Workbench Moderation
+        Moderation: '.unpublished-revision'
+        # These are the regions for wetkit_bootstrap.
+        Main menu: "#main-menu"
+        Header: ".region-header"
+        Featured: ".region-featured"
+        Highlighted: ".region-highlighted"
+        Help: ".region-help"
+        Content: ".region-content"
+        Sidebar first: ".region-sidebar-first"
+        Sidebar second: ".region-sidebar-second"
+        Footer first column: ".region-footer-firstcolumn"
+        Footer second column: ".region-footer-secondcolumn"
+        Footer third column: ".region-footer-thirdcolumn"
+        Footer fourth column: ".region-footer-fourthcolumn"
+        Footer: ".region-footer"
+        Search: "#search-form"
+        Panopoly Magic Style Settings: "#panels-edit-style-settings-form #edit-general-settings"
+        Browser: "#media-browser-page-wrapper"
+# Setup for Google Chrome only tests.
+chrome:
+  suites:
+    default:
+      filters:
+        tags: "@chrome"
+  extensions:
+    Behat\MinkExtension:
+      selenium2:
+        browser: chrome
+        capabilities: {"browser": "chrome", "browserName": "chrome", "browserVersion": "ANY", "version": "ANY"}

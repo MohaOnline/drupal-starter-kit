@@ -1,0 +1,34 @@
+name = Shared content example source site
+description = Contains example configuration for demonstrating the Shared Content project on a test source site.
+core = 7.x
+package = Shared content example
+php = 5.2.4
+dependencies[] = ctools
+dependencies[] = deploy
+dependencies[] = features
+dependencies[] = options
+dependencies[] = shared_content_example
+dependencies[] = shared_content_source
+dependencies[] = strongarm
+dependencies[] = workbench
+dependencies[] = workbench_moderation
+features[ctools][] = deploy:deploy_endpoints:1
+features[ctools][] = deploy:deploy_plans:1
+features[ctools][] = strongarm:strongarm:1
+features[deploy_endpoints][] = destination_site_endpoint
+features[deploy_plans][] = destination_site_plan
+features[features_api][] = api:2
+features[field_instance][] = node-complex_content-field_deploy_to_destination_site
+features[field_instance][] = node-complex_content-field_shared_content
+features[field_instance][] = node-simple_content-field_deploy_to_destination_site
+features[field_instance][] = node-simple_content-field_shared_content
+features[field_instance][] = taxonomy_term-tags-field_shared_content
+features[variable][] = workbench_moderation_default_state_complex_content
+features[variable][] = workbench_moderation_default_state_simple_content
+
+; Information added by drupal.org packaging script on 2013-07-27
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "shared_content"
+datestamp = "1374898884"
+

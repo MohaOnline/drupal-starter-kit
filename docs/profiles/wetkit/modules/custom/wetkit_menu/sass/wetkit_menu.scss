@@ -1,0 +1,148 @@
+/**
+ * @file
+ * Custom SCSS for the WetKit Menu module.
+ */
+
+@charset "utf-8";
+
+.mb-menu {
+  li {
+    h4 {
+      a {
+        text-decoration: none !important;
+        &:hover {
+          text-decoration: underline !important;
+        }
+      }
+    }
+  }
+  ul {
+    li {
+      &.top-level {
+        a {
+          text-decoration: none !important;
+          &:hover {
+            text-decoration: underline !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+.pane-menu-tree {
+  .top-level-alt {
+    margin: 0 0 3px;
+    a {
+      background: #0b3048;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      font-size: 1.1em;
+      color: white !important;
+      font-weight: bold;
+    }
+  }
+}
+
+#wb-sec {
+  .expanded {
+    .list-group {
+      .list-group {
+        .list-group-item {
+          background: #F2F2F2!important;
+          color: #555!important;
+          padding-left: 2.8em!important;
+        }
+        .list-group {
+          .list-group-item {
+            background: #e6e6e6!important;
+            color: #555!important;
+            padding-left: 3.8em!important;
+          }
+        }
+      }
+    }
+  }
+  .list-group {
+    .list-group {
+      a.list-group-item {
+        &.wb-navcurr {
+          background: #146094!important;
+          color: #fff!important;
+        }
+      }
+      a.list-group-item[href] {
+        &:focus,
+        &:hover {
+          background: #146094!important;
+          color: #fff!important;
+        }
+      }
+      .list-group {
+        a.list-group-item {
+          &.wb-navcurr {
+            background: #146094!important;
+            color: #fff!important;
+          }
+        }
+        a.list-group-item[href] {
+          &:focus,
+          &:hover {
+            background: #146094!important;
+            color: #fff!important;
+          }
+        }
+      }
+    }
+  }
+}
+.sidebar-nav-right { margin-bottom:30px;
+  .nav>li>a { padding:0; }
+  .list-group { margin:0; border-radius: 0;
+    .list-group-item.active {
+      a {
+        &:hover { background:#0A466F; }
+      }
+      .list-group {
+        a {
+          &:hover { background:#e6e6e6;}
+        }
+      }
+    }
+    .list-group-item { padding:0; background:#eee; border-radius: 0; border-left:0; border-right:0;
+      .list-group-item { border-left:0; border-right:0; }
+      a { padding:10px 15px 10px 25px; display: block; border-radius: 0;
+        &:hover { background:#e6e6e6; }
+      }
+      &.active { padding:0; background:#146094;
+        a { color:#fff; }
+      }
+    }
+    .list-group {
+      .list-group-item { padding:0; background:#ddd;
+        a { padding:10px 15px 10px 40px; }
+      }
+      .list-group {
+        .list-group-item {
+          a { padding:10px 15px 10px 55px; }
+        }
+        .list-group {
+          .list-group-item {
+            a { padding:10px 15px 10px 70px; }
+          }
+        }
+      }
+    }
+  }
+  .list-group-item.active { background:#146094; border:none;
+    a { color:#fff;
+      &:hover { background:#0A466F; }
+    }
+    .list-group {
+      a { color:#295376;  }
+    }
+  }
+  .menu.nav>li { padding:0;
+    &> { padding:10px 15px; }
+  }
+}

@@ -1,0 +1,13 @@
+name = WetKit Navbar
+description = Provide functionality for Navbar
+core = 7.x
+package = WetKit
+dependencies[] = navbar
+dependencies[] = responsive_preview
+stylesheets[all][] = css/wetkit-navbar.css
+
+; Information added by Drupal.org packaging script on 2019-03-29
+version = "7.x-4.9"
+core = "7.x"
+project = "wetkit_admin"
+datestamp = "1553881768"

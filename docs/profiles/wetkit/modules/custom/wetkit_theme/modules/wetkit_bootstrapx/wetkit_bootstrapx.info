@@ -1,0 +1,16 @@
+name = WetKit Bootstrapx
+description = Extended bootstrap configuration for use with Drupal WxT.
+package = WetKit
+core = 7.x
+dependencies[] = views_bootstrap
+scripts[] = js/alert.js
+scripts[] = js/collapse.js
+scripts[] = js/tooltip.js
+scripts[] = js/vertical_tabs.js
+
+; Information added by Drupal.org packaging script on 2016-08-22
+version = "7.x-4.5"
+core = "7.x"
+project = "wetkit_theme"
+datestamp = "1471826369"
+

@@ -1,0 +1,30 @@
+name = WetKit Menu
+description = Specify a mini panel to appear when a user hovers over a menu item for use with the Drupal Web Experience Toolkit (WxT).
+core = 7.x
+package = WetKit
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = menu
+dependencies[] = menu_attributes
+dependencies[] = menu_block
+dependencies[] = panels_mini
+dependencies[] = strongarm
+configure = admin/config/user-interface/wetkit_menu
+features[ctools][] = panels_mini:panels_default:1
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[menu_custom][] = megamenu
+features[menu_custom][] = sidebar
+features[panels_mini][] = wetkit_mini_panels_drupal_github
+features[panels_mini][] = wetkit_mini_panels_drupal_wcms
+features[panels_mini][] = wetkit_mini_panels_example_pages
+features[panels_mini][] = wetkit_mini_panels_home
+features[variable][] = menu_minipanels__enabled
+features[variable][] = menu_minipanels_admin_menu_enabled
+features[variable][] = menu_minipanels_devel_enabled
+
+; Information added by Drupal.org packaging script on 2019-05-29
+version = "7.x-4.7"
+core = "7.x"
+project = "wetkit_menu"
+datestamp = "1559173393"

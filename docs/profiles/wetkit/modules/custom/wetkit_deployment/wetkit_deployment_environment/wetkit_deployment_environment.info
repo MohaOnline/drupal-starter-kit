@@ -1,0 +1,17 @@
+name = WetKit Deployment Environment
+description = Server Environment Deployment Configuration for Drupal WxT.
+core = 7.x
+package = WetKit
+dependencies[] = ctools
+dependencies[] = environment_indicator
+features[ctools][] = environment_indicator:default_environment_indicator_environments:1
+features[environment_indicator_environment][] = development_environment
+features[environment_indicator_environment][] = production_environment
+features[environment_indicator_environment][] = quality_assurance_environment
+features[features_api][] = api:2
+
+; Information added by Drupal.org packaging script on 2019-05-29
+version = "7.x-4.23"
+core = "7.x"
+project = "wetkit_deployment"
+datestamp = "1559169809"

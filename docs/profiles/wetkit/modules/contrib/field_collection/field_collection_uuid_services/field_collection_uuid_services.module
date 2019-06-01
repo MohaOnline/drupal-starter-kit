@@ -1,0 +1,20 @@
+<?php
+/**
+ * @file
+ * Provide Services support for field collections.
+ */
+
+/**
+ * Implements hook_services_resources().
+ */
+function field_collection_uuid_services_services_resources() {
+  module_load_include('inc', 'field_collection_uuid_services', 'resources/field_collection.resource');
+
+  $resources = array(
+    '#api_version' => 3002,
+  );
+
+  $resources += _field_collection_resource_definition();
+
+  return $resources;
+}

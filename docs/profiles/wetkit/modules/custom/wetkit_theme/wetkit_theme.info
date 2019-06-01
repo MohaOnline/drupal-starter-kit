@@ -1,0 +1,26 @@
+name = WetKit Theme
+description = Helps with the overall theming configuration.
+core = 7.x
+package = WetKit
+dependencies[] = ctools
+dependencies[] = panels
+dependencies[] = strongarm
+dependencies[] = wetkit_bootstrapx
+dependencies[] = wetkit_emberx
+scripts[] = js/wetkit-accordion.js
+stylesheets[all][] = css/wetkit-featured.css
+stylesheets[all][] = css/wetkit-accordian.css
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[variable][] = theme_wetkit_bootstrap_settings
+features[variable][] = theme_wetkit_ember_settings
+features[variable][] = views_ui_custom_theme
+features[variable][] = views_ui_show_listing_filters
+features[variable][] = views_ui_show_master_display
+
+; Information added by Drupal.org packaging script on 2016-08-22
+version = "7.x-4.5"
+core = "7.x"
+project = "wetkit_theme"
+datestamp = "1471826369"
+

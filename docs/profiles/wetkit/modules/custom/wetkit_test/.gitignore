@@ -1,0 +1,19 @@
+# Ignore Behat Files
+behat.yml
+composer.lock
+composer.phar
+bin
+vendor
+
+# Ignore Development Files
+compass_app_log.txt
+*.DS_Store
+*.diff
+*.err
+*.orig
+*.log
+*.rej
+*.swo
+*.swp
+*.vi
+*.sass-cache

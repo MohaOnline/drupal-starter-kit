@@ -1,0 +1,124 @@
+/* =============================================================================
+   Ember
+   ========================================================================== */
+
+h1 {
+  font-size: 2.375em;
+}
+
+h2 {
+  font-size: 2.160em;
+}
+
+ul {
+  &.action-links {
+    padding-left: 0px;
+  }
+}
+
+#branding {
+  color: #FFF;
+  background-color: #555555;
+  .breadcrumb {
+    color: #fff;
+    margin: 0;
+    a {
+      color: #fff;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  ul.secondary {
+    a.active {
+      color: #008fdc;
+    }
+  }
+}
+
+#block-system-main {
+  .fieldset-wrapper {
+    .form-item-filters-per-page,
+    .form-item-filters-types {
+      overflow: hidden;
+    }
+  }
+}
+
+#page {
+  margin: 2.5rem 2.25em 0;
+}
+
+.page-media-format-form {
+  #page {
+   margin: 0.75rem 1.25em 0;
+  }
+}
+
+.form-item-name,
+.form-item-uid {
+  .description {
+    display: none;
+  }
+}
+
+fieldset {
+  &.collapsible {
+    .fieldset-legend {
+      &:before {
+        [dir="ltr"] & {
+          float: left;
+          margin-left: -1.2em;
+          border-color: transparent #008fdc #008fdc transparent;
+        }
+        [dir="rtl"] & {
+          float: right;
+          margin-right: -1.2em;
+          border-color: transparent transparent #008fdc #008fdc;
+        }
+      }
+    }
+  }
+}
+
+.drag .tabledrag-handle, .tabledrag-handle:hover, .tabledrag-handle:active, .tabledrag-handle:focus {
+  color: #008fdc;
+}
+
+/* Animated throbber */
+html.js {
+  .form-autocomplete {
+    background-image: url(../images/throbber-inactive.png);
+    background-repeat: no-repeat;
+    background-size: 1em;
+  }
+  &[dir="ltr"] {
+    .form-autocomplete {
+        background-position: 100% center; /* LTR */
+    }
+  }
+  &[dir="ltr"] {
+    .throbbing {
+      background: transparent url(../images/throbber-active.gif) no-repeat 0px center;
+      display: inline;
+      background-position: 100% center; /* LTR */
+    }
+  }
+}
+
+.token-tree .expander {
+  margin-left: 0px!important;
+}
+
+.wetkit-site-overview p {
+  max-width: none;
+}
+
+.ui-widget-overlay {
+  position: fixed;
+}
+
+.ui-dialog .ui-dialog-titlebar-close span {
+  margin-left: -8px;
+  margin-top: -8px;
+}

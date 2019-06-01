@@ -1,0 +1,478 @@
+/* =============================================================================
+   Bean
+   ========================================================================== */
+.bean-type-list {
+  list-style-type: none;
+  padding-left: 0px;
+}
+.bean-type-list li {
+  margin-bottom: 15px;
+}
+.bean-type-list li a {
+  font-weight: bold;
+}
+.bean-type-list li a .icon {
+  padding-left: 0px;
+}
+
+/* =============================================================================
+   CTools
+   ========================================================================== */
+.ctools-modal-dialog .modal-content {
+  background-color: #fff;
+}
+
+#modal-content .entity-translation-field-translatable {
+  padding: 0px;
+}
+#modal-content .panel-heading .panel-title {
+  color: black;
+  margin: 0px;
+}
+
+/* =============================================================================
+   Deploy
+   ========================================================================== */
+.deploy-panel div.status {
+  background-repeat: no-repeat;
+}
+.deploy-panel div.messages {
+  background-repeat: no-repeat;
+}
+
+/* =============================================================================
+   Features
+   ========================================================================== */
+.feature-lnks h3 a {
+  font-size: 16px;
+}
+
+/* =============================================================================
+   Fields
+   ========================================================================== */
+.checkbox-ul {
+  list-style: none;
+  padding: 0px;
+}
+
+.field-name-field-slide-link a {
+  font-weight: bold;
+}
+
+.field-name-field-application-screenshots ul {
+  display: inline-block;
+}
+
+/* =============================================================================
+   Misc
+   ========================================================================== */
+.draggable a.tabledrag-handle {
+  height: 1.1em;
+}
+
+.bootstrap-tabs-processed .vertical-tabs-list a {
+  text-decoration: none;
+  color: black;
+}
+
+table.sticky-header {
+  z-index: 10;
+}
+
+.ctools-dropbutton .ctools-content ul {
+  padding-left: 0px;
+}
+
+.pane-menus .item-list ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+.pane-taxonomy .item-list ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+h1.node-edit-title {
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.container-inline-date {
+  margin-top: 18px;
+}
+
+td.ctools-export-ui-operations .ctools-dropbutton {
+  position: relative;
+}
+
+.region-aykroyd-icon .field-name-field-taxonomy-icon {
+  font-size: 6em;
+  margin-top: 20px;
+}
+
+.region-aykroyd-content-left .wb-geomap-map {
+  margin: 0 0px 20px;
+  outline: none;
+}
+
+.region-aykroyd-content-left .wb-geomap-map .olMapViewport {
+  margin-top: -25px;
+}
+
+.page-admin-dashboard .pane-content .categories-links {
+  float: right;
+}
+
+#ui-datepicker-div {
+  z-index: 2 !important;
+}
+
+/* =============================================================================
+   Navbar
+   ========================================================================== */
+#navbar-administration .navbar-tray-horizontal .navbar-menu-add-bean li,
+#navbar-administration .navbar-tray-horizontal .navbar-menu-add-content li {
+  border-left: 1px solid #DDD;
+}
+
+body.navbar-tray-open.navbar-fixed.navbar-vertical #navbar-administration.navbar-oriented {
+  width: 0px;
+}
+
+/* =============================================================================
+   Panels
+   ========================================================================== */
+#page-manager-edit .page-manager-edit-operations li.active {
+  border-right: none !important;
+}
+
+.dashboard-content {
+  padding: 0;
+}
+
+.dashboard-title {
+  font-weight: 300;
+  font-size: 2em;
+  margin-bottom: .5em;
+}
+
+.dashboard-entry .dashboard-link {
+  font-size: 120%;
+  font-weight: normal;
+}
+
+.dashboard-block {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.panels-dashboard .links {
+  margin-top: 0;
+}
+
+#page-manager-edit .page-manager-edit-operations li li.operation-first {
+  border-top: none !important;
+}
+
+div.dashboard-block {
+  /* panels dashboard, not dashboard */
+  padding: 0;
+  background: transparent;
+  border: 0px solid transparent;
+  margin-bottom: 0;
+}
+
+dl.page-manager-wizards {
+  margin: 0 0 1em;
+  padding: 0 0 0 2.5em;
+}
+
+dl.page-manager-wizards dt {
+  font-size: 1em;
+  font-weight: 500;
+}
+
+dl.page-manager-wizards dd {
+  margin-left: 0;
+}
+
+#page-manager-edit .page-manager-wrapper,
+#page-manager-edit .page-manager-tabs,
+#page-manager-edit .page-manager-edit-operations ul,
+#page-manager-edit .page-manager-edit-operations ul li {
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+
+#page-manager-edit .page-manager-edit-operations .inside {
+  border: 0px solid transparent;
+}
+
+#page-manager-edit .page-manager-edit-operations li {
+  background: transparent;
+  border: 0px solid transparent;
+}
+
+#page-manager-edit .page-manager-edit-operations li.changed,
+#page-manager-edit .page-manager-edit-operations li.changed-group .page-manager-group-title {
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+
+#page-manager-edit table tr.even {
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+
+#page-manager-edit .page-manager-ajax-pad {
+  background: transparent;
+  border-left: 1px solid #ddd;
+}
+
+#page-manager-edit .actions li a {
+  color: inherit;
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+
+#page-manager-edit .page-manager-changed {
+  float: left;
+  /* LTR */
+  font-style: italic;
+  color: inherit;
+  padding-left: 1em;
+  padding-right: 22px;
+  background-color: transparent;
+  background-image: none;
+  border: 0px solid transparent;
+}
+
+#page-manager-list-pages-form .form-select,
+#page-manager-list-pages-form input,
+#ctools-export-ui-list-form .form-select,
+#ctools-export-ui-list-form input {
+  display: inline-block;
+}
+
+#page-manager-list-pages-form .form-item,
+#ctools-export-ui-list-form .form-item {
+  padding-right: .25em;
+  float: none;
+  display: inline-block;
+}
+
+#edit-pages-apply,
+#edit-pages-reset,
+#ctools-export-ui-list-form .form-submit {
+  margin-top: 0;
+  float: none;
+}
+
+#panels-dnd-main .panel-region .label {
+  border-style: none;
+  position: relative;
+}
+
+body form#page-manager-list-pages-form, body form#ctools-export-ui-list-form {
+  margin: 1em 0;
+}
+
+.pane-bean-blog-stay-connected ul {
+  list-style: none;
+}
+
+.panels-layouts-checkboxes .radio + .radio {
+  margin-top: 10px;
+}
+
+/* =============================================================================
+   Modules
+   ========================================================================== */
+.admin-disabled {
+  color: #800;
+}
+
+.admin-enabled {
+  color: #080;
+}
+
+.admin-missing {
+  color: #f00;
+}
+
+.incompatible {
+  font-weight: bold;
+}
+
+.admin-requirements,
+.admin-required {
+  font-size: 0.9em;
+  color: #444;
+}
+
+/* =============================================================================
+   System
+   ========================================================================== */
+fieldset:first-child {
+  border-top: 1px solid #e5e5e5;
+}
+
+fieldset.panel {
+  padding-top: 0px;
+}
+
+.pane-page-messages {
+  margin-top: 30px;
+}
+
+.tabs--primary.nav-tabs {
+  margin-bottom: 1.5em;
+}
+
+.node-form #node-edit .pane-form .pane-content {
+  clear: both;
+  margin-top: 1.5em;
+}
+
+ul.pagination > li > a.progress-disabled {
+  float: left;
+}
+
+#edit-log-wrapper {
+  height: inherit;
+}
+
+.composite-form-label {
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+/* =============================================================================
+   Webform
+   ========================================================================== */
+.webform-container-inline .form-control {
+  display: inline;
+}
+
+/* =============================================================================
+   WxT
+   ========================================================================== */
+.form-item .input-group-addon .icon {
+  padding-left: 0px;
+}
+
+.page-node-edit.theme-gcweb main.container {
+  background-color: #FFF;
+}
+
+.admin-views-view .views-field-views-bulk-operations .checkbox input[type=checkbox],
+.admin-views-view .views-table .checkbox input[type=checkbox] {
+  position: inherit;
+  margin-left: 0px;
+}
+.admin-views-view .form-item .input-group-addon {
+  width: inherit;
+}
+
+.table .checkbox input[type=checkbox] {
+  position: inherit;
+  margin-left: 0px;
+}
+
+.home .blog .row h2 a,
+.home .blog .row h3 a,
+.home .blog .row h4 a {
+  font-size: 29px;
+}
+
+.btn .icon {
+  padding-left: 0px;
+}
+
+.theme-gcweb .panel-primary > .panel-heading {
+  background-color: #335075;
+  border-color: #335075;
+}
+
+.pane-block .alert-info .btn {
+  color: #FFF;
+}
+
+.theme-gcweb .page-header {
+  border-bottom: 1px solid #af3c43;
+  margin-top: 0.5em;
+}
+
+.wb-mb-links .glyphicon-search:before {
+  float: left;
+}
+
+.wb-srch-multi {
+  padding-top: 1em;
+}
+
+.wb-srch-multi button, .wb-srch-multi input {
+  border-radius: 0;
+}
+
+.wb-srch-multi button {
+  background-color: #335075;
+  border: 0;
+  border-color: #335075;
+  font-size: 17px;
+}
+
+.wb-srch-multi button:active, .wb-srch-multi button:focus, .wb-srch-multi button:hover {
+  background: #243850;
+}
+
+.wb-srch-multi .glyphicon {
+  top: auto;
+  vertical-align: middle;
+}
+
+.wb-srch-multi input {
+  float: left;
+  background-color: #e0e0e0;
+  border-color: #e0e0e0;
+  border-right: 0;
+  border-style: solid;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  color: #555;
+  margin-right: -4px;
+  min-width: 246px;
+  position: relative;
+}
+
+.xxsmallview .wb-srch-multi input {
+  min-width: initial;
+}
+
+.item-list .pagination > li:first-child > span,
+.item-list .pagination > li:last-child > span {
+  padding: 10px 16px;
+}
+
+.legendColorBox {
+  width: 30px;
+}
+
+.icon {
+  font-size: inherit;
+  min-height: 0px;
+  min-width: 0px;
+}
+
+.action-links .btn {
+  min-height: 0px;
+}
+
+/* =============================================================================
+   WxT Mobile Menu
+   ========================================================================== */
+#sec-pnl ul li.no-sect {
+  display: none;
+}

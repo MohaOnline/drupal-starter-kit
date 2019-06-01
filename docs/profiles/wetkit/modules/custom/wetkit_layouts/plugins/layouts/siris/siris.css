@@ -1,0 +1,38 @@
+/**
+ * @file
+ * siris panel layout
+**/
+
+.siris-container {
+  margin-bottom: 1em;
+}
+
+.siris-column {
+  width: 51.064%;
+  float: left;
+}
+
+.siris-column-inner {
+  margin-right: 20px;
+}
+
+.siris-column2 {
+  width: 48.936%;
+}
+
+.siris-column2-inner {
+  margin-right: 0;
+}
+
+/* iPhone [portrait + landscape] */
+@media only screen and (max-width: 480px) {
+  .siris-column,
+  .siris-column2 {
+    width: 100%;
+    float: none;
+  }
+
+  .siris-column-inner {
+    margin-right: 0;
+  }
+}

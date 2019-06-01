@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the WetKit Splash feature.
+ */
+
+include_once 'wetkit_splash.features.inc';

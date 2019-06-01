@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bean>
+    <english>
+        <content>
+            <source_id>field_collection_slides_eng_1</source_id>
+            <host_entity_id>bean_slideshow_eng_1</host_entity_id>
+            <slide_headline>Canada Day Festivities</slide_headline>
+            <slide_teaser><![CDATA[<p>Come on and come all to the Canada Day Event.</p>]]></slide_teaser>
+            <image>
+                <media_field>
+                    <key>bean_slideshow_eng_1_img_1</key>
+                    <filename>canada_flag.jpg</filename>
+                    <alt>Canada Day Event</alt>
+                </media_field>
+            </image>
+            <link>
+                <link_title><![CDATA[Canada Day Festivities]]></link_title>
+                <link_url><![CDATA[www.canadaday.gc.ca]]></link_url>
+            </link>
+        </content>
+        <content>
+            <source_id>field_collection_slides_eng_2</source_id>
+            <host_entity_id>bean_slideshow_eng_1</host_entity_id>
+            <slide_headline>National Aboriginal Awareness Week</slide_headline>
+            <slide_teaser><![CDATA[<p>The National Aboriginal Awareness Week kicks off.</p>]]></slide_teaser>
+            <image>
+                <media_field>
+                    <key>bean_slideshow_eng_2_img_1</key>
+                    <filename>aboriginal_awareness.jpg</filename>
+                    <alt>Aboriginal Awareness Day</alt>
+                </media_field>
+            </image>
+            <link>
+                <link_title><![CDATA[National Aboriginal Awareness Week]]></link_title>
+                <link_url><![CDATA[https://www.aadnc-aandc.gc.ca]]></link_url>
+            </link>
+        </content>
+    </english>
+    <french>
+        <content>
+            <source_id>field_collection_slides_fra_1</source_id>
+            <host_entity_id>bean_slideshow_fra_1</host_entity_id>
+            <slide_headline>Fête du Canada</slide_headline>
+            <slide_teaser><![CDATA[<p>Allez et venez tous à la Journée de l'événement du Canada.</p>]]></slide_teaser>
+            <image>
+                <media_field>
+                    <key>bean_slideshow_fra_1_img_1</key>
+                    <filename>canada_flag.jpg</filename>
+                    <alt>Canada Day Event</alt>
+                </media_field>
+            </image>
+            <link>
+                <link_title><![CDATA[Fête du Canada]]></link_title>
+                <link_url><![CDATA[http://feteducanada.gc.ca]]></link_url>
+            </link>
+        </content>
+        <content>
+            <source_id>field_collection_slides_fra_2</source_id>
+            <host_entity_id>bean_slideshow_fra_1</host_entity_id>
+            <slide_headline>Semaine nationale de sensibilisation aux cultures autochtones</slide_headline>
+            <slide_teaser><![CDATA[<p>La semaine de sensibilisation nationale des Autochtones.</p>]]></slide_teaser>
+            <image>
+                <media_field>
+                    <key>bean_slideshow_fra_2_img_1</key>
+                    <filename>aboriginal_awareness.jpg</filename>
+                    <alt>Journée de sensibilisation aux cultures autochtones</alt>
+                </media_field>
+            </image>
+            <link>
+                <link_title><![CDATA[Semaine nationale de sensibilisation aux cultures autochtones]]></link_title>
+                <link_url><![CDATA[https://www.aadnc-aandc.gc.ca]]></link_url>
+            </link>
+        </content>
+    </french>
+</bean>

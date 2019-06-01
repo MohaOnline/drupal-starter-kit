@@ -1,0 +1,37 @@
+/**
+ * @file
+ * Styling for the add content icon.
+ */
+
+/**
+ * Toolbar tab icon.
+ */
+.navbar-bar .navbar-icon-add-content:before {
+  background-image: url("../icons/bebebe/plus.svg");
+}
+.no-svg .navbar-bar .navbar-icon-add-content:before {
+  background-image: url("../icons/bebebe/plus.png");
+}
+.navbar-bar .navbar-icon-add-content:active:before,
+.navbar-bar .navbar-icon-add-content.navbar-active:before {
+  background-image: url("../icons/ffffff/plus.svg");
+}
+.no-svg .navbar-bar .navbar-icon-add-content:active:before,
+.no-svg .navbar-bar .navbar-icon-add-content.navbar-active:before {
+  background-image: url("../icons/ffffff/plus.png");
+}
+
+.navbar-bar .navbar-icon-add-bean:before {
+  background-image: url("../icons/bebebe/plus.svg");
+}
+.no-svg .navbar-bar .navbar-icon-add-bean:before {
+  background-image: url("../icons/bebebe/plus.png");
+}
+.navbar-bar .navbar-icon-add-bean:active:before,
+.navbar-bar .navbar-icon-add-bean.navbar-active:before {
+  background-image: url("../icons/ffffff/plus.svg");
+}
+.no-svg .navbar-bar .navbar-icon-add-bean:active:before,
+.no-svg .navbar-bar .navbar-icon-add-bean.navbar-active:before {
+  background-image: url("../icons/ffffff/plus.png");
+}

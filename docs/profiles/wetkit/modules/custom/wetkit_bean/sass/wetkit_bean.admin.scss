@@ -1,0 +1,41 @@
+/**
+ * Stylesheet for WetKit Bean (Admin)
+ */
+
+.field-name-field-slide-image,
+.field-name-field-slide-headline,
+.field-name-field-slide-teaser {
+  margin-right: 2%;
+}
+
+.field-name-field-slide-link .link-field-column,
+.field-name-field-slide-link .form-item div.description {
+  white-space: normal;
+}
+.field-name-field-slide-link .link-field-url {
+  clear: left;
+}
+
+.field-name-field-slideshow-slides .field-add-more-submit {
+  display: none;
+}
+
+.field-multiple-table fieldset.redirect-list {
+  display: none;
+}
+
+.bean-slide-processed .overview .overview-column  {
+  width: 32%;
+  float: left;
+}
+.bean-slide-processed .overview-column .label-wrapper {
+  display: none;
+}
+.bean-slide-processed .overview-column.title {
+  margin-top: 1em;
+}
+.bean-slide-processed .overview-column img {
+  float: left;
+  width: 70px;
+  height: 70px;
+}

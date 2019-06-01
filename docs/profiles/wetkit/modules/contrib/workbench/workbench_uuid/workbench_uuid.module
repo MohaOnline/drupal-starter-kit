@@ -1,0 +1,16 @@
+<?php
+/**
+ * @file
+ * Code for the Workbench UUID module.
+ */
+
+ /**
+ * Implements hook_uuid_entities_features_export_entity_alter().
+ */
+function workbench_uuid_entities_features_export_entity_alter(&$entity, $entity_type) {
+  foreach (array('workbench_moderation', 'my_revision', 'workbench_access', 'workbench_access_scheme', 'workbench_access_by_role') as $property) {
+    if (isset($entity->{$property})) {
+      unset($entity->{$property});
+    }
+  }
+}

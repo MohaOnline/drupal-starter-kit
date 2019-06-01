@@ -1,0 +1,293 @@
+<?php
+
+/**
+ * @file
+ * Module file for integrating OG with WetKit.
+ */
+
+include_once 'wetkit_og.features.inc';
+
+/**
+ * Implements hook_workbench_moderation_states_next_alter().
+ *
+ * Defines new states according to user permissions.
+ */
+function wetkit_og_workbench_moderation_states_next_alter(&$states, $current_state, $context) {
+
+  // Node still does not exist, it is being created.
+  if (!isset($context['node']->nid)) {
+    return;
+  }
+
+  // Get group nodes.
+  $groups = og_get_entity_groups($entity_type = 'node', $context['node'], array(OG_STATE_ACTIVE));
+
+  // If we are creating a node, we don't have groups associated yet.
+  if (empty($groups)) {
+    return;
+  }
+
+  $groups = node_load_multiple(array_values($groups['node']));
+  $possible_states = workbench_moderation_state_labels();
+
+  foreach ($groups as $group) {
+    foreach ($possible_states as $state_key => $state_name) {
+
+      if (!strcmp($state_key, $current_state)) {
+        continue;
+      }
+
+      $permission = t('moderate content from @from_state to @to_state',
+                      array('@from_state' => $current_state, '@to_state' => $state_key));
+
+      if (og_user_access_entity($permission, 'node', $group)) {
+        $states[$state_key] = $state_name;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_og_permission().
+ *
+ * Defines new permissions in OG that allows to define new transitions.
+ */
+function wetkit_og_og_permission() {
+  $perms = array();
+  $transitions = workbench_moderation_transitions();
+
+  // Test all possible transitions.
+  foreach ($transitions as $transition) {
+    $from_state = $transition->from_name;
+    $to_state = $transition->to_name;
+
+    $from_state_label = workbench_moderation_state_label($from_state);
+    $to_state_label = workbench_moderation_state_label($to_state);
+
+    // Always set a permission to perform all moderation states.
+    $perms["moderate content from $from_state to $to_state"] = array(
+      'title' => t('Moderate all content from @from_state to @to_state',
+          array('@from_state' => $from_state_label, '@to_state' => $to_state_label)));
+  }
+
+  /* Define a permission to view all group unpublished content to allow users
+  to see content they can moderate */
+  $perms['View all unpublished content'] = array(
+    'title' => t('View all unpublished group content'));
+
+  return $perms;
+}
+
+/**
+ * Implements hook_node_access_records().
+ *
+ * This function is responsible to define the access records that allow users
+ * of the same group to access unpublished nodes. Grants are only set if node
+ * is unpublished.
+ */
+function wetkit_og_node_access_records($node) {
+
+  if (!isset($node->workbench_moderation['my_revision'])) {
+    return;
+  }
+
+  // If revision is not published we need to grant access to group.
+  if (!$node->workbench_moderation['my_revision']->published) {
+
+    $grants = array();
+    // Fet the groups defined in the node.
+    $groups = og_get_entity_groups($entity_type = 'node', $node);
+
+    // For each group set a grant.
+    if (isset ($groups['node']) && !empty($groups)) {
+      foreach ($groups['node'] as $gid => $value) {
+        $grants[] = array(
+          'realm' => 'wetkit_og',
+          'gid' => $value,
+          'grant_view' => 1,
+          'grant_update' => 0,
+          'grant_delete' => 0,
+          'priority' => 2,
+        );
+      }
+      return $grants;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_grants().
+ *
+ * Will pass grants to every group the user belongs to
+ */
+function wetkit_og_node_grants($account, $op) {
+
+  $grants = array();
+
+  // Gets the user groups.
+  $group_ids = og_get_entity_groups('user', $account, array(OG_STATE_ACTIVE));
+
+  // Foreach group that user is a member.
+  if (isset($group_ids) && !empty($group_ids['node'])) {
+
+    $groups = entity_load('node', array_values(reset($group_ids)));
+    foreach ($groups as $group_id => $group) {
+
+      // Check if the user can access unpublished content in this group
+      // if that is correct, access is granted.
+      if (og_user_access_entity('View all unpublished content', 'node', $group)) {
+        $grants['wetkit_og'][] = $group_id;
+      }
+    }
+  }
+
+  return $grants;
+}
+
+/**
+ * Implements hook_help().
+ */
+function wetkit_og_help($path, $arg) {
+  switch ($path) {
+    case 'admin/config/workbench/moderation':
+      if (module_exists('og_ui')) {
+        return '<p>' . t('Workbench moderation OG is active. You will find new
+          permissions available to configure in !link.', array(
+            '!link' => l(t('OG Permissions overview'),
+                       'admin/config/group/permissions'))) . '</p>';
+      }
+      else {
+        return '<p>' . t('Workbench moderation OG is active. However you need to configure its permissions and workflow using OG Ui Module which is not active. Please enable it.') . '</p>';
+      }
+  }
+}
+
+/**
+ * Implements hook_views_query_alter().
+ */
+function wetkit_og_views_query_alter($view, &$query) {
+  if ($view->name == 'group_members' && $view->current_display == 'block_1') {
+    $query->add_where_expression('AND', "node_og_membership.uid != users_og_membership.uid");
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function wetkit_og_entity_info_alter(&$entity_info) {
+  // Alter the og membership label callback.
+  $entity_info['og_membership']['label callback'] = 'wetkit_og_og_membership_label';
+}
+
+/**
+ * Label callback; Return the label of OG membership entity.
+ */
+function wetkit_og_og_membership_label($og_membership) {
+  $wrapper = entity_metadata_wrapper('og_membership', $og_membership);
+  $params = array(
+    '@entity' => $wrapper->entity->label(),
+    '@group' => $wrapper->group->label(),
+  );
+  return t('@entity is part of group @group', $params);
+}
+
+/**
+ * Check if the user is admin of a given organic group.
+ *
+ * @param int $uid
+ *   The user uid
+ * @param int $gid
+ *   The user gid
+ *
+ * @return bool
+ *   Returns a boolean.
+ */
+function _wetkit_og_check_user_is_admin_of_group($uid, $gid) {
+  $query = db_select('og_users_roles', 'og');
+  $query->condition('gid', $gid, '=');
+  $query->condition('uid', $uid, '=');
+  $query->distinct();
+  $query->fields('og', array('rid'));
+  $result = $query->execute();
+  $role_id = $result->fetchAssoc();
+  if ($role_id['rid'] == 3) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Get group ids a given user is admin of.
+ *
+ * @param int $uid
+ *   The user uid
+ *
+ * @return bool
+ *   Returns group ids.
+ */
+function _wetkit_og_get_group_ids_current_user_is_admin_of($uid) {
+  $query = db_select('og_users_roles', 'og');
+  $query->condition('rid', '3', '=');
+  $query->condition('uid', $uid, '=');
+  $query->fields('og', array('gid'));
+  $result = $query->execute();
+  while ($record = $result->fetchAssoc()) {
+    $gids[] = $record;
+  }
+  return $gids;
+}
+
+/**
+ * Get all groups current user is member of.
+ *
+ * @return array
+ *   Associated group ids.
+ */
+function _wetkit_og_get_logged_in_user_group_ids() {
+  global $user;
+  if ($user->uid != 0) {
+    $group_id = '+';
+    $current_user = user_load($user->uid);
+    $get_group_ids = $current_user->og_user_node[LANGUAGE_NONE];
+    foreach ($get_group_ids as $get_group_id) {
+      $group_id .= $get_group_id['target_id'] . '+';
+    }
+    $group_id = ltrim($group_id, '+');
+    $group_id = rtrim($group_id, '+');
+    return $group_id;
+  }
+}
+
+/**
+ * Get Users with given user roles and organic group.
+ *
+ * @param int $rid
+ *   The user rid
+ * @param int $gid
+ *   The user gid
+ *
+ * @return array
+ *   Returns a user object.
+ */
+function _wetkit_og_get_users_on_role_and_group_basis($rid, $gid) {
+  $users = entity_load('user');
+  foreach ($users as $user) {
+    if (is_array($user->og_user_node)) {
+      if (array_key_exists($rid, $user->roles)) {
+        foreach ($user->og_user_node[LANGUAGE_NONE] as $key => $values) {
+          if (in_array($gid, $values)) {
+            $get_user[] = $user;
+          }
+        }
+      }
+    }
+  }
+  if (isset($get_user)) {
+    return $get_user;
+  }
+  else {
+    return FALSE;
+  }
+}

@@ -1,0 +1,1265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<menu_handler>
+    <menu>
+        <language>
+            <section>
+                <source_id>megamenu</source_id>
+                <menu_name>megamenu</menu_name>
+                <title>Mega Menu (Insert)</title>
+                <description>Mega Menu (Insert).</description>
+            </section>
+            <section>
+                <source_id>megamenu_focus</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <title>Mega Menu (Focus)</title>
+                <description>Mega Menu (Focus).</description>
+            </section>
+            <section>
+                <source_id>sidebar</source_id>
+                <menu_name>sidebar</menu_name>
+                <title>Sidebar</title>
+                <description>Sidebar Menu.</description>
+            </section>
+        </language>
+    </menu>
+    <menu_links>
+        <english>
+            <!-- BEGIN MAIN MENU -->
+            <section>
+                <source_id>main_menu_eng_1</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Home</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_2</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Demo pages</link_title>
+                <link_path>content/drupal-wxt</link_path>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_2_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupal WxT</link_title>
+                <link_path>content/drupal-wxt</link_path>
+                <parent>main_menu_eng_2</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_2_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupal Platform</link_title>
+                <link_path>content/drupal-platform</link_path>
+                <parent>main_menu_eng_2</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_2_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupal Collaboration</link_title>
+                <link_path>content/drupal-collaboration</link_path>
+                <parent>main_menu_eng_2</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_3</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Core WxT</link_title>
+                <link_path>http://wet-boew.github.io</link_path>
+                <parent>main_menu_eng_3</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_3_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Community</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>main_menu_eng_3</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_3_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Documentation</link_title>
+                <link_path>http://wet-boew.github.io</link_path>
+                <parent>main_menu_eng_3</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_3_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Implementations</link_title>
+                <link_path>http://wet-boew.github.io/wet-boew/docs/ref/wetsites-en.html</link_path>
+                <parent>main_menu_eng_3</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_3_d</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Roadmap</link_title>
+                <link_path>http://wet-boew.github.io/wet-boew/docs/versions/rdmp-en.html</link_path>
+                <parent>main_menu_eng_3</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_4</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupal WxT</link_title>
+                <link_path>http://wet-boew.github.io</link_path>
+                <parent>main_menu_eng_4</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_4_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Community</link_title>
+                <link_path>https://drupal.org/project/wetkit</link_path>
+                <parent>main_menu_eng_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_4_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>GitHub</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew-drupal</link_path>
+                <parent>main_menu_eng_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_4_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Documentation</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>main_menu_eng_4</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_5</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Resources</link_title>
+                <link_path>http://drupal.org</link_path>
+                <parent>main_menu_eng_5</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_5_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupalize.me</link_title>
+                <link_path>https://drupalize.me</link_path>
+                <parent>main_menu_eng_5</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_5_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Build a module</link_title>
+                <link_path>http://buildamodule.com/</link_path>
+                <parent>main_menu_eng_5</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_5_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Panels</link_title>
+                <link_path>https://www.codeenigma.com/community/blog/panels-module-you-ought-love-it</link_path>
+                <parent>main_menu_eng_5</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_eng_5_d</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupal API</link_title>
+                <link_path>https://api.drupal.org</link_path>
+                <parent>main_menu_eng_5</parent>
+                <weight>4</weight>
+            </section>
+            <!-- END MAIN MENU -->
+            <!-- BEGIN MEGAMENU FOCUS -->
+            <section>
+                <source_id>megamenu_focus_eng_1</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>Drupal WCMS</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_focus_eng_1_a</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>Focus</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_focus_eng_1</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_focus_eng_1_b</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>Link 1</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_focus_eng_1_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_focus_eng_1_c</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>Link 2</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_focus_eng_1_a</parent>
+                <weight>2</weight>
+            </section>
+            <!-- END MEGAMENU FOCUS -->
+            <!-- BEGIN MEGAMENU -->
+            <section>
+                <source_id>megamenu_eng_1</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Home</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_1_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Front Page</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_eng_1</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal WCMS</link_title>
+                <link_path>front</link_path>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal in Government</link_title>
+                <link_path>http://groups.drupal.org/government-sites</link_path>
+                <parent>megamenu_eng_2</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_b</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal Showcase</link_title>
+                <link_path>http://www.drupalshowcase.com/</link_path>
+                <parent>megamenu_eng_2</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_c</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal Whitepapers</link_title>
+                <link_path>https://www.acquia.com/resources/whitepapers</link_path>
+                <parent>megamenu_eng_2</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_d</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal Blogs</link_title>
+                <link_path>http://drupal.org/planet</link_path>
+                <parent>megamenu_eng_2</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_e</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Why Panels</link_title>
+                <link_path>http://www.codeenigma.com/blog/drupal-panels-you-ought-to-love-them</link_path>
+                <parent>megamenu_eng_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_f</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>CTools Plugins</link_title>
+                <link_path>http://internetdevels.com/blog/ctools-content-type</link_path>
+                <parent>megamenu_eng_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_g</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal.org</link_title>
+                <link_path>http://drupal.org</link_path>
+                <parent>megamenu_eng_2</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_h</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Spark Distribution</link_title>
+                <link_path>http://drupal.org/project/panopoly</link_path>
+                <parent>megamenu_eng_2_g</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_i</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal WxT Distribution</link_title>
+                <link_path>http://drupal.org/project/wetkit</link_path>
+                <parent>megamenu_eng_2_g</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_j</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Panels Documentation</link_title>
+                <link_path>http://drupal.org/node/496278</link_path>
+                <parent>megamenu_eng_2_g</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_2_k</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Panels Workflow</link_title>
+                <link_path>http://drupal.org/node/1704266</link_path>
+                <parent>megamenu_eng_2_g</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>GitHub</link_title>
+                <link_path>https://github.com</link_path>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>WET-BOEW</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>megamenu_eng_3</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_b</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Main Project Page</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>megamenu_eng_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_c</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Wiki Page</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>megamenu_eng_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_d</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Issues Queue</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>megamenu_eng_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_e</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>WET-BOEW-DRUPAL</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew-drupal</link_path>
+                <parent>megamenu_eng_3</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_f</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Main Project Page</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>megamenu_eng_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_g</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Wiki Page</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>megamenu_eng_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_3_i</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Issues Queue</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>megamenu_eng_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_4</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Example Pages</link_title>
+                <link_path>front</link_path>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_4_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Demo pages</link_title>
+                <link_path>content/drupal-wxt</link_path>
+                <parent>megamenu_eng_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_4_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal WxT</link_title>
+                <link_path>content/drupal-wxt</link_path>
+                <parent>megamenu_eng_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_4_b</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal Platform</link_title>
+                <link_path>content/drupal-platform</link_path>
+                <parent>megamenu_eng_4</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_eng_4_c</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal Collaboration</link_title>
+                <link_path>content/drupal-collaboration</link_path>
+                <parent>megamenu_eng_4</parent>
+                <weight>3</weight>
+            </section>
+            <!-- END MEGAMENU -->
+            <!-- BEGIN SIDEBAR -->
+            <section>
+                <source_id>sidebar_eng_1</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Home</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_1_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Front Page</link_title>
+                <link_path>front</link_path>
+                <parent>sidebar_eng_1</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal WCMS</link_title>
+                <link_path>front</link_path>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal in Government</link_title>
+                <link_path>http://groups.drupal.org/government-sites</link_path>
+                <parent>sidebar_eng_2</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_b</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal Showcase</link_title>
+                <link_path>http://www.drupalshowcase.com/</link_path>
+                <parent>sidebar_eng_2</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_c</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal Whitepapers</link_title>
+                <link_path>https://www.acquia.com/resources/whitepapers</link_path>
+                <parent>sidebar_eng_2</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_d</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal Blogs</link_title>
+                <link_path>http://drupal.org/planet</link_path>
+                <parent>sidebar_eng_2</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_e</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Why Panels</link_title>
+                <link_path>http://www.codeenigma.com/blog/drupal-panels-you-ought-to-love-them</link_path>
+                <parent>sidebar_eng_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_f</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>CTools Plugins</link_title>
+                <link_path>http://internetdevels.com/blog/ctools-content-type</link_path>
+                <parent>sidebar_eng_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_g</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal.org</link_title>
+                <link_path>http://drupal.org</link_path>
+                <parent>sidebar_eng_2</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_h</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Spark Distribution</link_title>
+                <link_path>http://drupal.org/project/panopoly</link_path>
+                <parent>sidebar_eng_2_g</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_i</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal WxT Distribution</link_title>
+                <link_path>http://drupal.org/project/wetkit</link_path>
+                <parent>sidebar_eng_2_g</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_j</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Panels Documentation</link_title>
+                <link_path>http://drupal.org/node/496278</link_path>
+                <parent>sidebar_eng_2_g</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_2_k</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Panels Workflow</link_title>
+                <link_path>http://drupal.org/node/1704266</link_path>
+                <parent>sidebar_eng_2_g</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>GitHub</link_title>
+                <link_path>https://github.com</link_path>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>WET-BOEW</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>sidebar_eng_3</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_b</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Main Project Page</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>sidebar_eng_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_c</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Wiki Page</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>sidebar_eng_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_d</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Issues Queue</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>sidebar_eng_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_e</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>WET-BOEW-DRUPAL</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew-drupal</link_path>
+                <parent>sidebar_eng_3</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_f</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Main Project Page</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>sidebar_eng_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_g</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Wiki Page</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>sidebar_eng_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_3_i</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Issues Queue</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>sidebar_eng_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_4</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Demo pages</link_title>
+                <link_path>content/drupal-wxt</link_path>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_4_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal WxT</link_title>
+                <link_path>content/drupal-wxt</link_path>
+                <parent>sidebar_eng_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_4_b</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal Platform</link_title>
+                <link_path>content/drupal-platform</link_path>
+                <parent>sidebar_eng_4</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_eng_4_c</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal Collaboration</link_title>
+                <link_path>content/drupal-collaboration</link_path>
+                <parent>sidebar_eng_4</parent>
+                <weight>3</weight>
+            </section>
+            <!-- END SIDEBAR -->
+        </english>
+        <french>
+            <!-- BEGIN MAIN MENU -->
+            <section>
+                <source_id>main_menu_fra_1</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Accueil</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_2</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Démo pages</link_title>
+                <link_path>contenu/wxt-drupal</link_path>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_2_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>WxT Drupal</link_title>
+                <link_path>contenu/wxt-drupal</link_path>
+                <parent>main_menu_fra_2</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_2_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Application Drupal</link_title>
+                <link_path>contenu/application-drupal</link_path>
+                <parent>main_menu_fra_2</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_2_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Collaboration Drupal</link_title>
+                <link_path>contenu/cooperation-drupal</link_path>
+                <parent>main_menu_fra_2</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_3</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>WxT Core</link_title>
+                <link_path>http://wet-boew.github.io</link_path>
+                <parent>main_menu_fra_3</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_3_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Communauté</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>main_menu_fra_3</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_3_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Documentation</link_title>
+                <link_path>http://wet-boew.github.io</link_path>
+                <parent>main_menu_fra_3</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_3_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Implémentations</link_title>
+                <link_path>http://wet-boew.github.io/wet-boew/docs/ref/wetsites-fr.html</link_path>
+                <parent>main_menu_fra_3</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_3_d</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Roadmap</link_title>
+                <link_path>http://wet-boew.github.io/wet-boew/docs/versions/rdmp-fr.html</link_path>
+                <parent>main_menu_fra_3</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_4</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>WxT Drupal</link_title>
+                <link_path>http://wet-boew.github.io</link_path>
+                <parent>main_menu_fra_4</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_4_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Communauté</link_title>
+                <link_path>https://drupal.org/project/wetkit</link_path>
+                <parent>main_menu_fra_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_4_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>GitHub</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew-drupal</link_path>
+                <parent>main_menu_fra_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_4_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Documentation</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>main_menu_fra_4</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_5</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Ressources</link_title>
+                <link_path>http://drupal.org</link_path>
+                <parent>main_menu_fra_5</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_5_a</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupalize.me</link_title>
+                <link_path>https://drupalize.me</link_path>
+                <parent>main_menu_fra_5</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_5_b</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Construire un module</link_title>
+                <link_path>http://buildamodule.com/</link_path>
+                <parent>main_menu_fra_5</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_5_c</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Panels</link_title>
+                <link_path>https://www.codeenigma.com/community/blog/panels-module-you-ought-love-it</link_path>
+                <parent>main_menu_fra_5</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>main_menu_fra_5_d</source_id>
+                <menu_name>main-menu</menu_name>
+                <link_title>Drupal API</link_title>
+                <link_path>https://api.drupal.org</link_path>
+                <parent>main_menu_fra_5</parent>
+                <weight>4</weight>
+            </section>
+            <!-- END MAIN MENU -->
+            <!-- BEGIN MEGAMENU FOCUS -->
+            <section>
+                <source_id>megamenu_focus_fra_1</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>WCMS Drupal</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_focus_fra_1_a</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>Focus</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_focus_fra_1</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_focus_fra_1_b</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>Liens 1</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_focus_fra_1_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_focus_fra_1_c</source_id>
+                <menu_name>megamenu-focus</menu_name>
+                <link_title>Liens 2</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_focus_fra_1_a</parent>
+                <weight>2</weight>
+            </section>
+            <!-- END MEGAMENU FOCUS -->
+            <!-- BEGIN MEGAMENU -->
+            <section>
+                <source_id>megamenu_fra_1</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Accueil</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_1_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Premiére Page</link_title>
+                <link_path>front</link_path>
+                <parent>megamenu_fra_1</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>WCMS Drupal</link_title>
+                <link_path>front</link_path>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Gouvernement Drupal</link_title>
+                <link_path>http://groups.drupal.org/government-sites</link_path>
+                <parent>megamenu_fra_2</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_b</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Showcase Drupal</link_title>
+                <link_path>http://www.drupalshowcase.com/</link_path>
+                <parent>megamenu_fra_2</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_c</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Whitepapers Drupal</link_title>
+                <link_path>https://www.acquia.com/resources/whitepapers</link_path>
+                <parent>megamenu_fra_2</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_d</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Blogues du Drupal</link_title>
+                <link_path>http://drupal.org/planet</link_path>
+                <parent>megamenu_fra_2</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_e</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Pourquoi Panels</link_title>
+                <link_path>http://www.codeenigma.com/blog/drupal-panels-you-ought-to-love-them</link_path>
+                <parent>megamenu_fra_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_f</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>CTools Plugins</link_title>
+                <link_path>http://internetdevels.com/blog/ctools-content-type</link_path>
+                <parent>megamenu_fra_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_g</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal.org</link_title>
+                <link_path>http://drupal.org</link_path>
+                <parent>megamenu_fra_2</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_h</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Spark Distribution</link_title>
+                <link_path>http://drupal.org/project/panopoly</link_path>
+                <parent>megamenu_fra_2_g</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_i</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Drupal WxT Distribution</link_title>
+                <link_path>http://drupal.org/project/wetkit</link_path>
+                <parent>megamenu_fra_2_g</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_j</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Panels Documentation</link_title>
+                <link_path>http://drupal.org/node/496278</link_path>
+                <parent>megamenu_fra_2_g</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_2_k</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Panels Workflow</link_title>
+                <link_path>http://drupal.org/node/1704266</link_path>
+                <parent>megamenu_fra_2_g</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>GitHub</link_title>
+                <link_path>https://github.com</link_path>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>WET-BOEW</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>megamenu_fra_3</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_b</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Page principale du projet</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>megamenu_fra_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_c</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Page Wiki</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>megamenu_fra_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_d</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Problème</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>megamenu_fra_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_e</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>WET-BOEW-DRUPAL</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew-drupal</link_path>
+                <parent>megamenu_fra_3</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_f</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Page principale du projet</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>megamenu_fra_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_g</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Page Wiki</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>megamenu_fra_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_3_i</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Problème</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>megamenu_fra_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_4</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Pages d'Example</link_title>
+                <link_path>contenu/wxt-drupal</link_path>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_4_a</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>WxT Drupal</link_title>
+                <link_path>contenu/wxt-drupal</link_path>
+                <parent>megamenu_fra_4</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_4_b</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Application Drupal</link_title>
+                <link_path>contenu/application-drupal</link_path>
+                <parent>megamenu_fra_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>megamenu_fra_4_c</source_id>
+                <menu_name>megamenu</menu_name>
+                <link_title>Coopération Drupal</link_title>
+                <link_path>contenu/cooperation-drupal</link_path>
+                <parent>megamenu_fra_4</parent>
+                <weight>3</weight>
+            </section>
+            <!-- END MEGAMENU -->
+            <!-- BEGIN SIDEBAR -->
+            <section>
+                <source_id>sidebar_fra_1</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Accueil</link_title>
+                <link_path>front</link_path>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_1_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Premiére Page</link_title>
+                <link_path>front</link_path>
+                <parent>sidebar_fra_1</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>WCMS Drupal</link_title>
+                <link_path>front</link_path>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Gouvernement Drupal</link_title>
+                <link_path>http://groups.drupal.org/government-sites</link_path>
+                <parent>sidebar_fra_2</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_b</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Showcase Drupal</link_title>
+                <link_path>http://www.drupalshowcase.com/</link_path>
+                <parent>sidebar_fra_2</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_c</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Whitepapers Drupal</link_title>
+                <link_path>https://www.acquia.com/resources/whitepapers</link_path>
+                <parent>sidebar_fra_2</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_d</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Blogues du Drupal</link_title>
+                <link_path>http://drupal.org/planet</link_path>
+                <parent>sidebar_fra_2</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_e</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Pourquoi Panels</link_title>
+                <link_path>http://www.codeenigma.com/blog/drupal-panels-you-ought-to-love-them</link_path>
+                <parent>sidebar_fra_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_f</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>CTools Plugins</link_title>
+                <link_path>http://internetdevels.com/blog/ctools-content-type</link_path>
+                <parent>sidebar_fra_2_d</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_g</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal.org</link_title>
+                <link_path>http://drupal.org</link_path>
+                <parent>sidebar_fra_2</parent>
+                <weight>5</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_h</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Spark Distribution</link_title>
+                <link_path>http://drupal.org/project/panopoly</link_path>
+                <parent>sidebar_fra_2_g</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_i</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Drupal WxT Distribution</link_title>
+                <link_path>http://drupal.org/project/wetkit</link_path>
+                <parent>sidebar_fra_2_g</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_j</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Panels Documentation</link_title>
+                <link_path>http://drupal.org/node/496278</link_path>
+                <parent>sidebar_fra_2_g</parent>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_2_k</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Panels Workflow</link_title>
+                <link_path>http://drupal.org/node/1704266</link_path>
+                <parent>sidebar_fra_2_g</parent>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>GitHub</link_title>
+                <link_path>https://github.com</link_path>
+                <weight>3</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>WET-BOEW</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>sidebar_fra_3</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_b</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Page principale du projet</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>sidebar_fra_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_c</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Page Wiki</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>sidebar_fra_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_d</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Problème</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>sidebar_fra_3_a</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_e</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>WET-BOEW-DRUPAL</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew-drupal</link_path>
+                <parent>sidebar_fra_3</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_f</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Page principale du projet</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew</link_path>
+                <parent>sidebar_fra_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_g</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Page Wiki</link_title>
+                <link_path>http://drupalwxt.github.io</link_path>
+                <parent>sidebar_fra_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_3_i</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Problème</link_title>
+                <link_path>https://github.com/wet-boew/wet-boew/issues</link_path>
+                <parent>sidebar_fra_3_e</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_4</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Démo pages</link_title>
+                <link_path>front</link_path>
+                <weight>4</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_4_a</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>WxT Drupal</link_title>
+                <link_path>contenu/wxt-drupal</link_path>
+                <parent>sidebar_fra_4</parent>
+                <weight>1</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_4_b</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Application Drupal</link_title>
+                <link_path>contenu/application-drupal</link_path>
+                <parent>sidebar_fra_4</parent>
+                <weight>2</weight>
+            </section>
+            <section>
+                <source_id>sidebar_fra_4_c</source_id>
+                <menu_name>sidebar</menu_name>
+                <link_title>Coopération Drupal</link_title>
+                <link_path>contenu/cooperation-drupal</link_path>
+                <parent>sidebar_fra_4</parent>
+                <weight>3</weight>
+            </section>
+            <!-- END SIDEBAR -->
+        </french>
+    </menu_links>
+</menu_handler>

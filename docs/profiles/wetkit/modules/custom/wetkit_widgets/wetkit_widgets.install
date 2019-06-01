@@ -1,0 +1,72 @@
+<?php
+/**
+ * @file
+ * wetkit_widgets.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_widgets_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_widgets_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Media has been converted to use many sub modules.
+ */
+function wetkit_widgets_update_7101() {
+  if (!module_exists('media_wysiwyg')) {
+    module_enable(array('media_wysiwyg'));
+  }
+  if (!module_exists('media_wysiwyg_view_mode')) {
+    module_enable(array('media_wysiwyg_view_mode'));
+  }
+}
+
+/**
+ * Media + File Entity hook update correction.
+ */
+function wetkit_widgets_update_7102() {
+  // Media (7226) + File Entity (7215) functionality was reverted and hooks
+  // reused for different functionality which is a bad practice and forces
+  // us to fix the issue here.
+
+  // Accommodate the introduction of a new permission for media browser.
+  $roles = user_roles(FALSE, 'create files');
+  foreach ($roles as $rid => $role) {
+    user_role_grant_permissions($rid, array('access media browser'));
+  }
+
+  // Changing a primary key serial field to an int
+  // @see https://drupal.org/node/190027
+  db_add_index('file_metadata', 'temp', array('fid'));
+  db_drop_primary_key('file_metadata');
+  db_change_field('file_metadata', 'fid', 'fid', array(
+    'description' => 'The {file_managed}.fid of the metadata.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  ));
+  db_add_primary_key('file_metadata', array('fid', 'name'));
+  db_drop_index('file_metadata', 'temp');
+}
+
+/**
+ * Media + File Entity hook update correction.
+ */
+function wetkit_widgets_update_7103() {
+  // Media (7226) + File Entity (7215) functionality was reverted and hooks
+  // reused for different functionality which is a bad practice and forces
+  // us to fix the issue here.
+
+  drupal_set_installed_schema_version('file_entity', '7215');
+  drupal_set_installed_schema_version('media', '7226');
+}

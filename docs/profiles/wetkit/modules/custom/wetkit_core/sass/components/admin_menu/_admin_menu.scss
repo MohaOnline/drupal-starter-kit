@@ -1,0 +1,25 @@
+/* Global Admin Menu Fixes */
+
+#admin-menu {
+  .dropdown {
+    li {
+      li.expandable {
+        ul {
+          margin: -22px 0 0 160px !important;
+        }
+      }
+    }
+  }
+  .shortcut-toolbar {
+    text-shadow:#222 0 1px 1px;
+    background-repeat:repeat-x;
+    background-image:-webkit-gradient(linear,50% 0,50% 100%,color-stop(0%,#666),color-stop(100%,#545454))!important;
+    background-image:-webkit-linear-gradient(#666,#545454)!important;
+    background-image:-moz-linear-gradient(#666,#545454)!important;
+    background-image:-o-linear-gradient(#666,#545454)!important;
+    background-image:linear-gradient(#666,#545454)!important;
+    @if $legacy-support-for-ie8 {
+      @include filter-gradient(#666, #545454);
+    }
+  }
+}

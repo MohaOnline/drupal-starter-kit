@@ -1,0 +1,121 @@
+/* =============================================================================
+   System
+   ========================================================================== */
+
+.breadcrumb {
+  span {
+    font-size: 1.1em;
+  }
+  margin-bottom: 1em;
+}
+
+.primary {
+  li {
+    margin-bottom: 1em;
+  }
+  > [class*="active"] {
+    border-color: #008fdc;
+  }
+  > li:hover {
+    border-color: #ffffff;
+  }
+}
+
+th.active a:before {
+  border-bottom: 2px solid #008fdc;
+  top: -2px;
+  background-color: white;
+  height: 100%;
+  z-index: -1;
+}
+
+.tabs.primary {
+  margin: 1em 0 1em 0;
+  padding: 0;
+}
+
+ul.secondary {
+  margin: 0 -2.25em 0 -2.25em;
+  padding: .5em 3.5em;
+  background-color: #3b3b3b;
+  box-shadow: none;
+  a.active {
+    color: #008fdc;
+  }
+}
+
+#tab-bar {
+  ul.secondary{
+    height: 20.9px;
+    .language-toggle {
+      float: right;
+      margin: 0px;
+      a {
+        color: #FFF;
+      }
+    }
+  }
+}
+
+div.vertical-tabs .vertical-tabs-pane fieldset legend {
+  display: block;
+}
+
+.form-managed-file .form-file {
+  margin-bottom: 1em;
+}
+
+.theme-default h3 {
+  color: #008fdc;
+}
+
+.page-node-edit {
+  .ui-widget-overlay {
+    position: fixed;
+  }
+}
+
+.page-node-add,
+.page-node-edit {
+  h1 {
+    &#wb-cont {
+      margin-top: 0px;
+    }
+  }
+}
+
+fieldset.collapsible .fieldset-legend:after {
+  color: #008fdc;
+}
+
+.form-select {
+  &,
+  &:focus,
+  &:active {
+    background-repeat: no-repeat;
+    background-position: right center;
+  }
+
+  &[multiple='multiple'] {
+    background-image: none;
+  }
+}
+
+table.sticky-header {
+  position:relative !important;
+}
+
+.content {
+  .left, .right {
+    &.clearfix {
+      clear: none;
+    }
+  }
+  .system-themes-list {
+    .theme-selector {
+      &.clearfix {
+        clear: none;
+      }
+    }
+  }
+}

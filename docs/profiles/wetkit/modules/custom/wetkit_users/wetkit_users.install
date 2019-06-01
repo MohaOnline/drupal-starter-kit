@@ -1,0 +1,20 @@
+<?php
+/**
+ * @file
+ * wetkit_users.install
+ */
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_users_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_users_') === 0) {
+      variable_del($key);
+    }
+  }
+}

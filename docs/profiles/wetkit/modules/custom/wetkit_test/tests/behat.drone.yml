@@ -1,0 +1,8 @@
+imports:
+    - behat.common.yml
+
+default:
+  extensions:
+    Behat\MinkExtension:
+      base_url: http://127.0.0.1:8888
+      files_path: './profiles/wetkit/modules/custom/wetkit_test/tests'

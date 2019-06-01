@@ -1,0 +1,28 @@
+name = WetKit Demo
+description = Demo content and functionality to help show Drupal WxT functionality.
+core = 7.x
+package = WetKit
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = locale
+dependencies[] = page_manager
+dependencies[] = shortcut
+dependencies[] = strongarm
+dependencies[] = views
+dependencies[] = views_bootstrap
+dependencies[] = views_content
+dependencies[] = wetkit_pages
+features[ctools][] = page_manager:pages_default:1
+features[ctools][] = strongarm:strongarm:1
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[page_manager_pages][] = wetkit_demo_panel_front
+features[variable][] = site_frontpage
+features[views_view][] = wetkit_demo
+features[views_view][] = wxt_theme
+
+; Information added by Drupal.org packaging script on 2018-04-17
+version = "7.x-4.4"
+core = "7.x"
+project = "wetkit_demo"
+datestamp = "1523926409"

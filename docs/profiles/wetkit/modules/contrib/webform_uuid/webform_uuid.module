@@ -1,0 +1,184 @@
+<?php
+/**
+ * @file
+ * Code for the Webform UUID module.
+ */
+
+/**
+ * Implements hook_entity_uuid_load().
+ */
+function webform_entity_uuid_load(&$entities, $entity_type) {
+  if ($entity_type != 'node') {
+    return;
+  }
+
+  foreach ($entities as $entity) {
+    if (empty($entity->webform)) {
+      continue;
+    }
+
+    // Set the webform nid reference to the parent uuid.
+    $entity->webform['nid'] = $entity->uuid;
+    // Set all the webform component nids to the uuid.
+    foreach ($entity->webform['components'] as $i => $component) {
+      $entity->webform['components'][$i]['nid'] = $entity->uuid;
+    }
+
+    // Set all the webform email nids to the uuid.
+    foreach ($entity->webform['emails'] as $i => $email) {
+      $entity->webform['emails'][$i]['nid'] = $entity->uuid;
+    }
+
+    // Pass webform_validation info if the module is enabled.
+    // Based on a patch in https://drupal.org/node/1038208.
+    if (!module_exists('webform_validation')) {
+      return;
+    }
+
+    $entity->webform['validation'] = array();
+    // Get all validation rules.
+    $validation_rules = db_query("SELECT * FROM {webform_validation_rule} WHERE nid = :nid", array(':nid' => $entity->nid));
+    $rules = new stdClass();
+    $rules->components = array();
+
+    foreach ($validation_rules as $rule) {
+      $rule->nid = $entity->uuid;
+      // Get all validation components.
+      $validation_components = db_query("SELECT * FROM {webform_validation_rule_components} WHERE ruleid = :rid", array(':rid' => $rule->ruleid));
+
+      foreach ($validation_components as $component) {
+        $rule->components[] = $component;
+      }
+      // Append the validation rule to the validation array.
+      $entity->webform['validation'][] = $rule;
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_uuid_presave().
+ */
+function webform_entity_uuid_presave(&$entity, $entity_type) {
+  // Only edit nodes that have webforms.
+  if ($entity_type != 'node' || empty($entity->webform)) {
+    return;
+  }
+
+  $entity->webform['nid'] = current(entity_get_id_by_uuid($entity_type, array($entity->webform['nid'])));
+  foreach ($entity->webform['components'] as $i => $component) {
+    $entity->webform['components'][$i]['nid'] = $entity->webform['nid'];
+  }
+
+  foreach ($entity->webform['emails'] as $i => $email) {
+    $entity->webform['emails'][$i]['nid'] = $entity->webform['nid'];
+  }
+}
+
+/**
+ * Implements hook_webform_submission_presave().
+ */
+function webform_uuid_webform_submission_presave(&$entity, &$submission) {
+  if (uuid_is_valid($entity->webform['nid'])) {
+    $entity->webform['nid'] = current(entity_get_id_by_uuid('node', array($entity->webform['nid'])));
+  }
+}
+
+/**
+ * Implements hook_entity_uuid_save().
+ */
+function webform_entity_uuid_save($entity, $entity_type) {
+  // Only edit nodes that have webforms.
+  if ($entity_type != 'node' || empty($entity->webform)) {
+    return;
+  }
+
+  $entity->webform['nid'] = $entity->nid;
+  // Import validation rules if they exist.
+  if (empty($entity->webform['validation'])) {
+    return;
+  }
+
+  foreach ($entity->webform['validation'] as $rule) {
+    $rule['nid'] = $entity->webform['nid'];
+    // There is no uuid for a rule, so attempt to see if a rule exists already.
+    // This is imperfect because what if a rule changes dramatically?
+    // How would you delete the previous version?
+    // For now assume nid  validator  data = unique id.
+    // For now assume nid + validator + data = unique id.
+    // TODO: turn a rule into an entity or manually assign a UUID.
+    $rule_exists_ruleid = db_query("SELECT ruleid FROM {webform_validation_rule} WHERE nid = :nid AND  validator = :validator AND data = :data", array(
+      ':nid' => $rule['nid'],
+      ':validator' => $rule['validator'],
+      ':data' => $rule['data'],
+    ))->fetchField();
+
+    if (!is_numeric($rule_exists_ruleid)) {
+      // $rule['ruleid'] will be updated after node creation in hook_nodeapi().
+      unset($rule['ruleid']);
+      drupal_write_record('webform_validation_rule', $rule);
+      // Set $rule_exists_ruleid to our new ruleid for the components to use.
+      $rule_exists_ruleid = $rule['ruleid'];
+    }
+
+    foreach ($rule['components'] as $component) {
+      // If this pairing already exists, don't add it again.
+      $rule_component_exists = db_query("SELECT count(ruleid) FROM {webform_validation_rule_components} WHERE ruleid = :rid AND cid = :cid", array(
+        ':rid' => $rule_exists_ruleid,
+        ':cid' => $component['cid'],
+      ))->fetchField();
+      if ($rule_component_exists == 0) {
+        db_query("INSERT INTO {webform_validation_rule_components} (ruleid, cid) VALUES (:rid, :cid)", array(
+          ':rid' => $rule_exists_ruleid,
+          ':cid' => $component['cid'],
+        ));
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_uuid_node_features_export_render_alter().
+ */
+function webform_uuid_node_features_export_render_alter(&$export, &$node, $module) {
+  if (empty($node->webform)) {
+    return;
+  }
+
+  $export->webform['nid'] = $node->uuid;
+  foreach ($export->webform['components'] as $i => $component) {
+    $export->webform['components'][$i]['nid'] = $export->webform['nid'];
+  }
+
+  // Pass webform_validation info if the module is enabled.
+  // Based on a patch in https://drupal.org/node/1038208.
+  if (!module_exists('webform_validation')) {
+    return;
+  }
+
+  $node->webform['validation'] = array();
+  // Get all validation rules.
+  $validation_rules = db_query("SELECT * FROM {webform_validation_rule} WHERE nid = :nid", array(':nid' => $node->nid));
+  $rules = new stdClass();
+  $rules->components = array();
+
+  foreach ($validation_rules as $rule) {
+    $rule->nid = $node->uuid;
+    // Get all validation components.
+    $validation_components = db_query("SELECT * FROM {webform_validation_rule_components} WHERE ruleid = :rid", array(':rid' => $rule->ruleid));
+
+    foreach ($validation_components as $component) {
+      $rule->components[] = $component;
+    }
+    // Append the validation rule to the validation array.
+    $export->webform['validation'][] = $rule;
+  }
+}
+
+function webform_uuid_form_alter(&$form, &$form_state, $form_id)
+{
+   if (!empty($form['#node']) && !empty($form['#node']->uuid))
+   {
+      //Change the CSS ID that identifies this form for cross-server use from webform-NID to webform-UUID-{UUID} -RyanC
+      $form['#attributes']['id'] = 'webform-uuid-'.$form['#node']->uuid;
+   }
+}

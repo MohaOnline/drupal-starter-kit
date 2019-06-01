@@ -1,0 +1,289 @@
+<?php
+/**
+ * @file
+ * wetkit_core.install.
+ */
+
+include_once 'wetkit_core.block.inc';
+
+/**
+ * Implements hook_requirements().
+ */
+function wetkit_core_requirements($phase) {
+
+  // Kick us off.
+  $requirements = array();
+
+  // Ensure translations don't break at install time.
+  $t = get_t();
+
+  // Let's require more memory and force Drupal core to accept it.
+  $memory_limit = ini_get('memory_limit');
+  $wetkit_memory_limit = '196M';
+  $requirements['wetkit_core_memory_limit'] = array(
+    'title' => $t('PHP memory limit'),
+    'value' => $memory_limit == -1 ? $t('-1 (Unlimited)') : $memory_limit,
+    'weight' => 0,
+  );
+
+  if ($memory_limit && $memory_limit != -1 && parse_size($memory_limit) < parse_size($wetkit_memory_limit)) {
+    $description = '';
+    if ($phase == 'install') {
+      $description = $t('Consider increasing your PHP memory limit to %memory_minimum_limit to help prevent errors in the installation process.', array('%memory_minimum_limit' => $wetkit_memory_limit));
+    }
+    elseif ($phase == 'update') {
+      $description = $t('Consider increasing your PHP memory limit to %memory_minimum_limit to help prevent errors in the update process.', array('%memory_minimum_limit' => $wetkit_memory_limit));
+    }
+    elseif ($phase == 'runtime') {
+      $description = $t('Depending on your configuration, Drupal can run with a %memory_limit PHP memory limit. However, a %memory_minimum_limit PHP memory limit or above is recommended, especially if your site uses additional custom or contributed modules.', array('%memory_limit' => $memory_limit, '%memory_minimum_limit' => $wetkit_memory_limit));
+    }
+
+    if (!empty($description)) {
+      if ($php_ini_path = get_cfg_var('cfg_file_path')) {
+        $description .= ' ' . $t('Increase the memory limit by editing the memory_limit parameter in the file %configuration-file and then restart your web server (or contact your system administrator or hosting provider for assistance).', array('%configuration-file' => $php_ini_path));
+      }
+      else {
+        $description .= ' ' . $t('Contact your system administrator or hosting provider for assistance with increasing your PHP memory limit.');
+      }
+
+      $requirements['wetkit_core_memory_limit']['description'] = $description . ' ' . $t('See the <a href="@url">Drupal requirements</a> for more information.', array('@url' => 'http://drupal.org/requirements'));
+      $requirements['wetkit_core_memory_limit']['severity'] = REQUIREMENT_WARNING;
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ */
+function wetkit_core_install() {
+  // Add login link for users to log in.
+  $item = array(
+    'link_path' => 'user/login',
+    'link_title' => 'Log in',
+    'menu_name' => 'user-menu',
+  );
+  menu_link_save($item);
+
+  if (module_exists('block')) {
+    // Set Default Blocks.
+    // TODO: Convert these blocks to beans.
+    _wetkit_core_default_blocks();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_core_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_core_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Implementations of hook_update_N().
+ */
+
+/**
+ * Install the uuid_link contrib module.
+ */
+function wetkit_core_update_7101() {
+  if (!module_exists('uuid_link')) {
+    module_enable(array('uuid_link'));
+  }
+}
+
+/**
+ * Remove the panels_breadcrumb contrib module.
+ */
+function wetkit_core_update_7102() {
+  if (module_exists('panels_breadcrumbs')) {
+    module_disable(array('panels_breadcrumbs'));
+    drupal_uninstall_modules(array('panels_breadcrumbs'));
+  }
+}
+
+/**
+ * UUID has exported specific contrib module logic.
+ *
+ * Additionally installs the field_collection
+ * contrib module.
+ */
+function wetkit_core_update_7103() {
+  if (!module_exists('workbench_uuid')) {
+    module_enable(array('workbench_uuid'));
+  }
+  if (!module_exists('field_collection')) {
+    module_enable(array('field_collection'));
+  }
+  if (!module_exists('field_collection_uuid')) {
+    module_enable(array('field_collection_uuid'));
+  }
+}
+
+/**
+ * Install the wetkit update module.
+ */
+function wetkit_core_update_7104() {
+  if (!module_exists('wetkit_update')) {
+    module_enable(array('wetkit_update'));
+  }
+}
+
+/**
+ * Install the wetkit update module.
+ */
+function wetkit_core_update_7105() {
+  variable_set('panopoly_magic_pane_add_preview', 3);
+}
+
+/**
+ * Change the schema for Pathauto Persist from varchar to int.
+ */
+function wetkit_core_update_7106() {
+  // Change the entity_id column to int from varchar
+  // following work in [#936222].
+  db_drop_primary_key('pathauto_state');
+  db_change_field('pathauto_state', 'entity_id', 'entity_id',
+    array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'description' => 'An entity ID.'));
+  db_add_primary_key('pathauto_state', array('entity_type', 'entity_id'));
+}
+
+/**
+ *  Enable new modules for 4.x branch.
+ */
+function wetkit_core_update_7401() {
+  // Enable new modules for 4.x branch.
+   $modules = array(
+    'fontawesome',
+    'icon',
+    'icon_field',
+    'views_bootstrap',
+    'wetkit_splash'
+  );
+  foreach ($modules as $module) {
+    if (!module_exists($module)) {
+      module_enable(array($module));
+    }
+  }
+}
+
+/**
+ * Install the wetkit update module.
+ */
+function wetkit_core_update_7402() {
+  variable_set('panopoly_magic_pane_add_preview', 3);
+}
+
+/**
+ * Change the schema for Pathauto Persist from varchar to int.
+ */
+function wetkit_core_update_7403() {
+  // Change the entity_id column to int from varchar
+  // following work in [#936222].
+  db_drop_primary_key('pathauto_state');
+  db_change_field('pathauto_state', 'entity_id', 'entity_id',
+    array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'description' => 'An entity ID.'));
+  db_add_primary_key('pathauto_state', array('entity_type', 'entity_id'));
+}
+
+/**
+ * Remove the deprecated accessibility module.
+ */
+function wetkit_core_update_7404() {
+   $modules = array(
+    'accessibility_wysiwyg',
+    'accessibility',
+  );
+  foreach ($modules as $module) {
+    if (module_exists($module)) {
+      module_disable(array($module));
+      drupal_uninstall_modules(array($module));
+    }
+  }
+}
+
+/**
+ * Rename "Complexity" constraint to "Character Types".
+ */
+function wetkit_core_update_7405() {
+  $result = db_query("SELECT pid, policy, warning FROM {password_policy}");
+  foreach ($result as $row) {
+    $pid = $row->pid;
+    $policy = $row->policy;
+    $policy = unserialize($policy);
+    $warning = str_replace(' ', '', $row->warning);
+    if (isset($policy['complexity'])) {
+      $policy['character_types'] = $policy['complexity'];
+      unset($policy['complexity']);
+      $policy = serialize($policy);
+      db_update('password_policy')
+        ->fields(array('policy' => $policy))
+        ->condition('pid', $pid)
+        ->execute();
+    }
+    db_update('password_policy')
+      ->fields(array('warning' => $warning))
+      ->condition('pid', $pid)
+      ->execute();
+  }
+}
+
+/**
+ * Updates to WorkBench Moderation and schema alignment with v1.4.
+ */
+function wetkit_core_update_7406() {
+  $workbench_schema_version = drupal_get_installed_schema_version('workbench_moderation');
+
+  // Run only when Workbench version < 7010.
+  if ($workbench_schema_version < '7010') {
+    $fields = array(
+      'id' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'description' => 'Primary Key: Unique workbench_moderation transition identifier.',
+      ),
+      'name' => array(
+        'description' => 'The machine-readable name of this workbench_moderation transition.',
+        'type' => 'varchar',
+        'length' => 255,
+        'initial' => 'from_name',
+      ),
+    );
+    // Add index too.
+    $index = array(
+      'primary key' => array('id'),
+    );
+
+    db_add_field('workbench_moderation_transitions', 'id', $fields['id'], $index);
+    db_add_field('workbench_moderation_transitions', 'name', $fields['name']);
+
+    // Fill in the blanks.
+    db_update('workbench_moderation_transitions')
+      ->expression('name', "CONCAT(from_name, '-', to_name)")
+      ->execute();
+  }
+}
+
+/**
+ * Updates to Field Collection and schema alignment with v1.0-beta12
+ */
+function wetkit_core_update_7407() {
+  // We were early adopters of Entity Translation integration:
+  // http://drupal.org/files/issues/field_collection_field-1344672-510.patch
+  // However a different hook_update_n was committed before patch merged so
+  // we are ensuring that the new code in past hook gets called.
+  $field_collection_version = drupal_get_installed_schema_version('field_collection');
+
+  // Run only when Field Collection version < 7008.
+  if ($field_collection_version < '7008') {
+    drupal_set_installed_schema_version('field_collection', '7006');
+  }
+}

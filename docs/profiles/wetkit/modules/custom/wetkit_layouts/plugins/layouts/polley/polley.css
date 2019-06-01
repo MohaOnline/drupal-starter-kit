@@ -1,0 +1,15 @@
+/* Desktop view */
+@media screen and (min-width: 768px) and (min-device-width: 768px) {
+  #panels-dnd-main .polley #wb-main {width: 960px;}
+  #panels-dnd-main .polley .region-polley-content-listing {float:right;}
+}
+@media screen and (min-width: 768px) and (max-width: 959px) and (min-device-width: 768px) {
+  #panels-dnd-main .polley #wb-main {width: 768px;}
+  #panels-dnd-main .polley .region-polley-content-listing { float:right;}
+}
+@media screen and (min-width: 1200px) and (min-device-width: 768px) {
+  #panels-dnd-main .polley #wb-main {width: 1200px; }
+  #panels-dnd-main .polley .region-polley-content-listing {width: 768px; float:right; }
+  #panels-dnd-main .polley .region-polley-bottom-banner { clear:both; }
+}
+}

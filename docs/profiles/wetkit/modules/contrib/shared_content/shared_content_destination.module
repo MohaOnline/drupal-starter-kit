@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * @file
+ * Allows content creators to push entities to this site from others.
+ */
+
+/**
+ * Implements hook_drupal_goto_alter().
+ */
+function shared_content_destination_drupal_goto_alter(&$path, &$options, &$http_response_code) {
+  // Search for UUID-based redirects and modify them if necessary.
+  if (!empty($options['external'])) {
+    $parts = parse_url($path);
+    if (!empty($parts['path'])) {
+      $old_path = ltrim($parts['path'], '/');
+      $args = arg(NULL, $old_path);
+      // The UUID redirect module substitutes UUIDs for the node ID in its
+      // redirects, so look for a valid UUID in the argument before modifying
+      // the redirect.
+      if (count($args) > 2 && $args[0] == 'node' && uuid_is_valid($args[1])) {
+        $modified = FALSE;
+        // When the UUID Redirect module redirects paths like node/%/revisions
+        // to the editing site, it will often lead to an access denied message
+        // (if the content only has one revision on the editing site). To
+        // prevent that, force the redirect to go to node/%/moderation instead,
+        // which the user should always have access to (and which the Workbench
+        // Moderation module on the editing site uses in place of
+        // node/%/revisions anyway).
+        // @todo We should not assume all content with revisions is using
+        //    Workbench Moderation on the source site.
+        if ($args[2] == 'revisions') {
+          $args[2] = 'moderation';
+          $modified = TRUE;
+        }
+        // Node delete links should go to the corresponding edit URL instead,
+        // since we have a checkbox on the edit form for deleting content from
+        // a particular site. (Redirecting to the actual delete form would be
+        // very confusing because it has the effect of deleting the content
+        // from all sites, which the administrator would not expect if they got
+        // there by following a delete link on an individual site.)
+        elseif ($args[2] == 'delete') {
+          $args[2] = 'edit';
+          $modified = TRUE;
+        }
+        if ($modified) {
+          $new_path = implode('/', $args);
+          $path = str_replace($old_path, $new_path, $path);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_get_item_alter().
+ */
+function shared_content_destination_menu_get_item_alter(&$router_item, $path, $original_map) {
+  // There are a number of paths like node/%/revisions/X which aren't likely to
+  // be linked from anywhere in the case of shared content (given that we are
+  // redirecting the main node/X/revisions path to the editing site already).
+  // Just in case they are linked from somewhere, though, deny access here
+  // (since for shared content, all revision management should happen on the
+  // editing site).
+  if (count($original_map) > 3 && $original_map[0] == 'node' && is_numeric($original_map[1]) && $original_map[2] == 'revisions') {
+    // Make sure this is shared content before denying access.
+    if (($node = node_load($original_map[1])) && shared_content_destination_entity_is_shared('node', $node)) {
+      $router_item['access_callback'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_menu_contextual_links_alter().
+ */
+function shared_content_destination_menu_contextual_links_alter(&$links, $router_item, $root_path) {
+  // Do not display contextual delete links for shared content. We want
+  // administrators to use the edit links instead, as per discussion in
+  // shared_content_destination_drupal_goto_alter().
+  if ($root_path == 'node/%' && isset($links['node-delete']['href'])) {
+    $node = menu_get_object('node', 1, $links['node-delete']['href']);
+    if ($node && shared_content_destination_entity_is_shared('node', $node)) {
+      unset($links['node-delete']);
+    }
+  }
+}
+
+/**
+ * Implements hook_uuid_redirect_skip_redirect().
+ */
+function shared_content_destination_uuid_redirect_skip_redirect($entity_type, $entity, $menu_info) {
+  // Only redirect to the source site if the entity is shared.
+  return !shared_content_destination_entity_is_shared($entity_type, $entity);
+}
+
+/**
+ * Determines if this entity is shared with other sites.
+ *
+ * @param $entity_type
+ *   The type of entity.
+ * @param $entity
+ *   The entity object.
+ *
+ * @return
+ *   TRUE if the entity is shared with other sites (i.e., was deployed to this
+ *   site from the source site), or FALSE if it isn't.
+ */
+function shared_content_destination_entity_is_shared($entity_type, $entity) {
+  $is_shared = FALSE;
+
+  if (isset($entity->field_shared_content)) {
+    $wrapper = entity_metadata_wrapper($entity_type, $entity);
+    if ($wrapper->field_shared_content->value()) {
+      $is_shared = TRUE;
+    }
+  }
+
+  return $is_shared;
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function shared_content_destination_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'entity_uuid_presave') {
+    // Move this module's hook_entity_uuid_presave() implementation to the
+    // beginning of the list, so it can run before the UUID module's own
+    // implementation takes irreversible steps (e.g., saves deployed files).
+    $implementations = array('shared_content_destination' => $implementations['shared_content_destination']) + $implementations;
+  }
+}
+
+/**
+ * Implements hook_entity_uuid_presave().
+ */
+function shared_content_destination_entity_uuid_presave($entity, $entity_type) {
+  // User accounts may not be shared between sites, so we won't necessarily be
+  // able to associate deployed content with a particular user account by UUID.
+  // Try to do it anyway, but if it fails, fall back on assigning the content
+  // to user 1.
+  if (isset($entity->uid)) {
+    entity_property_uuid_to_id($entity, 'user', array('uid'));
+    if (uuid_is_valid($entity->uid)) {
+      $entity->uid = 1;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function shared_content_destination_field_widget_form_alter(&$element, &$form_state, $context) {
+  // Hide the internal shared content field whenever the widget is displayed,
+  // since this field is for internal use only (so the API can keep track of
+  // the fact that this entity was deployed from somewhere else).
+  // Administrators should not be able to change this directly after an entity
+  // has been deployed. (Nor should they be able to change the default value in
+  // the field UI as in shared_content_source_field_widget_form_alter(); on the
+  // destination site, the default value should always be FALSE, with it set to
+  // TRUE during deployment itself.)
+  if ($context['field']['field_name'] == 'field_shared_content') {
+    $element['#access'] = FALSE;
+  }
+}

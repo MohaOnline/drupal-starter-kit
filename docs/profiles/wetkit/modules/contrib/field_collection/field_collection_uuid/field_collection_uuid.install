@@ -1,0 +1,46 @@
+<?php
+/**
+ * @file
+ * Field Collection UUID installation and schema hooks.
+ */
+
+/**
+ * Implements hook_schema_alter().
+ */
+function field_collection_uuid_schema_alter(&$schema = array()) {
+  $field = uuid_schema_field_definition();
+  $schema['field_collection_item']['fields']['uuid'] = $field;
+  $schema['field_collection_item_revision']['fields']['vuuid'] = $field;
+}
+
+/**
+ * Implements hook_install().
+ */
+function field_collection_uuid_install() {
+  $field = uuid_schema_field_definition();
+  if (!db_field_exists('field_collection_item', 'uuid')) {
+    db_add_field('field_collection_item', 'uuid', $field);
+    db_add_index('field_collection_item', 'uuid', array('uuid'));
+  }
+  if (!db_field_exists('field_collection_item_revision', 'vuuid')) {
+    db_add_field('field_collection_item_revision', 'vuuid', $field);
+    db_add_index('field_collection_item_revision', 'vuuid', array('vuuid'));
+  }
+}
+
+/**
+ * Implements hook_enable().
+ */
+function field_collection_uuid_enable() {
+  uuid_sync_all();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function field_collection_uuid_uninstall() {
+  db_drop_field('field_collection_item', 'uuid');
+  db_drop_index('field_collection_item', 'uuid');
+  db_drop_field('field_collection_item_revision', 'vuuid');
+  db_drop_index('field_collection_item_revision', 'vuuid');
+}

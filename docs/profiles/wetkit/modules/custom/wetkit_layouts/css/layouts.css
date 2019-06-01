@@ -1,0 +1,3 @@
+/** Custom styling for Changing Layout Feature */
+body #panels-dnd-main div.panel-region { border: 1px dashed #000; background: #e8e8e8; }
+body #panels-dnd-main div.panel-pane-is-title { border: 1px solid #000; }

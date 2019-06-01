@@ -1,0 +1,10 @@
+/* Desktop view */
+.panels-ipe-editing .region-pearson-second #wb-sec {
+ margin-top: 0px;
+}
+
+.panels-ipe-editing .region-pearson-second #wb-sec .panels-ipe-placeholder-content h3 {
+ border: none;
+ padding: 0px;
+ padding-left: 5px;
+}

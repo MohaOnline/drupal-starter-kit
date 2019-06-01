@@ -1,0 +1,279 @@
+<?php
+/**
+ * @file
+ * Code for the WetKit Search feature.
+ */
+
+include_once 'wetkit_apachesolr.features.inc';
+include_once 'theme/theme.apachesolr.inc';
+
+/**
+ * Implements hook_form_id_alter().
+ */
+function wetkit_apachesolr_form_apachesolr_sort_sort_form__alter(&$form, &$form_state, $form_id) {
+  // Unset some Fields.
+  unset($form['apachesolr_sort_name']['#title']);
+  unset($form['apachesolr_sort_direction']);
+  unset($form['apachesolr_sort_name']['#options']);
+
+  // Modify options dropdown.
+  $form['apachesolr_sort_name']['#options']['ds_changed'] = t('Last Modified');
+  $form['apachesolr_sort_name']['#options']['sort_label'] = t('Name Ascending');
+  $form['apachesolr_sort_name']['#options']['sort_label_desc'] = t('Name Descending');
+  $form['apachesolr_sort_name']['#options']['score'] = t('Relevance');
+  $form['apachesolr_sort_name']['#options']['bundle'] = t('Type');
+
+  // Change submit handler.
+  $form['actions']['submit']['#value'] = t('Go');
+  $form['actions']['submit']['#attributes'] = array(
+    'class' => array('gcwu-srch-submit'),
+  );
+  $form['#submit'][0] = 'wetkit_apachesolr_sort_form_submit';
+}
+
+/**
+ * Form submission handler for apachesolr_sort_apachesolr_sort_form().
+ */
+function wetkit_apachesolr_sort_form_submit($form, &$form_state) {
+  $query = $form_state['values']['apachesolr_sort_query'];
+
+  // Asc or Desc logic.
+  $name = $form_state['values']['apachesolr_sort_name'];
+  if ($name == 'sort_label_desc') {
+    $direction = 'desc';
+  }
+  else {
+    $direction = 'asc';
+  }
+
+  // Sets the Solr sort, gets query string parameters.
+  $query->setSolrsort($name, $direction);
+  $params = array_merge($_GET, $query->getSolrsortUrlQuery());
+  $params = drupal_get_query_parameters($params, array('q', 'page'));
+
+  // For sone reason query->getSolrsortUrlQuery() doesn't seem to handle score.
+  if ('score' == $name) {
+    $params = array();
+  }
+  // Redirect to a URL with the solrsort params included.
+  $form_state['redirect'] = array(current_path(), array('query' => $params));
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function wetkit_apachesolr_theme_registry_alter(&$theme_registry) {
+  // Theme ApacheSolr Templates.
+  $theme_registry['apachesolr_search_snippets']['theme path'] = drupal_get_path('module', 'wetkit_apachesolr');
+  $theme_registry['apachesolr_search_snippets']['function'] = 'wetkit_apachesolr_apachesolr_search_snippets';
+  $theme_registry['apachesolr_search_snippets']['final'] = TRUE;
+
+  $theme_registry['apachesolr_search_snippets__file']['theme path'] = drupal_get_path('module', 'wetkit_apachesolr');
+  $theme_registry['apachesolr_search_snippets__file']['function'] = 'wetkit_apachesolr_apachesolr_search_snippets__file';
+  $theme_registry['apachesolr_search_snippets__file']['final'] = TRUE;
+}
+
+/**
+ * Implements hook_solr_apachesolr_index_document_build().
+ */
+function wetkit_apachesolr_apachesolr_index_document_build(ApacheSolrDocument $document, $entity, $entity_type, $env_id) {
+  if ($entity->type == 'wetkit_page') {
+    $field = field_get_items($entity_type, $entity, 'body');
+    $document->content = apachesolr_clean_text($field[0]['value']);
+    $document->teaser = truncate_utf8($document->content, 300, TRUE);
+
+    // Add field_example to apache solr index, so that we can
+    // later display image in search results.
+    if (isset($entity->field_example[LANGUAGE_NONE]['0']['uri'])) {
+      $document->addField('ss_field_example', $entity->field_example[LANGUAGE_NONE]['0']['uri']);
+    }
+    // Add field_example uri to apache solr index, so that we can
+    // later display image in search results.
+    if (isset($entity->field_example['en']['0']['safe_value'])) {
+      $document->addField('ss_field_example', $entity->field_example['en']['0']['safe_value']);
+    }
+    // Add field_example uri to apache solr index, so that we can
+    // later display image in search results.
+    if (isset($entity->field_example['fr']['0']['safe_value'])) {
+      $document->addField('ss_field_example', $entity->field_example['fr']['0']['safe_value']);
+    }
+  }
+}
+
+/**
+ * Implements hook_apachesolr_query_alter().
+ */
+function wetkit_apachesolr_apachesolr_query_alter(DrupalSolrQueryInterface $query) {
+
+  // Get the Path of the Solr Query.
+  $solr_core = $query->getPath();
+
+  global $language;
+  if ($language->name == 'French') {
+    $val_lang = "fr";
+  }
+  else {
+    $val_lang = "en";
+  }
+
+  // Modify Different ApacheSolr Pages.
+  if (preg_match("/search\/site/i", $solr_core)) {
+    $query->addParam('fq', 'ss_language:' . $val_lang);
+    $query->addParam('fq', "bundle:(wetkit_page OR apps OR wetkit_documentation)");
+  }
+}
+
+/**
+ * Implements hook_apachesolr_field_mappings().
+ */
+function wetkit_apachesolr_apachesolr_field_mappings() {
+  // Load the required callbacks.
+  module_load_include('inc', 'apachesolr', 'apachesolr.index');
+  module_load_include('inc', 'facetapi', 'facetapi.callbacks');
+
+  $mappings = array(
+    // Field API field.
+    'per-field' => array(
+      'field_example' => array(
+        'indexing_callback' => 'wetkit_apachesolr_entityreference_indexing_callback',
+        'index_type' => 'integer',
+        'map callback' => 'facetapi_map_taxonomy_terms',
+        'name callback' => FALSE,
+        'facets' => TRUE,
+        'facet_block_callback' => 'apachesolr_search_taxonomy_facet_block',
+        'facet missing allowed' => FALSE,
+        'facet mincount allowed' => TRUE,
+        'dependency plugins' => array('bundle', 'role'),
+        'hierarchy callback' => 'facetapi_get_taxonomy_hierarchy',
+        'query types' => array('term'),
+        'query type' => 'term',
+        'multiple' => TRUE,
+      ),
+    ),
+  );
+  return $mappings;
+}
+
+/**
+ * Callback that converts term_reference field into an array.
+ */
+function wetkit_apachesolr_entityreference_indexing_callback($node, $field_name, $index_key, array $field_info) {
+  // Keep ancestors cached.
+  $ancestors = &drupal_static(__FUNCTION__, array());
+
+  $fields = array();
+  $vocab_names = array();
+  if (!empty($node->{$field_name}) && function_exists('taxonomy_get_parents_all')) {
+    $field = $node->$field_name;
+    list($lang, $items) = each($field);
+    foreach ($items as $item) {
+      // Entity Reference uses target_id.
+      // Need to convert for taxonomy term to work.
+      $item['tid'] = $item['target_id'];
+
+      // Triple indexing of tids lets us do efficient searches (on tid)
+      // and do accurate per field or per-vocabulary faceting
+      // By including the ancestors to a term in the index we make
+      // sure that searches for general categories match specific
+      // categories, e.g. Fruit -> apple, a search for fruit will find
+      // content categorized with apple.
+      if (!isset($ancestors[$item['tid']])) {
+        $ancestors[$item['tid']] = taxonomy_get_parents_all($item['tid']);
+      }
+      foreach ($ancestors[$item['tid']] as $ancestor) {
+        // Index parent term against the field. Note that this happens
+        // regardless of whether the facet is set to show as a hierarchy or not.
+        // We would need a separate field if we were to index terms without any
+        // hierarchy at all.
+        // If the term is singular, then we cannot add another value to the
+        // document as the field is single.
+        if ($field_info['multiple'] == TRUE) {
+          $fields[] = array(
+            'key' => $index_key,
+            'value' => $ancestor->tid,
+          );
+        }
+        $fields[] = array(
+          'key' => 'tid',
+          'value' => $ancestor->tid,
+        );
+        $fields[] = array(
+          'key' => 'im_vid_' . $ancestor->vid,
+          'value' => $ancestor->tid,
+        );
+        $name = apachesolr_clean_text($ancestor->name);
+        $vocab_names[$ancestor->vid][] = $name;
+        // We index each name as a string for cross-site faceting
+        // using the vocab name rather than vid in field construction .
+        $fields[] = array(
+          'key' => 'sm_vid_' . apachesolr_vocab_name($ancestor->vid),
+          'value' => $name,
+        );
+      }
+    }
+    // Index the term names into a text field for MLT queries and
+    // keyword searching.
+    foreach ($vocab_names as $vid => $names) {
+      $fields[] = array(
+        'key' => 'tm_vid_' . $vid . '_names',
+        'value' => implode(' ', $names),
+      );
+    }
+  }
+  return $fields;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wetkit_apachesolr_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'views_exposed_form') {
+
+    if ($form['#id'] == 'views-exposed-form-search-applications-solr-panel-pane-1') {
+      if ($form['#action'] == '/eng/apps') {
+        $form['#action'] = '/eng/search/apps';
+      }
+      if ($form['#action'] == '/fra/apps') {
+        $form['#action'] = '/fra/search/apps';
+      }
+    }
+
+    $form['filters']['#prefix'] = '<div class="span-6 row-start row-end margin-bottom-large">';
+    $form['filters']['#weight'] = 100;
+    $form['filters']['#suffix'] = '</div>';
+
+    $form['sort_by']['#prefix'] = '<div class="span-2 row-start row-end margin-bottom-none">';
+    $form['sort_by']['#title'] = '<div class="span-2">' . t('Sort By') . '</div>';
+    $form['sort_by']['#suffix'] = '</div>';
+
+    $form['sort_order']['#prefix'] = '<div class="span-2 row-start row-end margin-bottom-none">';
+    $form['sort_order']['#title'] = '<div class="span-2">' . t('Order By') . '</div>';
+    $form['sort_order']['#suffix'] = '</div>';
+
+    $form['submit']['#prefix'] = '<div class="span-2 row-start row-end margin-bottom-none views-submit-button">';
+    $form['submit']['#suffix'] = '</div>';
+  }
+}
+
+/**
+ * Implements hook_facetapi_url_processors().
+ */
+function wetkit_apachesolr_facetapi_url_processors() {
+  return array(
+    'wetkit_apachesolr' => array(
+      'handler' => array(
+        'label' => t('WetKit Search'),
+        'class' => 'FacetapiUrlProcessorWetKitSearch',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_facetapi_search_info().
+ */
+function wetkit_apachesolr_facetapi_searcher_info_alter(array &$searcher_info) {
+  foreach ($searcher_info as &$info) {
+    $info['url processor'] = 'wetkit_apachesolr';
+  }
+}

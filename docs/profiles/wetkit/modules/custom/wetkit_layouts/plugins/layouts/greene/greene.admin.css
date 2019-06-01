@@ -1,0 +1,7 @@
+#panels-dnd-main .panel-region {margin: 10px 0px;}
+#panels-dnd-main #wb-main #wb-main-in {padding-bottom: 0px;}
+#panels-dnd-main #wb-side-nav {display: none;}
+#panels-dnd-main .region {margin-bottom: 5px}
+#panels-dnd-main .region-greene-first {float: left; width: 37.25%}
+#panels-dnd-main .region-greene-second {float: right; width: 62.25%}
+#panels-dnd-main .region-greene-bottom {clear: both}

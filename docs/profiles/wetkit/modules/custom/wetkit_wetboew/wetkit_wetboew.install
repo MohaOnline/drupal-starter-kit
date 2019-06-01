@@ -1,0 +1,31 @@
+<?php
+/**
+ * @file
+ * wetkit_wetboew.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_wetboew_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_wetboew_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ *  Change in WxT Active theme variable name.
+ */
+function wetkit_wetboew_update_7401() {
+  $theme = variable_get('wetkit_wetboew_theme', 'theme-wet-boew');
+  $theme = str_replace('wet-boew-', 'theme-', $theme);
+  if ($theme == 'wet-boew') {
+    $theme = 'theme-wet-boew';
+  }
+  variable_set('wetkit_wetboew_theme', $theme);
+}

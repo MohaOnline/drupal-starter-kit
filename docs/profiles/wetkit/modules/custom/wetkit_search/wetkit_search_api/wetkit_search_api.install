@@ -1,0 +1,35 @@
+<?php
+/**
+ * @file
+ * wetkit_search_api.install
+ */
+
+/**
+ * Implemenetation of hook_uninstall().
+ */
+function wetkit_search_api_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_search_api_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Customize custom search blocks for solr support.
+ */
+function wetkit_search_api_update_7101() {
+  if (module_exists('custom_search')) {
+    // Get all enabled custom search blocks.
+    $blocks = variable_get('custom_search_blocks_number', 1);
+    for ($delta=1 ; $delta<=$blocks ; $delta++) {
+      if (variable_get('custom_search_blocks_' . $delta . '_paths', FALSE) == '') {
+        variable_set('custom_search_blocks_' . $delta . '_paths', 'search/site/[key]');
+      }
+    }
+    drupal_set_message(t('<a href="@custom_search">Custom Search</a> paths have been updated to: <em>search/site/[key]</em>', array('@custom_search' => url('http://drupal.org/project/custom_search'))), 'status');
+  }
+}

@@ -1,0 +1,43 @@
+/* =============================================================================
+   System
+   ========================================================================== */
+
+fieldset:first-child {
+  border-top: 1px solid #e5e5e5;
+}
+
+fieldset.panel {
+  padding-top: 0px
+}
+
+.pane-page-messages {
+  margin-top: 30px;
+}
+
+.tabs--primary.nav-tabs {
+  margin-bottom: 1.5em;
+}
+
+.node-form {
+  #node-edit {
+    .pane-form {
+      .pane-content {
+        clear: both;
+        margin-top: 1.5em;
+      }
+    }
+  }
+}
+
+ul.pagination >li>a.progress-disabled {
+  float:left
+}
+
+#edit-log-wrapper {
+  height: inherit;
+}
+
+.composite-form-label {
+  font-weight: 700;
+  margin-bottom: 5px;
+}

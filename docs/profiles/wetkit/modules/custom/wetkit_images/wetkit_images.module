@@ -1,0 +1,80 @@
+<?php
+/**
+ * @file
+ * wetkit_images.module
+ */
+
+include_once 'wetkit_images.features.inc';
+include_once 'theme/wetkit_images.theme.inc';
+
+define('PICTURE_IMPLEMENTATION_WXT', 'wet-boew');
+
+/**
+ * Implements hook_init().
+ */
+function wetkit_images_page_build() {
+  // Adding the wetkit images file to theme so it will show up in the WYSIWYG.
+  drupal_add_css(drupal_get_path('module', 'wetkit_images') . '/css/wetkit_images.css', array('group' => CSS_THEME));
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function wetkit_images_theme_registry_alter(&$theme_registry) {
+  // Theme Picture Templates.
+  $theme_registry['picture']['theme path'] = drupal_get_path('module', 'wetkit_images');
+  $theme_registry['picture']['file'] = drupal_get_path('module', 'wetkit_images') . '/theme/wetkit_images.theme.inc';
+  $theme_registry['picture']['function'] = 'wetkit_images_picture';
+  $theme_registry['picture']['final'] = TRUE;
+
+  $theme_registry['picture_source']['theme path'] = drupal_get_path('module', 'wetkit_images');
+  $theme_registry['picture_source']['file'] = drupal_get_path('module', 'wetkit_images') . '/theme/wetkit_images.theme.inc';
+  $theme_registry['picture_source']['function'] = 'wetkit_images_picture_source';
+  $theme_registry['picture_source']['final'] = TRUE;
+}
+
+/**
+ * Implements hook_media_wysiwyg_wysiwyg_allowed_view_modes_alter().
+ */
+function wetkit_images_media_wysiwyg_allowed_view_modes_alter(&$options, $context) {
+  if ($context->type == 'image') {
+    // Relabel some options
+    $labels = array(
+      'default' => t('Original Size'),
+      'teaser' => t('Quarter Size'),
+      'preview' => t('Thumbnail'),
+    );
+    foreach ($labels as $name => $label) {
+      if (isset($options[$name]) && isset($options[$name]['label'])) {
+        $options[$name]['label'] = $label;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_file_displays_alter().
+ *
+ * This function is designed to readjust the width and height
+ * properties in the WYSIWYG.
+ *
+ * See this issue for more background - http://drupal.org/node/1801308.
+ */
+function wetkit_images_file_displays_alter(&$displays, &$file, &$view_mode) {
+  if (!empty($file->override['attributes']['width'])) {
+    $file->image_dimensions['width'] = $file->override['attributes']['width'];
+  }
+  if (!empty($file->override['attributes']['height'])) {
+    $file->image_dimensions['height'] = $file->override['attributes']['height'];
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function wetkit_images_entity_info_alter(&$entity_info) {
+  $entity_info['file']['view modes']['link'] = array(
+    'label' => t('Link'),
+    'custom settings' => TRUE,
+  );
+}

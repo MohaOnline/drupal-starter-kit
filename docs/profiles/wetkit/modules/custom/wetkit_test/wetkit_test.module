@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the WetKit Test feature.
+ */
+
+include_once 'wetkit_test.features.inc';

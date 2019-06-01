@@ -1,0 +1,47 @@
+<?php
+
+/**
+ * @file
+ * An installation file for WetKit Admin
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_admin_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_admin_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Implementations of hook_update_N().
+ */
+
+/**
+ *  Enable new modules for 4.x branch.
+ */
+function wetkit_admin_update_7401() {
+  // Enable new module for 4.x branch.
+  $modules = array('admin_select', 'wetkit_navbar');
+  foreach ($modules as $module) {
+    if (!module_exists($module)) {
+      module_enable(array($module));
+    }
+  }
+}
+
+/**
+ * Remove the escape_admin contrib module ported to navbar.
+ */
+function wetkit_admin_update_7402() {
+  if (module_exists('escape_admin')) {
+    module_disable(array('escape_admin'));
+    drupal_uninstall_modules(array('escape_admin'));
+  }
+}

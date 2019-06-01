@@ -1,0 +1,18 @@
+/* =============================================================================
+   Bean
+   ========================================================================== */
+
+.bean-type-list {
+  list-style-type: none;
+  padding-left: 0px;
+  li {
+    margin-bottom: 15px;
+    a {
+      font-weight: bold;
+      .icon {
+        padding-left: 0px;
+      }
+    }
+  }
+}
+

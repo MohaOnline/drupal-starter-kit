@@ -1,0 +1,56 @@
+<?php
+/**
+ * @file
+ * wetkit_wysiwyg.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_wysiwyg_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_wysiwyg_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Implementations of hook_update_N().
+ */
+
+/**
+ * Implements hook_update_n().
+ */
+function wetkit_wysiwyg_update_7101() {
+  if (!module_exists('linkit_uuid')) {
+    module_enable(array('linkit_uuid'));
+  }
+}
+
+/**
+ * Implements hook_update_n().
+ */
+function wetkit_wysiwyg_update_7102() {
+  if (module_exists('wysiwyg_filter')) {
+    module_disable(array('wysiwyg_filter'));
+    drupal_uninstall_modules(array('wysiwyg_filter'));
+  }
+}
+
+/**
+ *  Enable new modules for 4.x branch.
+ */
+function wetkit_wysiwyg_update_7401() {
+  // Deprecated.
+}
+
+/**
+ *  Enable line wrapping in Wysiwyg by default.
+ */
+function wetkit_wysiwyg_update_7402() {
+  variable_set('wetkit_wysiwyg_linewrapping', TRUE);
+}

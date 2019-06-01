@@ -1,0 +1,21 @@
+name = WetKit Shiny
+description = A simple theme to be used exclusively with the installer.
+core = 7.x
+stylesheets[screen][] = css/reset.css
+stylesheets[screen][] = css/style.css
+stylesheets[screen][] = css/contrib.css
+stylesheets[all][] = css/shiny.css
+settings[shortcut_module_link] = 1
+regions[content] = Content
+regions[help] = Help
+regions[page_top] = Page top
+regions[page_bottom] = Page bottom
+regions[sidebar_first] = First sidebar
+regions_hidden[] = sidebar_first
+
+; Information added by Drupal.org packaging script on 2015-04-13
+version = "7.x-4.0"
+core = "7.x"
+project = "wetkit_shiny"
+datestamp = "1428964082"
+

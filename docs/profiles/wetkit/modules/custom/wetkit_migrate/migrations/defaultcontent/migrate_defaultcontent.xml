@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<default_content>
+    <english>
+        <content>
+            <source_id>default_content_eng_1</source_id>
+            <title>Drupal WxT</title>
+            <body><![CDATA[<div><img src="images/wxt_logo.png" style="float: right" /></div>
+
+<p>The Drupal WxT distribution is a web content management system which assists in building and maintaining innovative web sites that are accessible, usable, and interoperable. This distribution is open source software and free for use by departments and external Web communities.</p>
+
+<p>Fundamentally this distribution relies and integrates extensively with the <a href="http://github.com/wet-boew/wet-boew">WET-BOEW jQuery Framework</a> to leverage much of the accessibility support and extensively tested markup. Omega 4.x is used as the base theme for its exceptional HTML5 support and SASS / SMACSS based architecture. Where possible Drupal WxT will also pull work from the <a href="http://drupal.org/project/panopoly">Panopoly</a> and <a href="http://drupal.org/project/spark">Spark</a> Distributions due to the UX features and forward thinking design.</p>
+
+<p>Development has been tailored for organizations that need to comply with standards for accessibility and bilingualism or that simply need a content staging based distribution that allows them to get up and running quickly using a carefully curated selection of modules that can support common enterprise business requirements. Specific information about how to work with this distribution can be found here: <a href="http://drupalwxt.github.io">Wiki Documentation</a></p>
+
+<section>
+  <h2>Important Links</h2>
+  <ul>
+    <li>Change Log: <a href="https://github.com/wet-boew/wet-boew-drupal/blob/7.x-1.x/CHANGELOG.md">changelog.md</a></li>
+    <li>Documentation Website: <a href="http://drupalwxt.github.io">drupalwxt.github.io</a></li>
+    <li>Drupal Repository: <a href="http://drupal.org/project/wetkit">drupal.org/project/wetkit</a></li>
+    <li>GitHub Repository: <a href="https://github.com/wet-boew/wet-boew-drupal">wet-boew/wet-boew-drupal</a></li>
+    <li>Issue Queue: <a href="http://drupal.org/project/wetkit">Drupal (Primary)</a></li>
+    <li>Issue Queue: <a href="https://github.com/wet-boew/wet-boew-drupal">GitHub</a></li>
+    <li>Live Demo: <a href="http://responsinator.com/?url=drupalwxt.org">responsinator</a></li>
+    <li>Run it Now: <a href="http://simplytest.me/project/wetkit/7.x-1.x">simplytest.me</a></li>
+    <li>Screencasts: <a href="http://www.youtube.com/playlist?list=PLjIClrDa-_ZFwO-0sT_y6PGljSdbYztwi">youtube</a></li>
+  </ul>
+</section>
+
+<section>
+<h2>Benefits</h2>
+  <ul>
+    <li>Provides reusable components for building and maintaining innovative Web sites.</li>
+    <li>Respects accessibility <a href="http://www.w3.org/TR/WCAG20/">WCAG 2.0 AA</a> and <a href="http://www.w3.org/TR/wai-aria/)">WAI-ARIA</a>, usability, and interoperability </li>
+    <li>Reduces costs by consolidating Web tools and solutions.</li>
+    <li>Open source software that is free to use by departments and external Web communities.</li>
+    <li>Responsive design (based on Omega) - mobile, tablet and desktop support</li>
+    <li>Ever-growing list of open source plugins and widgets leverage through CTools Plugins.</li>
+  </ul>
+</section>]]></body>
+            <image>
+                <media_wysiwyg>
+                    <key>default_content_eng_1_img_1</key>
+                    <filename>wxt_logo.png</filename>
+                    <alt>Web Experience Toolkit Logo</alt>
+                </media_wysiwyg>
+            </image>
+        </content>
+        <content>
+            <source_id>default_content_eng_2</source_id>
+            <title>Drupal Platform</title>
+            <body><![CDATA[<p><span>Drupal is open source software maintained and developed by a community of 1,000,000+ users and 12,000 developers. It's distributed under the terms of the&nbsp;</span><a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License</a><span>&nbsp;(or "GPL"), which means anyone is free to download it and share it with others.</p>
+
+<p>This open development model means that people are constantly working to make sure Drupal is a cutting-edge platform that supports the latest technologies that the Web has to offer. The Drupal project's&nbsp;<a href="http://drupal.org/principles">principles</a><span>&nbsp;encourage modularity, standards, collaboration, ease-of-use, and more.</span></p>
+
+<section>
+    <h2>Drupal Features</h2>
+    <ul>
+        <li>Organize and find web content</li>
+        <li>Ease of use and creative content</li>
+        <li>Powerful fine-grained administration and security</li>
+        <li>Enables controlled collaboration</li>
+        <li>Customizeable and extendable</li>
+        <li>Easy connection to other IT systems and support for SOA and the Semantic Web</li>
+        <li>Extensive framework for building web applications</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Drupal Resources</h2>
+    <ul>
+        <li>Drupal Project: <a href="http://www.drupal.org">Drupal.org</a></li>
+        <li>Drupal Blogs: <a href="https://drupal.org/planet">drupal.org/planet</a></li>
+        <li>Drupal Books: <a href="http://www.packtpub.com/">PacktPub</a></li>
+        <li>Drupal News: <a href="https://drupal.org/news">drupal.org/news</a></li>
+        <li>Drupal Screencasts: <a href="http://drupalize.me">Drupalize.me</a></li>
+    </ul>
+</section>]]></body>
+            <image>
+                <media_field>
+                    <key>default_content_eng_2_img_1</key>
+                    <filename>drupal_logo.png</filename>
+                    <alt>Drupal Trademark Logo</alt>
+                </media_field>
+            </image>
+        </content>
+        <content>
+            <source_id>default_content_eng_3</source_id>
+            <title>Drupal Collaboration</title>
+            <body><![CDATA[<p>A major goal of Drupal WxT is to enable and encourage active collaboration on various requirements involving the Web Experience Toolkit and in particular the Drupal platform.</p>
+
+<p>This project is always looking for contributors in a wide array of areas. If you are a front / back end developer, designer, or an UX expert there will be a great need for your help here.</p>
+
+<p>Our firm belief and the real strength behind this distribution should be the community supporting it. If you use the distribution and devise a novel solution that you think would help, please contribute it back so the rest of the community can benefit.</p>
+
+<p>Together we can make an open source enterprise and governmental solution that is secure, accessible, efficient and above all else open.</p>
+
+<section>
+    <h2>Contributor guidelines - Web Experience Toolkit (WET)</h2>
+    <ul>
+        <li><a href="https://github.com/wet-boew/wet-boew/wiki/Developing-for-WET">Developing for WET</a></li>
+        <li><a href="https://github.com/wet-boew/wet-boew/wiki/Developing-for-WET#wiki-Contributor_guidelines">Contributor Guidlines / What to Expect</a></li>
+    </ul>
+</section>]]></body>
+            <image>
+                <media_field>
+                    <key>default_content_eng_3_img_1</key>
+                    <filename>wxt_collab.png</filename>
+                    <alt>Photo of people holding hands</alt>
+                </media_field>
+            </image>
+        </content>
+    </english>
+    <french>
+        <content>
+            <source_id>default_content_fra_1</source_id>
+            <title>WxT Drupal</title>
+            <body><![CDATA[<div><img src="images/wxt_logo.png" style="float: right" /></div>
+
+<p>La distribution Drupal WxT est un système de gestion de contenu Web qui aide dans la construction et la maintenance de sites Web innovateurs qui sont accessibles, conviviaux et interopérables. Cette distribution est un logiciel à code ouvert et gratuit pour l’utilisation par les ministères et des collectivités Web externes</p>
+
+<p>Fondamentalement, cette distribution se fonde et basée sur <a href="http://github.com/wet-boew/wet-boew">WET-BOEW jQuery Framework</a> et s’intègre bien avec celui-ci afin d'exploité une grande partie de l'appui de l'accessibilité et de nombreux tests balisage. Omega 4.x est utilisé comme thème de base pour son soutien HTML5 exceptionnel et une architecture basée SASS / SMACSS. Lorsque cela est possible WxT Drupal sera également tiré de travaux de la <a href="http://drupal.org/project/panopoly">Panopoly</a> and <a href="http://drupal.org/project/spark">Spark</a> Distributions en raison des caractéristiques UX et la conception avant-gardiste.</p>
+
+<p>Le développement a été adapté pour les organisations qui doivent se conformer aux normes d'accessibilité et de bilinguisme ou qui ont simplement besoin d'une teneur en scène distribution basée qui leur permet de se lever et courir rapidement en utilisant une sélection soigneusement organisée de modules qui peuvent les besoins communs d'affaires de l'entreprise. Des informations spécifiques sur la façon de travailler avec cette distribution peut être trouvé ici: <a href="http://drupalwxt.github.io">Wiki Documentation</a></p>
+
+<section>
+  <h2>Liens importants</h2>
+  <ul>
+    <li>Change Log: <a href="https://github.com/wet-boew/wet-boew-drupal/blob/7.x-1.x/CHANGELOG.md">changelog.md</a></li>
+    <li>Documentation Website: <a href="http://drupalwxt.github.io">drupalwxt.github.io</a></li>
+    <li>Drupal Repository: <a href="http://drupal.org/project/wetkit">drupal.org/project/wetkit</a></li>
+    <li>GitHub Repository: <a href="https://github.com/wet-boew/wet-boew-drupal">wet-boew/wet-boew-drupal</a></li>
+    <li>Issue Queue: <a href="http://drupal.org/project/wetkit">Drupal (Primary)</a></li>
+    <li>Issue Queue: <a href="https://github.com/wet-boew/wet-boew-drupal">GitHub</a></li>
+    <li>Démo en direct: <a href="http://responsinator.com/?url=drupalwxt.org">responsinator</a></li>
+    <li>Lancez: <a href="http://simplytest.me/project/wetkit/7.x-1.x">simplytest.me</a></li>
+    <li>Screencasts: <a href="http://www.youtube.com/playlist?list=PLjIClrDa-_ZFwO-0sT_y6PGljSdbYztwi">youtube</a></li>
+  </ul>
+</section>
+
+<section>
+<h2>Avantages</h2>
+  <ul>
+    <li>Fournit des composants réutilisables pour la construction et l'entretien de sites Web innovateurs.</li>
+    <li>Respecte l'accessibilité <a href="http://www.w3.org/TR/WCAG20/">WCAG 2.0 AA</a> and <a href="http://www.w3.org/TR/wai-aria/)">WAI-ARIA</a>, usability, and interoperability </li>
+    <li>Réduit les coûts en consolidant les outils du Web et de solutions.</li>
+    <li>Open Source Software qui est libre d'utiliser des ministères et des collectivités Web externes.</li>
+    <li>Responsive design (basé sur Omega) - mobile, tablette et support de bureau</li>
+    <li>Liste sans cesse croissante de plugiciels et gadgets effet de levier grâce Plugins ctools open source.</li>
+  </ul>
+</section>]]></body>
+            <image>
+                <media_wysiwyg>
+                    <key>default_content_fra_1_img_1</key>
+                    <filename>wxt_logo.png</filename>
+                    <alt>Boîte à outils de expérience Web Logo</alt>
+                </media_wysiwyg>
+            </image>
+        </content>
+        <content>
+            <source_id>default_content_fra_2</source_id>
+            <title>Application Drupal</title>
+            <body><![CDATA[<p><span>Drupal est un logiciel open sourcecode ouvert développé et maintenu par une communauté de 630.000 utilisateurs et les développeurs. Il est distribué sous les termes de la&nbsp;</span><a href="http://www.gnu.org/copyleft/gpl.html">Licence Publique Générale GNU</a><span>&nbsp;(ou "GPL"), ce qui signifie que chacun est libre de le télécharger et de le partager avec d'autres.</p>
+
+<p>Ce modèle de développement ouvert signifie que les personnes travaillent en permanence pour s'assurer Drupal est une plate-forme de pointe qui supporte les dernières technologies du Web a à offrir. Les <a href="http://drupal.org/principles">Principes</a> du projet Drupal encourager la modularité, les normes, la collaboration, la facilité d'utilisation, et plus encore.</p>
+
+<section>
+    <h2>Fonctionnalités du Drupal</h2>
+    <ul>
+        <li>Organiser et rechercher des contenus web</li>
+        <li>Facilité d'utilisation et le contenu créatif</li>
+        <li>Puissant Sécurité puissante et administration raffinée</li>
+        <li>Permets le travail collaboratif contrôlé</li>
+        <li>Personnalisable et extensible</li>
+        <li>Connexion facile à d'autres systèmes d'information et de soutien pour la SOA et le Web sémantique</li>
+        <li>Vaste cadre pour construire des applications Web</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Ressources Drupal</h2>
+    <ul>
+        <li>Projet pour Drupal: <a href="http://www.drupal.org">Drupal.org</a></li>
+        <li>Blogues pour Drupal: <a href="https://drupal.org/planet">drupal.org/planet</a></li>
+        <li>Livres pour Drupal: <a href="http://www.packtpub.com/">PacktPub</a></li>
+        <li>Nouvelles pour Drupal: <a href="https://drupal.org/news">drupal.org/news</a></li>
+        <li>Screencasts pour Drupal: <a href="http://drupalize.me">Drupalize.me</a></li>
+    </ul>
+</section>]]></body>
+            <image>
+                <media_field>
+                    <key>default_content_fra_2_img_1</key>
+                    <filename>drupal_logo.png</filename>
+                    <alt>Drupal logo de la marque</alt>
+                </media_field>
+            </image>
+        </content>
+        <content>
+            <source_id>default_content_fra_3</source_id>
+            <title>Coopération Drupal</title>
+            <body><![CDATA[<p>Un objectif majeur de la WxT Drupal est de permettre et d'encourager la collaboration à diverses activités impliquant la boîte à outils de l'expérience Web, et en particulier la plate-forme Drupal.</p>
+
+<p>Ce projet est toujours à la recherche de contributeurs dans un large éventail de domaines. Si vous êtes concepteur ou développeur, nous pourrions utiliser votre aide!</p>
+
+<p>Nous croyons que la véritable force derrière cette distribution devrait être de soutenir la communauté. la soutenir. Si vous utilisez la distribution afinet de concevoir une nouvelle solution que vous pensez que celle-ci pourrait aider, s'il vous plaît contribuer en retour!</p>
+
+<p>Ensemble nous pouvons faire une solution open sourcecode ouvert du gouvernement d'entreprise qui est sûr, accessible et efficace.</p>
+
+<section>
+    <h2>Lignes directrices pour les contributeurs - Boîte à outils de l’expérience Web (BOEW)</h2>
+    <ul>
+        <li><a href="https://github.com/wet-boew/wet-boew/wiki/Développer-pour-la-boew">Développer pour la BOEW</a></li>
+        <li><a href="https://github.com/wet-boew/wet-boew/wiki/Développer-pour-la-boew#wiki-Lignes_directrices_pour_les_contributeurs">Lignes directrices pour les contributeurs</a></li>
+    </ul>
+</section>]]></body>
+            <image>
+                <media_field>
+                    <key>default_content_fra_3_img_1</key>
+                    <filename>wxt_collab.png</filename>
+                    <alt>Photo de personnes se tenant la main</alt>
+                </media_field>
+            </image>
+        </content>
+    </french>
+</default_content>

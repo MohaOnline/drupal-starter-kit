@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Shared content example destination site feature.
+ */
+
+include_once 'shared_content_example_destination.features.inc';

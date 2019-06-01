@@ -1,0 +1,136 @@
+<?php
+/**
+ * @file
+ * Module file for WetKit Search.
+ */
+
+include_once 'wetkit_search.features.inc';
+include_once 'theme/theme.facetapi.inc';
+
+/**
+ * Implements hook_views_api().
+ */
+function wetkit_search_views_api() {
+  return array(
+    'api' => 3,
+    'template path' => drupal_get_path('module', 'wetkit_search') . '/templates',
+  );
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function wetkit_search_page_build() {
+  drupal_add_css(drupal_get_path('module', 'wetkit_search') . '/css/wetkit_search.css', array(
+    'group' => CSS_THEME,
+    'every_page' => TRUE,
+  ));
+}
+
+/**
+ * Implements hook_css_alter().
+ */
+function wetkit_search_css_alter(&$css) {
+  unset($css[drupal_get_path('module', 'current_search') . '/current_search.css']);
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function wetkit_search_theme_registry_alter(&$theme_registry) {
+  // Theme FacetAPI Templates.
+  $theme_registry['facetapi_count']['theme path'] = drupal_get_path('module', 'wetkit_search');
+  $theme_registry['facetapi_count']['function'] = 'wetkit_search_facetapi_count';
+  $theme_registry['facetapi_count']['final'] = TRUE;
+
+  $theme_registry['facetapi_link_inactive']['theme path'] = drupal_get_path('module', 'wetkit_search');
+  $theme_registry['facetapi_link_inactive']['function'] = 'wetkit_search_facetapi_link_inactive';
+  $theme_registry['facetapi_link_inactive']['final'] = TRUE;
+
+  $theme_registry['facetapi_link_active']['theme path'] = drupal_get_path('module', 'wetkit_search');
+  $theme_registry['facetapi_link_active']['function'] = 'wetkit_search_facetapi_link_active';
+  $theme_registry['facetapi_link_active']['final'] = TRUE;
+
+  // Theme Views Exposed Form.
+  $theme_registry['views_exposed_form']['path'] = drupal_get_path('module', 'wetkit_search') . '/templates';
+  $theme_registry['views_exposed_form']['theme path'] = drupal_get_path('module', 'wetkit_search') . '/templates';
+  $theme_registry['views_exposed_form']['final'] = TRUE;
+}
+
+/**
+ * Implements hook_preprocess_panels_pane().
+ */
+function wetkit_search_preprocess_panels_pane(&$variables) {
+  if (isset($variables['pane']->subtype) && (substr($variables['pane']->subtype, 0, 8) == 'facetapi')) {
+    $variables['classes_array'][] = '';
+    $variables['title_attributes_array']['class'][] = 'background-accent';
+    $variables['content_attributes_array']['class'][] = 'module';
+  }
+  if (isset($variables['pane']->subtype) && (substr($variables['pane']->subtype, 0, 14) == 'current_search')) {
+    $variables['classes_array'][] = '';
+    $variables['title_attributes_array']['class'][] = 'background-accent';
+    $variables['content_attributes_array']['class'][] = 'module';
+  }
+}
+
+/**
+ * Implements hook_facet_items_alter().
+ */
+function wetkit_search_facet_items_alter(&$build, &$settings) {
+  if (isset($build['apps']) && ($build['apps']['#path'] == 'search/site/')) {
+    if ($settings->facet == "bundle") {
+      foreach ($build as $key => $item) {
+        if ($key = 'wetkit_page') {
+          $build[$key]["#markup"] = t('Content Pages');
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_apps_app_info().
+ */
+function wetkit_search_apps_app_info() {
+  return array(
+    'configure form' => 'wetkit_search_configure_form',
+  );
+}
+
+/**
+ * Configuration Form for WetKit Search.
+ */
+function wetkit_search_configure_form($form, &$form_state) {
+  $form = array();
+
+  $form['wetkit_search_custom_search_path'] = array(
+    '#title' => t('Custom Search Path (404)'),
+    '#type' => 'textfield',
+    '#required' => FALSE,
+    '#default_value' => variable_get('wetkit_search_custom_search_path', 'search/node'),
+    '#description' => t('Override for the Custom Search path handling on 404 pages.'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wetkit_search_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'custom_search_blocks_form_1') {
+    // 404 special handling.
+    $status = drupal_get_http_header("status");
+    if($status == '404 Not Found'){
+      if ((variable_get('wetkit_search_custom_search_path', 'search/node') != 'search/node')) {
+        $form['#action'] = url('search/site');
+      }
+      elseif (module_exists('search_api') || module_exists('apachesolr')) {
+        $form['#action'] = url('search/site');
+      }
+      else {
+        $form['#action'] = url('search/node');
+      }
+    }
+  }
+}

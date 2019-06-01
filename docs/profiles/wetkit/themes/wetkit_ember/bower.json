@@ -1,0 +1,7 @@
+{
+  "name": "wetkit_ember",
+  "version": "1.0.0",
+  "dependencies": {
+    "pace": "HubSpot/pace"
+  }
+}

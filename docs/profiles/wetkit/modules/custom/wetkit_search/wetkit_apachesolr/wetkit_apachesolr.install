@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * wetkit_apachesolr.install file
+ */
+
+/**
+ * Implemenetation of hook_uninstall().
+ */
+function wetkit_apachesolr_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_apachesolr_') === 0) {
+      variable_del($key);
+    }
+  }
+}

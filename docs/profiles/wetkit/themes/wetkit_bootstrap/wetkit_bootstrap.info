@@ -1,0 +1,52 @@
+name = WetKit Bootstrap
+description = Support for The Web Experience Toolkit various themes leveraging Bootstrap as the base theme.
+base theme = bootstrap
+core = 7.x
+
+; ========================================
+; Regions
+; ========================================
+regions[navigation] = Navigation
+regions[header] = Top Bar
+regions[highlighted] = Highlighted
+regions[help] = Help
+regions[content] = Content
+regions[sidebar_first] = Primary
+regions[sidebar_second] = Secondary
+regions[featured] = Featured
+regions[footer] = Footer
+regions[page_top] = Page top
+regions[page_bottom] = Page bottom
+
+; ========================================
+; Stylesheets
+; ========================================
+stylesheets[all][] = css/wetkit_bootstrap.styles.css
+
+; ========================================
+; Scripts
+; ========================================
+;scripts[] = bootstrap/js/affix.js
+;scripts[] = bootstrap/js/alert.js
+;scripts[] = bootstrap/js/button.js
+;scripts[] = bootstrap/js/carousel.js
+;scripts[] = bootstrap/js/collapse.js
+;scripts[] = bootstrap/js/dropdown.js
+;scripts[] = bootstrap/js/modal.js
+;scripts[] = bootstrap/js/tooltip.js
+;scripts[] = bootstrap/js/popover.js
+;scripts[] = bootstrap/js/scrollspy.js
+;scripts[] = bootstrap/js/tab.js
+;scripts[] = bootstrap/js/transition.js
+scripts[] = js/wetkit-bootstrap.modules.js
+
+; ========================================
+; Settings
+; ========================================
+settings[bootstrap_cdn] = ""
+
+; Information added by Drupal.org packaging script on 2019-05-29
+version = "7.x-4.26"
+core = "7.x"
+project = "wetkit_bootstrap"
+datestamp = "1559169785"

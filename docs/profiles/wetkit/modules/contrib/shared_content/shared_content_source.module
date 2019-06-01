@@ -1,0 +1,1080 @@
+<?php
+
+/**
+ * @file
+ * Allows content creators to push entities from this site to others.
+ */
+
+/**
+ * Returns TRUE if the deployment system is disabled, FALSE otherwise.
+ */
+function shared_content_source_deployment_is_disabled() {
+  return variable_get('shared_content_source_deployment_disabled', FALSE);
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function shared_content_source_entity_insert($entity, $type) {
+  _shared_content_source_entity_insert_or_update($entity, $type);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function shared_content_source_entity_update($entity, $type) {
+  _shared_content_source_entity_insert_or_update($entity, $type);
+}
+
+/**
+ * Helper for hook_entity_insert() and hook_entity_update().
+ *
+ * @throws Exception
+ */
+function _shared_content_source_entity_insert_or_update($entity, $type) {
+  if (shared_content_source_entity_should_be_deployed($type, $entity)) {
+    $entity_wrapper = entity_metadata_wrapper($type, $entity);
+    foreach (shared_content_source_plans_to_deploy($type, $entity) as $plan) {
+      shared_content_source_add_to_plan_and_deploy($plan, $entity_wrapper);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function shared_content_source_entity_delete($entity, $type) {
+  // If a shared entity is being deleted, delete it on any site it is deployed
+  // to also.
+  $wrapper = entity_metadata_wrapper($type, $entity);
+  foreach (shared_content_source_plans_to_deploy($type, $entity) as $plan) {
+    deploy_services_client_delete_entity_from_plan_endpoints($wrapper, $plan);
+  }
+}
+
+/**
+ * Determines if the provided entity should be deployed when it is saved.
+ *
+ * @param $entity_type
+ *   The type of entity.
+ * @param $entity
+ *   The entity object.
+ *
+ * @return
+ *   TRUE if the entity should be deployed when it is saved, or FALSE if it
+ *   shouldn't.
+ *
+ * @see shared_content_source_entity_is_shared()
+ */
+function shared_content_source_entity_should_be_deployed($entity_type, $entity) {
+  // Return FALSE if the entity is not shared.
+  if (!shared_content_source_entity_is_shared($entity_type, $entity)) {
+    return FALSE;
+  }
+  // Return TRUE if this isn't a node (in that case, we always want to deploy
+  // changes when the entity is saved).
+  elseif ($entity_type != 'node') {
+    return TRUE;
+  }
+  // Return TRUE if the content does not support workbench moderation at all
+  // (in that case, we always want to deploy changes when the node is saved).
+  elseif (!module_exists('workbench_moderation') || !workbench_moderation_node_type_moderated($entity->type)) {
+    return TRUE;
+  }
+  // If the live revision of the node will be saved by Workbench Moderation
+  // later in the page request, it won't be deployed now, so return FALSE.
+  elseif (shared_content_source_live_revision_will_be_resaved($entity)) {
+    return FALSE;
+  }
+  // Return TRUE when the current revision of the node is published.
+  elseif ($entity->workbench_moderation['current']->state == workbench_moderation_state_published()) {
+    return TRUE;
+  }
+  // Return TRUE when the content has no live revision.
+  elseif (shared_content_source_has_no_live_revision($entity)) {
+    return TRUE;
+  }
+  // Return TRUE when the live revision of the node is being unpublished.
+  elseif (empty($entity->status) && $entity->workbench_moderation['current']->from_state == workbench_moderation_state_published() && workbench_moderation_node_is_current($entity)) {
+    return TRUE;
+  }
+  // If none of the above conditions match, return FALSE.
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Determines if this entity is shared with other sites.
+ *
+ * This only determines if the entity itself (i.e., any version of it) is or
+ * will be shared with other sites, not whether the specific version of it
+ * which is provided to this function is one which should be deployed. For the
+ * latter, use shared_content_source_entity_should_be_deployed() instead.
+ * The difference comes into play for nodes using Workbench Moderation; there,
+ * an entity may be shared, but we don't actually want to deploy every new
+ * draft version of it to other sites.
+ *
+ * @param $entity_type
+ *   The type of entity.
+ * @param $entity
+ *   The entity object.
+ *
+ * @return
+ *   TRUE if the entity is shared with other sites, or FALSE if it isn't.
+ *
+ * @see shared_content_source_entity_should_be_deployed()
+ */
+function shared_content_source_entity_is_shared($entity_type, $entity) {
+  $is_shared = FALSE;
+
+  if (isset($entity->field_shared_content)) {
+    $wrapper = entity_metadata_wrapper($entity_type, $entity);
+    if ($wrapper->field_shared_content->value()) {
+      $is_shared = TRUE;
+    }
+  }
+
+  return $is_shared;
+}
+
+/**
+ * Check if a node's live revision will be resaved later in the page request.
+ *
+ * If the live revision of a piece of content is scheduled to be resaved by
+ * Workbench Moderation during workbench_moderation_store() (a PHP shutdown
+ * function), there is no reason to deploy the initial version of the content
+ * during the node_save() call that occurs earlier in the page request, because
+ * it will be overwritten soon anyway (and in the meantime can cause trouble,
+ * because it might be in an unpublished state and therefore cause the live
+ * content on the target site to be unpublished for a while).
+ *
+ * This function can be used to check whether this scenario will occur, and
+ * skip the initial deployment under those circumstances.
+ *
+ * @param $node
+ *   A node object.
+ *
+ * @return
+ *   TRUE/FALSE depending on if the content's live revision will be resaved by
+ *   Workbench Moderation in a shutdown function which will run later in the
+ *   page request.
+ */
+function shared_content_source_live_revision_will_be_resaved($node) {
+  if (!is_object($node) || empty($node->nid)) {
+    return FALSE;
+  }
+
+  // The Workbench Moderation shutdown function sets this flag when it calls
+  // node_save() itself. In those cases, return FALSE since the node will not
+  // be resaved again.
+  if (!empty($node->workbench_moderation['updating_live_revision'])) {
+    return FALSE;
+  }
+
+  // Otherwise, look for the Workbench Moderation shutdown function and check
+  // if it is scheduled to resave this node.
+  $shutdown_functions = drupal_register_shutdown_function();
+  foreach ($shutdown_functions as $shutdown_function) {
+    if ($shutdown_function['callback'] == 'workbench_moderation_store') {
+      $arguments = $shutdown_function['arguments'];
+      $first_argument = reset($arguments);
+      if (is_object($first_argument) && !empty($first_argument->nid) && $first_argument->nid == $node->nid) {
+        return TRUE;
+      }
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Check if a node has no live revision.
+ *
+ * This function can be used to check for content whose drafts are safe to
+ * deploy to the public-facing sites for review there (without any risk of
+ * overwriting already live content on the public-facing site).
+ *
+ * @param $node
+ *   A node object.
+ *
+ * @return
+ *   TRUE if the content has no live revision, or FALSE if it does.
+ */
+function shared_content_source_has_no_live_revision($node) {
+  // The node should neither be published, nor have a record of any other
+  // published revision existing.
+  return empty($node->status) && isset($node->workbench_moderation) && empty($node->workbench_moderation['published']);
+}
+
+/**
+ * Returns the plans that will be deployed for a particular entity.
+ *
+ * @param $entity_type
+ *   The type of entity.
+ * @param $entity
+ *   The entity object.
+ *
+ * @return
+ *   An array of deployment plans for the entity, keyed by plan name.
+ */
+function shared_content_source_plans_to_deploy($entity_type, $entity) {
+  $plans = array();
+
+  // Return early with no plans, if this is not an entity which should be
+  // deployed at all.
+  if (shared_content_source_deployment_is_disabled() || !shared_content_source_entity_is_shared($entity_type, $entity)) {
+    return array();
+  }
+
+  $wrapper = entity_metadata_wrapper($entity_type, $entity);
+  foreach (shared_content_source_site_info_from_deployment_plan() as $plan_name => $site_info) {
+    // Check each field associated with the deployment plan (for example, a
+    // "deploy to Site X" checkbox) and see if it appears on the entity and
+    // evaluates to TRUE.
+    $entity_has_deployment_fields = FALSE;
+    foreach ($site_info as $info) {
+      if (isset($info['field_name']) && isset($entity->{$info['field_name']})) {
+        // Record that the field exists on the entity, regardless of whether it
+        // evaluates to TRUE or not.
+        $entity_has_deployment_fields = TRUE;
+        if ($wrapper->{$info['field_name']}->value() && ($plan = deploy_manager_plan_load($plan_name))) {
+          $plans[$plan_name] = $plan;
+          break;
+        }
+      }
+    }
+
+    // If the entity does not have any deployment fields related to this plan,
+    // but is still shared content, that means it should be deployed everywhere
+    // by default.
+    if (!$entity_has_deployment_fields && ($plan = deploy_manager_plan_load($plan_name))) {
+      $plans[$plan_name] = $plan;
+    }
+  }
+
+  return $plans;
+}
+
+/**
+ * Given a deployment plan, returns information about the corresponding site.
+ *
+ * @param $plan_name
+ *  (Optional) A string containing the name of the deployment plan. If not
+ *  provided, an array of information about all plans is returned instead.
+ *
+ * @return
+ *  An array of information about the sites corresponding to the provided plan,
+ *  including 'site_name', 'url', and 'field_name' keys in each array element.
+ */
+function shared_content_source_site_info_from_deployment_plan($plan_name = NULL) {
+  // @todo Put this in a static cache?
+  $site_info_by_plan = array();
+  foreach (field_info_fields() as $field) {
+    if (!empty($field['shared_content_plan']) && ($plan = deploy_plan_load($field['shared_content_plan']))) {
+      if (!empty($plan->endpoints)) {
+        foreach ($plan->endpoints as $endpoint_name) {
+          if ($endpoint = deploy_endpoint_load($endpoint_name)) {
+            $site_info_by_plan[$plan->name][] = array(
+              'site_name' => $endpoint->title,
+              // @todo We should not assume the endpoint URL ends with
+              // "services/rest".
+              'url' => preg_replace('!^(.*)/services/rest/?$!', '$1', $endpoint->service_config['url']),
+              'field_name' => $field['field_name'],
+            );
+            // @todo This only takes into account one endpoint per plan.
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (isset($plan_name)) {
+    return (isset($site_info_by_plan[$plan_name])) ? $site_info_by_plan[$plan_name] : array();
+  }
+  else {
+    return $site_info_by_plan;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function shared_content_source_form_field_ui_field_edit_form_alter(&$form, &$form_state, $form_id) {
+  $options = array();
+  $plans = deploy_plan_load_all();
+  foreach ($plans as $name => $plan) {
+    $options[$name] = $plan->title;
+  }
+
+  $form['field']['shared_content_plan'] = array(
+    '#type' => 'select',
+    '#title' => t('Deployment plan to trigger when this field is selected'),
+    '#default_value' => !empty($form['#field']['shared_content_plan']) ? $form['#field']['shared_content_plan'] : NULL,
+    '#empty_value' => '',
+    '#options' => $options,
+    '#access' => !empty($options),
+  );
+}
+
+/**
+ * Adds an entity to a plan and deploys it.
+ *
+ * When a plan is being deployed, the Deploy module obtains a lock that
+ * prevents the deployment from occurring, and throws an exception, if another
+ * deployment of that plan is already in progress. In our use case, we want to
+ * add content to a deployment plan at the same time as we deploy it. To
+ * prevent confusing race conditions (for example, where one user adds content
+ * to a deployment plan but has their deployment fail, while another user
+ * trying to deploy the plan at the same time not only gets there first and has
+ * the deployment succeed, but also winds up deploying the first user's content
+ * and getting a message about *it* rather than about their own) it is
+ * necessary to obtain a lock for the entire process and do it all at once.
+ *
+ * In addition, we will catch any such exceptions in this function and handle
+ * them in a friendly way.
+ *
+ * @param $plan
+ *   The deployment plan to use.
+ * @param $entity_wrapper
+ *   A wrapped entity object, as returned by entity_metadata_wrapper(),
+ *   representing the entity to deploy.
+ *
+ * @throws Exception
+ */
+function shared_content_source_add_to_plan_and_deploy($plan, $entity_wrapper) {
+  // Deployments can take a while, so allocate a long time for this script to
+  // complete.
+  drupal_set_time_limit(240);
+
+  // Try the deployment several times before eventually giving up.
+  $tries = 0;
+  $max_tries = 10;
+  do {
+    try {
+      $lock_name = 'shared_content_source_deploy_plan_' . $plan->name;
+      $acquired = lock_acquire($lock_name);
+      if (!$acquired) {
+        throw new Exception(t('A deployment of @plan is already running.', array('@plan' => $plan->name)));
+      }
+      shared_content_source_add_to_managed_plan($plan, $entity_wrapper);
+      $plan->deploy();
+      // Remove messages that the DeployProcessorMemory class set while the
+      // deployment was running; these are not user-friendly for our purposes,
+      // and we don't want to display them on the screen.
+      shared_content_source_remove_status_messages();
+      lock_release($lock_name);
+      return;
+    }
+    catch (Exception $e) {
+      // Delete it from the plan before releasing the lock, since it may have
+      // been added successfully but failed during the deployment.
+      deploy_manager_delete_from_plan($plan->name, $entity_wrapper->type(), $entity_wrapper->value());
+      if ($acquired) {
+        lock_release($lock_name);
+      }
+
+      // If the deployment failed too many times, stop trying.
+      if ($tries >= $max_tries) {
+        // Display a friendly message to the screen. We do not need to log the
+        // exception, since we'll be rethrowing it below and Drupal will log it
+        // for us.
+        drupal_set_message(t('A problem was encountered when saving and deploying your changes. Wait a few seconds and then hit the "reload" button in your web browser to try to save your changes again. Contact a site administrator if the problem persists.'));
+        // Since this usually happens during an entity save, we want to rethrow
+        // the exception to force the entire entity save to be rolled back
+        // (assuming the entity supports rollbacks; nodes do, for example, but
+        // taxonomy terms don't). Doing otherwise would leave the data on
+        // the source site inconsistent with the data on the destination sites.
+        throw $e;
+      }
+
+      // Wait a bit before trying again.
+      $tries++;
+      sleep(3);
+    }
+  } while (TRUE);
+}
+
+/**
+ * Adds an entity to a managed deployment plan.
+ *
+ * @param $plan
+ *   The deployment plan to to add the entity to.
+ * @param $entity_wrapper
+ *   A wrapped entity object, as returned by entity_metadata_wrapper(),
+ *   representing the entity to be added to the plan.
+ *
+ * @see deploy_rules_action_add_to_managed_plan()
+ */
+function shared_content_source_add_to_managed_plan($plan, $entity_wrapper) {
+  $entity_type = $entity_wrapper->type();
+  $entity = $entity_wrapper->value();
+  // Reset the entity's static cache before adding it to the plan, since if
+  // this function is called from somewhere like hook_entity_update() and if
+  // the plan is being deployed during the same page request, we need to
+  // guarantee that the updated entity is the one that is actually deployed.
+  list($entity_id) = entity_extract_ids($entity_type, $entity);
+  entity_get_controller($entity_type)->resetCache(array($entity_id));
+  deploy_manager_add_to_plan($plan->name, $entity_type, $entity);
+}
+
+/**
+ * Removes all previously-set status messages so the user won't see them.
+ */
+function shared_content_source_remove_status_messages() {
+  // Allow a debugging variable to prevent the messages from being removed.
+  if (!variable_get('shared_content_source_debug', FALSE)) {
+    drupal_get_messages('status');
+  }
+}
+
+/**
+ * Implements hook_entity_dependencies_alter().
+ */
+function shared_content_source_entity_dependencies_alter(&$dependencies, $entity, $type) {
+  foreach ($dependencies as $key => $dependency) {
+    // For improved speed, never try to deploy entities unless they can be
+    // shared themselves.
+    if (!($entities_to_deploy = entity_load($dependency['type'], array($dependency['id']))) || !($entity_to_deploy = reset($entities_to_deploy)) || !isset($entity_to_deploy->field_shared_content)) {
+      unset($dependencies[$key]);
+    }
+  }
+  // Re-key the array in case other modules depend on the original structure
+  // (note that entity_dependency_add() always adds dependencies with ordered
+  // numerical keys). This may have been to fix a specific bug, but I don't
+  // remember...
+  $dependencies = array_values($dependencies);
+}
+
+/**
+ * Implements hook_deploy_operation_info().
+ */
+function shared_content_source_deploy_operation_info() {
+  return array(
+    'postprocess' => array(
+      array('callback' => 'shared_content_source_deploy_postprocess'),
+    ),
+  );
+}
+
+/**
+ * Postprocess operation callback; runs after a deployment plan is deployed.
+ */
+function shared_content_source_deploy_postprocess($plan_name, $entity) {
+  $entity_type = $entity->__metadata['type'];
+
+  // If the entity has a field for syndicating content to this plan and it is
+  // not already selected, edit the field and re-save. (This can happen for
+  // entities that are deployed via an entity reference field, for example.)
+  // Also make sure to save it if it has the generic shared content field (that
+  // may need to be updated too).
+  $check_new_save = FALSE;
+  if (isset($entity->field_shared_content)) {
+    $check_new_save = TRUE;
+  }
+  if (!$check_new_save) {
+    foreach (shared_content_source_site_info_from_deployment_plan($plan_name) as $site_info) {
+      if (isset($site_info['field_name']) && isset($entity->{$site_info['field_name']})) {
+        $check_new_save = TRUE;
+        break;
+      }
+    }
+  }
+  if ($check_new_save) {
+    _shared_content_source_save_new_site_deployment_record_if_necessary($entity_type, $entity, $plan_name);
+  }
+
+  // Record information about the most recent deployed entity. The primary
+  // entity that we care about is always the last one being deployed (since
+  // it's the one with dependencies on all the previous ones) and is the one we
+  // will use to display a message later, so it's the only one we need to
+  // store.
+  shared_content_source_store_entity_info('deployed', array('entity' => $entity, 'entity_type' => $entity_type, 'plan_names' => array($plan_name)));
+}
+
+/**
+ * Stores (or retrieves) information about an entity.
+ *
+ * @param $key
+ *   The key which identifies the entity in storage. Usually either 'deployed'
+ *   or 'unpublished'. Optional if information is being retrieved, but required
+ *   if information is being stored.
+ * @param $entity_data
+ *   (Optional) An array of data about the entity whose information will be
+ *   stored, containing the following keys:
+ *   - entity: The entity object.
+ *   - entity_type: A string representing the type of entity (e.g., 'node' or
+ *     'user').
+ *   - plan_names: An array of deployment plan names to store with the entity.
+ *     Note that this will accumulate if the function is called multiple times,
+ *     even if a new entity is provided (this may be a bug, but it suits our
+ *     purposes well, given how this is used in functions such as
+ *     shared_content_source_deploy_postprocess()).
+ *   If this parameter is not provided or is incomplete, no new entity
+ *   information will be stored.
+ *
+ * @return
+ *   If $key is provided, the most recent entity information stored for that
+ *   key will be returned (or NULL if no information is stored). If no key was
+ *   provided, an array containing information for all stored keys will be
+ *   returned instead.
+ *
+ * @see shared_content_source_deploy_postprocess()
+ * @see shared_content_source_node_update()
+ */
+function shared_content_source_store_entity_info($key = NULL, $entity_data = array()) {
+  $stored_info = &drupal_static(__FUNCTION__, array());
+  if (isset($key) && isset($entity_data['entity']) && isset($entity_data['entity_type']) && isset($entity_data['plan_names'])) {
+    if (empty($stored_info)) {
+      // The first time entity info is being stored, we need to register a
+      // shutdown function that will appropriately display a message about the
+      // deployments that took place during the current page request.
+      drupal_register_shutdown_function('shared_content_source_display_deployment_messages');
+    }
+    $entity = $entity_data['entity'];
+    $entity_type = $entity_data['entity_type'];
+    $entity_info = entity_get_info($entity_type);
+    $bundle = !empty($entity_info['entity keys']['bundle']) ? $entity->{$entity_info['entity keys']['bundle']} : $entity_type;
+    $stored_info[$key]['type'] = $entity_info['bundles'][$bundle]['label'];
+    $stored_info[$key]['label'] = entity_label($entity_type, $entity);
+    foreach ($entity_data['plan_names'] as $plan_name) {
+      $stored_info[$key]['plan_names'][$plan_name] = $plan_name;
+    }
+  }
+  if (isset($key)) {
+    return isset($stored_info[$key]) ? $stored_info[$key] : NULL;
+  }
+  else {
+    return $stored_info;
+  }
+}
+
+/**
+ * Displays messages about deployments that occurred in the current page request.
+ *
+ * This is registered as a shutdown function so it can run after the Workbench
+ * Moderation module's shutdown function, which calls node_save() and which can
+ * trigger content deployments. However, since Drupal sessions can't be written
+ * to inside a shutdown function, we can't use drupal_set_message() here;
+ * rather, we must store the messages in a custom variable and display them
+ * on the next page load.
+ *
+ * @see shared_content_source_store_entity_info()
+ * @see shared_content_source_init()
+ * @see shared_content_source_set_delayed_message()
+ */
+function shared_content_source_display_deployment_messages() {
+  $entity_data = array();
+  foreach (array('deployed', 'unpublished') as $key) {
+    if ($data = shared_content_source_store_entity_info($key)) {
+      $entity_data[$key] = $data;
+    }
+  }
+  if ($entity_data) {
+    // An entity we care about was deployed or unpublished, so display a useful
+    // message explaining where the entity was deployed to or unpublished from.
+    foreach ($entity_data as $key => $data) {
+      $sites = shared_content_source_site_names_from_deployment_plans($data['plan_names']);
+      $t_strings = array(
+        '@type' => $data['type'],
+        '%label' => $data['label'],
+        '%site-string' => implode(', ', $sites),
+        '!site-list' => theme('item_list', array('items' => array_map('drupal_placeholder', $sites))),
+      );
+      if ($key == 'deployed') {
+        if (count($sites) > 1) {
+          shared_content_source_set_delayed_message(t('@type %label has been saved and syndicated to the following sites: !site-list', $t_strings));
+        }
+        else {
+          shared_content_source_set_delayed_message(t('@type %label has been saved and syndicated to the %site-string site.', $t_strings));
+        }
+      }
+      elseif ($key == 'unpublished') {
+        if (count($sites) > 1) {
+          shared_content_source_set_delayed_message(t('@type %label has been unpublished from the following sites: !site-list', $t_strings));
+        }
+        else {
+          shared_content_source_set_delayed_message(t('@type %label has been unpublished from the %site-string site.', $t_strings));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Sets a delayed message which will be displayed on the next page request.
+ *
+ * @param $message
+ *   The message to set.
+ * @param $account
+ *   (Optional) The user account to display the message to. Defaults to the
+ *   current logged-in user.
+ *
+ * @see shared_content_source_display_deployment_messages()
+ * @see shared_content_source_init()
+ * @see shared_content_source_display_delayed_messages()
+ */
+function shared_content_source_set_delayed_message($message, $account = NULL) {
+  if (!isset($account)) {
+    $account = $GLOBALS['user'];
+  }
+  $messages = variable_get('shared_content_source_delayed_messages_' . $account->uid, array());
+  $messages[] = $message;
+  variable_set('shared_content_source_delayed_messages_' . $account->uid, $messages);
+}
+
+/**
+ * Displays any delayed messages that have not been displayed yet.
+ *
+ * @param $account
+ *   (Optional) The user account whose messages will be displayed. Defaults to
+ *   the current logged-in user.
+ *
+ * @see shared_content_source_set_delayed_message()
+ */
+function shared_content_source_display_delayed_messages($account = NULL) {
+  if (!isset($account)) {
+    $account = $GLOBALS['user'];
+  }
+  $messages = variable_get('shared_content_source_delayed_messages_' . $account->uid, array());
+  if (!empty($messages)) {
+    // When we display a delayed message, we also want to avoid other messages
+    // that were set during entity saves (either by the Deploy module during
+    // deployments, or by the node submit handler or other entity forms), since
+    // our message replaces those. Unfortunately, due to oddities of the node
+    // form, and the fact that we sometimes don't know that we want to replace
+    // the message until we're inside a shutdown function, there is no good way
+    // to do this on the previous page request. So we have to do it here
+    // instead, which is not ideal, but works.
+    shared_content_source_remove_status_messages();
+    // Now display the new messages and clear the variable.
+    foreach ($messages as $message) {
+      drupal_set_message($message);
+    }
+    variable_del('shared_content_source_delayed_messages_' . $account->uid);
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function shared_content_source_init() {
+  // Display any delayed messages for the current user that may have been set
+  // during a previous page request.
+  shared_content_source_display_delayed_messages();
+}
+
+/**
+ * Returns the site names which correspond to the provided deployment plans.
+ *
+ * @param $plan_names
+ *   An array containing the names of deployment plans.
+ *
+ * @return
+ *   An array of site names corresponding to the provided plans.
+ */
+function shared_content_source_site_names_from_deployment_plans($plan_names) {
+  return _shared_content_source_site_names_from_deployment_plans($plan_names);
+}
+
+/**
+ * Links to content on the site corresponding to the provided deployment plan.
+ *
+ * @param $plan_name
+ *   The name of the deployment plan.
+ * @param $uuid
+ *   The UUID of the content to link to.
+ * @param $entity_type
+ *   (Optional) The type of entity to link to. Defaults to 'node'.
+ *
+ * @return
+ *   A link pointing to the specified content on the site corresponding to the
+ *   provided deployment plan, or an empty string if no such link can be
+ *   constructed (for example, if no such deployment plan exists).
+ */
+function shared_content_source_site_link_from_deployment_plan($plan_name, $uuid, $entity_type = 'node') {
+  if ($links = shared_content_source_site_links_from_deployment_plans(array($plan_name), $uuid, $entity_type)) {
+    return reset($links);
+  }
+  else {
+    return '';
+  }
+}
+
+/**
+ * Links to content on sites which correspond to the provided deployment plans.
+ *
+ * @param $plan_names
+ *   An array containing the names of deployment plans.
+ * @param $uuid
+ *   The UUID of the content to link to.
+ * @param $entity_type
+ *   (Optional) The type of entity to link to. Defaults to 'node'.
+ *
+ * @return
+ *   An array of links pointing to the specified content on each site which
+ *   corresponds to one of the provided deployment plans.
+ */
+function shared_content_source_site_links_from_deployment_plans($plan_names, $uuid, $entity_type = 'node') {
+  return _shared_content_source_site_names_from_deployment_plans($plan_names, $uuid, $entity_type);
+}
+
+/**
+ * Private function to assist in generating site names (optionally as links).
+ *
+ * @param $plan_names
+ *   An array containing the names of deployment plans.
+ * @param $uuid_for_link
+ *   (Optional) If provided, the site names will be rendered as links to the
+ *   provided site, specifically pointing to content with this UUID.
+ * @param $entity_type_for_link
+ *   (Optional) The type of entity to link to. Defaults to 'node'.
+ *
+ * @return
+ *   An array of site names corresponding to the provided plans. The site names
+ *   will be rendered as links if the optional $uuid_for_link parameter is
+ *   provided.
+ */
+function _shared_content_source_site_names_from_deployment_plans($plan_names, $uuid_for_link = NULL, $entity_type_for_link = 'node') {
+  global $language;
+  $site_names = array();
+
+  foreach ($plan_names as $plan_name) {
+    $site_info = shared_content_source_site_info_from_deployment_plan($plan_name);
+    foreach ($site_info as $info) {
+      if (isset($uuid_for_link) && !empty($info['url'])) {
+        $prefix = '';
+        if (module_exists('entity_translation') && entity_translation_enabled($entity_type_for_link)) {
+          $prefix = empty($language->prefix) ? '' : $language->prefix . '/';
+        }
+        $site_names[] = l($info['site_name'], $info['url'] . '/' . $prefix . $entity_type_for_link . '/' . $uuid_for_link, array('external' => TRUE));
+      }
+      else {
+        $site_names[] = $info['site_name'];
+      }
+    }
+  }
+
+  return array_unique($site_names);
+}
+
+/**
+ * Saves a new site deployment record to an entity, if it's not already there.
+ *
+ * Workbench moderation state will be respected by this function, so that if
+ * there is a current (unpublished) draft, the site deployment record will be
+ * saved in both places (the current draft and the published one), to reflect
+ * the fact that the entity is both deployed and scheduled for future
+ * deployment to that site. This is primarily useful when an entity is being
+ * deployed via a node reference relationship (i.e., if an entity with a node
+ * reference field is deployed, it will automatically trigger the nodes it
+ * references to be deployed also; those referenced nodes need their current
+ * published revision marked as deployed in order to reflect reality, but also
+ * need their newer draft marked as deployed so that when the draft is
+ * eventually published, the node continues to be deployed by default. If we
+ * didn't do this, the node would be removed from the destination site when the
+ * draft is published, without an administrator ever unclicking a checkbox to
+ * indicate they wanted that to happen).
+ *
+ * @param $entity_type
+ *   The type of entity.
+ * @param $entity
+ *   The entity object.
+ * @param $plan_name
+ *   A string representing the name of the deployment plan corresponding to the
+ *   site which the entity is being deployed to.
+ */
+function _shared_content_source_save_new_site_deployment_record_if_necessary($entity_type, $entity, $plan_name) {
+  // Check if we need to save the main entity.
+  $missing_site_deployment_record = _shared_content_source_missing_site_deployment_record($entity_type, $entity, $plan_name);
+  if (isset($entity->field_shared_content) || $missing_site_deployment_record) {
+    // Reload the entity before saving it, so we get a clean copy with no UUIDs
+    // substituted in (and also guarantee we get the current published revision
+    // in the case of nodes).
+    $entity_info = entity_get_info($entity_type);
+    $id_key = $entity_info['entity keys']['id'];
+    $loaded_entities = entity_load($entity_type, array($entity->{$id_key}));
+    if ($loaded_entities) {
+      $loaded_entity = reset($loaded_entities);
+      $wrapper = entity_metadata_wrapper($entity_type, $loaded_entity);
+      _shared_content_source_preserve_workbench_state($loaded_entity);
+      $save_needed = FALSE;
+      // Add the site deployment record.
+      if ($missing_site_deployment_record) {
+        foreach (shared_content_source_site_info_from_deployment_plan($plan_name) as $site_info) {
+          if (isset($site_info['field_name'])) {
+            $wrapper->{$site_info['field_name']}->set(TRUE);
+            $save_needed = TRUE;
+          }
+        }
+      }
+      // Make sure the entity is marked as shared, also.
+      if (!$wrapper->field_shared_content->value()) {
+        $wrapper->field_shared_content->set(TRUE);
+        $save_needed = TRUE;
+      }
+      // Perform the save, but only when needed (otherwise we hit an infinite
+      // loop).
+      if ($save_needed) {
+        $wrapper->save();
+      }
+    }
+    else {
+      watchdog('shared_content_source', 'New site deployment record could not be saved to entity with ID @id and type @type because the entity could not be reloaded in _shared_content_source_save_new_site_deployment_record_if_necessary().', array('@id' => $entity->{$id_key}, '@type' => $entity_type), WATCHDOG_ERROR);
+    }
+  }
+
+  // Determine if we will need to save the most recent draft revision also (see
+  // the function docblock for more details on why we may need to do this).
+  // This only applies for nodes, so we can assume the entity is a node
+  // throughout the following block of code.
+  if (isset($entity->workbench_moderation['current']->vid) && $entity->workbench_moderation['current']->vid != $entity->vid) {
+    $draft_node = node_load($entity->nid, $entity->workbench_moderation['current']->vid);
+    if (_shared_content_source_missing_site_deployment_record('node', $draft_node, $plan_name)) {
+      _shared_content_source_preserve_workbench_state($draft_node);
+      $wrapper = entity_metadata_wrapper('node', $draft_node);
+      foreach (shared_content_source_site_info_from_deployment_plan($plan_name) as $site_info) {
+        if (isset($site_info['field_name'])) {
+          $wrapper->{$site_info['field_name']}->set(TRUE);
+        }
+      }
+      // Make sure the entity is marked as shared, also.
+      $wrapper->field_shared_content->set(TRUE);
+      // The horrible little dance below is required because node_save() always
+      // records the vid of the saved node in the {node} table, but we are
+      // saving an unpublished "future" revision so we don't want that to
+      // happen. Therefore, we get the original (published) node, and resave
+      // that after saving the current draft. (Note that Workbench Moderation
+      // actually does something similar; see workbench_moderation_store()
+      // which is called in a shutdown function.)
+      $node = node_load($draft_node->nid);
+      _shared_content_source_preserve_workbench_state($node);
+      node_save($draft_node);
+      node_save($node);
+    }
+  }
+}
+
+/**
+ * Determines if an entity is missing a site deployment record.
+ *
+ * @param $entity_type
+ *   The type of entity to check.
+ * @param $entity
+ *   The entity to check.
+ * @param $plan_name
+ *   A string representing the name of the deployment plan corresponding to the
+ *   site which should be checked.
+ *
+ * @return
+ *   TRUE if the entity is missing the record, or FALSE if it is not.
+ */
+function _shared_content_source_missing_site_deployment_record($entity_type, $entity, $plan_name) {
+  $missing = FALSE;
+
+  $wrapper = entity_metadata_wrapper($entity_type, $entity);
+  foreach (shared_content_source_site_info_from_deployment_plan($plan_name) as $site_info) {
+    // If the deployment field doesn't appear on the entity at all (i.e., is
+    // not associated with this entity) then it's not missing; we only count it
+    // as "missing" if the entity is set up to record deployments for this plan
+    // but doesn't have a record of the deployment having happened.
+    if (isset($site_info['field_name']) && isset($entity->{$site_info['field_name']}) && !$wrapper->{$site_info['field_name']}->value()) {
+      $missing = TRUE;
+      break;
+    }
+  }
+
+  return $missing;
+}
+
+/**
+ * Ensures the current workbench state will be preserved when saving an entity.
+ */
+function _shared_content_source_preserve_workbench_state($entity) {
+  if (isset($entity->workbench_moderation)) {
+    $current_state = $entity->workbench_moderation['my_revision']->state;
+    $entity->workbench_moderation_state_current = $current_state;
+    $entity->workbench_moderation_state_new = $current_state;
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function shared_content_source_module_implements_alter(&$implementations, $hook) {
+  // Move our hook_node_view() and hook_node_update() implementations to the
+  // end of the list. The former is so the workbench moderation message we set
+  // in it appears at the bottom of the block, and the latter is so our update
+  // hook runs after Workbench Moderation's and therefore can work with a copy
+  // of the node that has all the workbench moderation information correctly
+  // updated.
+  if ($hook == 'node_view' || $hook == 'node_update') {
+    $group = $implementations['shared_content_source'];
+    unset($implementations['shared_content_source']);
+    $implementations['shared_content_source'] = $group;
+  }
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function shared_content_source_node_view($node, $view_mode, $langcode) {
+  // Check if we're on the full page view of a shared, moderated node and if
+  // the current user has access to see moderation messages (see
+  // workbench_moderation_node_view() and workbench_moderation_messages() for
+  // the source of some of this code). If so, add a workbench moderation
+  // message to the block at the top of the node, explaining which sites this
+  // node is deployed to (or scheduled to be deployed to). Note that the static
+  // variable here is to avoid duplicate messages due to hook_node_view() being
+  // called more than once when Panels is being used; see also the patch in
+  // http://drupal.org/node/1237558 (which doesn't cover this case).
+  $already_set = &drupal_static(__FUNCTION__, FALSE);
+  if (!$already_set && empty($node->in_preview) && $view_mode == 'full' && node_is_page($node) && module_exists('workbench_moderation') && workbench_moderation_node_type_moderated($node->type) && user_access('view moderation messages') && shared_content_source_entity_is_shared('node', $node)) {
+    $already_set = TRUE;
+    $published = isset($node->workbench_moderation['my_revision']->state) && $node->workbench_moderation['my_revision']->state == workbench_moderation_state_published();
+    $message['label'] = $published ? t('Syndicated to'): t('Will be syndicated to');
+    $wrapper = entity_metadata_wrapper('node', $node);
+    $plan_names = array_keys(shared_content_source_plans_to_deploy('node', $node));
+    $site_names = shared_content_source_site_names_from_deployment_plans($plan_names);
+    $site_links = shared_content_source_site_links_from_deployment_plans($plan_names, $node->uuid);
+    if (empty($site_links)) {
+      $site_links = $site_names = array($published ? t('This revision is not syndicated to any other sites.') : t('This revision will not be syndicated to any other sites.'));
+    }
+    if ($published || shared_content_source_has_no_live_revision($node)) {
+      $message['message'] = implode(', ', $site_links);
+    }
+    else {
+      // Don't link to unpublished, undeployed content, since there's nothing
+      // to link to.
+      $message['message'] = implode(', ', array_map('check_plain', $site_names));
+    }
+    workbench_moderation_set_message(array($message));
+    // If this is not the published revision, but publishing it will cause it
+    // to be unpublished from sites it's currently published on, set another
+    // message warning the user about the situation.
+    if (!$published && isset($node->workbench_moderation['published']->vid)) {
+      $published_revision = node_load($node->nid, $node->workbench_moderation['published']->vid);
+      $published_wrapper = entity_metadata_wrapper('node', $published_revision);
+      $published_plan_names = array_keys(shared_content_source_plans_to_deploy('node', $published_revision));
+      $published_site_links = shared_content_source_site_links_from_deployment_plans($published_plan_names, $node->uuid);
+      if ($sites_to_unpublish_from = array_diff($published_site_links, $site_links)) {
+        $unpublished_message['label'] = '<strong>' . t('Will be removed from') . '</strong>';
+        $unpublished_message['message'] = implode(', ', $sites_to_unpublish_from);
+        workbench_moderation_set_message(array($unpublished_message));
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ *
+ * @throws DeployAuthenticationException
+ * @throws DeployServiceException
+ */
+function shared_content_source_node_update($node) {
+  // When shared content is being deployed, we need to unpublished the content
+  // from any site that does not have the corresponding deployment checkbox
+  // checked. We unpublish rather than delete here, because if we deleted it
+  // and then tried to add it back again later when someone clicked the
+  // deployment checkbox again, all other content that referred to this (e.g.,
+  // via a node reference field) would wind up with broken references.
+  if (!shared_content_source_deployment_is_disabled() && shared_content_source_entity_should_be_deployed('node', $node)) {
+    $wrapper = entity_metadata_wrapper('node', $node);
+    $all_plans = array_keys(shared_content_source_site_info_from_deployment_plan());
+    $plans_deployed_to = array_keys(shared_content_source_plans_to_deploy('node', $node));
+    $plans_to_unpublish_from = array_diff($all_plans, $plans_deployed_to);
+    $plans_unpublished_from = array();
+    foreach ($plans_to_unpublish_from as $plan_to_unpublish_from) {
+      $plan = deploy_plan_load($plan_to_unpublish_from);
+      // This function can throw exceptions when it fails; these will be caught
+      // by node_save() which will automatically roll back the database
+      // transaction such that the node goes back to its previous state (with
+      // the deployment checkboxes that were unchecked for this save attempt
+      // going back to being checked). In theory, this could leave the node
+      // unpublished on some of the client sites but with the corresponding
+      // checkboxes on this site still checked. However, fixing this edge case
+      // would be complicated, and it will resolve itself the next time the
+      // node is successfully saved anyway.
+      // @todo Consider handling this better or at least catching the exception
+      //   and putting it in watchdog() before re-throwing it?
+      if (deploy_services_client_unpublish_entity_from_plan_endpoints($wrapper, $plan)) {
+        $plans_unpublished_from[] = $plan_to_unpublish_from;
+      }
+      // Store the list of deployment plans whose endpoints had the entity
+      // unpublished. This will be used to set a message in the user interface
+      // at the end of the page request.
+      if (!empty($plans_unpublished_from)) {
+        shared_content_source_store_entity_info('unpublished', array('entity' => $node, 'entity_type' => 'node', 'plan_names' => $plans_unpublished_from));
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_widget_form_alter().
+ */
+function shared_content_source_field_widget_form_alter(&$element, &$form_state, $context) {
+  // Hide the internal shared content field whenever the widget is displayed,
+  // since this field is for internal use only (so the API can keep track of
+  // which sites each entity is deployed to). Administrators should not be able
+  // to change this directly after an entity has been deployed. But we do allow
+  // it to be displayed inside the Field UI itself, so the default value can be
+  // set differently for types of entities.
+  // @todo Rethink whether this can be shown on some entity forms also (it's no
+  //   different than the site deployment checkboxes themselves, in some ways).
+  if ($context['field']['field_name'] == 'field_shared_content' && $form_state['build_info']['form_id'] != 'field_ui_field_edit_form') {
+    $element['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function shared_content_source_form_taxonomy_form_term_alter(&$form, &$form_state) {
+  // Add a warning about the dangers of deleting shared taxonomy terms.
+  if (isset($form_state['confirm_delete']) && shared_content_source_entity_is_shared('taxonomy_term', $form['#term'])) {
+    drupal_set_message(t('This taxonomy term is shared with other sites. Deleting it will remove it from all content on those sites. Before deleting it, please check each site to ensure that no content is unexpectedly using this term.'), 'warning');
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function shared_content_source_form_file_entity_edit_alter(&$form, &$form_state) {
+  // Add a warning about the effect of editing shared files.
+  if (empty($_POST) && shared_content_source_entity_is_shared('file', $form_state['file'])) {
+    drupal_set_message(t('This file is shared with other sites. Editing it will change it on those sites also.'), 'warning');
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function shared_content_source_form_file_entity_delete_form_alter(&$form, &$form_state) {
+  // Add a warning about the dangers of deleting shared files.
+  if (empty($_POST) && shared_content_source_entity_is_shared('file', $form_state['file'])) {
+    drupal_set_message(t('This file is shared with other sites. Deleting it will remove it from those sites. Before deleting it, please check each site to ensure that no content is unexpectedly using this file.'), 'warning');
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function shared_content_source_form_views_form_file_manager_page_alter(&$form, &$form_state) {
+  // Add a warning about the dangers of deleting shared files.
+  $display_messages = FALSE;
+  if (!empty($form_state['selection'])) {
+    foreach ($form_state['selection'] as $fid) {
+      if (($file = file_load($fid)) && shared_content_source_entity_is_shared('file', $file)) {
+        $display_messages = TRUE;
+        break;
+      }
+    }
+  }
+
+  if ($display_messages) {
+    drupal_set_message(t('Some of these files are shared with other sites and will be deleted on those sites if the file is deleted here. Before deleting them, please check each site to ensure that no content is unexpectedly using these files.'), 'warning');
+  }
+}

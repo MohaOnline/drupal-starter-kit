@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * @file
+ * Installation code for Drupal WxT.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Perform actions to set up the site for this profile.
+ */
+function wetkit_install() {
+  // Set password_policy module defaults.
+  $policy = array();
+  $policy = array(
+    'character_types' => 3,
+    'delay' => 0,
+    'digit_placement' => 2,
+    'history' => 24,
+    'length' => 8,
+    'letter' => 2,
+    'username' => 1,
+  );
+  $pid = db_insert('password_policy')
+  ->fields(array(
+    'name' => 'WetKit Default',
+    'description' => 'The default password policy implementation included with the WetKit distribution.',
+    'constraints' => serialize($policy),
+    'enabled' => 1,
+    'expiration' => '90',
+    'warning' => '7,14',
+    'created' => REQUEST_TIME,
+  ))
+  ->execute();
+  // Enable an authenticated role the above for the default password policy.
+  db_insert('password_policy_role')
+    ->fields(array(
+      'pid' => $pid,
+      'rid' => 2,
+  ))
+   ->execute();
+
+  // Only notify on Security Issue(s).
+  variable_set('update_notification_threshold', array('security'));
+
+  // Set the Admin Theme.
+  db_update('system')
+    ->fields(array('status' => 1))
+    ->condition('type', 'theme')
+    ->condition('name', 'wetkit_ember')
+    ->execute();
+
+  variable_set('admin_theme', 'wetkit_ember');
+
+  // Set the Bootstrap Theme.
+  db_update('system')
+    ->fields(array('status' => 1))
+    ->condition('type', 'theme')
+    ->condition('name', 'bootstrap')
+    ->execute();
+}
+
+/**
+ * Workbench Moderation schema correction.
+ */
+function wetkit_update_7100() {
+  // Schema correction was fixed directly in Workbench Moderation.
+}

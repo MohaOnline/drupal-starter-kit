@@ -1,0 +1,260 @@
+<?php
+/**
+ * @file
+ * wetkit_metatag.module
+ */
+
+include_once 'wetkit_metatag.features.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function wetkit_metatag_menu() {
+  $items['admin/config/search/metatags/optional'] = array(
+    'title' => 'Enable/disable meta tags',
+    'description' => 'Configure meta tag optional.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wetkit_metatag_optional_config_form'),
+    'access arguments' => array('administer meta tags'),
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_apps_app_info().
+ */
+function wetkit_metatag_apps_app_info() {
+  return array(
+    'configure form' => 'wetkit_metatag_configure_form',
+  );
+}
+
+/**
+ * Configuration Form for WetKit Metatags.
+ */
+function wetkit_metatag_configure_form($form, &$form_state) {
+  $form = array();
+  $form['wetkit_metatag'] = array(
+    '#title' => t('Metatag Settings'),
+    '#type'  => 'fieldset',
+    '#collapsible' => 'true',
+  );
+  $form['wetkit_metatag']['wetkit_metatag_creator'] = array(
+    '#title' => t('Metatags for Creator'),
+    '#type' => 'textfield',
+    '#maxlength' => 255,
+    '#size' => 50,
+    '#default_value' => variable_get('wetkit_metatag_creator'),
+    '#description' => t('Metatags for Creator'),
+  );
+  $form['wetkit_metatag']['wetkit_metatag_subject_scheme'] = array(
+    '#title' => t('Metatag Attribute for Subject (Scheme)'),
+    '#type' => 'textfield',
+    '#maxlength' => 255,
+    '#size' => 50,
+    '#default_value' => variable_get('wetkit_metatag_subject_scheme'),
+    '#description' => t('Metatag Attribute for Subject (Scheme)'),
+  );
+  $form['wetkit_metatag']['wetkit_metatag_canonical'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Remove &lt;link rel="canonical"&gt; metatag.'),
+    '#default_value' => variable_get('wetkit_metatag_canonical'),
+    '#description' => t('Checking this box will remove the canonical link metatag that is provided by Drupal Core.'),
+  );
+
+  $form['#submit'][] = 'wetkit_metatag_configure_form_submit';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Handle submission of the WetKit Metatag configuration page.
+ *
+ * @param array $form
+ *   Nested array of form elements that comprise the form.
+ * @param array $form_state
+ *   A keyed array containing the current state of the form.
+ */
+function wetkit_metatag_configure_form_submit($form, &$form_state) {
+  // Change query-strings on css/js files to enforce reload for all users.
+  _drupal_flush_css_js();
+
+  registry_rebuild();
+  drupal_clear_css_cache();
+  drupal_clear_js_cache();
+
+  // Rebuild the theme data. Note that the module data is rebuilt above, as
+  // part of registry_rebuild().
+  system_rebuild_theme_data();
+  drupal_theme_rebuild();
+
+  // Don't clear cache_form - in-progress form submissions may break.
+  // Ordered so clearing the page cache will always be the last action.
+  $core = array(
+    'cache',
+    'cache_path',
+    'cache_filter',
+    'cache_bootstrap',
+    'cache_page',
+  );
+  $cache_tables = array_merge(module_invoke_all('flush_caches'), $core);
+  foreach ($cache_tables as $table) {
+    cache_clear_all('*', $table, TRUE);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wetkit_metatag_theme() {
+  $info['wetkit_metatag'] = array(
+    'render element' => 'element',
+  );
+  $info['wetkit_metatag_property'] = array(
+    'render element' => 'element',
+  );
+
+  return $info;
+}
+
+
+/**
+ * Theme callback for a Dublin Core meta tag.
+ */
+function theme_wetkit_metatag($variables) {
+  $element = &$variables['element'];
+  element_set_attributes($element, array(
+    '#name' => 'name',
+    '#schema' => 'title',
+    '#value' => 'content')
+  );
+  unset($element['#value']);
+  return theme('html_tag', $variables);
+}
+
+/**
+ * Theme callback for a Property metatag.
+ */
+function theme_wetkit_metatag_property($variables) {
+  $element = &$variables['element'];
+  element_set_attributes($element, array(
+    '#name' => 'property',
+    '#schema' => 'title',
+    '#value' => 'content')
+  );
+  unset($element['#value']);
+  return theme('html_tag', $variables);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wetkit_metatag_form_alter(&$form, &$form_state, $form_id) {
+  // Only include on node add/edit forms.
+  if (!empty($form['#node_edit_form'])) {
+    // Ensure that the metatags form is present.
+    if (!empty($form['metatags'])) {
+      unset($form['metatags']['#description']);
+      unset($form['metatags']['defaults']['#description']);
+      unset($form['metatags']['dublin-core']['#description']);
+    }
+  }
+
+  // Check if Metatag Panels module exists.
+  if (module_exists('metatag_panels')) {
+    // Create the General Settings Fieldset.
+    if ($form_id == 'metatag_panels_node_form_metatags_content_type_edit_form') {
+      // Create General Settings Fieldset.
+      $form['general_settings'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('General Settings'),
+        '#collapsible' => FALSE,
+        '#collapsed' => FALSE,
+      );
+      $form['general_settings']['override_title'] = $form['override_title'];
+      $form['general_settings']['override_title_markup'] = $form['override_title_markup'];
+      $form['general_settings']['override_title_text'] = $form['override_title_text'];
+      $form['general_settings']['context'] = $form['context'];
+
+      // Unset some Form Variables.
+      unset($form['override_title']);
+      unset($form['override_title_markup']);
+      unset($form['override_title_text']);
+      unset($form['context']);
+    }
+  }
+}
+
+/**
+ * Form definition for enabling and disabling meta tags.
+ */
+function wetkit_metatag_optional_config_form($form, $form_state) {
+  $form = array('#tree' => TRUE);
+  // Show a title.
+  $form['info'] = array(
+    '#markup' => t('Choose which entities and bundles to enable meta tags for:'),
+    '#prefix' => '<h3>',
+    '#suffix' => '</h3>',
+  );
+
+  $entity_infos = entity_get_info();
+  // Add in our own settings.
+  $entity_infos = drupal_array_merge_deep($entity_infos, variable_get('wetkit_metatag_optional_settings', array()));
+
+  // Loop through entities and bundles.
+  foreach ($entity_infos as $entity_key => $entity_info) {
+    if (!empty($entity_info['bundles'])) {
+      $options = array();
+      $defaults = array();
+      foreach ($entity_info['bundles'] as $bundle_key => $bundle_info) {
+        if (!isset($entity_info['metatags']) || $entity_info['metatags']) {
+          if (!isset($bundle_info['metatags']) || $bundle_info['metatags']) {
+            $defaults[] = $bundle_key;
+          }
+        }
+        $options[$bundle_key] = $bundle_info['label'];
+      }
+      // Add a checkboxes group for the bundles in this entity.
+      $form['metatags'][$entity_key] = array(
+        '#type' => 'checkboxes',
+        '#options' => $options,
+        '#default_value' => $defaults,
+        '#title' => check_plain($entity_info['label']),
+      );
+    }
+  }
+
+  // Add submit button.
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save options'),
+  );
+
+  return $form;
+}
+
+/**
+ * Handle form submission.
+ */
+function wetkit_metatag_optional_config_form_submit($form, $form_state) {
+  // Convert user input to mergable array.
+  $config = array();
+  foreach ($form_state['values']['metatags'] as $entity => $bundles) {
+    foreach ($bundles as $bundle => $value) {
+      $config[$entity]['bundles'][$bundle]['metatags'] = !empty($value);
+    }
+  }
+  variable_set('wetkit_metatag_optional_settings', $config);
+  // Clear the entity info cache to ensure our alter hook gets called.
+  entity_info_cache_clear();
+  drupal_set_message(t('Meta tags options saved.'), 'status');
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function wetkit_metatag_entity_info_alter(&$entity_info) {
+  // Merge our setting with the entity info to override any metatags.
+  $entity_info = drupal_array_merge_deep($entity_info, variable_get('wetkit_metatag_optional_settings', array()));
+}

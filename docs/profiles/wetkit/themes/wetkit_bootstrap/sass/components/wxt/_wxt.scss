@@ -1,0 +1,140 @@
+/* =============================================================================
+   WxT
+   ========================================================================== */
+
+.form-item {
+  .input-group-addon {
+    .icon {
+      padding-left: 0px;
+    }
+  }
+}
+
+.page-node-edit.theme-gcweb {
+  main.container {
+  background-color: #FFF;
+  }
+}
+
+.admin-views-view {
+  .views-field-views-bulk-operations .checkbox input[type=checkbox],
+  .views-table .checkbox input[type=checkbox] {
+    position: inherit;
+    margin-left: 0px;
+  }
+  .form-item .input-group-addon {
+    width: inherit;
+  }
+}
+
+.table .checkbox input[type=checkbox] {
+  position: inherit;
+  margin-left: 0px;
+}
+
+.home .blog .row h2 a,
+.home .blog .row h3 a,
+.home .blog .row h4 a {
+  font-size: 29px;
+}
+
+.btn {
+  .icon {
+    padding-left: 0px;
+  }
+}
+
+.theme-gcweb .panel-primary > .panel-heading {
+  background-color: #335075;
+  border-color: #335075;
+}
+
+.pane-block .alert-info .btn {
+  color: #FFF;
+}
+
+.theme-gcweb .page-header {
+  border-bottom: 1px solid #af3c43;
+  margin-top: 0.5em;
+}
+
+.wb-mb-links .glyphicon-search:before {
+    float: left;
+}
+
+.wb-srch-multi {
+    padding-top: 1em
+}
+
+.wb-srch-multi button, .wb-srch-multi input {
+    border-radius: 0
+}
+
+.wb-srch-multi button {
+    background-color: #335075;
+    border: 0;
+    border-color: #335075;
+    font-size: 17px
+}
+
+.wb-srch-multi button:active, .wb-srch-multi button:focus, .wb-srch-multi button:hover {
+    background: #243850
+}
+
+.wb-srch-multi .glyphicon {
+    top: auto;
+    vertical-align: middle
+}
+
+.wb-srch-multi input {
+    float: left;
+    background-color: #e0e0e0;
+    border-color: #e0e0e0;
+    border-right: 0;
+    border-style: solid;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    color: #555;
+    margin-right: -4px;
+    min-width: 246px;
+    position: relative
+}
+
+.xxsmallview .wb-srch-multi input {
+  min-width: initial;
+}
+
+.item-list .pagination>li:first-child>span,
+.item-list .pagination>li:last-child>span {
+  padding: 10px 16px;
+}
+
+.legendColorBox {
+  width: 30px;
+}
+
+.icon {
+  font-size: inherit;
+  min-height: 0px;
+  min-width: 0px;
+}
+
+.action-links {
+  .btn {
+    min-height: 0px;
+  }
+}
+
+/* =============================================================================
+   WxT Mobile Menu
+   ========================================================================== */
+
+#sec-pnl {
+  ul {
+    li {
+      &.no-sect {
+        display: none;
+      }
+    }
+  }
+}

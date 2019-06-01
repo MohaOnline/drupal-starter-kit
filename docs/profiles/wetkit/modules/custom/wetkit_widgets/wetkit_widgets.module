@@ -1,0 +1,117 @@
+<?php
+/**
+ * @file
+ * wetkit_widgets.module
+ */
+
+include_once 'wetkit_widgets.features.inc';
+include_once 'wetkit_widgets.plugins.inc';
+
+/**
+ * Implements hook_apps_app_info().
+ */
+function wetkit_widgets_apps_app_info() {
+  return array(
+    'configure form' => 'wetkit_widgets_configure_form',
+  );
+}
+
+/**
+ * Configuration Form for WetKit Widgets.
+ */
+function wetkit_widgets_configure_form($form, &$form_state) {
+  drupal_add_js(drupal_get_path('module', 'system') . '/system.js');
+  $form = array();
+  $form['wetkit_widgets'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('WetKit Widgets Settings'),
+    '#collapsible' => TRUE,
+  );
+  $form['wetkit_widgets']['future_options'] = array(
+    '#markup' => '<p>' . t('Future options will appear here to configure WetKit Widgets.') . '</p>',
+  );
+  $form['#submit'][] = 'wetkit_widgets_configure_form_submit';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Handle submission of the WetKit Widgets configuration page.
+ *
+ * @param array $form
+ *   Nested array of form elements that comprise the form.
+ * @param array $form_state
+ *   A keyed array containing the current state of the form.
+ */
+function wetkit_widgets_configure_form_submit($form, &$form_state) {
+  // Change query-strings on css/js files to enforce reload for all users.
+  _drupal_flush_css_js();
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wetkit_widgets_theme($existing, $type, $theme, $path) {
+  return array(
+    'wetkit_widgets_file_video' => array(
+      'variables' => array(
+        'files' => array(),
+        'controls' => TRUE,
+        'autoplay' => FALSE,
+        'loop' => FALSE,
+        'muted' => FALSE,
+        'width' => NULL,
+        'height' => NULL,
+      ),
+      'file' => 'theme/wetkit_widgets.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_ctools_content_subtype_alter().
+ */
+function wetkit_widgets_ctools_content_subtype_alter(&$subtype, &$plugin) {
+
+  // Modify the menu block plugin to better fit into our UI.
+  if ($plugin['module'] == 'menu_block' && $subtype['menu_title'] == 'Main menu') {
+    $subtype['category'][0] = t('Custom');
+    $subtype['top level'] = TRUE;
+    $subtype['title'] = t('Add submenu');
+    $subtype['icon'] = drupal_get_path('module', 'wetkit_widgets') . '/images/icon_submenu.png';
+    $subtype['admin css'] = array(drupal_get_path('module', 'menu_block') . '/menu-block-admin.css');
+    $subtype['admin js'] = array(drupal_get_path('module', 'menu_block') . '/menu-block.js');
+  }
+
+  // Modify the general content item to appear in the generic content sidebar.
+  if ($plugin['module'] == 'views_content' && $subtype['title'] == 'Piece of Content') {
+    $subtype['category'][0] = t('Custom');
+    $subtype['top level'] = TRUE;
+    $subtype['title'] = t('Add content item');
+    $subtype['icon'] = drupal_get_path('module', 'wetkit_widgets') . '/images/icon_content_item.png';
+  }
+
+  // Modify the general content list to appear in the generic content sidebar.
+  if ($plugin['module'] == 'views_content' && $subtype['title'] == 'List of Content') {
+    $subtype['category'][0] = t('Custom');
+    $subtype['top level'] = TRUE;
+    $subtype['title'] = t('Add content list');
+    $subtype['icon'] = drupal_get_path('module', 'wetkit_widgets') . '/images/icon_content_list.png';
+  }
+
+  // Modify the plugins so we do away with this "node" and "entity" thing.
+  if ($subtype['category'] == 'Node' || $subtype['category'] == 'Entity') {
+    $subtype['category'] = t('Page Content');
+  }
+  if ($subtype['category'] == 'User') {
+    $subtype['category'] = t('User Content');
+  }
+  if ($subtype['category'] == 'Taxonomy_term' || $subtype['category'] == 'Taxonomy term') {
+    $subtype['category'] = t('Category Content');
+  }
+
+  // Modify the plugins so we have consistent language around "form" content.
+  if ($subtype['category'] == 'Form') {
+    $subtype['category'] = t('Form Content');
+  }
+}

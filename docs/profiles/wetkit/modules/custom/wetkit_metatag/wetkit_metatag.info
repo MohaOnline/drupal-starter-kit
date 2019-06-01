@@ -1,0 +1,28 @@
+name = WetKit Metatag
+description = Installs and configures default metatags that help to extend the SEO of the site.
+core = 7.x
+package = WetKit
+dependencies[] = ctools
+dependencies[] = i18n
+dependencies[] = i18n_variable
+dependencies[] = metatag
+dependencies[] = metatag_panels
+dependencies[] = strongarm
+dependencies[] = wetkit_bean
+dependencies[] = wetkit_widgets
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[metatag][] = global
+features[metatag][] = global:frontpage
+features[metatag][] = node
+features[metatag][] = taxonomy_term
+features[metatag][] = user
+features[variable][] = wetkit_metatag_creator
+features[variable][] = wetkit_metatag_optional_settings
+features[variable][] = wetkit_metatag_subject_scheme
+
+; Information added by Drupal.org packaging script on 2018-06-19
+version = "7.x-4.16"
+core = "7.x"
+project = "wetkit_metatag"
+datestamp = "1529369054"

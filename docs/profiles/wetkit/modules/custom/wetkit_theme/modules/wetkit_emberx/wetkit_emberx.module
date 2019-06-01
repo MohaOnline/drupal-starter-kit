@@ -1,0 +1,148 @@
+<?php
+/**
+ * @file
+ * Code for the module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function wetkit_emberx_menu() {
+  $items = array();
+  $items['admin/config/user-interface/ember-support'] = array(
+    'title' => t('Ember Support'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('wetkit_emberx_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'description' => t('Allows administrators to configure Ember Support.'),
+  );
+  return $items;
+}
+
+/**
+ * Administrative settings for the module add-ons.
+ */
+function wetkit_emberx_admin_form($form, $form_state) {
+
+  // Checkbox to remove the Panels IPE css.
+  $form['wetkit_emberx_panels_ipe_css'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Override default Panels IPE styles'),
+    '#description' => t('Ember Support overrides these styles by default.'),
+    '#default_value' => variable_get('wetkit_emberx_panels_ipe_css', TRUE),
+  );
+  // If Panels IPE is not enabled, disable the settings.
+  if (!module_exists('panels_ipe')) {
+    $form['wetkit_emberx_panels_ipe_css']['#disabled'] = TRUE;
+    variable_del('wetkit_emberx_panels_ipe_css');
+  }
+
+  // Checkbox to remove the Panels modal css.
+  $form['wetkit_emberx_panels_modal_css'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Override Panels modal styles'),
+    '#description' => t('Ember Support overrides these styles by default.'),
+    '#default_value' => variable_get('wetkit_emberx_panels_modal_css', TRUE),
+  );
+  // If Panels is not enabled, disable the settings.
+  if (!module_exists('panels')) {
+    $form['wetkit_emberx_panels_modal_css']['#disabled'] = TRUE;
+    variable_del('wetkit_emberx_panels_modal_css');
+  }
+
+  // Checkbox to remove the Panopoly Magic css.
+  $form['wetkit_emberx_panopoly_magic_css'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Override Panopoly Magic styles'),
+      '#description' => t('Ember Support overrides these styles by default.'),
+      '#default_value' => variable_get('wetkit_emberx_panopoly_magic_css', TRUE),
+      );
+  // If Panopoly Magic is not enabled, disable the settings.
+  if (!module_exists('panopoly_magic')) {
+    $form['wetkit_emberx_panopoly_magic_css']['#disabled'] = TRUE;
+    variable_del('wetkit_emberx_panopoly_magic_css');
+  }
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_css_alter().
+ */
+function wetkit_emberx_css_alter(&$css) {
+
+  $ember_path = drupal_get_path('module', 'wetkit_bootstrapx');
+
+  // Override Panels modal styles by default.
+  if (module_exists('panels') && variable_get('wetkit_emberx_panels_modal_css', TRUE) == TRUE) {
+    // Do nothing. The css is set in Ember Support's .info file.
+  }
+  else {
+    // Remove Ember Support's Panels modal styles.
+    unset($css[$ember_path . '/css/ember-ctools.css']);
+    unset($css[$ember_path . '/css/ember-modal.css']);
+  }
+
+  // Override Panels IPE styles by default. d
+  if (module_exists('panels_ipe') && variable_get('wetkit_emberx_panels_ipe_css', TRUE) == TRUE) {
+    // Remove the default Panels IPE css.
+    $path = drupal_get_path('module', 'panels_ipe');
+    unset($css[$path . '/css/panels_ipe.css']);
+  }
+  else {
+    // Remove Ember Support's Panels IPE styles.
+    unset($css[$ember_path . '/css/ember-panels-ipe.css']);
+  }
+
+  // Override Panopoly Magic styles by default.
+  if (module_exists('panopoly_magic') && variable_get('wetkit_emberx_panopoly_magic_css', TRUE) == TRUE) {
+    // Remove css set by default in Panopoly Magic's .info file.
+    $path = drupal_get_path('module', 'panopoly_magic');
+    unset($css[$path . '/css/panopoly-magic.css']);
+    unset($css[$path . '/css/panopoly-modal.css']);
+  }
+}
+
+/**
+ * Implements hook_preprocess_panels_ipe_pane_wrapper().
+ */
+function wetkit_emberx_preprocess_panels_ipe_pane_wrapper(&$variables) {
+  $pane = $variables['pane'];
+  $display = $variables['display'];
+  $renderer = $variables['renderer'];
+
+  if (user_access('administer advanced pane settings')) {
+    $css_link = array(
+      'title' => '<span>' . t('CSS') . '</span>',
+      'href' => $renderer->get_url('pane-css', $pane->pid),
+      'html' => TRUE,
+      'attributes' => array(
+        'class' => array('ctools-use-modal', 'pane-css'),
+        'title' => t('CSS'),
+      ),
+    );
+
+    // Make sure css is added just after style.
+    $style_link_key = array_search('style', array_keys($variables['links']));
+    $links_start = array_slice($variables['links'], 0, $style_link_key + 1);
+    $links_end = array_slice($variables['links'], $style_link_key);
+
+    // Add css link
+    $links_start['css'] = $css_link;
+    $variables['links'] = array_merge($links_start, $links_end);
+  }
+}
+
+/**
+ * Implements hook_media_bulk_upload_edit_multiple_form_alter().
+ */
+function wetkit_emberx_media_bulk_upload_edit_multiple_form_alter(&$form) {
+  foreach (element_children($form['multiform']) as $key) {
+    // Prefix each form with a preview of the file and add additional classes
+    // for styling.
+    $form['multiform'][$key]['#prefix'] = '<div class="media-bulk-asset"><div class="media-bulk-upload-image-header">' . drupal_render($form['multiform'][$key]['preview']) . '</div>';
+    $form['multiform'][$key]['#suffix'] = '</div>';
+
+    // Remove the existing file preview.
+    $form['multiform'][$key]['preview']['#access'] = FALSE;
+  }
+}

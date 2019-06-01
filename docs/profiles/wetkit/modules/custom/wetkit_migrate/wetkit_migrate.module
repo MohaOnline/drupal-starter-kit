@@ -1,0 +1,129 @@
+<?php
+/**
+ * @file
+ * wetkit_migrate.module
+ */
+
+include_once 'wetkit_migrate.features.inc';
+
+/**
+ * Implements hook_migrate_api().
+ */
+function wetkit_migrate_migrate_api() {
+  $api = array(
+    'api' => 2,
+
+    // Migrations can be organized into groups. The key used here will be the
+    // machine name of the group, which can be used in Drush:
+    // drush migrate-import --group=WetKitMigrate
+    //
+    // The title is a required argument which is displayed for the group in the
+    // UI. You may also have additional arguments for any other data which is
+    // common to all migrations in the group.
+    'groups' => array(
+      'BeanMigrate' => array(
+        'title' => t('Bean Imports'),
+      ),
+      'DefaultContentMigrate' => array(
+        'title' => t('Content Imports'),
+      ),
+      'DocumentationMigrate' => array(
+        'title' => t('Documentation Imports'),
+      ),
+      'MegaMenuMigrate' => array(
+        'title' => t('Mega Menu Imports'),
+      ),
+      'SiteMenuMigrate' => array(
+        'title' => t('Site Menu Imports'),
+      ),
+    ),
+
+    // Here we register the individual migrations. The keys below
+    // are the machine names of the migrations, and the class_name
+    // argument is required. The group_name is optional (defaults to 'default')
+    // but specifying it is a best practice.
+    'migrations' => array(
+      'WetKitMigrateBean' => array(
+        'class_name' => 'WetKitMigrateBean',
+        'group_name' => 'BeanMigrate',
+      ),
+      'WetKitMigrateBeanSlideOut' => array(
+        'class_name' => 'WetKitMigrateBeanSlideOut',
+        'group_name' => 'BeanMigrate',
+      ),
+      'WetKitMigrateBeanSlideShow' => array(
+        'class_name' => 'WetKitMigrateBeanSlideShow',
+        'group_name' => 'BeanMigrate',
+      ),
+      'WetKitMigrateDefaultContent' => array(
+        'class_name' => 'WetKitMigrateDefaultContent',
+        'group_name' => 'DefaultContentMigrate',
+      ),
+      'WetKitMigrateDefaultContentMedia' => array(
+        'class_name' => 'WetKitMigrateDefaultContentMedia',
+        'group_name' => 'DefaultContentMigrate',
+      ),
+      'WetKitMigrateDocumentation' => array(
+        'class_name' => 'WetKitMigrateDocumentation',
+        'group_name' => 'DocumentationMigrate',
+      ),
+      'WetKitMigrateDocumentationMenu' => array(
+        'class_name' => 'WetKitMigrateDocumentationMenu',
+        'group_name' => 'DocumentationMigrate',
+      ),
+      'WetKitMigrateDocumentationMenuLinks' => array(
+        'class_name' => 'WetKitMigrateDocumentationMenuLinks',
+        'group_name' => 'DocumentationMigrate',
+      ),
+      'WetKitMigrateFileBeanSlideShow' => array(
+        'class_name' => 'WetKitMigrateFileBeanSlideShow',
+        'group_name' => 'BeanMigrate',
+      ),
+      'WetKitMigrateFldCollectionSlides' => array(
+        'class_name' => 'WetKitMigrateFldCollectionSlides',
+        'group_name' => 'BeanMigrate',
+      ),
+      'WetKitMigrateMegaMenu' => array(
+        'class_name' => 'WetKitMigrateMegaMenu',
+        'group_name' => 'MegaMenuMigrate',
+      ),
+      'WetKitMigrateMegaMenuLinks' => array(
+        'class_name' => 'WetKitMigrateMegaMenuLinks',
+        'group_name' => 'MegaMenuMigrate',
+      ),
+      'WetKitMigrateSiteMenu' => array(
+        'class_name' => 'WetKitMigrateSiteMenu',
+        'group_name' => 'SiteMenuMigrate',
+      ),
+      'WetKitMigrateSiteMenuLinks' => array(
+        'class_name' => 'WetKitMigrateSiteMenuLinks',
+        'group_name' => 'SiteMenuMigrate',
+      ),
+      'WetKitMigrateTaxonomy' => array(
+        'class_name' => 'WetKitMigrateTaxonomy',
+        'group_name' => 'DefaultContentMigrate',
+      ),
+    ),
+  );
+  return $api;
+}
+
+/**
+ * Implements hook_migrate_menu().
+ */
+function wetkit_migrate_menu() {
+  $items = array();
+
+  $items['admin/wetkit/wetkit_settings/wetkit_migration'] = array(
+    'title' => 'Migration',
+    'description' => 'Configure database settings for the WetKit content migration.',
+    'page callback' => 'drupal_get_form',
+    'file' => 'wetkit_migrate.pages.inc',
+    'page arguments' => array('wetkit_migrate_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}

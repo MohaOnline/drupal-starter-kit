@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bean>
+    <english>
+        <content>
+            <source_id>bean_slideout_eng_1</source_id>
+            <title>Theme Selection</title>
+            <slideout_widget>form</slideout_widget>
+            <slideout_form>wetkit_wetboew_configure_form</slideout_form>
+            <body><![CDATA[]]></body>
+            <icon_bundle>bootstrap</icon_bundle>
+            <icon_icon>glyphicon-leaf</icon_icon>
+        </content>
+    </english>
+</bean>

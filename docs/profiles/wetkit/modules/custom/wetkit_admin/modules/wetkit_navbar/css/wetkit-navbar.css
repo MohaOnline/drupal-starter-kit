@@ -1,0 +1,73 @@
+
+/**
+ * Navbar Styling
+ */
+
+/* Toolbar formatting */
+
+a#navbar-link-admin-wetkit:before {
+  background-image: url("../icons/787878/wetkit.png");
+}
+
+a#navbar-link-admin-wetkit.active:before {
+  background-image: url("../icons/000000/wetkit.png");
+}
+
+a#navbar-link-admin-workbench:before {
+  background-image: url("../icons/787878/workbench.png");
+}
+
+a#navbar-link-admin-workbench.active:before {
+  background-image: url("../icons/000000/workbench.png");
+}
+
+.navbar-bar .navbar-icon-flush-cache:before {
+  background-image: url("../icons/bebebe/cache.svg");
+}
+.no-svg .navbar-bar .navbar-icon-flush-cache:before {
+  background-image: url("../icons/bebebe/cache.png");
+}
+.navbar-bar .navbar-icon-flush-cache:active:before,
+.navbar-bar .navbar-icon-flush-cache.active:before {
+  background-image: url("../icons/ffffff/cache.svg");
+}
+.no-svg .navbar-bar .navbar-icon-flush-cache:active:before,
+.no-svg .navbar-bar .navbar-icon-flush-cache.active:before {
+  background-image: url("../icons/ffffff/cache.png");
+}
+
+/* Tray formatting */
+
+.navbar-tray .navbar-icon-flush-cache:before {
+  background-image: url("../icons/787878/cache.svg");
+}
+.no-svg .navbar-tray .navbar-icon-flush-cache:before {
+  background-image: url("../icons/787878/cache.png");
+}
+.navbar-tray .navbar-icon-flush-cache:active:before,
+.navbar-tray .navbar-icon-flush-cache.active:before {
+  background-image: url("../icons/000000/cache.svg");
+}
+.no-svg .navbar-tray .navbar-icon-flush-cache:active:before,
+.no-svg .navbar-tray .navbar-icon-flush-cache.active:before {
+  background-image: url("../icons/000000/cache.png");
+}
+
+/* Styling Override */
+
+body.navbar-tray-open.navbar-vertical.navbar-fixed #modalContent {
+  margin-left: -250px;
+}
+
+body.navbar-tray-open.navbar-vertical.navbar-fixed {
+  margin-left: 20rem;
+}
+
+#navbar-administration.navbar-oriented .navbar-tray-vertical {
+  width: 20rem;
+}
+
+body.navbar-tray-open.navbar-fixed.navbar-vertical #navbar-administration.navbar-oriented {
+  width: 20rem;
+}
+

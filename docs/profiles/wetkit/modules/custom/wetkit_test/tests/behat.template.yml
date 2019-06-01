@@ -1,0 +1,22 @@
+imports:
+    - behat.common.yml
+
+default:
+  extensions:
+    Behat\MinkExtension:
+      # Set 'base_url' to the URL to view your Drupal site.
+      # For example: http://wxt.4x
+      base_url: '@BASE_URL@'
+      files_path: './profiles/wetkit/modules/wetkit/wetkit_test/tests'
+    Drupal\DrupalExtension:
+      drush:
+        # Set 'root' to the full path to your Drupal code base.
+        # For example: '/var/www/html/drupal'
+        root: '@DRUPAL_ROOT@'
+      drupal:
+        # Same as 'root' above!
+        drupal_root: '@DRUPAL_ROOT@'
+      # Look in the profile modules directory and pull in module subcontexts.
+      subcontexts:
+        paths:
+          - "./profiles/wetkit"

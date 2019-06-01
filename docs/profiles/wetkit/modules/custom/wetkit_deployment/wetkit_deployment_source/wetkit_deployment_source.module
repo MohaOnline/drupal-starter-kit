@@ -1,0 +1,555 @@
+<?php
+/**
+ * @file
+ * Code for the Deployed content source site feature.
+ */
+
+include_once 'wetkit_deployment_source.features.inc';
+include_once 'wetkit_deployment_source.deploy_actions.inc';
+include_once 'wetkit_deployment_source.deploy_queue.inc';
+include_once 'wetkit_deployment_source.deploy_menu.inc';
+include_once 'wetkit_deployment_source.uuid_taxonomy_services.inc';
+include_once 'theme/wetkit_deployment_source.theme.inc';
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function wetkit_deployment_source_ctools_plugin_directory($module, $plugin) {
+  return 'plugins/' . $plugin;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function wetkit_deployment_source_menu() {
+  // Deployment menu link.
+  $items['admin/dashboard/deployment/deploy'] = array(
+    'title' => 'Deploy for WetKit',
+    'page callback' => '_wetkit_deployment_source_deploy',
+    'page arguments' => array('context' => 'wetkit_deployment'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer deployments'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['wetkit_deployment_source_ajax/%ctools_js/%/%'] = array(
+    'title' => 'Modal dialog for deployed content',
+    'page callback' => '_wetkit_deployment_source_modal',
+    'page arguments' => array(1, 2, 3),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer deployments'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_apps_app_info().
+ */
+function wetkit_deployment_source_apps_app_info() {
+  return array(
+    'configure form' => 'wetkit_deployment_source_configure_form',
+  );
+}
+
+/**
+ * Configuration Form for WetKit Deployment Source.
+ */
+function wetkit_deployment_source_configure_form($form, &$form_state) {
+  $form = array();
+  $form['wetkit_deployment_source'] = array(
+    '#title' => t('Deployment Settings'),
+    '#type'  => 'fieldset',
+    '#collapsible' => 'true',
+  );
+  $form['wetkit_deployment_source']['wetkit_deployment_source_ed_perf'] = array(
+    '#title' => t('Enable the Entity Dependency Query Alteration for Performance'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('wetkit_deployment_source_ed_perf', FALSE),
+    '#description' => t('Do you want to enable the entity dependency query alteration for performance? (Experimental)'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_deploy_operation_info_alter().
+ */
+function wetkit_deployment_deploy_operation_info_alter(&$operations, $plan_name = NULL) {
+  foreach ($operations['postprocess'] as $key => $value) {
+    if ($value['callback'] == 'shared_content_source_deploy_postprocess' && $plan_name != 'destination_site_plan') {
+      unset($operations['postprocess'][$key]);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function wetkit_deployment_source_entity_insert($entity, $type) {
+  _wetkit_deployment_source_entity_insert_or_update($entity, $type);
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function wetkit_deployment_source_entity_update($entity, $type) {
+  _wetkit_deployment_source_entity_insert_or_update($entity, $type);
+}
+
+/**
+ * Helper for hook_entity_insert() and hook_entity_update().
+ *
+ * @throws Exception
+ */
+function _wetkit_deployment_source_entity_insert_or_update($entity, $type) {
+  if (module_exists('shared_content_source') && $type == 'menu_link') {
+    if (isset($entity->options['deploy_attributes']['deploy_menu_item']['yes'])) {
+      $entity_wrapper = entity_metadata_wrapper($type, $entity);
+      $plan = deploy_manager_plan_load('destination_site_plan');
+      shared_content_source_add_to_plan_and_deploy($plan, $entity_wrapper);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function wetkit_deployment_source_entity_delete($entity, $type) {
+  if (module_exists('shared_content_source') && $type == 'menu_link') {
+    if (isset($entity->options)) {
+      $options = unserialize($entity->options);
+    }
+    if (isset($options['deploy_attributes']['deploy_menu_item']['yes'])) {
+      $entity_wrapper = entity_metadata_wrapper($type, $entity);
+      $plan = deploy_manager_plan_load('destination_site_plan');
+      deploy_services_client_delete_entity_from_plan_endpoints($entity_wrapper, $plan);
+    }
+  }
+}
+
+/*
+ * Implements hook_media_parse().
+ */
+function wetkit_deployment_source_media_parse($url) {
+  // Workaround for Big Files using Import Media from F.S. + iNotify + Rsync.
+  if (variable_get('wetkit_deployment_source_file_contents_override', FALSE)) {
+    if (substr($url, 0, 21) === 'public://upload/media') {
+      return $url;
+    }
+  }
+}
+
+/**
+ * Implements hook_deploy_entity_alter().
+ */
+function wetkit_deployment_source_deploy_entity_alter(&$entity, $entity_type) {
+  // Ensure the hidden attribute isn't overridden by
+  // i18n_menu_translated_menu_link_alter.
+  if ($entity_type == 'menu_link') {
+    $query = db_select('menu_links')
+      ->fields('menu_links', array('mlid', 'hidden'))
+      ->condition('mlid', $entity->mlid);
+    if ($item = $query->execute()->fetchAssoc()) {
+      $entity->hidden  = $item['hidden'];
+    }
+  }
+
+  // Workaround for Big Files using Import Media from F.S. + iNotify + Rsync.
+  if ($entity_type == 'file' && variable_get('wetkit_deployment_source_file_contents_override', FALSE)) {
+    if (substr($entity->uri, 0, 21) === 'public://upload/media') {
+      if (isset($entity->file_contents)) {
+        unset($entity->file_contents);
+      }
+    }
+  }
+}
+
+/**
+ * Page callback for the simplest introduction menu entry.
+ *
+ * @param object $context
+ *   Some content passed in.
+ */
+function _wetkit_deployment_source_deploy($context = NULL) {
+  $deploy = deploy_plan_load($context);
+  if ($deploy) {
+    $deploy->deploy();
+  }
+  drupal_goto('admin/dashboard/deployment');
+}
+
+/**
+ * A modal static page callback.
+ *
+ * @param bool $js
+ *   Determine whether the user's browser is javascript enabled.
+ * @param int $entity_id
+ *   The node ID of passed as an argument from the hook_menu() path
+ *
+ * @return string
+ *   The contents of the node, that will fill the modal window.
+ */
+function _wetkit_deployment_source_modal($js = NULL, $entity_type = NULL, $entity_id = NULL) {
+  global $language;
+  $title = '';
+  $output = '';
+
+  if ($entity_type == NULL) {
+    // You can customize the string below, or use a drupal_goto() to
+    // send the user to a custom error page.
+    return t('No entity type was sent to be loaded.');
+  }
+
+  if ($entity_id == NULL) {
+    // You can customize the string below, or use a drupal_goto() to
+    // send the user to a custom error page.
+    return t('No entity id was sent to be loaded.');
+  }
+
+  if ($js) {
+    // Required includes for ctools to work:
+    ctools_include('ajax');
+    ctools_include('modal');
+  }
+
+  // Load the entity object.
+  $query = new EntityFieldQuery();
+
+  $query->entityCondition('entity_type', $entity_type)
+    ->entityCondition('entity_id', $entity_id, '=');
+
+  $result = $query->execute();
+
+  if (isset($result[$entity_type])) {
+    $entity_nids = array_keys($result[$entity_type]);
+    $entities = entity_load($entity_type, $entity_nids);
+    foreach ($entities as $item) {
+      $title = $item->title_field[$language->language][0]['value'];
+      $output = $item->body[$language->language][0]['value'];
+    }
+  }
+  else {
+    return t('Nothing was returned by the Entity Field Query.');
+  }
+
+  return ctools_modal_render($title, $output);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wetkit_deployment_source_theme() {
+  return array(
+    'wetkit_deployment_source_items' => array(
+      'variables' => array('items' => NULL),
+    ),
+    'wetkit_deploy_ui_overview' => array(
+      'variables' => array('blocks' => array()),
+    ),
+    'wetkit_deploy_ui_overview_plan_content' => array(
+      'variables' => array('info' => array()),
+    ),
+  );
+}
+
+/**
+ * Implements hook_deploy_aggregators().
+ */
+function wetkit_deployment_source_deploy_aggregators() {
+  $path = drupal_get_path('module', 'wetkit_deployment_source') . '/plugins/deployment';
+  return array(
+    'WetKitDeployAggregatorManaged' => array(
+      'name' => 'WetKit Managed aggregator',
+      'description' => 'Provides methods for modules (or users) to manually manage entitites to be aggregated for deployment.',
+      'handler' => array(
+        'class' => 'WetKitDeployAggregatorManaged',
+        'file' => 'WetKitDeployAggregatorManaged.inc',
+        'path' => $path,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_deploy_processors().
+ */
+function wetkit_deployment_source_deploy_processors() {
+  $path = drupal_get_path('module', 'wetkit_deployment_source') . '/plugins/deployment';
+  return array(
+    'WetKitDeployProcessorQueue' => array(
+      'name' => 'WetKit Queue API',
+      'description' => 'All entities are processed with the Queue API. Works best when deployments are large.',
+      'handler' => array(
+        'class' => 'WetKitDeployProcessorQueue',
+        'file' => 'WetKitDeployProcessorQueue.inc',
+        'path' => $path,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_deploy_services().
+ */
+function wetkit_deployment_deploy_services() {
+  $path = drupal_get_path('module', 'wetkit_deployment_source') . '/plugins/deployment';
+  return array(
+    'WetKitServiceRestJSON' => array(
+      'name' => 'WetKit REST JSON',
+      'description' => 'Deploys multilingual data over a REST service that can receive JSON data. Works well when the endpoint happens to be a Drupal sites using Services module with REST server.',
+      'handler' => array(
+        'class' => 'WetKitServiceRestJSON',
+        'file' => 'WetKitServiceRestJSON.inc',
+        'path' => $path,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_cron_queue_info().
+ */
+function wetkit_deployment_source_cron_queue_info() {
+  $queues = array();
+  if ((variable_get('wetkit_deployment_source_enable_cron', TRUE)) || (drupal_is_cli() && function_exists('drush_main'))) {
+    $queues['wetkit_deploy'] = array(
+      'worker callback' => 'wetkit_deployment_source_worker_deploy',
+      'time' => 60,
+    );
+    $queues['wetkit_publish'] = array(
+      'worker callback' => 'wetkit_deployment_source_worker_publish',
+      'time' => 60,
+    );
+    variable_set('wetkit_deployment_source_enable_cron', FALSE);
+  }
+  return $queues;
+}
+
+/**
+ * Processes a single queued item for deployment.
+ */
+function wetkit_deployment_source_worker_deploy($entity, &$context = NULL) {
+  $endpoint = deploy_endpoint_load($entity->__metadata['endpoint_name']);
+  $plan = deploy_plan_load($entity->__metadata['plan_name']);
+
+  if ($plan && $endpoint) {
+    $entities = array(array('type' => $entity->__metadata['type'], 'id' => $entity->__metadata['id']));
+    $iterator = deploy_iterator($entities);
+    $endpoint->deploy($entity->__metadata['deployment_key'], $iterator, $entity->__metadata['lock_name']);
+  }
+}
+
+/**
+ * Processes a single queued item for publishing.
+ */
+function wetkit_deployment_source_worker_publish($entity, &$context = NULL) {
+  $endpoint = deploy_endpoint_load($entity->__metadata['endpoint_name']);
+  $plan = deploy_plan_load($entity->__metadata['plan_name']);
+
+  if ($plan && $endpoint) {
+    $entities = array(array('type' => $entity->__metadata['type'], 'id' => $entity->__metadata['id']));
+    $iterator = deploy_iterator($entities);
+    $endpoint->publish($entity->__metadata['deployment_key'], $iterator, $entity->__metadata['lock_name']);
+
+    $context['results'][$entity->__metadata['endpoint_name']] = $entity->__metadata['plan_name'];
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wetkit_deployment_source_form_alter(&$form, &$form_state, $form_id) {
+  // Peform logic on generic total control types.
+  $deployment_types = array(
+    'wetkit_deployment_source_deployment_edit_form',
+    'wetkit_deployment_source_queue_edit_form',
+  );
+  if (in_array($form_id, $deployment_types)) {
+    // Create General Settings Fieldset.
+    $form['general_settings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('General Settings'),
+      '#collapsible' => FALSE,
+      '#collapsed' => FALSE,
+    );
+    $form['general_settings']['override_title'] = $form['override_title'];
+    $form['general_settings']['override_title_markup'] = $form['override_title_markup'];
+    $form['general_settings']['override_title_text'] = $form['override_title_text'];
+    $form['general_settings']['types'] = $form['types'];
+
+    // Unset some Form Variables.
+    unset($form['override_title']);
+    unset($form['override_title_markup']);
+    unset($form['override_title_text']);
+    unset($form['types']);
+  }
+
+  $forms_to_improve = array(
+    'wetkit_deployment_source_queue_edit_form'
+  );
+
+  if (in_array($form_id, $forms_to_improve)) {
+    unset($form['override_title_heading']);
+  }
+
+  // Overrride Deploy Managed UI since we have our own interface.
+  if (!empty($form['#node_edit_form']) && isset($form['deploy_managed_ui'])) {
+    unset($form['deploy_managed_ui']);
+    foreach ($form['#submit'] as $key => $handler) {
+      if ($handler == 'deploy_managed_ui_node_form_submit') {
+        unset($form['#submit'][$key]);
+      }
+    }
+  }
+
+  // For the rest we only support edit forms following the Entity API convention.
+  if (!empty($form['#entity_type'])) {
+    $entity_type = $form['#entity_type'];
+    if (isset($form[$entity_type]) && is_object($form[$entity_type]['#value'])) {
+      unset($form['deploy_managed_ui']);
+      foreach ($form['#submit'] as $key => $handler) {
+        if ($handler == 'deploy_managed_ui_entity_form_submit') {
+          unset($form['#submit'][$key]);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_views_bulk_operations_form_alter().
+ */
+function wetkit_deployment_source_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
+  // Perform logic on vbo submit.
+  $vbo_types = array(
+    'views_form_deployment_administration_beans_panel_pane_1',
+    'views_form_deployment_administration_files_panel_pane_1',
+    'views_form_deployment_administration_nodes_panel_pane_1',
+    'views_form_deployment_administration_taxonomy_panel_pane_1',
+    'views_form_deployment_administration_users_panel_pane_1',
+  );
+  if (in_array($form['#form_id'], $vbo_types)) {
+    $form['select']['submit']['#submit'][] = '_wetkit_deployment_source_deploy_vbo';
+  }
+}
+
+/**
+ * Add all of the deployment items to the queue.
+ */
+function _wetkit_deployment_source_deploy_vbo($form, &$form_state) {
+  $form_state['redirect'] = array(
+    'admin/dashboard/deployment/deploy',
+  );
+}
+
+/**
+ * Implements hook_quicktabs_tabstyles().
+ */
+function wetkit_deployment_source_quicktabs_tabstyles() {
+  $path = drupal_get_path('module', 'wetkit_deployment_source');
+  return array(
+    $path . '/plugins/quicktabs_styles/wetkit_tabs/wetkit_tabs.css' => t('WetKit Tabs'),
+  );
+}
+
+/**
+ * Implements hook_action_info().
+ */
+function wetkit_deployment_source_action_info() {
+  $actions = array();
+  $actions['wetkit_deployment_source_action_add_content_to_managed_plan'] = array(
+    'type' => 'node',
+    'label' => t('Add content to queue'),
+    'configurable' => FALSE,
+  );
+  $actions['wetkit_deployment_source_action_add_bean_to_managed_plan'] = array(
+    'type' => 'bean',
+    'label' => t('Add bean to queue'),
+    'configurable' => FALSE,
+  );
+  $actions['wetkit_deployment_source_action_add_file_to_managed_plan'] = array(
+    'type' => 'file',
+    'label' => t('Add file to queue'),
+    'configurable' => FALSE,
+  );
+  $actions['wetkit_deployment_source_action_add_term_to_managed_plan'] = array(
+    'type' => 'taxonomy_term',
+    'label' => t('Add term to queue'),
+    'configurable' => FALSE,
+  );
+  $actions['wetkit_deployment_source_action_add_user_to_managed_plan'] = array(
+    'type' => 'user',
+    'label' => t('Add user to queue'),
+    'configurable' => FALSE,
+  );
+  return $actions;
+}
+
+/**
+ * Options callback for the deploy_plan data type.
+ */
+function wetkit_deployment_source_deploy_manager_plan_get_options($args = array()) {
+  $default_args = array(
+    'aggregator_plugin' => 'WetKitDeployAggregatorManaged',
+  );
+  $args = array_merge($default_args, $args);
+
+  $plans = deploy_plan_load_all($args);
+  $options = array();
+  foreach ($plans as $plan_name => $info) {
+    $options[$plan_name] = $info->title;
+  }
+  return $options;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wetkit_deployment_source_form_views_exposed_form_alter(&$form, &$form_state) {
+  if (substr($form['#id'], 0, 29) === 'views-exposed-form-deployment') {
+    $form['submit']['#attributes'] = array('class' => array('my-views-filter-submit'));
+    $submit_btn_id = $form['submit']['#id'];
+    if (!empty($submit_btn_id) && !empty($form['reset'])) {
+      // Add own reset button
+      $form['submit']['#suffix'] = '<button onclick="javascript:jQuery(this.form).clearForm();jQuery(this.form).find(\'#' . $submit_btn_id . '\').trigger(\'click\');return false;" class="btn btn-default form-submit ico-remove form-reset my-views-filter-reset">' . t('Reset') . '</button>';
+      // Remove the original RESET button.
+      unset($form['reset']);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_dependencies_alter().
+ *
+ * Will only deploy dependencies that have not already been deployed
+ */
+function wetkit_deployment_source_entity_dependencies_alter(&$dependencies, $entity, $type) {
+  if (variable_get('wetkit_deployment_source_ed_perf', FALSE)) {
+    // Cycle through the dependencies and check if they are deployed.
+    foreach ($dependencies as $index => $dependency) {
+      $wrapper = entity_metadata_wrapper($dependency['type'], $dependency['id']);
+      $bundle = $wrapper->getBundle();
+      // Only look at dependencies that have the shared_content field.
+      if (field_info_instance($dependency['type'], 'field_shared_content', $bundle)) {
+        // EFQ to see if the dependency/content has been deployed.
+        $query = new EntityFieldQuery();
+        $query->entityCondition('entity_type', $dependency['type'], '=');
+        $query->entityCondition('entity_id', $dependency['id'], '=');
+        $query->fieldCondition('field_shared_content', 'value', TRUE, '=');
+        // Node must be published.
+        if ($dependency['type'] == 'node') {
+          $query->propertyCondition('status', 1);
+        }
+        // if the deploy to destination field exists, it must be checked/deployed.
+        if (field_info_instance($dependency['type'], 'field_deploy_to_destination_site', $bundle)) {
+          $query->fieldCondition('field_deploy_to_destination_site', 'value', TRUE, '=');
+        }
+        $result = $query->execute();
+        // If the query returns that the content has been deployed remove dependency.
+        if (isset($result[$dependency['type']]) && count($result[$dependency['type']]) == 1) {
+          unset($dependencies[$index]);
+        }
+      }
+    }
+  }
+}

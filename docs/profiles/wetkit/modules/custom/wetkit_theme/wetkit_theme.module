@@ -1,0 +1,234 @@
+<?php
+/**
+ * @file
+ * wetkit_theme.module
+ */
+
+include_once 'wetkit_theme.features.inc';
+
+/**
+ * Implements hook_apps_app_info().
+ */
+function wetkit_theme_apps_app_info() {
+  return array(
+    'configure form' => 'wetkit_theme_configure_form',
+  );
+}
+
+/**
+ * Configuration Form for WetKit Users.
+ */
+function wetkit_theme_configure_form($form, &$form_state) {
+  $form = array();
+
+  $form['wetkit_theme_admin_paths'] = array(
+    '#title' => t('Remove WxT Admin Path Cutomization for Bootstrap'),
+    '#type' => 'select',
+    '#required' => TRUE,
+    '#options' => array(
+      0 => t('Do Not Remove (default)'),
+      1 => t('Remove (use with caution)'),
+    ),
+    '#default_value' => variable_get('wetkit_theme_admin_paths', 0),
+    '#description' => t('This setting will remove the customizations WxT utilizes to enforce Bootstrap theme rendering on admin paths. This option is heavily discouraged as WxT 4.x has been designed with the goal of leveraging a single theme for both the front / back end. The benefits of this approach is an improved user experience and validated WxT markup on the majority of page rendering. Only use this option if your requirements force having a separate administrative back end.'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function wetkit_theme_page_build() {
+  drupal_add_library('system', 'ui.widget');
+  drupal_add_library('system', 'ui.tabs');
+  drupal_add_library('system', 'ui.accordion');
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function wetkit_theme_ctools_plugin_directory($module, $plugin) {
+  return 'plugins/' . $plugin;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function wetkit_theme_entity_info_alter(&$entity_info) {
+
+  // Add featured view mode to nodes.
+  $entity_info['node']['view modes']['featured'] = array(
+    'label' => t('Featured'),
+    'custom settings' => TRUE,
+  );
+
+  // Add featured view mode to users.
+  $entity_info['user']['view modes']['featured'] = array(
+    'label' => t('Featured'),
+    'custom settings' => TRUE,
+  );
+
+  // Add featured view mode to taxonomy.
+  $entity_info['taxonomy_term']['view modes']['featured'] = array(
+    'label' => t('Featured'),
+    'custom settings' => TRUE,
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wetkit_theme_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'system_theme_settings':
+
+      // Better Title.
+      $form['logo']['default_logo']['#title'] = 'Use the default logo system';
+
+      // Duplicate the logo form for svg file.
+      $add_wetkit_theme = $form['logo']['default_logo'];
+      $svg_path = $form['logo']['settings']['logo_path'];
+      $svg_upload = $form['logo']['settings']['logo_upload'];
+      $add_wetkit_theme['#title'] = t('Use a svg logo');
+      $svg_path['#title'] = t('Path to custom svg logo');
+      $svg_upload['#title'] = t('Upload logo svg image');
+      $add_wetkit_theme['#description'] = t('Check here if you want the theme to use a svg logo if the browser supports it.');
+      $svg_path['#description'] = t('The path to the file you would like to use as your svg logo file instead of the default logo.');
+      $svg_upload['#description'] = t("If you don't have direct file access to the server, use this field to upload your svg logo.");
+
+      // Get theme name to get settings.
+      $theme_settings_name = $form['var']['#value'];
+      $theme_settings_array = explode('_', $theme_settings_name);
+      $theme_settings_array_count = count($theme_settings_array);
+      $theme_name = ($theme_settings_array_count > 2) ? $theme_settings_array[1] : NULL;
+
+      // Theme name has underscores.
+      if ($theme_settings_array_count > 3) {
+        $theme_name = '';
+        foreach ($theme_settings_array as $key => $value) {
+          if ($key != 0 && $key != ($theme_settings_array_count - 1)) {
+            $theme_name .= $value;
+            if ($key != ($theme_settings_array_count - 2)) {
+              $theme_name .= '_';
+            }
+          }
+        }
+      }
+
+      // Provide default value.
+      $add_wetkit_theme['#default_value'] = theme_get_setting('wetkit_theme_svg_default_logo', $theme_name);
+      $svg_path['#default_value'] = theme_get_setting('wetkit_theme_svg_logo_path', $theme_name);
+
+      // If path is a public:// URI, display the relative path.
+      $original_path = $svg_path['#default_value'];
+      $friendly_path = NULL;
+      if (file_uri_scheme($original_path) == 'public') {
+        $friendly_path = file_uri_target($original_path);
+        $svg_path['#default_value'] = $friendly_path;
+      }
+
+      // Add container.
+      $form['logo']['settings']['svg'] = array(
+        '#type' => 'container',
+        '#states' => array(
+          // Hide the logo settings when using the default logo.
+          'invisible' => array(
+            'input[name="wetkit_theme_svg_default_logo"]' => array('checked' => FALSE),
+          ),
+        ),
+        '#weight' => 5,
+      );
+
+      // Weight for the right order.
+      $add_wetkit_theme['#weight'] = 4;
+
+      // Add back to form.
+      $form['logo']['settings']['wetkit_theme_svg_default_logo'] = $add_wetkit_theme;
+      $svg_path = $form['logo']['settings']['svg']['wetkit_theme_svg_logo_path'] = $svg_path;
+      $svg_upload = $form['logo']['settings']['svg']['wetkit_theme_svg_logo_upload'] = $svg_upload;
+
+      // Validator + Submit function.
+      $form['#validate'][] = 'wetkit_theme_theme_settings_validate';
+      $form['#submit'][] = 'wetkit_theme_theme_settings_submit';
+      break;
+  }
+}
+
+/**
+ * Implements hook_theme_settings_validate().
+ */
+function wetkit_theme_theme_settings_validate($form, &$form_state) {
+  // Handle file uploads.
+  $validators = array('file_validate_extensions' => array('svg'));
+
+  // Check for a new uploaded logo.
+  $file = file_save_upload('wetkit_theme_svg_logo_upload', $validators);
+  if (isset($file)) {
+    // File upload was attempted.
+    if ($file) {
+      // Put the temporary file in form_values so we can save it on submit.
+      $form_state['values']['wetkit_theme_svg_logo_upload'] = $file;
+    }
+    else {
+      // File upload failed.
+      form_set_error('wetkit_theme_svg_logo_upload', t('The svg logo could not be uploaded.'));
+    }
+  }
+
+  // If the user provided a path for a logo or favicon file, make sure a file
+  // exists at that path.
+  if ($form_state['values']['wetkit_theme_svg_logo_path']) {
+    $path = _system_theme_settings_validate_path($form_state['values']['wetkit_theme_svg_logo_path']);
+    if (!$path) {
+      form_set_error('wetkit_theme_svg_logo_path', t('The custom svg logo path is invalid.'));
+    }
+  }
+}
+
+/**
+ * Implements hook_theme_settings_submit().
+ */
+function wetkit_theme_theme_settings_submit($form, &$form_state) {
+  $values = $form_state['values'];
+
+  // If the user uploaded a new logo or favicon, save it to a permanent location
+  // and use it in place of the default theme-provided file.
+  if ($file = $values['wetkit_theme_svg_logo_upload']) {
+    unset($values['wetkit_theme_svg_logo_upload']);
+    $filename = file_unmanaged_copy($file->uri);
+    $values['wetkit_theme_svg_default_logo'] = 1;
+    $values['wetkit_theme_svg_logo_path'] = $filename;
+  }
+
+  // If the user entered a path relative to the system files directory for
+  // a logo, store a public:// URI so the theme system can handle it.
+  if (!empty($values['wetkit_theme_svg_logo_path'])) {
+    $values['wetkit_theme_svg_logo_path'] = _system_theme_settings_validate_path($values['wetkit_theme_svg_logo_path']);
+  }
+
+  // Load current theme settings to add svg settings.
+  $key = $values['var'];
+  $theme_settings = variable_get($key);
+
+  // Clean settings.
+  unset(
+    $theme_settings['logo_upload'],
+    $theme_settings['wetkit_theme_upload'],
+    $theme_settings['var'],
+    $theme_settings['submit'],
+    $theme_settings['reset'],
+    $theme_settings['form_id'],
+    $theme_settings['op'],
+    $theme_settings['form_build_id'],
+    $theme_settings['form_token']
+  );
+
+  // Add svg settings.
+  $theme_settings['wetkit_theme_svg_default_logo'] = $values['wetkit_theme_svg_default_logo'];
+  $theme_settings['wetkit_theme_svg_logo_path'] = $values['wetkit_theme_svg_logo_path'];
+
+  // Save theme settings an clear cache.
+  variable_set($key, $theme_settings);
+  cache_clear_all();
+}

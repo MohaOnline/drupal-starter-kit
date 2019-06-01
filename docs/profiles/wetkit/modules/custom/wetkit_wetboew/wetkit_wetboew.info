@@ -1,0 +1,24 @@
+name = WetKit WET-BOEW
+description = Installs and configures settings related to the WET-BOEW JS Library
+core = 7.x
+package = WetKit
+dependencies[] = ctools
+dependencies[] = defaultconfig
+dependencies[] = features
+dependencies[] = libraries
+dependencies[] = menu
+dependencies[] = menu_attributes
+dependencies[] = menu_block
+dependencies[] = wetkit_core
+features[features_api][] = api:2
+features[menu_custom][] = main-menu
+features[menu_custom][] = menu-wet-footer
+features[menu_custom][] = menu-wet-header
+features[menu_custom][] = menu-wet-mid-footer
+features[menu_custom][] = menu-wet-terms
+
+; Information added by Drupal.org packaging script on 2019-05-29
+version = "7.x-4.12"
+core = "7.x"
+project = "wetkit_wetboew"
+datestamp = "1559173696"

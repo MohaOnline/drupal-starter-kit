@@ -1,0 +1,30 @@
+<?php
+/**
+ * @file
+ * Code for the Deployed content feature.
+ */
+
+include_once 'wetkit_deployment.features.inc';
+
+/**
+ * Implements hook_entity_uuid_presave().
+ */
+function wetkit_deployment_entity_uuid_presave(&$entity, $entity_type) {
+  // Since the user account may have originated on a different site (e.g., via
+  // UUID Services), its roles won't necessarily exist on this site, so we need
+  // to remove the ones that don't exist before saving. We use the role name
+  // (rather than the role ID) to determine if a role exists on this site,
+  // because that is closer to a "machine name" in the sense that it has actual
+  // meaning and can be directly controlled by site administrators. This is
+  // also consistent with how the Features module handles this.
+  if ($entity_type == 'user') {
+    $built_in_roles = drupal_map_assoc(array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID));
+    $custom_roles = array_diff_key(user_roles(), $built_in_roles);
+    $matched_roles = array_intersect($custom_roles, $entity->roles);
+    // Built-in roles (whose IDs have special meaning) must be explicitly
+    // preserved, since user_roles() returns their names translated, so they
+    // wouldn't have necessarily been able to match above even if we had tried.
+    $built_in_roles = array_intersect_key($entity->roles, $built_in_roles);
+    $entity->roles = $built_in_roles + $matched_roles;
+  }
+}

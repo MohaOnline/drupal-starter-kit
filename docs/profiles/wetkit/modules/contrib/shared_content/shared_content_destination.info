@@ -1,0 +1,19 @@
+name = Shared content destination site
+description = Allows content creators to push entities to this site from other sites via an automatic deployment system.
+core = 7.x
+package = Shared content
+dependencies[] = ctools
+dependencies[] = entity
+dependencies[] = libraries
+dependencies[] = rest_server
+dependencies[] = services
+dependencies[] = uuid
+dependencies[] = uuid_redirect
+dependencies[] = uuid_services
+
+; Information added by drupal.org packaging script on 2013-07-27
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "shared_content"
+datestamp = "1374898884"
+

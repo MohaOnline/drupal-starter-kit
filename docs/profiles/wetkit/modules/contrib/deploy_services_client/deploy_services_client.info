@@ -1,0 +1,14 @@
+name = Deploy Services Client
+description = Provides a Services client which communicates with Deployment endpoints.
+package = Deployment
+core = 7.x
+dependencies[] = entity
+dependencies[] = deploy
+files[] = deploy_services_client.client.inc
+
+; Information added by drupal.org packaging script on 2013-10-02
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "deploy_services_client"
+datestamp = "1380745321"
+

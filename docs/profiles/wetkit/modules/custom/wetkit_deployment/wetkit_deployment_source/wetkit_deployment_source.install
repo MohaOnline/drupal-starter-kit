@@ -1,0 +1,47 @@
+<?php
+/**
+ * @file
+ * wetkit_deployment_source.install
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_deployment_source_install() {
+  variable_get('wetkit_deployment_source_enable_cron', FALSE);
+
+  // Ensure that our new classes are taken.
+  drupal_flush_all_caches();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_deployment_source_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_deployment_source_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Install the deploy_services module.
+ */
+function wetkit_deployment_update_7401() {
+  if (!module_exists('deploy_services')) {
+    module_enable(array('deploy_services'));
+  }
+}
+
+/**
+ * Install the deploy_plus module.
+ */
+function wetkit_deployment_update_7402() {
+  if (!module_exists('deploy_plus')) {
+    module_enable(array('deploy_plus'));
+  }
+}

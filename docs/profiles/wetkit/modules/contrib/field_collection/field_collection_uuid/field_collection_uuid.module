@@ -1,0 +1,85 @@
+<?php
+/**
+ * @file
+ * Provide UUID support for field collections.
+ *
+ * This code is taken from this issue below to solve challenges with
+ * Field Collections - https://drupal.org/node/1817956.
+ * This also implements the VUUID for Field Collection revisions.
+ */
+
+/**
+ * Implements hook_entity_uuid_load().
+ */
+function field_collection_entity_uuid_load(&$entities, $entity_type) {
+  if ($entity_type == 'field_collection_item') {
+    entity_property_id_to_uuid($entities, 'field_collection_item', 'value');
+  }
+}
+
+/**
+ * Implements hook_entity_uuid_presave().
+ */
+function field_collection_entity_uuid_presave(&$entity, $entity_type) {
+  if ($entity_type == 'field_collection_item') {
+    entity_property_uuid_to_id($entity, 'field_collection_item', 'value');
+  }
+}
+
+/**
+ * Implements hook_field_uuid_load().
+ */
+function field_collection_field_uuid_load($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  entity_property_id_to_uuid($items, 'field_collection_item', 'value');
+}
+
+/**
+ * Implements hook_field_uuid_presave().
+ */
+function field_collection_field_uuid_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  entity_property_uuid_to_id($items, 'field_collection_item', 'value');
+  // Update the revision_ids of the field to match the head revisions
+  // of the entities.
+  $entity_ids = array();
+  foreach ($items as $item) {
+    $entity_ids[] = $item['value'];
+  }
+
+  $field_collections = entity_load("field_collection_item", $entity_ids);
+  foreach ($items as &$item) {
+    $item['revision_id'] = $field_collections[$item['value']]->revision_id;
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function field_collection_uuid_entity_info_alter(&$entity_info) {
+  // Set the properties bellow for field collection entity so UUIDs get
+  // created on sync.
+  $entity_info['field_collection_item']['uuid'] = TRUE;
+  $entity_info['field_collection_item']['entity keys']['uuid'] = 'uuid';
+  $entity_info['field_collection_item']['entity keys']['revision uuid'] = 'vuuid';
+  $entity_info['field_collection_item']['entity class'] = 'UUIDFieldCollectionItemEntity';
+}
+
+/**
+ * Implements hook_services_request_preprocess_alter().
+ */
+function field_collection_uuid_services_request_preprocess_alter($controller, &$args) {
+  foreach ($args as $i => $arg) {
+    if (is_array($arg) && isset($arg['type'])) {
+      foreach (field_info_instances($args[0], $arg['type']) as $field_value) {
+        if (isset($field_value['type']) && $field_value['type'] == "field_collection") {
+          foreach ($arg[$field_value['field_name']][LANGUAGE_NONE] as $delta => $value) {
+            $target = reset(entity_get_id_by_uuid('field_collection_item', array($value['value'])));
+            $args[$i][$field_value['field_name']][LANGUAGE_NONE][$delta] = array(
+              'value' => $target,
+              'revision_id' => db_query('SELECT MAX(revision_id) FROM {field_collection_item_revision}')->fetchField(),
+            );
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,139 @@
+/* =============================================================================
+   Panels
+   ========================================================================== */
+
+
+#page-manager-edit .page-manager-edit-operations li.active {
+  border-right: none !important;
+}
+
+.dashboard-content {
+  padding: 0;
+}
+
+.dashboard-title {
+  font-weight: 300;
+  font-size: 2em;
+  margin-bottom: .5em;
+}
+
+.dashboard-entry .dashboard-link {
+  font-size: 120%;
+  font-weight: normal;
+}
+
+.dashboard-block {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.panels-dashboard .links {
+  margin-top: 0;
+}
+
+#page-manager-edit .page-manager-edit-operations li li.operation-first {
+  border-top: none !important;
+}
+
+div.dashboard-block {
+  /* panels dashboard, not dashboard */
+  padding: 0;
+  background: transparent;
+  border: 0px solid transparent;
+  margin-bottom: 0;
+}
+
+dl.page-manager-wizards {
+  margin: 0 0 1em;
+  padding: 0 0 0 2.5em;
+}
+dl.page-manager-wizards dt {
+  font-size: 1em;
+  font-weight: 500;
+}
+
+dl.page-manager-wizards dd {
+  margin-left: 0;
+}
+
+#page-manager-edit .page-manager-wrapper,
+#page-manager-edit .page-manager-tabs,
+#page-manager-edit .page-manager-edit-operations ul,
+#page-manager-edit .page-manager-edit-operations ul li {
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+#page-manager-edit .page-manager-edit-operations .inside {
+  border: 0px solid transparent;
+}
+#page-manager-edit .page-manager-edit-operations li {
+  background: transparent;
+  border: 0px solid transparent;
+}
+#page-manager-edit .page-manager-edit-operations li.changed,
+#page-manager-edit .page-manager-edit-operations li.changed-group .page-manager-group-title {
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+#page-manager-edit table tr.even {
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+#page-manager-edit .page-manager-ajax-pad {
+  background: transparent;
+  border-left: 1px solid #ddd;
+}
+#page-manager-edit .actions li a {
+  color: inherit;
+  background-color: transparent;
+  border: 0px solid transparent;
+}
+#page-manager-edit .page-manager-changed {
+  float: left;
+  /* LTR */
+  font-style: italic;
+  color: inherit;
+  padding-left: 1em;
+  padding-right: 22px;
+  background-color: transparent;
+  background-image: none;
+  border: 0px solid transparent;
+}
+
+#page-manager-list-pages-form .form-select,
+#page-manager-list-pages-form input,
+#ctools-export-ui-list-form .form-select,
+#ctools-export-ui-list-form input {
+  display: inline-block;
+}
+#page-manager-list-pages-form .form-item,
+#ctools-export-ui-list-form .form-item {
+  padding-right: .25em;
+  float: none;
+  display: inline-block;
+}
+
+#edit-pages-apply,
+#edit-pages-reset,
+#ctools-export-ui-list-form .form-submit {
+  margin-top: 0;
+  float: none;
+}
+
+#panels-dnd-main .panel-region .label {
+  border-style: none;
+  position: relative;
+}
+
+body form#page-manager-list-pages-form, body form#ctools-export-ui-list-form {
+  margin: 1em 0;
+}
+
+.pane-bean-blog-stay-connected ul {
+  list-style: none;
+}
+
+.panels-layouts-checkboxes .radio+.radio {
+  margin-top: 10px;
+}

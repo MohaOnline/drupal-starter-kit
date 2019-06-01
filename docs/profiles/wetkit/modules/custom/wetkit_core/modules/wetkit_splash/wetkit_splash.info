@@ -1,0 +1,27 @@
+name = WetKit Splash
+description = Splash configuration
+core = 7.x
+package = WetKit
+dependencies[] = ctools
+dependencies[] = splashify
+dependencies[] = strongarm
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[variable][] = splashify_how_desktop_mode
+features[variable][] = splashify_how_desktop_size
+features[variable][] = splashify_what_desktop_content
+features[variable][] = splashify_what_desktop_mode
+features[variable][] = splashify_what_desktop_pagetitle
+features[variable][] = splashify_when_anonymous
+features[variable][] = splashify_when_desktop_frequency
+features[variable][] = splashify_when_roles
+features[variable][] = splashify_when_roles_options
+features[variable][] = splashify_where_desktop_listpages
+features[variable][] = splashify_where_desktop_opposite
+features[variable][] = splashify_where_desktop_page
+
+; Information added by Drupal.org packaging script on 2019-05-29
+version = "7.x-4.34"
+core = "7.x"
+project = "wetkit_core"
+datestamp = "1559169792"

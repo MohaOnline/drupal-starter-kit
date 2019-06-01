@@ -1,0 +1,36 @@
+<?php
+/**
+ * @file
+ * wetkit_search_api.module
+ */
+
+include_once 'wetkit_search_api.features.inc';
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function wetkit_search_api_ctools_plugin_directory($module, $plugin) {
+  return 'plugins/' . $plugin;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function wetkit_search_api_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'search_form' || $form_id == 'search_theme_form') {
+    $form['#submit'] = array('wetkit_search_api_all_form_submit');
+    if (!empty($form['basic']['keys'])) {
+      $form['basic']['keys']['#size'] = '';
+    }
+  }
+}
+
+/**
+ * Custom form submit handler to change redirect state of the form.
+ */
+function wetkit_search_api_all_form_submit($form, &$form_state) {
+  $keys = trim($form_state['values']['keys']);
+  $module = !empty($form_state['values']['module']) ? $form_state['values']['module'] : 'site';
+  $module = ($module === 'node') ? 'site' : $module;
+  $form_state['redirect'] = array('search/' . $module . '/' . $keys);
+}

@@ -1,0 +1,23 @@
+/**
+ * @file
+ * Styling for the devel icon.
+ */
+
+/**
+ * Toolbar tab icon.
+ */
+
+.navbar-bar .navbar-icon-development:before {
+  background-image: url("../icons/bebebe/cog.svg");
+}
+.no-svg .navbar-bar .navbar-icon-development:before {
+  background-image: url("../icons/bebebe/cog.png");
+}
+.navbar-bar .navbar-icon-development:active:before,
+.navbar-bar .navbar-icon-development.navbar-active:before {
+  background-image: url("../icons/ffffff/cog.svg");
+}
+.no-svg .navbar-bar .navbar-icon-development:active:before,
+.no-svg .navbar-bar .navbar-icon-development.navbar-active:before {
+  background-image: url("../icons/ffffff/cog.png");
+}

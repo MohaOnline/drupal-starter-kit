@@ -1,0 +1,62 @@
+<?php
+/**
+ * @file
+ * wetkit_images.install
+ */
+
+/**
+ * Implements hook_install().
+ */
+function wetkit_images_install() {
+
+  // Remove initial display settings.
+  module_load_include('inc', 'file_entity', 'file_entity.file_api');
+  ctools_include('export');
+
+  $default_image_styles = array(
+    'preview' => 'square_thumbnail',
+    'teaser' => 'medium',
+    'full' => 'large',
+  );
+
+  foreach ($default_image_styles as $view_mode => $image_style) {
+    $display_name = 'image__' . $view_mode . '__file_image';
+    $display = array(
+      'api_version' => 1,
+      'name' => $display_name,
+      'status' => 1,
+      'weight' => 5,
+      'settings' => array('image_style' => $image_style),
+      'export_type' => NULL,
+    );
+    ctools_export_crud_delete('file_display', (object) $display);
+  }
+
+  file_info_cache_clear();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_images_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_images_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Picture + Breakpoints support for Images.
+ */
+function wetkit_images_update_7101() {
+  if (!module_exists('breakpoints')) {
+    module_enable(array('breakpoints'));
+  }
+  if (!module_exists('picture')) {
+    module_enable(array('picture'));
+  }
+}

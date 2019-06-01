@@ -1,0 +1,160 @@
+<?php
+
+/**
+ * @file
+ * Provides a Services client which communicates with Deployment endpoints.
+ */
+
+/**
+ * Deletes an entity from endpoints associated with a Deployment plan.
+ *
+ * @param EntityMetadataWrapper $entity
+ *   The entity object to delete. Construct this by calling
+ *   entity_metadata_wrapper() on a normal Drupal entity.
+ * @param DeployPlan $plan
+ *   The Deployment plan object (as returned by deploy_plan_load()) whose
+ *   endpoints will be contacted to delete the entity.
+ *
+ * @return
+ *   An array of endpoint names on which the entity existed and was
+ *   successfully deleted.
+ *
+ * @throws DeployAuthenticationException
+ * @throws DeployServiceException
+ */
+function deploy_services_client_delete_entity_from_plan_endpoints(EntityMetadataWrapper $entity, DeployPlan $plan) {
+  return _deploy_services_client_call_for_each_endpoint('deploy_services_client_delete_entity_from_endpoint', $entity, $plan);
+}
+
+/**
+ * Deletes an entity from a Deployment endpoint.
+ *
+ * The endpoint is first contacted to see if the entity exists there. If so,
+ * only then is an actual DELETE request made.
+ *
+ * @param EntityMetadataWrapper $entity
+ *   The entity object to delete. Construct this by calling
+ *   entity_metadata_wrapper() on a normal Drupal entity.
+ * @param DeployEndpoint $endpoint
+ *   The endpoint object (as returned by deploy_endpoint_load()) representing
+ *   the Deployment endpoint on which a request will be made to delete the
+ *   entity.
+ *
+ * @return
+ *   TRUE if the entity was deleted on the endpoint, or FALSE if it did not
+ *   exist on the endpoint (and therefore was not deleted).
+ *
+ * @throws DeployAuthenticationException
+ * @throws DeployServiceException
+ */
+function deploy_services_client_delete_entity_from_endpoint(EntityMetadataWrapper $entity, DeployEndpoint $endpoint) {
+  $success = FALSE;
+  $client = new DeployServicesClient($endpoint);
+  $client->login();
+  if ($client->get($entity)) {
+    // @todo: If the delete method can be changed to have a return value, we
+    //   should return that, rather than assuming the deletion was always
+    //   successful.
+    $client->delete($entity);
+    $success = TRUE;
+  }
+  $client->logout();
+  return $success;
+}
+
+/**
+ * Unpublishes an entity from endpoints associated with a Deployment plan.
+ *
+ * @param EntityMetadataWrapper $entity
+ *   The entity object to unpublish. Construct this by calling
+ *   entity_metadata_wrapper() on a normal Drupal entity.
+ * @param DeployPlan $plan
+ *   The Deployment plan object (as returned by deploy_plan_load()) whose
+ *   endpoints will be contacted to unpublish the entity.
+ *
+ * @return
+ *   An array of endpoint names on which the entity existed in a published
+ *   state and was successfully unpublished.
+ *
+ * @throws DeployAuthenticationException
+ * @throws DeployServiceException
+ */
+function deploy_services_client_unpublish_entity_from_plan_endpoints(EntityMetadataWrapper $entity, DeployPlan $plan) {
+  return _deploy_services_client_call_for_each_endpoint('deploy_services_client_unpublish_entity_from_endpoint', $entity, $plan);
+}
+
+/**
+ * Unpublishes an entity from a Deployment endpoint.
+ *
+ * The endpoint is first contacted to see if the entity exists there and is
+ * currently published. If so, only then is an actual request to unpublish the
+ * entity made.
+ *
+ * @param EntityMetadataWrapper $entity
+ *   The entity object to unpublish. Construct this by calling
+ *   entity_metadata_wrapper() on a normal Drupal entity.
+ * @param DeployEndpoint $endpoint
+ *   The endpoint object (as returned by deploy_endpoint_load()) representing
+ *   the Deployment endpoint on which a request will be made to unpublish the
+ *   entity.
+ *
+ * @return
+ *   TRUE if the entity was unpublished on the endpoint, or FALSE if it did not
+ *   exist on the endpoint or did exist but was already unpublished there.
+ *
+ * @throws DeployAuthenticationException
+ * @throws DeployServiceException
+ */
+function deploy_services_client_unpublish_entity_from_endpoint(EntityMetadataWrapper $entity, DeployEndpoint $endpoint) {
+  $success = FALSE;
+  $client = new DeployServicesClient($endpoint);
+  $client->login();
+  if (($entity_data = $client->get($entity)) && !empty($entity_data['status'])) {
+    // @todo: If the unpublish method can be changed to have a return value, we
+    //   should return that, rather than assuming the entity was always
+    //   unpublished successfully.
+   $client->unpublish($entity);
+   $success = TRUE;
+  }
+  else if (($entity_data = $client->get($entity)) && !empty($entity_data['hidden']) && $entity->type() == 'menu_link') {
+    $client->unpublish($entity);
+    $success = TRUE;
+  }
+  $client->logout();
+  return $success;
+}
+
+/**
+ * Calls a function on an entity for each endpoint in a plan.
+ *
+ * @param $function
+ *   The name of the function to call.
+ * @param EntityMetadataWrapper $entity
+ *   The entity object to call the function for. Construct this by calling
+ *   entity_metadata_wrapper() on a normal Drupal entity.
+ * @param DeployPlan $plan
+ *   The Deployment plan object (as returned by deploy_plan_load()) whose
+ *   endpoints will be contacted.
+ *
+ * @return
+ *   An array of endpoint names on which the function returned TRUE when it was
+ *   called.
+ *
+ * @throws DeployAuthenticationException
+ * @throws DeployServiceException
+ */
+function _deploy_services_client_call_for_each_endpoint($function, EntityMetadataWrapper $entity, DeployPlan $plan) {
+  // Get the list of endpoints to check.
+  $endpoint_names = array_filter($plan->endpoints);
+
+  // Loop through each and call the requested function.
+  $endpoints_where_function_was_successful = array();
+  foreach ($endpoint_names as $endpoint_name) {
+    $endpoint = deploy_endpoint_load($endpoint_name);
+    if ($function($entity, $endpoint)) {
+      $endpoints_where_function_was_successful[] = $endpoint_name;
+    }
+  }
+
+  return $endpoints_where_function_was_successful;
+}

@@ -1,0 +1,22 @@
+/* Panels */
+
+.panel-portlet .grab-title {
+  background: #008fdc;
+}
+
+.panels-ipe-newblock {
+  ul {
+    margin: 0px;
+  }
+  li {
+    padding: 0;
+    float: left;
+  }
+}
+
+.panels-ipe {
+  .l10n-client-minimized {
+    bottom: 52px !important;
+    z-index: 999 !important;
+  }
+}

@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * Installation and update scripts for WetKit Search.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_search_uninstall() {
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_search_') === 0) {
+      variable_del($key);
+    }
+  }
+}

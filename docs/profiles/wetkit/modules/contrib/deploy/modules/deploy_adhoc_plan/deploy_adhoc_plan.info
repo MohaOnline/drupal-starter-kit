@@ -1,0 +1,17 @@
+name = Ad Hoc Deployment Plans
+description = Create ad hoc deployment plans associated with user sessions.
+package = Deployment
+core = 7.x
+
+configure = admin/config/content/deploy-adhoc-plan
+
+dependencies[] = deploy_auto_plan
+
+files[] = deploy_adhoc_plan.test
+
+; Information added by Drupal.org packaging script on 2016-03-22
+version = "7.x-2.0-beta2"
+core = "7.x"
+project = "deploy"
+datestamp = "1458645642"
+

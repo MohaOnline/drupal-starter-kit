@@ -1,0 +1,33 @@
+/**
+ * Stylesheet for Installation Profile
+ */
+
+#wetkit-theme-selection-form {
+  .form-item-theme {
+    clear: both;
+    margin-top: .5em;
+    margin-bottom: .5em;
+    label img {
+      float: left;
+      width: 100px;
+      margin-right: 1em;
+    }
+  }
+}
+
+.in-maintenance {
+  input[type="image"] + label,
+  input[type="checkbox"] + label,
+  input[type="radio"] + label {
+    display: inline;
+  }
+  #edit-theme {
+    img{
+      display: block;
+      width: 275px;
+    }
+  }
+  .messages {
+    padding: 10px 10px 10px 10px;
+  }
+}

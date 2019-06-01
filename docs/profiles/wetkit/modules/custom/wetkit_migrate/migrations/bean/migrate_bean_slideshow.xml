@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bean>
+    <english>
+        <content>
+            <source_id>bean_slideshow_eng_1</source_id>
+            <title>Main Slider</title>
+        </content>
+    </english>
+    <french>
+        <content>
+            <source_id>bean_slideshow_fra_1</source_id>
+            <title>Main Slider</title>
+        </content>
+    </french>
+</bean>

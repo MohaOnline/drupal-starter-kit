@@ -1,0 +1,11 @@
+<dataConfig>
+<dataSource name="ds1" type="FileDataSource" />
+<document>
+<entity name="ngrams" processor="LineEntityProcessor" url="path_to_csv.csv" transformer="RegexTransformer, TemplateTransformer" skipLineRegex="^ID\|">
+   <field column="rawLine" regex="^(.*)\|(.*)\|(.*)$"  groupNames="id,ss_title_fr,ss_body_fr" />
+   <field column="hash" template="xxxxxx" />
+   <field column="bundle" template="xxxxxx" />
+   <field column="ss_language" template="fr" />
+</entity>
+</document>
+</dataConfig>

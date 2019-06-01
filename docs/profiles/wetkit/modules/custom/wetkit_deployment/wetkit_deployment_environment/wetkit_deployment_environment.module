@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the WetKit Environment feature.
+ */
+
+include_once 'wetkit_deployment_environment.features.inc';

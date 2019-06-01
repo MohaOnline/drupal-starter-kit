@@ -1,0 +1,35 @@
+name = Shared content example destination site
+description = Contains example configuration for demonstrating the Shared Content project on a test destination site.
+core = 7.x
+package = Shared content example
+php = 5.2.4
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = file_entity
+dependencies[] = node
+dependencies[] = options
+dependencies[] = services
+dependencies[] = shared_content_destination
+dependencies[] = shared_content_example
+dependencies[] = strongarm
+dependencies[] = taxonomy
+features[ctools][] = services:services:3
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[field_instance][] = node-complex_content-field_shared_content
+features[field_instance][] = node-simple_content-field_shared_content
+features[field_instance][] = taxonomy_term-tags-field_shared_content
+features[services_endpoint][] = destination_site_endpoint
+features[user_permission][] = administer taxonomy
+features[user_permission][] = bypass file access
+features[user_permission][] = bypass node access
+features[user_role][] = content deployment user
+features[variable][] = uuid_redirect_external_base_url
+features[variable][] = uuid_redirect_menu_paths
+
+; Information added by drupal.org packaging script on 2013-07-27
+version = "7.x-1.0-beta2"
+core = "7.x"
+project = "shared_content"
+datestamp = "1374898884"
+

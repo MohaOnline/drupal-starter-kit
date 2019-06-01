@@ -1,0 +1,71 @@
+name = Drupal WxT
+distribution_name = WetKit
+description = Installation Profile created for the Web Experience Toolkit using Drupal WxT.
+core = 7.x
+exclusive = 1
+
+; Drupal Core
+dependencies[] = menu
+dependencies[] = image
+dependencies[] = list
+dependencies[] = locale
+dependencies[] = number
+dependencies[] = options
+dependencies[] = path
+dependencies[] = taxonomy
+dependencies[] = search
+dependencies[] = field
+dependencies[] = field_ui
+dependencies[] = file
+dependencies[] = block
+dependencies[] = dblog
+dependencies[] = update
+dependencies[] = shortcut
+dependencies[] = contextual
+
+; Drupal Core (Disabled)
+;dependencies[] = overlay
+;dependencies[] = help
+;dependencies[] = rdf
+;dependencies[] = statistics
+;dependencies[] = simpletest
+
+; WxT Foundation
+dependencies[] = wetkit_core
+dependencies[] = wetkit_admin
+dependencies[] = wetkit_images
+dependencies[] = wetkit_widgets
+dependencies[] = wetkit_pages
+dependencies[] = wetkit_layouts
+dependencies[] = wetkit_theme
+dependencies[] = wetkit_wysiwyg
+dependencies[] = wetkit_language
+dependencies[] = wetkit_migrate
+dependencies[] = wetkit_bean
+dependencies[] = wetkit_metatag
+dependencies[] = wetkit_menu
+dependencies[] = wetkit_wetboew
+dependencies[] = wetkit_breadcrumbs
+dependencies[] = wetkit_users
+dependencies[] = wetkit_search
+
+; WxT Recommended
+dependencies[] = l10n_client
+dependencies[] = panopoly_magic
+
+; WxT Testing
+files[] = wetkit.test
+files[] = tests/simpletest/WetKitWebTestCase.inc
+
+; CSS Stylesheets
+stylesheets[all][] = css/wetkit.css
+
+; Settings
+variables[password_policy_show_restrictions] = 1
+variables[password_policy_new_login_change] = 0
+
+; Information added by Drupal.org packaging script on 2019-05-30
+version = "7.x-4.40"
+core = "7.x"
+project = "wetkit"
+datestamp = "1559176090"

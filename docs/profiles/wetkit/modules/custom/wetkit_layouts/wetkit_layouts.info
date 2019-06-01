@@ -1,0 +1,15 @@
+name = WetKit Panel Layouts
+description = Provides custom and responsive panel layouts.
+core = 7.x
+package = WetKit
+php = 5.2.4
+dependencies[] = panels
+dependencies[] = ctools
+dependencies[] = wetkit_pages
+stylesheets[all][] = css/layouts.css
+
+; Information added by Drupal.org packaging script on 2019-05-29
+version = "7.x-4.9"
+core = "7.x"
+project = "wetkit_layouts"
+datestamp = "1559173388"

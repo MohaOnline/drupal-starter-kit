@@ -1,0 +1,323 @@
+/* =============================================================================
+   CTools
+   ========================================================================== */
+.ctools-content ul {
+  padding-left: 0px;
+}
+
+.page-node .ctools-collapsible-container .ctools-collapsible-handle {
+  background: #CCC;
+}
+
+/* =============================================================================
+   Ember
+   ========================================================================== */
+h1 {
+  font-size: 2.375em;
+}
+
+h2 {
+  font-size: 2.160em;
+}
+
+ul.action-links {
+  padding-left: 0px;
+}
+
+#branding {
+  color: #FFF;
+  background-color: #555555;
+}
+#branding .breadcrumb {
+  color: #fff;
+  margin: 0;
+}
+#branding .breadcrumb a {
+  color: #fff;
+}
+#branding .breadcrumb a:hover {
+  text-decoration: underline;
+}
+#branding ul.secondary a.active {
+  color: #008fdc;
+}
+
+#block-system-main .fieldset-wrapper .form-item-filters-per-page,
+#block-system-main .fieldset-wrapper .form-item-filters-types {
+  overflow: hidden;
+}
+
+#page {
+  margin: 2.5rem 2.25em 0;
+}
+
+.page-media-format-form #page {
+  margin: 0.75rem 1.25em 0;
+}
+
+.form-item-name .description,
+.form-item-uid .description {
+  display: none;
+}
+
+[dir="ltr"] fieldset.collapsible .fieldset-legend:before {
+  float: left;
+  margin-left: -1.2em;
+  border-color: transparent #008fdc #008fdc transparent;
+}
+[dir="rtl"] fieldset.collapsible .fieldset-legend:before {
+  float: right;
+  margin-right: -1.2em;
+  border-color: transparent transparent #008fdc #008fdc;
+}
+
+.drag .tabledrag-handle, .tabledrag-handle:hover, .tabledrag-handle:active, .tabledrag-handle:focus {
+  color: #008fdc;
+}
+
+/* Animated throbber */
+html.js .form-autocomplete {
+  background-image: url(../images/throbber-inactive.png);
+  background-repeat: no-repeat;
+  background-size: 1em;
+}
+html.js[dir="ltr"] .form-autocomplete {
+  background-position: 100% center;
+  /* LTR */
+}
+html.js[dir="ltr"] .throbbing {
+  background: transparent url(../images/throbber-active.gif) no-repeat 0px center;
+  display: inline;
+  background-position: 100% center;
+  /* LTR */
+}
+
+.token-tree .expander {
+  margin-left: 0px !important;
+}
+
+.wetkit-site-overview p {
+  max-width: none;
+}
+
+.ui-widget-overlay {
+  position: fixed;
+}
+
+.ui-dialog .ui-dialog-titlebar-close span {
+  margin-left: -8px;
+  margin-top: -8px;
+}
+
+/* =============================================================================
+   Features
+   ========================================================================== */
+.features-export-component .fieldset-legend {
+  margin-left: 0.5em;
+}
+
+/* =============================================================================
+   Media
+   ========================================================================== */
+#media-browser-page-wrapper #media-browser-tabset .media-browser-tab {
+  padding: 1em;
+}
+#media-browser-page-wrapper #media-browser-tabset #branding {
+  background-color: #555555;
+}
+#media-browser-page-wrapper #media-browser-tabset #branding h1 {
+  height: auto;
+}
+#media-browser-page-wrapper #media-browser-tabset #branding #media-tabs-wrapper ul.tabs.primary {
+  margin: 1em 0em;
+}
+
+.media-wrapper
+.ui-dialog-titlebar {
+  background-color: #2fa6e5;
+  color: white;
+  font-weight: bold;
+  padding: 10px;
+  padding-left: 30px;
+}
+
+.media-wrapper
+.ui-dialog .ui-dialog-titlebar-close {
+  right: .6em;
+}
+
+/* =============================================================================
+   Module Filter
+   ========================================================================== */
+form#system-modules #module-filter-modules th:nth-child(4),
+form#system-modules #module-filter-modules td:nth-child(4) {
+  width: auto;
+}
+
+/* =============================================================================
+   System
+   ========================================================================== */
+.breadcrumb {
+  margin-bottom: 1em;
+}
+.breadcrumb span {
+  font-size: 1.1em;
+}
+
+.primary li {
+  margin-bottom: 1em;
+}
+.primary > [class*="active"] {
+  border-color: #008fdc;
+}
+.primary > li:hover {
+  border-color: #ffffff;
+}
+
+th.active a:before {
+  border-bottom: 2px solid #008fdc;
+  top: -2px;
+  background-color: white;
+  height: 100%;
+  z-index: -1;
+}
+
+.tabs.primary {
+  margin: 1em 0 1em 0;
+  padding: 0;
+}
+
+ul.secondary {
+  margin: 0 -2.25em 0 -2.25em;
+  padding: .5em 3.5em;
+  background-color: #3b3b3b;
+  box-shadow: none;
+}
+ul.secondary a.active {
+  color: #008fdc;
+}
+
+#tab-bar ul.secondary {
+  height: 20.9px;
+}
+#tab-bar ul.secondary .language-toggle {
+  float: right;
+  margin: 0px;
+}
+#tab-bar ul.secondary .language-toggle a {
+  color: #FFF;
+}
+
+div.vertical-tabs .vertical-tabs-pane fieldset legend {
+  display: block;
+}
+
+.form-managed-file .form-file {
+  margin-bottom: 1em;
+}
+
+.theme-default h3 {
+  color: #008fdc;
+}
+
+.page-node-edit .ui-widget-overlay {
+  position: fixed;
+}
+
+.page-node-add h1#wb-cont,
+.page-node-edit h1#wb-cont {
+  margin-top: 0px;
+}
+
+fieldset.collapsible .fieldset-legend:after {
+  color: #008fdc;
+}
+
+.form-select, .form-select:focus, .form-select:active {
+  background-repeat: no-repeat;
+  background-position: right center;
+}
+.form-select[multiple='multiple'] {
+  background-image: none;
+}
+
+table.sticky-header {
+  position: relative !important;
+}
+
+.content .left.clearfix, .content .right.clearfix {
+  clear: none;
+}
+.content .system-themes-list .theme-selector.clearfix {
+  clear: none;
+}
+
+/* =============================================================================
+   Views
+   ========================================================================== */
+.views-displays .secondary .active a,
+.views-displays .secondary .active a:hover {
+  border-color: #008fdc;
+}
+
+.views-displays .views-display-settings {
+  clear: both;
+  margin-top: 4em;
+}
+.views-displays .views-display-settings .ctools-dropbutton-wrapper {
+  position: relative;
+  min-height: initial;
+}
+
+.views-ui-display-tab-actions .ctools-button-processed input {
+  color: #008fdc;
+}
+
+.views-ui-dialog #views-ajax-title {
+  background: #2fa6e5;
+}
+
+.views-ui-dialog .form-wrapper fieldset {
+  padding-left: 1.5em;
+}
+.views-ui-dialog .form-wrapper .collapsed {
+  height: auto;
+  margin-bottom: 0em;
+}
+.views-ui-dialog .form-wrapper .collapsed legend {
+  margin-bottom: 0px;
+}
+
+.views-exposed-form .views-exposed-widget {
+  overflow: hidden;
+}
+
+.views-ui-dialog #edit-selected {
+  display: block;
+  position: relative;
+  padding: 0px 16px 30px 30px;
+}
+
+.views-ui-dialog .scroll {
+  padding: 0em 2em 3em;
+}
+
+.views-ui-dialog #views-filterable-options-controls {
+  padding-top: 0px;
+}
+
+#views-ui-preview-form > div > div#preview-submit-wrapper {
+  margin: 0em .5em 0 0;
+}
+
+.page-admin-structure-views .ui-widget-overlay {
+  position: fixed;
+}
+
+/* =============================================================================
+   WetKit
+   ========================================================================== */
+.wxt-message {
+  margin-left: 15px;
+  margin-right: 15px;
+}

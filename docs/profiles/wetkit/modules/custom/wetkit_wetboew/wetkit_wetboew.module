@@ -1,0 +1,261 @@
+<?php
+/**
+ * @file
+ * wetkit_wetboew.module
+ */
+
+include_once 'libraries/wetkit_wetboew.libraries.inc';
+include_once 'theme/wetkit_wetboew.theme.inc';
+
+/**
+ * Implements hook_page_build().
+ */
+function wetkit_wetboew_page_build() {
+  // Only use WET-BOEW on Front End.
+  global $theme;
+  global $base_theme_info;
+  global $base_url;
+
+  $wetkit_base_theme = FALSE;
+  $themekey = 'theme-gcwu-fegc';
+
+  foreach ($base_theme_info as $base) {
+    if (!empty($base->name)) {
+      if ($base->name == 'wetkit_bootstrap') {
+        $wetkit_base_theme = TRUE;
+      }
+    }
+  }
+
+  if (($theme == 'wetkit_bootstrap') || ($wetkit_base_theme == TRUE)) {
+
+    $wxt_active = variable_get('wetkit_wetboew_theme', 'theme-wet-boew');
+
+    // WxT Core.
+    drupal_add_library('wetkit_wetboew', 'wet-boew');
+
+    // Internet Theme.
+    if ($wxt_active == 'theme-gcwu-fegc') {
+      drupal_add_library('wetkit_wetboew', $wxt_active);
+      $themekey = 'theme-gcwu-fegc';
+    }
+    // Intranet Theme.
+    elseif ($wxt_active == 'theme-gc-intranet') {
+      drupal_add_library('wetkit_wetboew', $wxt_active);
+      $themekey = 'theme-gcwu-intranet';
+    }
+    // Base Theme.
+    elseif ($wxt_active == 'theme-base') {
+      drupal_add_library('wetkit_wetboew', $wxt_active);
+      $themekey = 'theme-base';
+    }
+    // OGPL Theme.
+    elseif ($wxt_active == 'theme-ogpl') {
+      drupal_add_library('wetkit_wetboew', $wxt_active);
+      $themekey = 'theme-ogpl';
+    }
+    // Canada Theme.
+    elseif ($wxt_active == 'theme-gcweb') {
+      drupal_add_library('wetkit_wetboew', $wxt_active);
+      $themekey = 'theme-gcweb';
+    }
+    // Canada Theme.
+    elseif ($wxt_active == 'theme-gcweb-v5') {
+      drupal_add_library('wetkit_wetboew', $wxt_active);
+      $themekey = 'theme-gcweb';
+    }
+    // WET Theme.
+    else {
+      drupal_add_library('wetkit_wetboew', 'theme-wet-boew');
+      $themekey = 'theme-wet-boew';
+    }
+  }
+
+  // Solve some of the display inconsistencies between WET and Drupal.
+  drupal_add_css(drupal_get_path('module', 'wetkit_wetboew') . '/css/wetkit_wetboew.css', array(
+    'group' => CSS_THEME,
+    'every_page' => TRUE,
+  ));
+
+  // Add the noscipt css that WET expects.
+  $wxt_active = variable_get('wetkit_wetboew_theme', 'theme-wet-boew');
+  $element = array(
+    '#type' => 'markup',
+    '#markup' => '<link rel="stylesheet" href="' . $base_url . libraries_get_path('wet-boew', TRUE) . '/css/noscript.min.css" />',
+    '#prefix' => "<noscript>",
+    '#suffix' => "</noscript>\n",
+    '#weight' => '999',
+  );
+  drupal_add_html_head($element, 'wetkit_wetboew_noscript');
+}
+
+/**
+ * Implements hook_icon_bundles().
+ */
+function wetkit_wetboew_icon_bundles() {
+  $bundles = array();
+  $bundles['bootstrap'] = array(
+    'render' => 'sprite',
+    'provider' => 'bootstrap',
+    'title' => t('Bootstrap'),
+    'version' => t('Icons by Glyphicons'),
+    'variations' => array(
+      'icon-white' => t('White'),
+    ),
+    'settings' => array(
+      'tag' => 'span',
+    ),
+    'icons' => _wetkit_wetboew_theme_exists('bootstrap') ? _bootstrap_glyphicons() : array(),
+  );
+  return $bundles;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function wetkit_wetboew_ctools_plugin_directory($module, $plugin) {
+  return 'plugins/' . $plugin;
+}
+
+/**
+ * Implements hook_apps_app_info().
+ */
+function wetkit_wetboew_apps_app_info() {
+  return array(
+    'configure form' => 'wetkit_wetboew_configure_form',
+  );
+}
+
+/**
+ * Configuration Form for WetKit WET-BOEW.
+ *
+ * @param array $form
+ *   Nested array of form elements that comprise the form.
+ * @param array $form_state
+ *   A keyed array containing the current state of the form.
+ */
+function wetkit_wetboew_configure_form($form, &$form_state) {
+  drupal_add_js(drupal_get_path('module', 'system') . '/system.js');
+  $form = array();
+  $form['wetkit_wetboew'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('WxT Theme Selection'),
+    '#collapsible' => TRUE,
+  );
+  $form['wetkit_wetboew']['wetkit_wetboew_theme'] = array(
+    '#type' => 'select',
+    '#title' => t('Select Theme:'),
+    '#options' => _wetkit_wetboew_options(),
+    '#default_value' => variable_get('wetkit_wetboew_theme', 'theme-wet-boew'),
+    '#description' => t('This will change the theme by adding custom css and logic to support the various Drupal WxT based themes.'),
+  );
+
+  $form['wetkit_wetboew']['wetkit_wetboew_minified'] = array(
+    '#type' => 'select',
+    '#title' => t('Development Mode:'),
+    '#options' => array(
+      'minified' => t('Minified'),
+      'unminified' => t('Unminified'),
+    ),
+    '#default_value' => variable_get('wetkit_wetboew_minified', 'minified'),
+    '#description' => t('This will change the themes loaded files into either minified or unminified form.'),
+  );
+
+  $form['#submit'][] = 'wetkit_wetboew_configure_form_submit';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Handle submission of the WetKit Web Usability configuration page.
+ *
+ * @param array $form
+ *   Nested array of form elements that comprise the form.
+ * @param array $form_state
+ *   A keyed array containing the current state of the form.
+ */
+function wetkit_wetboew_configure_form_submit($form, &$form_state) {
+  // Clear WxT render cache.
+  cache_clear_all('wetkit_bean:slideout', 'cache', TRUE);
+  cache_clear_all('wetkit_bootstrap:custom_search', 'cache', TRUE);
+  cache_clear_all('wetkit_bootstrap:menu', 'cache', TRUE);
+
+  // Change query-strings on css/js files to enforce reload for all users.
+  _drupal_flush_css_js();
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function wetkit_wetboew_theme_registry_alter(&$theme_registry) {
+  if (module_exists('total_control')) {
+    $theme_registry['total_control_admin_table']['theme path'] = drupal_get_path('module', 'wetkit_wetboew');
+    $theme_registry['total_control_admin_table']['file'] = drupal_get_path('module', 'wetkit_wetboew') . '/theme/wetkit_wetboew.theme.inc';
+    $theme_registry['total_control_admin_table']['function'] = 'theme_wetkit_wetboew_admin_table';
+    $theme_registry['total_control_admin_table']['final'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function wetkit_wetboew_theme($existing, $type, $theme, $path) {
+  return array(
+    'wetkit_wetboew_admin_table' => array(
+      'render element' => 'element',
+      'file' => 'theme/wetkit_wetboew.theme.inc',
+    ),
+    'wetkit_wetboew_tablefield_view' => array(
+      'file' => 'theme/wetkit_wetboew.theme.inc',
+      'variables' => array(
+        'header' => NULL,
+        'rows' => NULL,
+        'delta' => NULL,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_preprocess_tablefield_view().
+ */
+function wetkit_wetboew_preprocess_tablefield_view(&$variables) {
+  global $theme;
+  global $base_theme_info;
+  $wetkit_base_theme = FALSE;
+
+  foreach ($base_theme_info as $base) {
+    if (!empty($base->name)) {
+      if ($base->name == 'wetkit_bootstrap') {
+        $wetkit_base_theme = TRUE;
+      }
+    }
+  }
+
+  if (($theme == 'wetkit_bootstrap') || ($wetkit_base_theme == TRUE)) {
+    $variables['theme_hook_suggestions'][] = 'wetkit_wetboew_tablefield_view';
+  }
+}
+
+/**
+ * WxT theme options.
+ */
+function _wetkit_wetboew_options() {
+  return array(
+    'theme-wet-boew' => t('WxT'),
+    'theme-gcwu-fegc' => t('Internet'),
+    'theme-gc-intranet' => t('Intranet'),
+    'theme-base' => t('Base'),
+    'theme-ogpl' => t('OGPL'),
+    'theme-gcweb' => t('Canada'),
+    'theme-gcweb-v5' => t('Canada v5'),
+  );
+}
+
+/**
+ * Implements custom function to detect if theme is enabled.
+ */
+function _wetkit_wetboew_theme_exists($theme_name) {
+  $themes = list_themes();
+  return isset($themes[$theme_name]) && $themes[$theme_name]->status == 1;
+}

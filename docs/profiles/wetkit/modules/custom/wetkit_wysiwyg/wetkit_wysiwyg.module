@@ -1,0 +1,306 @@
+<?php
+/**
+ * @file
+ * wetkit_wysiwyg.module
+ */
+
+include_once 'wetkit_wysiwyg.features.inc';
+include_once 'wetkit_wysiwyg.features.wysiwyg.inc';
+
+/**
+ * Implements hook_apps_app_info().
+ */
+function wetkit_wysiwyg_apps_app_info() {
+  return array(
+    'configure form' => 'wetkit_wysiwyg_configure_form',
+  );
+}
+
+/**
+ * Configuration Form for WetKit WYSIWYG.
+ */
+function wetkit_wysiwyg_configure_form($form, &$form_state) {
+  $form = array();
+  // Documentation.
+  $form['wetkit_wysiwyg'] = array(
+    '#title' => t('WYSIWYG Settings'),
+    '#type'  => 'fieldset',
+    '#collapsible' => 'true',
+  );
+  $form['wetkit_wysiwyg']['wetkit_wysiwyg_show_format_details'] = array(
+    '#title' => t('Show Text Formatter Details'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('wetkit_wysiwyg_show_format_details', FALSE),
+    '#description' => t('Do you want WetKit to show the help text and text format guidelines?'),
+  );
+  $form['wetkit_wysiwyg']['wetkit_wysiwyg_linewrapping'] = array(
+    '#title' => t('Enable Line Wrapping In WYSIWYG Editor Source View'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('wetkit_wysiwyg_linewrapping', TRUE),
+    '#description' => t('Do you want Line Wrapping on the WYSIWYG editor source view to be enabled?'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function wetkit_wysiwyg_ctools_plugin_directory($module, $plugin) {
+  return 'plugins/' . $plugin;
+}
+
+/**
+ * Implements hook_linkit_search_plugin_entities_alter().
+ */
+function wetkit_wysiwyg_linkit_search_plugin_entities_alter(&$plugins) {
+  foreach ($plugins as $plugin_name => $plugin) {
+    if ($plugin['entity_type'] == 'bean') {
+      unset($plugins[$plugin_name]);
+    }
+    if ($plugin['entity_type'] == 'menu_link') {
+      unset($plugins[$plugin_name]);
+    }
+  }
+}
+
+/**
+ * Implements hook_wysiwyg_plugin().
+ */
+function wetkit_wysiwyg_wysiwyg_plugin($editor, $version) {
+  switch ($editor) {
+    case 'ckeditor':
+      if ($version >= 4) {
+        return array(
+          'codemirror' => array(
+            'url' => 'http://ckeditor.com/addon/codemirror',
+            'path' => drupal_get_path('module', 'wetkit_wysiwyg') . '/plugins/wysiwyg/codemirror',
+            'filename' => 'plugin.js',
+            'buttons' => array(
+              'codemirror' => t('Code Mirror'),
+            ),
+            'load' => TRUE,
+            'internal' => FALSE
+          ),
+        );
+      }
+      break;
+  }
+}
+
+/**
+ * Implements hook_element_info_alter().
+ */
+function wetkit_wysiwyg_element_info_alter(&$type) {
+  // Change text format processing on elements to our version.
+  if (isset($type['text_format'])) {
+    $type['text_format']['#process'][] = 'wetkit_wysiwyg_filter_process_format';
+  }
+}
+
+/**
+ * Callback for processing the text_format element.
+ */
+function wetkit_wysiwyg_filter_process_format($element) {
+
+  // Do not auto submit the form due to changes of the filter.
+  $element['format']['format']['#attributes']['class'][] = 'ctools-auto-submit-exclude';
+
+  // Do not show the guidelines and help text for text formatters.
+  // Also format this all a bit different so that it looks right.
+  if (!variable_get('wetkit_wysiwyg_show_format_details', FALSE)) {
+    $element['format']['#weight'] = 1;
+    $element['format']['#prefix'] = '<div class="format-toggle clearfix">';
+    $element['format']['#suffix'] = '</div><div class="clearfix"></div>';
+    unset($element['format']['#type']);
+    $element['format']['format']['#title'] = 'Editor: ';
+    $element['format']['help']['#access'] = FALSE;
+    $element['format']['guidelines']['#access'] = FALSE;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function wetkit_wysiwyg_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'wysiwyg_editor_settings_alter') {
+    $group = $implementations['wetkit_wysiwyg'];
+    unset($implementations['wetkit_wysiwyg']);
+    $implementations['wetkit_wysiwyg'] = $group;
+  }
+}
+
+/**
+ * Implements hook_wysiwyg_editor_settings_alter().
+ */
+function wetkit_wysiwyg_wysiwyg_editor_settings_alter(&$settings, $context) {
+
+  // Change interface language for tinymce based on context.
+  if (isset($settings['language'])) {
+    global $language;
+    if ($settings['language'] != $language->language) {
+      // Check existence of TinyMCE core language file.
+      if (file_exists($context['editor']['library path'] . '/langs/' . $language->language . '.js')) {
+        // Check existence of TinyMCE theme language file.
+        if (file_exists($context['editor']['library path'] . '/themes/' . $context['theme'] . '/langs/' . $language->language . '.js')) {
+          $settings['language'] = $language->language;
+        }
+      }
+      // Check existence of CKEditor which includes language pack by default.
+      if ($context['editor']['name'] == 'ckeditor') {
+        $settings['language'] = $language->language;
+      }
+    }
+  }
+
+  switch ($context['editor']['name']) {
+    case 'ckeditor':
+
+      // Get active WxT context.
+      $wxt_active = variable_get('wetkit_wetboew_theme', 'theme-wet-boew');
+      $library_path = libraries_get_path($wxt_active, TRUE);
+
+      // Custom JS overrides.
+      $settings['customConfig'] = base_path() . drupal_get_path('module', 'wetkit_wysiwyg') . '/js/ckeditor_config.js';
+
+      // Start Up Settings.
+      $settings['docType'] = '<!DOCTYPE html>';
+      $settings['startupMode'] = 'wysiwyg';
+
+      // Set CSS Files that absolutely need to be rendered inside the WYSIWYG
+      // leaves the interface in the frontend to be used for additional styles.
+      $wxt_contentscss = array(
+
+        // WET-BOEW jQuery stylesheets.
+        $library_path . '/css/theme.min.css',
+        $library_path . '/css/wet-boew.min.css',
+
+        // Final override for wysiwyg ckeditor body area.
+        base_path() . drupal_get_path('module', 'wetkit_wysiwyg') . '/css/wetkit-wysiwyg.css',
+      );
+      $settings['contentsCss'] = array_merge($wxt_contentscss, $settings['contentsCss']);
+
+      // Body Class.
+      $settings['bodyClass'] = 'wysiwyg-editor-body';
+
+      // Editor Configuration.
+      $settings['emailProtection'] = 'encode';
+      $settings['find_highlight'] = array(
+        'element' => 'span',
+        'styles' => array(
+          'background-color' => '#ff0',
+          'color' => '#00f',
+        ),
+      );
+      $settings['justifyClasses'] = array(
+        'align-left',
+        'align-center',
+        'align-right',
+      );
+      $settings['resize_enabled'] = TRUE;
+
+      // Toolbar Configuration.
+      $settings['toolbarCanCollapse'] = TRUE;
+      $settings['toolbarStartupExpanded'] = TRUE;
+
+      // Startup Outline Blocks.
+      $settings['startupOutlineBlocks'] = FALSE;
+
+      // Enable SCAYT by default.
+      $settings['scayt_autoStartup'] = FALSE;
+      $settings['scayt_maxSuggestions'] = 5;
+      $settings['scayt_moreSuggestions'] = 'on';
+      $settings['scayt_sLang'] = ($settings['language'] == 'fr') ? 'fr_CA' : 'en_CA';
+
+      $settings['codemirror'] = array(
+        'theme' => 'monokai',
+        'lineWrapping' => variable_get('wetkit_wysiwyg_linewrapping', TRUE),
+      );
+      break;
+
+    case 'markitup':
+      // Load the appropriate CSS and JS.
+      drupal_add_css($context['editor']['library path'] . '/markitup/sets/html/style.css');
+      drupal_add_js($context['editor']['library path'] . '/markitup/sets/html/set.js');
+
+      // Defin the new header buttons.
+      $header_buttons = array(
+        'header-begin' => array(
+          'className' => 'markItUpSeparator',
+        ),
+        'h1' => array(
+          'name' => t('Heading 1'),
+          'className' => 'markitup-h1',
+          'key' => '1',
+          'openWith' => '<h1(!( class="[![Class]!]")!)>',
+          'closeWith' => '</h1>',
+          'placeHolder' => t('Your title here...'),
+        ),
+        'h2' => array(
+          'name' => t('Heading 2'),
+          'className' => 'markitup-h2',
+          'key' => '2',
+          'openWith' => '<h2(!( class="[![Class]!]")!)>',
+          'closeWith' => '</h2>',
+          'placeHolder' => t('Your title here...'),
+        ),
+        'h3' => array(
+          'name' => t('Heading 3'),
+          'className' => 'markitup-h3',
+          'key' => '3',
+          'openWith' => '<h3(!( class="[![Class]!]")!)>',
+          'closeWith' => '</h3>',
+          'placeHolder' => t('Your title here...'),
+        ),
+        'h4' => array(
+          'name' => t('Heading 4'),
+          'className' => 'markitup-h4',
+          'key' => '4',
+          'openWith' => '<h4(!( class="[![Class]!]")!)>',
+          'closeWith' => '</h4>',
+          'placeHolder' => t('Your title here...'),
+        ),
+        'paragraph' => array(
+          'name' => t('Paragraph'),
+          'className' => 'markitup-paragraph',
+          'key' => 'p',
+          'openWith' => '<p(!( class="[![Class]!]")!)>',
+          'closeWith' => '</p>',
+        ),
+        'header-end' => array(
+          'className' => 'markItUpSeparator',
+        ),
+      );
+
+      // Define the list styles.
+      $list_styles = array(
+        'list-bullet' => array(
+          'name' => t('Unordered List'),
+          'className' => 'markitup-list-bullet',
+          'openWith' => "<ul>\n",
+          'closeWith' => '</ul>',
+        ),
+        'list-numeric' => array(
+          'name' => t('Ordered List'),
+          'className' => 'markitup-list-numeric',
+          'openWith' => "<ol>\n",
+          'closeWith' => '</ol>',
+        ),
+      );
+
+      // Add the header buttons to the end.
+      foreach ($header_buttons as $tag => $details) {
+        $settings['markupSet'][$tag] = $details;
+        $context['profile']->settings['buttons']['html'][$tag] = 1;
+      }
+
+      // Add the list styles to the end.
+      foreach ($list_styles as $tag => $details) {
+        $settings['markupSet'][$tag] = $details;
+        $context['profile']->settings['buttons']['html'][$tag] = 1;
+      }
+      break;
+  }
+}

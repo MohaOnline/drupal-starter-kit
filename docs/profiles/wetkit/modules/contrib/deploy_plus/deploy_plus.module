@@ -1,0 +1,251 @@
+<?php
+/**
+ * @file
+ * Deploy Plus module functions.
+ */
+
+// Deployment plans list path.
+define('DEPLOY_PLUS_PLANS_PATH', 'admin/structure/deploy/plans/list');
+
+// Include helper functions.
+include_once 'deploy_plus.helper.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function deploy_plus_menu() {
+  $items = array();
+
+  // Build menu item array to reuse it in for two items: MENU_NORMAL_ITEM
+  // and MENU_DEFAULT_LOCAL_TASK.
+  $review = array(
+    'title' => 'Review deployment plan',
+    'page callback' => 'deploy_plus_review_plan',
+    'page arguments' => array(3),
+    'access arguments' => array('administer deployments'),
+    'file' => 'deploy_plus.pages.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/structure/deploy/%deploy_plan/review'] = $review;
+
+  $review['type'] = MENU_DEFAULT_LOCAL_TASK;
+  $review['title'] = 'Review';
+  $review['weight'] = 0;
+  $items['admin/structure/deploy/%deploy_plan/review/plan'] = $review;
+
+  // Menu item to delete all elements from the plan.
+  // @see deploy_ui.module
+  $items['admin/structure/deploy/%deploy_plan/review/empty'] = array(
+    'title' => 'Empty',
+    'description' => 'Remove all content from the plan',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('deploy_ui_empty_plan_form', 3),
+    'access arguments' => array('administer deployments'),
+    'file path' => drupal_get_path('module', 'deploy_ui'),
+    'file' => 'deploy_ui.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 10,
+  );
+
+  // Menu item to delete one element from the plan.
+  $items['admin/structure/deploy/%deploy_plan/%/%/delete'] = array(
+    'title' => 'Remove from plan',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('deploy_plus_delete_from_plan_form', 3, 4, 5),
+    'access arguments' => array('administer deployments'),
+    'file' => 'deploy_plus.pages.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function deploy_plus_menu_alter(&$items) {
+  if (isset($items['admin/structure/deploy'])) {
+    $items['admin/structure/deploy']['page callback'] = 'deploy_plus_overview_page';
+    $items['admin/structure/deploy']['file'] = 'deploy_plus.pages.inc';
+    $items['admin/structure/deploy']['file path'] = drupal_get_path('module', 'deploy_plus');
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function deploy_plus_theme($existing, $type, $theme, $path) {
+  return array(
+    'deploy_plus_overview' => array(
+      'variables' => array('blocks' => array()),
+      'file' => 'deploy_plus.theme.inc',
+    ),
+    'deploy_plus_overview_plan_page' => array(
+      'variables' => array(
+        'prefix'  => NULL,
+        'info'    => array(),
+        'actions' => array(),
+      ),
+      'file' => 'deploy_plus.theme.inc',
+    ),
+    'deploy_plus_overview_plan_content_details' => array(
+      'variables' => array('info' => array()),
+      'file' => 'deploy_plus.theme.inc',
+    ),
+    'deploy_plus_menu_overview_form' => array(
+      'render element' => 'form',
+      'file' => 'deploy_plus.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function deploy_plus_ctools_plugin_directory($module, $plugin) {
+  return 'plugins/' . $plugin;
+}
+
+/**
+ * Implements hook_action_info().
+ */
+function deploy_plus_action_info() {
+  return array(
+    'deploy_plus_plan_action' => array(
+      'type' => 'entity',
+      'label' => t('Manage entity in deployment plan'),
+      'configurable' => TRUE,
+    ),
+  );
+}
+
+/**
+ * VBO action to perform for each entity.
+ *
+ * Used in node/term admin views and at admin/structure/menu/manage/%menu.
+ *
+ * @see deploy_plus_action_info()
+ * @see deploy_plus_action_form_submit()
+ */
+function deploy_plus_plan_action($entity, $context) {
+  // @see deploy.manager.inc
+  // @see deploy_manager_add_to_plan()
+  // @see deploy_manager_delete_from_plan()
+  $function = "deploy_manager_{$context['operation']}_plan";
+  if (function_exists($function)) {
+    call_user_func($function, $context['plan'], $context['entity_type'], $entity);
+  }
+}
+
+/**
+ * Form to select action builder.
+ *
+ * @see deploy_plus_action_info()
+ */
+function deploy_plus_plan_action_form($context, $form_state) {
+  global $user;
+  $form = array();
+
+  $plans = deploy_plan_load_all();
+
+  $options = array();
+  foreach ($plans as $name => $plan) {
+
+    if (variable_get('deploy_plus_user_context', FALSE)) {
+      if (strpos($plan->name, 'destination_site_plan_') === 0) {
+        if ($plan->name != 'destination_site_plan_' . $user->name) {
+          unset($plans[$plan->name]);
+          continue;
+        }
+      }
+    }
+
+    $options[t('Add to managed deployment plan')]["add_to:$name"] = $plan->title;
+    $options[t('Remove from managed deployment plan')]["delete_from:$name"] = $plan->title;
+  }
+
+  $form['plan'] = array(
+    '#type' => 'select',
+    '#title' => t('Deploy operations'),
+    '#options' => $options,
+  );
+
+  return $form;
+}
+
+/**
+ * Submit handler for deploy_plus_plan_action_form().
+ *
+ * Entity add/delete to/from deploy plan submit.
+ */
+function deploy_plus_plan_action_submit(&$form, &$form_state) {
+  $context = array();
+  $action = explode(':', $form_state['values']['plan']);
+  list($context['operation'], $context['plan']) = $action;
+
+  return $context;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add "Deploy operations" selector to admin/structure/menu/manage/%menu.
+ * Overwrite theme of the page to support new element.
+ */
+function deploy_plus_form_menu_overview_form_alter(&$form, &$form_state) {
+  if (module_exists('entity_menu_links')) {
+    $links = menu_load_links($form['#menu']['menu_name']);
+    foreach ($links as $link) {
+      if (!empty($form['mlid:' . $link['mlid']])) {
+        $form['mlid:' . $link['mlid']]['plan'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Deploy'),
+          '#title_display' => 'invisible',
+          '#default_value' => FALSE,
+        );
+      }
+    }
+    $options = array();
+    $options[] = t('Please Select');
+
+    $plans = deploy_plan_load_all();
+    foreach ($plans as $name => $plan) {
+      $options[t('Add to managed deployment plan')]["add_to:$name"] = $plan->title;
+      $options[t('Remove from managed deployment plan')]["delete_from:$name"] = $plan->title;
+    }
+
+    $form['plan'] = array(
+      '#type' => 'select',
+      '#title' => t('Deploy operations'),
+      '#options' => $options,
+    );
+
+    $form['#theme'] = array('deploy_plus_menu_overview_form');
+    $form['#submit'][] = 'deploy_plus_form_menu_overview_form_submit';
+  }
+}
+
+/**
+ * Submit handler for menu_overview_form().
+ *
+ * Add/Delete menu links to/from deployment plan.
+ *
+ * @see deploy_managed_ui_form_menu_overview_form_alter()
+ */
+function deploy_plus_form_menu_overview_form_submit(&$form, &$form_state) {
+  $values = $form_state['values'];
+  if ($values['plan']) {
+    $context = array(
+      'operation' => '',
+      'plan' => '',
+      'entity_type' => 'menu_link',
+    );
+    list($context['operation'], $context['plan']) = explode(':', $values['plan']);
+    foreach ($form_state['values'] as $value) {
+      if (isset($value['mlid']) && $value['plan'] == 1) {
+        $entity = entity_load_single($context['entity_type'], $value['mlid']);
+        deploy_plus_plan_action($entity, $context);
+      }
+    }
+  }
+}

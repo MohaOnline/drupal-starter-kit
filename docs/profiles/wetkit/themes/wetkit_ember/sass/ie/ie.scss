@@ -1,0 +1,47 @@
+// Import the common includes for all files.
+
+/* IE7 renders legends in nested fieldsets without a width. */
+fieldset legend {
+  height: 1%;
+}
+
+/* IE renders absolute positioned legend where fieldset content starts. */
+fieldset .fieldset-legend {
+  left: 0;
+  top: 0;
+}
+
+/* IE renders monospace font too big. */
+code,
+pre,
+kbd {
+  font-size: 1em;
+}
+
+.fade-in {
+  animation: inherit;
+  zoom: 1;
+  opacity: 1;
+  filter: alpha(opacity = 100);
+}
+
+.form-type-select {
+    position:relative;
+    z-index:0
+}
+.form-type-select select {
+    z-index:1;
+}
+
+.form-type-select:before {
+    display:block;
+    position:absolute;
+    content:'';
+    right:45px;
+    top:5px;
+    height:1.7em;
+    width:2em;
+    margin:2px;
+    background: #FFF;
+    z-index:5;
+}

@@ -1,0 +1,66 @@
+/* =============================================================================
+   Misc
+   ========================================================================== */
+
+
+.draggable a.tabledrag-handle {
+  height: 1.1em;
+}
+
+.bootstrap-tabs-processed .vertical-tabs-list a {
+  text-decoration: none;
+  color: black;
+}
+
+table.sticky-header {
+  z-index: 10;
+}
+
+.ctools-dropbutton .ctools-content ul {
+  padding-left: 0px;
+}
+
+.pane-menus .item-list ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+.pane-taxonomy .item-list ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+h1.node-edit-title {
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.container-inline-date {
+  margin-top: 18px;
+}
+
+td.ctools-export-ui-operations .ctools-dropbutton {
+  position: relative;
+}
+
+.region-aykroyd-icon .field-name-field-taxonomy-icon {
+  font-size: 6em;
+  margin-top: 20px;
+}
+
+.region-aykroyd-content-left .wb-geomap-map {
+  margin: 0 0px 20px;
+  outline: none;
+}
+
+.region-aykroyd-content-left .wb-geomap-map .olMapViewport {
+  margin-top: -25px;
+}
+
+.page-admin-dashboard .pane-content .categories-links {
+  float: right;
+}
+
+#ui-datepicker-div {
+  z-index: 2 !important;
+}

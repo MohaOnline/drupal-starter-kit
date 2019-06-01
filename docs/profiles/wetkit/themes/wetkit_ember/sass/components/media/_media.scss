@@ -1,0 +1,36 @@
+/* =============================================================================
+   Media
+   ========================================================================== */
+
+#media-browser-page-wrapper {
+  #media-browser-tabset {
+    .media-browser-tab {
+      padding: 1em;
+    }
+    #branding {
+      background-color: #555555;
+      h1 {
+        height: auto;
+      }
+      #media-tabs-wrapper {
+        ul.tabs.primary {
+          margin: 1em 0em;
+        }
+      }
+    }
+  }
+}
+
+.media-wrapper
+.ui-dialog-titlebar {
+  background-color: #2fa6e5;
+  color: white;
+  font-weight: bold;
+  padding: 10px;
+  padding-left: 30px;
+}
+
+.media-wrapper
+.ui-dialog .ui-dialog-titlebar-close {
+  right: .6em;
+}

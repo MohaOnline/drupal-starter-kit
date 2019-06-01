@@ -1,0 +1,6 @@
+name = Field Collection UUID Services
+core = 7.x
+package = Fields
+dependencies[] = field_collection
+dependencies[] = services
+dependencies[] = uuid

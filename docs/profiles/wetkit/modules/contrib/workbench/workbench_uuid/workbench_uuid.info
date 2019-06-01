@@ -1,0 +1,5 @@
+name = Workbench UUID
+core = 7.x
+package = Workbench
+dependencies[] = uuid
+dependencies[] = workbench

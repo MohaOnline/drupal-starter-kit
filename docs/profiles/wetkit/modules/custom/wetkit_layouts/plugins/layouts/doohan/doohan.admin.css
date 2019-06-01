@@ -1,0 +1,8 @@
+#panels-dnd-main .panel-region {margin: 10px 0px;}
+#panels-dnd-main #wb-main #wb-main-in {padding-bottom: 0px;}
+#panels-dnd-main #wb-main .region-doohan-second {width: 64%; float: left;}
+#panels-dnd-main #wb-main .region-doohan-third {width: 35%; float: right;}
+#panels-dnd-main #wb-main .region-doohan-content-footer { clear: both; }
+#panels-dnd-main #wb-sec { width: 24%; }
+#panels-dnd-main #wb-sec h2 {overflow: visible; height: auto !important; width: auto !important; position: relative !important; clip: auto !important;}
+#panels-dnd-main #wb-side-nav {display: none;}

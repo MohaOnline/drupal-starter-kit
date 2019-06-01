@@ -1,0 +1,90 @@
+<?php
+/**
+ * @file
+ * wetkit_migrate.install
+ */
+
+/**
+ * Implements hook_install().
+ */
+function wetkit_migrate_install() {
+  // Migration Variables.
+  variable_set('WetKitMigrateDocumentation_basedir', libraries_get_path('wet-boew', FALSE));
+  variable_set('WetKitMigrateDocumentation_listdir', libraries_get_path('wet-boew', FALSE) . '/demos/grids');
+  variable_set('WetKitMigrateDocumentation_files', libraries_get_path('wet-boew', TRUE) . '/demos');
+
+  // Migration Instantiation.
+  MigrationBase::registerMigration('WetKitMigrateBean');
+  MigrationBase::registerMigration('WetKitMigrateBeanSlideOut');
+  MigrationBase::registerMigration('WetKitMigrateBeanSlideShow');
+  MigrationBase::registerMigration('WetKitMigrateFldCollectionSlides');
+  MigrationBase::registerMigration('WetKitMigrateDefaultContent');
+  MigrationBase::registerMigration('WetKitMigrateDefaultContentMedia');
+  MigrationBase::registerMigration('WetKitMigrateDocumentation');
+  MigrationBase::registerMigration('WetKitMigrateDocumentationMenu');
+  MigrationBase::registerMigration('WetKitMigrateDocumentationMenuLinks');
+  MigrationBase::registerMigration('WetKitMigrateFileBeanSlideShow');
+  MigrationBase::registerMigration('WetKitMigrateMegaMenu');
+  MigrationBase::registerMigration('WetKitMigrateMegaMenuLinks');
+  MigrationBase::registerMigration('WetKitMigrateSiteMenu');
+  MigrationBase::registerMigration('WetKitMigrateSiteMenuLinks');
+  MigrationBase::registerMigration('WetKitMigrateTaxonomy');
+
+  if (function_exists('migrate_static_registration')) {
+    migrate_static_registration();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function wetkit_migrate_uninstall() {
+  // Delete migration variables.
+  variable_delete('WetKitMigrateDocumentation_basedir');
+  variable_delete('WetKitMigrateDocumentation_listdir');
+  variable_delete('WetKitMigrateDocumentation_files');
+  variable_delete('WetKitMigrateDocumentationMenu_file');
+
+  // Migration deRegistration.
+  MigrationBase::deregisterMigration('WetKitMigrateBean');
+  MigrationBase::deregisterMigration('WetKitMigrateBeanSlideOut');
+  MigrationBase::deregisterMigration('WetKitMigrateBeanSlideShow');
+  MigrationBase::deregisterMigration('WetKitMigrateFldCollectionSlides');
+  MigrationBase::deregisterMigration('WetKitMigrateDefaultContent');
+  MigrationBase::deregisterMigration('WetKitMigrateDefaultContentMedia');
+  MigrationBase::deregisterMigration('WetKitMigrateDocumentation');
+  MigrationBase::deregisterMigration('WetKitMigrateDocumentationMenu');
+  MigrationBase::deregisterMigration('WetKitMigrateDocumentationMenuLinks');
+  MigrationBase::deregisterMigration('WetKitMigrateFileBeanSlideShow');
+  MigrationBase::deregisterMigration('WetKitMigrateMegaMenu');
+  MigrationBase::deregisterMigration('WetKitMigrateMegaMenuLinks');
+  MigrationBase::deregisterMigration('WetKitMigrateSiteMenu');
+  MigrationBase::deregisterMigration('WetKitMigrateSiteMenuLinks');
+  MigrationBase::deregisterMigration('WetKitMigrateTaxonomy');
+
+  // Get global variable array.
+  global $conf;
+  foreach (array_keys($conf) as $key) {
+    // Find variables that have the module prefix.
+    if (strpos($key, 'wetkit_migrate_') === 0) {
+      variable_del($key);
+    }
+  }
+}
+
+/**
+ * Implementations of hook_update_N().
+ */
+
+/**
+ * Register new Migration Classes.
+ */
+function wetkit_migrate_update_7401() {
+  // Enable Migration Classes for 4.x  branch.
+  MigrationBase::registerMigration('WetKitMigrateBean');
+  MigrationBase::registerMigration('WetKitMigrateBeanSlideOut');
+  MigrationBase::registerMigration('WetKitMigrateBeanSlideShow');
+  MigrationBase::registerMigration('WetKitMigrateFldCollectionSlides');
+  MigrationBase::registerMigration('WetKitMigrateFileBeanSlideShow');
+  MigrationBase::registerMigration('WetKitMigrateTaxonomy');
+}
