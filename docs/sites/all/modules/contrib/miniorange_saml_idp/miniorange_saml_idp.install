@@ -1,0 +1,56 @@
+<?php
+/**
+ * @file
+ * Installation file for miniOrange SAML Module.
+ */
+ 
+ include 'miniorange_saml_idp_feedback.php';
+
+/**
+ * Implements hook_uninstall().
+ */
+function miniorange_saml_idp_uninstall() {
+  
+  variable_del('miniorange_saml_idp_status');
+  variable_del('miniorange_saml_idp_customer_admin_email');
+  variable_del('miniorange_saml_idp_customer_admin_phone');
+  variable_del('miniorange_saml_idp_customer_admin_token');
+  variable_del('miniorange_saml_idp_customer_id');
+  variable_del('miniorange_saml_idp_customer_api_key');
+  variable_del('miniorange_saml_idp_sp_name');
+  variable_del('miniorange_saml_idp_sp_entity_id');
+  variable_del('miniorange_saml_idp_acs_url');
+  variable_del('miniorange_saml_idp_nameid_format');
+  variable_del('miniorange_saml_idp_nameid_attr_map');
+  variable_del('miniorange_saml_idp_relay_state');
+  variable_del('miniorange_saml_idp_assertion_signed');
+  variable_del('miniorange_saml_idp_tx_id');
+  variable_del('miniorange_saml_idp_issuerID');
+  variable_del('miniorange_saml_idp_customer_admin_password');
+  variable_del('mo_saml_tourTaken_miniorange_saml_idp');
+  variable_del('mo_saml_tourTaken_sp_setup');
+  variable_del('mo_saml_tourTaken_idp_setup');
+  variable_del('mo_saml_tourTaken_attr_mapping');
+  variable_del('mo_saml_tourTaken_customer_setup');
+  unset($_SESSION['mo_other']);
+}
+/**
+ * Implements hook_install().
+ */
+function miniorange_saml_idp_install() {
+  user_save(user_load(1), array('data' => array('overlay' => 0)));
+}
+
+
+/**
+ * Implements hook_disable().
+ */
+
+function miniorange_saml_idp_disable() {
+
+    if(!isset($_SESSION['mo_other']))
+        $_SESSION['mo_other'] = "False";
+        miniorange_idp_feedback();
+
+}
+ 

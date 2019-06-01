@@ -1,0 +1,389 @@
+<?php
+/**
+ * @file
+ * Module file for miniOrange SAML IDP Module.
+ */
+ 
+/**
+* Implements hook_menu().
+*/
+function miniorange_saml_idp_menu() {
+
+  $items['admin/config/people/miniorange_saml_idp'] = array(
+    'title' => 'Drupal SAML IDP Configuration',
+    'description' => 'Convert your Drupal into an IDP',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('miniorange_sp_information'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'miniorange_sp_information.inc',
+  );
+
+  $items['admin/config/people/miniorange_saml_idp/customer_setup'] = array(
+    'title' => 'Register/Login',
+    'weight' => -1,
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('miniorange_saml_idp_customer_setup'),
+    'file' => 'miniorange_saml_idp_customer_setup.inc',
+  );
+
+  $items['admin/config/people/miniorange_saml_idp/idp_setup'] = array(
+    'title' => 'Service Provider',
+    'weight' => -6,
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('miniorange_saml_idp_setup'),
+    'file' => 'miniorange_saml_idp_setup.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['admin/config/people/miniorange_saml_idp/sp_setup'] = array(
+    'title' => 'IDP METADATA',
+    'weight' => -7,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('miniorange_sp_information'),
+    'file' => 'miniorange_sp_information.inc',
+  );
+
+  $items['admin/config/people/miniorange_saml_idp/attr_mapping'] = array(
+    'title' => 'Attribute/Role Mapping',
+    'weight' => -5,
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('miniorange_saml_idp_attribute_mapping'),
+    'file' => 'miniorange_saml_idp_attribute_mapping.inc',
+  );
+
+  $items['admin/config/people/miniorange_saml_idp/export_config'] = array(
+    'title' => 'Import/Export',
+    'weight' => -4,
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('miniorange_saml_idp_export_config'),
+    'file' => 'miniorange_saml_idp_export_config.inc',
+  );
+
+  $items['admin/config/people/miniorange_saml_idp/custom_certificate'] = array(
+     'title' => 'Custom Certificate',
+     'weight' => -3,
+     'type' => MENU_LOCAL_TASK,
+     'access arguments' => array('administer site configuration'),
+     'page arguments' => array('mo_saml_idp_add_custom_certificate'),
+     'file' => 'mo_saml_idp_add_custom_certificate.inc',
+  );
+
+  $items['admin/config/people/miniorange_saml_idp/licensing'] = array(
+    'title' => 'Upgrade Plans',
+    'weight' => -2,
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('miniorange_saml_idp_licensing'),
+    'file' => 'miniorange_saml_idp_licensing.inc',
+  );
+
+
+  $items['initiatelogon'] = array(
+   'access callback' => TRUE,
+    'page callback' => 'miniorange_saml_idp_login_request',
+    'type' => MENU_CALLBACK
+  ); 
+  
+  $items['mo_testIdpConfig'] = array(
+   'access callback' => TRUE,
+    'page callback' => 'miniorange_saml_idp_test_configurations',
+    'type' => MENU_CALLBACK
+  );
+
+  $items['moidp_metadata'] = array(
+   'access callback' => TRUE,
+    'page callback' => 'miniorange_saml_idp_metadata',
+    'type' => MENU_CALLBACK
+  
+  );
+  
+  return $items;
+
+}
+
+/**
+* Send SAML Response after user Login.
+*/
+
+function miniorange_saml_idp_user_login(&$edit, $account){
+	if(isset($_COOKIE['response_params'])){
+		$response_params =  json_decode(stripslashes($_COOKIE['response_params']),true);
+		if(strcmp( $response_params['moIdpsendResponse'], 'true') == 0) {
+			mo_idp_send_reponse($response_params['acs_url'],$response_params['audience'],$response_params['relayState'],$response_params['inResponseTo']);
+		}
+	}
+}
+
+/**
+* Initiate configurations testing.
+*/
+
+function miniorange_saml_idp_test_configurations(){
+	
+	$relayState = '/';
+	$acs = variable_get('miniorange_saml_idp_acs_url');
+	$sp_issuer = variable_get('miniorange_saml_idp_sp_entity_id');
+
+	if($acs == '' || is_null($acs) || $sp_issuer == '' || is_null($sp_issuer)) {
+        echo '<div style="font-family:Calibri;padding:0 3%;">';
+        echo '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center;border:1px solid #E6B3B2;font-size:18pt;"> ERROR</div>
+                <div style="color: #a94442;font-size:14pt; margin-bottom:20px;">
+                    <p><strong>Error: </strong>Please configure your Service Provider (SP) first and then click on Test Configuration.</p>
+                    <p><strong>Possible Cause: </strong> ACS URL or SP Entity ID not found.</p>
+                
+                </div>
+                <div style="margin:3%;display:block;text-align:center;">';
+        ?>
+        <div style="margin:3%;display:block;text-align:center;"><input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;box-sizing: border-box;border-color: #0073AA;box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;color: #FFF;"type="button" value="Done" onClick="self.close();"></a></div>
+        <?php
+        exit;
+	}
+	mo_idp_authorize_user($acs,$sp_issuer,$relayState);
+}
+
+
+/**
+* Initiate SAML Login.
+*/
+function miniorange_saml_idp_login_request() {
+	
+  if(array_key_exists('SAMLRequest', $_REQUEST) && !empty($_REQUEST['SAMLRequest'])) {
+    _read_saml_request($_REQUEST,$_GET);		
+  }
+}
+
+function miniorange_saml_idp_metadata(){
+  if(isset($_REQUEST['q']) && $_REQUEST['q'] == 'moidp_metadata') {
+    _generate_metadata();
+  }
+}
+
+function _generate_metadata(){
+  global $base_url;	
+  
+  $site_url = $base_url . '/';
+  
+  $entity_id = $site_url . '?q=admin/config/people/miniorange_saml_idp/';
+  $login_url = $site_url . '?q=initiatelogon';
+  $logout_url = $site_url;
+  
+  define('DRUPAL_BASE_ROOT', dirname(__FILE__));
+  $module_path = drupal_get_path('module', 'miniorange_saml_idp');
+  //echo DRUPAL_BASE_ROOT;
+  $cert_path = DRUPAL_BASE_ROOT . DIRECTORY_SEPARATOR .  'resources' . DIRECTORY_SEPARATOR . 'idp-signing.crt';
+ 
+  //ob_clean();
+  $certificate = file_get_contents($cert_path);
+  
+  $certificate = preg_replace("/[\r\n]+/", "", $certificate);
+  $certificate = str_replace( "-----BEGIN CERTIFICATE-----", "", $certificate );
+  $certificate = str_replace( "-----END CERTIFICATE-----", "", $certificate );
+  $certificate = str_replace( " ", "", $certificate );
+  
+header('Content-Type: text/xml');
+echo'<?xml version="1.0" encoding="UTF-8"?><md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="'.$entity_id.'"><md:IDPSSODescriptor WantAuthnRequestsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><md:KeyDescriptor 
+			use="signing">
+			<ds:KeyInfo 
+				xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+				<ds:X509Data>
+					<ds:X509Certificate>'.$certificate.'</ds:X509Certificate>
+				</ds:X509Data>
+			</ds:KeyInfo>
+		</md:KeyDescriptor>
+
+		<md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>
+		<md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</md:NameIDFormat>
+		<md:SingleSignOnService 
+			Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+			Location="'.$login_url.'"/>
+		<md:SingleSignOnService 
+			Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" 
+			Location="'.$login_url.'"/>
+	</md:IDPSSODescriptor>
+</md:EntityDescriptor>';
+exit;
+}
+
+function _read_saml_request($REQUEST,$GET) {
+  $samlRequest = $REQUEST['SAMLRequest'];
+  $relayState = '/';
+  if(array_key_exists('RelayState', $REQUEST)) {
+	$relayState = $REQUEST['RelayState'];
+  }
+		
+  $samlRequest = base64_decode($samlRequest);
+  if(array_key_exists('SAMLRequest', $GET) && !empty($GET['SAMLRequest'])) {
+    $samlRequest = gzinflate($samlRequest);
+  }
+		
+  $document = new DOMDocument();
+  $document->loadXML($samlRequest);
+  $samlRequestXML = $document->firstChild;
+ 
+  $authnRequest = new AuthnRequest($samlRequestXML);
+	
+  $errors = '';
+  if(strtotime($authnRequest->getIssueInstant()) > (time() + 60))
+    $errors.= '<strong>INVALID_REQUEST: </strong>Request time is greater than the current time.<br/>';
+  if($authnRequest->getVersion()!=='2.0')
+    $errors.='We only support SAML 2.0! Please send a SAML 2.0 request.<br/>';
+		
+  $acs_url = variable_get('miniorange_saml_idp_acs_url');
+  $sp_issuer = variable_get('miniorange_saml_idp_sp_entity_id', NULL);
+  $acs_url_from_request = $authnRequest->getAssertionConsumerServiceURL();
+  $sp_issuer_from_request = $authnRequest->getIssuer();
+	
+  if(empty($acs_url) || empty($sp_issuer)){
+    $errors.= '<strong>INVALID_SP: </strong>Service Provider is not configured. Please configure your Service Provider.<br/>';
+  }else{
+    if(strcmp($acs_url,$acs_url_from_request) !== 0 ){
+      $errors.= '<strong>INVALID_ACS: </strong>Invalid ACS URL!. Please check your Service Provider Configurations.<br/>';
+	}
+	if(strcmp($sp_issuer,$sp_issuer_from_request) !== 0){
+      $errors.='<strong>INVALID_ISSUER: </strong>Invalid Issuer! Please check your configuration.<br/>';
+	}
+  }
+  
+  $inResponseTo = $authnRequest->getRequestID();  // sending inresponeTo parameter with the SAML response
+  
+  if(empty($errors)){
+	$module_path = drupal_get_path('module', 'miniorange_saml_idp');
+  ?>
+	<div style="vertical-align:center;text-align:center;width:100%;font-size:25px;background-color:white;">
+	  <img src="<?php echo $module_path;?>/includes/images/loader_gif.gif"></img>
+	  <h3>PROCESSING...PLEASE WAIT!</h3>
+	</div>
+  <?php
+  
+	mo_idp_authorize_user($acs_url_from_request,$sp_issuer_from_request,$relayState,$inResponseTo);
+  } else{
+	echo sprintf($errors);
+	exit;
+  }
+}
+
+function mo_idp_authorize_user($acs_url,$audience,$relayState,$inResponseTo=null){
+		
+  global $user;
+  if (user_is_logged_in()) {
+	
+    mo_idp_send_reponse($acs_url,$audience,$relayState,$inResponseTo);
+	
+  } else {
+    $saml_response_params = array('moIdpsendResponse' => "true" , "acs_url" => $acs_url , "audience" => $audience , "relayState" => $relayState,"inResponseTo" => $inResponseTo );
+	setcookie("response_params",json_encode($saml_response_params));
+	global $base_url;
+	$redirect_url = $base_url . '/';
+    drupal_goto($redirect_url);	
+	exit;
+  }
+}
+
+function mo_idp_send_reponse($acs_url,$audience,$relayState, $inResponseTo=null){
+	global $user;
+	$current_user = $user;
+	
+	if(!in_array('administrator',$current_user->roles)){
+	
+	  ob_end_clean();
+           
+                echo '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center;border:1px solid #E6B3B2;font-size:18pt;"> ERROR</div>
+				<div style="color: #a94442;font-size:14pt; margin-bottom:20px;"><p><strong>Single Sign On not Allowed</strong> </p>
+				<p>This is a trial plugin meant for Administrator use only.</p>
+				<p>The Single Sign On feature for end users is available in the premium version of the plugin.</p>
+				</div>
+				<div style="margin:3%;display:block;text-align:center;">';
+				exit;
+	}
+	
+	$email = $current_user->mail;
+	$username = $current_user->name;
+   
+	global $base_url;
+
+  $issue1 = variable_get('miniorange_saml_idp_issuerID','');
+  $issuer = $issue1 !='' ? $issue1 : $base_url . '/?q=admin/config/people/miniorange_saml_idp/';
+	//$issuer = $base_url . '/?q=admin/config/people/miniorange_saml_idp/';
+	
+	$name_id_attr = (variable_get('miniorange_saml_idp_nameid_attr_map') == '')?'emailAddress' : variable_get('miniorange_saml_idp_nameid_attr_map');
+	$name_id_attr_format = variable_get('miniorange_saml_idp_nameid_format');
+	$idp_assertion_signed = variable_get('miniorange_saml_idp_assertion_signed');
+	$state = variable_get('miniorange_saml_idp_relay_state', '');
+	if(!empty($state) && !is_null($state)){
+		$relayState = $state;
+	}
+	
+	miniorange_saml_idp_load_xmlseclib();
+	
+	$saml_response_obj = new GenerateResponse($email,$username, $acs_url, $issuer, $audience,$inResponseTo, $name_id_attr,$name_id_attr_format,$idp_assertion_signed);
+	
+	$saml_response = $saml_response_obj->createSamlResponse();
+	setcookie("response_params","");
+	_send_response($saml_response, $relayState,$acs_url);
+}
+
+function _send_response($saml_response, $ssoUrl,$acs_url){
+	$saml_response = base64_encode($saml_response);
+	?>
+	<form id="responseform" action="<?php echo $acs_url; ?>" method="post">
+		<input type="hidden" name="SAMLResponse" value="<?php echo htmlspecialchars($saml_response); ?>" />
+		<input type="hidden" name="RelayState" value="<?php echo $ssoUrl; ?>" />
+	</form>
+	<script>
+		setTimeout(function(){
+			document.getElementById('responseform').submit();
+		}, 100);	
+	</script>
+<?php
+	exit;
+}
+
+/**
+* Implements hook_libraries_info().
+*/
+function miniorange_saml_idp_libraries_info() {
+  $libraries['xmlseclibs'] = array(
+    'name' => 'XML Encryption and Signatures',
+    'vendor url' => 'https://code.google.com/p/xmlseclibs/',
+    'download url' => 'https://xmlseclibs.googlecode.com/files/xmlseclibs-1.3.1.tar.gz',
+    'version arguments' => array(
+      'file'    => 'xmlseclibs.php',
+      'pattern' => '/@version\s*(.*)$/',
+      'lines'   => 100,
+    ),
+    'files' => array(
+      'php' => array(
+        'xmlseclibs.php',
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+function miniorange_saml_idp_load_xmlseclib(){
+	// Try main library path. 
+  if (libraries_get_path('xmlseclibs')) {
+    $xmlseclibs_file = libraries_get_path('xmlseclibs') . '/xmlseclibs.php';
+  }
+  else {
+    // Trying alternate library path.
+    $xmlseclibs_file = libraries_get_path('xmlseclibs-master') . '/xmlseclibs.php';
+  }
+  
+  libraries_load('xmlseclibs');
+  if (!class_exists('XMLSecurityKey') && !@include($xmlseclibs_file)) {
+   echo "<div>
+    <p><font class='alert' background-color='crimson' color='red'>Error: xmlseclibs not loaded properly</font></p>
+	<p>You can download xmlseclibs from <a href='https://github.com/robrichards/xmlseclibs/tree/1.4' target='_blank'>here</a>.
+	<br>Extract the archive and place it under <b>sites/all/libraries/</b> in your Drupal directory.</p>
+	<div>";
+    exit();
+  }
+
+    
+}
