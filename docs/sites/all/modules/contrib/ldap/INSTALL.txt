@@ -1,0 +1,64 @@
+==================================================================================
+Prerequisites
+==================================================================================
+
+To set up LDAP efficiently, you need to acquire the relevant information for the
+domain you are authenticating against.
+
+Contact your organization's staff to receive the necessary information. This
+should include:
+
+* The servers available to you (hostname, port, encryption preference)
+* The binding method (service account including credentials, if necessary)
+* If applicable, the structure of the data you are trying to sync, e.g.
+sAMAccountName is the unique name attribute for your Active Directory.
+
+### Requirements
+
+The following requirements need to be met for you to work with any of the LDAP
+modules.
+
+* PHP version 5.6.
+* PHP LDAP extension.
+
+==================================================================================
+ Installation instructions:
+==================================================================================
+
+1) Download the LDAP module as you would any other.
+
+2) Go to admin/build/modules and enable the needed modules from the
+   Lightweight Directory Access Protocol group.
+
+3) Enable and configure ldap servers and configure at least one server.
+
+4) Enable the other LDAP modules you need.
+
+5) LDAP Help is just for debugging and administrator help. Use it if you have
+problems. Disable it in production; it adds no functionality or end user help.
+
+==================================================================================
+ Configuration overrides
+==================================================================================
+
+If you need to selectively disable LDAP functionality and cannot disable the
+modules, use configuration overrides, such as the following in settings.php and
+clearing your cache afterwards.
+
+// Disable the server you are syncing users from LDAP to Drupal.
+$conf['ldap_user_conf']['drupalAcctProvisionServer'] = 0;
+// Disable LDAP authentication.
+$conf['ldap_authentication_conf']['sids'] = [];
+// Set bind DN and bind password for service account.
+$conf['ldap_servers_overrides']['my_server']['binddn'] = 'my_dn';
+$conf['ldap_servers_overrides']['my_server']['bindpw'] = 'my_password';
+
+IMPORTANT: These overrides will change the data in your admin forms, saving them
+will save them permanently in the database.
+
+==================================================================================
+More documentation is available at:
+
+ http://drupal.org/project/ldap -- project homepage
+ http://drupal.org/node/997082 - project documentation
+==================================================================================
