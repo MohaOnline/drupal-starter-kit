@@ -1,0 +1,53 @@
+<?php
+
+/**
+* Implements hook_menu().
+*/
+function better_search_menu() {    
+  $items['admin/config/search/better-search'] = array(
+    'title' => t('Better search settings'),
+    'description' => t('Configure the theme for the Better Search Module.'),
+    'file' => 'better_search.admin.inc',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('better_search_admin_form'),
+    'access arguments' => array('administer search'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function better_search_form_search_block_form_alter(&$form, &$form_state, $form_id){
+
+  $path = drupal_get_path('module', 'better_search');
+  $theme = variable_get('theme', 0);
+  switch ($theme) {
+    case 0:
+      $form['#attached']['css'][] = $path .'/css/background_fade.css';
+      break;
+    case 1:
+      $form['#attached']['css'][] = $path .'/css/expand_on_hover.css';
+      break;
+    case 2:
+      $form['#attached']['css'][] = $path .'/css/increase_icon_size.css';
+      break;
+    case 3:
+      $form['#attached']['css'][] = $path .'/css/on_hover_button.css';
+      break;
+  }
+
+  if ($theme == 3) {
+    $form['search_block_form']['#suffix'] = ' <button class="icon"><i class="better_search"></i></button>';
+  }
+  else {
+    $form['search_block_form']['#prefix'] = '<div class="icon"><i class="better_search"></i></div>';
+  }
+  $form['search_block_form']['#attributes']['placeholder'] = t(variable_get('placeholder_text', 'search'));
+  $form['actions']['#attributes']['class'][] = 'element-invisible';
+  $form['search_block_form']['#size'] = variable_get('size', 20);
+
+  // Change the color of input search text.
+  drupal_add_css('#search-block-form .form-item-search-block-form input.form-text{color:' . variable_get('placeholder_color', '#FFFFFF') . '}', 'inline');
+}
