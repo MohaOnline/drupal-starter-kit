@@ -1,0 +1,72 @@
+i.better_search {
+  background: url("images/search-icon.svg") center center no-repeat;
+  height: 1.1em;
+  width: 1em;
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+}
+
+#search-block-form {
+  overflow: hidden;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.form-item-search-block-form input.form-text {
+  height: 50px;
+  background: #2b303b; /* Search field BG */
+  border: none;
+  font-size: 1em;
+  float: left;
+  color: #fff;
+  padding-left: 15px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px; 
+  z-index: 100;
+}
+
+#search-block-form .icon {
+  border: none;
+  height: 50px;
+  width: 50px;
+  color: #4f5b66;
+  opacity: 0;
+  -webkit-transition: all .55s ease;
+  -moz-transition: all .55s ease;
+  -ms-transition: all .55s ease;
+  -o-transition: all .55s ease;
+  transition: all .55s ease;
+}
+
+.form-item-search-block-form input:-webkit-input-placeholder {
+  color: #65737e;
+}
+ 
+.form-item-search-block-form input:-moz-placeholder {
+  color: #65737e;
+}
+
+.form-item-search-block-form input:-ms-input-placeholder {
+  color: #65737e;
+}
+
+#search-block-form:hover .icon,
+#search-block-form:focus .icon,
+#search-block-form:active .icon {
+  outline: none;
+  opacity: 1;
+  margin-left: -50px;
+}
+
+#search-block-form:hover {
+  cursor: pointer;
+  cursor: hand;
+}
+
+#search-block-form:hover .icon {
+  background: white;
+}
