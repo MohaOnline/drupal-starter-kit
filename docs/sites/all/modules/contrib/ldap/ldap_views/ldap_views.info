@@ -1,0 +1,30 @@
+
+name = LDAP Views
+description = Implements LDAP integration with Views
+package = Lightweight Directory Access Protocol
+dependencies[] = ldap_query
+dependencies[] = views
+core = 7.x
+php = 5.4
+
+files[] = ldap_views.module
+files[] = ldap_views.install
+
+; plugins
+files[] = plugins/ldap_views_plugin_query_ldap.inc
+
+; handlers
+files[] = handlers/ldap_views_handler_argument.inc
+files[] = handlers/ldap_views_handler_argument_attribute.inc
+files[] = handlers/ldap_views_handler_field.inc
+files[] = handlers/ldap_views_handler_field_attribute.inc
+files[] = handlers/ldap_views_handler_filter.inc
+files[] = handlers/ldap_views_handler_filter_attribute.inc
+files[] = handlers/ldap_views_handler_sort.inc
+files[] = handlers/ldap_views_handler_sort_attribute.inc
+
+; Information added by Drupal.org packaging script on 2019-04-20
+version = "7.x-2.5"
+core = "7.x"
+project = "ldap"
+datestamp = "1555751588"
