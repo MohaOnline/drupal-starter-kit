@@ -1261,8 +1261,8 @@ function commerce_line_item_manager_validate($element, &$form_state, $form) {
         commerce_line_item_rebase_unit_price($line_item);
       }
 
-      // Only save if values were actually changed.
-      if ($line_item != $element['line_items'][$line_item_id]['line_item']['#value']) {
+      // Only save if no errors and values were actually changed.
+      if (!form_get_errors() && $line_item != $element['line_items'][$line_item_id]['line_item']['#value']) {
         commerce_line_item_save($line_item);
       }
     }
@@ -1571,21 +1571,25 @@ function commerce_line_items_total($line_items, $types = array()) {
  * @see hook_commerce_line_item_summary_link_info()
  */
 function commerce_line_item_summary_links() {
-  // Retrieve links defined by the hook and allow other modules to alter them.
-  $links = module_invoke_all('commerce_line_item_summary_link_info');
+  $links = &drupal_static(__FUNCTION__, array());
 
-  // Merge in default values for our custom properties.
-  foreach ($links as $key => &$link) {
-    $link += array(
-      'weight' => 0,
-      'access' => TRUE,
-    );
+  if (empty($links)) {
+    // Retrieve links defined by the hook and allow other modules to alter them.
+    $links = module_invoke_all('commerce_line_item_summary_link_info');
+
+    // Merge in default values for our custom properties.
+    foreach ($links as $key => &$link) {
+      $link += array(
+        'weight' => 0,
+        'access' => TRUE,
+      );
+    }
+
+    drupal_alter('commerce_line_item_summary_link_info', $links);
+
+    // Sort the links by weight and return the array.
+    uasort($links, 'drupal_sort_weight');
   }
-
-  drupal_alter('commerce_line_item_summary_link_info', $links);
-
-  // Sort the links by weight and return the array.
-  uasort($links, 'drupal_sort_weight');
 
   return $links;
 }
