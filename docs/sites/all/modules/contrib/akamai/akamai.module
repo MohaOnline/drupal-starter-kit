@@ -1,0 +1,425 @@
+<?php
+/**
+ * @file
+ * Integration with the Akamai CDN Cache Control Web Service.
+ *
+ * Akamai is a registered trademark of Akamai Technologies, Inc.
+ */
+
+/**
+ * Implements hook_perm().
+ */
+function akamai_permission() {
+  return array(
+    'administer akamai' => array(
+      'description' => t('Configure the Akamai integration settings. Username, password, etc.'),
+      'title' => t('Administer Akamai Settings'),
+    ),
+    'purge akamai cache' => array(
+      'description' => t('Allowed to clear content from the Akamai cache.'),
+      'title' => t('Purge Akamai Cache'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function akamai_menu() {
+  $items = array();
+
+  $items['admin/config/system/akamai'] = array(
+    'title' => 'Akamai',
+    'description' => 'Akamai integration settings and cache clearing utility',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('akamai_settings'),
+    'access arguments' => array('administer akamai'),
+    'file' => 'akamai.admin.inc',
+  );
+
+  $items['admin/config/system/akamai/settings'] = array(
+    'title' => 'Settings',
+    'weight' => -10,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  $items['admin/config/system/akamai/refresh'] = array(
+    'title' => 'Cache Control Utility',
+    'description' => 'Admin interface to flush Drupal resources from the Akamai cache',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('akamai_cache_control'),
+    'access arguments' => array('purge akamai cache'),
+    'file' => 'akamai.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme()
+ */
+function akamai_theme() {
+  return array(
+    'akamai_page_cache_control_block' => array(
+      'variables' => array('cache_control_form' => NULL),
+      'template' => 'akamai-page-cache-control-block',
+    ),
+  );
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function akamai_module_implements_alter(&$implementations, $hook) {
+  // Move Akamai to run after Acquia Purge since it can grab the stale cache in
+  // certain edge cases, i.e. Akamai purging superfast followed by a request.
+  if ($hook == 'expire_cache' && (isset($implementations['purge']) || isset($implementations['acquia_purge']))) {
+    $group = $implementations['akamai'];
+    unset($implementations['akamai']);
+    $implementations['akamai'] = $group;
+  }
+
+  // Disable the akamai node hooks if expire module is available, since
+  // akamai_expire_cache() will get invoked instead.
+  if (in_array($hook, array('node_update', 'node_delete')) && module_exists('expire')) {
+    unset($implementations['akamai']);
+  }
+}
+
+/**
+ * Implements hook_expire_cache().
+ */
+function akamai_expire_cache($urls, $wildcards, $object_type, $object) {
+  foreach ($urls as $short_url => $full_url) {
+    $url = base_path() . $short_url;
+    akamai_clear_url($url, array(), $object);
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ *
+ * When nodes are modified, clear URL from the Akamai
+ * cache. Clear base node/% url as well as aliases.
+ */
+function akamai_node_update($node) {
+  $url = base_path() . "node/{$node->nid}";
+  akamai_clear_url($url, array(), $node);
+}
+
+/**
+ * Implements hook_node_delete().
+ *
+ * When nodes are modified, clear URL from the Akamai
+ * cache. Clear base node/% url as well as aliases.
+ */
+function akamai_node_delete($node) {
+  $url = base_path() . "node/{$node->nid}";
+  akamai_clear_url($url, array(), $node);
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function akamai_block_info() {
+  $blocks['akamai'] = array(
+    'info' => t('Akamai Cache Control'),
+    'cache'  => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function akamai_block_view($delta) {
+  if ($delta == 'akamai') {
+    $cache_control_form = drupal_get_form('akamai_page_cache_control_form');
+    $block = array(
+      'subject' => t('Akamai Cache Control'),
+      'content' => $cache_control_form,
+    );
+    return $block;
+  }
+}
+
+/**
+ * Form builder for purging the current URL from the Akamai cache.
+ *
+ * @see akamai_block_view()
+ */
+function akamai_page_cache_control_form() {
+  $form = array();
+  $nid = arg(1);
+
+  if (arg(0) == 'node' && is_numeric($nid) && arg(2) == NULL) {
+    $path = arg(0) . '/' . $nid;
+    $form['#node'] = node_load($nid);
+  }
+  else {
+    $path = check_plain($_GET['q']);
+    $form['#node'] = NULL;
+  }
+
+  $path_label = $path;
+  if ($path == variable_get('site_frontpage', 'node')) {
+    $path_label = t("[frontpage]");
+  }
+
+  $form['path'] = array(
+    '#type'  => 'hidden',
+    '#value' => $path
+  );
+  $form['message'] = array(
+    '#type'  => 'item',
+    '#title' => t('Refresh URL'),
+    '#markup' => $path_label,
+  );
+  $form['submit'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Refresh Akamai Cache'),
+  );
+
+  return $form;
+}
+
+/**
+ * Form submission handler for akamai_page_cache_control_form().
+ *
+ * Purge the 'path' variable from the Akamai cache.
+ */
+function akamai_page_cache_control_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $path = $values['path'];
+  $did_clear = akamai_clear_url($path, array(), $form['#node']);
+  if ($did_clear) {
+    $message = t("Akamai Cache Request has been made successfully, please allow 10 minutes for changes to take effect.");
+    drupal_set_message($message);
+  }
+  else {
+    drupal_set_message(t("There was a problem clearing the cache for this page.  Check your log messages for more information."), 'error');
+  }
+}
+
+/**
+ * Clear a URL from Akamai. Clears node/id and any URL aliases.
+ *
+ * @param array $paths_in
+ *   An array of paths or single path to clear.
+ * @param array $params
+ *   (optional) An array of params for the API call.
+ * @param object $node
+ *   (optional)
+ *
+ * @return bool
+ *    TRUE if it was successfully cleared, FALSE otherwise.
+ */
+function akamai_clear_url($paths_in, $params = array(), $node = NULL) {
+  if (variable_get('akamai_disabled', FALSE)) {
+    watchdog('akamai', 'Request to clear paths ignored because clearing is disabled. Check module settings.');
+    return FALSE;
+  }
+
+  if (!is_array($paths_in)) {
+    $paths_in = array($paths_in);
+  }
+  // Get the system path and all aliases to this url
+  $paths = array();
+
+  foreach ($paths_in as $path) {
+    $paths = array_merge($paths, _akamai_get_all_paths($path, $node));
+  }
+
+  // It is possible to have no paths at this point if other modules have
+  // altered the paths.
+  if (empty($paths)) {
+    watchdog('akamai', 'No resultant paths to clear for %paths', array('%paths' => implode(', ', $paths_in)), WATCHDOG_NOTICE);
+    return FALSE;
+  }
+
+  $paths = array_unique($paths);
+
+  try {
+    $akamai = akamai_get_class($params);
+    $response = $akamai->clear_url($paths);
+    if (is_object($response)) {
+      $response->client = $akamai;
+    }
+    return $response;
+  }
+  catch (AkamaiException $e) {
+    watchdog_exception('akamai', $e);
+    return FALSE;
+  }
+}
+
+/**
+ * Return all system and alias paths for the provided URL.
+ *
+ * @param $url
+ *   The URL to find all aliases
+ * @param object $node
+ *   (optional) The Node for the URL being cleared if one exists, NULL otherwise.
+ *
+ * @return array
+ *    An array of all paths aliased to the provided URL.
+ */
+function _akamai_get_all_paths($url, $node = NULL) {
+  global $language;
+
+  // If it is not a node path, get the system path.
+  if (strpos($url, 'node') !== 0) {
+    $source = drupal_lookup_path('source', $url);
+  }
+  if (!isset($source)  || !$source) {
+    $source = $url;
+  }
+  $source = preg_replace("/^\//", "", $source);
+  $paths[] = $source;
+
+
+  $result = db_query('SELECT alias FROM {url_alias} WHERE source = :source AND language IN (:language, :language_none)',
+                      array(
+                        ':source' => $source,
+                        ':language' => isset($language->language) ? $language->language : '',
+                        ':language_none' => LANGUAGE_NONE,
+                      ));
+
+  foreach ($result as $record) {
+    $paths[] = $record->alias;
+  }
+
+  // If this is the frontpage, add a blank to clear the root doc.
+  if ($source == variable_get('site_frontpage', 'node')) {
+    $paths[] = '';
+  }
+
+  // Allow other modules to add/modify paths to be cleared.
+  drupal_alter('akamai_paths', $paths, $node);
+
+  return $paths;
+}
+
+/**
+ * Returns the Akamai Cache Control class.
+ *
+ * This is abstracted to provide the capability
+ * of a no-op or recording class for testing purposes.
+ *
+ * @param array $params
+ *
+ * @return object
+ */
+function akamai_get_class($params = array()) {
+  module_load_include('inc', 'akamai', 'akamai.class');
+  $class = variable_get('akamai_service_class', 'AkamaiCacheControlClient');
+  $akamai = new $class($params);
+  return $akamai;
+}
+
+/**
+ * Implementation of hook_context_http_header_def()
+ * from context_http_header module
+ * These are the form items that display for the http header context reaction.
+ */
+/*
+ AWAITING UPGRADE OF context_http_headers TO DRUPAL 7
+
+function akamai_context_http_header_def() {
+  return array(
+    'akamai_ttl' => array(
+      '#title'       => 'TTL',
+      '#type'        => 'textfield',
+      '#description' => t("Specifies a Time-To-Live (TTL) for the object in the edge server’s cache. This is themaximum amount of time the content will be served before the edge server will issue an If Modified Since request back to the content provider to check whether the object content has changed. The content is an integer, followed by a unit specifier Current unit specifiers are: 's' (seconds), 'm' (minutes), 'h' (hours), 'd' (days)."),
+    ),
+    'akamai_nostore' => array(
+      '#title'         => 'No Store',
+      '#type'          => 'radios',
+      '#description'   => t("Specifies that the object is not to be cached. The edge server will retrieve the object from the origin server upon every request."),
+      '#options'       => array(
+        FALSE  => t('Not Specified'),
+        'on'   => t('On'),
+        'off'  => t('Off')
+      ),
+    ),
+    'akamai_bypass_cache' => array(
+      '#title'         => 'Bypass Cache',
+      '#type'          => 'radios',
+      '#description'   => t("When enabled, bypass-cache causes the request to be passed without caching. It's similar to no-store, except that it doesn't remove the cache entry if one already exists. This is useful if the object returned is an alternate for the content normally delivered"),
+      '#options'       => array(
+        FALSE  => t('Not Specified'),
+        'on'   => t('On'),
+        'off'  => t('Off')
+      ),
+    ),
+    'akamai_dynamic_content_assembly' => array(
+      '#title' => 'Dynamic Content Assembly (dca)',
+      '#type'  => 'radios',
+      '#description' => t('Nominates the request for Dynamic Content Assembly. Valid argument is a type of processing. This header is used to nominate the object for ESI processing. At this time, "esi" and "akamaizer" specify the available processing types. These headers tell the edge server to process the objects in the ESI processor. The other header dca=noop, tells the edge server not to process the associated content.'),
+      '#options' => array(
+        FALSE   => t('Not Specified'),
+        'noop'  => t('noop'),
+        'esi'   => t('esi'),
+        'akamaizer' => t('akamaizer'),
+      ),
+    ),
+
+  );
+}
+*/
+
+/**
+ * @param $http_header_items
+ *
+ * Implemantation of hook_http_header_build
+ * from context_http_header module
+ * build the akamai edge control headers
+ * array(
+ *    'header-1' => array('value1', 'value2', etc),
+ *    'header-2' => array(...),
+ * )
+ */
+
+/*
+ AWAITING UPGRADE OF context_http_headers TO DRUPAL 7
+
+function akamai_context_http_header_build($http_header_items) {
+  $header_builds = array();
+  if ($value = $http_header_items['akamai_ttl']) {
+    $header_builds["Edge-Control"][] = "Cache-maxage=". check_plain($value);
+  }
+
+  if ($value = $http_header_items['akamai_nostore']) {
+    if ($value == 'on') {
+      $header_builds["Edge-Control"][] = "No-store";
+    }
+    elseif ($value == 'off') {
+      $header_builds["Edge-Control"][] = "!No-store";
+    }
+  }
+
+  if ($value = $http_header_items['akamai_bypass_cache']) {
+    if ($value == 'on') {
+      $header_builds["Edge-Control"][] = "bypass-cache";
+    }
+    elseif ($value == 'off') {
+      $header_builds["Edge-Control"][] = "!bypass-cache";
+    }
+  }
+
+  if ($value = $http_header_items['akamai_dynamic_content_assembly']) {
+    if ($value == 'noop') {
+      $header_builds["Edge-Control"][] = "dca=noop";
+    }
+    if ($value == 'esi') {
+      $header_builds["Edge-Control"][] ="dca=esi";
+    }
+    if ($value == 'akamaizer') {
+      $header_builds["Edge-Control"][] = "dca=akamaizer";
+    }
+  }
+
+  return $header_builds;
+}
+*/
