@@ -1,0 +1,116 @@
+<?php
+
+/**
+ * @file
+ * Put Trumba spuds everywhere!
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function trumba_menu() {
+  $items = array();
+
+  $items['admin/config/system/trumba'] = array(
+    'title' => 'Trumba',
+    'description' => 'Main configuration for using Trumba on your site.',
+    'access arguments' => array('administer trumba'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('trumba_admin_settings_form'),
+    'file' => 'trumba.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function trumba_permission() {
+  $return = array();
+
+  $return['administer trumba'] = array(
+    'title' => t('Administer Trumba'),
+    'description' => t('Gives user the ability to modify the configuration of
+    your Trumba calendars'),
+  );
+
+  $return['place trumba spuds'] = array(
+    'title' => t('Place Trumba Spuds'),
+    'description' => t('Gives user the ability to place Trumba spuds on pages.'),
+  );
+
+  return $return;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function trumba_ctools_plugin_directory($owner, $plugin_type) {
+  // Let the system know we implement task and task_handler plugins.
+  if ($owner == 'ctools' && $plugin_type == 'content_types') {
+    return 'plugins/' . $plugin_type;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function trumba_theme($existing, $type, $theme, $path) {
+  $return = array();
+
+  $module_directory = drupal_get_path('module', 'trumba');
+
+  $return['trumba_calendar'] = array(
+    'variables' => array(
+      'spud_id' => NULL,
+    ),
+    'path' => $module_directory . "/templates/",
+    'template' => 'trumba-calendar',
+  );
+
+  return $return;
+}
+
+/**
+ * Create Javascript settings for a Trumba Spud.
+ *
+ * @param string $spud_id
+ *    The identifier of the spud.
+ * @param array $params
+ *    The array of configuration parameters.
+ */
+function _trumba_spud_embed($spud_id, $params) {
+  $pane = new stdClass();
+
+  // Required JS.
+  drupal_add_js('https://www.trumba.com/scripts/spuds.js', array(
+    'type' => 'external',
+    'scope' => 'header',
+  ));
+
+  // Do not include spudConfig if it's blank.
+  if (empty($params['spudConfig'])) {
+    unset($params['spudConfig']);
+  }
+
+  // Add Spud settings.
+  drupal_add_js(
+    array(
+      'trumba' => array(
+        $spud_id => $params,
+      ),
+    ), 'setting'
+  );
+
+  // Create Spuds.
+  drupal_add_js(drupal_get_path('module', 'trumba') . '/js/trumba.js', array('scope' => 'footer'));
+
+  // Render the HTML.
+  $pane->content = theme('trumba_calendar', array(
+    'spud_id' => $spud_id,
+  ));
+
+  return $pane;
+}
