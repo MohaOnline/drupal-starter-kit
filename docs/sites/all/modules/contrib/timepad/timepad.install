@@ -1,0 +1,13 @@
+<?php
+/**
+ * @file
+ * Install, update, and uninstall functions for the TimePad module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function timepad_uninstall() {
+  // Delete variables.
+  variable_del('timepad_access_token');
+}

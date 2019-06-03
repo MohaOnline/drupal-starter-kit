@@ -1,0 +1,13 @@
+name = TimePad
+description "Provides TimePad API integration"
+core = 7.x
+configure = admin/config/services/timepad
+
+files[] = TimePadApi.class.inc
+
+; Information added by Drupal.org packaging script on 2015-09-26
+version = "7.x-1.0"
+core = "7.x"
+project = "timepad"
+datestamp = "1443265208"
+

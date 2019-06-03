@@ -1,0 +1,49 @@
+<?php
+/**
+ * @file
+ * Basic integration with TimePad.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function timepad_menu() {
+  $items['admin/config/services/timepad'] = array(
+    'title' => 'TimePad settings',
+    'description' => 'Configure TimePad account.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('timepad_settings_form'),
+    'access arguments' => array('administer timepad configuration'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function timepad_permission() {
+  return array(
+    'administer timepad configuration' => array(
+      'title' => t('Administer TimePad configuration'),
+    ),
+  );
+}
+
+/**
+ * TimePad settings form.
+ */
+function timepad_settings_form($form, &$form_state) {
+  $form['timepad_access_token'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Access token'),
+    '#description' => t('If you want to create/modify events this field is required.'),
+    '#suffix' => l(
+      t('Get access token'),
+      'http://dev.timepad.ru/api/oauth/',
+      array('attributes' => array('target' => '_blank'))
+    ),
+    '#default_value' => variable_get('timepad_access_token'),
+  );
+
+  return system_settings_form($form);
+}
