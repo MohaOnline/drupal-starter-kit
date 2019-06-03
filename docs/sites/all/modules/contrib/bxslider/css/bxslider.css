@@ -1,0 +1,22 @@
+.region-content .bx-wrapper ul {
+  margin: 0 0;
+}
+
+.bx-wrapper div.bx-viewport {
+  box-shadow: none;
+}
+
+div.bx-wrapper img {
+  margin: 0 auto;
+}
+
+.bxslider-ths li img {
+  opacity: 0.5;
+  background-color: #ffffff;
+}
+
+.bxslider-ths li.active img,
+.bxslider-ths li img:hover {
+  opacity: 1;
+  background-color: #ffffff;
+}

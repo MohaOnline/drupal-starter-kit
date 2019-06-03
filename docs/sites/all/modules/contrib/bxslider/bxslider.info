@@ -1,0 +1,15 @@
+name = BxSlider
+description = Integration BxSlider with Field Formaters.
+core = 7.x
+
+dependencies[] = image
+dependencies[] = libraries (>=2.x)
+dependencies[] = jquery_update
+
+files[] = bxslider.test
+
+; Information added by Drupal.org packaging script on 2018-07-18
+version = "7.x-1.4"
+core = "7.x"
+project = "bxslider"
+datestamp = "1531934626"

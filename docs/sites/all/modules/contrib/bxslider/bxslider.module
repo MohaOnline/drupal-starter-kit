@@ -1,0 +1,1344 @@
+<?php
+
+/**
+ * @file
+ * Fields integration with BxSlider.
+ */
+
+/**
+ * Implements hook_libraries_info().
+ */
+function bxslider_libraries_info() {
+  $libraries['bxslider'] = array(
+    'name' => 'bxslider',
+    'vendor url' => 'http://bxslider.com/',
+    'download url' => 'http://bxslider.com/lib/jquery.bxslider.zip',
+    'version arguments' => array(
+      'file' => 'jquery.bxslider.min.js',
+      // BxSlider v4.x.x.
+      'pattern' => '/[b,B]xSlider v(\d+)/',
+      'lines' => 2,
+    ),
+    'files' => array(
+      'js' => array(
+        'jquery.bxslider.min.js',
+        // 'jquery.bxslider.js',.
+      ),
+      'css' => array(
+        'jquery.bxslider.css',
+      ),
+    ),
+    'integration files' => array(
+      'bxslider' => array(
+        'css' => array('css/bxslider.css'),
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_library().
+ */
+function bxslider_library() {
+  $module_path = drupal_get_path('module', 'bxslider');
+  $library_path = libraries_get_path('bxslider');
+
+  $libraries['bxslider'] = array(
+    'title' => 'bxslider',
+    'website' => 'http://bxslider.com',
+  // 'version' => '4',.
+    'js' => array(
+      $library_path . '/jquery.bxslider.min.js' => array(
+        'scope' => 'footer',
+      ),
+    ),
+    'css' => array(
+      $library_path . '/jquery.bxslider.css' => array(
+        'type' => 'file',
+        'media' => 'screen',
+      ),
+      $module_path . '/css/bxslider.css' => array(
+        'type' => 'file',
+        'media' => 'screen',
+      ),
+    ),
+  );
+  return $libraries;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function bxslider_field_formatter_info() {
+  return array(
+    'bxslider' => array(
+      'label' => t('BxSlider'),
+      'field types' => array('image', 'media'),
+      'settings' => array(
+        'image_style' => 'large',
+        'general' => array(
+          'mode' => 'horizontal',
+          'speed' => 500,
+          'slideMargin' => 0,
+          'startSlide' => 0,
+          'randomStart' => FALSE,
+          'infiniteLoop' => TRUE,
+          'hideControlOnEnd' => TRUE,
+          'easing' => '',
+          'captions' => FALSE,
+          'ticker' => FALSE,
+          'tickerHover' => FALSE,
+          'adaptiveHeight' => FALSE,
+          'adaptiveHeightSpeed' => 500,
+          'video' => FALSE,
+          'responsive' => TRUE,
+          'useCSS' => TRUE,
+          'preloadImages' => 'visible',
+          'touchEnabled' => TRUE,
+          'swipeThreshold' => 50,
+          'oneToOneTouch' => TRUE,
+          'preventDefaultSwipeX' => TRUE,
+          'preventDefaultSwipeY' => FALSE,
+        ),
+        'pager' => array(
+          'pager' => TRUE,
+          'pagerType' => 'full',
+          'pagerShortSeparator' => ' / ',
+          'pagerSelector' => '',
+          'pagerCustom_type' => 'none',
+          'pagerCustom' => 'null',
+          'pagerCustom_image_style' => 'thumbnail',
+        ),
+        'controls' => array(
+          'controls' => TRUE,
+          'nextText' => 'Next',
+          'prevText' => 'Prev',
+          'nextSelector' => '',
+          'prevSelector' => '',
+          'autoControls' => FALSE,
+          'startText' => 'Start',
+          'stopText' => 'Stop',
+          'autoControlsCombine' => FALSE,
+          'autoControlsSelector' => '',
+        ),
+        'auto' => array(
+          'auto' => FALSE,
+          'pause' => 4000,
+          'autoStart' => TRUE,
+          'autoDirection' => 'next',
+          'autoHover' => FALSE,
+          'autoDelay' => 0,
+        ),
+        'carousel' => array(
+          'minSlides' => 1,
+          'maxSlides' => 1,
+          'moveSlides' => 0,
+          'slideWidth' => 0,
+        ),
+        'colorbox' => array(
+          'enable' => FALSE,
+          'image_style' => 'large',
+          'slideshow' => FALSE,
+          'slideshow_speed' => 2000,
+          'transition' => 'elastic',
+          'transition_speed' => 350,
+        ),
+      ),
+    ),
+    'bxslider_ths' => array(
+      'label' => t('BxSlider - Thumbnail slider'),
+      'field types' => array('image', 'media'),
+      'settings' => array(
+        'image_style' => 'large',
+        'general' => array(
+          'mode' => 'horizontal',
+          'speed' => 500,
+          'slideMargin' => 0,
+          'startSlide' => 0,
+          'randomStart' => FALSE,
+          'infiniteLoop' => FALSE,
+          'hideControlOnEnd' => TRUE,
+          'easing' => '',
+          'captions' => FALSE,
+          'ticker' => FALSE,
+          'tickerHover' => FALSE,
+          'adaptiveHeight' => FALSE,
+          'adaptiveHeightSpeed' => 500,
+          'video' => FALSE,
+          'responsive' => TRUE,
+          'useCSS' => TRUE,
+          'preloadImages' => 'visible',
+          'touchEnabled' => TRUE,
+          'swipeThreshold' => 50,
+          'oneToOneTouch' => TRUE,
+          'preventDefaultSwipeX' => TRUE,
+          'preventDefaultSwipeY' => FALSE,
+        ),
+        'pager' => array(
+          'pager' => FALSE,
+        ),
+        'controls' => array(
+          'controls' => TRUE,
+          'nextText' => 'Next',
+          'prevText' => 'Prev',
+          'nextSelector' => '',
+          'prevSelector' => '',
+          'autoControls' => FALSE,
+          'startText' => 'Start',
+          'stopText' => 'Stop',
+          'autoControlsCombine' => FALSE,
+          'autoControlsSelector' => '',
+        ),
+        'auto' => array(
+          'auto' => FALSE,
+          'pause' => 4000,
+          'autoStart' => TRUE,
+          'autoDirection' => 'next',
+          'autoHover' => FALSE,
+          'autoDelay' => 0,
+        ),
+        'carousel' => array(
+          'minSlides' => 1,
+          'maxSlides' => 1,
+          'moveSlides' => 0,
+          'slideWidth' => 0,
+        ),
+        'thumbnail_slider' => array(
+          'thumbnail_style' => 'thumbnail',
+          'general' => array(
+            'mode' => 'horizontal',
+            'speed' => 500,
+            'slideMargin' => 0,
+            'startSlide' => 0,
+            'randomStart' => FALSE,
+            'infiniteLoop' => TRUE,
+            'hideControlOnEnd' => FALSE,
+            'easing' => '',
+            'captions' => FALSE,
+            'ticker' => FALSE,
+            'tickerHover' => FALSE,
+            'adaptiveHeight' => FALSE,
+            'adaptiveHeightSpeed' => 500,
+            'video' => FALSE,
+            'responsive' => TRUE,
+            'useCSS' => TRUE,
+            'preloadImages' => 'visible',
+            'touchEnabled' => TRUE,
+            'swipeThreshold' => 50,
+            'oneToOneTouch' => TRUE,
+            'preventDefaultSwipeX' => TRUE,
+            'preventDefaultSwipeY' => FALSE,
+          ),
+          'pager' => array(
+            'pager' => FALSE,
+          ),
+          'controls' => array(
+            'controls' => TRUE,
+            'nextText' => 'Next',
+            'prevText' => 'Prev',
+            'nextSelector' => '',
+            'prevSelector' => '',
+            'autoControls' => FALSE,
+            'startText' => 'Start',
+            'stopText' => 'Stop',
+            'autoControlsCombine' => FALSE,
+            'autoControlsSelector' => '',
+          ),
+          'auto' => array(
+            'auto' => FALSE,
+            'pause' => 4000,
+            'autoStart' => TRUE,
+            'autoDirection' => 'next',
+            'autoHover' => FALSE,
+            'autoDelay' => 0,
+          ),
+          'carousel' => array(
+            'minSlides' => 4,
+            'maxSlides' => 4,
+            'moveSlides' => 1,
+            'slideWidth' => 0,
+          ),
+        ),
+        'colorbox' => array(
+          'enable' => FALSE,
+          'image_style' => 'large',
+          'slideshow' => FALSE,
+          'slideshow_speed' => 2000,
+          'transition' => 'elastic',
+          'transition_speed' => 350,
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function bxslider_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $image_styles = image_style_options(FALSE, PASS_THROUGH);
+
+  $element['image_style'] = array(
+    '#title' => t('Image style'),
+    '#type' => 'select',
+    '#default_value' => $settings['image_style'],
+    '#empty_option' => t('None (original image)'),
+    '#options' => $image_styles,
+  );
+
+  $element['description'] = array(
+    '#markup' => t('Visit <a href="@field-help" target="_blank">http://bxslider.com/options</a> for more information about bxSlider options.', array('@field-help' => url('http://bxslider.com/options'))),
+  );
+
+  $element['general'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General'),
+    '#weight' => 1,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $element['general']['mode'] = array(
+    '#title' => t('Mode'),
+    '#type' => 'select',
+    '#default_value' => $settings['general']['mode'],
+    '#options' => array(
+      'horizontal' => 'horizontal',
+      'vertical' => 'vertical',
+      'fade' => 'fade',
+    ),
+  );
+  $element['general']['speed'] = array(
+    '#title' => t('Speed'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['general']['speed'],
+  );
+  $element['general']['slideMargin'] = array(
+    '#title' => t('slideMargin'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['general']['slideMargin'],
+  );
+  $element['general']['startSlide'] = array(
+    '#title' => t('startSlide'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['general']['startSlide'],
+  );
+  $element['general']['randomStart'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('randomStart'),
+    '#default_value' => $settings['general']['randomStart'],
+  );
+  $element['general']['infiniteLoop'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('infiniteLoop'),
+    '#default_value' => $settings['general']['infiniteLoop'],
+  );
+  $element['general']['hideControlOnEnd'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('hideControlOnEnd'),
+    '#default_value' => $settings['general']['hideControlOnEnd'],
+  );
+  $element['general']['easing'] = array(
+    '#title' => t('easing'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['general']['easing'],
+  );
+  $element['general']['captions'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('captions'),
+    '#default_value' => $settings['general']['captions'],
+  );
+  $element['general']['ticker'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('ticker'),
+    '#default_value' => $settings['general']['ticker'],
+  );
+  $element['general']['tickerHover'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('tickerHover'),
+    '#default_value' => $settings['general']['tickerHover'],
+  );
+  $element['general']['adaptiveHeight'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('adaptiveHeight'),
+    '#default_value' => $settings['general']['adaptiveHeight'],
+  );
+  $element['general']['adaptiveHeightSpeed'] = array(
+    '#title' => t('adaptiveHeightSpeed'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['general']['adaptiveHeightSpeed'],
+  );
+  $element['general']['video'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('video'),
+    '#default_value' => $settings['general']['video'],
+  );
+  $element['general']['responsive'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('responsive'),
+    '#default_value' => $settings['general']['responsive'],
+  );
+  $element['general']['useCSS'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('useCSS'),
+    '#default_value' => $settings['general']['useCSS'],
+  );
+  $element['general']['preloadImages'] = array(
+    '#title' => t('preloadImages'),
+    '#type' => 'select',
+    '#default_value' => $settings['general']['preloadImages'],
+    '#options' => array(
+      'all' => 'all',
+      'visible' => 'visible',
+    ),
+  );
+  $element['general']['preloadImages'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('preloadImages'),
+    '#default_value' => $settings['general']['preloadImages'],
+  );
+  $element['general']['swipeThreshold'] = array(
+    '#title' => t('swipeThreshold'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['general']['swipeThreshold'],
+  );
+  $element['general']['oneToOneTouch'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('oneToOneTouch'),
+    '#default_value' => $settings['general']['oneToOneTouch'],
+  );
+  $element['general']['preventDefaultSwipeX'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('preventDefaultSwipeX'),
+    '#default_value' => $settings['general']['preventDefaultSwipeX'],
+  );
+  $element['general']['preventDefaultSwipeY'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('preventDefaultSwipeY'),
+    '#default_value' => $settings['general']['preventDefaultSwipeY'],
+  );
+
+  if ($display['type'] == 'bxslider') {
+    $element['pager'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Pager'),
+      '#weight' => 2,
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $element['pager']['pager'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('pager'),
+      '#default_value' => $settings['pager']['pager'],
+    );
+    $element['pager']['pagerType'] = array(
+      '#title' => t('pagerType'),
+      '#type' => 'select',
+      '#default_value' => $settings['pager']['pagerType'],
+      '#options' => array(
+        'full' => 'full',
+        'short' => 'short',
+      ),
+      '#states' => array(
+        'enabled' => array(
+          ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][pager][pager]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $element['pager']['pagerShortSeparator'] = array(
+      '#title' => t('pagerShortSeparator'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['pager']['pagerShortSeparator'],
+      '#states' => array(
+        'enabled' => array(
+          ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][pager][pager]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $element['pager']['pagerSelector'] = array(
+      '#title' => t('pagerSelector'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['pager']['pagerSelector'],
+      '#states' => array(
+        'enabled' => array(
+          ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][pager][pager]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $element['pager']['pagerCustom_type_markup'] = array(
+      '#markup' => '<hr>',
+    );
+    $element['pager']['pagerCustom_type'] = array(
+      '#title' => t('Custom Pager'),
+      '#type' => 'select',
+      '#default_value' => $settings['pager']['pagerCustom_type'],
+      '#options' => array(
+        'none' => 'None',
+        'thumbnail_pager_method1' => 'Thumbnail pager - method 1',
+        'thumbnail_pager_method2' => 'Thumbnail pager - method 2',
+      ),
+      '#description' => t('Select a thumbnail pager according to <a href="@method1">Thumbnail pager - method 1</a> or <a href="@method2">Thumbnail pager - method 2</a>.', array('@method1' => url('http://bxslider.com/examples/thumbnail-pager-1'), '@method2' => url('http://bxslider.com/examples/thumbnail-pager-2'))),
+      '#states' => array(
+        'enabled' => array(
+          ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][pager][pager]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $element['pager']['pagerCustom_image_style'] = array(
+      '#title' => t('Custom Pager - Image style'),
+      '#type' => 'select',
+      '#default_value' => $settings['pager']['pagerCustom_image_style'],
+      '#empty_option' => t('None (thumbnail)'),
+      '#options' => $image_styles,
+      '#description' => t('Used only when some the "Custom Pager" option is selected.'),
+      '#states' => array(
+        'enabled' => array(
+          array(
+            array(':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][pager][pagerCustom_type]"]' => array('value' => 'thumbnail_pager_method1')),
+            'xor',
+            array(':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][pager][pagerCustom_type]"]' => array('value' => 'thumbnail_pager_method2')),
+          ),
+          ':input[name="fields[' . $field['field_name'] . '][settings_edit_form][settings][pager][pager]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+  }
+
+  $element['controls'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Controls'),
+    '#weight' => 3,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $element['controls']['controls'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('controls'),
+    '#default_value' => $settings['controls']['controls'],
+  );
+  $element['controls']['nextText'] = array(
+    '#title' => t('nextText'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['controls']['nextText'],
+  );
+  $element['controls']['prevText'] = array(
+    '#title' => t('prevText'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['controls']['prevText'],
+  );
+  $element['controls']['nextSelector'] = array(
+    '#title' => t('nextSelector'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['controls']['nextSelector'],
+  );
+  $element['controls']['prevSelector'] = array(
+    '#title' => t('prevSelector'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['controls']['prevSelector'],
+  );
+  $element['controls']['autoControls'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('autoControls'),
+    '#default_value' => $settings['controls']['autoControls'],
+  );
+  $element['controls']['startText'] = array(
+    '#title' => t('startText'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['controls']['startText'],
+  );
+  $element['controls']['stopText'] = array(
+    '#title' => t('stopText'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['controls']['stopText'],
+  );
+  $element['controls']['autoControlsCombine'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto'),
+    '#default_value' => $settings['controls']['autoControlsCombine'],
+  );
+  $element['controls']['autoControlsSelector'] = array(
+    '#title' => t('autoControlsSelector'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['controls']['autoControlsSelector'],
+  );
+
+  $element['auto'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Auto'),
+    '#weight' => 4,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $element['auto']['auto'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Auto'),
+    '#default_value' => $settings['auto']['auto'],
+  );
+  $element['auto']['pause'] = array(
+    '#title' => t('pause'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['auto']['pause'],
+  );
+  $element['auto']['autoStart'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('autoStart'),
+    '#default_value' => $settings['auto']['autoStart'],
+  );
+  $element['auto']['autoDirection'] = array(
+    '#title' => t('autoDirection'),
+    '#type' => 'select',
+    '#default_value' => $settings['auto']['autoDirection'],
+    '#options' => array(
+      'next' => 'next',
+      'prev' => 'prev',
+    ),
+  );
+  $element['auto']['autoHover'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('autoHover'),
+    '#default_value' => $settings['auto']['autoHover'],
+  );
+  $element['auto']['autoDelay'] = array(
+    '#title' => t('autoDelay'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['auto']['autoDelay'],
+  );
+
+  $element['carousel'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Carousel'),
+    '#weight' => 5,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $element['carousel']['minSlides'] = array(
+    '#title' => t('minSlides'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['carousel']['minSlides'],
+  );
+  $element['carousel']['maxSlides'] = array(
+    '#title' => t('maxSlides'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['carousel']['maxSlides'],
+  );
+  $element['carousel']['moveSlides'] = array(
+    '#title' => t('moveSlides'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['carousel']['moveSlides'],
+  );
+  $element['carousel']['slideWidth'] = array(
+    '#title' => t('slideWidth'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['carousel']['slideWidth'],
+  );
+
+  if ($display['type'] == 'bxslider_ths') {
+
+    $element['thumbnail_slider'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Thumbnail slider'),
+      '#weight' => 10,
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+
+    $element['thumbnail_slider']['thumbnail_style'] = array(
+      '#title' => t('Image style'),
+      '#type' => 'select',
+      '#default_value' => $settings['thumbnail_slider']['thumbnail_style'],
+      '#empty_option' => t('None (original image)'),
+      '#options' => $image_styles,
+    );
+
+    $element['thumbnail_slider']['general'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('General'),
+      '#weight' => 1,
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $element['thumbnail_slider']['general']['mode'] = array(
+      '#title' => t('Mode'),
+      '#type' => 'select',
+      '#default_value' => $settings['thumbnail_slider']['general']['mode'],
+      '#options' => array(
+        'horizontal' => 'horizontal',
+        'fade' => 'fade',
+      ),
+    );
+    $element['thumbnail_slider']['general']['speed'] = array(
+      '#title' => t('Speed'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['general']['speed'],
+    );
+    $element['thumbnail_slider']['general']['slideMargin'] = array(
+      '#title' => t('slideMargin'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['general']['slideMargin'],
+    );
+    $element['thumbnail_slider']['general']['startSlide'] = array(
+      '#title' => t('startSlide'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['general']['startSlide'],
+    );
+    $element['thumbnail_slider']['general']['randomStart'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('randomStart'),
+      '#default_value' => $settings['thumbnail_slider']['general']['randomStart'],
+    );
+    $element['thumbnail_slider']['general']['infiniteLoop'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('infiniteLoop'),
+      '#default_value' => $settings['thumbnail_slider']['general']['infiniteLoop'],
+    );
+    $element['thumbnail_slider']['general']['hideControlOnEnd'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('hideControlOnEnd'),
+      '#default_value' => $settings['thumbnail_slider']['general']['hideControlOnEnd'],
+    );
+    $element['thumbnail_slider']['general']['easing'] = array(
+      '#title' => t('easing'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['general']['easing'],
+    );
+    $element['thumbnail_slider']['general']['captions'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('captions'),
+      '#default_value' => $settings['thumbnail_slider']['general']['captions'],
+    );
+    $element['thumbnail_slider']['general']['ticker'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('ticker'),
+      '#default_value' => $settings['thumbnail_slider']['general']['ticker'],
+    );
+    $element['thumbnail_slider']['general']['tickerHover'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('tickerHover'),
+      '#default_value' => $settings['thumbnail_slider']['general']['tickerHover'],
+    );
+    $element['thumbnail_slider']['general']['adaptiveHeight'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('adaptiveHeight'),
+      '#default_value' => $settings['thumbnail_slider']['general']['adaptiveHeight'],
+    );
+    $element['thumbnail_slider']['general']['adaptiveHeightSpeed'] = array(
+      '#title' => t('adaptiveHeightSpeed'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['general']['adaptiveHeightSpeed'],
+    );
+    $element['thumbnail_slider']['general']['responsive'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('responsive'),
+      '#default_value' => $settings['thumbnail_slider']['general']['responsive'],
+    );
+    $element['thumbnail_slider']['general']['useCSS'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('useCSS'),
+      '#default_value' => $settings['thumbnail_slider']['general']['useCSS'],
+    );
+    $element['thumbnail_slider']['general']['preloadImages'] = array(
+      '#title' => t('preloadImages'),
+      '#type' => 'select',
+      '#default_value' => $settings['thumbnail_slider']['general']['preloadImages'],
+      '#options' => array(
+        'all' => 'all',
+        'visible' => 'visible',
+      ),
+    );
+    $element['thumbnail_slider']['general']['preloadImages'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('preloadImages'),
+      '#default_value' => $settings['thumbnail_slider']['general']['preloadImages'],
+    );
+    $element['thumbnail_slider']['general']['swipeThreshold'] = array(
+      '#title' => t('swipeThreshold'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['general']['swipeThreshold'],
+    );
+    $element['thumbnail_slider']['general']['oneToOneTouch'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('oneToOneTouch'),
+      '#default_value' => $settings['thumbnail_slider']['general']['oneToOneTouch'],
+    );
+    $element['thumbnail_slider']['general']['preventDefaultSwipeX'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('preventDefaultSwipeX'),
+      '#default_value' => $settings['thumbnail_slider']['general']['preventDefaultSwipeX'],
+    );
+    $element['thumbnail_slider']['general']['preventDefaultSwipeY'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('preventDefaultSwipeY'),
+      '#default_value' => $settings['thumbnail_slider']['general']['preventDefaultSwipeY'],
+    );
+
+    $element['thumbnail_slider']['pager']['pager'] = array(
+      '#type' => 'hidden',
+      '#default_value' => $settings['thumbnail_slider']['pager']['pager'],
+    );
+
+    $element['thumbnail_slider']['controls'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Controls'),
+      '#weight' => 3,
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $element['thumbnail_slider']['controls']['controls'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('controls'),
+      '#default_value' => $settings['thumbnail_slider']['controls']['controls'],
+    );
+    $element['thumbnail_slider']['controls']['nextText'] = array(
+      '#title' => t('nextText'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['controls']['nextText'],
+    );
+    $element['thumbnail_slider']['controls']['prevText'] = array(
+      '#title' => t('prevText'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['controls']['prevText'],
+    );
+    $element['thumbnail_slider']['controls']['autoControls'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('autoControls'),
+      '#default_value' => $settings['thumbnail_slider']['controls']['autoControls'],
+    );
+    $element['thumbnail_slider']['controls']['startText'] = array(
+      '#title' => t('startText'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['controls']['startText'],
+    );
+    $element['thumbnail_slider']['controls']['stopText'] = array(
+      '#title' => t('stopText'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['controls']['stopText'],
+    );
+    $element['thumbnail_slider']['controls']['autoControlsCombine'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Auto'),
+      '#default_value' => $settings['thumbnail_slider']['controls']['autoControlsCombine'],
+    );
+
+    $element['thumbnail_slider']['auto'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Auto'),
+      '#weight' => 4,
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $element['thumbnail_slider']['auto']['auto'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Auto'),
+      '#default_value' => $settings['thumbnail_slider']['auto']['auto'],
+    );
+    $element['thumbnail_slider']['auto']['pause'] = array(
+      '#title' => t('pause'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['auto']['pause'],
+    );
+    $element['thumbnail_slider']['auto']['autoStart'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('autoStart'),
+      '#default_value' => $settings['thumbnail_slider']['auto']['autoStart'],
+    );
+    $element['thumbnail_slider']['auto']['autoDirection'] = array(
+      '#title' => t('autoDirection'),
+      '#type' => 'select',
+      '#default_value' => $settings['thumbnail_slider']['auto']['autoDirection'],
+      '#options' => array(
+        'next' => 'next',
+        'prev' => 'prev',
+      ),
+    );
+    $element['thumbnail_slider']['auto']['autoHover'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('autoHover'),
+      '#default_value' => $settings['thumbnail_slider']['auto']['autoHover'],
+    );
+    $element['thumbnail_slider']['auto']['autoDelay'] = array(
+      '#title' => t('autoDelay'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['auto']['autoDelay'],
+    );
+
+    $element['thumbnail_slider']['carousel'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Carousel'),
+      '#weight' => 5,
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+    $element['thumbnail_slider']['carousel']['minSlides'] = array(
+      '#title' => t('minSlides'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['carousel']['minSlides'],
+    );
+    $element['thumbnail_slider']['carousel']['maxSlides'] = array(
+      '#title' => t('maxSlides'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['carousel']['maxSlides'],
+    );
+    $element['thumbnail_slider']['carousel']['moveSlides'] = array(
+      '#title' => t('moveSlides'),
+      '#type' => 'textfield',
+      '#size' => 60,
+      '#default_value' => $settings['thumbnail_slider']['carousel']['moveSlides'],
+    );
+  }
+
+  $colorbox_exist = module_exists('colorbox');
+  $element['colorbox'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Colorbox'),
+    '#weight' => 11,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => ($colorbox_exist) ? '' : t("Please, enable the Colorbox module firstly."),
+  );
+  $element['colorbox']['enable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Colorbox enable'),
+    '#default_value' => $settings['colorbox']['enable'],
+    '#disabled' => ($colorbox_exist) ? FALSE : TRUE,
+  );
+  $element['colorbox']['image_style'] = array(
+    '#title' => t('Colorbox Image style'),
+    '#type' => 'select',
+    '#default_value' => $settings['colorbox']['image_style'],
+    '#empty_option' => t('None (original image)'),
+    '#options' => $image_styles,
+    '#disabled' => $colorbox_exist ? FALSE : TRUE,
+  );
+  $element['colorbox']['slideshow'] = array(
+    '#title' => t('Colorbox slideshow'),
+    '#type' => 'select',
+    '#default_value' => $settings['colorbox']['slideshow'],
+    '#empty_option' => t('No slideshow'),
+    '#options' => array('manual' => 'Manual', 'automatic' => 'Automatic'),
+    '#disabled' => $colorbox_exist ? FALSE : TRUE,
+  );
+  $element['colorbox']['slideshow_speed'] = array(
+    '#title' => t('Colorbox slideshow speed'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['colorbox']['slideshow_speed'],
+    '#description' => t("Time between transitions (ms)."),
+    '#disabled' => $colorbox_exist ? FALSE : TRUE,
+  );
+  $element['colorbox']['transition'] = array(
+    '#title' => t('Colorbox transition'),
+    '#type' => 'select',
+    '#default_value' => $settings['colorbox']['transition'],
+    '#empty_option' => t('No transition'),
+    '#options' => array('elastic' => 'Elastic', 'fade' => 'Fade'),
+    '#disabled' => $colorbox_exist ? FALSE : TRUE,
+  );
+  $element['colorbox']['transition_speed'] = array(
+    '#title' => t('Colorbox transition speed'),
+    '#type' => 'textfield',
+    '#size' => 60,
+    '#default_value' => $settings['colorbox']['transition_speed'],
+    '#description' => t("Duration of transition (ms)."),
+    '#disabled' => $colorbox_exist ? FALSE : TRUE,
+  );
+  return $element;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function bxslider_form_field_ui_display_overview_form_alter(&$form, &$form_state) {
+  $form['#validate'][] = 'bxslider_field_ui_display_overview_form_validate';
+  $form['#submit'][] = 'bxslider_field_ui_display_overview_form_submit';
+}
+
+/**
+ * Form validation function.
+ *
+ * Change some field's settings to valid data type.
+ */
+function bxslider_field_ui_display_overview_form_validate($form, &$form_state) {
+
+  // Some parameters must be passed to the js as 'int',
+  // but while the form submit they are 'string'. So, it is corrected here.
+  foreach ($form_state['values']['fields'] as $did => $display) {
+    if (isset($display['type']) && ($display['type'] == 'bxslider' || $display['type'] == 'bxslider_ths')) {
+      $force_int = array(
+        array('general', 'speed'),
+        array('general', 'slideMargin'),
+        array('general', 'startSlide'),
+        array('general', 'adaptiveHeightSpeed'),
+        array('general', 'swipeThreshold'),
+        array('auto', 'pause'),
+        array('auto', 'autoDelay'),
+        array('carousel', 'minSlides'),
+        array('carousel', 'maxSlides'),
+        array('carousel', 'moveSlides'),
+        array('carousel', 'slideWidth'),
+      );
+      if ($display['type'] == 'bxslider_ths') {
+        $force_int[] = array('thumbnail_slider', 'general', 'speed');
+        $force_int[] = array('thumbnail_slider', 'general', 'slideMargin');
+        $force_int[] = array('thumbnail_slider', 'general', 'startSlide');
+        $force_int[] = array(
+          'thumbnail_slider',
+          'general',
+          'adaptiveHeightSpeed',
+        );
+        $force_int[] = array('thumbnail_slider', 'general', 'swipeThreshold');
+        $force_int[] = array('thumbnail_slider', 'auto', 'pause');
+        $force_int[] = array('thumbnail_slider', 'auto', 'autoDelay');
+        $force_int[] = array('thumbnail_slider', 'carousel', 'minSlides');
+        $force_int[] = array('thumbnail_slider', 'carousel', 'maxSlides');
+        $force_int[] = array('thumbnail_slider', 'carousel', 'moveSlides');
+        $force_int[] = array('thumbnail_slider', 'carousel', 'slideWidth');
+      }
+      foreach ($force_int as $param) {
+        if (isset($form_state['values']['fields'][$did]['settings_edit_form']['settings']) && !is_null($form_state['values']['fields'][$did]['settings_edit_form']['settings'])) {
+          $val = intval(drupal_array_get_nested_value($form_state['values']['fields'][$did]['settings_edit_form']['settings'], $param));
+          drupal_array_set_nested_value($form_state['values']['fields'][$did]['settings_edit_form']['settings'], $param, $val, TRUE);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Form submit function.
+ */
+function bxslider_field_ui_display_overview_form_submit($form, &$form_state) {
+
+  foreach ($form_state['values']['fields'] as $did => $display) {
+    if (isset($display['type']) && ($display['type'] == 'bxslider' || $display['type'] == 'bxslider_ths')) {
+      if (isset($form_state['formatter_settings']) && isset($form_state['formatter_settings'][$did]) && $form_state['formatter_settings'][$did]['colorbox']['enable'] && module_exists('colorbox')) {
+        // Set option "Enable Colorbox load" in Colorbox settings.
+        variable_set('colorbox_load', 1);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function bxslider_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+
+  if ($display['type'] == 'bxslider_ths') {
+    $summary[] = t('BxSlider (with thumbnail slider) configuration');
+  }
+  elseif ($display['type'] == 'bxslider') {
+    $summary[] = t('BxSlider configuration');
+  }
+
+  return implode('<br />', $summary);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function bxslider_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+
+  $element = array();
+  $settings = array();
+  $settings['slider_id'] = $instance['field_name'];
+
+  if (count($items) > 0) {
+    if ($display['type'] == 'bxslider') {
+
+      $method2_items = '';
+      foreach ($items as $key => $item) {
+
+        $slide_item['item'] = $item;
+
+        // Prepare variables for theme_image_style.
+        $img = array(
+          'path' => $item['uri'],
+          'style_name' => $display['settings']['image_style'],
+          'alt' => $item['alt'],
+          'title' => $item['title'],
+        );
+
+        if (!empty($display['settings']['image_style'])) {
+          // Here, theme('image_style', ...) isn't used, because there are
+          // defined "height" and "width" attributes and the slider become not
+          // responsive.
+          $img['path'] = image_style_url($display['settings']['image_style'], $item['uri']);
+        }
+        $slide_item['slide'] = theme('image', $img);
+
+        // If using Colorbox.
+        if ($display['settings']['colorbox']['enable']) {
+          // Used for combination of elements together for a gallery.
+          $slide_item['item']['rel'] = $field["id"];
+
+          $slide_item['slide'] = theme('bxslider_colorbox', array('slide_item' => $slide_item, 'settings' => $display['settings']));
+        }
+
+        if (isset($display['settings']['pager']['pagerCustom_type']) && ($display['settings']['pager']['pagerCustom_type'] == 'thumbnail_pager_method1' || $display['settings']['pager']['pagerCustom_type'] == 'thumbnail_pager_method2')) {
+          // Prepare variables for theme_image_style.
+          $img['style_name'] = empty($display['settings']['pager']['pagerCustom_image_style']) ? 'thumbnail' : $display['settings']['pager']['pagerCustom_image_style'];
+
+          $slide_item['slide_pagerCustom'] = theme('image_style', $img);
+
+          if ($display['settings']['pager']['pagerCustom_type'] == 'thumbnail_pager_method2') {
+            $method2_items .= "case " . $key . ": return '" . $slide_item['slide_pagerCustom'] . "';";
+          }
+        }
+
+        $items[$key] = $slide_item;
+      }
+
+      if (isset($display['settings']['pager']['pagerCustom_type']) && $display['settings']['pager']['pagerCustom_type'] == 'thumbnail_pager_method1') {
+        $display['settings']['pager']['pagerCustom'] = '#bxslide-pager-th';
+      }
+
+      $method2 = array();
+      if (isset($display['settings']['pager']['pagerCustom_type']) && $display['settings']['pager']['pagerCustom_type'] == 'thumbnail_pager_method2') {
+        $method2 = array(
+          'buildPager' => "switch(slideIndex){" . $method2_items . "}",
+        );
+      }
+
+      $settings['slider_settings'] = array_merge($display['settings']['general'], $display['settings']['pager'], $display['settings']['controls'], $display['settings']['auto'], $display['settings']['carousel'], $method2);
+
+      $element = array(
+        '#theme' => 'bxslider',
+        '#items' => $items,
+        '#settings' => $settings,
+      );
+
+    }
+    elseif ($display['type'] == 'bxslider_ths') {
+
+      foreach ($items as $key => $item) {
+
+        $slide_item['item'] = $item;
+
+        // Prepare variables for theme_image.
+        $img = array(
+          'path' => $item['uri'],
+          'style_name' => $display['settings']['image_style'],
+          'alt' => $item['alt'],
+          'title' => $item['title'],
+        );
+
+        if (!empty($display['settings']['image_style'])) {
+          // Here, theme('image_style', ...) isn't used, because there are
+          // defined "height" and "width" attributes and the slider become
+          // not responsive.
+          $img['path'] = image_style_url($display['settings']['image_style'], $item['uri']);
+        }
+        $slide_item['slide'] = theme('image', $img);
+
+        // If using Colorbox.
+        if ($display['settings']['colorbox']['enable']) {
+          // Used for combination of elements together for a gallery.
+          $slide_item['item']['rel'] = $field["id"];
+
+          $slide_item['slide'] = theme('bxslider_colorbox', array('slide_item' => $slide_item, 'settings' => $display['settings']));
+        }
+
+        $items[$key] = $slide_item;
+
+        // Generate thumbnails.
+        $thumbnail_style = empty($display['settings']['thumbnail_slider']['thumbnail_style']) ? 'thumbnail' : $display['settings']['thumbnail_slider']['thumbnail_style'];
+
+        $thumbnail_item = array();
+        $img['path'] = image_style_url($thumbnail_style, $item['uri']);
+        // Here, theme('image_style', ...) isn't used, because there are defined
+        // "height" and "width" attributes and the slider become not responsive.
+        $thumbnail_item['thumbnail'] = theme('image', $img);
+
+        // Prepare variables for theme_image_style.
+        $thumbnail_item['thumbnail_item']['path'] = $img['path'];
+        $thumbnail_item['thumbnail_item']['style_name'] = $thumbnail_style;
+        $thumbnail_item['thumbnail_item']['alt'] = $item['alt'];
+        $thumbnail_item['thumbnail_item']['title'] = $item['title'];
+
+        $thumbnail_items[$key] = $thumbnail_item;
+
+        // Fill the "slideWidth" parameter with the width defined
+        // by image's style.
+        $thumbnail_info = image_get_info($img['path']);
+        $display['settings']['thumbnail_slider']['carousel']['slideWidth'] = $thumbnail_info['width'];
+      }
+
+      $settings['slider_settings'] = array_merge($display['settings']['general'], $display['settings']['pager'], $display['settings']['controls'], $display['settings']['auto'], $display['settings']['carousel']);
+      $settings['thumbnail_slider_settings'] = array_merge($display['settings']['thumbnail_slider']['general'], $display['settings']['thumbnail_slider']['pager'], $display['settings']['thumbnail_slider']['controls'], $display['settings']['thumbnail_slider']['auto'], $display['settings']['thumbnail_slider']['carousel']);
+
+      $element = array(
+        '#theme' => 'bxslider_ths',
+        '#items' => $items,
+        '#thumbnail_items' => $thumbnail_items,
+        '#settings' => $settings,
+      );
+    }
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function bxslider_theme() {
+  return array(
+    'bxslider' => array(
+      'variables' => array(
+        'items' => array(),
+        'settings' => array(),
+      ),
+      'template' => 'templates/bxslider',
+    ),
+    'bxslider_ths' => array(
+      'variables' => array(
+        'items' => array(),
+        'thumbnail_items' => array(),
+        'settings' => array(),
+      ),
+      'template' => 'templates/bxslider_ths',
+    ),
+    'bxslider_colorbox' => array(
+      'variables' => array(
+        'slide_item' => array(),
+        'settings' => array(),
+      ),
+    ),
+  );
+}
+
+/**
+ * BxSlider template preprocess handler.
+ */
+function template_process_bxslider(&$vars) {
+
+  $vars['slider_id'] = $vars['settings']['slider_id'];
+
+  $a = libraries_load('bxslider');
+
+  // JavaScript settings.
+  $js_settings = $vars['settings'];
+
+  drupal_add_js(array('bxslider' => array($vars['slider_id'] => $js_settings)), 'setting');
+
+  drupal_add_css(drupal_get_path('module', 'bxslider') . '/css/bxslider.css');
+  drupal_add_js(drupal_get_path('module', 'bxslider') . '/js/bxslider.js', array('type' => 'file', 'scope' => 'footer'));
+
+  if (isset($vars['settings']['slider_settings']['pagerCustom_type']) && $vars['settings']['slider_settings']['pagerCustom_type'] == 'thumbnail_pager_method2') {
+    drupal_add_css(drupal_get_path('module', 'bxslider') . '/css/bxslider_method2.css');
+  }
+
+  if (isset($vars['settings']['slider_settings']['pagerCustom_type']) && $vars['settings']['slider_settings']['pagerCustom_type'] == 'thumbnail_pager_method1') {
+    $vars['settings']['slider_settings']['pagerCustom'] = str_replace(array('#', '.'), '', $vars['settings']['slider_settings']['pagerCustom']);
+  }
+}
+
+/**
+ * BxSlider template preprocess handler.
+ */
+function template_process_bxslider_ths(&$vars) {
+
+  $vars['slider_id'] = $vars['settings']['slider_id'];
+
+  libraries_load('bxslider');
+
+  // JavaScript settings.
+  $js_settings = $vars['settings'];
+
+  drupal_add_js(array('bxslider_ths' => array($vars['slider_id'] => $js_settings)), 'setting');
+
+  drupal_add_css(drupal_get_path('module', 'bxslider') . '/css/bxslider.css');
+  drupal_add_js(drupal_get_path('module', 'bxslider') . '/js/bxslider_ths.js', array('type' => 'file', 'scope' => 'footer'));
+
+}
+
+/**
+ * Theme function for integration Colorbox.
+ */
+function theme_bxslider_colorbox(&$vars) {
+
+  $slide = $vars['slide_item']['slide'];
+  if ($vars['settings']['colorbox']['enable']) {
+    if (!empty($vars['settings']['colorbox']['image_style'])) {
+      $style = image_style_load($vars['settings']['colorbox']['image_style']);
+      $colorbox_style_path = image_style_path($vars['settings']['colorbox']['image_style'], $vars['slide_item']['item']['uri']);
+      image_style_create_derivative($style, $vars['slide_item']['item']['uri'], $colorbox_style_path);
+      $thumbnail_parameters = image_get_info($colorbox_style_path);
+      $width = $thumbnail_parameters['width'];
+      $height = $thumbnail_parameters['height'];
+    }
+    else {
+      // Original image.
+      $colorbox_style_path = file_create_url($vars['slide_item']['item']['uri']);
+      $width = $vars['slide_item']['item']['width'];
+      $height = $vars['slide_item']['item']['height'];
+    }
+
+    $attributes = array(
+      'class' => 'colorbox-load',
+      // Used for combination of elements together for a gallery.
+      'rel' => 'bx-' . $vars['slide_item']['item']['rel'],
+    );
+    $options = array(
+      'width' => $width,
+      'height' => $height,
+    );
+    if (isset($vars['settings']['colorbox']['slideshow']) && $vars['settings']['colorbox']['slideshow']) {
+      $options["slideshow"] = "true";
+      $options["slideshowAuto"] = $vars['settings']['colorbox']['slideshow'] == 'automatic' ? 'true' : 'false';
+      $options["slideshowSpeed"] = $vars['settings']['colorbox']['slideshow_speed'];
+      $options["transition"] = $vars['settings']['colorbox']['transition'];
+      $options["speed"] = $vars['settings']['colorbox']['transition_speed'];
+    }
+    $slide = l($slide, file_create_url($colorbox_style_path), array(
+      'attributes' => $attributes,
+      'html' => TRUE,
+      'query' => $options,
+    ));
+  }
+
+  return $slide;
+}

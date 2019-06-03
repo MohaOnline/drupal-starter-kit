@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Test cases for BxSlider.
+ */
+
+/**
+ * BxsliderTestCase.
+ */
+class BxsliderTestCase extends DrupalWebTestCase {
+  protected $adminUser;
+  protected $anyUser;
+
+  /**
+   * Describe test.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('BxSlider tests'),
+      'description' => t('Test the BxSlider presets, configuration options.'),
+      'group' => t('BxSlider'),
+    );
+  }
+
+  /**
+   * Prepare needed modules and settings for testings.
+   */
+  protected function setUp() {
+    parent::setUp('libraries', 'bxslider', 'jquery_update');
+
+    // Create users.
+    $this->adminUser = $this->drupalCreateUser(array('administer content types'));
+    $this->anonymousUser = $this->drupalCreateUser();
+  }
+
+  /**
+   * Enable and set a BxSlider format.
+   */
+  protected function testEnableAndSetBxSliderFormat() {
+
+    // Login with admin user.
+    $this->drupalLogin($this->adminUser);
+
+    // Select and set the "BxSlider" format.
+    $optionset = array();
+    $optionset['fields[field_image][type]'] = 'bxslider';
+    $this->drupalPost('admin/structure/types/manage/article/display', $optionset, t('Save'));
+    $this->assertResponse(200);
+    $this->assertText('Your settings have been saved.', t('Successfully selected and saved the "BxSlider" format'));
+
+    // Select and set the "BxSlider - Thumbnail slider" format.
+    $optionset = array();
+    $optionset['fields[field_image][type]'] = 'bxslider_ths';
+    $this->drupalPost('admin/structure/types/manage/article/display', $optionset, t('Save'));
+    $this->assertResponse(200);
+    $this->assertText('Your settings have been saved.', t('Successfully selected and saved the "BxSlider - Thumbnail slider" format'));
+
+    // Change some settings for the "BxSlider - Thumbnail slider" format.
+    $this->drupalPostAJAX('admin/structure/types/manage/article/display', NULL, 'field_image_formatter_settings_edit');
+    $optionset = array();
+    // Try enable an option Auto for the "BxSlider - Thumbnail slider" format.
+    $optionset['fields[field_image][settings_edit_form][settings][thumbnail_slider][auto][auto]'] = TRUE;
+    // Set the $path parameter to NULL for submitting to the same form. .
+    $this->drupalPostAJAX(NULL, $optionset, 'field_image_formatter_settings_update');
+    $this->drupalPost(NULL, NULL, t('Save'));
+    $this->assertResponse(200);
+    $this->assertText('Your settings have been saved.', t('Successfully changed settings for the "BxSlider - Thumbnail slider" format'));
+
+    // Save the content type Article.
+    $this->DrupalGet('admin/structure/types/manage/article');
+    $this->drupalPost(NULL, NULL, t('Save content type'));
+    $this->assertResponse(200);
+    $this->assertText('The content type Article has been updated', t('Successfully saved the Article content type'));
+  }
+
+}
