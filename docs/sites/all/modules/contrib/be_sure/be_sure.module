@@ -1,0 +1,221 @@
+<?php
+
+/**
+ * @file
+ * Provide interface for other modules to make you sure about your Drupal site.
+ */
+
+define('BE_SURE_STATUS_OK', 'status');
+define('BE_SURE_STATUS_NOK', 'warning');
+define('BE_SURE_MODULE_PATH', drupal_get_path('module', 'be_sure'));
+
+/**
+ * Implements hook_menu().
+ */
+function be_sure_menu() {
+  $items = array();
+  $infos = be_sure_get_infos();
+
+  $items['admin/reports/sure'] = array(
+    'title' => 'Be sure',
+    'description' => 'Be sure about you drupal site',
+    'page callback' => 'be_sure_page',
+    'access arguments' => array('access be sure information'),
+  );
+
+  foreach ($infos as $name => $item) {
+    $items['admin/reports/sure/' . $name] = array(
+      'title' => $item['title'],
+      'description' => $item['description'],
+      'page arguments' => array($name),
+      'page callback' => 'be_sure_page',
+      'access arguments' => array('access be sure information'),
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function be_sure_permission() {
+  $items['access be sure information'] = array(
+    'title' => t("Access 'Be sure' information"),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function be_sure_theme($existing, $type, $theme, $path) {
+  $base = array(
+    'path' => $path . '/theme',
+    'file' => 'theme.inc',
+  );
+
+  $items['be_sure_multiple'] = $base + array(
+    'variables' => array(
+      'titles' => array(),
+      'elements' => array(),
+    ),
+    'template' => 'be-sure-multiple',
+  );
+
+  $items['be_sure_element'] = $base + array(
+    'variables' => array(
+      'items' => array(),
+      'status' => '',
+      'passed' => '',
+    ),
+    'template' => 'be-sure-element',
+  );
+
+  $items['be_sure_progress_bar'] = $base + array(
+    'variables' => array(
+      'percent' => '',
+      'class' => '',
+      'message' => '',
+    ),
+    'function' => 'theme_be_sure_progress_bar',
+  );
+
+  return $items;
+}
+
+/**
+ * Page callback for each sure item.
+ */
+function be_sure_page($info = NULL) {
+  $infos = be_sure_get_infos();
+
+  if ($info && !empty($infos[$info])) {
+    $item = $infos[$info];
+
+    if (count($item['elements']) > 1) {
+      foreach ($item['elements'] as $element) {
+        $id = uniqid('be-sure-');
+        $titles[$id] = t($element['title']);
+
+        list($result, $passed) = be_sure_proceed_elements($element['items']);
+        $percent = round($passed / count($element['items']) * 100);
+
+        $results[$id] = theme(
+          'be_sure_element',
+          array(
+            'items' => $result,
+            'status' => $percent,
+            'passed' => $passed,
+          )
+        );
+      }
+
+      $output = theme('be_sure_multiple', array('titles' => $titles, 'elements' => $results));
+      drupal_add_js(BE_SURE_MODULE_PATH . '/includes/be-sure.js');
+    }
+    else {
+      list($result, $passed) = be_sure_proceed_elements($item['elements'][0]['items']);
+      $percent = round($passed / count($item['elements'][0]['items']) * 100);
+
+      $output = theme(
+        'be_sure_element',
+        array(
+          'items' => $result,
+          'status' => $percent,
+          'passed' => $passed,
+        )
+      );
+    }
+  }
+  else {
+    $contents = array();
+
+    foreach ($infos as $name => $item) {
+      $total_passed = $total_passed_max = 0;
+      foreach ($item['elements'] as $subitem) {
+        list(, $passed) = be_sure_proceed_elements($subitem['items']);
+        $total_passed += $passed;
+        $total_passed_max += count($subitem['items']);
+      }
+      $total_percentage = round(($total_passed / $total_passed_max) * 100);
+      $progress_bar = theme('be_sure_progress_bar', array(
+        'percent' => $total_percentage,
+        'class' => $total_percentage > 25 ? ($total_percentage > 75 ? 'bes-success' : 'bes-normal') : 'bes-warning',
+        'message' => t('Total info about @name: @passed/@total issues resolved', array(
+          '@passed' => $total_passed,
+          '@total' => $total_passed_max,
+          '@name' => $name,
+          )),
+      ));
+      $contents[] = array(
+        'title' => t($item['title']),
+        'description' => t($item['description']) . $progress_bar,
+        'href' => 'admin/reports/sure/' . $name,
+        'localized_options' => array(),
+      );
+    }
+
+    $output = theme('admin_block_content', array('content' => $contents));
+  }
+
+  drupal_add_js(BE_SURE_MODULE_PATH . '/includes/be-sure.js');
+  drupal_add_css(BE_SURE_MODULE_PATH . '/includes/be-sure.css');
+
+  return $output;
+}
+
+/**
+ * Return infos information after all hooks.
+ *
+ * @return array
+ *   Array of sure infos.
+ */
+function be_sure_get_infos() {
+  $info = &drupal_static(__FUNCTION__);
+  if (!is_null($info)) {
+    return $info;
+  }
+
+  $info = module_invoke_all('sure_info');
+  drupal_alter('sure_info', $info);
+
+  return $info;
+}
+
+/**
+ * Check array of elements.
+ *
+ * @param array $items
+ *   Array of items for proceed.
+ *
+ * @return array
+ *   Array with results and count of passed elements.
+ */
+function be_sure_proceed_elements(array $items) {
+  $result = array();
+  $passed = 0;
+
+  foreach ($items as $key => $element) {
+    if (empty($element['args']) || !is_array($element['args'])) {
+      $element['args'] = array();
+    }
+
+    if (call_user_func($element['callback'])) {
+      $passed++;
+      $result[$key] = array(
+        'status' => BE_SURE_STATUS_OK,
+        'text' => t($element['ok'], $element['args']),
+      );
+    }
+    else {
+      $result[$key] = array(
+        'status' => BE_SURE_STATUS_NOK,
+        'text' => t($element['nok'], $element['args']),
+      );
+    }
+  }
+
+  return array($result, $passed);
+}

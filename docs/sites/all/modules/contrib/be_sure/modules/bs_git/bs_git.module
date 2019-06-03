@@ -1,0 +1,170 @@
+<?php
+
+/**
+ * @file
+ * Be sure about SEO part of your Drupal site.
+ */
+
+// Define constants.
+define('BS_GIT_FILE_NEW', '?');
+define('BS_GIT_FILE_ADDED', 'A');
+define('BS_GIT_FILE_CHANGED', 'M');
+define('BS_GIT_FILE_DELETED', 'D');
+
+/**
+ * Implements hook_menu().
+ */
+function bs_git_menu() {
+  $items = array();
+
+  if (bs_git_get_command()) {
+    $items['admin/reports/sure/security/files'] = array(
+      'title' => 'Files status',
+      'access arguments' => array('access be sure information'),
+      'page callback' => 'bs_git_page',
+    );
+    $items['admin/reports/sure/security/files/diff'] = array(
+      'title' => 'File diff',
+      'access arguments' => array('access be sure information'),
+      'page callback' => 'bs_git_page_diff',
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_sure_info_alter().
+ */
+function bs_git_sure_info_alter(&$items) {
+  if (isset($items['security']) && $git_command = bs_git_get_command()) {
+    array_unshift($items['security']['elements'][0]['items'], array(
+      'ok' => 'No changed files',
+      'nok' => 'Files were changed, see more !link',
+      'callback' => 'bs_git_check',
+      'args' => array(
+        '!link' => l('here', 'admin/reports/sure/security/files'),
+      ),
+    ));
+  }
+}
+
+/**
+ * Check if git is used in current project.
+ *
+ * @return bool|string
+ */
+function bs_git_get_command() {
+  $git_command = &drupal_static(__FUNCTION__);
+
+  if (!is_null($git_command)) {
+    return $git_command;
+  }
+
+  if (function_exists('exec')) {
+    exec('command -v git', $output, $retval);
+    if ($retval != 0) {
+      $git_command = FALSE;
+    }
+    else {
+      $git_command = $output[0];
+
+      exec(escapeshellcmd($git_command) . ' status > /dev/null 2>&1', $output, $retval);
+      if ($retval != 0) {
+        $git_command = FALSE;
+      }
+    }
+  }
+  else {
+    $git_command = FALSE;
+  }
+
+  return $git_command;
+}
+
+/**
+ * Get status of local git repo.
+ */
+function _bs_git_get_status() {
+  $git_command = bs_git_get_command();
+  $output = array();
+
+  exec(escapeshellcmd($git_command) . ' status --porcelain', $output, $retval);
+
+  return $output;
+}
+
+/**
+ * Check status of changed files.
+ */
+function bs_git_check() {
+  return !_bs_git_get_status();
+}
+
+/**
+ * Page callback for 'admin/reports/sure/security/git' path.
+ */
+function bs_git_page() {
+  $info = _bs_git_get_status();
+
+  if (!$info) {
+    $output = '<div class="messages status">';
+    $output .= t('There are no changed files.');
+    $output .= '</div>';
+  }
+  else {
+    $output = '<div class="messages error">';
+    $output .= t('There are changed files.');
+    $output .= '</div>';
+
+    foreach ($info as $file) {
+      $file = explode(' ', trim($file));
+      $file = array_values(array_filter($file));
+
+      list($status, $file_path) = $file;
+
+      $status = drupal_strlen($status) > 1
+        ? drupal_substr($status, -1, 1)
+        : $status;
+
+      $items[$status][] = $status == BS_GIT_FILE_CHANGED
+        ? $file_path . ' ' . l(t('(show diff)'), current_path() .'/diff', array('query' => array('file' => $file_path)))
+        : $file_path;
+    }
+
+    $titles = array(
+      BS_GIT_FILE_ADDED => t('Added'),
+      BS_GIT_FILE_NEW => t('Created'),
+      BS_GIT_FILE_CHANGED => t('Modified'),
+      BS_GIT_FILE_DELETED => t('Deleted'),
+    );
+
+    foreach ($items as $status => $value) {
+      $title = $titles[$status];
+
+      $output .= theme('item_list', array(
+        'items' => $value,
+        'title' => $title,
+      ));
+    }
+  }
+
+  return $output;
+}
+
+function bs_git_page_diff() {
+  $file = isset($_GET['file']) ? (string) $_GET['file'] : '';
+
+  if (!$file || !file_exists($file)) {
+    return MENU_NOT_FOUND;
+  }
+
+  $git_command = bs_git_get_command();
+  exec(escapeshellcmd($git_command) . ' diff ' . escapeshellarg($file), $diff, $retval);
+
+  $output = '<pre>';
+  $output .= implode($diff, PHP_EOL);
+  $output .= '</pre>';
+
+  return $output;
+}

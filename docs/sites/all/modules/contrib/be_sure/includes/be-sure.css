@@ -1,0 +1,25 @@
+#be-sure-tabs {
+  margin-bottom: 20px;
+}
+
+body.page-admin .progress .bar .filled.bes-normal {
+  background: #F0CC4A none repeat scroll 0px 0px !important;
+}
+
+body.page-admin .progress .bar .filled.bes-warning {
+  background: #DC3F58 none repeat scroll 0px 0px !important;
+}
+
+body.page-admin .progress .bar .filled.bes-success {
+  background: #75D351 none repeat scroll 0px 0px !important;
+}
+
+.adminimal-theme ul.primary {
+  display: block;
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+.tao #be-sure-tabs li {
+  float: left;
+}

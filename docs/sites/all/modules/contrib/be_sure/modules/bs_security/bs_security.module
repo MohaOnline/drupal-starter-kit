@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * @file
+ * Be sure about SEO part of your Drupal site.
+ */
+
+/**
+ * Implements hook_sure_info().
+ */
+function bs_security_sure_info() {
+  $items['security'] = array(
+    'title' => 'Security',
+    'description' => 'Be sure about security part of your Drupal site.',
+    'elements' => array(
+      array(
+        'title' => 'Security',
+        'items' => array(
+          array(
+            'ok' => 'Superadmin username is not common',
+            'nok' => 'Common Admin username',
+            'callback' => 'bs_security_admin_username',
+          ),
+          array(
+            'ok' => 'Site errors not visible',
+            'nok' => 'Site errors visible',
+            'callback' => 'bs_security_visible_errors',
+          ),
+          array(
+            'ok' => 'PHP Filter module disabled',
+            'nok' => 'PHP Filter module enabled',
+            'callback' => 'bs_security_php_filter',
+          ),
+          array(
+            'ok' => '!module module disabled',
+            'nok' => '!module module enabled',
+            'callback' => 'bs_security_code_filter',
+            'args' => array(
+              '!module' => l('Code Filter', 'https://www.drupal.org/project/codefilter'),
+            ),
+          ),
+          array(
+            'ok' => 'PHP Register Globals disabled',
+            'nok' => 'PHP Register Globals enabled',
+            'callback' => 'bs_security_php_globals',
+          ),
+          array(
+            'ok' => '!module module enabled',
+            'nok' => '!module module not enabled',
+            'callback' => 'bs_security_seckit',
+            'args' => array(
+              '!module' => l('Security Kit', 'https://www.drupal.org/project/seckit'),
+            ),
+          ),
+          array(
+            'ok' => '!module module enabled',
+            'nok' => '!module module not enabled',
+            'callback' => 'bs_security_username_enumeration_prevention',
+            'args' => array(
+              '!module' => l('Username Enumeration Prevention', 'https://www.drupal.org/project/username_enumeration_prevention'),
+            ),
+          ),
+          array(
+            'ok' => '!module module enabled',
+            'nok' => '!module module disabled',
+            'callback' => 'bs_security_password_policy',
+            'args' => array(
+              '!module' => l('Password Policy', 'https://www.drupal.org/project/password_policy'),
+            ),
+          ),
+          array(
+            'ok' => 'Users table contains anonymous user',
+            'nok' => 'Users table do not contains anonymous user',
+            'callback' => 'bs_security_users_anonymous',
+          ),
+          array(
+            'ok' => 'Syslog module enabled',
+            'nok' => 'Syslog module not enabled',
+            'callback' => 'bs_security_syslog',
+          ),
+        ),
+      ),
+    ),
+  );
+
+  return $items;
+}
+
+/**
+ * Check for common Admin username.
+ */
+function bs_security_admin_username() {
+  $common_usernames = array(
+    'admin',
+    'administrator',
+    'root',
+    'adm',
+    'manager',
+    'system',
+    'superuser',
+  );
+
+  $or = db_or();
+  foreach ($common_usernames as $username) {
+    $or->condition('u.name', $username, 'LIKE');
+  }
+
+  return !db_select('users', 'u')
+    ->fields('u', array('uid'))
+    ->condition('u.uid', 1)
+    ->condition($or)
+    ->execute()
+    ->fetchField();
+}
+
+/**
+ * Check visibility of site errors.
+ */
+function bs_security_visible_errors() {
+  return variable_get('error_level', 2) == 0;
+}
+
+/**
+ * Check availability of PHP Filter module.
+ */
+function bs_security_php_filter() {
+  return !module_exists('php');
+}
+
+/**
+ * Check availability of Code Filter module.
+ */
+function bs_security_code_filter() {
+  return !module_exists('codefilter');
+}
+
+/**
+ * Check availability of Register Globals variable.
+ */
+function bs_security_php_globals() {
+  $globals = ini_get('register_globals');
+
+  if (is_string($globals) && (strcasecmp($globals, 'on') == 0)) {
+    $globals = TRUE;
+  }
+
+  return !$globals;
+}
+
+/**
+ * Check availability of Security Kit module.
+ */
+function bs_security_seckit() {
+  return module_exists('seckit');
+}
+
+/**
+ * Check availability of Username Enumeration Prevention module.
+ */
+function bs_security_username_enumeration_prevention() {
+  return module_exists('username_enumeration_prevention');
+}
+
+/**
+ * Check availability of Password Policy module.
+ */
+function bs_security_password_policy() {
+  return module_exists('password_policy');
+}
+
+/**
+ * Check availability of Anonymous user.
+ */
+function bs_security_users_anonymous() {
+  return db_select('users', 'u')
+    ->fields('u')
+    ->condition('u.uid', 1)
+    ->execute()
+    ->fetchCol();
+}
+
+/**
+ * Check availability of Syslog module.
+ */
+function bs_security_syslog() {
+  return module_exists('syslog');
+}

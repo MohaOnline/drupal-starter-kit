@@ -1,0 +1,266 @@
+<?php
+
+/**
+ * @file
+ * Be sure about performance part of your Drupal site.
+ */
+
+require_once dirname(__FILE__) . '/bs_performance.cache.inc';
+require_once dirname(__FILE__) . '/bs_performance.module.inc';
+require_once dirname(__FILE__) . '/bs_performance.other.inc';
+
+/**
+ * Implements hook_sure_info().
+ */
+function bs_performance_sure_info() {
+  $items['performance'] = array(
+    'title' => 'Performance',
+    'description' => 'Be sure about performance part of your Drupal site.',
+    'elements' => array(
+      bs_performance_cache(),
+      bs_performance_module(),
+      bs_performance_other(),
+    ),
+  );
+
+  return $items;
+}
+
+/**
+ * Describe sure points of cache.
+ *
+ * @return array
+ *   Items of Cache category
+ */
+function bs_performance_cache() {
+  return array(
+    'title' => 'Cache',
+    'items' => array(
+      array(
+        'ok' => 'Page caching enabled',
+        'nok' => 'Page caching is not enabled',
+        'callback' => 'bs_performance_cache_caching',
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module disabled',
+        'callback' => 'bs_performance_cache_entitycache',
+        'args' => array(
+          '!module' => l('Entity cache', 'https://www.drupal.org/project/entitycache'),
+        ),
+      ),
+      array(
+        'ok' => 'Block caching enabled',
+        'nok' => 'Block caching is not enabled',
+        'callback' => 'bs_performance_cache_block',
+      ),
+      array(
+        'ok' => '!module module enabled and configured',
+        'nok' => '!module module disabled or not well configured',
+        'callback' => 'bs_performance_cache_varnish',
+        'args' => array(
+          '!module' => l('Varnish', 'https://www.drupal.org/project/varnish'),
+        ),
+      ),
+      array(
+        'ok' => '!module module disabled',
+        'nok' => '!module module enabled',
+        'callback' => 'bs_performance_cache_file_cache',
+        'args' => array(
+          '!module' => l('File cache', 'https://www.drupal.org/project/filecache'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module not enabled',
+        'callback' => 'bs_performance_cache_expire',
+        'args' => array(
+          '!module' => l('Expire', 'https://www.drupal.org/project/expire'),
+        ),
+      ),
+      array(
+        'ok' => 'Minimum cache lifetime greater than 0',
+        'nok' => 'The minimum cache lifetime is 0',
+        'callback' => 'bs_performance_cache_min_lifetime',
+      ),
+      array(
+        'ok' => 'Page cache max age 5 minutes or greater',
+        'nok' => 'Page cache max age less than 5 minutes',
+        'callback' => 'bs_performance_cache_max_age',
+      ),
+      array(
+        'ok' => '!memcache or !redis module is enabled',
+        'nok' => '!memcache or !redis module disabled',
+        'callback' => 'bs_performance_cache_memcache_redis',
+        'args' => array(
+          '!memcache' => l('Memcache', 'https://www.drupal.org/project/memcache'),
+          '!redis' => l('Redis', 'https://www.drupal.org/project/redis'),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Describe sure points of modules.
+ *
+ * @return array
+ *   Items of Modules category
+ */
+function bs_performance_module() {
+  return array(
+    'title' => 'Modules',
+    'items' => array(
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_performance_module_litepager',
+        'args' => array(
+          '!module' => l('Views Litepager', 'https://www.drupal.org/project/expire'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_performance_module_fast_404',
+        'args' => array(
+          '!module' => l('Fast 404', 'https://www.drupal.org/project/fast_404'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module disabled',
+        'callback' => 'bs_performance_module_speedy',
+        'args' => array(
+          '!module' => l('Speedy', 'https://www.drupal.org/project/speedy'),
+        ),
+      ),
+      array(
+        'ok' => '!module module is not enabled',
+        'nok' => '!module module enabled',
+        'callback' => 'bs_performance_module_mobile_tools',
+        'args' => array(
+          '!module' => l('Mobile Tools', 'https://www.drupal.org/project/mobile_tools'),
+        ),
+      ),
+      array(
+        'ok' => '!module module is not enabled',
+        'nok' => '!module module enabled',
+        'callback' => 'bs_performance_module_plam',
+        'args' => array(
+          '!module' => l('Performance Logging and Monitoring', 'https://www.drupal.org/project/plam'),
+        ),
+      ),
+      array(
+        'ok' => 'Database logging module disabled',
+        'nok' => 'Database logging module enabled',
+        'callback' => 'bs_performance_module_dblog',
+      ),
+      array(
+        'ok' => '!module module disabled',
+        'nok' => '!module module enabled',
+        'callback' => 'bs_performance_module_tdeveloper',
+        'args' => array(
+          '!module' => l('Theme Developer', 'https://www.drupal.org/project/devel_themer'),
+        ),
+      ),
+      array(
+        'ok' => '!module module disabled',
+        'nok' => '!module module enabled',
+        'callback' => 'bs_performance_module_backup',
+        'args' => array(
+          '!module' => l('Backup and Migrate', 'https://www.drupal.org/project/backup_migrate'),
+        ),
+      ),
+      array(
+        'ok' => '!module module is not enabled',
+        'nok' => '!module module enabled',
+        'callback' => 'bs_performance_module_coder',
+        'args' => array(
+          '!module' => l('Coder', 'https://www.drupal.org/project/coder'),
+        ),
+      ),
+      array(
+        'ok' => 'Update manager module disabled',
+        'nok' => 'Update manager module enabled',
+        'callback' => 'bs_performance_module_update',
+      ),
+      array(
+        'ok' => '!module module is not enabled',
+        'nok' => '!module module enabled',
+        'callback' => 'bs_performance_module_simpletest',
+        'args' => array(
+          '!module' => l('SimpleTest', 'https://www.drupal.org/project/simpletest'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module disabled',
+        'callback' => 'bs_performance_module_image_resize_filter',
+        'args' => array(
+          '!module' => l('Image Resize Filter', 'https://www.drupal.org/project/image_resize_filter'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module disabled',
+        'callback' => 'bs_performance_module_imageapi_optimize',
+        'args' => array(
+          '!module' => l('ImageAPI Optimize (or Image Optimize)', 'https://www.drupal.org/project/imageapi_optimize'),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Describe sure points of other.
+ *
+ * @return array
+ *   Items of Other category
+ */
+function bs_performance_other() {
+  return array(
+    'title' => 'Other',
+    'items' => array(
+      array(
+        'ok' => 'Cron ran in the past day',
+        'nok' => 'Cron did not run in the past day',
+        'callback' => 'bs_performance_other_last_cron',
+      ),
+      array(
+        'ok' => 'CSS optimization enabled',
+        'nok' => 'CSS optimization not enabled',
+        'callback' => 'bs_performance_other_css',
+      ),
+      array(
+        'ok' => 'Page compression enabled',
+        'nok' => 'Page compression disabled',
+        'callback' => 'bs_performance_other_page_compression',
+      ),
+      array(
+        'ok' => 'JavaScript optimization enabled',
+        'nok' => 'JavaScript optimization not enabled',
+        'callback' => 'bs_performance_other_js',
+      ),
+      array(
+        'ok' => 'PHP APC extension enabled',
+        'nok' => 'PHP APC extension is not enabled',
+        'callback' => 'bs_performance_other_php_apc',
+      ),
+      array(
+        'ok' => 'PHP maximum execution time less than 300 seconds',
+        'nok' => 'PHP maximum execution time greater or equal than 300 seconds',
+        'callback' => 'bs_performance_other_max_execution',
+      ),
+      array(
+        'ok' => 'Compressing CSS and JS via "!module" configured',
+        'nok' => 'Compressing CSS and JS via "!module" not well configured',
+        'callback' => 'bs_performance_other_advagg',
+        'args' => array(
+          '!module' => l('Advanced CSS/JS Aggregation', 'https://www.drupal.org/project/advagg'),
+        ),
+      ),
+    ),
+  );
+}

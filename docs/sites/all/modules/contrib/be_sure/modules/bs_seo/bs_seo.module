@@ -1,0 +1,211 @@
+<?php
+
+/**
+ * @file
+ * Be sure about SEO part of your Drupal site.
+ */
+
+require_once dirname(__FILE__) . '/bs_seo.page_structure.inc';
+require_once dirname(__FILE__) . '/bs_seo.crawlability.inc';
+require_once dirname(__FILE__) . '/bs_seo.user_experience.inc';
+require_once dirname(__FILE__) . '/bs_seo.best_practices.inc';
+
+/**
+ * Implements hook_sure_info().
+ */
+function bs_seo_sure_info() {
+  $items['seo'] = array(
+    'title' => 'SEO',
+    'description' => 'Be sure about SEO part of your Drupal site.',
+    'elements' => array(
+      bs_seo_page_structure(),
+      bs_seo_crawlability(),
+      bs_seo_user_experience(),
+      bs_seo_best_practices(),
+    ),
+  );
+
+  return $items;
+}
+
+/**
+ * Describe sure points of page structure.
+ */
+function bs_seo_page_structure() {
+  return array(
+    'title' => 'Page structure',
+    'items' => array(
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_page_structure_page_title',
+        'args' => array(
+          '!module' => l('Page Title', 'https://www.drupal.org/project/page_title'),
+        ),
+      ),
+      array(
+        'ok' => 'Clean URLs enabled',
+        'nok' => 'Clean URLs not enabled',
+        'callback' => 'bs_seo_page_structure_clean_urls',
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_page_structure_pathauto',
+        'args' => array(
+          '!module' => l('Pathauto', 'https://www.drupal.org/project/pathauto'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module disabled',
+        'callback' => 'bs_seo_page_structure_metatag',
+        'args' => array(
+          '!module' => l('Metatag', 'https://www.drupal.org/project/metatag'),
+        ),
+      ),
+      array(
+        'ok' => '!module enabled',
+        'nok' => '!module not enabled',
+        'callback' => 'bs_seo_page_structure_microdata',
+        'args' => array(
+          '!module' => l('Microdata', 'https://www.drupal.org/project/microdata'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_page_structure_kwresearch',
+        'args' => array(
+          '!module' => l('Keyword Research', 'https://www.drupal.org/project/kwresearch'),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Describe sure points of crawlability.
+ */
+function bs_seo_crawlability() {
+  return array(
+    'title' => 'Crawlability',
+    'items' => array(
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_crawlability_xmlsitemap',
+        'args' => array(
+          '!module' => l('XML Sitemap', 'https://www.drupal.org/project/xmlsitemap'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_crawlability_robotstxt',
+        'args' => array(
+          '!module' => l('RobotsTxt', 'https://www.drupal.org/project/robotstxt'),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Describe sure points of user experience.
+ */
+function bs_seo_user_experience() {
+  return array(
+    'title' => 'User experience',
+    'items' => array(
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_user_experience_site_map',
+        'args' => array(
+          '!module' => l('Site map', 'https://www.drupal.org/project/site_map'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_user_experience_scheduler',
+        'args' => array(
+          '!module' => l('Scheduler', 'https://www.drupal.org/project/scheduler'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_user_experience_html_purifier',
+        'args' => array(
+          '!module' => l('HTML Purifier', 'https://www.drupal.org/project/htmlpurifier'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_user_experience_global_redirect',
+        'args' => array(
+          '!module' => l('Global Redirect', 'https://www.drupal.org/project/globalredirect'),
+        ),
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module is not enabled',
+        'callback' => 'bs_seo_user_experience_redirect',
+        'args' => array(
+          '!module' => l('Redirect', 'https://www.drupal.org/project/redirect'),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Describe sure points of best practices.
+ */
+function bs_seo_best_practices() {
+  return array(
+    'title' => 'Best practices',
+    'items' => array(
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module not enabled',
+        'callback' => 'bs_seo_best_practices_search404',
+        'args' => array(
+          '!module' => l('Search 404', 'https://www.drupal.org/project/search404'),
+        ),
+      ),
+      array(
+        'ok' => '!module sitemap module enabled',
+        'nok' => '!module sitemap module not enabled',
+        'callback' => 'bs_seo_best_practices_googlenews',
+        'args' => array(
+          '!module' => l('Google News', 'https://www.drupal.org/project/googlenews'),
+        ),
+      ),
+      array(
+        'ok' => '!module module configured',
+        'nok' => '!module module not configured',
+        'callback' => 'bs_seo_best_practices_gag',
+        'args' => array(
+          '!module' => l('Google Analytics', 'https://www.drupal.org/project/google_analytics'),
+        ),
+      ),
+      array(
+        'ok' => 'Google Analytics module caching code',
+        'nok' => 'Google Analytics module not caching code',
+        'callback' => 'bs_seo_best_practices_gag_cache',
+      ),
+      array(
+        'ok' => '!module module enabled',
+        'nok' => '!module module not enabled',
+        'callback' => 'bs_seo_best_practices_site_verify',
+        'args' => array(
+          '!module' => l('Site Verification', 'https://www.drupal.org/project/site_verify'),
+        ),
+      ),
+    ),
+  );
+}

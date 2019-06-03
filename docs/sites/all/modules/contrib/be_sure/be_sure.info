@@ -1,0 +1,11 @@
+name = Be sure
+description = "Provide interface for other modules to make you sure about your Drupal site."
+core = 7.x
+package = Development
+
+; Information added by Drupal.org packaging script on 2015-10-03
+version = "7.x-1.5"
+core = "7.x"
+project = "be_sure"
+datestamp = "1443866640"
+

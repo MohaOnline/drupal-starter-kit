@@ -1,0 +1,13 @@
+name = Be sure - performance
+description = "Be sure about performance part of your Drupal site."
+core = 7.x
+package = Development
+
+dependencies[] = be_sure
+
+; Information added by Drupal.org packaging script on 2015-10-03
+version = "7.x-1.5"
+core = "7.x"
+project = "be_sure"
+datestamp = "1443866640"
+
