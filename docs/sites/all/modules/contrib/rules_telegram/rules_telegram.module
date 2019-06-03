@@ -1,0 +1,163 @@
+<?php
+
+/**
+ * @file
+ * Main module file.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function rules_telegram_help($path, $arg) {
+
+}
+
+/**
+ * Implements hook_init().
+ */
+function rules_telegram_init() {
+  $curl = curl_init();
+
+  if (!$curl && path_is_admin(current_path())) {
+    drupal_set_message(t("Can't initialize cURL. You need to install it on your server or enable it in your hosting-panel if you want to use rules-telegram"), 'error');
+  }
+}
+
+/**
+ * Implements hook_rules_action_info().
+ */
+function rules_telegram_rules_action_info() {
+  $actions = [];
+
+  $actions['_rules_telegram_send_to_telegram_action'] = [
+    'label' => t('Send message to Telegram'),
+    'group' => t('System'),
+    'parameter' => [
+      'tg_bot_token' => [
+        'type' => 'text',
+        'optional' => FALSE,
+        'label' => t('Bot token'),
+        'restriction' => 'input',
+      ],
+      'tg_chat_ids' => [
+        'type' => 'text',
+        'label' => t('Chat IDs'),
+        'optional' => FALSE,
+        'restriction' => 'input',
+        'description' => t('Delimiter: comma'),
+      ],
+      'tg_message' => [
+        'type' => 'text',
+        'optional' => FALSE,
+        'label' => t('Message'),
+      ],
+    ],
+  ];
+
+  return $actions;
+}
+
+/**
+ * Action for hook_rules_action_info().
+ */
+function _rules_telegram_send_to_telegram_action($tg_bot_token, $tg_chat_ids, $tg_message) {
+  $chatids = explode(',', $tg_chat_ids);
+  $proxy = variable_get('rules_telegram_proxy');
+  $proxy_server = variable_get('rules_telegram_proxy_server');
+  $proxy_login = variable_get('rules_telegram_proxy_login');
+  $proxy_pass = variable_get('rules_telegram_proxy_password');
+
+  foreach ($chatids as $chatid) {
+    if ($proxy) {
+      _rules_telegram_send_to_telegram($tg_bot_token, $chatid, $tg_message, TRUE, $proxy_server, $proxy_login, $proxy_pass);
+    }
+    else {
+      _rules_telegram_send_to_telegram($tg_bot_token, $chatid, $tg_message);
+    }
+  }
+}
+
+/**
+ * Send to telegram common function.
+ */
+function _rules_telegram_send_to_telegram($token, $chatid, $message, $proxy = FALSE, $proxy_server = NULL, $proxy_login = NULL, $proxy_pass = NULL) {
+  $curl = curl_init();
+
+  if ($curl) {
+    $query = "https://api.telegram.org/bot" . $token .
+      "/sendMessage?disable_web_page_preview=true&chat_id=" . $chatid .
+      "&text=" . urlencode($message);
+
+    curl_setopt($curl, CURLOPT_URL, $query);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($curl, CURLOPT_POST, TRUE);
+
+    if ($proxy) {
+      curl_setopt($curl, CURLOPT_PROXYTYPE, CURLPROXY_SOCKS5_HOSTNAME);
+      curl_setopt($curl, CURLOPT_PROXY, $proxy_server);
+      if ($proxy_login) {
+        curl_setopt($curl, CURLOPT_PROXYUSERPWD, $proxy_login . ':' . $proxy_pass);
+      }
+    }
+
+    if (curl_exec($curl) === FALSE) {
+      watchdog('rules_telegram', curl_error($curl));
+    }
+
+    curl_close($curl);
+  }
+  else {
+    watchdog('rules_telegram', "Can't initialize cURL. Is it installed on the server?");
+  }
+
+}
+
+/**
+ * Implements hook_menu().
+ */
+function rules_telegram_menu() {
+  $items['admin/config/workflow/rules_telegram'] = [
+    'title' => 'Rules Telegram',
+    'description' => 'Send notifications to telegram via Rules.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['_rules_telegram_settings_form'],
+    'access arguments' => ['administer site configuration'],
+  ];
+
+  return $items;
+}
+
+/**
+ * Settings form.
+ */
+function _rules_telegram_settings_form() {
+  $form = [];
+
+  $form['rules_telegram_proxy_fieldset'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Proxy Settings (SOCKS 5)'),
+  ];
+  $form['rules_telegram_proxy_fieldset']['rules_telegram_proxy'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Use proxy to send messages to Telegram via Rules'),
+    '#default_value' => variable_get('rules_telegram_proxy'),
+  ];
+  $form['rules_telegram_proxy_fieldset']['rules_telegram_proxy_server'] = [
+    '#type' => 'textfield',
+    '#title' => t('Server name (or IP address) and :port'),
+    '#default_value' => variable_get('rules_telegram_proxy_server'),
+    '#description' => t('For example: 127.0.0.1:1234'),
+  ];
+  $form['rules_telegram_proxy_fieldset']['rules_telegram_proxy_login'] = [
+    '#type' => 'textfield',
+    '#title' => t('Proxy login'),
+    '#default_value' => variable_get('rules_telegram_proxy_login'),
+  ];
+  $form['rules_telegram_proxy_fieldset']['rules_telegram_proxy_password'] = [
+    '#type' => 'textfield',
+    '#title' => t('Proxy password'),
+    '#default_value' => variable_get('rules_telegram_proxy_password'),
+  ];
+
+  return system_settings_form($form);
+}

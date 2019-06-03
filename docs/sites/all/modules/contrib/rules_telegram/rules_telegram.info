@@ -1,0 +1,12 @@
+name = Rules Telegram
+description = Send notifications to telegram via Rules
+core = 7.x
+php = 5.4
+dependencies[] = rules
+configure = admin/config/workflow/rules_telegram
+
+; Information added by Drupal.org packaging script on 2019-05-10
+version = "7.x-1.2"
+core = "7.x"
+project = "rules_telegram"
+datestamp = "1557490391"
