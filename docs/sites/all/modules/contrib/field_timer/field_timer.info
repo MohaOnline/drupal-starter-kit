@@ -1,0 +1,22 @@
+name = Field Timer
+description = Provides a basic field to create timer or countdown.
+core = 7.x
+package = Fields
+
+dependencies[] = libraries
+dependencies[] = date
+dependencies[] = date_popup
+dependencies[] = options
+
+files[] = includes/field_timer_base.inc
+files[] = includes/field_timer_text.inc
+files[] = includes/field_timer_county.inc
+files[] = includes/field_timer_jquery_countdown.inc
+files[] = includes/field_timer_jquery_countdown_led.inc
+
+; Information added by Drupal.org packaging script on 2017-06-04
+version = "7.x-2.1"
+core = "7.x"
+project = "field_timer"
+datestamp = "1496600646"
+
