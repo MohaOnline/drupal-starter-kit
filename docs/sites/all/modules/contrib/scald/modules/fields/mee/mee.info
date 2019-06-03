@@ -1,0 +1,16 @@
+name = Multimedia Editorial Element
+package = Scald
+description = Allows users to define metadata on atoms that are embedded in text fields
+dependencies[] = field
+dependencies[] = text
+dependencies[] = dnd
+dependencies[] = scald
+core = 7.x
+
+stylesheets[all][] = css/editor-global.css
+
+; Information added by Drupal.org packaging script on 2019-03-31
+version = "7.x-1.12"
+core = "7.x"
+project = "scald"
+datestamp = "1554028687"
