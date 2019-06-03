@@ -1,0 +1,11 @@
+name = CKEditor Browser Context Menu
+description = "Makes CKEditor use the browser's built-in context menu instead of CKEditor's custom context menu (right-click menu).  This will allow full use of the browser's built-in spellcheck capabilities.  NOTE: This disables the contextmenu, tabletools, and tableresize plugins."
+package = CKEditor
+version = VERSION
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2019-04-30
+version = "7.x-1.0"
+core = "7.x"
+project = "ckeditor_browser_context_menu"
+datestamp = "1556654888"
