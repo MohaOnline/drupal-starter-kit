@@ -1,0 +1,229 @@
+<?php
+/**
+ * @file
+ * adds a formatter for images that makes them 'lazy load' using Javascript Image Asynchronous Loading
+ *
+ */
+ /**
+ * Implements hook_menu().
+ */
+function image_lazy_loader_menu() {
+  $items = array();
+  $items['admin/config/media/image-lazy-loader'] = array(
+    'title'            => 'Image Lazy Loader',
+    'description'      => 'Configuration',
+    'page callback'    => 'drupal_get_form',
+    'page arguments'   => array('image_lazy_loader_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type'             => MENU_NORMAL_ITEM,
+    'file'             => 'image_lazy_loader.admin.inc',
+  );
+  return $items;
+}
+
+function image_lazy_loader_field_formatter_info() {
+  return array(
+    'image_lazy_loader' => array(
+      'label' => t('Lazy Loader Image'),
+      'field types' => array('image'),
+      'settings' => array(
+        'image_lazy_loader_effect' => 'none',
+        'image_lazy_loader_duration' => 'none',
+        'image_lazy_loader_image_style' => 'None (original image)',
+        'image_lazy_loader_responsive' => 'none',
+      )
+    )
+  );
+}
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function image_lazy_loader_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $element = array();
+  $element['image_lazy_loader_effect'] = array(
+    '#type'           => 'select',
+    '#title'          => t('Effect'),
+    '#description'    => t('Select the effect to use'),
+    '#default_value'  => $settings['image_lazy_loader_effect'],
+    '#options'        => array(
+      'bounce'          => 'Bounce',
+      'pulse'           => 'Pulse',
+      'zoomIn'          => 'Zoom In',
+      'fadeIn'          => 'Fade In',
+      'fadeInUp'        => 'Fade In Up',
+      'fadeInDown'      => 'Fade In Down',
+      'fadeInLeft'      => 'Fade In Left',
+      'fadeInRight'     => 'Fade In Right',
+      'slideInUp'       => 'Slide In Up',
+      'slideInDown'     => 'Slide In Down',
+      'slideInUp'       => 'Slide In Left',
+      'slideInUp'       => 'Slide In Right'
+    ),
+  );
+  $element['image_lazy_loader_duration'] = array(
+    '#type'           => 'textfield',
+    '#title'          => t('Effect Duration'),
+    '#description'    => t('Select the duration of your animation'),
+    '#attributes' => array(
+      ' type'           => 'number',
+      'step'            => '0.1',
+      'min'             => '0',
+      'max'             => '3',
+    ),
+    '#default_value'  => $settings['image_lazy_loader_duration']
+  );
+  $image_styles = image_style_options(FALSE);
+  $element['image_lazy_loader_image_style'] = array(
+     '#title'         => t('Image style'),
+     '#type'          => 'select',
+     '#default_value' => $settings['image_lazy_loader_image_style'],
+     '#empty_option'  => t('None (original image)'),
+     '#options'       => $image_styles,
+  );
+  $element['image_lazy_loader_responsive'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Responsive'),
+    '#description'    => t('Add img-responsive class to images'),
+    '#default_value'  => $settings['image_lazy_loader_responsive'],
+    '#suffix'         => '<br>',
+    '#prefix'         => '<br>'
+  );
+  return $element;
+}
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function image_lazy_loader_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  if ($settings['image_lazy_loader_effect']=="none") {
+    $effect = 'bounce';
+  } else {
+    $effect = $settings['image_lazy_loader_effect'];
+  }
+  if ($settings['image_lazy_loader_duration']=="none") {
+    $duration = 'not defined';  
+  } else {
+    $duration = $settings['image_lazy_loader_duration'];
+  }
+  if ($settings['image_lazy_loader_image_style']=="") {
+    $lazy_image_style = "Original";
+  } else {
+    $lazy_image_style = $settings['image_lazy_loader_image_style'];
+  }
+  if ($settings['image_lazy_loader_responsive']=="none") {
+    $responsive = '';
+  } else {
+    $responsive = t('This will add the "img-responsive" class.');
+  }
+  $summary = t('Images will load Asynchronously when scrolled into view using a "@effect" effect during "@duration".<br>Using Image Style: "@image_lazy_loader_image_style".', array(
+    '@effect'                         => $effect,
+    '@image_lazy_loader_image_style'  => $lazy_image_style,
+    '@duration'                       => $duration,
+    '@responsive'                     => $responsive
+  ));
+  return $summary;
+}
+/**
+ * Implements hook_field_formatter_view().
+ */
+function image_lazy_loader_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+  $effect = $settings['image_lazy_loader_effect'];
+  $duration = $settings['image_lazy_loader_duration'];
+  $imagepath = file_create_url($items[0]['uri']);
+  $responsive = $settings['image_lazy_loader_responsive'];
+
+  foreach ($items as $delta => $item) {
+    $element[$delta] = array(
+      '#theme'                              => 'image_lazy_loader_formatter',
+      '#item'                               => $item,
+      '#image_lazy_loader_image_style'      => $settings['image_lazy_loader_image_style'],
+      '#image_lazy_loader_effect'           => $effect,
+      '#image_lazy_loader_duration'         => $duration,
+      '#image_lazy_loader_responsive'       => $responsive,
+    );
+  }
+  return $element;
+}
+/**
+ * Returns HTML for an image field formatter.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - item: An array of image data.
+ *   - image_style: An optional image style.
+ *   - path: An array containing the link 'path' and link 'options'.
+ *
+ * @ingroup themeable
+ */
+function theme_image_lazy_loader_formatter(&$variables) {
+  $module_path = drupal_get_path('module', 'image_lazy_loader');
+  $item = $variables['item'];
+  // $placeholder = $variables['placeholder'];
+  $image = array(
+    'path'        => $item['uri'],
+    'alt'         => $item['alt'],
+  );
+  $effect = $variables['image_lazy_loader_effect'];
+  $duration = $variables['image_lazy_loader_duration'];
+  $responsive = $variables['image_lazy_loader_responsive'];
+  // Do not output an empty 'title' attribute.
+  if (drupal_strlen($item['title']) > 0) {
+    $image['title'] = $item['title'];
+  }
+  if ($variables['image_lazy_loader_image_style']=='None (original image)' || $variables['image_lazy_loader_image_style']=='') {
+    $url = file_create_url($item['uri']);
+  } else {
+    $url = image_style_url($variables['image_lazy_loader_image_style'], $item['uri']);
+  }
+  // It is responsive?
+  $responsive_class = '';
+  if ($responsive != 'none') {
+    $responsive_class = 'img-responsive';
+  }
+  // HTML output
+  $output = '<img class="lozad animated ' . $responsive_class . '" style="animation-duration: ' . $duration . 's" data-animation="' . $effect . '" data-src="' . $url . '" alt="' . $image['alt'] . '"/>';
+  if ($variables['path']) {
+    $path = $variables['path']['path'];
+    $options = $variables['path']['options'];
+    // When displaying an image inside a link, the html option must be TRUE.
+    $options['html'] = TRUE;
+    $output = l($output, $path, $options);
+  }
+  return $output;
+}
+
+function image_lazy_loader_theme() {
+  return array(
+    'image_lazy_loader_formatter' => array(
+      'variables' => array(
+        'item' => NULL,
+        'path' => NULL,
+        'image_lazy_loader_image_style' => NULL,
+        'placeholder' => NULL,
+        'image_lazy_loader_effect' => NULL,
+        'image_lazy_loader_duration' => NULL,
+        'image_lazy_loader_responsive' => NULL
+      ),
+    ),
+  );
+}
+
+function image_lazy_loader_preprocess_page(&$vars) {
+  // Add animate.css library if checked in /admin/config/media/ill-config
+  if (variable_get('image_lazy_loader_animate_library', 0)) {
+    drupal_add_css(drupal_get_path('module', 'image_lazy_loader') . '/animate-css/animate.min.css');
+  }
+  // Add Lozad.js library
+  drupal_add_js(drupal_get_path('module', 'image_lazy_loader') . '/lozad/dist/lozad.js');
+  // Init Lozad.js
+  drupal_add_js(drupal_get_path('module', 'image_lazy_loader') . '/image_lazy_loader.js', array(
+    'type' => 'file',
+    'scope' => 'footer',
+    'weight' => 5
+  ));
+}
