@@ -1,0 +1,1836 @@
+<?php
+
+/**
+ * @file
+ * Provides default CRM Core Contact entities and the ability to create more.
+ */
+
+// Integration with context.
+module_load_include('inc', 'crm_core_contact', 'crm_core_contact.context');
+
+/**
+ * Implements hook_entity_info().
+ */
+function crm_core_contact_entity_info() {
+  $return = array(
+    'crm_core_contact' => array(
+      'label' => t('CRM Core Contact'),
+      'entity class' => 'CRMCoreContactEntity',
+      'controller class' => 'CRMCoreContactController',
+      'base table' => 'crm_core_contact',
+      'revision table' => 'crm_core_contact_revision',
+      'fieldable' => TRUE,
+      'entity keys' => array(
+        'id' => 'contact_id',
+        'revision' => 'vid',
+        'bundle' => 'type',
+        // This is used for entityreference lookups(DB queries).
+        // @see EntityReference_SelectionHandler_Generic::buildEntityFieldQuery()
+        'label' => 'name',
+      ),
+      'bundle keys' => array(
+        'bundle' => 'type',
+      ),
+      'bundles' => array(),
+      'view modes' => array(
+        'full' => array(
+          'label' => t('Full content'),
+          'custom settings' => FALSE,
+        ),
+      ),
+      'label callback' => 'entity_class_label',
+      'uri callback' => 'entity_class_uri',
+      'access callback' => 'crm_core_contact_access',
+      'permission labels' => array(
+        'singular' => t('contact'),
+        'plural' => t('contacts'),
+      ),
+      'token type' => 'crm-core-contact',
+    ),
+  );
+
+  $return['crm_core_contact_type'] = array(
+    'label' => t('CRM Core Contact type'),
+    'entity class' => 'CRMContactType',
+    'controller class' => 'CRMCoreContactTypeController',
+    'features controller class' => 'CRMCoreContactTypeFeaturesController',
+    'base table' => 'crm_core_contact_type',
+    'fieldable' => FALSE,
+    'bundle of' => 'crm_core_contact',
+    'exportable' => TRUE,
+    'entity keys' => array(
+      'id' => 'id',
+      'name' => 'type',
+      'label' => 'name',
+    ),
+    'module' => 'crm_core_contact',
+    // Enable the entity API's admin UI.
+    'admin ui' => array(
+      'path' => 'admin/structure/crm-core/contact-types',
+      'file' => 'crm_core_contact.admin.inc',
+      'controller class' => 'EntityDefaultUIController',
+    ),
+    'access callback' => 'crm_core_contact_type_access',
+    'token type' => 'crm-core-contact-type',
+  );
+
+  if (module_exists('uuid')) {
+    $return['crm_core_contact']['uuid'] = TRUE;
+    $return['crm_core_contact']['entity keys']['uuid'] = 'uuid';
+    $return['crm_core_contact']['entity keys']['revision uuid'] = 'vuuid';
+  }
+
+  if (module_exists('entity_translation')) {
+    $return['crm_core_contact'] += array(
+      'translation' => array(
+        'entity_translation' => array(
+          'base path' => 'crm-core/contact/%crm_core_contact',
+        ),
+      ),
+    );
+  }
+
+  if (module_exists('inline_entity_form')) {
+    $return['crm_core_contact']['inline entity form'] = array(
+      'controller' => 'EntityInlineEntityFormController',
+    );
+  }
+
+  return $return;
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * Use this hook to specify contact bundles to avoid a recursion, as loading
+ * the contact types needs the entity info too.
+ */
+function crm_core_contact_entity_info_alter(&$entity_info) {
+  foreach (crm_core_contact_type_get_name() as $type => $name) {
+    $entity_info['crm_core_contact']['bundles'][$type] = array(
+      'label' => $name,
+      'admin' => array(
+        'path' => 'admin/structure/crm-core/contact-types/manage/%crm_core_contact_type',
+        'real path' => 'admin/structure/crm-core/contact-types/manage/' . $type,
+        'bundle argument' => 5,
+        'access arguments' => array('administer contact types'),
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_entity_property_info().
+ *
+ * Add entity metadata properties for contact primary fields.
+ *
+ * @see entity_metadata_entity_property_info()
+ */
+function crm_core_contact_entity_property_info() {
+  $info['crm_core_contact']['properties']['primary_email'] = array(
+    'label' => t('Primary email'),
+    'type' => 'text',
+    'description' => t('Get primary e-mail of CRM Core Contact.'),
+    'getter callback' => 'crm_core_contact_get_primary_email_field_value',
+    'computed' => TRUE,
+  );
+
+  $info['crm_core_contact']['properties']['primary_address'] = array(
+    'label' => t('Primary address'),
+    'type' => 'struct',
+    'description' => t('Get primary address of CRM Core Contact.'),
+    'getter callback' => 'crm_core_contact_get_primary_address_field_value',
+    'computed' => TRUE,
+  );
+
+  $info['crm_core_contact']['properties']['primary_phone'] = array(
+    'label' => t('Primary phone'),
+    'type' => 'struct',
+    'description' => t('Get primary phone of CRM Core Contact.'),
+    'getter callback' => 'crm_core_contact_get_primary_phone_field_value',
+    'computed' => TRUE,
+  );
+
+  return $info;
+}
+
+/**
+ * Get CRM Core Contact primary field name.
+ */
+function crm_core_contact_get_primary_field_name(CRMCoreContactEntity $contact, $primary_field) {
+  $contact_type = crm_core_contact_type_load($contact->type);
+
+  return empty($contact_type->primary_fields[$primary_field]) ? '' : $contact_type->primary_fields[$primary_field];
+}
+
+/**
+ * Get CRM Core Contact primary field value.
+ *
+ * @param CRMCoreContactEntity $contact
+ *   CRM Core Contact.
+ * @param string $primary_field
+ *   Primary field name.
+ *
+ * @return string
+ *   Value of specified primary field or empty string.
+ */
+function crm_core_contact_get_primary_field_value(CRMCoreContactEntity $contact, $primary_field) {
+  $field = crm_core_contact_get_primary_field_name($contact, $primary_field);
+  $field_value = '';
+  if (empty($field)) {
+
+    // TODO: use watchdog instead.
+    // Check that user has access to configure crm_core_contact.
+    if (user_access('administer contact types')) {
+      // Alert privileged users that requested primary field didn't configured.
+      $path = 'admin/structure/crm-core/contact-types/manage/' . $contact->type;
+      $message = "Some module requested value of primary field %field of"
+        . " contact of %contact_type type, but this primary field is not"
+        . " configured for this contact type. You can configure it !here.";
+      drupal_set_message(t($message, array(
+        '%contact_type' => $contact->type,
+        '%field' => $primary_field,
+        '!here' => l(t('here'), $path),
+      )), 'warning');
+    }
+  }
+  else {
+    $contact_wrapper = entity_metadata_wrapper('crm_core_contact', $contact);
+    $field_value = $contact_wrapper->{$field}->value();
+  }
+
+  return $field_value;
+}
+
+/**
+ * Returns primary email.
+ */
+function crm_core_contact_get_primary_email_field_value($contact) {
+  return crm_core_contact_get_primary_field_value($contact, 'email');
+}
+
+/**
+ * Returns primary address.
+ */
+function crm_core_contact_get_primary_address_field_value($contact) {
+  return crm_core_contact_get_primary_field_value($contact, 'address');
+}
+
+/**
+ * Returns primary phone.
+ */
+function crm_core_contact_get_primary_phone_field_value($contact) {
+  return crm_core_contact_get_primary_field_value($contact, 'phone');
+}
+
+/**
+ * Access callback for crm_core_contact_type entities.
+ */
+function crm_core_contact_type_access($op, $entity, $account, $entity_type) {
+  return user_access('administer contact types', $account);
+}
+
+/**
+ * Create empty contact entity.
+ *
+ * @deprecated since contacts moved to entity api.
+ */
+function crm_core_contact_create($values) {
+  return entity_get_controller('crm_core_contact')->create($values);
+}
+
+/**
+ * Implements hook_permission().
+ */
+function crm_core_contact_permission() {
+  $permissions = array(
+    'administer contact types' => array(
+      'title' => t('Administer contact types'),
+      'description' => t('Allows the user to edit the types of contact such as Individual, Organization, etc.'),
+    ),
+    'view disabled contact types' => array(
+      'title' => t('View disabled contact types'),
+      'description' => t('Allows the user to view disabled contact types'),
+    ),
+    'revert contact record' => array(
+      'title' => ('Revert contact record'),
+      'description' => t('Allows the user to have ability to revert contacts'),
+    ),
+  );
+
+  $permissions += crm_core_entity_access_permissions('crm_core_contact');
+
+  return $permissions;
+}
+
+/**
+ * Check permission for various contact operations.
+ *
+ * @param $op
+ *   Operation being performed.
+ * @param object $contact
+ *   A crm_core_contact_type object.
+ *
+ * @return bool
+ *   TRUE if access is granted/FALSE is access is denied.
+ */
+function crm_core_contact_access($op, $contact, $account = NULL, $entity_type = NULL) {
+  global $user;
+
+  if (!isset($account)) {
+    $account = $user;
+  }
+  if (is_object($contact)) {
+    $contact_type = $contact->type;
+  }
+  else {
+    $contact_type = $contact;
+  }
+
+  // First grant access to the entity for the specified operation if no other
+  // module denies it and at least one other module says to grant access.
+  $access_results = module_invoke_all('crm_core_entity_access', $op, $contact, $account, $entity_type);
+  if (in_array(FALSE, $access_results, TRUE)) {
+    return FALSE;
+  }
+  elseif (in_array(TRUE, $access_results, TRUE)) {
+    return TRUE;
+  }
+
+  $administer_contact = user_access('administer crm_core_contact entities', $account);
+
+  switch ($op) {
+    case 'view':
+      $view_any_contact = user_access('view any crm_core_contact entity', $account);
+      $view_type_contact = user_access('view any crm_core_contact entity of bundle ' . $contact_type, $account);
+
+      return ($administer_contact || $view_any_contact || $view_type_contact);
+
+    case 'edit':
+      $edit_any_contact = user_access('edit any crm_core_contact entity', $account);
+      $edit_type_contact = user_access('edit any crm_core_contact entity of bundle ' . $contact_type, $account);
+
+      return ($administer_contact || $edit_any_contact || $edit_type_contact);
+
+    case 'delete':
+      $delete_any_contact = user_access('delete any crm_core_contact entity', $account);
+      $delete_type_contact = user_access('delete any crm_core_contact entity of bundle ' . $contact_type, $account);
+
+      return ($administer_contact || $delete_any_contact || $delete_type_contact);
+
+    case 'revert':
+      // @todo: more fine grained will be adjusting dynamic permission
+      // generation for reverting bundles of contact.
+      $revert_any_contact = user_access('revert contact record', $account);
+
+      return ($administer_contact || $revert_any_contact);
+
+    case 'create_view':
+      // Any of the create permissions.
+      $create_any_contact = user_access('create crm_core_contact entities', $account);
+      $contact_types = array_keys(crm_core_contact_types(TRUE));
+      foreach ($contact_types as $type) {
+        $create_type_contact[] = entity_access('create', 'crm_core_contact', $type, $account);
+      }
+      // Any type of contact type create permission.
+      $create_type_contact_flag = in_array(TRUE, $create_type_contact);
+
+      return ($administer_contact || $create_any_contact || $create_type_contact_flag);
+
+    case 'create':
+    default:
+
+      // make sure we are getting a contact type back
+      if(empty($contact_type)){
+        return false;
+      }
+      // Must be able to create contact of any type (OR) specific type
+      // (AND) have an active contact type.
+      // IMPORTANT, here $contact is padded in as a string of the contact type.
+      $create_any_contact = user_access('create crm_core_contact entities', $account);
+      $create_type_contact = user_access('create crm_core_contact entities of bundle ' . $contact_type, $account);
+      // Load the contact type entity.
+      $contact_type_entity = crm_core_contact_type_load($contact_type);
+      $contact_type_is_active = (!(bool) $contact_type_entity->disabled);
+
+      return (($administer_contact || $create_any_contact || $create_type_contact) && $contact_type_is_active);
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function crm_core_contact_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'crm_core_contact') . '/includes/views',
+  );
+}
+
+/**
+ * Implements hook_search_info().
+ */
+function crm_core_contact_search_info() {
+  return array(
+    'title' => 'CRM Core contacts',
+    'path' => 'contact',
+  );
+}
+
+/**
+ * Implements hook_search_access().
+ */
+function crm_core_contact_search_access() {
+  return user_access('administer crm_core_contact entities') || user_access('view any crm_core_contact entity');
+}
+
+/**
+ * Implements hook_search_reset().
+ */
+function crm_core_contact_search_reset() {
+  db_update('search_dataset')
+    ->fields(array('reindex' => REQUEST_TIME))
+    ->condition('type', 'crm_core_contact')
+    ->execute();
+}
+
+/**
+ * Implements hook_search_status().
+ */
+function crm_core_contact_search_status() {
+  $total = db_query('SELECT COUNT(*) FROM {crm_core_contact}')->fetchField();
+  $remaining = db_query("SELECT COUNT(*) FROM {crm_core_contact} c LEFT JOIN {search_dataset} d ON d.type = 'crm_core_contact' AND d.sid = c.contact_id WHERE d.sid IS NULL OR d.reindex <> 0")->fetchField();
+
+  return array('remaining' => $remaining, 'total' => $total);
+}
+
+/**
+ * Implements hook_search_execute().
+ */
+function crm_core_contact_search_execute($keys = NULL, $conditions = NULL) {
+  // Build matching conditions.
+  $query = db_select('search_index', 'i', array('target' => 'slave'))
+    ->extend('SearchQuery')
+    ->extend('PagerDefault');
+  $query->join('crm_core_contact', 'c', 'c.contact_id = i.sid');
+  $query->searchExpression($keys, 'crm_core_contact');
+
+  // Insert special keywords.
+  $query->setOption('type', 'c.type');
+  $query->setOption('language', 'c.language');
+
+  // Only continue if the first pass query matches.
+  if (!$query->executeFirstPass()) {
+    return array();
+  }
+
+  // Load results.
+  $find = $query
+    ->limit(10)
+    ->execute();
+  $results = array();
+  foreach ($find as $item) {
+    // Render the contact.
+    $contact = crm_core_contact_load($item->sid);
+    $build = crm_core_contact_view($contact);
+    unset($build['#theme']);
+    $contact->rendered = drupal_render($build);
+    $title = field_get_items('crm_core_contact', $contact, 'contact_name');
+    $title = name_format($title[0], '((((t+ig)+im)+if)+is)+jc');
+    $uri = entity_uri('crm_core_contact', $contact);
+    $results[] = array(
+      'link' => url($uri['path'], array_merge($uri['options'], array('absolute' => TRUE))),
+      'type' => check_plain(crm_core_contact_type_get_name($contact->type)),
+      'title' => $title,
+      'user' => theme('username', array('account' => user_load($contact->uid))),
+      'date' => $contact->changed,
+      'contact' => $contact,
+      'score' => $item->calculated_score,
+      'snippet' => search_excerpt($keys, $contact->rendered),
+      'language' => (isset($contact->language)) ? $contact->language : LANGUAGE_NONE,
+    );
+  }
+
+  return $results;
+}
+
+/**
+ * Search condition callback.
+ */
+function crm_core_contact_search_conditions_callback($keys) {
+  $conditions = array();
+
+  if (!empty($_REQUEST['keys'])) {
+    $conditions['keys'] = $_REQUEST['keys'];
+  }
+  if (!empty($_REQUEST['sample_search_keys'])) {
+    $conditions['sample_search_keys'] = $_REQUEST['sample_search_keys'];
+  }
+  if ($force_keys = variable_get('sample_search_force_keywords', '')) {
+    $conditions['sample_search_force_keywords'] = $force_keys;
+  }
+
+  return $conditions;
+}
+
+/**
+ * Implements hook_update_index().
+ */
+function crm_core_contact_update_index() {
+  $limit = (int) variable_get('search_cron_limit', 100);
+
+  $result = db_query_range("SELECT c.contact_id FROM {crm_core_contact} c LEFT JOIN {search_dataset} d ON d.type = 'crm_core_contact' AND d.sid = c.contact_id WHERE d.sid IS NULL OR d.reindex <> 0 ORDER BY d.reindex ASC, c.contact_id ASC", 0, $limit);
+
+  foreach ($result as $contact) {
+    $contact = crm_core_contact_load($contact->contact_id);
+    variable_set('crm_core_contact_cron_last', $contact->changed);
+
+    // Render the contact.
+    $text = drupal_render(crm_core_contact_view($contact));
+    // Update index.
+    search_index($contact->contact_id, 'crm_core_contact', $text);
+  }
+}
+
+/**
+ * Entity label callback.
+ *
+ * @param object $contact
+ *   A fully loaded CRM Core Contact object.
+ *
+ * @return string
+ *   Raw formatted string. This should be run through check_plain().
+ */
+function crm_core_contact_label($contact) {
+  $cache = &drupal_static(__FUNCTION__, array());
+
+  if (!isset($cache[$contact->contact_id])) {
+    // Check whether bundle type label function exists.
+    // This is needed if we want to have different labels per contact type.
+    // For example Individual contact's label is person's Name.
+    // But for Organization -- organization's name.
+    $function = 'crm_core_contact_' . $contact->type . '_label';
+    if (function_exists($function)) {
+      return $function($contact);
+    }
+
+    $contact_wrapper = entity_metadata_wrapper('crm_core_contact', $contact);
+    $field_info = field_info_field('contact_name');
+
+    $item = $field_info['cardinality'] == '1' ? $contact_wrapper->contact_name->value() : $contact_wrapper->contact_name[0]->value();
+
+    // Load the label format.
+    $format = name_get_format_by_machine_name('crm_core_contact_label_format');
+    if (empty($format)) {
+      $format = name_get_format_by_machine_name('default');
+    }
+    $settings = array(
+      'markup' => FALSE,
+      'object' => $contact,
+      'type' => 'crm_core_contact',
+    );
+
+    // There is no need to store in cache data for not saved contacts.
+    if (empty($contact->contact_id)) {
+      return name_format($item, $format, $settings);
+    }
+
+    $cache[$contact->contact_id] = name_format($item, $format, $settings);
+  }
+
+  return $cache[$contact->contact_id];
+}
+
+/**
+ * Check to see if a contact type is locked, can be disabled/deleted.
+ *
+ * @param object $crm_core_contact_type
+ *    A fully loaded $crm_core_contact_type object.
+ *
+ * @param string $op
+ *    The operation being performed on the contact type.
+ *    Possible values include edit / delete.
+ *
+ * @return bool
+ *   TRUE if permission given, FALSE if permission denied.
+ */
+function crm_core_contact_type_permission($crm_core_contact_type, $op = 'edit') {
+
+  // First check drupal permission.
+  if (!user_access('administer contact types')) {
+    return FALSE;
+  }
+
+  switch ($op) {
+    case 'enable':
+      // Only disabled contact type can be enabled.
+      if ((bool) $crm_core_contact_type->disabled) {
+        return TRUE;
+      }
+      else {
+        return FALSE;
+      }
+      break;
+
+    case 'disable':
+      // Locked contact type cannot be disabled.
+      if ((bool) $crm_core_contact_type->locked) {
+        return FALSE;
+      }
+      if ((bool) $crm_core_contact_type->disabled) {
+        return FALSE;
+      }
+      break;
+
+    case 'delete':
+      // If contact type is locked, you can't delete it.
+      if ((bool) $crm_core_contact_type->locked) {
+        return FALSE;
+      }
+      // If contact instance of this contact type exist, you can't delete it.
+      $count = db_query("SELECT count(*) FROM {crm_core_contact} WHERE `type` = :type",
+        array(':type' => $crm_core_contact_type->type))->fetchField();
+      if ($count > 0) {
+        return FALSE;
+      }
+      break;
+
+    case 'edit':
+    default:
+      // If the contact type is locked, you can't edit it.
+      if ((bool) $crm_core_contact_type->locked) {
+        return FALSE;
+      }
+
+      if ((bool) $crm_core_contact_type->disabled) {
+        return FALSE;
+      }
+      break;
+  }
+
+  return TRUE;
+}
+
+/**
+ * Returns an array of contact type objects keyed by type.
+ *
+ * @param bool $active
+ *    TRUE if we only want to select active contact types
+ *    FALSE if we want to select all contact types
+ *
+ * @return array $contact_types
+ *    An numeric index array of contact types (machine names)
+ */
+function crm_core_contact_types($active = FALSE) {
+  // First check the static cache for a contact types array.
+  $contact_types =& drupal_static(__FUNCTION__);
+
+  // If it did not exist, fetch the types now.
+  if ($active && !isset($contact_types['active'])) {
+    $contact_types['active'] = db_query('SELECT * FROM {crm_core_contact_type} WHERE disabled = 0')->fetchAllAssoc('type');
+  }
+  elseif (!$active && !isset($contact_types['all'])) {
+    $contact_types['all'] = db_query('SELECT * FROM {crm_core_contact_type}')->fetchAllAssoc('type');
+  }
+
+  return $active ? $contact_types['active'] : $contact_types['all'];
+}
+
+/**
+ * Returns the human readable name of any or all contact types.
+ *
+ * @param string|null $type
+ *   (optional) Specify the type whose name to return.
+ *
+ * @return
+ *   If $type is specified, a string containing the human
+ *   readable name of the type.
+ *   If $type isn't specified an array containing all human
+ *   readable names keyed on the machine type.
+ */
+function crm_core_contact_type_get_name($type = NULL) {
+  $contact_types = crm_core_contact_types();
+
+  // If type is set return the name if it exists.
+  if (!empty($type)) {
+    if (isset($contact_types[$type])) {
+      return $contact_types[$type]->name;
+    }
+    else {
+      return FALSE;
+    }
+  }
+
+  // Otherwise return a mapping of type => name.
+  foreach ($contact_types as $key => $value) {
+    $contact_types[$key] = $value->name;
+  }
+
+  return $contact_types;
+}
+
+/**
+ * Return a new contact type with initialize fields.
+ *
+ * @param string $type
+ *   The machine-readable name of the contact type. Example: individual
+ *
+ * @return
+ *   A stdClass object with contact type fields
+ */
+function crm_core_contact_type_new($type = '') {
+  $values = array('type' => $type, 'locked' => 1);
+
+  return entity_create('crm_core_contact_type', $values);
+}
+
+/**
+ * Loads a contact type.
+ *
+ * @param string $type
+ *   The machine-readable name of the contact type.
+ */
+function crm_core_contact_type_load($type, $reset = FALSE) {
+  $results = entity_load('crm_core_contact_type', FALSE, array('type' => $type), $reset);
+
+  return reset($results);
+}
+
+/**
+ * Saves a contact type.
+ *
+ * @param object $contact_type
+ *   Contact object.
+ *
+ * @return bool
+ *   FALSE if the insert fails and SAVED_NEW or SAVED_UPDATED
+ *   based on the operation performed, exception in case of error.
+ */
+function crm_core_contact_type_save($contact_type) {
+  return entity_save('crm_core_contact_type', $contact_type);
+}
+
+/**
+ * Delete a contact type.
+ *
+ * @param string $type_id
+ *   Contact type string.
+ */
+function crm_core_contact_type_delete($type_id) {
+  entity_get_controller('crm_core_contact_type')->delete(array($type_id));
+}
+
+/**
+ * Sets the default contact type.
+ *
+ * @param array $info
+ *   An associative array of contact type information
+ *   Possible keys include:
+ *     - type
+ *     - name
+ *     - description
+ *     - custom
+ *     - modified
+ *     - is_new
+ *
+ * @return object
+ *   A default contact type.
+ */
+function crm_core_contact_type_set_defaults($info = array()) {
+  $type =& drupal_static(__FUNCTION__);
+
+  if (!isset($type)) {
+    $type = new stdClass();
+    $type->type = '';
+    $type->name = '';
+    $type->description = '';
+    $type->custom = 0;
+    $type->disabled = 0;
+    $type->locked = 0;
+    $type->modified = 0;
+    $type->is_new = 1;
+  }
+
+  $new_type = clone $type;
+  $info = (array) $info;
+  foreach ($info as $key => $data) {
+    $new_type->$key = $data;
+  }
+  $new_type->orig_type = isset($info['type']) ? $info['type'] : '';
+
+  return $new_type;
+}
+
+/**
+ * Checks to see if a given contact type already exists.
+ *
+ * @param string $type
+ *   The string to match against existing types.
+ *
+ * @return bool
+ *   TRUE or FALSE indicating whether or not the contact type exists.
+ */
+function crm_core_contact_type_validate_unique($type) {
+  // Look for a match of the type.
+  $match_id = db_query('SELECT type FROM {crm_core_contact_type} WHERE type = :type', array(':type' => $type))->fetchField();
+
+  return !$match_id;
+}
+
+/**
+ * Save a contact.
+ *
+ * @param object $contact
+ *   The contact object to be saved
+ *
+ * @return mixed
+ *   FALSE if the save fails and SAVED_NEW or SAVED_UPDATED
+ *   based on the operation performed, exception in case of error.
+ */
+function crm_core_contact_save($contact) {
+  return entity_get_controller('crm_core_contact')->save($contact);
+}
+
+/**
+ * Load a contact.
+ *
+ * @param int $contact_id
+ *   Contact id of the contact to be loaded
+ * @param array $conditions
+ *
+ * @see crm_core_contact_load_multiple()
+ * @return
+ *   A contact object upon successful load
+ *   FALSE if loading fails
+ */
+function crm_core_contact_load($contact_id, $conditions = array()) {
+  if (empty($contact_id)) {
+    return array();
+  }
+
+  if ($contact_id !== FALSE) {
+    $contact_id = array($contact_id);
+  }
+
+  $contacts = crm_core_contact_load_multiple($contact_id, $conditions);
+
+  return $contacts ? reset($contacts) : FALSE;
+}
+
+/**
+ * Load one or more contact.
+ *
+ * @param array $contact_ids
+ *   An array of contact id to be loaded
+ * @param array $conditions (deprecated)
+ *   An associative array of conditions on the base table
+ *   with keys equal to the field name and value equal to
+ *   the value the fields must have
+ *
+ * @return
+ *   An array of entity object indexed by their ids
+ */
+function crm_core_contact_load_multiple($contact_ids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('crm_core_contact', $contact_ids, $conditions, $reset);
+}
+
+/**
+ * Deletes a single contact record.
+ *
+ * The wrapper for delete() method of 'crm_core_contact' controller.
+ *
+ * @param int $contact_id
+ *   The contact id.
+ *
+ * @return
+ *   TRUE or throw exception and write it to watchdog.
+ */
+function crm_core_contact_delete($contact_id) {
+  return crm_core_contact_delete_multiple(array($contact_id));
+}
+
+/**
+ * Delete multiple contact records.
+ *
+ * The wrapper for delete() method of 'crm_core_contact' controller.
+ *
+ * @param array $contact_ids
+ *   Flat array of contact ids like array(5, 6, 7).
+ *
+ * @return
+ *   TRUE or throw exception and write it to watchdog.
+ */
+function crm_core_contact_delete_multiple($contact_ids = array()) {
+  return entity_get_controller('crm_core_contact')->delete($contact_ids);
+}
+
+/**
+ * View a single contact record.
+ */
+function crm_core_contact_view($contact, $view_mode = 'full') {
+  $langcode = $GLOBALS['language_content']->language;
+  module_invoke_all('entity_view', $contact, 'crm_core_contact', $view_mode, $langcode);
+  $build = $contact->view($view_mode, $langcode);
+
+  return $build;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function crm_core_contact_theme($existing, $type, $theme, $path) {
+  return array(
+    'crm_core_contact_merge_table' => array(
+      'render element' => 'table',
+      'file' => 'theme/crm_core_contact.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Title callback for a contact.
+ *
+ * @param object $contact
+ *   Contact object.
+ *
+ * @return String
+ *   Returns the string for the contact.
+ */
+function crm_core_contact_title($contact) {
+  return entity_label('crm_core_contact', $contact);
+}
+
+/**
+ * Fetch revision list for a contact.
+ *
+ * @param object $contact
+ *   Contact object.
+ *
+ * @return array
+ *   An associative array of revision information for a given contact.
+ *   Includes the following keys:
+ *     - vid
+ *     - log
+ *     - created
+ *     - changed
+ *     - uid
+ */
+function crm_core_contact_revision_list($contact) {
+  return db_select('crm_core_contact_revision', 'rev')
+    ->fields('rev', array('vid', 'log', 'created', 'changed', 'uid'))
+    ->condition('contact_id', $contact->contact_id)
+    ->execute()
+    ->fetchAllAssoc('vid');
+}
+
+/**
+ * Revert a contact to a previous revision.
+ *
+ * @param object $contact
+ *   Contact object.
+ * @param int $vid
+ *   Revision id.
+ *
+ * @return bool
+ *   TRUE upon success, FALSE upon failure
+ */
+function crm_core_contact_revert($contact, $vid) {
+  return entity_get_controller('crm_core_contact')->revertContact($contact, $vid);
+}
+
+/**
+ * Implements hook_feeds_plugins().
+ */
+function crm_core_contact_feeds_plugins() {
+  $info['CRMFeedsContactProcessor'] = array(
+    'name' => 'CRM Core Contact processor',
+    'description' => 'Create and update CRM Core Contacts.',
+    'help' => 'Create and update CRM Core Contacts from parsed content.',
+    'handler' => array(
+      'parent' => 'FeedsProcessor',
+      'class' => 'CRMFeedsContactProcessor',
+      'file' => 'CRMFeedsContactProcessor.inc',
+      'path' => drupal_get_path('module', 'crm_core_contact') . '/includes',
+    ),
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_file_download_access().
+ */
+function crm_core_contact_file_download_access($file_item, $entity_type, $entity) {
+  if ($entity_type == 'crm_core_contact') {
+    return crm_core_contact_access('view', $entity);
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ *
+ * Lets the system know where our task and task_handler plugins are.
+ */
+function crm_core_contact_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'page_manager' && $plugin_type == 'tasks') {
+    return 'plugins/' . $plugin_type;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function crm_core_contact_form_field_ui_field_delete_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['entity_type']['#value'] == 'crm_core_contact'
+    && $form['field_name']['#value'] == 'contact_name') {
+    $warning = 'Think twice before hit "Delete" button. If you delete this'
+      . ' field, your CRM installation will most likely BREAK!';
+    drupal_set_message($warning, 'error');
+  }
+}
+
+/**
+ * Implements hook_action_info().
+ *
+ * Adds actions:
+ *  - merge 2 or more contacts into household contact(non destructive)
+ *  - merge 2 or more contacts(destructive)
+ *  - send email to contact
+ */
+function crm_core_contact_action_info() {
+  return array(
+    'crm_core_contact_join_into_household_action' => array(
+      'type' => 'crm_core_contact',
+      'label' => t('Join into household'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+      'aggregate' => TRUE,
+    ),
+    'crm_core_contact_merge_contacts_action' => array(
+      'type' => 'crm_core_contact',
+      'label' => t('Merge contacts'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+      'aggregate' => TRUE,
+    ),
+    'crm_core_contact_send_email_action' => array(
+      'type' => 'crm_core_contact',
+      'label' => t('Send e-mail to contacts'),
+      'configurable' => TRUE,
+      'triggers' => array('any'),
+    ),
+  );
+}
+
+/**
+ * Form builder for creating a household.
+ */
+function crm_core_contact_join_into_household_action_form($context, &$form_state = array()) {
+  module_load_include('inc', 'crm_core_contact_ui', 'crm_core_contact_ui.pages');
+  $household = entity_create('crm_core_contact', array('type' => 'household'));
+  $form = crm_core_contact_ui_form(array(), $form_state, $household);
+
+  return $form;
+}
+
+/**
+ * Validate handler for action configuration form.
+ */
+function crm_core_contact_join_into_household_action_validate($form, $form_state) {
+  $household =& $form_state['crm_core_contact'];
+  field_attach_form_validate('crm_core_contact', $household, $form, $form_state);
+}
+
+/**
+ * Submit handler for action configuration form.
+ */
+function crm_core_contact_join_into_household_action_submit($form, $form_state) {
+  $household =& $form_state['crm_core_contact'];
+  field_attach_submit('crm_core_contact', $household, $form, $form_state);
+
+  return array('household' => $household);
+}
+
+/**
+ * Creates household with specified members.
+ */
+function crm_core_contact_join_into_household_action($selected_contacts, $context) {
+  $household = $context['household'];
+  // Saving household only now because user can click "Cancel" on confirmation
+  // page(if he/she will notice that selected wrong contacts).
+  $household->uid = $GLOBALS['user']->uid;
+  crm_core_contact_save($household);
+  $relation_type = 'crm_member';
+  foreach ($selected_contacts as $member) {
+
+    if ($member->type == 'individual') {
+      $endpoints = array(
+        0 => array(
+          'entity_type' => 'crm_core_contact',
+          'entity_id' => $member->contact_id,
+        ),
+        1 => array(
+          'entity_type' => 'crm_core_contact',
+          'entity_id' => $household->contact_id,
+        ),
+      );
+      $relation = relation_create($relation_type, $endpoints);
+      relation_save($relation);
+    }
+  }
+}
+
+/**
+ * Form builder for merging contacts.
+ */
+function crm_core_contact_merge_contacts_action_form($context, &$form_state) {
+
+  $form = array();
+  $selected_contacts = crm_core_contact_load_multiple($form_state['selection']);
+  // Lets check contacts type, it should be unique.
+  $contact_types = array();
+  foreach ($selected_contacts as $contact) {
+    $contact_types[] = $contact->type;
+  }
+  $contact_types = array_unique($contact_types);
+  // All selected contacts have same type.
+  if (count($contact_types) != 1) {
+    $message = 'You should select contacts of one type to be able to merge them!';
+    drupal_set_message(t($message), 'error');
+    drupal_goto('crm-core/contact');
+  }
+  else {
+    $form['table'] = array(
+      '#theme' => 'crm_core_contact_merge_table',
+      '#tree' => TRUE,
+      '#selected' => $form_state['selection'],
+    );
+    // Creating header.
+    $header['field_name'] = array('#markup' => t('Field name\\Contact'));
+    foreach ($selected_contacts as $contact) {
+      $header[$contact->contact_id] = array(
+        '#type' => 'radio',
+        '#title' => check_plain($contact->label()),
+      );
+    }
+    $form['table']['contact_id'] = $header;
+    $field_instances = field_info_instances('crm_core_contact', array_shift($contact_types));
+    foreach ($field_instances as $field_name => $field_instance) {
+      $form['table'][$field_name] = array();
+      $row =& $form['table'][$field_name];
+      $row['field_name'] = array('#markup' => check_plain($field_instance['label']));
+      foreach ($selected_contacts as $contact) {
+        $field_value = array('#markup' => '');
+        if (isset($contact->{$field_name}[LANGUAGE_NONE][0])) {
+          $item = $contact->{$field_name}[LANGUAGE_NONE][0];
+          $field_value_render = field_view_value('crm_core_contact', $contact, $field_name, $item);
+          $field_value_rendered = drupal_render($field_value_render);
+          // This check is a must because some fields can provide empty markup.
+          if (!empty($field_value_rendered)) {
+            $field_value = array(
+              '#type' => 'radio',
+              '#title' => $field_value_rendered,
+            );
+          }
+        }
+        $row[$contact->contact_id] = $field_value;
+      }
+    }
+  }
+
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'crm_core_contact') . '/js/merge_table.js',
+  );
+
+  return $form;
+}
+
+/**
+ * Validate handler for action configuration form.
+ */
+function crm_core_contact_merge_contacts_action_validate($form, $form_state) {
+  $table = $form_state['values']['table'];
+  $primary_contact = array_filter($table['contact_id']);
+  if (empty($primary_contact)) {
+    form_set_error('table][contact_id', t('You must select primary contact in table header!'));
+  }
+  if (count($primary_contact) > 1) {
+    form_set_error('table][contact_id', t('Supplied more than one primary contact!'));
+  }
+}
+
+/**
+ * Submit handler for action configuration form.
+ */
+function crm_core_contact_merge_contacts_action_submit($form, $form_state) {
+  $table = $form_state['values']['table'];
+  $tmp = array_keys(array_filter($table['contact_id']));
+  $data = array('contact_id' => array_shift($tmp));
+  unset($table['contact_id']);
+  foreach ($table as $field_name => $selection) {
+    $tmp = array_keys(array_filter($selection));
+    $data[$field_name] = array_shift($tmp);
+  }
+
+  return array('data' => array_filter($data));
+}
+
+/**
+ * Merge contacts.
+ */
+function crm_core_contact_merge_contacts_action($selected_contacts, $context) {
+  $data = $context['data'];
+  $primary_contact = $selected_contacts[$data['contact_id']];
+  $pcid = $primary_contact->contact_id;
+  $pcw = entity_metadata_wrapper('crm_core_contact', $primary_contact);
+  unset($selected_contacts[$data['contact_id']]);
+  unset($data['contact_id']);
+  $wrappers = array();
+  foreach ($selected_contacts as $cid => $contact) {
+    $wrappers[$cid] = entity_metadata_wrapper('crm_core_contact', $contact);
+  }
+  // Updating primary contact fields from other selected contacts.
+  foreach ($data as $field_name => $contact_id) {
+    if ($pcid != $contact_id) {
+      $pcw->{$field_name}->set($wrappers[$contact_id]->{$field_name}->value());
+    }
+  }
+  $pcw->save();
+  foreach (array_keys($selected_contacts) as $contact_id) {
+    // Creating path aliases for contacts that will be deleted.
+    $path = array(
+      'alias' => 'crm-core/contact/' . $contact_id,
+      'source' => 'crm-core/contact/' . $pcid,
+    );
+    path_save($path);
+
+    if (module_exists('crm_core_activity')) {
+      // Replacing participant in existing activities.
+      $query = new EntityFieldQuery();
+      $activities = $query->entityCondition('entity_type', 'crm_core_activity')
+        ->fieldCondition('field_activity_participants', 'target_id', $contact_id)
+        ->execute();
+      if (is_array($activities) && isset($activities['crm_core_activity'])) {
+        foreach (array_keys($activities['crm_core_activity']) as $activity_id) {
+          $aw = entity_metadata_wrapper('crm_core_activity', $activity_id);
+          foreach ($aw->field_activity_participants->getIterator() as $delta => $cw) {
+            if ($cw->getIdentifier() == $contact_id) {
+              $aw->field_activity_participants[$delta]->set($pcid);
+            }
+          }
+          $aw->save();
+        }
+      }
+    }
+
+    if (module_exists('relation')) {
+      // Replacing existing relations for contacts been deleted with new ones.
+      $entity_type = 'crm_core_contact';
+      $relations = relation_query($entity_type, $contact_id)->execute();
+      foreach ($relations as $relation_info) {
+        $rid = $relation_info->rid;
+        $relation_wrapper = entity_metadata_wrapper('relation', $rid);
+        $bundle = $relation_wrapper->getBundle();
+        $column = 'endpoints_entity_id';
+        $field_info = field_info_field('endpoints');
+        $tables = array();
+        $tables[] = _field_sql_storage_tablename($field_info);
+        $tables[] = _field_sql_storage_revision_tablename($field_info);
+        foreach ($tables as $table) {
+          // Replacing contact ID with primary contact ID in endpoints field
+          // tables. Doing this with direct query because different relation
+          // types can have slightly different endpoints settings which is
+          // near to impossible to recreate.
+          db_update($table)
+            ->fields(array($column => $pcid))
+            ->condition('bundle', $bundle)
+            ->condition('entity_id', $rid)
+            ->condition('endpoints_entity_type', $entity_type)
+            ->condition($column, $contact_id)
+            ->execute();
+        }
+        cache_clear_all('field:relation:' . $rid, 'cache_field');
+      }
+    }
+  }
+
+  module_invoke_all('crm_core_contact_merge_contacts', $primary_contact, $selected_contacts);
+  crm_core_contact_delete_multiple(array_keys($selected_contacts));
+  $count = count($selected_contacts);
+  $singular = '%contacts contact merged to %dest.';
+  $plural = '%contacts contacts merged to %dest.';
+  $contacts_label = array();
+  foreach ($selected_contacts as $contact) {
+    $contacts_label[] = $contact->label();
+  }
+  $message = format_plural($count, $singular, $plural, array(
+    '%contacts' => implode(', ', $contacts_label),
+    '%dest' => $primary_contact->label(),
+  ));
+  drupal_set_message($message);
+}
+
+/**
+ * Field base settings for 'contact_name' field.
+ */
+function _crm_core_contact_contact_name_base() {
+
+  $field_base = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'contact_name',
+    'foreign keys' => array(),
+    'indexes' => array(
+      'family' => array(
+        0 => 'family',
+      ),
+      'given' => array(
+        0 => 'given',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'name',
+    'settings' => array(
+      'allow_family_or_given' => 0,
+      'autocomplete_separator' => array(
+        'credentials' => ', ',
+        'family' => ' -',
+        'generational' => ' ',
+        'given' => ' -',
+        'middle' => ' -',
+        'title' => ' ',
+      ),
+      'autocomplete_source' => array(
+        'credentials' => array(),
+        'family' => array(),
+        'generational' => array(
+          'generational' => 0,
+        ),
+        'given' => array(),
+        'middle' => array(),
+        'title' => array(
+          'title' => 'title',
+        ),
+      ),
+      'components' => array(
+        'credentials' => 'credentials',
+        'family' => 'family',
+        'generational' => 'generational',
+        'given' => 'given',
+        'middle' => 'middle',
+        'title' => 'title',
+      ),
+      'generational_options' => '-- --
+Jr.
+Sr.
+I
+II
+III
+IV
+V
+VI
+VII
+VIII
+IX
+X',
+      'labels' => array(
+        'credentials' => 'Credentials',
+        'family' => 'Last',
+        'generational' => 'Generational',
+        'given' => 'First',
+        'middle' => 'Middle',
+        'title' => 'Title',
+      ),
+      'max_length' => array(
+        'credentials' => 255,
+        'family' => 63,
+        'generational' => 15,
+        'given' => 63,
+        'middle' => 127,
+        'title' => 31,
+      ),
+      'minimum_components' => array(
+        'credentials' => 0,
+        'family' => 'family',
+        'generational' => 0,
+        'given' => 'given',
+        'middle' => 0,
+        'title' => 0,
+      ),
+      'sort_options' => array(
+        'generational' => 0,
+        'title' => 'title',
+      ),
+      'title_options' => '-- --
+Mr.
+Mrs.
+Miss
+Ms.
+Dr.
+Prof.',
+    ),
+    'translatable' => 0,
+    'type' => 'name',
+  );
+
+  return $field_base;
+}
+
+/**
+ * Field instance settings for 'contact_name' field.
+ */
+function _crm_core_contact_contact_name_instance($type, $label) {
+
+  $instance = array(
+    'bundle' => $type,
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'name',
+        'settings' => array(
+          'format' => 'default',
+          'markup' => 0,
+          'multiple' => 'default',
+          'multiple_and' => 'text',
+          'multiple_delimiter' => ', ',
+          'multiple_delimiter_precedes_last' => 'never',
+          'multiple_el_al_first' => 1,
+          'multiple_el_al_min' => 3,
+          'output' => 'default',
+        ),
+        'type' => 'name_formatter',
+      ),
+    ),
+    'entity_type' => 'crm_core_contact',
+    'field_name' => 'contact_name',
+    'label' => $label,
+    'required' => 0,
+    'settings' => array(
+      'component_css' => '',
+      'component_layout' => 'default',
+      'components' => array(
+        'credentials' => 0,
+        'family' => 0,
+        'generational' => 0,
+        'given' => 0,
+        'middle' => 0,
+        'title' => 0,
+      ),
+      'credentials_inline' => 0,
+      'field_type' => array(
+        'credentials' => 'text',
+        'family' => 'text',
+        'generational' => 'select',
+        'given' => 'text',
+        'middle' => 'text',
+        'title' => 'select',
+      ),
+      'generational_field' => 'select',
+      'inline_css' => array(
+        'credentials' => '',
+        'family' => '',
+        'generational' => '',
+        'given' => '',
+        'middle' => '',
+        'title' => '',
+      ),
+      'labels' => array(
+        'credentials' => '',
+        'family' => '',
+        'generational' => '',
+        'given' => '',
+        'middle' => '',
+        'title' => '',
+      ),
+      'minimum_components' => array(
+        'credentials' => 0,
+        'family' => 0,
+        'generational' => 0,
+        'given' => 0,
+        'middle' => 0,
+        'title' => 0,
+      ),
+      'override_format' => 'default',
+      'show_component_required_marker' => 0,
+      'size' => array(
+        'credentials' => 35,
+        'family' => 20,
+        'generational' => 5,
+        'given' => 20,
+        'middle' => 20,
+        'title' => 6,
+      ),
+      'title_display' => array(
+        'credentials' => 'description',
+        'family' => 'description',
+        'generational' => 'description',
+        'given' => 'description',
+        'middle' => 'description',
+        'title' => 'description',
+      ),
+      'title_field' => 'select',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'name',
+      'settings' => array(),
+      'type' => 'name_widget',
+    ),
+  );
+
+  $title_display_settings = array(
+    'credentials' => 'none',
+    'family' => 'description',
+    'generational' => 'none',
+    'given' => 'none',
+    'middle' => 'none',
+    'title' => 'none',
+  );
+
+  switch ($type) {
+    case 'household':
+      $instance['settings']['components']['family'] = 'family';
+      $instance['settings']['labels']['family'] = sprintf('%s name', $label);
+      $instance['settings']['minimum_components']['family'] = 'family';
+      $instance['settings']['title_display'] = $title_display_settings;
+      break;
+
+    case 'organization':
+      $instance['settings']['components']['family'] = 'family';
+      $instance['settings']['labels']['family'] = sprintf('%s name', $label);
+      $instance['settings']['minimum_components']['family'] = 'family';
+      $instance['settings']['title_display'] = $title_display_settings;
+
+      break;
+  }
+
+  return $instance;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ *
+ * Initialize new contact type with 'contact_name' field which CRM Core heavily
+ * rely on.
+ */
+function crm_core_contact_crm_core_contact_type_insert($contact_type) {
+  $info = field_info_field('contact_name');
+  if (empty($info)) {
+    field_create_field(_crm_core_contact_contact_name_base());
+  }
+
+  $info_instance = field_info_instance('crm_core_contact', 'contact_name', $contact_type->type);
+  if (empty($info_instance)) {
+    field_create_instance(_crm_core_contact_contact_name_instance($contact_type->type, $contact_type->name));
+  }
+}
+
+/**
+ * Form builder for 'crm_core_contact_send_email_action' action.
+ */
+function crm_core_contact_send_email_action_form($context, &$form_state) {
+
+  $form = array();
+  $form['subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#description' => t('The subject of the message.'),
+    '#default_value' => isset($form_state['values']['subject']) ? $form_state['values']['subject'] : '',
+  );
+
+  $form['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message'),
+    '#description' => t('The message that should be sent.'),
+    '#default_value' => isset($form_state['values']['message']) ? $form_state['values']['message'] : '',
+  );
+
+  // Display a list of tokens that can be used in the message.
+  if (module_exists('token')) {
+    // Lets extend description of message field.
+    $form['message']['#description'] .= ' ';
+    $form['message']['#description'] .= t('You may include placeholders here to represent data that will be different each time message is sent. You can find list of available placeholder in the table below.');
+
+    // We must load token values here to show them on the options form.
+    drupal_add_js(drupal_get_path('module', 'token') . '/token.js');
+    drupal_add_css(drupal_get_path('module', 'token') . '/token.css');
+    drupal_add_library('token', 'treeTable');
+
+    $form['tokens'] = array(
+      '#theme' => 'token_tree',
+      '#token_types' => array(token_get_entity_mapping('entity', 'crm_core_contact')),
+      '#dialog' => FALSE,
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Submit handler for 'crm_core_contact_send_email_action' action.
+ */
+function crm_core_contact_send_email_action_submit($form, $form_state) {
+  $subject = $form_state['values']['subject'];
+  $message = $form_state['values']['message'];
+
+  return array('subject' => $subject, 'message' => $message);
+}
+
+/**
+ * Send e-mail to contacts action.
+ */
+function crm_core_contact_send_email_action($contact, $context) {
+
+  if (module_exists('token')) {
+    // Token replacement preparations.
+    $data = array(
+      token_get_entity_mapping('entity', 'crm_core_contact') => $contact,
+    );
+    $options = array(
+      // Remove tokens that could not be found.
+      'clear' => TRUE,
+    );
+    $subject = token_replace($context['subject'], $data, $options);
+    $message = token_replace($context['message'], $data, $options);
+  }
+  else {
+    $subject = $context['subject'];
+    $message = $context['message'];
+  }
+
+  $contact_wrapper = entity_metadata_wrapper('crm_core_contact', $contact);
+  $email = $contact_wrapper->primary_email->value();
+  if (!empty($email)) {
+    // Getting sender email.
+    $account = $GLOBALS['user'];
+    $from = empty($account->mail) ? NULL : $account->mail;
+    if (module_exists('crm_core_user_sync')) {
+      $sender = crm_core_user_sync_get_contact_from_uid($account->uid);
+      if ($sender) {
+        $sender_wrapper = entity_metadata_wrapper('crm_core_contact', $sender);
+        $sender_mail = $sender_wrapper->primary_email->value();
+        if (!empty($sender_mail)) {
+          $from = $sender_mail;
+        }
+      }
+    }
+
+    $params = array(
+      'subject' => $subject,
+      'message' => $message,
+      'crm_core_contact' => $contact_wrapper,
+    );
+    drupal_mail('crm_core_contact', 'crm-core-contact-send-email-action', $email, language_default(), $params, $from);
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function crm_core_contact_mail($key, &$message, $params) {
+  $message['subject'] = $params['subject'];
+  $message['body'][] = $params['message'];
+}
+
+/**
+ * Implements hook_services_resources().
+ */
+function crm_core_contact_services_resources() {
+  // @todo Check access to resources.
+  $resources = array(
+    '#api_version' => 3002,
+    'crm_core_contact' => array(
+      'operations' => array(
+        'retrieve' => array(
+          'file' => array(
+            'type' => 'inc',
+            'module' => 'crm_core_contact',
+            'name' => 'includes/crm_core_contact_resource',
+          ),
+          'callback' => 'crm_core_contact_load',
+          'args' => array(
+            array(
+              'name' => 'contact_id',
+              'optional' => FALSE,
+              'source' => array('path' => 0),
+              'type' => 'int',
+              'description' => t('The contact_id of the contact to get.'),
+            ),
+          ),
+          'access callback' => '_crm_core_contact_resource_access',
+          'access arguments' => array('view'),
+          'access arguments append' => TRUE,
+        ),
+        'create' => array(
+          'file' => array(
+            'type' => 'inc',
+            'module' => 'crm_core_contact',
+            'name' => 'includes/crm_core_contact_resource',
+          ),
+          'callback' => '_crm_core_contact_resource_create',
+          'args' => array(
+            array(
+              'name' => 'crm_core_contact',
+              'optional' => FALSE,
+              'source' => 'data',
+              'description' => t('The crm_core_contact data to create.'),
+              'type' => 'array',
+            ),
+          ),
+          'access callback' => '_crm_core_contact_resource_access',
+          'access arguments' => array('create'),
+          'access arguments append' => TRUE,
+        ),
+        'update' => array(
+          'file' => array(
+            'type' => 'inc',
+            'module' => 'crm_core_contact',
+            'name' => 'includes/crm_core_contact_resource',
+          ),
+          'callback' => '_crm_core_contact_resource_update',
+          'args' => array(
+            array(
+              'name' => 'contact_id',
+              'optional' => FALSE,
+              'source' => array('path' => 0),
+              'type' => 'int',
+              'description' => t('The contact_id of the contact to get.'),
+            ),
+            array(
+              'name' => 'crm_core_contact',
+              'optional' => FALSE,
+              'source' => 'data',
+              'description' => t('The crm_core_contact data to create.'),
+              'type' => 'array',
+            ),
+          ),
+          'access callback' => '_crm_core_contact_resource_access',
+          'access arguments' => array('update'),
+          'access arguments append' => TRUE,
+        ),
+        'delete' => array(
+          'file' => array(
+            'type' => 'inc',
+            'module' => 'crm_core_contact',
+            'name' => 'includes/crm_core_contact_resource',
+          ),
+          'callback' => 'crm_core_contact_delete',
+          'args' => array(
+            array(
+              'name' => 'contact_id',
+              'optional' => FALSE,
+              'source' => array('path' => 0),
+              'type' => 'int',
+              'description' => t('The contact_id of the contact to delete.'),
+            ),
+          ),
+          'access callback' => '_crm_core_contact_resource_access',
+          'access arguments' => array('delete'),
+          'access arguments append' => TRUE,
+        ),
+        'index' => array(
+          'file' => array(
+            'type' => 'inc',
+            'module' => 'crm_core_contact',
+            'name' => 'includes/crm_core_contact_resource',
+          ),
+          'callback' => '_crm_core_contact_resource_index',
+          'args' => array(
+            array(
+              'name' => 'page',
+              'optional' => TRUE,
+              'type' => 'int',
+              'description' => 'The zero-based index of the page to get, defaults to 0.',
+              'default value' => 0,
+              'source' => array('param' => 'page'),
+            ),
+            array(
+              'name' => 'pagesize',
+              'optional' => TRUE,
+              'type' => 'int',
+              'description' => 'Number of records to get per page, defaults to 25.',
+              'default value' => 25,
+              'source' => array('param' => 'pagesize'),
+            ),
+          ),
+          'access callback' => '_crm_core_contact_resource_access',
+          'access arguments' => array('view'),
+        ),
+      ),
+    ),
+  );
+
+  return $resources;
+}
+
+/**
+ * Helper to check uuid fields existence.
+ */
+function _crm_core_contact_check_uuid() {
+  $schema_changed = FALSE;
+  module_load_include('install', 'uuid', 'uuid');
+  $field = uuid_schema_field_definition();
+  if (!db_field_exists('crm_core_contact', 'uuid')) {
+    db_add_field('crm_core_contact', 'uuid', $field);
+    db_add_index('crm_core_contact', 'uuid', array('uuid'));
+    $schema_changed = TRUE;
+  }
+  if (!db_field_exists('crm_core_contact_revision', 'vuuid')) {
+    db_add_field('crm_core_contact_revision', 'vuuid', $field);
+    db_add_index('crm_core_contact_revision', 'vuuid', array('vuuid'));
+    $schema_changed = TRUE;
+  }
+  if ($schema_changed) {
+    drupal_get_schema(NULL, TRUE);
+  }
+}
+
+/**
+ * Implements hook_uuid_sync().
+ */
+function crm_core_contact_uuid_sync() {
+  _crm_core_contact_check_uuid();
+}
+
+/**
+ * Implements hook_entity_dependencies().
+ *
+ * Adding contact activities and relationships as dependencies.
+ */
+function crm_core_contact_entity_dependencies($entity, $entity_type) {
+  $dependencies = array();
+  if ($entity_type == 'crm_core_contact') {
+    // Lets check activities.
+    if (module_exists('crm_core_activity')) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'crm_core_activity');
+      $query->fieldCondition('field_activity_participants', 'target_id', $entity->contact_id);
+      $result = $query->execute();
+      if (!empty($result['crm_core_activity'])) {
+        foreach (array_keys($result['crm_core_activity']) as $activity_id) {
+          $dependencies[] = array('type' => 'crm_core_activity', 'id' => $activity_id);
+        }
+      }
+    }
+    // Lets check relations.
+    if (module_exists('relation')) {
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'relation');
+      $query->fieldCondition('endpoints', 'entity_id', $entity->contact_id);
+      $result = $query->execute();
+      if (!empty($result['relation'])) {
+        foreach (array_keys($result['relation']) as $rid) {
+          $dependencies[] = array('type' => 'relation', 'id' => $rid);
+        }
+      }
+    }
+  }
+
+  return $dependencies;
+}

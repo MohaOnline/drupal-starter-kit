@@ -1,0 +1,56 @@
+/** Mapping page **/
+#mapping-fieldset-wrapper {
+  margin-bottom: 20px;
+}
+#entity-form-fieldset-wrapper .form-type-select {
+  display: inline;
+}
+#entity-form-fieldset-wrapper .form-type-select label {
+  display: inline;
+}
+#entity-form-fieldset-wrapper select {
+  width: 150px;
+}
+.entity-fieldset-wrapper {
+  border: none;
+  border-bottom: 1px solid #ccc;
+  padding: 20px 0;
+}
+.entity-fieldset-wrapper h3 {
+  float: left;
+  margin: 5px 10px 5px 0;
+}
+
+/** Settings page **/
+#crm-core-data-import-settings-page .form-type-item label {
+  font-size: 20px;
+  font-weight: normal;
+}
+#crm-core-data-import-settings-page .form-item-relations-relation-type label,
+#crm-core-data-import-settings-page .form-item-relations-relation-type,
+#crm-core-data-import-settings-page .form-item-references-reference-type label,
+#crm-core-data-import-settings-page .form-item-references-reference-type,
+#crm-core-data-import-settings-page .form-item-user-contact-user-type label,
+#crm-core-data-import-settings-page .form-item-user-contact-user-type {
+  display: inline;
+}
+#crm-core-data-import-settings-page .settings-fieldset-wrapper {
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 30px;
+}
+#crm-core-data-import-settings-page  .settings-fieldset {
+  padding: 0;
+  border: 0;
+}
+#crm-core-data-import-settings-page  .settings-fieldset .form-item {
+  display: inline;
+}
+#crm-core-data-import-settings-page  #edit-relations .form-type-machine-name label {
+  display: none;
+}
+
+/** Source mapping form **/
+.source-mapping-table td {
+  width: 30%;
+}

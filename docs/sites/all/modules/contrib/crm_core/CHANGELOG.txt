@@ -1,0 +1,500 @@
+CRM Core 7.x-1.0, 2017-02-16
+-------------------------------------------------------------
+- CRMFeedsActivityProcessor::expire() incompatible with FeedsProcessor::expire.
+- Fixed content module missing warning in Drupal 7.50.
+- Fixed Fatal error: Call to undefined method stdClass::label() when migrating contacts.
+- CRMFeedsActivityProcessor does not expose all fields as targets.
+- Strict Warnings in Feeds Integration.
+- CRMFeedsContactProcessor does not expose all fields as targets.
+- Moved devel integration code to separate project crm_core_devel.
+
+CRM Core 7.x-1.0-rc1, 2016-01-23
+----------------------------
+- Added "Send email to participants" action for activities.
+- CRM Core Report cleanup.
+- Fixed issue with transferring relations on contacts merge.
+- Move linked imports UI to the settings screen.
+- Fixed documentation.
+- Added views handler to provide default argument contact ID from current user.
+- Added ability to skip node access checks when querying for related entities.
+- Contact and activity templates are not used.
+- Show only enabled themes on settings page.
+- Replaced menu_rebuild() call with a marker that menu needs to be rebuilt.
+- Fixed typo in array key.
+- Added check for data received from CiviCRM API.
+- Fixed handling CiviCRM field collections.
+- Fixed fatal error in data import.
+- Fixed check that relation between contacts exists.
+- Added ability to alter entity list on rewind.
+- Preserve data loss on contact/activity type being deleted.
+- Preserve data loss on contact/activity type being deleted(features revert).
+- Added crm_core_report_register_alter hook to API docs.
+- Added convertion of primary/first address field related data.
+- Added update of changed property on activity save.
+- Added sender email to "Send e-mail to contacts" action.
+- Added wrapped contact to mail params.
+- PostgreSQL compatibility problem on activation.
+- Improved contact label handling.
+- Code should not call Drupal API functions outside of a function body. https://www.drupal.org/node/2597716.
+- Fixed issues with contact autocomplete on PostgreSQL and improved label handling performance.
+- Improved contact search by name handling.
+- Fixed incorrect label cache population for not saved contacts.
+- Removed unused param from name_format() call.
+- By RoSk0, bechtold: Fill in contact "name" field.
+- Bundle permissions not working correctly.
+
+CRM Core 7.x-0.980, 2014-11-14
+------------------------------
+- Do not use t() in hook_menu.
+- Remove unnecessary autocomplete code.
+- By techsoldaten: creating data import modules.
+- By techsoldaten: adding structure to data import module.
+- By techsoldaten: more structure for data import.
+- Added paths to basic pages.
+- Added table for CRM Core data import.
+- Added data import page.
+- Added source selection page. Added plugins for source.
+- Added CiviCRM plugin to info file.
+- Added skeleton dynamic migration class.
+- Base implementation for CRMCoreDataImport controller.
+- Implementation for source config form.
+- Added title callback for source settings page.
+- Added next and previous buttons.
+- Added title callback for field mapping page.
+- Implementation of source fields.
+- Implementation of destination plugins.
+- Initial implementation for mapping form.
+- Added entities and fields to mapping form.
+- Refactoring and improving of mapping form.
+- Added user destination plugin.
+- Implementation of saving to db.
+- Moved configuration pages to admin.inc.
+- Added ctools plugins for settings page.
+- Got rid of the unnecessary hooks implementation.
+- Implementation of relations plugin.
+- Implementation of the removal.
+- Fixed adding of new elements.
+- Updated comments and .info file.
+- Added link to settings form.
+- Improved generating options for relations select.
+- Initial implementation for migration.
+- Updated dependencies for migrate module.
+- Implementation the run of migration for contacts and nodes.
+- Implementation to use mapping from settings.
+- Added primary key for source.
+- Added batch for migration process and work with multiple entities.
+- Implementation of relations.
+- Added hooks.
+- Added plugin for references settings.
+- Added remove button.
+- Initial implementation of references.
+- Added styles for mapping form.
+- Added intial support for multiple bundles.
+- Improved support for multiple bundles on the mapping form.
+- Updated migration to work with multiple bundles. Updated relations plugin.
+- Updated references plugin to work with multiple bundles.
+- Added delimiter to settings form for CSV plugin.
+- Fixed migration for one destination.
+- Fixed default values in form for settings of plugin.
+- Fixed tooltip position.
+- Fixed action buttons position on contact and activity forms.
+- Implementation of move up and move down buttons.
+- Implementation of remove button for each field.
+- Styles for settings page.
+- Implementation of remove button for settings forms.
+- Added hook for preparing entity before saving.
+- Fixed fatal error when references value added to contact entity.
+- Improved code for references values.
+- Improved handling for references. Added implementation for activities.
+- Exposed contact creator to views.
+- Unified naming.
+- Exposed activity creator to views.
+- Unified activity naming.
+- Fixed some wording.
+- Implementation of user migration.
+- Fixed import for crm_core_activity.
+- Added reference for node author.
+- Fixed error with duplicates of controllers in settings.
+- Converted plugins to use Batch API.
+- Added real metrics to data import dashboard.
+- Replaced ctools_dropbutton with crm_core_ui_ctools_dropbutton.
+- Need a way to prevent creating contacts automatically when syncing between sites.
+- Added plugin to manage settings for user contacts.
+- Implementation of preImport method. Implementation of creating an user contact.
+- Implementation of contact form in plugin.
+- Implementation of crm_core_user_sync relation.
+- Code refactoring and cleanup.
+- Fixed fatal error with empty lastimport property.
+- Fixed default value for primary fields.
+- Added check of match engine to prevent creation duplicates of contacts.
+- Fixed notices on the settings page.
+- Implementation of removing entity from settings.
+- Improved removing entity from settings.
+- Disabled CiviCRM importer since it is empty for now.
+- Set default importer.
+- Got rid of the empty optional methods.
+- Removed unused operation.
+- Initial implementation for features integration.
+- Added machine name of importer.
+- Features integration based on machine name.
+- Moved settings for source to separate field. Improved features integration.
+- Prevent errors if source is not configured.
+- Increased sourcekey size to 32.
+- Harmonized destination labels.
+- Fixed remove button to remove correct field.
+- Fixed issue with unavailable items.
+- Fixed issue with primary field.
+- Fixed display of relations.
+- Merge branch '7.x-0.x' into import.
+- Remove migrate table and migrate settings when import is deleted.
+- Implementation of rollback for all registered migrations.
+- Added deregister operation.
+- Removed registration of migration on the dashboard page.
+- Allow mapping of multi-part fields.
+- Updated styles for settings page.
+- Cleanup code. Misc fixes.
+- Display shorter field names for data import.
+- Added implementation to display mapping form as table.
+- Fixed 'Manage fields' link broken for CRM Core Contacts.
+- Added field for default value.
+- Implementation of setting default values.
+- Removed unused styles.
+- Added page manger support for activities.
+- Fixed error on mapping form.
+- Added message to finished callback.
+- Initial implementation for civicrm source.
+- Added CiviCRM plugins for activity, contact and relationship.
+- Added entity mapping form.
+- Added default values to forms.
+- Render source mapping form as table.
+- Added implementation for fields.
+- Base implementation for CiviCRM data import.
+- Fixed negative value after the importer is run.
+- Removed ids from settings.
+- Added base class for source_plugins. Updated source fields to use entity properties.
+- Added support for different entity bundles.
+- Hide empty tables for source mapping.
+- Added fields for activity. Fixed code.
+- Moved getListOfRelatedEntities to source, because they depends on the source type.
+- Fix typo in comment for hook_entity_property_info.
+- Support Entity Translation.
+- Support Title module.
+- Do not overwrite revision log messages.
+- Allow to search for existing contact when user is created.
+- Validate field_activity_participants only once.
+- Standardize access checks for contacts and activities.
+- Initial implementation of references for CiviCRM plugin.
+- Moved CRM_CORE_DATA_IMPORT_CIVICRM_VERSION to wrapper.
+- Fixed activity_type_id filter.
+- Base implementation for relationships.
+- Refactored getListOfRelatedEntities() method.
+- Refactored reset() to prevent strict warning.
+- Added RelationsCiviCrmImportSettings plugin.
+- Added new implementation for CiviCRM relationships.
+- Fixed error when  FALSE.
+- Fixed avaiable relationships.
+- Fixed bug with destination ids.
+- Removed relationships from source mapping form.
+- Added validation callback for settings. Replaced settings with importer in arguments.
+- Added implementation for importing a relation types.
+- Added pager to display current step.
+- Fixed notices.
+- Added source mapping to ctools dropbutton.
+- Refactored settings plugins. Moved code for each plugin to separate method of source plugin.
+- Added skipping for fields which listed in settings for references.
+- Removed hardcoded fields for references. Improved references, which currently based on mapping.
+- Fixed code style issues.
+- Refactored getEntitiesForRelationships and getEntitiesForReferences methods.
+- Improved performance. Added caching for migration tables.
+- Improved performance of references plugin.
+- Fixed issue with table name. Fixed issue with references.
+- Improved available fields for contacts.
+- Fixed labels for references.
+- Added skeleton for conversion plugins.
+- Added based implementation for CiviCRM core fields.
+- Added activity fields. Improved getFields method, which currently based on the 'getfields' CiviCRM API method.
+- Added support of custom fields. Added conversion plugin for custom fields.
+- Improved performance for custom fields.
+- Added ability to choose existing bundle on the source mapping form.
+- Added restriction for available options on the field mapping form.
+- Fixed features integration for CiviCRM plugin.
+- Fixed restriction for new entity bundle.
+- Added ReferencesCiviCrmImportSettings plugin for CiviCRM references. Improved performance.
+- Added implementation for field collection fields on mapping.
+- Added listing of subfields for field collection.
+- Added skipping for field collection items.
+- Added items of field collection to listing of source fields.
+- Refactored batch operations.
+- Implemented conversion for items of field collection.
+- Added implementation for field collection fields.
+- Removed temporary code.
+- Added 'token type' to entity info.
+- Code style fixes.
+- Renamed CRM Activity to CRM Core Activity.
+- Fixed issue preventing to search for activities.
+- Fixed autocomplete for contact.
+- Added caching for statistic of migration.
+- Added implementation of default values for FC items.
+- Fixed broken plugins: RelationsImportSettings and ReferencesImportSettings. Temporary fix.
+- Moved general functionality to the base abstract class.
+- Refactored CivicrmDataSourceHandler and EntityListMigrateSource to use lazy loading.
+- Fixed counters and improved performance.
+- Fixed available fields for participant and contribution.
+- Fixed available repationships.
+- Added ability to skip row.
+- Adding watchdog information to relationsimportsettings - shows when a relationship fails to create.
+- Resolve PHP notice when label is not set.
+- Add additional source fields to migrate map table if there are relationships and/or references.
+- Multiple source keys.
+- Allow source and destination endpoints of relationship be different.
+- Get the list of data imports to create list of dependencies.
+- Linked imports form addition.
+- Save linked imports state in importer settings.
+- Store primary source field for linked data imports.
+- Register linked data import as Migration::softDependencies.
+- Populate sourceMigration from linked data imports.
+- Extend MigrateSQLMap to store additional ids.
+- Fix UUID errors from duplicating entity api keys.
+- Get relation id setting from data importer settings.
+- Add static caching of relation endpoints.
+- Added a default for form state. See https://www.drupal.org/node/2332505.
+- Fatal error: Call to undefined method stdClass::uri().
+- Improved DX in using match method.
+- Make linked import fieldset collapsed by default.
+- Improved method documentation.
+- Don't just call civicrm_initialize() if CiviCRM is not enabled.
+- Add a basic README.txt file for CRM Core data import.
+
+CRM Core 7.x-0.964 (23-March-2014)
+===================================
+
+Seems like some of the CHANGELOG history has been lost in past commits. Going to
+try to recreate some of it. See 7.x-0.963 if you want details about UUID / services
+integration for CRM Core contacts, activities and relationships.
+
+This is a bugfix release that addresses a spectrum of issues related to maintaining
+contacts, relationships and activities.
+
+Contacts:
+
+- Issue #2142911 by kristofferrom: fixing issue with access checks on content types
+- Issue #2217843 by dsnopek: fixing issue with spaces between names in autocomplete
+
+Activities:
+
+- Issue #2216295 by Spleshka: making activity fields optional
+
+Relationships:
+
+- Issue #2191173: support for non-unique relationships
+
+Reports:
+
+- Adding support for tooltips on flot charts
+
+General:
+
+- Issue #2201165 by attiks: added uid to revisions
+- Issue #2211587 by Dane Powell: Added Migrate destinations for activities and contacts.
+- Removing hook_enable and hook_disable from CRM Core UI, this means no more crm core
+  menu appearing automatically.
+
+
+CRM Core 7.x-0.964 (12-Dec-2013)
+===================================
+
+Adding enhancements related to synchronizing contacts across sites. Fixing bugs.
+
+Activities:
+
+- Added activity_string property to activity type.
+- Updated crm_activities_by_contact view.
+
+General:
+
+- Added UUID Support
+- Fixed uninstall functions in crm_core_contact and crm_core_activity.
+- Added relations as dependencies for CRM Core.
+- Fixed resources access check.
+- Adding contact activities as dependencies.
+- Fixed bug preventing crm_core_activity from consistent export with services.
+- Added 'create' and 'update' functionality for services integration.
+- Fixed saving activity_type_id on feed import.
+
+
+CRM Core 7.x-0.952 (27-Aug-2013)
+===================================
+
+Contacts:
+
+-	Added merge contacts functionality. Now in main contact list you can select 2
+  or more contacts and merge them in one, selecting which contact should be
+  updated with data from what contacts.
+- Added menu entries for contact types in admin_menu module.
+- Added action to send e-mails to contacts from main contact list.
+
+Activities:
+
+- Enabled revisions for activities.
+
+
+CRM Core 7.x-0.95 (13-Aug-2013)
+===================================
+
+The major change for this version of CRM Core deals with the name field.
+
+The name field is now unlocked, users can do with it what they wish. Just
+remember that deleting the name field will make most of the UI modules
+not work.
+
+There is a patch for the name module (see https://drupal.org/node/2047643)
+that needs to be used for CRM Core to work properly.
+
+General:
+
+- Added support for panels (https://drupal.org/node/2041833)
+- Removed circular dependencies (https://drupal.org/node/1995700)
+
+Activities:
+
+- Addressed issues with access to activity records
+- Added full support for theming individual activity types
+- Addressed a core issue where title is not set for MENU_LOCAL_ACTION
+  (see http://drupal.org/node/891892)
+
+Contacts:
+
+- Addressed an issue with the name field. Until it is updated, CRM Core
+  requires a patch to properly support different naming conventions for
+  different contact types (https://drupal.org/node/2047643)
+- Unlocked contact name to allow field permissions settings.
+- Addressed an issue where users were being forced to use CRM Core
+  Contact UI (https://drupal.org/node/1897892)
+- Addressed an issue where install profiles would fail because of string
+  translations in CRM Core Contact.
+- Revised revision support for contact records.
+- Added entity metadata for specifying primary fields for contact information.
+- Added views handlers to provide support for primary fields.
+- Restored missing uid on the base table (https://drupal.org/node/1914326)
+
+Matching Engines:
+
+- Improved support for custom matching rules
+
+Relationships:
+
+- Addressed an issue where install profiles would fail because of string
+  translations in CRM Core Relationship.
+- Addressed an issue with relationships not displaying properly
+  (https://drupal.org/node/2059309)
+
+Reports:
+
+- Improved indexing of reports
+
+
+CRM Core 7.x-0.93 (08-May-2013)
+===================================
+
+Fixes release merge issue.
+
+
+CRM Core 7.x-0.92 (08-May-2013)
+===================================
+
+New features:
+
+- Improvements for contacts
+  - implemented match method on CRMCoreContactEntity
+  - implemented primary fields for email, phone and address on contacts, for use in feature
+    development
+  - added hook_entity_delete for contact records
+  - added support for relationship deletion
+- Improvments for activities
+  - activities can now be created without first selecting a contact
+  - modified logic for activity participants, removed dependency on original contact
+  - modified filters for activity displays, can now filter by all activity types
+- Improvements for relationships
+  - relationships can now be created without first selecting a contact
+- Improvements for CRM Core User Sync
+  - removed dependency on rules configuration for contact to user management
+- New module: CRM Core Match
+  - implements matching engines and logic for identifying duplicate contacts
+  - implements interface for selecting default matching rules for contacts
+- New module: CRM Core Default Matching Engine
+  - creates matching engine and interface for configuring matching logic
+
+Other commits:
+
+- Corrected several permissions issues affecting the display of contact information
+- Corrected path issues for links coming from various views
+- Improved breadcrumb support for CRM Core Reports
+- Modified filters on various views to support resetting filter criteria
+- Implemented logical operators for contact matching in CRM Core Default Matching Engine
+- Implemented field hanlders for supporting logical operations in CRM Core Default Matching Engine
+- Implemented support for selecting matching engines in CRM Core Match
+- Implemented support for multiple contact types in CRM Core Match
+- Implemented test cases for evaluating contacts in CRM Core Match
+- Implemented security around CRM Core Match test cases
+- Implemented objects for creating custom matching engines and API around them
+- Implemented several relationships in views to account for matches and duplicates
+- Improved documentation in various areas of the code
+- Corrected double encoding of contact labels
+- Corrected missing uid column on contact table
+
+CRM Core 7.x-0.91 (22-Mar-2013)
+===================================
+
+New features:
+
+- Addition of settings screen, with options for controlling the theme, primary links, and contact info for
+  linked user accounts.
+- Addition of user matching screen, for linking user accounts to contacts.
+- Addition of inactive relationships screen.
+- Addition of navigational menu for CRM Core, and creation of CRM Core Admin menu.
+- Addition of CRM Core Report.
+- Implementation of theming functions and code hinting for all CRM Core entities.
+- Removed from this release:
+
+Removals:
+
+The following modules, which exist in previous development releases, were removed from this release:
+
+- CRM OG Sync
+- CRM Core Case
+- CRM Core Match
+- CRM Core Default Matching Engine
+
+These modules still exist in development versions, they are just not considered stable. These modules will be
+supported in future official releases of CRM Core. You can find them the --development branch.
+
+Other commits:
+
+- Implemented consistent path schemes for all CRM Core entities.
+- Implemented consistent breadcrumb structure for all CRM Core entities.
+- Removed the default image field for contacts.
+- Removed default contact fields from the user edit form.
+- Corrected bugs with bi-directional relationships.
+- Modified appearance of various screens for adding CRM Core entities to ensure there is a uniform appearance.
+- Modified various page titles for compliance with Drupal standards.
+- Modified no results text on contacts, activities and relationship pages.
+- Added action links for adding CRM Core entities.
+- Added operations columns to screens for displaying CRM Core entities.
+- Modified links for adding new contacts.
+- Added reset buttons and other UI controls for various filters throughout the system.
+- Improved UI for user synchronization.
+- Enhanced user synchronization options - system now allows for weighted rules matching.
+- Enhanced user synchronization options - system now allows for batch processing of user accounts.
+- Enhanced sync form to only display users / contacts with no match.
+- Improved dashboard handling - removed default text.
+- Improved dashboard handling - added UI for configuring dashboard.
+- Improved dashboard handling - added controls to remove links to dashboard when it is not present in the system.
+- Removed unnecessary CSS throughout system.
+- Adjusted paths for adding entities within the dashboard.
+- Business logic - CRM Core now allows contacts to be removed from activities.
+- Business logic - CRM Core now allows multiple contacts to be added to activities.
+- Business logic - UI now displays information about contacts when viewing an activity.
+- Business logic - UI now displays participant names as links to contact records.
+- Business logic - streamlined process for deleting relationships.
+- Dependencies - removed unnecessary dependencies.
+- Template files - removed duplicate template files, added theme hinting.

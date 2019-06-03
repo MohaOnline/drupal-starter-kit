@@ -1,0 +1,51 @@
+name = CRM Core Data Import
+description = Handles data imports for CRM Core
+package = CRM Core
+core = 7.x
+
+; =======================
+; Dependencies
+; =======================
+
+; Contrib Dependencies
+dependencies[] = migrate (>2.5)
+dependencies[] = ctools
+
+; handlers for data import entities
+files[] = includes/controllers/CRMCoreDataImport.inc
+files[] = includes/controllers/MigrationDataImport.inc
+files[] = includes/controllers/CRMCoreMigrateSQLMap.inc
+
+; Interfaces
+files[] = plugins/source/CRMCoreDataSourceHandler.inc
+files[] = plugins/destination/CRMCoreDataDestinationHandler.inc
+files[] = plugins/settings/CRMCoreDataImportSettings.inc
+files[] = plugins/source_plugins/civicrm/CivicrmEntityType.inc
+
+; Plugins
+files[] = plugins/source/CsvDataSourceHandler.inc
+files[] = plugins/source/CivicrmDataSourceHandler.inc
+files[] = plugins/destination/CRMCoreContactDataDestinationHandler.inc
+files[] = plugins/destination/CRMCoreActivityDataDestinationHandler.inc
+files[] = plugins/destination/NodeDestinationHandler.inc
+files[] = plugins/destination/UserDestinationHandler.inc
+files[] = plugins/settings/LinkedImportSettings.inc
+files[] = plugins/settings/RelationsImportSettings.inc
+files[] = plugins/settings/ReferencesImportSettings.inc
+files[] = plugins/settings/UserContactImportSettings.inc
+files[] = plugins/settings/RelationsCiviCrmImportSettings.inc
+files[] = plugins/settings/ReferencesCiviCrmImportSettings.inc
+files[] = plugins/source_plugins/civicrm/CivicrmContactEntityType.inc
+files[] = plugins/source_plugins/civicrm/CivicrmActivityEntityType.inc
+files[] = plugins/source_plugins/civicrm/CivicrmRelationshipEntityType.inc
+files[] = plugins/conversion/CRMCoreConversionHandler.inc
+files[] = plugins/conversion/CiviCrmCoreFields.inc
+files[] = plugins/settings/ReferencesImportSettingsBase.inc
+files[] = plugins/settings/RelationsImportSettingsBase.inc
+
+; Information added by Drupal.org packaging script on 2017-02-16
+version = "7.x-1.0"
+core = "7.x"
+project = "crm_core"
+datestamp = "1487217492"
+

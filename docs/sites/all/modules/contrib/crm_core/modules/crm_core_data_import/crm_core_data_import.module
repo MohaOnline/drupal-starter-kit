@@ -1,0 +1,790 @@
+<?php
+/**
+ * @file
+ * Provides basic functionality for a CRM Core Data Import.
+ */
+
+define('CRM_CORE_DATA_IMPORT_CIVICRM_VERSION', 3);
+define('CRM_CORE_DATA_IMPORT_REQUIRED_STEPS', 4);
+
+/**
+ * Implements hook_menu().
+ */
+function crm_core_data_import_menu() {
+  $items = array();
+
+  $items['admin/structure/crm-core/data-import'] = array(
+    'title' => 'CRM Core Data Import',
+    'description' => 'Manage data import tasks.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_dashboard_form'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  $items['admin/structure/crm-core/data-import/new-import'] = array(
+    'title' => 'New import',
+    'description' => 'Create a new data import task for CRM Core.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_source_selection'),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  $items['admin/structure/crm-core/data-import/%/source-selection'] = array(
+    'title' => 'Source selection',
+    'description' => 'Create a new data import task for CRM Core.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_source_selection', 4),
+    'type' => MENU_CALLBACK,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  $items['admin/structure/crm-core/data-import/%/source-settings'] = array(
+    'title' => 'Source settings',
+    'title callback' => 'crm_core_data_import_source_settings_title_callback',
+    'title arguments' => array(4),
+    'description' => 'Settings for data import source.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_source_settings', 4),
+    'type' => MENU_CALLBACK,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  $items['admin/structure/crm-core/data-import/%/source-mapping'] = array(
+    'title' => 'Source mapping',
+    'title callback' => 'crm_core_data_import_source_settings_title_callback',
+    'title arguments' => array(4),
+    'description' => 'Mapping for data import source.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_source_mapping', 4),
+    'type' => MENU_CALLBACK,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  $items['admin/structure/crm-core/data-import/%/field-mapping'] = array(
+    'title' => 'Field mapping',
+    'title callback' => 'crm_core_data_import_field_mapping_title_callback',
+    'title arguments' => array(4),
+    'description' => 'Field mapping for data import task.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_field_mapping', 4),
+    'type' => MENU_CALLBACK,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  $items['admin/structure/crm-core/data-import/%/settings'] = array(
+    'title' => 'Data Import Settings',
+    'description' => 'Settings for data import task.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_settings_page', 4),
+    'type' => MENU_CALLBACK,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  $items['admin/structure/crm-core/data-import/%/delete'] = array(
+    'title' => 'Delete Data Import',
+    'description' => 'Page to delete data import task.',
+    'access arguments' => array('access administration pages'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_data_import_delete_page', 4),
+    'type' => MENU_CALLBACK,
+    'file' => 'crm_core_data_import.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function crm_core_data_import_ctools_plugin_type() {
+  return array(
+    'crm_core_data_import_source' => array(
+      'use hooks' => TRUE,
+      'cache' => TRUE,
+    ),
+    'crm_core_data_import_destination' => array(
+      'use hooks' => TRUE,
+      'cache' => TRUE,
+    ),
+    'crm_core_data_import_settings' => array(
+      'use hooks' => TRUE,
+      'cache' => TRUE,
+    ),
+    'crm_core_data_import_source_civicrm_entity_type' => array(
+      'use hooks' => TRUE,
+      'cache' => TRUE,
+    ),
+    'crm_core_data_import_conversion' => array(
+      'use hooks' => TRUE,
+      'cache' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function crm_core_data_import_ctools_plugin_directory($module, $plugin) {
+  if (($module == 'crm_core_data_import') && ($plugin == 'crm_core_data_import_source')) {
+    return 'plugins/source';
+  }
+  if (($module == 'crm_core_data_import') && ($plugin == 'crm_core_data_import_destination')) {
+    return 'plugins/destination';
+  }
+  if (($module == 'crm_core_data_import') && ($plugin == 'crm_core_data_import_settings')) {
+    return 'plugins/settings';
+  }
+  if (($module == 'crm_core_data_import') && ($plugin == 'crm_core_data_import_source_civicrm_entity_type')) {
+    return 'plugins/source_plugins/civicrm';
+  }
+  if (($module == 'crm_core_data_import') && ($plugin == 'crm_core_data_import_conversion')) {
+    return 'plugins/conversion';
+  }
+}
+
+/**
+ * Implements hook_features_api().
+ */
+function crm_core_data_import_features_api() {
+  return array(
+    'crm_core_data_import' => array(
+      'name' => t('CRM Core Data Import'),
+      'feature_source' => TRUE,
+      'default_hook' => 'crm_core_data_import_features_default_settings',
+      'default_file' => FEATURES_DEFAULTS_INCLUDED,
+      'file' => drupal_get_path('module', 'crm_core_data_import') . '/crm_core_data_import.features.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function crm_core_data_import_theme() {
+  return array(
+    'crm_core_data_import_field_mapping' => array(
+      'render element' => 'form',
+    ),
+    'crm_core_data_import_source_mapping' => array(
+      'render element' => 'form',
+    ),
+    'crm_core_data_import_settings_page' => array(
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
+ * Theme implementation for mapping form.
+ */
+function theme_crm_core_data_import_field_mapping($variables) {
+  $form = $variables['form'];
+  _crm_core_data_import_theme_mapping_form($form);
+  return drupal_render_children($form);
+}
+
+/**
+ * Theme implementation for mapping form.
+ */
+function theme_crm_core_data_import_source_mapping($variables) {
+  $form = $variables['form'];
+  _crm_core_data_import_theme_source_mapping_form($form);
+  return drupal_render_children($form);
+}
+
+/**
+ * Theme implementation for settings form.
+ */
+function theme_crm_core_data_import_settings_page($variables) {
+  $form = $variables['form'];
+  _crm_core_data_import_theme_settings_form($form);
+  return drupal_render_children($form);
+}
+
+/**
+ * Returns available tasks.
+ */
+function _crm_core_data_import_get_tasks() {
+  return db_select('crm_core_data_import', 'd')
+    ->fields('d')
+    ->execute()
+    ->fetchAllAssoc('id');
+}
+
+/**
+ * Load importer.
+ *
+ * @return CRMCoreDataImport $importer
+ */
+function crm_core_data_import_load_importer($importer_id) {
+  $importer = new CRMCoreDataImport();
+  $importer->id = $importer_id;
+  $importer->load();
+  return $importer;
+}
+
+/**
+ * Load importer by machine_name.
+ */
+function crm_core_data_import_load_importer_machine_name($machine_name) {
+  $importer = new CRMCoreDataImport();
+  if ($importer_id = crm_core_data_importer_id_by_machine_name($machine_name)) {
+    $importer->id = $importer_id;
+    $importer->load();
+    return $importer;
+  }
+  return FALSE;
+}
+
+/**
+ * Load plugin instance.
+ */
+function crm_core_data_import_load_plugin_instance($type, $id) {
+  ctools_include('plugins');
+  $plugin = ctools_get_plugins('crm_core_data_import', $type, $id);
+  $class = ctools_plugin_get_class($plugin, 'handler');
+  if ($class) {
+    $instances[$id] = new $class();
+  }
+  return !empty($instances[$id]) ? $instances[$id] : FALSE;
+}
+
+/**
+ * Returns destination plugin entity label.
+ */
+function crm_core_data_import_get_destination_entity_label($entity_type) {
+  $plugins = ctools_get_plugins('crm_core_data_import', 'crm_core_data_import_destination');
+  return !empty($plugins[$entity_type]['label']) ? $plugins[$entity_type]['label'] : FALSE;
+}
+
+/**
+ * Returns destination plugin label.
+ */
+function crm_core_data_import_get_destination_bundle_label($entity_type, $entity_bundle) {
+  $destination = crm_core_data_import_load_plugin_instance('crm_core_data_import_destination', $entity_type);
+  $entity_bundles = $destination->getBundles();
+  return !empty($entity_bundles[$entity_bundle]) ? $entity_bundles[$entity_bundle] : FALSE;
+}
+
+/**
+ * Returns destination entity type.
+ */
+function crm_core_data_import_get_destination_entity_type($entity_type) {
+  $destination = crm_core_data_import_load_plugin_instance('crm_core_data_import_destination', $entity_type);
+  return $destination->entityType;
+}
+
+/**
+ * Returns destination entity controller.
+ */
+function crm_core_data_import_get_destination_entity_controller($entity_type) {
+  ctools_include('plugins');
+  $plugins = ctools_get_plugins('crm_core_data_import', 'crm_core_data_import_destination');
+  foreach ($plugins as $plugin_key => $plugin) {
+    $class = ctools_plugin_get_class($plugin, 'handler');
+    if ($class) {
+      $instance = new $class();
+      if ($instance->entityType == $entity_type) {
+        return $plugin_key;
+      }
+    }
+  }
+}
+
+/**
+ * Convert to machine name.
+ */
+function _crm_core_data_import_convert_to_machine_name($string) {
+  return 'ccdi_' . preg_replace('@[^a-z0-9-]+@', '_', strtolower($string));
+}
+
+/**
+ * Returns machine name.
+ */
+function _crm_core_data_import_migration_machine_name($importer_id, $entity_type, $entity_bundle, $bundle_delta) {
+  return _crm_core_data_import_convert_to_machine_name($importer_id . '_' . $entity_type . '_' . $entity_bundle . '_' . $bundle_delta);
+}
+
+/**
+ * Register CRM Core data migration.
+ */
+function crm_core_data_import_register_migration($importer_id, $entity_type, $entity_bundle, $bundle_delta) {
+  /** @var CRMCoreDataImport $importer */
+  $importer = crm_core_data_import_load_importer($importer_id);
+  $linked_imports = $importer->getLinkedImports();
+  $machine_name = _crm_core_data_import_migration_machine_name($importer->id, $entity_type, $entity_bundle, $bundle_delta);
+  $arguments =     array(
+    'importer' => $importer,
+    'entity_type' => $entity_type,
+    'entity_bundle' => $entity_bundle,
+    'delta' => $bundle_delta,
+  );
+  if ($linked_imports) {
+    $dependencies = array();
+    foreach ($linked_imports as $key => $primary_field) {
+      $linked_importer = crm_core_data_import_load_importer($key);
+      foreach ($linked_importer->getMigrationInstances() as $migration) {
+        /** @var Migration $migration */
+        if (!array_search($migration->getMachineName(), $dependencies)) {
+          $dependencies[] = $migration->getMachineName();
+        }
+      }
+    }
+    $arguments['soft_dependencies'] = $dependencies;
+  }
+  Migration::registerMigration(
+    'MigrationDataImport',
+    $machine_name,
+    $arguments
+  );
+
+  // Save registered migration.
+  // This allows rollback and remove registered migrations.
+  $registered_migrations = variable_get('crm_core_data_import_migrations_' . $importer_id, array());
+  if (!in_array($machine_name, $registered_migrations)) {
+    $registered_migrations[] = $machine_name;
+    variable_set('crm_core_data_import_migrations_' . $importer_id, $registered_migrations);
+  }
+}
+
+/**
+ * Deregister CRM Core data migration.
+ */
+function crm_core_data_import_deregister_migration($importer_id, $entity_type, $entity_bundle, $bundle_delta) {
+  $importer = crm_core_data_import_load_importer($importer_id);
+  $machine_name = _crm_core_data_import_migration_machine_name($importer->id, $entity_type, $entity_bundle, $bundle_delta);
+  Migration::deregisterMigration($machine_name);
+}
+
+/**
+ * Returns path to css file.
+ */
+function _crm_core_data_import_css_path() {
+  return drupal_get_path('module', 'crm_core_data_import') . '/css/crm_core_data_import.css';
+}
+
+/**
+ * Swap items in array.
+ */
+function _crm_core_data_import_array_swap($items, $key_source, $key_target) {
+  $swap_items = array();
+  foreach ($items as $key => $value) {
+    if ($key == $key_source) {
+      $swap_items[$key_target] = $items[$key_target];
+    }
+    elseif ($key == $key_target) {
+      $swap_items[$key_source] = $items[$key_source];
+    }
+    else {
+      $swap_items[$key] = $items[$key];
+    }
+  }
+  return $swap_items;
+}
+
+/**
+ * Returns status by code.
+ */
+function _crm_core_data_import_migration_status($status) {
+  switch ($status) {
+    case MigrationBase::STATUS_IDLE:
+      $status = t('Idle');
+      break;
+
+    case MigrationBase::STATUS_IMPORTING:
+      $status = t('Importing');
+      break;
+
+    case MigrationBase::STATUS_ROLLING_BACK:
+      $status = t('Rolling back');
+      break;
+
+    case MigrationBase::STATUS_STOPPING:
+      $status = t('Stopping');
+      break;
+
+    case MigrationBase::STATUS_DISABLED:
+      $status = t('Disabled');
+      break;
+
+    default:
+      $status = t('Unknown');
+      break;
+  }
+  return $status;
+}
+
+/**
+ * Returns entity key.
+ */
+function _crm_core_data_import_entity_key_by_controller_key($controller_key) {
+  list($entity_controller_type, $entity_bundle, $bundle_delta) = explode(':', $controller_key);
+  $entity_type = crm_core_data_import_get_destination_entity_type($entity_controller_type);
+  return implode(':', array($entity_type, $entity_bundle, $bundle_delta));
+}
+
+/**
+ * Returns entity key.
+ */
+function _crm_core_data_import_controller_key_by_entity_key($entity_key) {
+  list($entity_type, $entity_bundle, $bundle_delta) = explode(':', $entity_key);
+  $entity_controller_type = crm_core_data_import_get_destination_entity_controller($entity_type);
+  return implode(':',
+    array(
+      $entity_controller_type,
+      $entity_bundle,
+      $bundle_delta,
+    )
+  );
+}
+
+/**
+ * Returns importer id by machine name.
+ */
+function crm_core_data_importer_id_by_machine_name($value) {
+  $result = db_select('crm_core_data_import')
+    ->fields('crm_core_data_import', array('id'))
+    ->condition('machine_name', $value)
+    ->execute()
+    ->fetchField();
+  return $result;
+}
+
+/**
+ * Generate pretty labels for destination bundles, e.g. Individual Contact (1).
+ */
+function crm_core_data_import_get_destination_label($entity_controller_type, $bundle, $bundle_delta) {
+  $bundle_label = crm_core_data_import_get_destination_bundle_label($entity_controller_type, $bundle);
+  $entity_label = crm_core_data_import_get_destination_entity_label($entity_controller_type);
+  return t('@bundle @entity (@delta)',
+    array(
+      '@bundle' => $bundle_label,
+      '@entity' => $entity_label,
+      '@delta' => $bundle_delta,
+    )
+  );
+}
+
+/**
+ * Helper to theme mapping form.
+ */
+function _crm_core_data_import_theme_mapping_form(&$form) {
+  $header = array(
+    t('Source field'),
+    t('Destination field'),
+    t('Default value'),
+    t('Remove field'),
+  );
+
+  if (!empty($form['mapping'])) {
+    // Loop over all mapping fields and render they as table.
+    foreach ($form['mapping'] as $key => $mapping_item) {
+      if (is_array($mapping_item) && !empty($mapping_item['fields'])) {
+        $rows = array();
+        foreach (element_children($mapping_item['fields'], TRUE) as $id) {
+          $field =& $mapping_item['fields'][$id];
+          $row = array(
+            'data' => array(),
+          );
+
+          if ($id === 'primary') {
+            $row['data'][] = drupal_render($field['source_field_primary']);
+            $row['data'][] = drupal_render($field['destination_field_primary']);
+            $row['data'][] = '';
+            $row['data'][] = '';
+          }
+          else {
+            $row['data'][] = drupal_render($field['source_field']);
+            $row['data'][] = drupal_render($field['destination_field']);
+            $row['data'][] = drupal_render($field['default_value']);
+            $row['data'][] = drupal_render($field['remove_field']);
+          }
+
+          $rows[] = $row;
+        }
+
+        $form['mapping'][$key]['fields'] = array();
+        $form['mapping'][$key]['fields']['#markup'] = theme('table', array(
+          'header' => $header,
+          'rows' => $rows,
+          'attributes' => array('class' => array('mapping-fields-table')),
+        ));
+      }
+    }
+  }
+}
+
+/**
+ * Helper to theme source mapping form.
+ */
+function _crm_core_data_import_theme_source_mapping_form(&$form) {
+  $header = array(
+    t('Source @entity_type type'),
+    t('Destination entity type'),
+    t('Entity name'),
+  );
+
+  if (!empty($form['source_mapping'])) {
+    // Loop over all mapping entities and render they as table.
+    foreach ($form['source_mapping'] as $key => $mapping_item) {
+      if (is_array($mapping_item) && !empty($mapping_item['#type']) && $mapping_item['#type'] == 'fieldset') {
+        $rows = array();
+        foreach (element_children($mapping_item, TRUE) as $id) {
+          $entity =& $mapping_item[$id];
+          $row = array(
+            'data' => array(
+              drupal_render($entity['source_entity']) . drupal_render($entity['source_entity_markup']),
+              drupal_render($entity['destination_entity']),
+              drupal_render($entity['destination_entity_new']) . drupal_render($entity['destination_entity_existing']),
+            ),
+          );
+          $rows[] = $row;
+        }
+
+        $header[0] = t('Source @entity_type type', array('@entity_type' => $mapping_item['#title']));
+        $form['source_mapping'][$key] = array();
+        if (!empty($rows)) {
+          $form['source_mapping'][$key]['#markup'] = theme('table', array(
+            'header' => $header,
+            'rows' => $rows,
+            'attributes' => array('class' => array('source-mapping-table')),
+          ));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Helper to theme settings form.
+ */
+function _crm_core_data_import_theme_settings_form(&$form) {
+  if (!empty($form['relations']['civicrm'])) {
+    $header = array(
+      t('Source entity'),
+      t('CiviCRM Relationship'),
+      t('CRM Core Relation'),
+      t('New relation'),
+      t('Destination entity'),
+    );
+
+    if (!empty($form['relations']['relations_values'])) {
+      // Loop over all relations and render they as table.
+      $rows = array();
+      foreach ($form['relations']['relations_values'] as $key => $relation_item) {
+        if (is_array($relation_item) && !empty($relation_item['#type']) && $relation_item['#type'] == 'fieldset') {
+          $row = array(
+            'data' => array(
+              drupal_render($relation_item['civicrm_relation_id'])
+              . drupal_render($relation_item['source_entity'])
+              . drupal_render($relation_item['source_entity_markup']),
+              drupal_render($relation_item['source_relation_markup']),
+              drupal_render($relation_item['relation_type']),
+              drupal_render($relation_item['new_relation_name']),
+              drupal_render($relation_item['destination_entity'])
+              . drupal_render($relation_item['destination_entity_markup']),
+            ),
+          );
+          $rows[] = $row;
+        }
+      }
+      $form['relations']['relations_values'] = array();
+      if (!empty($rows)) {
+        $form['relations']['relations_values']['#markup'] = theme('table', array(
+          'header' => $header,
+          'rows' => $rows,
+          'attributes' => array('class' => array('settings-table')),
+        ));
+      }
+    }
+  }
+}
+
+/**
+ * Wrapper for civicrm_api function.
+ */
+function crm_core_data_import_civicrm_api($entity, $action, $params = array(), $extra = NULL) {
+  if (module_exists('civicrm')) {
+    civicrm_initialize();
+    $params['version'] = CRM_CORE_DATA_IMPORT_CIVICRM_VERSION;
+    $result = civicrm_api($entity, $action, $params, $extra);
+    if (empty($result['is_error']) && !empty($result['values'])) {
+      return $result['values'];
+    }
+  }
+  return array();
+}
+
+/**
+ * Run single query for CiviCRM.
+ */
+function crm_core_data_import_single_query($query) {
+  civicrm_initialize();
+  return CRM_Core_DAO::singleValueQuery($query);
+}
+
+/**
+ * Returns whether a relation name already exists.
+ */
+function crm_core_data_import_relation_exist($relation_name) {
+  $relation_type = relation_type_load($relation_name);
+  return !empty($relation_type);
+}
+
+/**
+ * Attach page to form.
+ */
+function crm_core_data_import_attach_pager(&$form, $importer, $function) {
+  if (empty($importer->source_plugin->sourceMapping)) {
+    $all = CRM_CORE_DATA_IMPORT_REQUIRED_STEPS;
+    $shift = 0;
+  }
+  else {
+    $shift = 1;
+    $all = CRM_CORE_DATA_IMPORT_REQUIRED_STEPS + $shift;
+  }
+
+  switch ($function) {
+    case 'crm_core_data_import_source_selection':
+      $step = 1;
+      break;
+
+    case 'crm_core_data_import_source_settings':
+      $step = 2;
+      break;
+
+    case 'crm_core_data_import_source_mapping':
+      $step = 3;
+      break;
+
+    case 'crm_core_data_import_field_mapping':
+      $step = 3 + $shift;
+      break;
+
+    case 'crm_core_data_import_settings_page':
+      $step = 4 + $shift;
+      break;
+
+    default:
+      $step = FALSE;
+  }
+
+  if ($step) {
+    $form['step'] = array(
+      '#markup' => t('@step of @all', array('@step' => $step, '@all' => $all)),
+    );
+  }
+}
+
+/**
+ * Returns CiviCRM activity type.
+ */
+function crm_core_data_get_civicrm_activity_type($bundle) {
+  $params = array('name' => 'activity_type');
+  $option_group = crm_core_data_import_civicrm_api('option_group', 'get', $params);
+  $option_group = reset($option_group);
+  if (!empty($option_group['id'])) {
+    $options = array('option_group_id' => $option_group['id'], 'name' => $bundle);
+    $type = crm_core_data_import_civicrm_api('option_value', 'get', $options);
+    return reset($type);
+  }
+  return FALSE;
+}
+
+/**
+ * Returns map table for certain migration instance.
+ */
+function _crm_core_data_import_map_table_get($machine_name) {
+  $cid = 'crm_core_data_migration_map_table:' . $machine_name;
+  if ($cache = cache_get($cid)) {
+    $table = $cache->data;
+  }
+  else {
+    $migration = Migration::getInstance($machine_name);
+    $table = $migration->getMap()->getMapTable();
+    cache_set($cid, $table, 'cache');
+  }
+  return $table;
+}
+
+/**
+ * Returns available custom fields.
+ */
+function _crm_core_data_import_civicrm_get_custom_fields($entity_type) {
+  $custom_fields = array();
+  $fields = crm_core_data_import_civicrm_api($entity_type, 'getfields');
+  foreach ($fields as $field_name => $field) {
+    if (!empty($field['custom_group_id'])) {
+      $custom_fields[$field_name] = $field;
+    }
+  }
+  return $custom_fields;
+}
+
+/**
+ * Returns constants provided by CiviCRM.
+ */
+function _crm_core_data_import_civicrm_get_constant($name) {
+  return crm_core_data_import_civicrm_api('Constant', 'get', array('name' => $name));
+}
+
+/**
+ * Returns names fields which is field collection.
+ */
+function _crm_core_data_import_contact_field_collection_fields() {
+  return array(
+    'email',
+    'website',
+    'phone',
+    'address',
+  );
+}
+
+/**
+ * Check if field is field collection.
+ */
+function _crm_core_data_import_is_field_collection_field($field_name) {
+  $field = field_info_field($field_name);
+  return (!empty($field['type']) && $field['type'] == 'field_collection');
+}
+
+/**
+ * Returns statistic of migration.
+ */
+function _crm_core_data_import_migration_statistic_get($importer) {
+  $stats = array(
+    'total' => 0,
+    'imported' => 0,
+    'processed' => 0,
+    'status' => 0,
+  );
+
+  $migrations = $importer->getMigrationInstances();
+  $source_settings = $importer->getSourceSettings();
+  foreach ($migrations as $migration) {
+    if (!empty($source_settings)) {
+      $stats['total'] += $migration->sourceCount();
+      $stats['processed'] += $migration->processedCount();
+      $stats['imported'] += $migration->importedCount();
+    }
+    $stats['status'] = $migration->getStatus();
+  }
+
+  return $stats;
+}
+
+/**
+ * Clear cache statistic.
+ */
+function _crm_core_data_import_migration_statistic_reset($importer) {
+  cache_clear_all('crm_core_data_import_statistic:' . $importer->id, 'cache');
+}

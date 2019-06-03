@@ -1,0 +1,93 @@
+<?php
+/**
+ * @file
+ * Install file for the CRM Core Data Import.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function crm_core_data_import_schema() {
+  $schema = array();
+
+  $schema['crm_core_data_import'] = array(
+    'description' => 'Stores data import data.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The id for the data import.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'Title for the data import.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'machine_name' => array(
+        'description' => 'The machine-readable name.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'description' => array(
+        'description' => 'Description for the data import.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'big',
+      ),
+      'source' => array(
+        'description' => 'Data source selected for the data import.',
+        'type' => 'varchar',
+        'length' => 100,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'source_settings' => array(
+        'description' => 'Serialized array of information about the source of data import.',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+      'settings' => array(
+        'description' => 'Serialized array of information about the data import being defined.',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'Timestamp for when this data import was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'lastimport' => array(
+        'description' => 'Timestamp indicating the last time this import was run.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'created' => array('created'),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function crm_core_data_import_uninstall() {
+  // Deregister all data import tasks.
+  db_delete('migrate_status')
+    ->condition('class_name', 'MigrationDataImport')
+    ->execute();
+}

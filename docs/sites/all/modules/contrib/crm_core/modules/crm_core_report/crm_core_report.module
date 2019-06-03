@@ -1,0 +1,130 @@
+<?php
+
+/**
+ * @file
+ * Provides a simple reporting interface for CRM Core and related modules.
+ */
+
+/**
+ * Implements hook_hook_info().
+ */
+function crm_core_report_hook_info() {
+  $hooks = array(
+    // Registers reports from submodules within CRM Core, for central display.
+    'crm_core_report_register' => array(
+      'group' => 'crm_core_report',
+    ),
+  );
+
+  return $hooks;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function crm_core_report_permission() {
+  return array(
+    'view crm report index' => array(
+      'title' => t('View CRM Core report index'),
+      'description' => t('View CRM Core report index page.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function crm_core_report_menu() {
+
+  $items = array();
+
+  // Provides a listing of all reports registered for CRM Core.
+  $items['crm-core/reports'] = array(
+    'title' => 'Reports',
+    'page callback' => 'crm_core_report_list',
+    'access arguments' => array('view crm report index'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'pages/crm_core_report.pages.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function crm_core_report_theme() {
+
+  // We want a themable function for
+  // - report items
+  // - widgets
+  // - report index.
+  return array(
+    'crm_core_report_index' => array(
+      'template' => 'crm-core-report-index',
+      'variables' => array('reports' => NULL, 'report_items' => array()),
+      'path' => drupal_get_path('module', 'crm_core_report') . '/templates',
+    ),
+  );
+}
+
+/**
+ * Preprocess report index.
+ *
+ * @todo Allow reports to have weights.
+ */
+function crm_core_report_preprocess_crm_core_report_index(&$variables) {
+  $report_items = array();
+  $reports = $variables['reports'];
+  if (!empty($reports)) {
+    foreach ($reports as $item) {
+      $items = array();
+      foreach ($item['reports'] as $report) {
+        $items[] = l($report['title'], $report['path']) . '<br />' . $report['description'];
+      }
+      $report_items[] = theme('item_list', array(
+        'items' => $items,
+        'title' => $item['title'],
+      ));
+    }
+  }
+
+  $variables['report_items'] = $report_items;
+}
+
+/**
+ * Constructs a list of registered reports and widgets for CRM Core.
+ *
+ * Reports registered via this hook will be listed on the reports page
+ * and should include appropriate access controls, unless you want
+ * everyone with access to the main reports page to see them.
+ */
+function crm_core_report_get_reports() {
+  $hook = 'crm_core_report_register';
+  $reports = module_invoke_all($hook);
+  // @todo Document hook_alter.
+  drupal_alter($hook, $reports);
+
+  return $reports;
+}
+
+/**
+ * Implements hook_init().
+ *
+ * Add basic CSS styles for crm-core/reports path.
+ */
+function crm_core_report_init() {
+  if (arg(0) == 'crm-core' && arg(1) == 'reports') {
+    drupal_add_css(drupal_get_path('module', 'crm_core_report') . '/css/reports.css');
+  }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function crm_core_report_preprocess_page($vars){
+  if(arg(0) == 'crm-core'){
+    drupal_add_css(drupal_get_path('module', 'crm_core_report') . '/css/reports.css');
+    drupal_add_js(drupal_get_path('module', 'crm_core_report') . '/js/script.js');
+  }
+}

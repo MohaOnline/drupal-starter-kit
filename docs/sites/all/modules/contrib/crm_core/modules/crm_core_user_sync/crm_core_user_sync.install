@@ -1,0 +1,61 @@
+<?php
+
+/**
+ * Implements hook_install()
+ */
+function crm_core_user_sync_install() {
+  $t = get_t();
+
+  // Add relation type
+  $relation_type_info = array(
+    'relation_type' => 'crm_core_user_sync',
+    'label' => $t('Contact'),
+    'reverse_label' => $t('User'),
+    'source_bundles' => array('user:user'),
+    'target_bundles' => array('crm_core_contact:*'),
+    'r_unique' => TRUE,
+    'directional' => TRUE,
+  );
+  $relation_type = relation_type_create($relation_type_info);
+  relation_type_save($relation_type);
+}
+
+/**
+ * Implements hook_uninstall()
+ */
+function crm_core_user_sync_uninstall() {
+  relation_type_delete('crm_core_user_sync');
+
+  variable_del('crm_core_user_sync_rules');
+  variable_del('crm_core_user_sync_auto_sync_user_create');
+  variable_del('crm_core_user_sync_auto_sync_user_match');
+}
+
+/**
+ * Implements hook_enable().
+ */
+function crm_core_user_sync_enable() {
+  $menu_items = array(
+    array(
+      'link_path' => 'admin/config/crm-core/user-sync',
+      'link_title' => 'Administer User Synchronization',
+      'menu_name' => 'crm-core-admin-menu',
+    ),
+  );
+  foreach ($menu_items as $item) {
+    menu_link_save($item);
+  }
+}
+
+/**
+ * Implements hook_disable().
+ */
+function crm_core_user_sync_disable() {
+  //Remove links from crm-core-menu and crm-core-admin-menu.
+  $conditions = array(
+    'crm-core-admin-menu' => array(
+      'admin/config/crm-core/user-sync'
+    ),
+  );
+  crm_core_ui_remove_links($conditions);
+}

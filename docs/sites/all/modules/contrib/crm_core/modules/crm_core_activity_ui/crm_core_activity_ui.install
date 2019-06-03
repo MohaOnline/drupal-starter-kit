@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for Activity UI module.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Set weight of the module to 20. It should be more than
+ * of views module for hook_menu_alter().
+ */
+function crm_core_activity_ui_install() {
+  db_query("UPDATE {system} SET weight = 20 WHERE name = 'crm_core_activity_ui'");
+}
+
+/**
+ * Implements hook_enable().
+ */
+function crm_core_activity_ui_enable() {
+  $menu_items = array(
+    array(
+      'link_path' => 'admin/structure/crm-core/activity-types',
+      'link_title' => 'Administer CRM Core Activity types',
+      'menu_name' => 'crm-core-admin-menu',
+    ),
+  );
+  foreach ($menu_items as $item) {
+    menu_link_save($item);
+  }
+}
+
+/**
+ * Implements hook_disable().
+ */
+function crm_core_activity_ui_disable() {
+  // Remove links from crm-core-menu and crm-core-admin-menu.
+  $conditions = array(
+    'crm-core-admin-menu' => array(
+      'admin/structure/crm-core/activity-types',
+    ),
+  );
+  crm_core_ui_remove_links($conditions);
+}

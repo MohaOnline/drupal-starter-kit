@@ -1,0 +1,266 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function crm_core_ui_menu() {
+  $items = array();
+
+  /**
+   * Base CRM menu
+   */
+  $items['crm-core'] = array(
+    'title' => 'CRM Core',
+    'page callback' => 'crm_core_ui_dashboard',
+    'access arguments' => array('view crm dashboard'),
+    'type' => MENU_SUGGESTED_ITEM,
+    'theme callback' => 'crm_core_ui_get_theme',
+  );
+
+  $dashboard_enabled = variable_get('crm_core_dashboard_enabled', FALSE);
+  if ($dashboard_enabled) {
+    $items['crm-core/dashboard'] = array(
+      'title' => 'Dashboard',
+      'weight' => -10,
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'context' => MENU_CONTEXT_PAGE,
+    );
+  }
+
+  $items['admin/structure/crm-core'] = array(
+    'title' => 'CRM Core',
+    'description' => 'Manage contact types, activity types, and contact relationship types.',
+    'page callback' => 'crm_core_ui_admin_dashboard',
+    'access arguments' => array('access administration pages'),
+    'file' => 'pages/crm_core_ui.pages.inc',
+  );
+
+  $items['admin/config/crm-core'] = array(
+    'title' => 'CRM Core',
+    'description' => 'CRM Core module and feature settings.',
+    'position' => 'right',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/config/crm-core/settings'] = array(
+    'title' => 'CRM Core Settings',
+    'description' => 'Configure the appearance of CRM Core and presets for interacting with contacts.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('crm_core_ui_admin_config_form'),
+    'access arguments' => array('administer crm-core settings'),
+    'file' => 'pages/crm_core_ui.pages.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function crm_core_ui_permission() {
+  return array(
+    'view crm dashboard' => array(
+      'title' => t('View CRM dashboard'),
+      'description' => t('Use dashboard.'),
+    ),
+    'administer crm-core settings' => array(
+      'title' => t('Administer CRM Core Settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function crm_core_ui_theme() {
+  return array(
+    'crm_core_ui_ctools_dropbutton' => array(
+      'variables' => array(
+        'ops_count' => NULL,
+        'links' => array(),
+        'index' => NULL
+      )
+    )
+  );
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function crm_core_ui_admin_paths() {
+  $paths = array(
+    'crm-core/admin' => TRUE,
+    'crm-core/admin/*' => TRUE,
+  );
+
+  return $paths;
+}
+
+/**
+ * Render CRM Core Dashboard, if configured, otherwise redirects to contacts list.
+ */
+function crm_core_ui_dashboard() {
+  if (variable_get('crm_core_dashboard_enabled', FALSE)) {
+    $dashboard_path = variable_get('crm_core_dashboard_path', '');
+    // Get the content for the path.
+    $output = menu_execute_active_handler($dashboard_path, FALSE);
+    // Lets check if specified path still exists and accessible.
+    if ($output === MENU_NOT_FOUND || $output === MENU_ACCESS_DENIED) {
+      if (user_access('administer crm-core settings')) {
+        drupal_set_message(t('The dashboard cannot be loaded. Please check the !settings.',
+          array(
+            '!settings' => l(t('CRM Core Dashboard settings'), 'admin/config/crm-core/settings'),
+          )
+        ), 'error');
+      }
+      // @todo Consider menu_rebuild() instead for performance reasons.
+      drupal_flush_all_caches();
+      // @todo Where do we go if the crm_core_contact_ui is not enabled?
+      drupal_goto('crm-core/contact');
+    }
+    // If the callback returns an array instead of text, render it.
+    if (is_array($output)) {
+      $output = drupal_render($output);
+    }
+    $menu_item = menu_get_item($dashboard_path);
+    if (!empty($menu_item['title'])) {
+      drupal_set_title($menu_item['title']);
+    }
+
+    return $output;
+  }
+  else {
+    // Dashboard is not configured.
+    if (user_access('administer crm-core settings')) {
+      drupal_set_message(t('No dashboard has been configured for CRM Core. Click !here to configure a dashboard.',
+        array(
+          '!here' => l(t('here'), 'admin/config/crm-core/settings'),
+        )
+      ));
+    }
+    // @todo Consider menu_rebuild() instead for performance reasons.
+    drupal_flush_all_caches();
+    // @todo Where do we go if the crm_core_contact_ui is not enabled?
+    drupal_goto('crm-core/contact');
+  }
+}
+
+/**
+ * Implements hook_views_pre_render()
+ */
+function crm_core_ui_views_pre_render($view) {
+  if ($view->name == 'crm_activities_by_contact') {
+    crm_core_ui_ctools_add_dropbutton_files();
+  }
+}
+
+/**
+ * Additional function that adds special CSS/JS files for dropbuttons
+ */
+function crm_core_ui_ctools_add_dropbutton_files() {
+  // Add needed files
+  ctools_add_js('dropbutton');
+  ctools_add_css('dropbutton');
+  ctools_add_css('button');
+
+  // Add views & seven files
+  views_add_css('views-admin');
+  views_add_css('views-admin.ctools');
+  views_add_css('views-admin.seven');
+  drupal_add_css(drupal_get_path('module', 'crm_core_ui') . '/css/crm_core_ui.admin.css');
+}
+
+/**
+ * Theme function for operation links
+ */
+function theme_crm_core_ui_ctools_dropbutton($variables) {
+  $output = '';
+
+  $ops_count = $variables['ops_count'];
+  $links = $variables['links'];
+  $index = $variables['index'];
+
+  if (is_array($links) && count($links)) {
+    $item_list = array();
+    for ($i = count($links) - $ops_count; $i < count($links); $i++) {
+      $item_list['items'][] = $links[$i];
+    }
+
+    $class = 'ctools-no-js ctools-dropbutton ctools-button';
+    $output .= '<div class="' . $class . '" id="ctools-button-' . $index . '">';
+    $output .= '<div class="ctools-link">';
+    $output .= '<a href="#" class="ctools-twisty ctools-text">' . t('open') . '</a>';
+    $output .= '</div>';
+    $output .= '<div class="ctools-content">';
+    $output .= theme('item_list', $item_list);
+    $output .= '</div>';
+    $output .= '</div>';
+  }
+
+  return $output;
+}
+
+/**
+ * Contains custom menu definitions of CRM Core.
+ *
+ * @return array
+ *  Assoc array of menu items, keyed by menu name.
+ */
+function crm_core_ui_get_menus() {
+  $t = get_t();
+
+  return array(
+    'crm-core-menu' => array(
+      'menu_name' => 'crm-core-menu',
+      'title' => $t('CRM Core'),
+      'description' => $t('Provides access to various features and functions within CRM Core.'),
+    ),
+    'crm-core-admin-menu' => array(
+      'menu_name' => 'crm-core-admin-menu',
+      'title' => $t('CRM Core Admin Menu'),
+      'description' => $t('Provides access to various settings and configuration within CRM Core.'),
+    )
+  );
+}
+
+/**
+ * Helper function to remove links by path from specified menu.
+ *
+ * @param $conditions
+ *  Assoc array keyed by menu name. Each entry is array of paths, link to which should be removed.
+ */
+function crm_core_ui_remove_links($conditions) {
+  foreach ($conditions as $menu_name => $links_path) {
+    $links = menu_load_links($menu_name);
+    foreach ($links as $link) {
+      foreach ($links_path as $link_path) {
+        if ($link['link_path'] == $link_path) {
+          menu_link_delete($link['mlid']);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to set theme to use for CRM Core pages.
+ *
+ * @return theme_name|NULL
+ *  Machine theme name or NULL if not set.
+ */
+function crm_core_ui_get_theme() {
+  if (variable_get('crm_core_theme_enabled', FALSE)) {
+    return variable_get('crm_core_theme', '');
+  }
+}
+
+function crm_core_ui_preprocess_page(&$variables) {
+  // Replace "main-menu" links with links from "crm-core-menu".
+  if (menu_get_custom_theme() && variable_get('crm_core_theme_replace_links', FALSE)) {
+    $variables['main_menu'] = menu_navigation_links('crm-core-menu');
+  }
+}

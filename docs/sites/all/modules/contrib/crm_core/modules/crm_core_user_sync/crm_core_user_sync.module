@@ -1,0 +1,613 @@
+<?php
+
+/**
+ * Implements hook_menu()
+ */
+function crm_core_user_sync_menu() {
+  $items = array();
+  if (module_exists('crm_core_ui')) {
+    $items['admin/config/crm-core/user-sync'] = array(
+      'title' => 'User Synchronization',
+      'description' => 'Manage CRM Core user synchronization settings',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('crm_core_user_sync_admin_form'),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'weight' => 0,
+    );
+
+    $items['admin/config/crm-core/user-sync/settings'] = array(
+      'title' => 'User Synchronization Settings',
+      'weight' => -10,
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+    );
+
+    $items['admin/config/crm-core/user-sync/new'] = array(
+      'title' => 'Add a new rule',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('crm_core_user_sync_admin_edit_rule_form', NULL),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'type' => MENU_LOCAL_ACTION,
+    );
+
+    $items['admin/config/crm-core/user-sync/%/edit'] = array(
+      'title' => 'Edit a rule',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('crm_core_user_sync_admin_edit_rule_form', 4),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $items['admin/config/crm-core/user-sync/%/delete'] = array(
+      'title' => 'Delete a rule',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('crm_core_user_sync_admin_delete_rule_form', 4),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+    );
+
+    $items['admin/config/crm-core/user-sync/%/enable'] = array(
+      'title' => 'Delete a rule',
+      'page callback' => 'crm_core_user_sync_admin_update_rule_status',
+      'page arguments' => array(4, TRUE),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+    );
+
+    $items['admin/config/crm-core/user-sync/%/disable'] = array(
+      'title' => 'Delete a rule',
+      'page callback' => 'crm_core_user_sync_admin_update_rule_status',
+      'page arguments' => array(4, FALSE),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+    );
+
+    $items['admin/config/crm-core/user-sync/contact-to-user-management/add'] = array(
+      'title' => 'Add a new relation',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('crm_core_user_sync_edit_relation_form', NULL),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'type' => MENU_LOCAL_ACTION,
+    );
+
+    $items['admin/config/crm-core/user-sync/contact-to-user-management/%relation/edit'] = array(
+      'title' => 'Edit relation',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('crm_core_user_sync_edit_relation_form', 5),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $items['admin/config/crm-core/user-sync/contact-to-user-management/%relation/delete'] = array(
+      'title' => 'Delete relation',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('crm_core_user_sync_delete_relation_form', 5),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $items['admin/config/crm-core/user-sync/contact-to-user-management/user-autocomplete/%'] = array(
+      'page callback' => 'crm_core_user_sync_user_autocomplete',
+      'page arguments' => array(6),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $items['admin/config/crm-core/user-sync/contact-to-user-management/contact-autocomplete/%'] = array(
+      'page callback' => 'crm_core_user_sync_contact_autocomplete',
+      'page arguments' => array(6),
+      'access arguments' => array('administer user-sync'),
+      'file' => 'crm_core_user_sync.admin.inc',
+      'type' => MENU_CALLBACK,
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function crm_core_user_sync_permission() {
+  return array(
+    'administer user-sync' => array(
+      'title' => t('Administer User Synchronization'),
+      'description' => t('Access to configuration pages for User Synchronization'),
+    ),
+    'edit own contact information' => array(
+      'title' => t('Edit own contact information'),
+      'description' => t('Allows user to edit his/her own contact record from the user profile form'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function crm_core_user_sync_views_api() {
+  return array(
+    'api' => 2,
+    'path' => drupal_get_path('module', 'crm_core_user_sync') . '/views',
+  );
+}
+
+/**
+ * Implements hook_user_insert().
+ */
+function crm_core_user_sync_user_insert(&$edit, $account, $category) {
+  if (variable_get('crm_core_user_sync_auto_sync_user_create', 1)) {
+    // We want to try to search for existing contact.
+    if (variable_get('crm_core_user_sync_auto_sync_user_match', 1)) {
+      $contact_types = entity_load('crm_core_contact_type');
+      $match = FALSE;
+      foreach ($contact_types as $contact_type) {
+        if (isset($contact_type->primary_fields) && !empty($contact_type->primary_fields['email'])) {
+          $email_field = $contact_type->primary_fields['email'];
+          $email_field_info = field_info_field($email_field);
+          reset($email_field_info['columns']);
+          $column = key($email_field_info['columns']);
+          $query = new EntityFieldQuery();
+          $query->entityCondition('entity_type', 'crm_core_contact')
+            ->entityCondition('bundle', $contact_type->type)
+            ->fieldCondition($email_field, $column, $account->mail);
+          $results = $query->execute();
+          if (!empty($results['crm_core_contact'])) {
+            $match = TRUE;
+            $cids = array_keys($results['crm_core_contact']);
+            $contact_id = array_shift($cids);
+            crm_core_user_sync_sync($account, crm_core_contact_load($contact_id));
+            break;
+          }
+        }
+      }
+      if (!$match) {
+        crm_core_user_sync_sync($account);
+      }
+    }
+    else {
+      crm_core_user_sync_sync($account);
+    }
+  }
+}
+
+/**
+ * Implements hook_user_update()
+ */
+function crm_core_user_sync_user_update(&$edit, $account, $category) {
+  // user update only ensures that for the given user it should have a corresponding
+  // contact record associated with it.
+  $related_contact = _crm_core_user_sync_get_related_entity('user', $account->uid, 'crm_core_user_sync');
+  if (empty($related_contact)) {
+      if (variable_get('crm_core_user_sync_auto_sync_user_create', 1)) {
+        crm_core_user_sync_sync($account);
+      }
+  }
+}
+
+/**
+ * Implements hook_user_delete()
+ */
+function crm_core_user_sync_user_delete($account) {
+  // @TODO: For now we delete the relation only.
+  // We should handle this properly in hook_user_cancel() regarding other
+  // cancellation methods.
+  $query = relation_query('user', $account->uid);
+  $query->propertyCondition('relation_type', 'crm_core_user_sync');
+  $query->propertyCondition('arity', 2);
+  $relations = $query->execute();
+  $relation_ids = array();
+  foreach ($relations as $relation) {
+    $relation_ids[] = $relation->rid;
+  }
+  if (!empty($relation_ids)) {
+    relation_delete_multiple($relation_ids);
+  }
+}
+
+/**
+ * Returns corresponding contact type for user account to synchronize with.
+ */
+function crm_core_user_sync_get_contact_type_for_account($account) {
+  $rules = variable_get('crm_core_user_sync_rules', array());
+  uasort($rules, 'crm_core_user_sync_weight_cmp');
+
+  foreach ($rules as $rule) {
+    if ($rule['enabled'] && in_array($rule['rid'], array_keys($account->roles))) {
+      return $rule['contact_type'];
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Checks if user->contact relation exists.
+ */
+function crm_core_user_sync_exists($uid, $contact_id) {
+  if (is_object($uid)) {
+    $uid = $uid->uid;
+  }
+
+  if (is_object(($contact_id))) {
+    $contact_id = $contact_id->contact_id;
+  }
+
+  return relation_relation_exists(array(
+    array('entity_type' => 'user', 'entity_id' => $uid),
+    array('entity_type' => 'crm_core_contact', 'entity_id' => $contact_id)
+  ), 'crm_core_user_sync');
+}
+
+/**
+ * Validates user amd contact.
+ *
+ * @param $account to be synchronized
+ * @param $contact_type to be associated with $account. It can be contact object either.
+ */
+function crm_core_user_sync_validate($account, $contact_type) {
+  if (is_object($contact_type)) {
+    $contact_type = $contact_type->type;
+  }
+
+  $rules = variable_get('crm_core_user_sync_rules', array());
+
+  foreach ($rules as $rule) {
+    if ($rule['enabled'] && in_array($rule['rid'], array_keys($account->roles))
+          && $rule['contact_type'] == $contact_type) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Synchronizes user amd contact.
+ *
+ * @param $account to be synchronized
+ * @param $contact to be associated with $account
+ *
+ * @return contact object
+ */
+function crm_core_user_sync_sync($account, $contact = NULL) {
+  // Property crm_core_no_auto_sync skips creation of contact.
+  if (empty($contact) && empty($account->crm_core_no_auto_sync)) {
+
+    // Get corresponding contact type
+    $contact_type = crm_core_user_sync_get_contact_type_for_account($account);
+
+    if (!$contact_type) {
+      return;
+    }
+
+    // Create the contact.
+    $contact = entity_create('crm_core_contact', array('type' => $contact_type));
+    $contact->uid = $account->uid;
+
+    // For now we just add the name.
+    $contact_name = field_info_instance('crm_core_contact', 'contact_name', $contact_type);
+    if (!empty($contact_name)) {
+      $contact->contact_name[LANGUAGE_NONE][0] = array(
+        'title' => '',
+        'family' => '',
+        'generational' => '',
+        'credentials' => '',
+        'given' => $account->name,
+      );
+    }
+
+    crm_core_contact_save($contact);
+  }
+  else {
+    $contact_type = $contact->type;
+
+    // Check if contact can be synchronized to a contact.
+    if (!crm_core_user_sync_validate($account, $contact)) {
+      return;
+    }
+  }
+
+  // Check if crm_core_user_sync relation exists for any of endpoint.
+  if (crm_core_user_sync_get_contact_from_uid($account->uid) ||
+          crm_core_user_sync_get_user_from_contact_id($contact->contact_id)) {
+    return;
+  }
+
+  // Create the relation
+  $endpoints = array(
+    array(
+      'entity_type' => 'user',
+      'entity_bundle' => 'user',
+      'entity_id' => $account->uid,
+    ),
+    array(
+      'entity_type' => 'crm_core_contact',
+      'entity_bundle' => $contact_type,
+      'entity_id' => $contact->contact_id,
+    ),
+  );
+
+  $relation = relation_create('crm_core_user_sync', $endpoints);
+  $rid = relation_save($relation);
+
+  watchdog('crm_core_user_sync', 'User @user has been synchronized to the contact @contact_id, relation @rid has been created.',
+    array('@user' => $account->name, '@contact_id' => $contact->contact_id, '@rid' => $rid)
+  );
+
+  return $contact;
+}
+
+/**
+ * Loosely based on relation_rules_get_related_entities.
+ */
+function _crm_core_user_sync_get_related_entities($entity_type, $entity_id, $relation_type) {
+  $rids = array_keys(relation_query($entity_type, $entity_id)->entityCondition('bundle', $relation_type)->execute());
+
+  $entities_ids = array();
+  if (!$rids) {
+    return $entities_ids;
+  }
+
+  $target_entity_type = ($entity_type == 'user')?'crm_core_contact':'user';
+  $rmap = array();
+
+  foreach (relation_load_multiple($rids) as $relation) {
+    $data = array();
+    foreach ($relation->endpoints[LANGUAGE_NONE] as $endpoint) {
+      $data[$endpoint['entity_type']] = $endpoint['entity_id'];
+    }
+    $entities_ids[] = $data[$target_entity_type];
+    $rmap[$data[$target_entity_type]] = $data[$entity_type];
+  }
+
+  $entities = entity_load($target_entity_type, $entities_ids);
+
+  $targets = array();
+
+  foreach ($entities as $entity_id => $entity) {
+    $targets[$rmap[$entity_id]] = $entity;
+  }
+  return $targets;
+}
+
+/**
+ * Copied from relation.module, (beta 1)
+ * gives an error if the entity id is not found, so need to fix that
+ */
+function _crm_core_user_sync_get_related_entity($entity_type, $entity_id, $relation_type = NULL, $r_index = NULL, $check_access = TRUE) {
+  $query = relation_query($entity_type, $entity_id);
+  // Allows to skip node access checks.
+  if (!$check_access) {
+    $query->addTag('DANGEROUS_ACCESS_CHECK_OPT_OUT');
+  }
+  if ($relation_type) {
+    $query->propertyCondition('relation_type', $relation_type);
+  }
+  if (isset($r_index)) {
+    $query->fieldCondition('endpoints', 'r_index', $r_index);
+  }
+  $results = $query->execute();
+
+  if (empty($results)) {
+    return;
+  }
+
+  $result = reset($results);
+  $relation = relation_load($result->rid);
+  $request_key = $entity_type . ':' . $entity_id;
+  $entities = $relation->endpoints[LANGUAGE_NONE];
+  if (isset($entities[0]['entity_type']) && isset($entities[0]['entity_id'])) {
+    $first_entity_key = $entities[0]['entity_type'] . ':' . $entities[0]['entity_id'];
+    if (isset($r_index)) {
+      $request_key = $request_key . ':' . $r_index;
+      $first_entity_key = $first_entity_key . ':' . $entities[0]['r_index'];
+    }
+    if ($request_key == $first_entity_key) {
+      $other_endpoints = entity_load($entities[1]['entity_type'], array($entities[1]['entity_id']));
+      return reset($other_endpoints);
+    }
+    $other_endpoints = entity_load($entities[0]['entity_type'], array($entities[0]['entity_id']));
+    return reset($other_endpoints);
+  }
+}
+
+/**
+ * Retrieves the related entity based on entity type, ids and relation type.
+ */
+function crm_core_user_sync_get_related_entity($entity_type, $entity_id, $relation_type = 'crm_core_user_sync') {
+  if (is_array($entity_id)) {
+    return _crm_core_user_sync_get_related_entities($entity_type, $entity_id, $relation_type);
+  }
+  elseif (is_numeric($entity_id)) {
+    return _crm_core_user_sync_get_related_entity($entity_type, $entity_id, $relation_type);
+  }
+  return FALSE;
+}
+
+/**
+ * Retrieves the related contacts for given uid(s).
+ */
+function crm_core_user_sync_get_contact_from_uid($uid) {
+  return crm_core_user_sync_get_related_entity('user', $uid, 'crm_core_user_sync');
+}
+
+/**
+ * Retrieves the related contacts for given uids.
+ */
+function crm_core_user_sync_get_contacts_from_uids($uids) {
+  return crm_core_user_sync_get_related_entity('user', $uids, 'crm_core_user_sync');
+}
+
+/**
+ * Retrieves the related users for given contact id(s).
+ */
+function crm_core_user_sync_get_user_from_contact_id($contact_id) {
+  return crm_core_user_sync_get_related_entity('crm_core_contact', $contact_id, 'crm_core_user_sync');
+}
+
+/**
+ * Retrieves the related users for given contact ids.
+ */
+function crm_core_user_sync_get_users_from_contact_ids($contact_ids) {
+  return crm_core_user_sync_get_related_entity('crm_core_contact', $contact_ids, 'crm_core_user_sync');
+}
+
+/**
+ * Implements hook_entity_property_info_alter().
+ *
+ * We need to extend Contact entity with related user for Rules integration.
+ */
+function crm_core_user_sync_entity_property_info_alter(&$info) {
+  $info['crm_core_contact']['properties']['crm_core_user_sync_uid'] = array(
+    'label' => t('Linked Account'),
+    'description' => t('Account related to Contact by crm_core_user_sync module.'),
+    'type' => 'user',
+    'getter callback' => 'crm_core_user_sync_contact_get_user_properties',
+  );
+}
+
+function crm_core_user_sync_contact_get_user_properties($entity, array $options, $name, $entity_type) {
+  if ($account = _crm_core_user_sync_get_related_entity('crm_core_contact', $entity->contact_id, 'crm_core_user_sync')) {
+    return $account->uid;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function crm_core_user_sync_form_crm_core_ui_admin_config_form_alter(&$form, &$form_state, $form_id) {
+  $form['contacts'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Contacts'),
+    '#weight' => 0,
+  );
+  $description = 'When checked, this will allow contact information to be loaded as part of the user entity. '
+    . 'It will create an array containing contact information associated with the current user. In certain situations,'
+    . ' loading contact data as part of a user entity can create performance issues (for instance, when there are '
+    .'hundreds of fields associated with each contact). Uncheck this box if it is creating problems with performance.';
+  $form['contacts']['crm_core_contact_load'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Load contact information as part of the user entity?'),
+    '#description' => t($description),
+    '#default_value' => variable_get('crm_core_contact_load', FALSE),
+    '#weight' => 0,
+  );
+}
+
+/**
+ * Implements hook_init().
+ */
+function crm_core_user_sync_init() {
+  if (variable_get('crm_core_contact_load', FALSE)) {
+    global $user;
+    $user->crm_core['contact'] = crm_core_user_sync_get_contact_from_uid($user->uid);
+  }
+}
+
+/**
+ * Implements hook_theme
+ */
+function crm_core_user_sync_theme() {
+  return array(
+    'crm_core_user_sync_admin_form' => array(
+      'render element' => 'form',
+      'file' => 'crm_core_user_sync.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_user_view().
+ */
+function crm_core_user_sync_user_view($account, $view_mode, $langcode) {
+  $contact = crm_core_user_sync_get_contact_from_uid($account->uid);
+  if ($contact) {
+    $content = array(
+      '#type' => 'user_profile_item',
+      '#title' => t('Contact Information'),
+    );
+    $contact_label = t('Contact name: ');
+    global $user;
+    if (user_access('edit any crm_core_contact entity', $user)) {
+      $uri = $contact->uri();
+      $content['#markup'] = $contact_label . l($contact->label(), $uri['path']);
+    }
+    else {
+      $content['#markup'] = $contact_label . $contact->label();
+    }
+    $account->content['crm_core'] = $content;
+  }
+}
+
+/**
+ * Weight comparison function
+ */
+function crm_core_user_sync_weight_cmp($a, $b) {
+  if ($a['weight'] == $b['weight']) {
+    return 0;
+  }
+  return ($a['weight'] < $b['weight']) ? -1 : 1;
+}
+
+/**
+ * Implemets hook_views_pre_execute().
+ */
+function crm_core_user_sync_views_pre_execute(&$view) {
+    return; // TODO: update this
+
+    if ($view->name == 'crm_core_contact_to_user_management') {
+    // Implementing "FULL OUTER JOIN" by union of queries.
+    // Reciept from http://drupal.org/node/748844#comment-7070234
+    $left_query = db_select('crm_core_contact');
+    $left_query->leftJoin('field_data_endpoints', 'field_data_endpoints', "crm_core_contact.contact_id = field_data_endpoints.endpoints_entity_id AND field_data_endpoints.bundle = 'crm_core_user_sync' AND field_data_endpoints.endpoints_entity_type = 'crm_core_contact'");
+    $left_query->leftJoin('field_data_endpoints', 'field_data_endpoints2', "field_data_endpoints.entity_id = field_data_endpoints2.entity_id AND field_data_endpoints2.endpoints_entity_type = 'user'");
+    $left_query->leftJoin('users', 'users_crm_core_contact', "field_data_endpoints2.endpoints_entity_id = users_crm_core_contact.uid AND field_data_endpoints2.endpoints_entity_type = 'user'");
+    $left_query->addField('crm_core_contact', 'contact_id', 'contact_id');
+    $left_query->addField('users_crm_core_contact', 'uid', 'users_crm_core_contact_uid');
+    $left_query->addField('users_crm_core_contact', 'name', 'users_crm_core_contact_name');
+    $left_query->addExpression("'crm_core_contact'", 'field_data_contact_name_crm_core_contact_entity_type');
+
+    $right_query = db_select('crm_core_contact');
+    $right_query->leftJoin('field_data_endpoints', 'field_data_endpoints', "crm_core_contact.contact_id = field_data_endpoints.endpoints_entity_id AND field_data_endpoints.bundle = 'crm_core_user_sync' AND field_data_endpoints.endpoints_entity_type = 'crm_core_contact'");
+    $right_query->leftJoin('field_data_endpoints', 'field_data_endpoints2', "field_data_endpoints.entity_id = field_data_endpoints2.entity_id AND field_data_endpoints2.endpoints_entity_type = 'user'");
+    $right_query->rightJoin('users', 'users_crm_core_contact', "field_data_endpoints2.endpoints_entity_id = users_crm_core_contact.uid AND field_data_endpoints2.endpoints_entity_type = 'user'");
+    $right_query->addField('crm_core_contact', 'contact_id', 'contact_id');
+    $right_query->addField('users_crm_core_contact', 'uid', 'users_crm_core_contact_uid');
+    $right_query->addField('users_crm_core_contact', 'name', 'users_crm_core_contact_name');
+    $right_query->addExpression("'crm_core_contact'", 'field_data_contact_name_crm_core_contact_entity_type');
+
+    $left_query->union($right_query);
+    $total_query = db_select($left_query, 'total')->fields('total');
+    $view->build_info['count_query'] = $view->build_info['query'] = $total_query;
+  }
+}
+
+/**
+ * Retrieves entity object from a text in a format like 'Title [id_key: 123]'.
+ */
+function _crm_core_user_sync_get_entity_id_from_text($text, $entity_type) {
+  $entity_info = entity_get_info($entity_type);
+
+  if (empty($entity_info) || empty($entity_info['entity keys']['id'])) {
+    return FALSE;
+  }
+
+  $id_key = $entity_info['entity keys']['id'];
+
+  $matches = array();
+  preg_match('/\[' . $id_key . ':([0-9]+)\]/', $text, $matches);
+  if (!array_key_exists(1, $matches) || !is_numeric($matches[1])) {
+    return FALSE;
+  }
+  $entities = entity_load($entity_type, array($matches[1]));
+  if (empty($entities)) {
+    return FALSE;
+  }
+  return $entities[$matches[1]];
+}

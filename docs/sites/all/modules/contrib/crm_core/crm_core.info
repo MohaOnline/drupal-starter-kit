@@ -1,0 +1,11 @@
+name = CRM Core
+description = Provides basic functionality for a CRM Core.
+package = CRM Core
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2017-02-16
+version = "7.x-1.0"
+core = "7.x"
+project = "crm_core"
+datestamp = "1487217492"
+
