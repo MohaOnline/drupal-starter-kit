@@ -1,0 +1,22 @@
+name = Pushtape Page
+description = Creates a static page content type.
+core = 7.x
+package = Pushtape
+version = 7.x-1.0
+project = pushtape_page
+dependencies[] = features
+dependencies[] = field_sql_storage
+dependencies[] = node
+dependencies[] = text
+datestamp = 1416534481
+features[features_api][] = api:2
+features[field_base][] = body
+features[field_instance][] = node-page-body
+features[node][] = page
+
+; Information added by Drupal.org packaging script on 2016-09-28
+version = "7.x-1.0"
+core = "7.x"
+project = "pushtape_page"
+datestamp = "1475042045"
+

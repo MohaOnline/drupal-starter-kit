@@ -1,0 +1,173 @@
+/**
+ * Admin page
+ */
+.pushtape-player-admin-container-class {
+  border-left: 1px solid #ddd;
+  font-size: 0.9em;
+  padding-left: 10px;
+}
+
+
+/**
+ * Player
+ */
+.pt-play-pause:focus {
+  /* @TODO: Add another indicator here or remove to address accessibility */
+  outline:0;
+  opacity:.8; /* Some sort of indicator, at least*/
+}
+.pt-previous,
+.pt-next {
+  display:block;
+  margin-left:2em;
+  float:right;
+}
+.pt-previous .genericon,
+.pt-next .genericon {
+  font-size:2.5em;
+  vertical-align:middle;
+  line-height:1.5em;
+}
+.pt-play-pause,
+.pt-play-pause .genericon {
+  font-size:2em;
+}
+/* Hide/Show */
+.pause-btn,
+.pt-play-pause.pt-playing .play-btn {
+  display:none;
+}
+.pt-play-pause.pt-playing .pause-btn {
+  display:inline-block;
+}
+.pause-btn {
+}
+.pt-scrubber {
+  margin-bottom: 0.6em;
+  margin-top: 1em;
+}
+.pt-scrubber .pt-statusbar {
+  height: 0.6em;
+  position: relative;
+  border-right:solid 1px #CCC;
+  border-bottom:solid 1px #CCC;
+  border-top:solid 1px #DCDCDC;
+  border-left:solid 1px #DCDCDC;
+  background:#F9F9F9;
+  border-radius:1px;
+  padding:1px;
+}
+.pt-scrubber.dragging .pt-statusbar {
+  cursor: grabbing;
+  cursor:-webkit-grabbing;
+}
+.pt-scrubber .pt-statusbar .pt-position,
+.pt-scrubber .pt-statusbar .pt-loading {
+  position: absolute;
+  height: 100%;
+  left: 0;
+  top: 0;
+  width:0;
+}
+.pt-scrubber .pt-statusbar .pt-position {
+  background-color: #666666;
+  position:relative;
+}
+.pt-scrubber .pt-statusbar .pt-loading {
+  background-color:#F1F1F1;
+}
+.pt-scrubber .pt-statusbar .pt-handle {
+  position:absolute;
+  width:1.7em;
+  height:.95em;
+  right:-1.6em; /* Half of width */
+  top:-.24em; /* Slightly less than half of height*/
+  background:#FDFDFD;
+  border:solid 1px #999;
+  border-bottom:solid 1px #777;
+  border-right:solid 1px #777;
+  border-radius:1px;
+  transition: all .1s;
+  cursor: pointer;
+}
+.pt-time {
+  float:right;
+  font-size:1em;
+}
+.pt-current-track-title {
+  color:#DDD;
+  font-size:1.7em;
+  vertical-align:middle;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.pushtape-player-playlist {
+  clear:both;
+  margin:0;
+  padding:0;
+  list-style-type:none;
+  font-size:1.1em;
+}
+.pushtape-player-playlist a {
+  display:block;
+  padding:1em;
+  border-bottom:solid 1px #EEE;
+}
+.pushtape-player-playlist li.last a {
+  border-bottom:none;
+}
+.pushtape-player-playlist a:hover,
+.pushtape-player-playlist a.pt-playing,
+.pushtape-player-playlist a.pt-paused {
+  background:#FBFBEF;
+}
+.pt-link.pt-loading { opacity:.2;}
+.pt-link.pt-playing { opacity: 1; font-weight:bold;}
+.pt-link.pt-paused { opacity:.5; font-weight:bold;}
+
+/**
+ * Genericons for better icons. 
+ * See: http://genericons.com/
+ */
+.pt-link {}
+.pt-link:before {
+  font-family:Genericons;
+  content: '\f452 ';
+  vertical-align:bottom;
+  -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.pt-link.pt-playing:before {
+  font-family:Genericons;
+  content: '\f448 ';
+  vertical-align:bottom;
+  -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.pt-play-pause.pt-buffering,
+.pt-link.pt-buffering {
+  -webkit-animation: buffering 1.6s infinite;
+  animation:  buffering 1.6s infinite;
+}
+
+/* Utility class to hide elements if no links found on page load */
+.pt-hide {
+  display:none;
+}
+
+/* Buffering animation */
+@-webkit-keyframes buffering {
+  0%   { opacity:1; }
+  50%   { opacity:.5; }
+  100% { opacity:1; }
+}
+
+@keyframes buffering {
+  0%   { opacity:1; }
+  50% { opacity:.5; }
+  100% { opacity:1; }
+}

@@ -1,0 +1,24 @@
+name = Pushtape News
+description = Creates a news content type and associated views.
+core = 7.x
+package = Pushtape
+version = 7.x-1.0
+project = pushtape_news
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = menu
+dependencies[] = pushtape_discography
+dependencies[] = views
+datestamp = 1416483273
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[field_instance][] = node-news-body
+features[node][] = news
+features[views_view][] = news
+
+; Information added by Drupal.org packaging script on 2016-09-28
+version = "7.x-1.0"
+core = "7.x"
+project = "pushtape_news"
+datestamp = "1475042055"
+

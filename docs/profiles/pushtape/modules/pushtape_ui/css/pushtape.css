@@ -1,0 +1,31 @@
+.indent {
+  margin-left:50px;
+
+}
+.new-album, .upload-artwork {
+  font-size:.9em;
+  padding-left:10px;
+  border-left: solid 1px #ddd;
+}
+
+.multiselect {
+  width: 460px;
+  height: 200px;
+}
+
+#edit-field-tracklist .tabledrag-toggle-weight-wrapper {
+  display:none;
+}
+
+.small {
+  font-size:.8em;
+}
+
+.view-releases .views-row {
+  margin-bottom:1.5em;
+}
+
+.field-name-field-tags .field-items .field-item {
+  display:inline-block;
+  margin-right:.5em;
+}

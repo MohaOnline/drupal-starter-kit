@@ -1,0 +1,41 @@
+name = Flux
+description = Flux is a simple, style agnostic base theme used in the Pushtape distribution.
+core = 7.x
+version = 7.x-1.0
+engine = phptemplate
+stylesheets[all][] = style.css
+scripts[] = js/flux.js
+
+regions[top]            = Top
+regions[header]         = Header
+regions[navigation]     = Navigation
+regions[highlighted]    = Highlighted
+regions[help]           = Help
+regions[content]        = Content
+regions[sidebar_first]  = First Sidebar
+regions[sidebar_second] = Second Sidebar
+regions[footer]         = Footer
+regions[bottom]         = Bottom
+
+
+features[] = logo
+features[] = name
+features[] = slogan
+features[] = node_user_picture
+features[] = comment_user_picture
+features[] = comment_user_verification
+features[] = favicon
+features[] = main_menu
+
+; Theme settings
+settings[default_cover_photo] = 1
+settings[toggle_cover_photo] = 1
+settings[toggle_logo] = 0
+
+
+; Information added by Drupal.org packaging script on 2016-09-28
+version = "7.x-1.0"
+core = "7.x"
+project = "flux"
+datestamp = "1475041487"
+

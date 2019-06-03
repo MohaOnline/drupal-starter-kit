@@ -1,0 +1,320 @@
+<?php
+
+/**
+ * Implement hook_install().
+ *
+ * Perform actions to set up the site for this profile.
+ */
+function pushtape_install() {
+
+  // (Deprecated) Path to Soundmanager2
+  // variable_set('sm2_path', 'profiles/pushtape/libraries/soundmanager2');
+
+  // Colorbox custom links
+  variable_set('colorbox_inline', 1);
+  variable_set('colorbox_load', 1);
+  
+  // Enable themes
+  theme_enable(array('seven', 'flux'));
+  variable_set('admin_theme', 'flux');
+  variable_set('theme_default', 'flux');
+  variable_set('site_frontpage', 'releases');
+  variable_set('pathauto_node_pattern', '[node:title]');
+  variable_set('pathauto_node_album_pattern', 'release/[node:title]');
+  variable_set('pathauto_node_track_pattern', 'track/[node:title]');
+  variable_set('pathauto_node_news_pattern', 'news/[node:title]');
+  variable_set('pathauto_node_event_pattern', 'event/[node:title]');
+  variable_set('pathauto_node_photoset_pattern', 'photoset/[node:title]');
+  // variable_set('clean_url', 1);
+  // variable_set('site_footer', 'Built with Pushtape');
+  variable_set('node_admin_theme', '1');  
+  
+  // Default "Basic page" to not be promoted and have comments disabled.
+  variable_set('node_options_page', array('status'));
+  variable_set('node_options_track', array('status'));
+  variable_set('node_options_album', array('status'));
+  variable_set('comment_page', COMMENT_NODE_HIDDEN);
+  variable_set('comment_track', COMMENT_NODE_HIDDEN);
+  variable_set('comment_album', COMMENT_NODE_HIDDEN);
+  variable_set('node_preview_page', 0);
+  variable_set('node_preview_track', 0);
+  variable_set('node_preview_album', 0);
+
+  // Default dates
+  variable_set('date_format_short', 'F j, Y'); 
+  variable_set('date_format_medium', 'M j, Y'); 
+  variable_set('date_format_long', 'n/j/Y'); 
+
+  // Don't display date and author information for "Basic page" nodes by default.
+  variable_set('node_submitted_page', FALSE);
+  variable_set('node_submitted_track', FALSE);
+  variable_set('node_submitted_album', FALSE);
+  variable_set('node_submitted_event', FALSE);
+  variable_set('node_submitted_photoset', FALSE);
+
+  // Enable user picture support and set the default to a square thumbnail option.
+  variable_set('user_pictures', '1');
+  variable_set('user_picture_dimensions', '1024x1024');
+  variable_set('user_picture_file_size', '800');
+  variable_set('user_picture_style', 'thumbnail');
+
+  // Allow visitor account creation with administrative approval.
+  variable_set('user_register', USER_REGISTER_ADMINISTRATORS_ONLY);
+  
+  // Disable secondary menu link source.
+  variable_set('menu_secondary_links_source', '');
+  
+  /**
+   * Some input formats
+   */
+   $filtered_html_format = array(
+    'format' => 'filtered_html', 
+    'name' => 'Filtered HTML', 
+    'weight' => 0, 
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0, 
+        'status' => 1,
+      ),
+      // HTML filter. 
+      'filter_html' => array(
+        'weight' => 1, 
+        'status' => 1,
+      ),
+      // Line break filter. 
+      'filter_autop' => array(
+        'weight' => 2, 
+        'status' => 1,
+      ),
+      // HTML corrector filter. 
+      'filter_htmlcorrector' => array(
+        'weight' => 10, 
+        'status' => 1,
+      ),
+    ),
+  );
+  $filtered_html_format = (object) $filtered_html_format;
+  filter_format_save($filtered_html_format);
+
+  $full_html_format = array(
+    'format' => 'full_html', 
+    'name' => 'Full HTML', 
+    'weight' => 1, 
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0, 
+        'status' => 1,
+      ),
+      // Line break filter. 
+      'filter_autop' => array(
+        'weight' => 1, 
+        'status' => 1,
+      ),
+      // HTML corrector filter. 
+      'filter_htmlcorrector' => array(
+        'weight' => 10, 
+        'status' => 1,
+      ),
+    ),
+  );
+  $full_html_format = (object) $full_html_format;
+  filter_format_save($full_html_format);
+  
+  // Enable some standard blocks.
+  $default_theme = 'flux';
+  $values = array(
+    array(
+      'module' => 'pushtape_player', 
+      'delta' => 'controls', 
+      'theme' => $default_theme, 
+      'status' => 1, 
+      'weight' => -10, 
+      'region' => 'content',
+      'visibility' => 0,        
+      'pages' => "admin*\nnode/add/*\nnode/*/edit\nprint/*\nprintpdf/*\nsystem/ajax\nsystem/ajax/*", 
+      'cache' => -1,
+    ),  
+    array(
+      'module' => 'system', 
+      'delta' => 'main', 
+      'theme' => $default_theme, 
+      'status' => 1, 
+      'weight' => 0, 
+      'region' => 'content',
+      'visibility' => 0,        
+      'pages' => '', 
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'system', 
+      'delta' => 'help', 
+      'theme' => $default_theme, 
+      'status' => 1, 
+      'weight' => 0, 
+      'region' => 'help',
+      'visibility' => 0,        
+      'pages' => '', 
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'menu', 
+      'delta' => 'menu-pushtape', 
+      'theme' => $default_theme, 
+      'status' => 1, 
+      'weight' => 0, 
+      'region' => 'top',
+      'visibility' => 0,        
+      'pages' => '', 
+      'cache' => -1,
+    ),
+    array(
+      'module' => 'views', 
+      'delta' => 'events-block_1', 
+      'theme' => $default_theme, 
+      'status' => 1, 
+      'weight' => 10, 
+      'region' => 'content',
+      'visibility' => 1,     
+      'pages' => 'shows', 
+      'cache' => -1,
+    ),    
+  );
+  $query = db_insert('block')->fields(array('module', 'delta', 'theme', 'status', 'weight', 'region', 'visibility', 'pages', 'cache'));
+  foreach ($values as $record) {
+    $query->values($record);
+  }
+  $query->execute();   
+}
+
+
+/**
+ * Implements hook_install_tasks().
+ */
+function pushtape_install_tasks(&$install_state) {
+
+  // Remove any status messages that might have been set. They are unneeded.
+  drupal_get_messages('status', TRUE);
+  
+  $tasks = array(
+    'pushtape_final_site_setup' => array(),
+  );
+  return $tasks;
+}
+
+/**
+ * Return system status before completing installation.
+ */
+function pushtape_final_site_setup() {
+
+  drupal_set_title(st('@drupal installation complete', array('@drupal' => drupal_install_profile_distribution_name())), PASS_THROUGH);
+  $messages = drupal_set_message();
+  $output = '<p>' . st('Congratulations, you installed @drupal!', array('@drupal' => drupal_install_profile_distribution_name())) . '</p>';
+  $output .= '<p>' . (isset($messages['error']) ? st('Review the messages above before visiting <a href="@url">your new site</a>.', array('@url' => url(''))) : st('<a href="@url">Visit your new site</a>.', array('@url' => url('')))) . '</p>';
+  $clean = variable_get('clean_url', 0) ? 'enabled' : 'disabled';
+  $size = format_size(file_upload_max_size());
+  $output .= '<fieldset>';
+  $output .= '<legend><span class="fieldset-legend">Additional notes</span></legend>';
+  $output .= '<ul class = "post-install-notes">';
+  $output .=   '<li>Drupal admin modules are turned <strong>off</strong>.</li>';  
+  $output .=   '<li>Clean URLS are <strong>' . $clean . '.</strong></li>';  
+  $output .=   '<li>Default file upload limit is <strong>' . $size . '.</strong></li>';
+  $output .= '</ul>';
+  
+  /**
+   * Flush all caches to ensure that any full bootstraps during the installer
+   * do not leave stale cached data, and that any content types or other items
+   * registered by the installation profile are registered correctly.
+   */
+  drupal_flush_all_caches();
+
+  // Remember the profile which was used.
+  variable_set('install_profile', drupal_get_profile());
+
+  // Installation profiles are always loaded last
+  db_update('system')->fields(array('weight' => 1000))->condition('type', 'module')->condition('name', drupal_get_profile())->execute();
+
+  // Cache a fully-built schema.
+  drupal_get_schema(NULL, TRUE);
+
+  // Run cron to populate update status tables (if available) so that users
+  // will be warned if they've installed an out of date Drupal version.
+  // Will also trigger indexing of profile-supplied content or feeds.
+  drupal_cron_run();
+
+  return $output;
+}
+
+
+/**
+ * Implements hook_install_tasks_alter().
+ */
+function pushtape_install_tasks_alter(&$tasks, $install_state) {
+
+  // These first two pages will depend on Drupal exclusive flag
+  $tasks['install_select_profile']['display'] = FALSE;
+  $tasks['install_select_locale']['display'] = FALSE;
+  $tasks['install_select_locale']['run'] = INSTALL_TASK_SKIP;
+
+  // The "Welcome" screen needs to come after the first two steps
+  // (profile and language selection), despite the fact that they are disabled.
+  $new_task['install_welcome'] = array(
+    'display' => TRUE,
+    'display_name' => st('Welcome'),
+    'type' => 'form',
+    'run' => isset($install_state['parameters']['welcome']) ? INSTALL_TASK_SKIP : INSTALL_TASK_RUN_IF_REACHED,
+  );
+  $old_tasks = $tasks;
+  $tasks = array_slice($old_tasks, 0, 2) + $new_task + array_slice($old_tasks, 2);
+
+  _pushtape_set_theme('flux');
+}
+
+
+/**
+ * Force-set a theme at any point during the execution of the request.
+ *
+ * Drupal doesn't give us the option to set the theme during the installation
+ * process and forces enable the maintenance theme too early in the request
+ * for us to modify it in a clean way.
+ */
+function _pushtape_set_theme($target_theme) {
+  if ($GLOBALS['theme'] != $target_theme) {
+    unset($GLOBALS['theme']);
+    drupal_static_reset();
+    $GLOBALS['conf']['maintenance_theme'] = $target_theme;
+    $GLOBALS['conf']['site_name'] = 'Pushtape Installation';
+    _drupal_maintenance_theme();
+  }
+}
+
+
+/**
+ * Task callback: shows the welcome screen.
+ */
+function install_welcome($form, &$form_state, &$install_state) {
+  drupal_set_title(st('Welcome'));
+
+  $message = '<p>' . st('After installing this distribution, you will have a fully featured music website for your band complete with tracks, albums, news, photos, and show listings.') . '</p>';
+
+  $form = array();
+  $form['welcome_message'] = array(
+    '#markup' => $message,
+  );
+  $form['actions'] = array(
+    '#type' => 'actions',
+  );
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => st('Begin installation'),
+    '#weight' => 10,
+  );
+  return $form;
+}
+
+function install_welcome_submit($form, &$form_state) {
+  global $install_state;
+  $install_state['parameters']['welcome'] = 'done';
+  $install_state['parameters']['locale'] = 'en';
+}

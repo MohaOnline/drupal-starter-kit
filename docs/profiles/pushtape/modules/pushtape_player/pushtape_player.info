@@ -1,0 +1,14 @@
+name = Pushtape Player 
+core = 7.x
+version = 7.x-1.0
+description = Adds support for using the <a href="https://github.com/zirafa/pushtape-player.js">Pushtape-player.js</a>. Depends on the <a href="http://www.schillmania.com/projects/soundmanager2/">Soundmanager2</a> API.
+package = Pushtape
+
+stylesheets[all][] = css/pushtape-player.css
+
+; Information added by Drupal.org packaging script on 2016-09-28
+version = "7.x-1.1"
+core = "7.x"
+project = "pushtape_player"
+datestamp = "1475042382"
+

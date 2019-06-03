@@ -1,0 +1,416 @@
+<?php
+/**
+ * @file
+ * Provide a block for Pushtape Player global controls, as well as a field formatter for audio links.
+ *
+ */
+
+/**
+ * Implements hook_init().
+ */
+function pushtape_player_init() {
+  // Do not load player during the Drupal installation process, e.g. if part of installation profiles.
+  if (!drupal_installation_attempted()) {
+    _pushtape_player_doheader();
+  }
+}
+
+/**
+ * Implements hook_menu()
+ */
+function pushtape_player_menu() {
+  $items['admin/config/media/pushtape-player'] = array(
+    'title' => t('Pushtape Player'),
+    'description' => t('Configure <a href="https://github.com/zirafa/pushtape-player.js">Pushtape Audio Player</a> settings.'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pushtape_player_settings_form'),
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+/**
+ * Pushtape Player settings form callback
+ */
+function pushtape_player_settings_form($form, &$form_state) {
+  $form['settings']['pushtape_player_block'] = array(
+      '#markup' => t('This page only configures the pushtape-player.js script defaults. You may need to additionally configure the <a href="!link"><em>Pushtape Player Controls</em> block</a> to position the global player controls.', array('!link' => url('admin/structure/block/manage/pushtape_player/controls/configure'))),
+      '#prefix' => '<div class="messages">',
+      '#suffix' => '</div>',
+  );
+  $form['settings']['pushtape_player_scope'] = array(
+      '#type' => 'radios',
+      '#title' => t('Player scope'),
+      '#default_value' => variable_get('pushtape_player_scope', 0), 
+      '#options' => array(0 => t('Scan entire page for all playable links'), 1 => t('Scan only inside a container class')),
+      '#description' => t('The default behavior is to scan for all audio links on a page, but you can restrict the scope to look only inside a container class, i.e. pushtape-player-playlist.'),
+    );
+  $form['settings']['pushtape_player_container_class'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Container class'),
+      '#default_value' => variable_get('pushtape_container_class', 'pushtape-player-playlist'), 
+      '#description' => t('Enter a valid class name as it would appear in HTML markup, do not use a leading period.'),
+      '#prefix' => '<div class="pushtape-player-admin-container-class indent">',
+      '#suffix' => '</div>',
+      '#states' => array('visible' => array(':input[name="pushtape_player_scope"]' => array('value' => '1'))),
+    );
+  $form['settings']['pushtape_player_link_class'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Link Class'),
+      '#default_value' => variable_get('pushtape_player_link_class', 'pushtape-player-audio'),
+      '#description' => t('If left empty, player will add all audio links found on a page. If set (i.e. pushtape-player-audio), the script will only add audio links that have class="pushtape-player-audio". Enter a valid class name as it would appear in HTML markup, do not use a leading period.'),
+    );
+  $form['settings']['pushtape_player_visibility'] = array(
+    '#type' => 'radios',
+    '#title' => t('Add Pushtape Player script on specific pages'),
+    '#options' => array(0 => t('All pages except those listed'), 1 => t('Only the listed pages')),
+    '#default_value' => variable_get('pushtape_player_visibility', 0),
+  );
+  $form['settings']['pushtape_player_pages'] = array(
+    '#type' => 'textarea',
+    '#title' => '<span class="element-invisible">' . t('Pages') . '</span>',
+    '#default_value' => variable_get('pushtape_player_pages', "admin*\nnode/add/*\nnode/*/edit\nprint/*\nprintpdf/*\nsystem/ajax\nsystem/ajax/*"),
+    '#description' => t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>')),
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Check if Pushtape Player should be active for the current URL.
+ *
+ * @return
+ *   TRUE if Pushtape Player should be active for the current page.
+ */
+function _pushtape_player_active() {
+  // Make it possible deactivate with parameter ?pushtape_player=no in the url.
+  if (isset($_GET['pushtape_player']) && $_GET['pushtape_player'] == 'no') {
+    return FALSE;
+  }
+
+  // Code from the block_list function in block.module.
+  $path = drupal_get_path_alias($_GET['q']);
+  $pushtape_player_pages = variable_get('pushtape_player_pages', "admin*\nnode/add/*\nnode/*/edit\nprint/*\nprintpdf/*\nsystem/ajax\nsystem/ajax/*");
+  // Compare with the internal and path alias (if any).
+  $page_match = drupal_match_path($path, $pushtape_player_pages);
+  if ($path != $_GET['q']) {
+    $page_match = $page_match || drupal_match_path($_GET['q'], $pushtape_player_pages);
+  }
+  $page_match = variable_get('pushtape_player_visibility', 0) == 0 ? !$page_match : $page_match;
+
+  return $page_match;
+}
+
+/**
+ * Loads the various js and css files.
+ */
+function _pushtape_player_doheader() {
+  static $already_added = FALSE;
+  if ($already_added) {
+    return; // Don't add the JavaScript and CSS multiple times.
+  }
+  if (!_pushtape_player_active()) {
+    return; // Don't add the JavaScript and CSS on specified paths.
+  }
+  $scope = variable_get('pushtape_player_scope', 0);
+  $container_class = variable_get('pushtape_container_class', 'pushtape-player-playlist');
+  $link_class = variable_get('pushtape_player_link_class', '');
+
+  $js_settings = array(
+    'playNext' => true, // stop after one sound, or play through list until end
+    'autoPlay' => false, // start playing the first sound right away
+    'repeatAll' => false, // repeat playlist after last track
+    'autoScan' => false, // Turn off mutation observer
+    'containerClass' => (!empty($scope) && !empty($container_class)) ? $container_class : '', // Default is to scan entire page for links, if set will scan only inside containerClass
+    'linkClass' => $link_class, // Default will add all audio links found. If set (i.e. pushtape-player), will only add audio links that have the class: <a class="pushtape-player" href="file.mp3"></a>
+    'addControlsMarkup' => array(
+      'enabled' => false, // Default is false. If true, global controls markup is inserted inside of containerClass
+      'controlsMarkupClass' => 'pt-controls-wrapper', // Wrapper class
+      'position' => 'top' // Position the controls inside the top or bottom of the document or containerClass
+    ),
+  );
+
+  // Give other modules the possibility to override settings and style.
+  $data = &$js_settings;
+  drupal_alter('pushtapePlayerConfig', $data);
+  
+  // Load genericons from library
+  if (module_exists('libraries') && $genericons_path = libraries_get_path('genericons')) {
+   drupal_add_css($genericons_path . '/genericons/genericons.css');
+  }
+
+  // Add and initialise the scripts.
+  if ($sm2_library_path = libraries_get_path('soundmanager2')) {
+    // Add Soundmanager2
+    drupal_add_js($sm2_library_path . '/script/soundmanager2-jsmin.js');
+    drupal_add_js(array('pushtapePlayerSM2' => array('url' => base_path() . $sm2_library_path . '/swf/', 'debug' => TRUE)), array('type' => 'setting', 'scope' => JS_DEFAULT));
+    
+    // Pushtape player settings
+    drupal_add_js(array('pushtapePlayerConfig' => $js_settings), array('type' => 'setting', 'scope' => JS_DEFAULT));
+    
+    // Pushtape player constructor
+    drupal_add_js(drupal_get_path('module', 'pushtape_player') . '/js/pushtape-player.js', array('scope' => 'footer'));
+  
+    // Pushtape player instance
+    drupal_add_js(drupal_get_path('module', 'pushtape_player') . '/js/pushtape-player-init.js', array('scope' => 'footer'));
+    $already_added = TRUE;
+  }
+  else {
+    watchdog('pushtape_player', 'Soundmanager2 library not found. Normally found in your libraries directory, i.e. profiles/pushtape/libraries/soundmanager2 or sites/all/libraries/soundmanager2');  
+  }
+}
+
+
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function pushtape_player_field_formatter_info() {
+  return array(
+    'pushtape_player' => array(
+      'label' => t('Pushtape Page Player'),
+      'field types' => array('file', 'media', 'link_field'),
+      'settings' => array(
+        'text' => 'filename',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function pushtape_player_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $element = array();
+
+  switch ($display['type']) {
+    case 'pushtape_player':
+      $element['text'] = array(
+        '#title' => t('Link text'),
+        '#type' => 'select',
+        '#options' =>  _pushtape_player_link_text_options(),
+        '#default_value' => $settings['text'],
+      );
+      break;
+  }
+  return $element;
+}
+
+function _pushtape_player_link_text_options() {
+  return array(
+    'filename' => t('File Name'),
+    'description' => t('File Description'),
+    'title' => t('Node/entity title'),
+    'empty' => t('Icon only'),
+  );
+}
+
+
+/**
+ * Implements hook_field_formatter_settings_summary
+ */
+function pushtape_player_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = array();
+  $options = _pushtape_player_link_text_options();
+
+  switch ($display['type']) {
+    case 'pushtape_player':
+      $summary[] = t('Link text: @text', array('@text' => $options[$settings['text']]));
+      break;
+    default:
+      break;
+  }
+  return implode('<br />', $summary);
+}
+
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function pushtape_player_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+
+  $tracks = array();
+  foreach ($items as $delta => $item) {
+    $attributes = array();
+    $link_class = variable_get('pushtape_player_link_class', '');
+    if ($link_class != '') {
+      $attributes['class'] = array();
+      $attributes['class'][] = $link_class;
+    }
+    // Prepend a random parameter to the URL in case this track appears  multiple times on the same page.
+    $url_options = array('query' => array('uuid' => uniqid()), 'attributes' => $attributes, 'html' => TRUE);
+    if (isset($item['file'])) {
+      // A Media file type.
+      $file = $item['file'];
+      // Get text to use in link
+      $text = $file->filename;
+      if (array_key_exists('text', $settings)) {
+        if ($settings['text'] == 'description' && !empty($item['description'])) {
+          $url_options['attributes']['title'] = $file->description;
+          $text = t('<span class="pushtape-player-title">@text</span>', array('@text' => $file->description));
+        }
+        else if ($settings['text'] == 'title' && !empty($entity->title)) {
+          $url_options['attributes']['title'] = $entity->title;
+          $text = t('<span class="pushtape-player-title">@text</span>', array('@text' => $entity->title));
+        }
+        else if ($settings['text'] == 'empty') {
+          $url_options['attributes']['title'] = !empty($entity->title) ? $entity->title : $text; 
+          $text = t('<span class="pushtape-player-title element-invisible">@text</span>', array('@text' => $text));
+        }
+      }
+      $tracks[$delta] = theme('pushtape_player_track', array('text' => $text, 'url' => file_create_url($file->uri), 'options' => $url_options));
+    } elseif (isset($item['url'])) {
+      // A Link file type.
+      $file = $item['url'];
+      // Get text to use in link
+      $text = $item['title'];
+      if (array_key_exists('text', $settings)) {
+        if ($settings['text'] == 'description' && !empty($item['description'])) {
+          $url_options['attributes']['title'] = $item['title'];
+          $text = t('<span class="pushtape-player-title">@text</span>', array('@text' => $item['title']));
+        }
+        else if ($settings['text'] == 'title' && !empty($entity->title)) {
+          $url_options['attributes']['title'] = $entity->title;
+          $text = t('<span class="pushtape-player-title">@text</span>', array('@text' => $entity->title));
+        }
+        else if ($settings['text'] == 'empty') {
+          $url_options['attributes']['title'] = !empty($entity->title) ? $entity->title : $text; 
+          $text = t('<span class="pushtape-player-title element-invisible">@text</span>', array('@text' => $text));
+        }
+      }
+      $tracks[$delta] = theme('pushtape_player_track', array('text' => $text, 'url' => file_create_url($item['url']), 'options' => $url_options));
+    } else {
+      // Get text to use in link
+      $text = $item['filename'];
+      if (array_key_exists('text', $settings)) {
+        if ($settings['text'] == 'description' && !empty($item['description'])) {
+          $url_options['attributes']['title'] = $item['description'];
+          $text = t('<span class="pushtape-player-title">@text</span>', array('@text' => $item['description']));
+        }
+        else if ($settings['text'] == 'title' && !empty($entity->title)) {
+          $url_options['attributes']['title'] = $entity->title;
+          $text = t('<span class="pushtape-player-title">@text</span>', array('@text' => $entity->title));
+        }
+        else if ($settings['text'] == 'empty') {
+          $url_options['attributes']['title'] = !empty($entity->title) ? $entity->title : $text; 
+          $text = t('<span class="pushtape-player-title element-invisible">@text</span>', array('@text' => $text));
+        }
+      }
+      $tracks[$delta] = theme('pushtape_player_track', array('text' => $text, 'url' => file_create_url($item['uri']), 'options' => $url_options));
+    }
+
+    switch ($display['type']) {
+      case 'pushtape_player':
+        $element[0] = array(
+          '#theme' => 'pushtape_player_tracks',
+          '#tracks' => $tracks,
+        );
+        break;
+     }
+  }
+  return $element;
+}
+
+
+/**
+ * Implementation of hook_theme().
+ */
+function pushtape_player_theme() {
+  return array(
+    'pushtape_player_tracks' => array(
+      'variables' => array('tracks' => array()),
+    ),
+    'pushtape_player_track' => array(
+      'variables' => array(),
+    ),
+    'pushtape_player_controls' => array(
+      'variables' => array('tracks' => array()),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_block_info()
+ */
+function pushtape_player_block_info() {
+  $blocks = array();
+  $blocks['controls'] = array(
+    'info' => t('Pushtape Player Controls'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view
+ */
+function pushtape_player_block_view($delta = '') {
+  // This example is adapted from node.module.
+  $block = array();
+
+  switch ($delta) {
+    case 'controls':
+      $block['subject'] = null;
+      $block['content'] = array(
+        '#theme' => 'pushtape_player_controls',
+      );
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Theme multiple tracks 
+ */
+function theme_pushtape_player_tracks($vars) {
+  $output = '';
+  foreach ($vars['tracks'] as $delta => $track) {
+    $output .= $track;  
+  }
+  return $output;
+}
+
+/**
+ * Theme a single track as a link. 
+ */
+function theme_pushtape_player_track($vars) {
+  return l($vars['text'], $vars['url'], $vars['options']);
+}
+
+/**
+ * Theme global controls block
+ */
+function theme_pushtape_player_controls() {
+  $output = <<<EOD
+  <div class="pt-controls-markup">
+    <div class="pt-controls pt-hide">
+      <a class="pt-next" href="#" title="Next"> <span class="genericon genericon-fastforward"></span></a>
+      <a class="pt-previous" href="#" title="Previous"><span class="genericon genericon-rewind"></span> </a>
+      <a class="pt-play-pause" href="#" title="Play/Pause">
+        <span class="play-btn"><span class="genericon genericon-play"></span></span>
+        <span class="pause-btn"><span class="genericon genericon-pause"></span></span>
+      </a>
+      <span class="pt-current-track-title"></span>
+      <div class="pt-scrubber">
+        <div class="pt-statusbar">  
+          <div class="pt-loading"></div>  
+          <div class="pt-position"><div class="pt-handle"></div></div>  
+        </div>
+      </div>
+      <div class="pt-time">
+        <span class="pt-current-time">--:--</span> / <span class="pt-duration">--:--</span>
+      </div>
+    </div>
+  </div>
+EOD;
+
+  return $output;
+}

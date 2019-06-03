@@ -1,0 +1,29 @@
+name = Pushtape_Photos
+description = Creates a photoset content type for sharing groups of photos.
+core = 7.x
+package = Pushtape
+version = 7.x-1.0
+project = pushtape_photos
+dependencies[] = colorbox
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = image
+dependencies[] = menu
+dependencies[] = views
+datestamp = 1416483287
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[field_base][] = field_photos
+features[field_instance][] = node-photoset-field_photos
+features[image][] = photo_large
+features[image][] = photo_thumb
+features[image][] = photo_tiny
+features[node][] = photoset
+features[views_view][] = photosets
+
+; Information added by Drupal.org packaging script on 2016-09-28
+version = "7.x-1.0"
+core = "7.x"
+project = "pushtape_photos"
+datestamp = "1475042040"
+

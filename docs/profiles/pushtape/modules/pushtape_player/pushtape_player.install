@@ -1,0 +1,14 @@
+<?php
+
+/**
+* Implement hook_install().
+*/
+function pushtape_player_install() {
+  // Pushtape Player Defaults
+  variable_set('pushtape_player_scope', 0);
+  variable_set('pushtape_container_class', 'pushtape-player-playlist');
+  variable_set('pushtape_player_link_class', 'pushtape-player-audio');
+  variable_set('pushtape_player_visibility', 0);
+  variable_set('pushtape_player_pages', "admin*\nnode/add/*\nnode/*/edit\nprint/*\nprintpdf/*\nsystem/ajax\nsystem/ajax/*");
+}
+

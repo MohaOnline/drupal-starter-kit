@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Pushtape_Photos feature.
+ */
+
+include_once 'pushtape_photos.features.inc';

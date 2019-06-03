@@ -1,0 +1,249 @@
+*, *:before, *:after {
+    box-sizing: border-box;
+}
+body, html {
+  height:100%;
+  margin:0;
+  padding:0;
+}
+html.iframe {
+  border: 1px solid #d1d1d1;
+  overflow:hidden;
+}
+body {
+  background-image:none;
+  position:relative;
+}
+.pt-link:before,
+.genericon {
+  color:#525252;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+body {
+  margin:0px;
+}
+
+/**
+ * Setup common backgrounds
+ */
+.pushtape-services-iframe .view-tracklist ol,
+.pushtape-services-iframe .pt-play-pause,
+.pt-next,
+.pt-previous,
+.pushtape-services-iframe .pt-time,
+.pushtape-services-iframe h2 {
+  background:rgba(0, 0, 0, .75);
+  color:#FFF;
+  padding:10px;
+}
+
+
+.pushtape-services-iframe h2 {
+  font-size:1.25em;
+  margin:0;
+  opacity:.9;
+  line-height:1.25em;
+  width:100%;
+}
+
+
+.pushtape-services-iframe h2:after {
+  content: '\f455';
+  font-family:genericons;
+  font-size:1.5em;
+  display:inline-block;
+  vertical-align:middle;
+  margin-left:.5em;
+  float:right;
+}
+
+.pushtape-services-iframe .pt-time {
+  font-size:1.25em;
+  font-family:"Inconsolata", monospace;
+  position:absolute;
+  bottom:0;
+  left:0;
+  width:100%;
+  text-align:center;
+  background:rgba(0,0,0,.5);
+  color:#ffffff;
+}
+
+.pushtape-services-iframe .pt-handle {
+  display:none;
+}
+.pushtape-services-iframe .pt-statusbar {
+  position:absolute;
+  bottom:45px;
+  left:0px;
+  width:100%;
+  height:15px;
+  padding:2px;
+  opacity:.5;
+  border:none;
+}
+.pt-scrubber, .pt-statusbar {
+  background:#000;
+}
+/**
+ * Service Links
+ */
+.pushtape-services-links {
+  padding:0;
+  position:absolute;
+  bottom:0;
+  right:0;
+}
+a.pushtape-services-link {
+  margin:0;
+  padding:10px;
+  background:transparent;
+  border:none;
+  margin:1px;
+  display:block;
+  vertical-align:bottom;
+  width:40px;
+  height:40px;
+  overflow:hidden;
+  white-space:nowrap;
+  display:inline-block;
+}
+.pushtape-services-link .genericon {
+  color:#FFF;
+  margin-right:10px;
+}
+a.pushtape-services-link:hover {
+  background:transparent;
+}
+
+.pushtape-services-iframe .pt-controls {
+
+}
+.pushtape-services-iframe .pt-play-pause {
+  display:block;
+  width:70px;
+  height:70px;
+  margin:10px;
+  border-radius:3px;
+
+}
+.pt-previous,
+.pt-next {
+  padding:10px 12px;
+  margin-top:10px;
+  border-radius:2px;
+}
+.pt-next {
+  border-color:transparent;
+  margin-left:2px;
+  margin-right:10px;
+}
+.pt-previous .genericon,
+.pt-next .genericon {
+  font-size:1.5em;
+}
+
+.pushtape-services-iframe .pt-play-pause .genericon,
+.pushtape-services-iframe .pt-next .genericon,
+.pushtape-services-iframe .pt-previous .genericon {
+  color:#DDD;
+}
+.pushtape-services-iframe .pt-current-track-title {
+  color:#000;
+  font-size:1em;
+  line-height:1em;
+  display:block;
+  text-transform:uppercase;
+  font-style:italic;
+  font-family:"Inconsolata", monospace;
+  position:absolute;
+  bottom:45px;
+  height:14px;
+  right:0;
+  width:100%;
+  text-align:center;
+  vertical-align:middle;
+  z-index:50;
+  pointer-events:none;
+}
+
+/* Popup input */
+textarea {
+  border:solid 2px #d1d1d1;
+  padding:10px;
+  width:100%;
+  color:#888888;
+}
+input {
+  border:solid 2px #d1d1d1;
+  color:#222;
+  padding:5px;
+  width:auto;
+  display:inline-block;
+  margin-right:1.5em;
+}
+label {
+  display:inline-block;
+  font-weight:bold;
+  margin-right:.5em;
+}
+.embed-refresh {
+  float:right;
+  padding:10px;
+}
+
+.pushtape-services-iframe.release-type-track .pt-next,
+.pushtape-services-iframe.release-type-track .pt-previous,
+.pushtape-services-iframe.release-type-track .pt-current-track-title,
+.pushtape-services-iframe.release-type-track .field-name-field-audio {
+  display:none; /* N/A for single track */
+}
+
+/* Displaying tracklist needs more thought... */
+.pushtape-services-iframe .view-tracklist  {
+  display:none;
+}
+.pushtape-services-iframe .view-tracklist ol {
+  overflow:auto;
+  margin:0;
+  height:25%;
+  width:100%;
+  position:absolute;
+  bottom:0;
+  padding:0 5px;
+}
+
+.view-tracklist .views-row {
+  line-height:25px;
+  padding:10px 0;
+  border-color:#999;
+}
+.view-tracklist .views-row .pt-link:before {
+  color:#FFF;
+}
+.view-tracklist .views-row:hover {
+  background:none;
+}
+
+@media screen and (max-width:250px) {
+  .pushtape-services-iframe h2:after  {
+    float:none;
+    display:none;
+  }
+  .pushtape-services-iframe .pt-time {
+    text-align:left;
+  }
+  .pt-current-track-title {
+    text-align:left;
+  }
+  .pushtape-services-iframe .pt-next,
+  .pushtape-services-iframe .pt-previous {
+    display:none;
+  }
+
+  .pushtape-services-iframe .pt-play-pause {
+  
+  }
+}
+

@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Pushtape News feature.
+ */
+
+include_once 'pushtape_news.features.inc';

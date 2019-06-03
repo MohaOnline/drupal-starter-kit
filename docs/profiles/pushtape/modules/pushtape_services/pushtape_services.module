@@ -1,0 +1,589 @@
+<?php
+/**
+ * @file
+ * Pushtape Services. 
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function pushtape_services_menu() {
+  $items['node/%node/jspf'] = array(
+    'title' => 'JSPF', 
+    'access arguments' => array('access jspf'),
+    'page callback' => 'pushtape_services_jspf',
+    'page arguments' => array(1),
+    'type' => MENU_CALLBACK,    
+  );
+  $items['node/%node/embed'] = array(
+    'title' => 'Embed', 
+    'access arguments' => array('access content'),
+    'page arguments' => array(1),
+    'page callback' => 'pushtape_services_embed',
+    'type' => MENU_CALLBACK,    
+  );
+  $items['node/%node/embed_code'] = array(
+    'title' => 'Embed', 
+    'access arguments' => array('access content'),
+    'page arguments' => array(1),
+    'page callback' => 'pushtape_services_embed_code',
+    'type' => MENU_CALLBACK,    
+  );
+  $items['node/%node/html'] = array(
+    'title' => 'HTML', 
+    'access arguments' => array('access jspf'),
+    'page callback' => 'pushtape_services_html',
+    'page arguments' => array(1),
+    'type' => MENU_CALLBACK,    
+  );  
+  $items['pushtape/services/cassette'] = array(
+    'title' => 'Cassette', 
+    'access arguments' => array('access jspf'),
+    'page arguments' => array(1),
+    'page callback' => 'pushtape_services_cassette',
+    'type' => MENU_CALLBACK,    
+  );  
+  return $items;
+}
+
+function pushtape_services_permission() {
+  return array(
+    'access jspf' => array(
+      'title' => t('Access Cassette, JSPF, HTML Endpoints'),
+      'description' => t('Users with this permission will be able to view and access JSON playlist formats for albums and track endpoints (node/%nid/jspf), html endpoints (node/%nid/html) and cassette.json (pushtape/services/cassette)'),
+    ),
+  );
+}
+
+
+/**
+ * Return JSPF formatted content: http://xspf.org/jspf/
+ *
+ * @param $node
+ *   Node object
+ * @return
+ *   Javascript JSPF object
+ */
+function pushtape_services_jspf($node) {
+  // Return if not an album or track node
+  if (!user_access('access jspf') || empty($node) || !in_array($node->type, array('album', 'track'))) {
+    return;
+  }
+
+  $lang = $node->language;
+
+  // If the node exists, title and url are required.
+  $title = t($node->title);
+  $info = url('node/' . $node->nid, array('absolute' => TRUE));
+  // Add additional metadata if available
+  $creator = !empty($node->field_artist) ? _pushtape_services_get_field($node, 'field_artist') : '';
+  $image = !empty($node->field_artwork) ? file_create_url($node->field_artwork[$lang][0]['uri']) : '';
+  
+  $tracks = array();
+  
+  // If tracklist exists, we are dealing with an album, otherwise it's a single
+  if (!empty($node->field_tracklist)) {
+    $tracklist = $node->field_tracklist[$lang];
+    foreach ($tracklist as $ref) {
+      $reference_node = node_load($ref['target_id']);
+      $track = array();
+      $track['title'] = t($reference_node->title);
+      $track['info'] =  url('node/' . $reference_node->nid, array('absolute' => TRUE));
+      if (!empty($reference_node->field_audio)) {
+        $audio = file_create_url($reference_node->field_audio[$lang][0]['uri']);
+        $track['location'] = array($audio);
+      }
+      if (!empty($reference_node->field_artist)) {
+        $track['creator'] = _pushtape_services_get_field($reference_node, 'field_artist');
+      }
+      if (!empty($reference_node->field_artwork)) {
+        $track['image'] = file_create_url($reference_node->field_artwork[$reference_node->language][0]['uri']);
+      }
+      $tracks[] = $track;
+    }
+  }
+  elseif (!empty($node->field_audio)) {
+    $track = array();
+    $track['title'] = $title;
+    $track['info'] =  $info;
+    $audio = file_create_url($node->field_audio[$lang][0]['uri']);
+    $track['location'] = array($audio);
+    if (!empty($creator)) {
+      $track['creator'] = $creator;
+    }
+    if (!empty($image)) {
+      $track['image'] = $image;
+    }
+    $tracks[] = $track;  
+  }
+
+  // Build the JSON array
+  $jspf = array();
+  $jspf['playlist'] = array();
+  $jspf['playlist']['title'] = $title;
+  $jspf['playlist']['info'] = $info;
+  if (!empty($creator)) {
+    $jspf['playlist']['creator'] = $creator;
+  }
+  if (!empty($image)) {
+    $jspf['playlist']['image'] = $image;
+  }
+  if (!empty($tracks)) {
+    $jspf['playlist']['track'] = $tracks;
+  }
+
+  $callback = !empty($_REQUEST['callback']) ? check_plain($_REQUEST['callback']) : '';
+  // If its a jsonp callback request
+  if (isset($callback) && $callback != '') {
+    $json_response = drupal_json_encode($jspf);
+    header("Content-type: text/javascript");
+    echo $callback ."(". $json_response .");";
+  }
+  else {
+    drupal_json_output($jspf);
+  }    
+}
+
+/**
+ * Return HTML for static page
+ *
+ * @param $node
+ *   Node object
+ * @return
+ *   HTML
+ */
+function pushtape_services_html($node) {
+  // Return if not an album or track node
+  if (!user_access('access jspf') || empty($node) || !in_array($node->type, array('page', 'track', 'album'))) {
+    return;
+  }
+  $node = node_load($node->nid);
+  $output = '';
+  if ($node->type == 'page') {
+    $output .= '<h2>' . $node->title . '</h2>';
+    $field = field_get_items('node', $node, 'body');
+    $field_value = field_view_value('node', $node, 'body', $field[0]);
+    $output .= render($field_value);
+    
+  }
+  if ($node->type == 'track' || $node->type == 'album') {
+    $output .= _pushtape_services_get_field($node, 'body');    
+  }
+  
+  $callback = !empty($_REQUEST['callback']) ? check_plain($_REQUEST['callback']) : '';
+  // If its a jsonp callback request
+  if (isset($callback) && $callback != '') {
+    $json_response = json_encode(array('response' => $output));
+    header("Content-type: text/javascript");
+    print $callback . '(' . $json_response . ');' ;
+  }
+  else {
+    print $output;
+  }   
+  drupal_exit();
+}
+
+
+/**
+ * Return Cassette.json
+ * See: https://github.com/zirafa/pushtape-cassette
+ *
+ * @return
+ *   Cassette JSON Object
+ */
+function pushtape_services_cassette() {
+  // Return if not an album or track node
+  if (!user_access('access jspf')) {
+    return;
+  }
+  
+  $cassette = array();
+  $cassette['pages'] = array('releases' => "");
+
+  // Support JSONP
+  $callback = variable_get('clean_url') ? '?callback=?' : '&callback=?';
+  
+  // Grab static pages that are in main menu
+  $menu = menu_load_links('main-menu');
+  $link_paths = array();
+  foreach ($menu as $menu_item) {
+    $link_paths[] = $menu_item['link_path'];  
+  }  
+  $page_nids = db_select('node', 'n')
+     ->fields('n', array('nid', 'created'))
+     ->condition('n.status', 1)
+     ->condition('n.type', 'page')
+     ->orderBy('n.created', 'DESC')      
+     ->addTag('node_access')
+     ->execute()
+     ->fetchCol();
+  foreach ($page_nids as $page_nid) {
+    if (in_array('node/' . $page_nid, $link_paths)) {
+      $alias = drupal_get_path_alias('node/' . $page_nid);
+      $cassette['pages'][$alias] = array('format' => 'json', 'location' => url('node/' . $page_nid . '/html', array('absolute' => TRUE)) . $callback);
+    } 
+  }
+
+  // Grab all albums and tracks
+  // @TODO optimize this query, it's too general
+  $nids = db_select('node', 'n')
+     ->fields('n', array('nid', 'created'))
+     ->condition('n.status', 1)
+     ->condition(db_or()->condition('n.type', 'album')->condition('n.type', 'track'))
+     ->orderBy('n.created', 'DESC')      
+     ->addTag('node_access')
+     ->execute()
+     ->fetchCol();
+
+  // Load all nodes to be rendered.
+  $nodes = node_load_multiple($nids);
+  $releases = array();
+  $album = '';
+  foreach ($nodes as $node) {
+
+    // If track doesn't have album, it's counted as a release
+    $single = FALSE;
+    if ($node->type == 'track' && empty($node->field_album)) {
+      $single = TRUE;
+    }
+    if ($node->type == 'album' || $single) {
+      $lang = $node->language;
+      $title = t($node->title);
+      if(module_load_include('inc','pathauto','pathauto') !== FALSE) {
+       if (function_exists('pathauto_cleanstring')) {
+        $path =  pathauto_cleanstring($title);
+       }
+       else
+        $path = $node->nid;
+      }       
+      $creator = !empty($node->field_artist) ? _pushtape_services_get_field($node, 'field_artist') : '';    
+      $artwork = !empty($node->field_artwork) ?  file_create_url(image_style_url('artwork_medium', $node->field_artwork[$lang][0]['uri'])) : '';
+      $jspf = url('node/' . $node->nid . '/jspf', array('absolute' => TRUE));
+      $notes = url('node/' . $node->nid . '/html', array('absolute' => TRUE));
+      $releases[$path] = array('title' => $title, 'playlist' => $jspf . $callback, 'artwork' => $artwork, 'notes' => array('format' => 'json', 'location' => $notes . $callback));
+    }
+  }
+  $cassette['releases'] = $releases;
+  
+  $callback = !empty($_REQUEST['callback']) ? check_plain($_REQUEST['callback']) : '';
+  // If its a jsonp callback request
+  if (isset($callback) && $callback != '') {
+    $json_response = drupal_json_encode($cassette);
+    header("Content-type: text/javascript");
+    echo $callback ."(". $json_response .");";
+  }
+  else {
+    drupal_json_output($cassette);
+  }  
+}
+
+/**
+ * Generate player embed markup for an album or track
+ *
+ * @param $node
+ *   Node object
+ *
+ * @return
+ *   HTML player markup intended to be delivered via an iFrame
+ */
+function pushtape_services_embed($node) {
+  // Return if not an album or track node
+  if (empty($node) || !in_array($node->type, array('album', 'track'))) {
+    return;
+  }
+  
+  $lang = $node->language;
+
+  $path = drupal_get_path('module', 'pushtape_services');
+
+  // If the node exists, title and url are required.
+  $title = t($node->title);
+  $info = url('node/' . $node->nid, array('absolute' => TRUE));
+
+  // Add additional metadata if available
+  $creator = !empty($node->field_artist) ? _pushtape_services_get_field($node, 'field_artist') : '';
+  $image = !empty($node->field_artwork) ? file_create_url($node->field_artwork[$lang][0]['uri']) : '';
+
+  $tracks = array();
+
+  // If tracklist exists, we are dealing with an album, otherwise it's a single
+  if (!empty($node->field_tracklist)) {
+    $tracklist = $node->field_tracklist[$lang];
+    foreach ($tracklist as $ref) {
+      $reference_node = node_load($ref['target_id']);
+      $track = array();
+      $track['title'] = t($reference_node->title);
+      $track['info'] =  url('node/' . $reference_node->nid, array('absolute' => TRUE));
+      if (!empty($reference_node->field_audio)) {
+        $audio = file_create_url($reference_node->field_audio[$lang][0]['uri']);
+        $track['location'] = array($audio);
+      }
+      if (!empty($reference_node->field_artist)) {
+        $track['creator'] = _pushtape_services_get_field($reference_node, 'field_artist');
+      }
+      if (!empty($reference_node->field_artwork)) {
+        $track['image'] = file_create_url($reference_node->field_artwork[$reference_node->language][0]['uri']);
+      }
+      $tracks[] = $track;
+    }
+  }
+  elseif (!empty($node->field_audio)) {
+    $track = array();
+    $track['title'] = $title;
+    $track['info'] =  $info;
+    $audio = file_create_url($node->field_audio[$lang][0]['uri']);
+    $track['location'] = array($audio);
+    if (!empty($creator)) {
+      $track['creator'] = $creator;
+    }
+    if (!empty($image)) {
+      $track['image'] = $image;
+    }
+    $tracks[] = $track;  
+  }
+
+  // Build the markup
+  $build = node_view($node);
+  $pushtape_player_block = module_invoke('pushtape_player', 'block_view', 'controls');
+
+  $markup = '';
+   // Title
+  $creator = !empty($creator) ? ' by ' . $creator : '';
+  $markup .= l('<h2>' . $title . $creator . '</h2>', $info, array('html' => TRUE, 'attributes' => array('target' => '_blank')));
+  // Player controls
+  $markup .= render($pushtape_player_block['content']);
+
+  // Render Tracklist or Audio Fields
+  $classes = array('pushtape-services-iframe');
+  if (!empty($node->field_tracklist)) {
+    $markup .= render($build['field_tracklist']);
+    $classes[] = 'release-type-album';
+  } else if (!empty($node->field_audio)) {
+    $markup .= render($build['field_audio']);
+    $classes[] = 'release-type-track';
+  }
+  // Add service links to allow further sharing
+  $markup .= '<div class="pushtape-services-links">' . pushtape_services_embed_link($node->nid) . pushtape_services_jspf_link($node->nid) . '</div>';
+
+  // Try and add scalable background image based on available artwork 
+  if (!empty($image)) {
+    $dcss = format_string('html {
+        background: url(@background) no-repeat center center fixed;
+        -webkit-background-size: cover;
+        -moz-background-size: cover;
+        -o-background-size: cover;
+        background-size: cover;    
+      }', array('@background' => $image));
+    drupal_add_css($dcss, array('type' => 'inline', 'preprocess' => FALSE));
+  }
+
+  // Google font used for nicer monotype font in the widget
+  drupal_add_css('http://fonts.googleapis.com/css?family=Inconsolata');
+  drupal_add_css($path . '/css/pushtape-services-embed.css', array('group' => CSS_THEME, 'weight' => 99));
+  drupal_add_js($path . '/js/pushtape-services-embed-controls.js');
+
+  $vars['title'] = $title;
+  $vars['classes'] = $classes;
+  $vars['markup'] = $markup;
+  $vars['iframe'] = TRUE;
+  print theme('pushtape_services_html', $vars);
+}
+
+/**
+ * Embed code wrapped in an input field for easier copying & pasting.
+ * This HTML output is intended to be shown inside a colorbox popup.
+ *
+ * @param $node
+ *   Node object
+ */
+function pushtape_services_embed_code($node) {
+  // Return if not an album or track node
+  if (empty($node) || !in_array($node->type, array('album', 'track'))) {
+    return;
+  }
+  $path = drupal_get_path('module', 'pushtape_services');
+  $src = url('node/' . $node->nid . '/embed', array('absolute' => TRUE));
+  $markup = theme('pushtape_services_embed_code', array('src' => $src));
+
+  $title = t('Embed code');
+  $classes = array('embed-code-form');  
+  $vars['title'] = $title;
+  $vars['classes'] = $classes;
+  $vars['markup'] = $markup;
+  print theme('pushtape_services_html', $vars);
+}
+
+/**
+ * Implements hook_preprocess_page
+ */
+function pushtape_services_preprocess_page(&$vars) {
+  
+  // Raw output is partial HTML (no HEAD, no scripts or styles, etc)
+  /*
+  if (isset($_GET['raw']) && $_GET['raw'] == 1 ) {
+    $vars['theme_hook_suggestions'] = array('pushtape_services_page_raw');
+  }
+  */
+  
+  // Load genericons from library
+  if (module_exists('libraries') && $genericons_path = libraries_get_path('genericons')) {
+   drupal_add_css($genericons_path . '/genericons/genericons.css');
+  }
+  
+  /**
+   * Add a new variable to page.tpl.php called $pushtape_icons
+   * that contains service links for Embed code and JSPF.
+   */
+  $vars['pushtape_icons'] = '';
+
+  // Only relevant for album and track node types.
+  if (!empty($vars['node']) && ($vars['node']->type == 'album' || $vars['node']->type == 'track') && !(path_is_admin(current_path()))) {
+    // Load the necessary js file for Colorbox activation.
+    if (module_exists('colorbox') && drupal_get_library('colorbox') && !variable_get('colorbox_inline', 0)) {
+      drupal_add_js(drupal_get_path('module', 'colorbox') . '/js/colorbox_inline.js');
+    }
+    $vars['pushtape_icons'] .= pushtape_services_embed_link($vars['node']->nid);
+    $vars['pushtape_icons'] .= pushtape_services_jspf_link($vars['node']->nid);
+  }
+  $path = drupal_get_path('module', 'pushtape_services');
+}
+
+/**
+ * Implements hook_preprocess_page
+ */
+/*
+function pushtape_services_preprocess_html(&$vars) {
+  if (isset($_GET['raw']) && $_GET['raw'] == 1 ) {
+    $vars['theme_hook_suggestions'] = array('pushtape_services_html_raw');
+  }
+}
+*/
+
+
+
+/**
+ * Generate Colorbox Embed Link with iFrame code for a node
+ * 
+ * @param integer $nid
+ *   Node ID
+ *   
+ * @return
+ *   Colorbox popup link with embed code for given node
+ */
+function pushtape_services_embed_link($nid) {
+  return l('<span class="genericon genericon-code"></span> Embed', 'node/' . $nid . '/embed_code', array('query' => array('width' => 600, 'height' => 500, 'iframe' => TRUE, 'title' => 'false'), 'html' => TRUE, 'attributes' => array('class' => array('colorbox-load', 'pushtape-services-link', 'pushtape-services-embed'), 'rel' => 'colorbox', 'title' => t('Embed'))));
+}
+
+/**
+ * Generate JSPF link for a node
+ *
+ * @param integer $nid
+ *   Node ID
+ *   
+ * @return
+ *   Link to JSPF for given node
+ */
+function pushtape_services_jspf_link($nid) {
+  if (!user_access('access jspf')) {
+    return;
+  }
+  return l('<span class="genericon genericon-share"></span> JSPF', 'node/' . $nid . '/jspf', array('html' => TRUE, 'attributes' => array('target' => '_blank', 'class' => array('pushtape-services-link', 'pushtape-services-jspf'), 'rel' => 'colorbox', 'title' => t('Share JSPF playlist'))));
+}
+
+/**
+ * Implements hook_theme()
+ */
+function pushtape_services_theme() {
+  return array(
+    'pushtape_services_html' => array(
+      'variables' => array(),
+    ),
+    'pushtape_services_embed_code' => array(
+      'variables' => array(),
+    ),
+    'pushtape_services_page_raw' => array (
+      'variables' => array(),
+      'template' => 'page--raw' ,
+      'base hook' => 'page',
+      'path' => drupal_get_path('module', 'pushtape_services') . '/templates',
+    ),
+    'pushtape_services_html_raw' => array (
+      'variables' => array(),
+      'template' => 'html--raw' ,
+      'base hook' => 'html',
+      'path' => drupal_get_path('module', 'pushtape_services') . '/templates',
+    ),      
+  );
+}
+
+
+/**
+ * Wrapper for html output.
+ *
+ * @param array $variables
+ *   Variables for display
+ *   
+ * @return
+ *   Barebones HTML output
+ */
+function theme_pushtape_services_html($variables) {
+  // Variable parameters
+  $title = !empty($variables['title']) ? $variables['title'] : '';
+  $classes = !empty($variables['classes']) ? $variables['classes'] : array();
+  $markup = !empty($variables['markup']) ? $variables['markup'] : '';
+  $iframe = !empty($variables['iframe']) ? 'iframe' : 'not-iframe';
+  
+  // This is borrowed from template_preprocess_html
+  global $language;
+  drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+  drupal_add_http_header('Content-Language', $language->language);
+  
+  $head = drupal_get_html_head();
+  $css = drupal_add_css();
+  $styles = drupal_get_css();
+  $scripts = drupal_get_js();
+  $footer = drupal_get_js('footer');
+  
+  $output = '';
+  $output .= '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN""http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">';
+  $output .= '<html class="' . $iframe . '" xmlns="http://www.w3.org/1999/xhtml" xml:lang="' . $language->language . '" version="XHTML+RDFa 1.0">';
+  $output .= '<head>' . $head .  '<title>' . $title . '</title>' . $styles . $scripts . '</head>';
+  $output .= '<body><div class="' . implode(' ', $classes) . '">' . $markup . $footer . '</div></body>';
+  $output .= '</html>';
+  return $output;  
+}
+
+/**
+ * Theme function for returning embed code popup markup
+ *
+ * @param array $variables
+ *   $variables['src'] is iFrame URL for src attribute
+ *   
+ * @return
+ *   Output for Embed popup
+ */
+function theme_pushtape_services_embed_code($variables) {
+  $src = !empty($variables['src']) ? $variables['src'] : '';
+  $path = drupal_get_path('module', 'pushtape_services');
+  drupal_add_css($path . '/css/pushtape-services-embed.css', array('group' => CSS_THEME, 'weight' => 99));
+  $clean_url = variable_get('clean_url', 0);
+  drupal_add_js(array('pushtapeServices' => array('clean_url' => $clean_url)), 'setting');
+  drupal_add_js($path . '/js/pushtape-services-embed.js');
+  
+  $markup = '';  
+  $markup .= '<p><h3>Embed</h3><textarea class="embed-code-container" rows="2" cols="50" scrolling="no" readonly="readonly" ><iframe width="100%" height="350" scrolling="no" frameborder="no" src="' . $src . '"></iframe></textarea></p>';
+  $markup .= '<input type="submit" class="embed-refresh" value="Update Preview" />';  
+  $markup .= '<p><label>Width:</label><input type="text" name="embed_width" type="text" size="3" class="embed-width" value="100%" /><label>Height:</label><input size="3" name="embed_width" class="embed-height" value="350" /></p>';  
+  $markup .= '<p><h3>Preview</h3><div class="preview-container"></div></p>';
+  return $markup;
+}
+
+/**
+ * Helper function for exposing referenced entity values in a plain text way (i.e. taxonomy terms).
+ */
+function _pushtape_services_get_field($node, $field_name, $delta = 0) {
+  $field = field_get_items('node', $node, $field_name);
+  $field_value = field_view_value('node', $node, $field_name, $field[$delta]);
+  // Strip tags, we only want plain text
+  return strip_tags(render($field_value));
+}

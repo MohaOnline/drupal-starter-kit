@@ -1,0 +1,47 @@
+name = Pushtape Admin
+description = Administration menu, views, and roles for the Pushtape distribution.
+core = 7.x
+package = Pushtape
+version = 7.x-1.0
+project = pushtape_admin
+dependencies[] = block
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = menu
+dependencies[] = views
+datestamp = 1416483271
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[menu_custom][] = menu-pushtape
+features[menu_links][] = menu-pushtape_-add:node/add
+features[menu_links][] = menu-pushtape_account:user
+features[menu_links][] = menu-pushtape_advanced:admin
+features[menu_links][] = menu-pushtape_dashboard:admin/pushtape
+features[menu_links][] = menu-pushtape_home:<front>
+features[menu_links][] = menu-pushtape_new-track:node/add/track
+features[user_permission][] = access administration pages
+features[user_permission][] = access content
+features[user_permission][] = access content overview
+features[user_permission][] = access site in maintenance mode
+features[user_permission][] = administer blocks
+features[user_permission][] = administer site configuration
+features[user_permission][] = administer themes
+features[user_permission][] = create album content
+features[user_permission][] = create track content
+features[user_permission][] = delete own album content
+features[user_permission][] = delete own track content
+features[user_permission][] = edit own album content
+features[user_permission][] = edit own track content
+features[user_permission][] = use text format filtered_html
+features[user_permission][] = use text format full_html
+features[user_permission][] = view own unpublished content
+features[user_permission][] = view the administration theme
+features[user_role][] = artist
+features[views_view][] = dashboard
+
+; Information added by Drupal.org packaging script on 2016-09-28
+version = "7.x-1.0"
+core = "7.x"
+project = "pushtape_admin"
+datestamp = "1475042060"
+
