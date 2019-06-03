@@ -1,0 +1,11 @@
+name = "HAX"
+description = "A completely Headless Authoring eXperience, #haxtheweb."
+core = "7.x"
+dependencies[] = webcomponents
+configure = admin/config/content/hax
+
+; Information added by Drupal.org packaging script on 2019-01-15
+version = "7.x-3.0-rc2"
+core = "7.x"
+project = "hax"
+datestamp = "1547565034"
