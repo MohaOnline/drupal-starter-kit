@@ -1,0 +1,15 @@
+name = Poll fields
+description = Provide a way to poll specific data of a node in order to do live-updates (and bypass the page cache).
+core = 7.x
+php = 5.4
+
+dependencies[] = field
+dependencies[] = psr0
+
+scripts[] = polling.js
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-1.0"
+core = "7.x"
+project = "polling"
+datestamp = "1557238690"

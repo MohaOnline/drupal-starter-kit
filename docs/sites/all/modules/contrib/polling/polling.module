@@ -1,0 +1,56 @@
+<?php
+
+use \Drupal\polling\Loader;
+
+/**
+ * Implements hook_menu().
+ */
+function polling_menu() {
+  $items['node/%node/polling'] = [
+    'page callback' => 'polling_poll',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  ];
+  $items['polling'] = [
+    'page callback' => 'polling_global_poll',
+    'access callback' => 'user_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  ];
+  return $items;
+}
+
+function _polling_send($data) {
+  drupal_add_http_header("Access-Control-Allow-Origin", "*");
+  drupal_add_http_header('Cache-Control', 'public, max-age=5');
+  drupal_json_output($data);
+  exit();
+}
+
+/**
+ * Page callback: Node polling.
+ */
+function polling_poll($node) {
+  $data = [];
+  $loader = Loader::instance();
+  foreach ($loader->loadFieldTypePlugins('node', $node) as $plugin) {
+    $data = array_merge_recursive($data, $plugin->getData());
+  }
+
+  $data['nid'] = $node->nid;
+  _polling_send($data);
+}
+
+/**
+ * Page callback: Global polling.
+ */
+function polling_global_poll() {
+  $data = [];
+  $loader = Loader::instance();
+  foreach ($loader->loadGlobalPlugins() as $plugin) {
+    $data = array_merge_recursive($data, $plugin->getData());
+  }
+  _polling_send($data);
+}
