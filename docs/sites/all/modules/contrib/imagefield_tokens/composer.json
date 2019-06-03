@@ -1,0 +1,14 @@
+{
+  "name": "drupal/imagefield_tokens",
+  "type": "drupal-module",
+  "description": "Adds additional settings to the Image field alt/title attributes.",
+  "homepage": "https://www.drupal.org/project/imagefield_tokens",
+  "license": "GPL-2.0+",
+  "minimum-stability": "dev",
+  "support": {
+    "issues": "http://drupal.org/project/issues/imagefield_tokens"
+  },
+  "require": {
+    "drupal/token": "^1.7"
+  }
+}

@@ -1,0 +1,136 @@
+<?php
+
+/**
+ * @file
+ * This file implements tests for ImageFiled Tokens.
+ */
+
+/**
+ * Class ImageFieldTokensTestCase.
+ *
+ * Provides tests functionality for the ImageField Tokens module.
+ */
+class ImageFieldTokensTestCase extends DrupalWebTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => t('ImageField Tokens functionality'),
+      'description' => t('Test ImageField using ImageField Tokens in ALT and Title fields.'),
+      'group' => t('ImageField Tokens'),
+    );
+  }
+
+  /**
+   * Implementation of setUp().
+   */
+  protected function setUp() {
+    parent::setUp('image', 'simpletest', 'imagefield_tokens', 'token', 'file', 'file_module_test', 'image_module_test');
+  }
+
+  /**
+   * Test image uploading.
+   *
+   * @throws \FieldException
+   * @throws \Exception
+   */
+  public function testUploadImage() {
+    // Create content type.
+    $type = $this->drupalCreateContentType();
+
+    // Create ImageField.
+    $field_name = 'field_' . drupal_strtolower(self::randomName());
+    module_load_include('test', 'image', 'image');
+    module_load_include('test', 'simpletest', 'image');
+    $this->createImageField($field_name, $type->name, array(), array('alt' => '[node:title]', 'title' => '[node:title]'));
+
+    // Prepare a test file.
+    $test_file = $this->getTestFile('image');
+    file_save($test_file);
+
+    // Create and load new node.
+    $node = (object) [
+      'title' => self::randomName(),
+      'type' => $type->name,
+      'vid' => (string) (int) TRUE,
+    ];
+    node_save($node);
+    $nid = $node->nid;
+
+    // Load node and upload file.
+    $node = node_load($nid, NULL, TRUE);
+    $node->{$field_name}[LANGUAGE_NONE][0] = (array) $test_file;
+    $node->{$field_name}[LANGUAGE_NONE][0]['alt'] = '[node:title]';
+    $node->{$field_name}[LANGUAGE_NONE][0]['title'] = '[node:title]';
+    node_save($node);
+
+    // Get processed file from node.
+    $node_file = $node->{$field_name}[LANGUAGE_NONE][0];
+
+    // Check ALT and Title values.
+    $this->assertEqual($node_file['alt'], $node->title, t('Make sure ALT field has been processed.'));
+    $this->assertEqual($node_file['title'], $node->title, t('Make sure Title field has been processed.'));
+  }
+
+  /**
+   * Create a new image field.
+   *
+   * @param string $name
+   *   The name of the new field (all lowercase), exclude the "field_" prefix.
+   * @param string $type_name
+   *   The node type that this field will be added to.
+   * @param array $field_settings
+   *   A list of field settings that will be added to the defaults.
+   * @param array $instance_settings
+   *   A list of instance settings that will be added to the instance defaults.
+   * @param array $widget_settings
+   *   A list of widget settings that will be added to the widget defaults.
+   *
+   * @return mixed
+   *   Returns Image Field instance.
+   *
+   * @throws \FieldException
+   */
+  protected function createImageField($name, $type_name, array $field_settings = array(), array $instance_settings = array(), array $widget_settings = array()) {
+    $field = array(
+      'field_name' => $name,
+      'type' => 'image',
+      'settings' => array(),
+      'cardinality' => !empty($field_settings['cardinality']) ? $field_settings['cardinality'] : 1,
+    );
+    $field['settings'] = array_merge($field['settings'], $field_settings);
+    field_create_field($field);
+
+    $instance = array(
+      'field_name' => $field['field_name'],
+      'entity_type' => 'node',
+      'label' => $name,
+      'bundle' => $type_name,
+      'required' => !empty($instance_settings['required']),
+      'settings' => array(),
+      'widget' => array(
+        'type' => 'image_image',
+        'settings' => array(),
+      ),
+    );
+    $instance['settings'] = array_merge($instance['settings'], $instance_settings);
+    $instance['widget']['settings'] = array_merge($instance['widget']['settings'], $widget_settings);
+    return field_create_instance($instance);
+  }
+
+  /**
+   * Retrieves a sample file of the specified type.
+   */
+  protected function getTestFile($type_name, $size = NULL) {
+    // Get a file to upload.
+    $file = current($this->drupalGetTestFiles($type_name, $size));
+
+    // Add a filesize property to files as would be read by file_load().
+    $file->filesize = filesize($file->uri);
+
+    return $file;
+  }
+
+}
