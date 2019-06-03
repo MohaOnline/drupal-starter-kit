@@ -1,0 +1,268 @@
+<?php
+/**
+ * @file
+ * Provides some custom functionality.
+ */
+
+/**
+ * Require all constants
+ */
+require_once __DIR__ . '/constants.inc';
+
+/**
+ * Implements hook_entity_property_info().
+ */
+function taxonomy_term_depth_entity_property_info() {
+  $info = array();
+
+  $properties = &$info['taxonomy_term']['properties'];
+  $properties['depth'] = array(
+    'label' => t("Term Depth"),
+    'type' => 'integer',
+    'description' => t("The depth of this term inside the taxonomy tree."),
+    'schema field' => 'depth',
+  );
+
+  return $info;
+}
+
+/**
+ * @todo: Provide description
+ *
+ * @param $tid
+ * @param bool $force
+ *
+ * @return int
+ */
+function taxonomy_term_depth_get_by_tid($tid, $force = FALSE) {
+  $cache = &drupal_static('taxonomy_term_depth', array());
+  $cache_key = $tid;
+  if ($force || !isset($cache[$cache_key])) {
+    // Try to get cached value first but only if no need to rebuild
+    // If force flag is set to TRUE the query won't be executed
+    if ($force || !($depth = db_query('SELECT depth FROM {taxonomy_term_data} WHERE tid=:tid', array(':tid' => $tid))->fetchField())) {
+      // Calculate value without using caches
+      $depth = _taxonomy_term_depth_get_nocache($tid);
+
+      // And write to database cache
+      db_update('taxonomy_term_data')
+        ->fields(array(
+          'depth' => $depth,
+        ))
+        ->condition('tid', $tid)
+        ->execute();
+    }
+
+    $cache[$cache_key] = $depth;
+  }
+
+  return $cache[$cache_key];
+}
+
+/**
+ * Implements hook_entity_update();
+ */
+function taxonomy_term_depth_entity_update($entity, $type) {
+  // Update depth of the item on save
+  if ($type == 'taxonomy_term') {
+    taxonomy_term_depth_get_by_tid($entity->tid, TRUE);
+  }
+}
+
+/**
+ * Implements hook_entity_insert()
+ */
+function taxonomy_term_depth_entity_insert($entity, $type) {
+  taxonomy_term_depth_entity_update($entity, $type);
+}
+
+/**
+ * Calculates taxonomy term depth from database
+ *
+ * @param $tid
+ *
+ * @return int
+ */
+function _taxonomy_term_depth_get_nocache($tid) {
+  $parent = taxonomy_term_depth_get_parent($tid);
+  if (!$parent) {
+    return 1;
+  }
+  else {
+    return 1 + _taxonomy_term_depth_get_nocache($parent);
+  }
+}
+
+/**
+ * Gets parent of the term
+ *
+ * @param $tid
+ *  Term tid to find its parent
+ */
+function taxonomy_term_depth_get_parent($tid, $nocache = FALSE) {
+  $cache = &drupal_static(__FUNCTION__, array());
+  $cache_key = $tid;
+  if (!isset($cache[$cache_key]) || $nocache) {
+    $cache[$cache_key] = db_query(
+      "SELECT parent FROM {taxonomy_term_hierarchy} WHERE tid = :tid",
+      array(':tid' => $tid)
+    )->fetchField();
+  }
+
+  return $cache[$cache_key];
+}
+
+
+/**
+ * Gets child of the term
+ *
+ * @param $tid
+ *  Term tid to find its parent
+ */
+function taxonomy_term_depth_get_child($tid, $nocache = FALSE) {
+  $cache = &drupal_static('taxonomy_term_depth_get_child', array());
+  $cache_key = $tid;
+  if (!isset($cache[$cache_key]) || $nocache) {
+    $cache[$cache_key] = db_query(
+      "SELECT tid FROM {taxonomy_term_hierarchy} WHERE parent = :tid",
+      array(':tid' => $tid)
+    )->fetchField();
+  }
+
+  return $cache[$cache_key];
+}
+
+/**
+ * @param $tid
+ *
+ * @return array
+ * @deprecated Use taxonomy_term_depth_get_full_chain().
+ */
+function taxonomy_term_depth_get_chain($tid, $reveresed = FALSE) {
+  return taxonomy_term_depth_get_parents($tid, $reveresed);
+}
+
+
+/**
+ * Get parents of the term.
+ *
+ * @param $tid
+ *
+ * @return array
+ */
+function taxonomy_term_depth_get_parents($tid, $reversed = FALSE) {
+  // @todo: Caching parents or not worth?
+  $parents = array();
+  $parent = $tid;
+  while ($parent = taxonomy_term_depth_get_parent($parent)) {
+    $parents[] = $parent;
+  }
+
+  return $reversed ? array_reverse($parents) : $parents;
+}
+
+/**
+ * Gets children of the term.
+ *
+ * @param $tid
+ *
+ * @return array
+ */
+function taxonomy_term_depth_get_children($tid, $reversed = FALSE) {
+  $children = [];
+
+  // Now get children
+  $child = $tid;
+  while ($child = taxonomy_term_depth_get_child($child)) {
+    $children[] = $child;
+  }
+
+  return $reversed ? array_reverse($children) : $children;
+}
+
+/**
+ * Gets full chain of terms, including term itself
+ *
+ * @param $tid
+ *
+ * @return array
+ */
+function taxonomy_term_depth_get_full_chain($tid, $reversed = FALSE) {
+  $parents = taxonomy_term_depth_get_parents($tid, TRUE);
+  $children = taxonomy_term_depth_get_children($tid, TRUE);
+  $chain = array_merge($parents, [$tid], $children);
+
+  return $reversed ? array_reverse($chain) : $chain;
+}
+
+/**
+ * Implements hook_menu()
+ */
+function taxonomy_term_depth_menu() {
+  $items = array();
+  $items['admin/structure/taxonomy/taxonomy_term_depth_update'] = array(
+    'title' => 'Rebuild all taxonomy term depths',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('taxonomy_term_depth_batch_depth_update_form'),
+    'access arguments' => array('administer taxonomy'),
+    'file' => 'taxonomy_term_depth.batch.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function taxonomy_term_depth_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+/**
+ * Implements hook_views_data()
+ * Exposes our playcount table to views
+ */
+function taxonomy_term_depth_views_data() {
+
+  // Our fields
+  $data['taxonomy_term_data']['depth'] = array(
+    'title' => t('Depth'),
+    'help' => t('The depth of a taxonomy term.'),
+  );
+
+  // Adds our field in the "Fields" section of Views
+  $data['taxonomy_term_data']['depth']['field'] = array(
+    'handler' => 'views_handler_field_numeric',
+    'click sortable' => TRUE,
+  );
+
+  // Adds our field in the "Filters" section of Views
+  $data['taxonomy_term_data']['depth']['filter'] = array(
+    'handler' => 'views_handler_filter_numeric',
+  );
+
+  // Adds our field in the "Sort" section of Views
+  $data['taxonomy_term_data']['depth']['sort'] = array(
+    'handler' => 'views_handler_sort',
+  );
+
+  $data['taxonomy_term_data']['name_depth']['field'] = array(
+    'real field' => 'name',
+    'title' => t('Depth Name'),
+    'help' => t('Shows a term or one of it\'s parents.'),
+    'handler' => 'taxonomy_term_depth_handler_field_taxonomy',
+    'click sortable' => TRUE,
+  );
+
+  $data['taxonomy_term_data']['has_children']['filter'] = array(
+    'real field' => 'tid',
+    'title' => t('Has Children'),
+    'help' => t('Filters on whether the term has children or not.'),
+    'handler' => 'taxonomy_term_depth_handler_filter_has_children',
+  );
+
+  return $data;
+}

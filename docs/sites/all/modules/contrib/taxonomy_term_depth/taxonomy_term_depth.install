@@ -1,0 +1,57 @@
+<?php
+/**
+ * @file
+ */
+
+/**
+ * Implements hook_install()
+ */
+function taxonomy_term_depth_install() {
+  $table = drupal_get_schema('taxonomy_term_data', TRUE);
+  $keys = array(
+    'indexes' => array(
+      'depth' => array('depth', 'tid'),
+    ),
+  );
+
+  db_add_field('taxonomy_term_data', 'depth', $table['fields']['depth'], $keys);
+
+  // Update all term depths
+  $options = array();
+  batch_set(array(
+    'operations' => array(
+      array(
+        'taxonomy_term_depth_batch_callbacks_update_term_depth',
+        array($options),
+      ),
+    ),
+    'title' => st('Updating depths for all terms'),
+    'file' => TAXONOMY_TERM_DEPTH_ROOT_REL . '/taxonomy_term_depth.batch.inc',
+  ));
+}
+
+/**
+ * Implements hook_schema_alter()
+ */
+function taxonomy_term_depth_schema_alter(&$schema) {
+  $schema['taxonomy_term_data']['fields']['depth'] = array(
+    'type' => 'int',
+    'size' => 'tiny',
+    'description' => 'Taxonomy depth',
+    'default' => NULL,
+  );
+
+  $schema['taxonomy_term_data']['indexes'] = array(
+    'depth' => array('depth', 'tid'),
+  );
+}
+
+/**
+ * Implements hook_uninstall()
+ */
+function taxonomy_term_depth_uninstall() {
+  db_drop_field('taxonomy_term_data', 'depth');
+  
+  // Remove depth index mapped to tid.
+  db_drop_index('taxonomy_term_data', 'depth');
+}

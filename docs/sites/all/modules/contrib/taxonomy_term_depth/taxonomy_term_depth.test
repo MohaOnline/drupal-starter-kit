@@ -1,0 +1,121 @@
+<?php
+
+/**
+ * @file
+ */
+
+/**
+ * Tests the taxonomy vocabulary interface.
+ */
+class DynamicDepthCalculationTest extends DrupalWebTestCase {
+  protected $terms = array();
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Getting calculating dynamically the depth of the term',
+      'description' => 'Basic test for Taxonomy depth manipulation',
+      'group' => 'Taxonomy Term Depth',
+    );
+  }
+
+  function setUp() {
+    $modules = array(
+      'taxonomy_term_depth',
+      'taxonomy'
+    );
+
+    parent::setUp($modules);
+  }
+
+
+  /**
+   * Creates and ensures that a feed is unique, checks source, and deletes feed.
+   */
+  public function testCalculateDepth() {
+    $voc = entity_create('taxonomy_vocabulary', array(
+      'machine_name' => 'testvoc',
+      'name' => 'testvoc',
+      'description' => 'testvoc',
+      'help' => 'test',
+    ));
+
+    entity_save('taxonomy_vocabulary', $voc);
+
+
+    $term1 = entity_create('taxonomy_term', array(
+      'vid' => $voc->vid,
+      'name' => 'Depth 1 term',
+    ));
+
+    entity_save('taxonomy_term', $term1);
+
+    $term2 = entity_create('taxonomy_term', array(
+      'vid' => $voc->vid,
+      'name' => 'Depth 2 term',
+      'parent' => array($term1->tid),
+    ));
+
+    entity_save('taxonomy_term', $term2);
+
+    $term3 = entity_create('taxonomy_term', array(
+      'vid' => $voc->vid,
+      'name' => 'Depth 3 term',
+      'parent' => array($term2->tid),
+    ));
+
+    entity_save('taxonomy_term', $term3);
+
+    $this->terms[] = $term1;
+    $this->terms[] = $term2;
+    $this->terms[] = $term3;
+
+    $this->assertEqual(taxonomy_term_depth_get_by_tid($term1->tid), 1, 'Depth of first term');
+    $this->assertEqual(taxonomy_term_depth_get_by_tid($term2->tid), 2, 'Depth of second term');
+    $this->assertEqual(taxonomy_term_depth_get_by_tid($term3->tid), 3, 'Depth of third term');
+
+
+    $chain = taxonomy_term_depth_get_full_chain($term2->tid);
+    $compare = [
+      $term1->tid,
+      $term2->tid,
+      $term3->tid,
+    ];
+
+    $this->assertTrue($chain === $compare, 'Testing fullchain for term2');
+
+    $chain = taxonomy_term_depth_get_full_chain($term2->tid, TRUE);
+    $this->assertTrue($chain === array_reverse($compare), 'Testing reversed fullchain for term2');
+
+    $this->assertEqual(db_query('SELECT depth FROM {taxonomy_term_data} WHERE tid=:tid', [':tid' => $term1->tid])->fetchField(), 1, 'DB depth_level field of first term');
+    $this->assertEqual(db_query('SELECT depth FROM {taxonomy_term_data} WHERE tid=:tid', [':tid' => $term2->tid])->fetchField(), 2, 'DB depth_level field of second term');
+    $this->assertEqual(db_query('SELECT depth FROM {taxonomy_term_data} WHERE tid=:tid', [':tid' => $term3->tid])->fetchField(), 3, 'DB depth_level field of third term');
+
+    $this->_testDepthCache();
+    $this->_testDepthProperty();
+  }
+
+  public function _testDepthCache() {
+    $tid = $this->terms[2]->tid;
+    // Get first time for caching
+    $depth_stored = taxonomy_term_depth_get_by_tid($tid);
+
+    $cache = &drupal_static('taxonomy_term_depth', array());
+    $cache_key = $tid;
+    if ($this->assertTrue(isset($cache[$cache_key]), 'Value was cached')) {
+      $this->assertEqual($cache[$cache_key], $depth_stored, 'Cached value is correct');
+    }
+
+    $fake_value = 500;
+    $cache[$cache_key] = $fake_value;
+    $this->assertEqual(taxonomy_term_depth_get_by_tid($tid), $fake_value, 'Cached value retrieved correctly');
+    $this->assertEqual(taxonomy_term_depth_get_by_tid($tid, TRUE), _taxonomy_term_depth_get_nocache($tid), 'Got correct data with forced cache clear');
+  }
+
+  public function _testDepthProperty() {
+    $term3 = $this->terms[2];
+
+    $wrapper = entity_metadata_wrapper('taxonomy_term', $term3->tid);
+    $this->assertEqual($wrapper->depth->value(), taxonomy_term_depth_get_by_tid($term3->tid), 'Depth property works fine with metadata wrapper');
+  }
+
+}
