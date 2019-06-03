@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * @file
+ * Code for the media_skyfish module.
+ */
+
+module_load_include('inc', 'media_skyfish', 'includes/media_skyfish.variables');
+module_load_include('inc', 'media_skyfish', 'includes/media_skyfish.utilities');
+
+/**
+ * Implements hook_media_browser_plugin_info().
+ */
+function media_skyfish_media_browser_plugin_info() {
+  $info['skyfish'] = array(
+    'title' => t('Skyfish'),
+    'class' => 'MediaSkyfishBrowser',
+    'weight' => 100,
+  );
+
+  return $info;
+}
+
+function media_skyfish_get_user_login_url($format = FALSE) {
+  $string = 'user/%user/skyfish';
+  if ($format) {
+    global $user;
+    return str_replace('%user', $user->uid, $string);
+  }
+  return $string;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function media_skyfish_menu() {
+  $items = array();
+  $items['admin/config/media/media_skyfish'] = array(
+    'title' => 'Skyfish settings',
+    'description' => 'Configure required settings for Media: Skyfish.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('media_skyfish_settings_form'),
+    'access arguments' => array('configure skyfish'),
+    'file' => 'includes/media_skyfish.admin.inc',
+  );
+
+  $items[media_skyfish_get_user_login_url()] = array(
+    'title' => 'Skyfish settings',
+    'description' => 'Configure Skyfish api settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('media_skyfish_user_settings_form', 1),
+    'access arguments' => array('configure own skyfish'),
+    'file' => 'includes/media_skyfish.user.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function media_skyfish_permission() {
+  return array(
+    'configure skyfish' => array(
+      'title' => t('Configure Global Media Skyfish settings'),
+    ),
+    'configure own skyfish' => array(
+      'title' => t('Configure own Media Skyfish settings'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function media_skyfish_admin_paths() {
+  $paths = [
+    'user/*/skyfish' => TRUE,
+  ];
+  return $paths;
+}

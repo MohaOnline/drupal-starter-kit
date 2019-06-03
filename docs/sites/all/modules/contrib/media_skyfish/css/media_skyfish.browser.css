@@ -1,0 +1,148 @@
+#media-skyfish-form .media-skyfish-list {
+  background-color: #EEE;
+  border: 3px solid #EEE;
+  display: list-item;
+  list-style: none;
+  float: left;
+  margin: 0 10px 10px 0;
+  position: relative;
+  padding: 5px !important;
+  height:100%;
+  width: 200px;
+  cursor: pointer;
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper {
+  display: none;
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper.active {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: table;
+  text-align: center;
+  z-index: 1;
+  background-color: rgba(0,0,0,0.5);
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper #skyfish-info-dialog {
+  display: table-cell;
+  vertical-align: middle;
+  text-align: center;
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper #skyfish-info-dialog #skyfish-dialog-content {
+  background: #FFF;
+  border: 3px solid #058AC5;
+  display: inline-block;
+  height: 400px;
+  padding: 5px;
+  overflow: auto;
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper #skyfish-info-dialog #skyfish-dialog-content-inner {
+  max-width: 200px;
+  text-align: left;
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper #skyfish-info-dialog #skyfish-dialog-content-inner div {
+  border-bottom: 1px solid lightgray;
+  margin-bottom: 3px;
+  padding-bottom: 3px;
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper #skyfish-info-dialog #skyfish-dialog-content #skyfish-dialog-close {
+  color: #058AC5;
+  cursor: pointer;
+}
+
+#media-skyfish-form #skyfish-dialog-wrapper #skyfish-info-dialog #skyfish-dialog-content #skyfish-dialog-close:hover {
+  text-decoration: underline;
+}
+
+#media-skyfish-form .media-skyfish-list:hover {
+  border-color: #058AC5;
+}
+
+#media-skyfish-form .media-skyfish-active {
+  background-color: #F4ECC7;
+  border-color: #058AC5;
+}
+
+#media-skyfish-form .media-skyfish-list div {
+  background-color: transparent;
+  font: 12px Helvetica;
+  padding: 3px;
+}
+
+#media-skyfish-form .media-skyfish-list .form-item {
+  height: 100%;
+  min-height: 108px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+#media-skyfish-form .media-skyfish-list .form-item label {
+  cursor: pointer;
+}
+
+#media-skyfish-form .media-skyfish-list .form-item .show-more {
+  color: #058AC5;
+}
+
+#media-skyfish-form .media-skyfish-list .form-item .show-more:hover {
+  text-decoration: underline;
+}
+
+#media-skyfish-form .media-skyfish-list .form-item .dialog-info {
+  display: none;
+}
+
+#media-skyfish-form .media-skyfish-list .form-item.active {
+  height: 100%;
+}
+
+#media-skyfish-form .media-skyfish-list .media-skyfish-title {
+  font-size: 15px;
+}
+
+#media-skyfish-form .media-skyfish-list .media-skyfish-checkbox {
+  display: none;
+}
+
+#media-skyfish-form .media-skyfish-list label.option {
+  font-size: 16px;
+  line-height: 17px;
+  width: 100%;
+}
+
+#media-skyfish-form #media-skyfish-form-submit {
+  background-color: #4D8F46;
+  color: #FFF;
+  position: absolute;
+  right: 30px;
+  top: 43px;
+}
+
+#media-skyfish-form a {
+  color: #0074BD;
+  text-decoration: underline;
+}
+
+#media-skyfish-form .media-skyfish-throbber {
+  position: absolute;
+  right: 20px;
+  top: 46px;
+}
+
+#media-skyfish-form .progress-disabled {
+  background: repeating-linear-gradient( -45deg, #FFFFFF, #D2D2D2 4px ) !important;
+  color: #6B6B6B !important;
+  cursor: not-allowed !important;
+  outline: none !important;
+  opacity: 0.665 !important;
+  text-shadow: 1px 1px 0px #fff !important;
+}

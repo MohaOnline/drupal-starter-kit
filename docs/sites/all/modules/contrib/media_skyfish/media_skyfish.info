@@ -1,0 +1,12 @@
+name = Media skyfish
+description = Provides skyfish.com integration to media module
+core = 7.x
+dependencies[] = media
+files[] = includes/MediaSkyfishBrowser.inc
+configure = admin/config/media/media_skyfish
+
+; Information added by Drupal.org packaging script on 2019-05-01
+version = "7.x-1.4"
+core = "7.x"
+project = "media_skyfish"
+datestamp = "1556713985"
