@@ -1,0 +1,114 @@
+<?php
+
+/**
+ * @file
+ * Browser update module.
+ */
+
+/**
+ * Loads BU on every page except the listed pages.
+ */
+define('BU_VISIBILITY_NOTLISTED', 0);
+
+/**
+ * Loads BU only on the listed pages.
+ */
+define('BU_VISIBILITY_LISTED', 1);
+
+/**
+ * Implements hook_page_build().
+ */
+function bu_page_build(&$page) {
+  $pages = variable_get('bu_pages', '');
+
+  // Match path if necessary.
+  $page_match = TRUE;
+  if ($pages) {
+    $visibility = variable_get('bu_visibility', BU_VISIBILITY_NOTLISTED);
+    // Convert path to lowercase. This allows comparison of the same path
+    // with different case. Ex: /Page, /page, /PAGE.
+    $pages = drupal_strtolower($pages);
+    // Convert the Drupal path to lowercase.
+    $path = drupal_strtolower(drupal_get_path_alias(current_path()));
+    // Compare the lowercase internal and lowercase path alias (if any).
+    $page_match = drupal_match_path($path, $pages);
+    if ($path != current_path()) {
+      $page_match = $page_match || drupal_match_path(current_path(), $pages);
+    }
+    // When $block->visibility has a value of 0 (BLOCK_VISIBILITY_NOTLISTED),
+    // the block is displayed on all pages except those listed in $block->pages.
+    // When set to 1 (BLOCK_VISIBILITY_LISTED), it is displayed only on those
+    // pages listed in $block->pages.
+    $page_match = !($visibility xor $page_match);
+  }
+  if ($page_match) {
+    // Get the first key of the page array so we can attach to it.
+    $first_key = element_children($page);
+    $first_key = array_shift($first_key);
+    $page[$first_key]['#attached']['js'][] = array(
+      'data' => bu_get_settings(),
+      'type' => 'setting',
+      'scope' => 'header',
+    );
+    $page[$first_key]['#attached']['js'][] = array(
+      'data' => drupal_get_path('module', 'bu') . '/bu.js',
+      'type' => 'file',
+      'scope' => 'header',
+    );
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function bu_menu() {
+  $items = array();
+  $items['admin/config/services/bu'] = array(
+    'title' => 'Browser update',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('bu_admin_settings'),
+    'access arguments' => array('administer browser-update'),
+    'file' => 'bu.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function bu_permission() {
+  return array(
+    'administer browser-update' => array(
+      'title' => t('Administer Browser-update'),
+      'description' => t('Administer Browser-update settings.'),
+    ),
+  );
+}
+
+/**
+ * Returns default settings for browser update.
+ */
+function bu_get_settings() {
+  return array(
+    'bu' => array(
+      'source' => variable_get('bu_settings_source', '//browser-update.org/update.js'),
+      'show_source' => variable_get('bu_settings_show_source', '//browser-update.org/update.show.min.js'),
+      'firefox' => variable_get('bu_browsers_firefox', '-4'),
+      'ie' => variable_get('bu_browsers_ie', '-6'),
+      'opera' => variable_get('bu_browsers_opera', '-4'),
+      'safari' => variable_get('bu_browsers_safari', '-2'),
+      'chrome' => variable_get('bu_browsers_chrome', '-4'),
+      'insecure' => variable_get('bu_settings_insecure', TRUE),
+      'unsupported' => variable_get('bu_settings_unsupported', FALSE),
+      'mobile' => variable_get('bu_settings_mobile', TRUE),
+      'position' => variable_get('bu_settings_position', 'top'),
+      'text' => variable_get('bu_settings_text', ''),
+      'reminder' => (int) variable_get('bu_settings_reminder', 3),
+      'reminder_closed' => (int) variable_get('bu_settings_reminder_closed', 3),
+      'debug' => (bool) variable_get('bu_settings_debug', 0),
+      'blank' => (bool) variable_get('bu_settings_blank', 0),
+      'hide_ignore' => (bool) variable_get('bu_settings_hide_ignore', FALSE),
+    ),
+  );
+}

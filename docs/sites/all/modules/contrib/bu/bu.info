@@ -1,0 +1,12 @@
+name = Browser update
+description = Integrates browser-update.org to notify users if they use an outdated browser.
+core = 7.x
+package = Other
+configure = admin/config/services/bu
+files[] = bu.module
+
+; Information added by Drupal.org packaging script on 2019-04-04
+version = "7.x-1.5"
+core = "7.x"
+project = "bu"
+datestamp = "1554378784"

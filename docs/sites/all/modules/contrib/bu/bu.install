@@ -1,0 +1,31 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Browser update module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function bu_uninstall() {
+  variable_del('bu_browsers_ie');
+  variable_del('bu_browsers_firefox');
+  variable_del('bu_browsers_opera');
+  variable_del('bu_browsers_safari');
+  variable_del('bu_browsers_chrome');
+  variable_del('bu_settings_insecure');
+  variable_del('bu_settings_unsupported');
+  variable_del('bu_settings_mobile');
+  variable_del('bu_settings_text');
+  variable_del('bu_settings_position');
+  variable_del('bu_settings_reminder');
+  variable_del('bu_settings_reminder_closed');
+  variable_del('bu_settings_debug');
+  variable_del('bu_settings_blank');
+  variable_del('bu_settings_hide_ignore');
+  variable_del('bu_settings_source');
+  variable_del('bu_settings_show_source');
+  variable_del('bu_visibility');
+  variable_del('bu_pages');
+}
