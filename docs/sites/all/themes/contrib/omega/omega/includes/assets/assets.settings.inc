@@ -9,10 +9,31 @@
  * Implements hook_extension_EXTENSION_theme_settings_form_alter().
  */
 function omega_extension_assets_settings_form($element, &$form, $form_state) {
+  $tokens = array(
+    ':core' => '<code>:core</code><div class="description">' . t('Matches the root (core) modules, themes or misc folder.') . '</div>',
+    ':contrib' => '<code>:contrib</code><div class="description">' . t('Matches all valid contrib module destinations (sites/all/modules, profiles/{profile}/modules, sites/{site}/modules).') . '</div>',
+    ':current-theme' => '<code>:current-theme</code><div class="description">' . t('Matches the directory of the active (current) theme.') . '</div>',
+    ':base-theme' => '<code>:base-theme</code><div class="description">' . t('Matches the directory of each base theme that belongs to the theme trail of the active theme.') . '</div>',
+  );
+
+  $element['omega_namespace_tokens'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Namespace tokens'),
+  );
+
+  $element['omega_namespace_tokens']['help'] = array(
+    '#theme' => 'item_list',
+    '#items' => $tokens,
+    '#attributes' => array(
+      'id' => 'omega-assets-namespace-tokens',
+      'class' => 'omega-assets-namespace-tokens',
+    ),
+  );
+
   $element['omega_js_footer'] = array(
     '#type' => 'textarea',
     '#title' => t('Move JS files to the footer'),
-    '#description' => t("Enter one file per line. The '*' character is a wildcard. Each path is relative to a module, theme, profile, theme engine or the 'misc' folder."),
+    '#description' => t("Enter one file per line. The '*' character is a wildcard. Each path is relative to a module, theme, profile or theme engine (e.g. if you installed the Views module sites/all/modules the path 'views/*' would automatically be mapped to 'sites/all/modules/views/*') or the Drupal root if it can't be mapped to one of the aforementioned namespaces. Alternatively, you can use one of the provided <a href=\"#omega-namespace-tokens\">namespace tokens</a> as path prefixes."),
     // The paths are stored in an array.
     '#default_value' => implode("\n", (array) omega_theme_get_setting('omega_js_footer', array())),
   );
@@ -20,7 +41,7 @@ function omega_extension_assets_settings_form($element, &$form, $form_state) {
   $element['omega_css_exclude'] = array(
     '#type' => 'textarea',
     '#title' => t('Exclude CSS files'),
-    '#description' => t("Enter one file per line. The '*' character is a wildcard. Each path is relative to a module, theme, profile, theme engine or the 'misc' folder."),
+    '#description' => t("Enter one file per line. The '*' character is a wildcard. Each path is relative to a module, theme, profile or theme engine (e.g. if you installed the Views module sites/all/modules the path 'views/*' would automatically be mapped to 'sites/all/modules/views/*') or the Drupal root if it can't be mapped to one of the aforementioned namespaces. Alternatively, you can use one of the provided <a href=\"#omega-namespace-tokens\">namespace tokens</a> as path prefixes."),
     // The paths are stored in an array.
     '#default_value' => implode("\n", (array) omega_theme_get_setting('omega_css_exclude', array())),
   );
@@ -28,7 +49,7 @@ function omega_extension_assets_settings_form($element, &$form, $form_state) {
   $element['omega_js_exclude'] = array(
     '#type' => 'textarea',
     '#title' => t('Exclude JS files'),
-    '#description' => t("Enter one file per line. The '*' character is a wildcard. Each path is relative to a module, theme, profile, theme engine or the 'misc' folder."),
+    '#description' => t("Enter one file per line. The '*' character is a wildcard. Each path is relative to a module, theme, profile or theme engine (e.g. if you installed the Views module sites/all/modules the path 'views/*' would automatically be mapped to 'sites/all/modules/views/*') or the Drupal root if it can't be mapped to one of the aforementioned namespaces. Alternatively, you can use one of the provided <a href=\"#omega-namespace-tokens\">namespace tokens</a> as path prefixes."),
     // The paths are stored in an array.
     '#default_value' => implode("\n", (array) omega_theme_get_setting('omega_js_exclude', array())),
   );
@@ -120,7 +141,7 @@ function omega_extension_assets_settings_form($element, &$form, $form_state) {
         ),
         '#parents' => array('omega_libraries', $library),
         '#tree' => TRUE,
-        '#attributes' => array('class' => array('omega-settings-container')),
+        '#attributes' => array('class' => array('omega-asset-options')),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       ) + $options;
@@ -202,24 +223,5 @@ function omega_extension_assets_theme_settings_form_submit($form, &$form_state) 
   foreach (array('omega_css_exclude', 'omega_js_exclude', 'omega_js_footer') as $item) {
     $exclude = array_filter(array_map('trim', explode("\n", $values[$item])));
     form_set_value(array('#parents' => array($item)), $exclude, $form_state);
-  }
-
-  // Cache the regex for the CSS and JS excludes (if any).
-  foreach (array('omega_css_exclude', 'omega_js_exclude') as $item) {
-    if ($value = $form_state['values'][$item]) {
-      $exclude = omega_generate_path_regex($value);
-      form_set_value(array('#parents' => array($item . '_regex')), $exclude, $form_state);
-    }
-  }
-
-  if (!empty($form_state['values']['omega_libraries'])) {
-    $values = &$form_state['values']['omega_libraries'];
-
-    foreach ($values as &$settings) {
-      if (isset($settings['variant']) && $settings['variant'] == '_default') {
-        // Unset the 'variant' option if it is the default option.
-        unset($settings['variant']);
-      }
-    }
   }
 }

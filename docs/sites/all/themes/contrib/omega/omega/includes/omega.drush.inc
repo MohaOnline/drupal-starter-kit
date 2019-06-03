@@ -19,18 +19,18 @@ function omega_drush_command() {
       'name' => dt('The name of your subtheme.'),
     ),
     'options' => array(
-      'destination' => dt('The destination of your subtheme. Defaults to "site:all" (sites/all/themes). May be one of "site:foo", "profile:bar" or "theme:baz" ("foo", "bar" and "baz" being the name of your site, profile or parent theme). May also have a third part for sub-pathing. For example, if using site:all:custom/cat, then the theme will be created in sites/all/themes/custom/cat/<name>.'),
+      'destination' => dt('The destination of your subtheme. Defaults to "sites/all/themes".'),
       'machine-name' => dt('The machine-readable name of your subtheme. This will be auto-generated from the human-readable name if omitted.'),
       'starterkit' => dt('The starterkit that your subtheme should use. Defaults to "default".'),
       'basetheme' => dt('Specifies a custom base theme. Defaults to "omega".'),
       'enable' => dt('Automatically enable the subtheme after creation.'),
       'set-default' => dt('Automatically enable the subtheme after creation and make it the default theme.'),
       'no-readme' => dt('Skips readme files when generating the subtheme.'),
-      'no-libraries' => dt("Prevent execution of the theme's libraries.make file."),
+      'with-libraries' => dt("Execute the libraries.make file upon completion."),
     ),
     'examples' => array(
       'drush omega-subtheme "My Theme"' => dt('Creates an Omega subtheme called "My Theme".'),
-      'drush omega-subtheme "My Theme" --destination=site:example.com' => dt('Creates an Omega subtheme called "My Theme" in sites/example.com/themes.'),
+      'drush omega-subtheme "My Theme" --destination=sites/example.com/themes' => dt('Creates an Omega subtheme called "My Theme" in sites/example.com/themes.'),
       'drush omega-subtheme "My Theme" --basetheme=my_custom_basetheme' => dt('Uses the default starterkit from a custom basetheme to create an Omega subtheme called "My Theme" in sites/all/themes.'),
       'drush omega-subtheme "My Theme" --basetheme=my_custom_basetheme --starterkit=my_custom_starterkit' => dt('Uses the my_custom_starterkit from a custom basetheme to create an Omega subtheme called "My Theme" in sites/all/themes.'),
     ),
@@ -141,24 +141,10 @@ function drush_omega_subtheme_validate($name = NULL) {
       )));
     }
   }
-
-  if ($destination = drush_get_option('destination')) {
-    // Check if the syntax of the destination is valid.
-    if (!is_string($destination) || !preg_match('/^(site|theme|profile)(:(.+?)){1,2}$/', $destination)) {
-      return drush_set_error('OMEGA_DESTINATION_INVALID', dt('The destination syntax (@destination) is invalid. Please use one of the following destination patterns (site, profile or theme): --destination="site:foo", --destination="profile:bar" or --destination="theme:baz".', array(
-        '@destination' => $destination,
-      )));
-    }
-
-    // Check if the provided destination exists.
-    if (!drush_omega_resolve_destination($destination)) {
-      list($type, $destination) = explode(':', $destination);
-
-      return drush_set_error('OMEGA_DESTINATION_DOES_NOT_EXIST', dt('The given destination @destination of type @type does not exist. Did you misspell it?', array(
-        '@destination' => $destination,
-        '@type' => $type,
-      )));
-    }
+  // Check if the provided destination exists.
+  $destination = drush_get_option('destination', 'sites/all/themes');
+  if (!is_string($destination)) {
+    return drush_set_error('OMEGA_DESTINATION_INVALID', dt('The --destination option expects a string value.'));
   }
 
   if ($basetheme = drush_get_option('basetheme')) {
@@ -175,7 +161,7 @@ function drush_omega_subtheme_validate($name = NULL) {
 
     // Check if the base theme is an Omega theme.
     if (!array_key_exists('omega', omega_theme_trail($basetheme))) {
-      return drush_set_error('OMEGA_BASETHEME_INVALID', dt('The base theme @basetheme does not exist or is invalid.', array(
+      return drush_set_error('OMEGA_BASETHEME_INVALID', dt('The given base theme is invalid (it has to be an Omega sub-theme or Omega itself).', array(
         '@basetheme' => $basetheme,
       )));
     }
@@ -218,7 +204,7 @@ function drush_omega_subtheme($name) {
 
   // Check whether the destination path does not exist and bail out if it does
   // so we don't delete any important data by accident.
-  $destination = drush_omega_resolve_destination(drush_get_option('destination', 'site:all')) . '/' . $machine_name;
+  $destination = drush_get_option('destination', 'sites/all/themes') . '/' . $machine_name;
   if (file_exists($destination)) {
     return drush_set_error('OMEGA_SUBTHEME_PATH', dt('The path @path already exists.', array('@path' => $destination)));
   }
@@ -241,6 +227,20 @@ function drush_omega_subtheme($name) {
     'description' => 'Please provide a description for your theme.',
     'base theme' => $basetheme,
   ) + $starterkit['info'];
+
+  // If the starterkit does not provide any regions, use those defined in the
+  // base theme (if any).
+  if (empty($info['regions'])) {
+    // We explicitly avoid reading from the generated theme info array for this
+    // and get the raw, unprocessed .info file data of the base theme instead to
+    // prevent any system- or module-provided regions to leak into our theme's
+    // .info file (e.g. via hook_system_info_alter() as used by the dashboard
+    // module).
+    $basetheme_info = drupal_parse_info_file(drupal_get_path('theme', $basetheme) . "/$basetheme.info");
+    if (!empty($basetheme_info['regions'])) {
+      $info['regions'] = $basetheme_info['regions'];
+    }
+  }
 
   // Write to the new .info file.
   $file = $temporary . '/' . $machine_name . '.info';
@@ -291,7 +291,7 @@ function drush_omega_subtheme($name) {
   }
 
   // Execute the theme's libraries.make file unless disabled.
-  if (!drush_get_option('no-libraries') && is_file("$destination/libraries.make")) {
+  if (drush_get_option('with-libraries') && is_file("$destination/libraries.make")) {
     drush_op('chdir', $destination);
     drush_invoke_process('@self', 'make', array('libraries.make'), array(
       'no-core' => TRUE,
@@ -329,20 +329,19 @@ function drush_omega_wizard() {
 
   // Prompt for a base theme.
   if (!$basetheme = drush_omega_theme_choice(dt('Please choose a base theme for your new theme'))) {
-    return;
+    $basetheme = 'omega';
   }
   drush_set_option('basetheme', $basetheme);
 
   // Let the user choose a starterkit.
-  if (!$starterkit = drush_omega_starterkit_choice($basetheme, dt('Please choose a starterkit for your new theme'))) {
-    return;
+  $starterkits = omega_discovery('starterkit', $basetheme);
+  if (!$starterkit = drush_omega_starterkit_choice($starterkits, dt('Please choose a starterkit for your new theme'))) {
+    $starterkit = 'default';
   }
   drush_set_option('starterkit', $starterkit);
 
   // Let the user choose a destination.
-  if (!$destination = drush_omega_destination_choice(dt('Please choose a destination. This is where your sub-theme will be placed'))) {
-    return;
-  }
+  $destination = drush_prompt(dt('Please choose a destination. This is where your sub-theme will be placed'), 'sites/all/themes');
   drush_set_option('destination', $destination);
 
   // Optionally skip readme files when generating the subtheme.
@@ -353,6 +352,11 @@ function drush_omega_wizard() {
     drush_set_option('set-default', drush_confirm(dt('Do you want to make your new theme the default theme?')));
   }
   drush_set_option('enable', $enable);
+
+  // Finally, let the user decide whether he/she wants to download the libraries directly.
+  if (is_file("{$starterkits[$starterkit]['path']}/libraries.make")) {
+    drush_set_option('with-libraries', drush_confirm(dt('Do you want to download the libraries defined in libraries.make now?')));
+  }
 
   drush_invoke('omega-subtheme', $name);
 }
@@ -393,16 +397,16 @@ function drush_omega_export($theme = NULL) {
   // Parse the current content of the .info file so we can append the settings
   // from the database.
   $path = drupal_get_path('theme', $theme) . '/' . $theme . '.info';
-  $data = file_get_contents($path);
+  $info = drupal_parse_info_file($path);
 
-  // Remove the old theme settings from the .info file.
-  $data = trim(preg_replace('/^settings\[.*\].*\n?/mi', '', $data));
-
-  // Append the exported theme settings to the .info file if there are any.
-  $data = $settings ? $data . "\n\n" . drush_omega_compose_info_file($settings, 'settings') : $data;
+  unset($info['settings']);
+  if (!empty($settings)) {
+    // Append the exported theme settings to the .info file if there are any.
+    $info['settings'] = $settings;
+  }
 
   // Write the data to the .info file of the theme.
-  if (drush_op('file_put_contents', $path, $data)) {
+  if (drush_op('file_put_contents', $path, drush_omega_compose_info_file($info))) {
     drush_log(dt('The theme settings for the @theme theme have been exported to the .info file of the theme.', array('@theme' => $themes[$theme]->info['name'])), 'success');
 
     if (drush_get_option('revert')) {
@@ -626,47 +630,6 @@ function drush_omega_guard($theme = NULL) {
 }
 
 /**
- * Resolves the destination path for a subtheme.
- *
- * This can either be a profile theme folder, a sites theme folder or a theme.
- *
- * @param string $destination
- *   A destination string, this can either be a site path ('site:foo'), a
- *   profile path ('profile:foo') or a theme path ('theme:foo').
- *
- * @return string|bool
- *   The full path to the given destination, FALSE if the destination could not
- *   be resolved.
- */
-function drush_omega_resolve_destination($destination) {
-  list($type, $destination, $custom) = explode(':', $destination);
-
-  // Add a '/' to the custom path suffix.
-  $custom = $custom ? '/' . $custom : '';
-
-  switch ($type) {
-    case 'site':
-      if (array_key_exists($destination, drush_omega_sites())) {
-        return 'sites/' . $destination . '/themes' . $custom;
-      }
-      break;
-
-    case 'profile':
-      require_once DRUPAL_ROOT . '/includes/install.core.inc';
-      if (array_key_exists($destination, install_find_profiles())) {
-        return 'profiles/' . $destination . '/themes' . $custom;
-      }
-      break;
-
-    case 'theme':
-      if (array_key_exists($destination, list_themes())) {
-        return drupal_get_path('theme', $destination) . $custom;
-      }
-      break;
-  }
-}
-
-/**
  * Helper function for printing a list of available Omega themes.
  *
  * @param string $message
@@ -691,8 +654,8 @@ function drush_omega_theme_choice($message) {
 /**
  * Helper function for printing a list of available starterkits.
  *
- * @param string $basetheme
- *   The machine-readable name of a basetheme.
+ * @param array $starterkits
+ *   An array of starterkits.
  * @param string $message
  *   The message that should be displayed.
  *
@@ -700,10 +663,10 @@ function drush_omega_theme_choice($message) {
  *   The machine-readable name of the chosen starterkit or FALSE if the
  *   operation was cancelled.
  */
-function drush_omega_starterkit_choice($basetheme, $message) {
+function drush_omega_starterkit_choice($starterkits, $message) {
   $themes = list_themes();
   $options = array();
-  foreach (omega_discovery('starterkit', $basetheme) as $key => $info) {
+  foreach ($starterkits as $key => $info) {
     $options[$key] = dt('@name: !description (Provided by @provider)', array(
       '@name' => $info['info']['name'],
       '!description' => isset($info['info']['description']) ? $info['info']['description'] : dt('No description'),
@@ -711,62 +674,6 @@ function drush_omega_starterkit_choice($basetheme, $message) {
     ));
   }
   return drush_choice($options, $message);
-}
-
-/**
- * Helper function that asks for the desired destination of a subtheme.
- *
- * @param string $message
- *   The message that should be displayed.
- *
- * @return bool|string
- *   The given destination using the pattern "type:destination"
- *   (e.g. "site:all") or FALSE if the operation was cancelled.
- */
-function drush_omega_destination_choice($message) {
-  drush_print($message);
-
-  // Let the user choose a destination.
-  $options = array(
-    'site' => dt("Site (e.g. 'all' or 'example.com')"),
-    'profile' => dt('Installation profile'),
-    'theme' => dt('Parent theme'),
-  );
-
-  if (!$type = drush_choice($options, dt('Please choose a destination type.'))) {
-    return FALSE;
-  }
-
-  switch ($type) {
-    case 'site':
-      if (!$destination = drush_choice(drush_omega_sites(), dt('Please choose a site.'))) {
-        return FALSE;
-      }
-      return 'site:' .  $destination;
-
-    case 'profile':
-      require_once DRUPAL_ROOT . '/includes/install.core.inc';
-
-      $options = array();
-      foreach (install_find_profiles() as $profile) {
-        $info = drupal_parse_info_file(dirname($profile->uri) . '/' . $profile->name . '.info');
-        $options[$profile->name] = $info['name'];
-      }
-
-      if (!$destination = drush_choice($options, dt('Please choose an installation profile.'))) {
-        return FALSE;
-      }
-      return 'profile:' . $destination;
-
-    case 'theme':
-      if (!$destination = drush_omega_theme_choice(dt('Please choose a theme.'))) {
-        return FALSE;
-      }
-      return 'theme:' . $destination;
-
-    default:
-      return 'site:all';
-  }
 }
 
 /**
@@ -882,6 +789,9 @@ function drush_omega_rewrite_recursive($path, $search, $replace) {
 /**
  * Recursively builds an .info file structure from an array.
  *
+ * This function will take the current theme information, and create the export
+ * based upon the current info file and settings saved within the database.
+ *
  * @param array $array
  *   The array to build the .info file from.
  * @param string|bool $prefix
@@ -889,28 +799,29 @@ function drush_omega_rewrite_recursive($path, $search, $replace) {
  *   for the keys. Defaults to NULL.
  *
  * @return string
- *   A .info file string.
+ *   The full, prettified .info file.
  */
-function drush_omega_compose_info_file($array, $prefix = NULL) {
+function drush_omega_compose_info_file($array, $prefix = '') {
   $info = '';
-
+  $incremental = !empty($array) && strval(key($array)) === '0' && array_keys($array) === range(0, count($array) - 1);
   foreach ($array as $key => $value) {
     if (is_array($value)) {
-      // This is an array, let's proceed with the next level.
-      $info .= drush_omega_compose_info_file($value, (!$prefix ? $key : "{$prefix}[{$key}]"));
+      if (empty($prefix)) {
+        $region = ucwords(strtr($key, array('_' => ' ')));
+        $info .= "\n";
+        $info .= "; ========================================\n";
+        $info .= "; $region\n";
+        $info .= "; ========================================\n";
+      }
+
+      $info .= drush_omega_compose_info_file($value, (empty($prefix) ? $key : "{$prefix}[{$key}]"));
     }
     else {
-      // Escape all single quotes.
+      $key = $incremental ? '' : $key;
       $value = str_replace("'", "\'", $value);
-      // Wrap the value in single quotes if it has any trailing or leading
-      // whitespace or it is an empty string from the start.
-      $value = $value === '' || trim($value) != $value ? "'" . $value . "'" : $value;
-      // If the key is numeric remove it entirely (simple brackets are enough in
-      // this case).
-      $key = is_numeric($key) ? '' : $key;
-
+      $value = strval($value) === '' ? '"' . $value . '"' : $value;
       $info .= $prefix ? ("{$prefix}[$key]") : $key;
-      $info .= ' = ' . $value . "\n";
+      $info .= " = $value\n";
     }
   }
 
