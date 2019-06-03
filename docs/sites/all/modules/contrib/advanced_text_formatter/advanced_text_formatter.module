@@ -1,0 +1,588 @@
+<?php
+
+/**
+ * @file
+ * Advanced Text Formatter
+ */
+
+function advanced_text_formatter_js_alter(&$javascript) {
+  $token_js = drupal_get_path('module', 'token') . '/token.js';
+
+  if (isset($javascript[$token_js])) {
+    $javascript[$token_js]['data'] = drupal_get_path('module', 'advanced_text_formatter') . '/js/token.js';
+  }
+}
+
+/**
+ * Implements hook_field_widget_info_alter().
+ */
+function advanced_text_formatter_field_widget_info_alter(&$info) {
+  if (module_exists('token')) {
+    $info['text_textarea']['settings']['show_token_tree'] = FALSE;
+    $info['text_textfield']['settings']['show_token_tree'] = FALSE;
+    $info['text_textarea_with_summary']['settings']['show_token_tree'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function advanced_text_formatter_field_widget_text_textarea_form_alter(&$element, &$form_state, $context) {
+  $instance = $context['instance'];
+
+  if (!module_exists('token') || empty($instance['widget']['settings']['show_token_tree'])) {
+    return;
+  }
+
+  $description = trim($element['#description']);
+
+  if (!empty($description)) {
+    if (substr($description, -1) != '.') {
+      $description .= '. ';
+    }
+    else {
+      $description .= ' ';
+    }
+  }
+
+  $description .= _advanced_text_formatter_browse_tokens($instance['entity_type']);
+
+  $element['#description'] = $description;
+  $element['value']['#description'] = $description;
+}
+
+/**
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function advanced_text_formatter_field_widget_text_textfield_form_alter(&$element, &$form_state, $context) {
+  $instance = $context['instance'];
+
+  if (!module_exists('token') || empty($instance['widget']['settings']['show_token_tree'])) {
+    return;
+  }
+
+  $description = trim($element['#description']);
+
+  if (!empty($description)) {
+    if (substr($description, -1) != '.') {
+      $description .= '. ';
+    }
+    else {
+      $description .= ' ';
+    }
+  }
+
+  $description .= _advanced_text_formatter_browse_tokens($instance['entity_type']);
+
+  $element['#description'] = $description;
+  $element['value']['#description'] = $description;
+}
+
+/**
+ * Implements hook_field_widget_WIDGET_TYPE_form_alter().
+ */
+function advanced_text_formatter_field_widget_text_textarea_with_summary_form_alter(&$element, &$form_state, $context) {
+  $instance = $context['instance'];
+
+  if (!module_exists('token') || empty($instance['widget']['settings']['show_token_tree'])) {
+    return;
+  }
+
+  if (empty($element['#pre_render'])) {
+    $info = element_info('text_format');
+    $element['#pre_render'] = empty($info['#pre_render']) ? array() : $info['#pre_render'];
+  }
+
+  $element['#pre_render'][] = '_advanced_text_formatter_field_add_token_tree';
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function advanced_text_formatter_field_formatter_info() {
+  $default_tags = array(
+    'a', 'b', 'br', 'dd', 'dl', 'dt', 'em', 'i', 'li', 'ol', 'p', 'strong',
+    'u', 'ul',
+  );
+
+  return array(
+    'advanced_text' => array(
+      'label'       => t('Advanced Text'),
+      'field types' => array('text', 'text_long', 'text_with_summary'),
+      'settings'    => array(
+        'trim_length'   => 600,
+        'ellipsis'      => 1,
+        'word_boundary' => 1,
+        'token_replace' => 0,
+        'filter'        => 'input',
+        'format'        => 'plain_text',
+        'allowed_html'  => $default_tags,
+        'autop'         => 0,
+        'use_summary'   => 0,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function advanced_text_formatter_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display  = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $element  = array();
+
+  if ($display['type'] == 'advanced_text') {
+    $elid_trim   = drupal_html_id('advanced_text_formatter_trim');
+    $elid_filter = drupal_html_id('advanced_text_formatter_filter');
+
+    $element['trim_length'] = array(
+      '#id'               => $elid_trim,
+      '#type'             => 'textfield',
+      '#title'            => t('Trim length'),
+      '#description'      => t("Set this to 0 if you don't want to cut the text. Otherwise, input a positive integer."),
+      '#size'             => 10,
+      '#default_value'    => $settings['trim_length'],
+      '#element_validate' => array('element_validate_integer'),
+      '#required'         => TRUE,
+    );
+
+    $element['ellipsis'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Ellipsis'),
+      '#description'   => t('If checked, a "..." will be added if a field was trimmed.'),
+      '#default_value' => $settings['ellipsis'],
+      '#states'        => array(
+        'visible' => array(
+          '#' . $elid_trim  => array('!value' => '0'),
+        ),
+      ),
+    );
+
+    $element['word_boundary'] = array(
+      '#type'          => 'checkbox',
+      '#title'         => t('Word Boundary'),
+      '#description'   => t('If checked, this field be trimmed only on a word boundary.'),
+      '#default_value' => $settings['word_boundary'],
+      '#states'        => array(
+        'visible' => array(
+          '#' . $elid_trim  => array('!value' => '0'),
+        ),
+      ),
+    );
+
+    $element['use_summary'] = array(
+      '#type'           => 'checkbox',
+      '#title'          => t('Use Summary'),
+      '#description'    => t('If a summary exists, use it.'),
+      '#default_value'  => $settings['use_summary'],
+    );
+
+    $token_link = _advanced_text_formatter_browse_tokens($instance['entity_type']);
+
+    $element['token_replace'] = array(
+      '#type'          => 'checkbox',
+      '#description'   => t('Replace text pattern. e.g %node-title-token or %node-author-name-token, by token values.', array(
+                            '%node-title-token'       => '[node:title]',
+                            '%node-author-name-token' => '[node:author:name]',
+                          )) . ' ' . $token_link,
+      '#title'         => t('Token Replace'),
+      '#default_value' => $settings['token_replace'],
+    );
+
+    $element['filter'] = array(
+      '#id'      => $elid_filter,
+      '#title'   => t('Filter'),
+      '#type'    => 'select',
+      '#options' => array(
+        'none'   => t('None'),
+        'input'      => t('Selected Text Format'),
+        'php'        => t('Limit allowed HTML tags'),
+        'drupal'     => t('Drupal'),
+      ),
+      '#default_value' => $settings['filter'],
+    );
+
+    $element['format'] = array(
+      '#title'         => t('Format'),
+      '#type'          => 'select',
+      '#options'       => array(),
+      '#default_value' => $settings['format'],
+      '#states'        => array(
+        'visible' => array(
+          '#' . $elid_filter  => array('value' => 'drupal'),
+        ),
+      ),
+    );
+
+    $formats = filter_formats();
+
+    foreach ($formats as $format => $info) {
+      $element['format']['#options'][$format] = $info->name;
+    }
+
+    if (empty($settings['allowed_html'])) {
+      $tags = '';
+    }
+    else {
+      $tags = '<' . implode('> <', $settings['allowed_html']) . '>';
+    }
+
+    $element['allowed_html'] = array(
+      '#type'              => 'textfield',
+      '#title'             => t('Allowed HTML tags'),
+      '#description'       => t('See <a href="@link" target="_blank">filter_xss()</a> for more information', array(
+                                '@link' => 'http://api.drupal.org/api/drupal/includes%21common.inc/function/filter_xss/7',
+                              )),
+      '#default_value'     => $tags,
+      '#element_validate'  => array('_advanced_text_formatter_validate_allowed_html'),
+      '#states'            => array(
+        'visible' => array(
+          '#' . $elid_filter  => array('value' => 'php'),
+        ),
+      ),
+    );
+
+    $element['autop'] = array(
+      '#title'         => t('Converts line breaks into HTML (i.e. &lt;br&gt; and &lt;p&gt;) tags.'),
+      '#type'          => 'checkbox',
+      '#return_value'  => 1,
+      '#default_value' => $settings['autop'],
+      '#states'        => array(
+        'invisible' => array(
+          '#' . $elid_filter  => array('!value' => 'php'),
+        ),
+      ),
+    );
+
+    $element['br'] = array('#markup' => '<br/>');
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function advanced_text_formatter_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display  = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary  = array();
+
+  if ($display['type'] == 'advanced_text') {
+    $yes = t('Yes');
+    $no  = t('No');
+
+    if ($settings['trim_length'] > 0) {
+      $summary[] = t('Trim length') . ': ' . $settings['trim_length'];
+      $summary[] = t('Ellipsis') . ': ' . ((isset($settings['ellipsis']) && $settings['ellipsis']) ? $yes : $no);
+      $summary[] = t('Word Boundary') . ': ' . ((isset($settings['word_boundary']) && $settings['word_boundary']) ? $yes : $no);
+      $summary[] = t('Use Summary') . ': ' . ((isset($settings['use_summary']) && $settings['use_summary']) ? $yes : $no);
+    }
+
+    $token_link = _advanced_text_formatter_browse_tokens($instance['entity_type']);
+    $summary[] = t('Token Replace') . ': ' . ((isset($settings['token_replace']) && $settings['token_replace']) ? ($yes . '. ' . $token_link) : $no);
+
+    switch ($settings['filter']) {
+      case 'drupal':
+        $formats = filter_formats();
+        $format  = isset($formats[$settings['format']]) ? $formats[$settings['format']]->name : t('Unknown');
+
+        $summary[] = t('Filter: @filter', array('@filter' => t('Drupal')));
+        $summary[] = t('Format: @format', array('@format' => $format));
+
+        break;
+
+      case 'php':
+        $text = array();
+
+        if (empty($settings['allowed_html'])) {
+          $text[] = t('Remove all HTML tags.');
+        }
+        else {
+          $tags = '<' . implode('> <', $settings['allowed_html']) . '>';
+          $text[] = t('Limit allowed HTML tags: !tags.', array('!tags' => $tags));
+        }
+
+        if (!empty($settings['autop'])) {
+          $text[] = t('Convert line breaks into HTML.');
+        }
+
+        $summary[] = t('Filter: @filter', array('@filter' => implode(' ', $text)));
+
+        break;
+
+      case 'input':
+        $summary[] = t('Filter: @filter', array('@filter' => t('Selected Text Format')));
+
+        break;
+
+      default:
+        $summary[] = t('Filter: @filter', array('@filter' => t('None')));
+
+        break;
+    }
+  }
+
+  $summary = array_filter($summary);
+
+  return implode('<br/>', $summary);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function advanced_text_formatter_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'advanced_text':
+      $settings   = $display['settings'];
+      $token_data = array($entity_type => $entity);
+
+      foreach ($items as $delta => $item) {
+        if ($settings['use_summary'] && !empty($item['summary'])) {
+          $output = $item['summary'];
+        }
+        else {
+          $output = $item['value'];
+        }
+
+        if ($settings['token_replace']) {
+          $output = token_replace($output, $token_data);
+        }
+
+        switch ($settings['filter']) {
+          case 'drupal':
+            $output = check_markup($output, $settings['format'], $langcode);
+
+            break;
+
+          case 'php':
+            $output = filter_xss($output, $settings['allowed_html']);
+
+            if ($settings['autop']) {
+              $output = _filter_autop($output);
+            }
+
+            break;
+
+          case 'input':
+            $output = check_markup($output, $item['format'], $langcode);
+
+            break;
+        }
+
+        if ($settings['trim_length'] > 0) {
+          $options  = array(
+            'word_boundary' => $settings['word_boundary'],
+            'max_length'    => $settings['trim_length'],
+            'ellipsis'      => $settings['ellipsis'],
+          );
+
+          $output = advanced_text_formatter_trim_text($output, $options);
+        }
+
+        $element[$delta] = array('#markup' => $output);
+      }
+
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function advanced_text_formatter_form_field_ui_field_edit_form_alter(&$form, &$form_state) {
+  if (!module_exists('token')) {
+    return;
+  }
+
+  $instance    = $form_state['build_info']['args'][0];
+  $widget_type = $instance['widget']['type'];
+
+  switch ($widget_type) {
+    case 'text_textarea':
+    case 'text_textfield':
+    case 'text_textarea_with_summary':
+      $form['instance']['widget']['settings']['show_token_tree'] = array(
+        '#type'          => 'checkbox',
+        '#title'         => t("Show available tokens in field's description"),
+        '#return_value'  => 1,
+        '#default_value' => empty($instance['widget']['settings']['show_token_tree']) ? 0 : 1,
+      );
+
+      break;
+  }
+}
+
+/**
+ * Trim text.
+ *
+ * @param string $text
+ *   The string is being trimmed.
+ *
+ * @param array $options
+ *   An associative array containing:
+ *   - html: TRUE means that text is in HTML.
+ *   - max_length: The maximum number of characters the a field can be.
+ *   - word_boundary: If checked, this field be trimmed only on a word boundary.
+ *   - ellipsis: If TRUE, a "..." will be added if a field was trimmed.
+ *
+ * @return string
+ *   The trimmed string.
+ */
+function advanced_text_formatter_trim_text($text, $options) {
+  if (!isset($options['html'])) {
+    $options['html'] = TRUE;
+    $options['max_length'] = _advanced_text_formatter_get_html_length($text, $options['max_length']);
+  }
+
+  if (drupal_strlen($text) > $options['max_length']) {
+    $text = drupal_substr($text, 0, $options['max_length']);
+
+    // TODO: replace this with cleanstring of ctools.
+    if (!empty($options['word_boundary'])) {
+      $regex = "(.*)\b.+";
+
+      if (function_exists('mb_ereg')) {
+        mb_regex_encoding('UTF-8');
+        $found = mb_ereg($regex, $text, $matches);
+      }
+      else {
+        $found = preg_match("/$regex/us", $text, $matches);
+      }
+
+      if ($found) {
+        $text = $matches[1];
+      }
+    }
+
+    // Remove scraps of HTML entities from the end of a strings.
+    $text = rtrim(preg_replace('/(?:<(?!.+>)|&(?!.+;)).*$/us', '', $text));
+
+    if (!empty($options['ellipsis'])) {
+      $text .= t('...');
+    }
+  }
+
+  if (!empty($options['html'])) {
+    $text = _filter_htmlcorrector($text);
+  }
+
+  return $text;
+}
+
+/**
+ * Calculate max length of HTML source to get the maximum of $max_length visible characters.
+ *
+ * @param string $text
+ *   HTML source.
+ * @param int $max_length
+ *   Maximum number of visible characters.
+ */
+function _advanced_text_formatter_get_html_length($text, $max_length) {
+  $length = 0;
+  $html_length = 0;
+
+  // Split input on HTML tags and entities. The result is an array where each
+  // odd item is HTML markup.
+  $parts = preg_split('/(<[^>]+>|&[^;]+;)/', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+  for ($i = 0; $i < count($parts); ++$i) {
+    if ($length >= $max_length) {
+
+      // Already reached the maximum length. Stop counting.
+      break;
+    }
+    $part_length = drupal_strlen($parts[$i]);
+    if (!($i & 1)) {
+
+      // This is a text item. Add this part up to where we reach the max length.
+      $add_length = min($max_length - $length, $part_length);
+      $html_length += $add_length;
+      $length += $add_length;
+    }
+    elseif (drupal_substr($parts[$i], 0, 1) == '&') {
+
+      // This is an HTML entity. Count this as a single character.
+      ++$length;
+      $html_length += $part_length;
+    }
+    else {
+
+      // Invisible HTML element. Always add whole element.
+      $html_length += $part_length;
+    }
+  }
+  return $html_length;
+}
+
+/**
+ * Get a link to browse for available tokens.
+ *
+ * @param mixed $token_types
+ *   A string or array contains the token types. See theme_token_tree() for more
+ *   details.
+ *
+ * @return string
+ *   A HTML link
+ */
+function _advanced_text_formatter_browse_tokens($token_types) {
+  if (!module_exists('token')) {
+    return;
+  }
+
+  if (!is_array($token_types)) {
+    $token_types = array($token_types);
+  }
+
+  $vars['token_types'] = $token_types;
+
+  return theme('token_tree_link', $vars);
+}
+
+/**
+ * Add available tokens link to text_format element.
+ *
+ * @param array $element
+ *   Form element
+ *
+ * @return array
+ *   Form element
+ */
+function _advanced_text_formatter_field_add_token_tree($element) {
+  $element['format']['show_token'] = array(
+    '#type' => 'container',
+    'link'  => array(
+      '#markup' => _advanced_text_formatter_browse_tokens($element['#entity_type']),
+    ),
+    '#attributes' => array(
+      'class' => array('clearfix'),
+    ),
+    '#weight' => 99,
+  );
+
+  return $element;
+}
+
+/**
+ * Change tags from string to array to speed up the formatter view.
+ *
+ * @param array $element
+ *   Form element.
+ *
+ * @param array $form_state
+ *   Form state.
+ */
+function _advanced_text_formatter_validate_allowed_html($element, &$form_state) {
+  $tags  = array();
+  $value = isset($element['#value']) ? trim($element['#value']) : '';
+
+  if (!empty($value)) {
+    $tags = preg_split('/\s+|<|>/', $value, -1, PREG_SPLIT_NO_EMPTY);
+  }
+
+  drupal_array_set_nested_value($form_state['values'], $element['#parents'], $tags);
+}
