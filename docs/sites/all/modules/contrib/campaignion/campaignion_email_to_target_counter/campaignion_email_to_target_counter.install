@@ -1,0 +1,41 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_email_to_target_counter_schema() {
+  $schema['campaignion_email_to_target_counter'] = [
+    'description' => 'Counts messages sent to each target of an email to target action.',
+    'fields' => [
+      'nid' => [
+        'description' => 'The node identifier of the webform.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'target_id' => [
+        'description' => 'ID for this target.',
+        'type' => 'varchar',
+        'length' => 64,
+      ],
+      'label' => [
+        'description' => 'Label for this target',
+        'type' => 'varchar',
+        'length' => 256,
+      ],
+      'count' => [
+        'description' => 'Current count for this target on this action.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => ['nid', 'target_id'],
+    'indexes' => [
+      'nid' => ['nid'],
+    ],
+  ];
+  return $schema;
+}

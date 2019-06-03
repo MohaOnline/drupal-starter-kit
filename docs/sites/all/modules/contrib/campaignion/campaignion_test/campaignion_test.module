@@ -1,0 +1,45 @@
+<?php
+
+include_once 'campaignion_test.features.inc';
+
+/**
+ * Implements hook_campaignion_contact_info().
+ */
+function campaignion_test_campaignion_contact_type_info() {
+  $types['contact'] = '\\Drupal\\campaignion_test\\Supporter';
+  return $types;
+}
+
+/**
+ * Implements hook_campaignion_action_info().
+ */
+function campaignion_test_campaignion_action_info() {
+  $types['email_to_target'] = array(
+    'wizard_class' => '\\Drupal\\campaignion_email_to_target\\Wizard\\Wizard',
+    'action_class' => '\\Drupal\\campaignion_email_to_target\\Action',
+    'thank_you_page' => array(
+      'type' => 'thank_you_page',
+      'reference' => 'field_thank_you_pages',
+    ),
+    'recent_supporters' => array(
+      'default_text' => t('!supporter_name just signed !action_title'),
+    ),
+    'email_to_target' => [
+      'options_field' => 'field_email_to_target_options',
+      'no_target_message_field' => 'field_no_target_message',
+    ],
+    'template_node_uuid' => 'f5645542-33eb-445e-8e6b-8300cf385069',
+  );
+  $types['petition'] = array(
+    'wizard_class' => '\\Drupal\\campaignion_wizard\\PetitionWizard',
+    'thank_you_page' => array(
+      'type' => 'thank_you_page',
+      'reference' => 'field_thank_you_pages',
+    ),
+    'recent_supporters' => array(
+      'default_text' => t('!supporter_name just signed !action_title'),
+    ),
+    'template_node_uuid' => '2825470e-e582-414d-b01c-e6e71a028075',
+  );
+  return $types;
+}

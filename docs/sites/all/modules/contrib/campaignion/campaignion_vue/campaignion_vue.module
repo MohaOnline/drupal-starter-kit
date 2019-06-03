@@ -1,0 +1,70 @@
+<?php
+
+// Filter for css files.
+function _campaignion_vue_filter_css($filename) {
+  return (strpos($filename, '.css') === strlen($filename) - 4);
+}
+
+// Add scripts, settings and styles needed by vue apps.
+function _campaignion_vue_add_assets() {
+  $module_path = drupal_get_path('module', 'campaignion_vue');
+
+  // Add javascript.
+  drupal_add_js($module_path . '/js/campaignion_vue.min.js', [
+    'scope' => 'footer',
+    'group' => JS_LIBRARY,
+    'preprocess' => FALSE,
+  ]);
+  drupal_add_js($module_path . '/js/interrupt-submit.js');
+
+  // Add element-ui locale.
+  if ($strings = _campaignion_vue_get_strings()) {
+    $settings['campaignion_vue']['element_ui_strings'] = json_decode($strings, TRUE);
+    drupal_add_js($settings, 'setting');
+  }
+
+  // Add element-ui stylesheets.
+  $stylesheets = array_filter(scandir($module_path . '/css'), '_campaignion_vue_filter_css');
+  foreach ($stylesheets as $stylesheet) {
+    drupal_add_css($module_path . '/css/' . $stylesheet);
+  }
+}
+
+/**
+ * Read translation strings from the locale file.
+ *
+ * @param object $language
+ *   Language object. Defaults to the request wide language.
+ *
+ * @return string|null
+ *   JSON encoded strings or NULL if no strings were found.
+ */
+function _campaignion_vue_get_strings($language = NULL) {
+  $code = $language ? $language->language : $GLOBALS['language']->language;
+  $module_path = drupal_get_path('module', 'campaignion_vue');
+  $candidates = [$code, explode('-', $code, 2)[0]];
+  foreach ($candidates as $lang_path) {
+    $path = DRUPAL_ROOT . '/' . $module_path . '/locale/' . $lang_path . '.json';
+    if (file_exists($path)) {
+      return file_get_contents($path);
+    }
+  }
+  return NULL;
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function campaignion_vue_preprocess_html(&$vars) {
+  $js = drupal_add_js();
+  $found = FALSE;
+  foreach ($js as $path => $options) {
+    if (substr($path, -11) == '.vue.min.js') {
+      $found = TRUE;
+      break;
+    }
+  }
+  if ($found) {
+    _campaignion_vue_add_assets();
+  }
+}

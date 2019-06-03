@@ -1,0 +1,11 @@
+name = Campaignion logo links
+description = Make site logo links point to configurable URLs
+core = 7.x
+
+dependencies[] = variable
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

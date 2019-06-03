@@ -1,0 +1,14 @@
+name = Action templates
+description = Mark actions as templates and use them when creating new actions.
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion_form_builder
+dependencies[] = list
+dependencies[] = little_helpers
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

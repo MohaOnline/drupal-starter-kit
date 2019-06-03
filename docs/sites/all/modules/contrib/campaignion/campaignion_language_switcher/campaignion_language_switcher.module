@@ -1,0 +1,104 @@
+<?php
+/**
+ * @file
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function campaignion_language_switcher_block_info() {
+  return array(
+    'locale_url' => array(
+      'info'  => t('Campaignion language switcher'),
+      'cache' => DRUPAL_CACHE_PER_PAGE | DRUPAL_CACHE_PER_ROLE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function campaignion_language_switcher_block_view($delta = '') {
+  if (!drupal_multilingual()) {
+    return array();
+  }
+  $links = language_negotiation_get_switch_links('language', current_path());
+
+  if (isset($links->links)) {
+    foreach ($links->links as &$link) {
+      if (isset($link['href']) && !_campaignion_language_switcher_check_access($link['href'])) {
+        unset($link['href']);
+        $link['attributes']['class'][] = 'locale-untranslated';
+      }
+    }
+    drupal_add_css(drupal_get_path('module', 'locale') . '/locale.css');
+    $class     = "campaignion-language-switcher-{$links->provider}";
+    $variables = array(
+      'links'      => $links->links,
+      'attributes' => array('class' => array($class))
+    );
+    $block['content'] = theme('links__locale_block', $variables);
+    $block['subject'] = '<none>';
+
+    return $block;
+  }
+}
+
+/**
+ * Check if currently logged-in user has access to $path.
+ */
+function _campaignion_language_switcher_check_access($path) {
+  return ($router_item = \menu_get_item($path)) && $router_item['access'];
+}
+
+/**
+ * implements hook_module_implements_alter().
+ * we copy and change the core language_switch_links_alter hook to add links for
+ * yet unpublished nodes
+ */
+function campaignion_language_switcher_module_implements_alter(&$implementations, $hook) {
+  if ($hook !== 'language_switch_links_alter') {
+    return;
+  }
+  unset($implementations['translation']);
+}
+
+/**
+ * Implements hook_language_switch_links_alter().
+ *
+ * copied from core/translation module; we don't check the $node-status.
+ */
+function campaignion_language_switcher_language_switch_links_alter(array &$links, $type, $path) {
+  $language_type = variable_get('translation_language_type', LANGUAGE_TYPE_INTERFACE);
+
+  if ($type == $language_type && preg_match("!^node/(\d+)(/.+|)!", $path, $matches)) {
+    $node = node_load((int) $matches[1]);
+
+    if (empty($node->tnid)) {
+      // If the node cannot be found nothing needs to be done. If it does not
+      // have translations it might be a language neutral node, in which case we
+      // must leave the language switch links unaltered. This is true also for
+      // nodes not having translation support enabled.
+      if (empty($node) || entity_language('node', $node) == LANGUAGE_NONE || !translation_supported_type($node->type)) {
+        return;
+      }
+      $langcode = entity_language('node', $node);
+      $translations = array($langcode => $node);
+    }
+    else {
+      $translations = translation_node_get_translations($node->tnid);
+    }
+
+    foreach ($links as $langcode => $link) {
+      if (isset($translations[$langcode])) {
+        // Translation in a different node.
+        $links[$langcode]['href'] = 'node/' . $translations[$langcode]->nid . $matches[2];
+      }
+      else {
+        // No translation in this language, or no permission to view.
+        unset($links[$langcode]['href']);
+        $links[$langcode]['attributes']['class'][] = 'locale-untranslated';
+      }
+    }
+  }
+}

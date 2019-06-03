@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * Implements hook_block_info();
+ */
+function campaignion_country_block_info() {
+  $blocks['languages'] = array(
+    'info' => 'Campaignion country: Other languages',
+    'cache' => DRUPAL_CACHE_PER_PAGE | DRUPAL_CACHE_PER_ROLE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view();
+ */
+function campaignion_country_block_view($delta = '') {
+  return _campaignion_country_block_languages();
+}
+
+
+function _campaignion_country_block_languages() {
+  $current = $GLOBALS['language'];
+  $mapping = variable_get('campaignion_country_languages', array());
+  if (!isset($mapping[$current->language])) {
+    return;
+  }
+
+  $languages = $mapping[$current->language];
+  $api = new \Drupal\little_helpers\Locale\LanguageApi();
+
+  $links = $api->languageLinks($languages);
+  foreach ($links as $code => &$l) {
+    $l['title'] = $languages[$code];
+  }
+
+  $block['subject'] = NULL;
+  $block['content'] = array(
+    '#theme' => 'links__country_languages',
+    '#links' => $links,
+  );
+  return $block;
+}

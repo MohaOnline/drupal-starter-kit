@@ -1,0 +1,48 @@
+<?php
+
+use Drupal\little_helpers\Webform\Submission;
+
+use Drupal\campaignion_email_to_target_counter\CountPolling;
+
+/**
+ * Implements hook_webform_submission_confirmed().
+ *
+ * Update counters.
+ */
+function campaignion_email_to_target_counter_webform_submission_confirmed(Submission $submission) {
+  $components = $submission->webform->componentsByType('e2t_selector');
+  foreach ($components as $cid => $component) {
+    foreach ($submission->valuesByCid($cid) as $serialized) {
+      $m = unserialize($serialized);
+      $t = db_transaction();
+      db_merge('campaignion_email_to_target_counter')
+        ->fields([
+          'label' => $m['target']['salutation'],
+          'count' => 1,
+        ])
+        ->expression('count', 'count + :inc', [':inc' => 1])
+        ->key([
+          'nid' => $submission->nid,
+          'target_id' => $m['target']['id'],
+        ])
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function campaignion_email_to_target_counter_node_delete($node) {
+  db_delete('campaignion_email_to_target_counter')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_polling_field_type_plugin_info().
+ */
+function campaignion_email_to_target_counter_polling_field_type_plugin_info() {
+  $plugins['email_to_target_options'] = CountPolling::class;
+  return $plugins;
+}

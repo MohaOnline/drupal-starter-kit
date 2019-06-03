@@ -1,0 +1,16 @@
+{
+  "presets": ["es2015"],
+  "plugins": [
+    "babel-plugin-add-module-exports",
+    ["component", [{
+        "libraryName": "element-ui",
+        "styleLibraryName": "theme-default"
+      }]
+    ]
+  ],
+  "env": {
+    "test": {
+      "plugins": ["istanbul"]
+    }
+  }
+}

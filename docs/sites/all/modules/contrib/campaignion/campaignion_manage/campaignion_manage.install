@@ -1,0 +1,186 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_manage_schema() {
+  $t = array();
+  $t['description'] = 'Metadata for a campaignion manage result set';
+  $t['fields'] = array(
+    'id' => array(
+      'description' => 'The primary identifier for a result set.',
+      'type' => 'serial',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+    ),
+    'uid' => array(
+      'description' => 'User who created that result-set.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    ),
+    'step' => array(
+      'description' => 'Current step during the calculation of results.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    ),
+    'created' => array(
+      'description' => 'Timestamp for when the resultset was created. Used for expiration.',
+      'type' => 'int',
+      'not null' => TRUE,
+    ),
+  );
+  $t['primary key'] = array('id');
+  $t['unique keys']['user_result'] = array('uid', 'step');
+  $t['indexes']['result_created'] = array('created');
+  $t['foreign keys']['user'] = array(
+    'table' => 'users',
+    'columns' => array('uid' => 'uid'),
+  );
+  $tables['campaignion_manage_result_meta'] = $t;
+
+  $t = array();
+  $t['fields'] = array(
+    'meta_id' => array(
+      'description' => 'ID of the result set.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+    ),
+    'contact_id' => array(
+      'description' => 'ID of a contact.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+    ),
+  );
+  $t['primary key'] = array('meta_id', 'contact_id');
+  $t['indexes']['meta'] = array('meta_id');
+  $t['foreign keys'] = array(
+    'meta' => array(
+      'table' => 'campaignion_manage_result_meta',
+      'columns' => array('meta_id' => 'id'),
+    ),
+    'contact' => array(
+      'table' => 'redhen_contact',
+      'columns' => array('contact_id' => 'contact_id'),
+    ),
+  );
+  $tables['campaignion_manage_result'] = $t;
+  return $tables;
+}
+
+/**
+ * Implements hook_install().
+ */
+function campaignion_manage_install() {
+  _campaignion_manage_deactivate_clientside_validation();
+}
+
+function _campaignion_manage_deactivate_clientside_validation() {
+  if (!module_exists('clientside_validation')) {
+    return;
+  }
+
+  $in_or_out =  variable_get('clientside_validation_validate_all', CLIENTSIDE_VALIDATION_VALIDATE_ALL);
+  if ($in_or_out == CLIENTSIDE_VALIDATION_VALIDATE_ALL) {
+    $in_or_out = CLIENTSIDE_VALIDATION_VALIDATE_ALL_EXCEPT;
+    variable_set('clientside_validation_validate_all', $in_or_out);
+  }
+  $specific_setting = variable_get('clientside_validation_validate_specific', '');
+  $specific = preg_split('/(\r\n?|\n)/', $specific_setting, -1, PREG_SPLIT_NO_EMPTY);
+  $found = array_search('campaignion_manage_form', $specific) !== FALSE;
+  if ($in_or_out == CLIENTSIDE_VALIDATION_VALIDATE_ALL_EXCEPT) {
+    if (!$found) {
+      $specific[] = 'campaignion_manage_form';
+    }
+  } else {
+    if ($found) {
+      unset($specific[$found]);
+    }
+  }
+  variable_set('clientside_validation_validate_specific', implode("\n", $specific));
+}
+
+/**
+ * Enable select2 for the bulk tag functionality.
+ */
+function campaignion_manage_update_7201() {
+  if (!module_enable(['select2'], TRUE)) {
+    throw new \DrupalUpdateException('Unable to enable select2. Please verify it (and all it’s dependencies) can be found by Drupal.');
+  }
+}
+
+/**
+ * Create tables for storing (intermediate) filter results.
+ */
+function campaignion_manage_update_7102() {
+  $t = array();
+  $t['description'] = 'Metadata for a campaignion manage result set';
+  $t['fields'] = array(
+    'id' => array(
+      'description' => 'The primary identifier for a result set.',
+      'type' => 'serial',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+    ),
+    'uid' => array(
+      'description' => 'User who created that result-set.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    ),
+    'step' => array(
+      'description' => 'Current step during the calculation of results.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    ),
+    'created' => array(
+      'description' => 'Timestamp for when the resultset was created. Used for expiration.',
+      'type' => 'int',
+      'not null' => TRUE,
+    ),
+  );
+  $t['primary key'] = array('id');
+  $t['unique keys']['user_result'] = array('uid', 'step');
+  $t['indexes']['result_created'] = array('created');
+  $t['foreign keys']['user'] = array(
+    'table' => 'users',
+    'columns' => array('uid' => 'uid'),
+  );
+  db_create_table('campaignion_manage_result_meta', $t);
+
+  $t = array();
+  $t['fields'] = array(
+    'meta_id' => array(
+      'description' => 'ID of the result set.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+    ),
+    'contact_id' => array(
+      'description' => 'ID of a contact.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+    ),
+  );
+  $t['primary key'] = array('meta_id', 'contact_id');
+  $t['indexes']['meta'] = array('meta_id');
+  $t['foreign keys'] = array(
+    'meta' => array(
+      'table' => 'campaignion_manage_result_meta',
+      'columns' => array('meta_id' => 'id'),
+    ),
+    'contact' => array(
+      'table' => 'redhen_contact',
+      'columns' => array('contact_id' => 'contact_id'),
+    ),
+  );
+  db_create_table('campaignion_manage_result', $t);
+}
+
+/**
+ * Disable clientside_validation on campaignion_manage_form.
+ */
+function campaignion_manage_update_7101() {
+  _campaignion_manage_deactivate_clientside_validation();
+}

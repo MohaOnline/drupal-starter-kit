@@ -1,0 +1,223 @@
+<?php
+
+use \Drupal\little_helpers\Webform\Submission;
+
+/**
+ * Implements hook_token_info().
+ */
+function campaignion_webform_tokens_token_info() {
+  $types = [];
+  $submission = [];
+
+  // Only webform3.
+  if (!function_exists('webform_token_info')) {
+    $types['submission'] = [
+      'name' => t('Webform submission data'),
+      'description' => t('Tokens related to data submitted by webforms.'),
+    ];
+  }
+
+  // Also don't advertise our own token syntax in webform4.
+  $submission['{component}'] = [
+    'name' => t('Component value'),
+    'description' => t('The value of the selected component, e.g. "email_adress".'),
+  ];
+
+  $submission['text-val'] = [
+    'name' => t('Component values'),
+    'description' => t('Value of a certain component. Use this followed by a colon and the form-key of the element'),
+    'dynamic' => TRUE,
+  ];
+
+  $submission['token-hash'] = [
+    'name' => t('Hashed sid'),
+    'description' => t('The hashed session id.'),
+  ];
+
+  return array(
+    'types' => $types,
+    'tokens' => array(
+      'submission' => $submission,
+    ),
+  );
+}
+
+/**
+ * Implements hook_token_info_alter().
+ */
+function campaignion_webform_tokens_token_info_alter(&$info) {
+  unset($info['types']['submission']['needs-data']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function campaignion_webform_tokens_form_webform_client_form_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'campaignion_webform_tokens_redirect';
+}
+
+/**
+ * Submit-callback for webform_client_form().
+ * 
+ * Add hash to the redirect if sid is set.
+ */
+function campaignion_webform_tokens_redirect($form, &$form_state) {
+  if (empty($form_state['webform_completed'])) {
+    return;
+  }
+  if (!is_array($form_state['redirect'])) {
+    $form_state['redirect'] = array($form_state['redirect'], array('query' => array()));
+  }
+  $sid = $form_state['values']['details']['sid'];
+  $form_state['redirect'][1] += array('query' => array());
+  $form_state['redirect'][1]['query'] += array(
+    'sid' => $sid,
+    'hash' => campaignion_webform_tokens_hash_sid($sid),
+  );
+}
+
+/**
+ * Returns a safe HMAC value for a submission ID used for authentication.
+ *
+ * @param int $sid
+ *   The submission ID.
+ * @return string
+ *   The HMAC signature.
+ */
+function campaignion_webform_tokens_hash_sid($sid) {
+  return drupal_hmac_base64((int) $sid, drupal_get_private_key() . drupal_get_hash_salt());
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function campaignion_webform_tokens_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  if ($type != 'submission') {
+    return $replacements;
+  }
+
+  $sid = (isset($_GET['sid']) && is_numeric($_GET['sid'])) ? (int) $_GET['sid'] : 0;
+  $hash = isset($_GET['hash']) ? $_GET['hash'] : NULL;
+
+  $submission = NULL;
+  $values = [];
+  if (isset($data['webform-submission'])) {
+    $submission = $data['webform-submission'];
+  }
+  elseif ($submission = _campaignion_webform_tokens_get_submission($sid, $hash)) {
+    $data['webform-submission'] = $submission;
+    $data['node'] = node_load($submission->nid);
+    if (function_exists('webform_tokens')) {
+      $replacements += webform_tokens($type, $tokens, $data, $options);
+    }
+  }
+  if (!$submission) {
+    return $replacements;
+  }
+  $node = !empty($data['node']) ? $data['node'] : node_load($submission->nid);
+  $values = _campaignion_webform_tokens_values($node, $submission);
+
+  foreach ($tokens as $name => $original) {
+    // Split token name to get the components name. The remainder is our default value.
+    $token = explode('/', $name, 2);
+    if (count($token) < 2) {
+      $token[] = '';
+    }
+    list($token, $default) = $token;
+    if (substr($token, 0, 9) == 'text-val:') {
+      $token = substr($token, 9);
+    }
+    if (array_key_exists($token, $values)) {
+      if (isset($values[$token])) {
+        // render webform component.
+        $replacements[$original] = $values[$token];
+      }
+      else {
+        $replacements[$original] = $default;
+      }
+    }
+  }
+
+  // Make the hash available as a token.
+  if (isset($tokens['token-hash'])) {
+    $replacements[$tokens['token-hash']] = campaignion_webform_tokens_hash_sid($submission->sid);
+  }
+
+  return $replacements;
+}
+
+function _campaignion_webform_tokens_get_submission($sid, $hash) {
+  // If hashes are needed:
+  //  - check if hash is present and valid
+  //  - don't replace anything if hashes don't match.
+  if (variable_get('campaignion_webform_tokens_use_hash', '1') == '1') {
+    if ($hash != campaignion_webform_tokens_hash_sid($sid))
+      return FALSE;
+  }
+
+  module_load_include('inc', 'webform', 'includes/webform.submissions');
+
+  $submission = webform_get_submissions(array('sid' => $sid));
+  return isset($submission[$sid]) ? $submission[$sid] : FALSE;
+}
+
+function _campaignion_webform_tokens_values($node, $submission) {
+  $s = new Submission($node, $submission);
+  $components = $s->webform->node->webform['components'];
+  $values = array();
+  foreach ($components as $cid => $component) {
+    $values[$component['form_key']] = NULL;
+    if (($v = $s->valuesByCid($cid)) && (count($v) > 1 || reset($v))) {
+      $values[$component['form_key']] = campaignion_webform_tokens_render_component($component, $v);
+    }
+  }
+  return $values;
+}
+
+/**
+ * Taken from webform_rules.module: webform_rules_render_component().
+ */
+function campaignion_webform_tokens_render_component($component, $value, $format = 'text') {
+  $display_element = webform_component_invoke($component['type'], 'display', $component, $value, 'text');
+  $display_element['#parents'] = array('submitted', $component['form_key']);
+  if (!isset($display_element['#id'])) {
+    $display_element['#id'] = drupal_clean_css_identifier('edit-' . implode('-', $display_element['#parents']));
+  }
+  $display_element['#title'] = NULL;
+  if (!isset($display_element['#webform_component'])) {
+    $display_element['#webform_component'] = $component;
+  }
+  return trim(drupal_render($display_element));
+}
+
+function campaignion_webform_tokens_node_view($node, $view_mode, $langcode) {
+  $languages = language_list();
+  $node->title = token_replace($node->title, array(), array('language' => $languages[$langcode]));
+  
+  if ($view_mode == 'teaser') {
+    // fix read-more link title.
+    $node->content['links']['node']['#links']['node-readmore']['title'] =
+      t('Read more<span class="element-invisible"> about @title</span>', array('@title' => strip_tags($node->title)));
+  }
+  if (($request_node = menu_get_object()) && $request_node->nid == $node->nid) {
+    drupal_set_title($node->title);
+  }
+}
+
+if (module_exists('metatag')) {
+  /**
+   * Implements template_process_page().
+   *
+   * Prevent metatag from setting the page title from a cached value.
+   */
+  function campaignion_webform_tokens_process_page(&$v) {
+    if (isset($v['page']['content']['metatags'])) {
+      foreach ($v['page']['content']['metatags'] as &$tags) {
+        if (isset($tags['title'])) {
+          unset($tags['title']);
+        }
+      }
+    }
+  }
+}

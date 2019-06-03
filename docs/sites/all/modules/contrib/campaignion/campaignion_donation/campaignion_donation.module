@@ -1,0 +1,127 @@
+<?php
+/**
+ * @file
+ * Hook implementations for the donation functionality in campaignion.
+ */
+
+use \Drupal\campaignion_action\Loader;
+use \Drupal\little_helpers\Webform\Webform;
+
+/**
+ * Helper function to check whether a node is a donation node.
+ */
+function _campaignion_donation_node_is_instance($node) {
+  return $node && ($type = Loader::instance()->type($node->type)) && $type->isDonation();
+}
+
+/**
+ * Implements hook_webform_paymethod_select_method_list_alter().
+ *
+ * Alters the list of available payment methods based whether the
+ * payment interval is recurrent or not
+ */
+function campaignion_donation_webform_paymethod_select_method_list_alter(&$methods, $payment) {
+  $interval = $payment->contextObj->value('donation_interval');
+  $recurrent = in_array($interval, array('m', 'y'));
+
+  if ($recurrent) {
+    foreach ($methods as $pmid => $method) {
+      if (!($method->controller instanceof \Drupal\webform_paymethod_select\PaymentRecurrentController)) {
+        unset($methods[$pmid]);
+      }
+    }
+  }
+  elseif (!variable_get_value('campaignion_donation_manual_direct_debit_one_off')) {
+    foreach ($methods as $pmid => $method) {
+      if ($method->name == 'manual_direct_debit') {
+        unset($methods[$pmid]);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_builder_palette_groups().
+ *
+ * Display a donation specific palette when editing a donation node.
+ */
+function campaignion_donation_form_builder_palette_groups($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  $palette = array();
+  if (_campaignion_donation_node_is_instance(node_load($form_id))) {
+    $palette['donation'] = array(
+      'weight' => -19,
+      'title'  => t('Payment data'),
+    );
+  }
+  return $palette;
+}
+
+/**
+ * Implements hook_form_builder_element_types().
+ *
+ * Add donation / payment specific types to the donation palette.
+ */
+function campaignion_donation_form_builder_element_types($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  if (_campaignion_donation_node_is_instance(node_load($form_id))) {
+    module_load_include('inc', 'form_builder_webform', 'form_builder_webform.components');
+    $types['donation_interval'] = array(
+      'properties' => array(
+        'default_value',
+        'options',
+        'multiple',
+      ),
+      'default'       => array(
+        '#options' => array('1' => t('only once'), 'm' => t('monthly'), 'y' => t('yearly')),
+        '#default_value' => 'm',
+        '#title' => t('Donation interval'),
+        '#required' => TRUE,
+      ) + _form_builder_webform_default('select', array('aslist' => TRUE, 'multiple' => FALSE)),
+      'palette_group' => 'donation',
+      'unique'        => TRUE,
+      'title'         => t('Donation interval'),
+      'weight'        => -98,
+    );
+
+    $types['donation_amount'] = array(
+      'title'  => t('Donation amount'),
+      'weight' => -99,
+      'palette_group' => 'donation',
+      'unique'        => TRUE,
+      'properties'    => array('default_value'),
+      'default'       => array(
+        '#title' => t('Donation amount'),
+        '#default_value' => '[current-page:query:p12]',
+        '#required' => TRUE,
+      ) + _form_builder_webform_default('textfield'),
+    );
+
+    return $types;
+  }
+}
+
+/**
+ * Implements hook_form_builder_element_types_alter().
+ *
+ * Add paymethod_select to our palette for donations and hide it for other
+ * content types.
+ */
+function campaignion_donation_form_builder_element_types_alter(&$types, $form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  if (_campaignion_donation_node_is_instance(node_load($form_id))) {
+    $types['paymethod_select']['addable'] = TRUE;
+    $types['paymethod_select']['palette_group'] = 'donation';
+    $types['currency']['palette_group'] = 'donation';
+    $types['currency']['unique'] = TRUE;
+  }
+  else {
+    $types['paymethod_select']['addable'] = FALSE;
+  }
+}

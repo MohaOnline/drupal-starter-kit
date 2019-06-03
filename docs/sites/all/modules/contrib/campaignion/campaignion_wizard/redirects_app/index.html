@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>redirects_app</title>
+  </head>
+  <body>
+    <a href="#" id="trigger-request-leave-page">Trigger request-leave-page</a>
+    <a href="#" id="trigger-request-submit-page">Trigger request-submit-page</a>
+    <div class="personalized-redirects-widget" id="personalized-redirects-widget--5"></div>
+    <!-- built files will be auto injected -->
+    <script type="text/javascript">
+      (function () {
+        function dispatch (el, type) {
+          const e = document.createEvent('Event')
+          e.initEvent(type, true, true)
+          el.dispatchEvent(e)
+        }
+        var appHasListeners = false
+        function addListeners (app) {
+          if (!appHasListeners) {
+            app.addEventListener('resume-leave-page', function () {
+              alert('You can leave the page now.')
+            })
+            app.addEventListener('cancel-leave-page', function () {
+              alert('Just stay here for a moment.')
+            })
+            appHasListeners = true
+          }
+        }
+
+        document.querySelectorAll('[id^=trigger-]').forEach(function (el) {
+          el.addEventListener('click', function () {
+            var app = document.querySelector('[data-interrupt-submit]')
+            addListeners(app)
+            dispatch(app, el.id.substr(8))
+          })
+        })
+      })()
+    </script>
+  </body>
+</html>

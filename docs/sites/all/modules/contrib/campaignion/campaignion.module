@@ -1,0 +1,44 @@
+<?php
+
+/**
+ * Implements hook_language_switch_links_alter().
+ *
+ * Remove switch links to non-node_view() paths created by the translation module.
+ * This is to avoid geoip_language_redirect from redirecting there.
+ */
+function campaignion_language_switch_links_alter(array &$links, $type, $path) {
+  $language_type = variable_get('translation_language_type', LANGUAGE_TYPE_INTERFACE);
+
+  if ($type == $language_type && preg_match("!^node/(\d+)(/.+|)!", $path, $matches)) {
+    if (!empty($matches[2]) && $matches[2] != '/' && $matches[2] != '/view') {
+      $node = node_load((int) $matches[1]);
+      foreach ($links as $langcode => &$link) {
+        if ($langcode != $node->language && isset($link['href'])) {
+          // No translation in this language, or no permission to view.
+          unset($link['href']);
+          $link['attributes']['class'][] = 'locale-untranslated';
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ *
+ * Use our own extended contact class.
+ */
+function campaignion_entity_info_alter(&$entity_info) {
+  if (isset($entity_info['redhen_contact'])) {
+    $entity_info['redhen_contact']['entity class'] = '\\Drupal\\campaignion\\Contact';
+  }
+}
+
+/**
+ * Implements hook_share_light_options_alter().
+ */
+function campaignion_share_light_options_alter(&$options) {
+  if (!empty($_GET['sid'])) {
+    $options['link']['query']['refsid'] = $_GET['sid'];
+  }
+}

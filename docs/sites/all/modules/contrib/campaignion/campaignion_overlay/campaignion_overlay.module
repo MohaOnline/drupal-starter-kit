@@ -1,0 +1,50 @@
+<?php
+/**
+ * @file
+ * Code for the campaignion_overlay feature.
+ */
+
+include_once 'campaignion_overlay.features.inc';
+
+/**
+ * @file
+ * Implements all needed hooks and functions.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function campaignion_overlay_theme($existing, $type, $theme, $path) {
+  return [
+    'campaignion_overlay_options' => [
+      'template' => 'campaignion-overlay',
+      'path' => drupal_get_path('module', 'campaignion_overlay'),
+      'variables' => [
+        'introduction' => NULL,
+        'content' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_field_collection_item_view_alter().
+ *
+ * Custom rendering for campaignion_overlay_options field collection items.
+ */
+function campaignion_overlay_field_collection_item_view_alter(&$build) {
+  if ($build['#bundle'] === 'campaignion_overlay_options') {
+    $element = [
+      '#theme' => 'campaignion_overlay_options',
+      '#introduction' => $build['campaignion_overlay_introduction'],
+    ];
+    $item = entity_metadata_wrapper('field_collection_item', $build['#entity']);
+    if ($node = $item->campaignion_overlay_content->value()) {
+      $element['#content'] = drupal_get_form('webform_client_form_' . $node->nid, $node, []);
+    }
+    $settings['campaignion_overlay']['overlay_enabled'] = (bool) $item->campaignion_overlay_enabled->value();
+    $element['#attached']['library'][] = ['system', 'ui.dialog'];
+    $element['#attached']['js'][] = ['data' => $settings, 'type' => 'setting'];
+    $build = $element;
+  }
+}

@@ -1,0 +1,185 @@
+<?php
+
+/**
+ * Implements hook_custom_theme().
+ */
+function campaignion_microsite_custom_theme() {
+  // compensate for a drupal core bug that denies access to the theme
+  // if the anonymous page cache is active.
+  // @see ajax_base_page_theme().
+  // @see drupal_valid_token().
+  // https://drupal.org/node/2177975
+  if ($GLOBALS['user']->uid == 0 && !empty($_POST['ajax_page_state']['theme']) && drupal_theme_access($_POST['ajax_page_state']['theme'])) {
+    return $_POST['ajax_page_state']['theme'];
+  }
+
+  // We can't use menu_get_object() here since it may trigger
+  // drupal_theme_initialize().
+  $parts = explode('/', current_path());
+  if ($parts[0] == 'node' && (string)(int)$parts[1] == $parts[1]) {
+    $nid = (int) $parts[1];
+  } else {
+    return;
+  }
+
+  // @TODO Set $config_field automatically by looping over all fields of type microsite.
+  $reference_field = variable_get('campaignion_microsite_node_reference_field', 'field_reference_to_campaign');
+  $config_field = variable_get('campaignion_microsite_config_field', 'field_microsite');
+  $sql = <<<SQL
+SELECT
+  n.nid,
+  r.field_reference_to_campaign_nid AS rnid,
+  m.{$config_field}_state AS state,
+  m.{$config_field}_theme AS theme,
+  m.{$config_field}_frontpage AS frontpage,
+  m.{$config_field}_logo AS logo
+FROM {node} n
+LEFT OUTER JOIN {field_data_$config_field} m ON m.entity_id=n.nid AND m.entity_type='node' AND m.delta=0
+LEFT OUTER JOIN {field_data_$reference_field} r ON r.entity_id=n.nid AND r.entity_type='node' AND r.delta=0
+WHERE n.nid=:nid
+SQL;
+
+  // Loop as long as we have a $nid and we can fetch it's data
+  while ($nid && ($row = db_query($sql, array(':nid' => $nid))->fetch())) {
+    // This node has a non-empty microsite field.
+    if (!empty($row->state)) {
+      $GLOBALS['microsite'] = array(
+        'logo' => $row->logo,
+        'front_page' => $row->frontpage,
+        'theme' => $row->theme,
+      );
+      $theme = &$GLOBALS['microsite']['theme'];
+      return ($theme === 'none') ? NULL : $theme;
+    }
+    // Follow the reference to the next node or give up.
+    $nid = !empty($row->rnid) ? $row->rnid : FALSE;
+  }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function campaignion_microsite_preprocess_page(&$vars) {
+  if (empty($GLOBALS['microsite'])) {
+    return;
+  }
+  $microsite = &$GLOBALS['microsite'];
+  if (!empty($vars['logo']) && !empty($microsite['logo'])) {
+    $vars['logo'] = url($microsite['logo']);
+  }
+  if (!empty($vars['front_page']) && !empty($microsite['front_page'])) {
+    $vars['front_page'] = url($microsite['front_page']);
+  }
+}
+
+/**
+ * Implements hook_field_info().
+ */
+function campaignion_microsite_field_info() {
+  $info['microsite'] = array(
+    'label' => t('Microsite'),
+    'description' => t('Turns node into microsites with custom frontpage, theme and icon.'),
+    'settings' => array('style' => NULL),
+    'default_widget' => 'microsite',
+    'default_formatter' => 'hidden',
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function campaignion_microsite_field_widget_info() {
+  $info['microsite'] = array(
+    'label' => t('Microsite settings'),
+    'field types' => array('microsite'),
+    'settings' => array(),
+    'behaviors' => array(
+      'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+      'default values' => FIELD_BEHAVIOR_DEFAULT,
+    ),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function campaignion_microsite_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $item = array();
+  if (isset($items[$delta])) {
+    $item = &$items[$delta];
+  }
+  $item = drupal_array_merge_deep(array(
+    'state' => FALSE,
+    'frontpage' => NULL,
+    'theme' => NULL,
+    'logo' => NULL,
+  ), $item);
+
+  $element['state'] = array(
+    '#title' => t('This page is a microsite.'),
+    '#description' => t("If enabled theme, logo and frontpage will be altered for all pages that are part of this microsite."),
+    '#type' => 'checkbox',
+    '#default_value' => $item['state'],
+  );
+  $element['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Microsite settings'),
+    '#states' => array(
+        'invisible' => array("#edit-" . strtr($field['field_name'], '_', '-') . "-und-$delta-state" => array('checked' => FALSE)),
+    ),
+  );
+  $themes = array('' => t("Use default theme."));
+  foreach (list_themes() as $theme) {
+    if ($theme->status) {
+      $themes[$theme->name] = $theme->info['name'];
+    }
+  }
+  $element['options']['theme'] = array(
+    '#type' => 'select',
+    '#title' => t('Theme'),
+    '#options' => $themes,
+    '#default_value' => $item['theme'],
+  );
+  $element['options']['frontpage'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Frontpage (path)'),
+    '#default_value' => $item['frontpage'],
+  );
+  $element['options']['logo'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Path to logo file.'),
+    '#default_value' => $item['logo'],
+  );
+
+  $element += array(
+    '#type' => 'fieldset',
+    '#title' => t('Microsite'),
+    '#element_validate' => array('campaignion_microsite_field_widget_validate'),
+  );
+
+  return $element;
+}
+
+/**
+ * Validate callback for the campaignion_microsite_field_widget_form().
+ */
+function campaignion_microsite_field_widget_validate(&$element, &$form_state) {
+  $item = &$form_state['values'];
+  foreach ($element['#parents'] as $key) {
+    $item = &$item[$key];
+  }
+  if (isset($item['options']) && is_array($item['options'])) {
+    foreach ($item['options'] as $name => $value) {
+      $item[$name] = $value;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function campaignion_microsite_field_is_empty($item, $field) {
+  return FALSE;
+}

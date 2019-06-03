@@ -1,0 +1,14 @@
+name = Mailchimp interest selector
+description = A webform component that lets users select a MailChimp interest group. The user is then added to the group on subscription.
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion_newsletters_mailchimp
+dependencies[] = little_helpers
+dependencies[] = psr0
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

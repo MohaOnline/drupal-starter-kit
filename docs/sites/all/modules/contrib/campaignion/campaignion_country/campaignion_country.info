@@ -1,0 +1,12 @@
+name = Campaignion country
+description = Country sections as different languages. One language per country X language (de_DE, de_AT, …).
+core = 7.x
+package = Campaignion
+
+dependencies[] = little_helpers
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

@@ -1,0 +1,17 @@
+name = Campaignion Form Builder
+description = Definitions of form builder extensions for Campaignion
+core = 7.x
+package = Campaignion
+
+; modules that we need to set up our data structures (so that hook_install() works)
+dependencies[] = campaignion_opt_in
+dependencies[] = form_builder
+dependencies[] = form_builder_webform
+dependencies[] = webform_country_list
+
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

@@ -1,0 +1,61 @@
+{
+  "data": {
+    "redirects": [
+      {
+        "id": 1,
+        "label": "My internal label",
+        "destination": "node/20",
+        "prettyDestination": "Pretty title of my node (20)",
+        "filters": [
+          {
+            "id": 2,
+            "type": "opt-in",
+            "value": true
+          },
+          {
+            "id": 3,
+            "type": "submission-field",
+            "field": "f_name",
+            "operator": "contains",
+            "value": "foo"
+          }
+        ]
+      },
+      {
+        "id": null,
+        "label": "Awesome redirect",
+        "destination": "node/3",
+        "prettyDestination": "Some Node title containing foo (3)",
+        "filters": [
+          {
+            "id": null,
+            "type": "opt-in",
+            "value": false
+          }
+        ]
+      },
+      {
+        "id": null,
+        "label": "Real spam lovers go here",
+        "destination": "http://opt-in.com",
+        "prettyDestination": "http://opt-in.com",
+        "filters": [
+          {
+            "id": null,
+            "type": "submission-field",
+            "field": "l_name",
+            "operator": "!contains",
+            "value": "bar"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "label": "",
+        "destination": "/something_else",
+        "prettyDestination": "/something_else",
+        "filters": []
+      }
+    ]
+  }
+}

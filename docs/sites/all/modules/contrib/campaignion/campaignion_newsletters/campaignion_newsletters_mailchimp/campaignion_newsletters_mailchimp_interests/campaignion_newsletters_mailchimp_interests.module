@@ -1,0 +1,86 @@
+<?php
+
+/**
+ * @file
+ * Main module file. Implement hooks.
+ *
+ * - Webform and form_bulder hooks.
+ * - The actual effect of the component in
+ *   hook_campaignion_newsletters_mailchimp_data_alter().
+ */
+
+use \Drupal\campaignion\CRM\Import\Source\WebformSubmission;
+
+/**
+ * Implements hook_webform_component_info().
+ */
+function campaignion_newsletters_mailchimp_interests_webform_component_info() {
+  $info['mc_interests'] = [
+    'label' => t('MailChimp interest groups'),
+    'description' => t('Allows users to select interest groups.'),
+    'features' => [
+      'conditional' => FALSE,
+    ],
+    'file' => 'component.php',
+  ];
+  return $info;
+}
+
+/**
+ * Implements hook_campaigion_newsletters_mailchimp_data_alter().
+ *
+ * Subscribe to all interest groups that were selected in any mc_interests
+ * component on the same form.
+ */
+function campaignion_newsletters_mailchimp_interests_campaignion_newsletters_mailchimp_data_alter(array &$data, $subscription) {
+  if (!empty($subscription->source) && $subscription->source instanceof WebformSubmission) {
+    $s = $subscription->source;
+    $list_groups = $subscription->newsletterList()->data->groups;
+    foreach ($s->webform->componentsByType('mc_interests') as $cid => $c) {
+      foreach ($s->valuesByCid($cid) as $key) {
+        if (isset($list_groups[$key])) {
+          $data['interests'][$key] = TRUE;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_builder_element_types().
+ *
+ * Defines a new form_builder field:
+ * - 'title'
+ * - in which ['palette_group'] it appears.
+ *   . @see hook_form_builder_palette_groups()
+ * - it's ['default'] representation (is used when dragging it into the preview
+ *   area) including:
+ *   - ['#webform_component'] the component array for webform (most important
+ *     it's ['#webform_component']['type']. @see hook_webform_component_info()
+ *   - ['#type'] the form-API type is used as the default form_builder
+ *     element_type. @see hook_element_info()
+ *   - ['#form_builder'] the form_builder type (again).
+ *     Also @see hook_form_builder_element_types()
+ * - whether or not the field is ['unique'].
+ *
+ * Fields are defined per form_type (so far only 'webform' is relevant for us).
+ */
+function campaignion_newsletters_mailchimp_interests_form_builder_element_types($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  require_once dirname(__FILE__) . '/component.php';
+  $map = _form_builder_webform_property_map('mc_interests');
+  // Deactivate the default value widget until there is support for pre-defined
+  // lists in options_element.
+  unset($map['properties']['default_value']);
+  $fields['mc_interests'] = array(
+    'class' => '\\Drupal\\campaignion_newsletters_mailchimp_interests\\FormBuilderElement',
+    'title' => t('MailChimp interests'),
+    'properties' => array_keys($map['properties']),
+    'default' => array(
+      '#form_builder' => array('element_type' => 'mc_interests'),
+    ) + _form_builder_webform_default('mc_interests'),
+  );
+  return $fields;
+}

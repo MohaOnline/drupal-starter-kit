@@ -1,0 +1,49 @@
+<?php
+
+use \Drupal\little_helpers\Field\Field;
+use \Drupal\little_helpers\Field\Bundle;
+use \Drupal\little_helpers\Field\Instance;
+
+/**
+ * Implements hook_install().
+ *
+ * Create taxonomy term field for supporter tagging.
+ */
+function campaignion_supporter_tags_install() {
+  $edit = array(
+    'name' => 'Supporter Tags',
+    'machine_name' => 'supporter_tags',
+    'description' => 'Vocabulary for Campaignion supporter tags.',
+    'module' => 'campaignion_supporter_tags',
+  );
+  $vocabulary = (object) $edit;
+
+  taxonomy_vocabulary_save($vocabulary);
+
+  if (!(Field::byName('supporter_tags'))) {
+    $field = Field::fromType('taxonomy_term_reference', 'supporter_tags');
+    $field->settings['allowed_values'][0] = array(
+      'vocabulary' => 'supporter_tags',
+      'parent' => 0,
+    );
+    $field->save();
+  }
+}
+
+/**
+ * Utility function to add the action_template field to a bundle.
+ *
+ * @param string $type
+ *   The entity_type to add the field to. 
+ * @param string $bundlename
+ *   The machine readable name of the bundle to add the field to.
+ */
+function campaignion_supporter_tags_add_instance($type, $bundlename) {
+  $bundle = new Bundle($type, $bundlename);
+  $instance = Instance::fromField(Field::byName('supporter_tags'), $bundle);
+  $instance->label = 'Tag supporters';
+  $instance->description = 'Supporters submitting this form will be automatically tagged with these tags.';
+  $instance->setFormatter('default', 'hidden');
+  $instance->setWidget('taxonomy_autocomplete');
+  $instance->save();
+}

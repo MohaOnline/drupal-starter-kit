@@ -1,0 +1,93 @@
+<?php
+
+/**
+ * @file
+ * Update, and schema functions for the field_reference_or_redirect module.
+ */
+
+use Drupal\campaignion_action\Redirects\Redirect;
+
+/**
+ * Implements hook_field_schema().
+ *
+ * Defines the database schema of the reference_or_redirect field.
+ */
+function field_reference_or_redirect_field_schema($field) {
+  return array(
+    'columns' => array(
+      'type' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => FALSE,
+      ],
+      'node_reference_nid' => array(
+        'type'     => 'int',
+        'not null' => FALSE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function field_reference_or_redirect_update_dependencies() {
+  $d['field_reference_or_redirect'][2]['campaignion_action'] = 3;
+  return $d;
+}
+
+/**
+ * Migrate to custom redirects.
+ */
+function field_reference_or_redirect_update_2() {
+  $type_spec = [
+    'type' => 'varchar',
+    'length' => 32,
+    'not null' => FALSE,
+  ];
+  $fields = field_read_fields(['type' => 'reference_or_redirect'], ['include_inactive' => TRUE]);
+  foreach ($fields as $field) {
+    $name = $field['field_name'];
+
+    // Store old redirects as new redirects.
+    $sql = <<<SQL
+SELECT entity_id AS nid, delta, {$name}_redirect_url AS redirect_url
+FROM {field_data_$name}
+WHERE {$name}_redirect_url IS NOT NULL AND entity_type='node'
+SQL;
+    foreach (db_query($sql) as $row) {
+      $redirect = new Redirect([
+        'nid' => $row->nid,
+        'delta' => $row->delta,
+        'destination' => $row->redirect_url,
+        'weight' => 0,
+      ]);
+      $redirect->save();
+    }
+
+    // Explicitly store selected mode end remove old redirect_url column.
+    foreach (['data', 'revision'] as $t) {
+      $table = "field_{$t}_$name";
+      db_add_field($table, "{$name}_type", $type_spec);
+      db_query("UPDATE {{$table}} SET {$name}_type=IF({$name}_node_reference_nid IS NOT NULL, 'node', 'redirect')");
+      db_drop_field($table, "{$name}_redirect_url");
+    }
+  }
+}
+
+/**
+ * Drop the template_nid column.
+ */
+function field_reference_or_redirect_update_1() {
+  $fields = field_read_fields(
+    array('type' => 'reference_or_redirect'),
+    array('include_inactive' => TRUE)
+  );
+  foreach ($fields as $field) {
+    $name = $field['field_name'];
+    foreach (array("field_data_$name", "field_revision_$name") as $table) {
+      db_query("UPDATE {{$table}} SET {$name}_node_reference_nid={$name}_template_nid WHERE {$name}_template_nid IS NOT NULL");
+      db_drop_field($table, "{$name}_template_nid");
+    }
+  }
+}

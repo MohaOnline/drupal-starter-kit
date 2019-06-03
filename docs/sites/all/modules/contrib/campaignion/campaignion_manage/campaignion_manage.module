@@ -1,0 +1,170 @@
+<?php
+
+use \Drupal\campaignion_manage as cm;
+
+/**
+ * Implements hook_menu().
+ */
+function campaignion_manage_menu() {
+  $items['admin/manage'] = array(
+    'title'            => t('Manage Campaignion'),
+    'page callback'    => 'campaignion_manage_content_page',
+    'access arguments' => array('administer nodes'),
+    'type'             => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/manage/content_and_actions'] = array(
+    'title'  => t('Content'),
+    'type'   => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -1,
+  );
+
+  $items['admin/manage/action_templates'] = array(
+    'title'            => t('Action Templates'),
+    'page callback'    => 'campaignion_manage_action_templates',
+    'access arguments' => array('administer nodes'),
+    'type'             => MENU_LOCAL_TASK,
+  );
+
+  $items['admin/supporters'] = array(
+    'title' => t('Manage Supporters'),
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => array('manage redhen contacts'),
+    'page callback' => 'campaignion_manage_supporters_page',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function campaignion_manage_admin_paths() {
+  return array(
+    'campaignion/manage/*' => TRUE,
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function campaignion_manage_theme() {
+  $theme['campaignion_manage_node'] = array(
+    'variables' => array(
+      'node' => NULL,
+      'translation_set' => FALSE,
+    ),
+    'file' => 'campaignion_manage.theme.inc',
+  );
+  $theme['campaignion_manage_contact'] = array(
+    'variables' => array(
+      'contact' => NULL,
+    ),
+    'file' => 'campaignion_manage.theme.inc',
+  );
+  $theme['campaignion_manage_ajax'] = array(
+    'render element' => 'element',
+    'file' => 'campaignion_manage.theme.inc',
+  );
+  $theme['campaignion_manage_pager'] = array(
+    'render element' => 'element',
+    'file' => 'campaignion_manage.theme.inc',
+  );
+  return $theme;
+}
+
+/**
+ * Implements hook_module_enable().
+ */
+function campaignion_manage_modules_enabled($modules) {
+  if (in_array('clientside_validation', $modules)) {
+    module_load_install('campaignion_manage');
+    _campaignion_manage_deactivate_clientside_validation();
+  }
+}
+
+/**
+ * AJAX-callback for the filter form.
+ */
+function campaignion_manage_ajax_filter($form, &$form_state) {
+  $renderable = $form;
+  unset($renderable['#theme_wrapper']);
+  $commands[] = ajax_command_replace('#campaignion-manage-ajax-wrapper', render($renderable));
+  return array(
+    '#type' => 'ajax',
+    '#commands' => $commands,
+  );
+}
+
+/**
+ * Page callback: Manage Content & Actions page
+ */
+function campaignion_manage_content_page() {
+  drupal_set_title(t('Manage Content & Actions'), PASS_THROUGH);
+
+  $page = new cm\ContentPage(new cm\Query\Content());
+  return $page->renderable();
+}
+
+/**
+ * Page callback: Action Templates page
+ */
+function campaignion_manage_action_templates() {
+  drupal_set_title(t('Action Templates'), PASS_THROUGH);
+
+  $page = new cm\ContentPage(new cm\Query\Template());
+  return $page->renderable();
+}
+
+/**
+ * Page callback: Manage your supporters page
+ */
+function campaignion_manage_supporters_page() {
+  drupal_set_title(t('Manage your supporters'), PASS_THROUGH);
+
+  $page = new cm\SupporterPage(new cm\Query\Supporter());
+  return $page->renderable();
+}
+
+function campaignion_manage_form($form, &$form_state, $formObj) {
+  return $formObj->form($form, $form_state);
+}
+
+function campaignion_manage_form_submit($form, &$form_state) {
+  $form_state['build_info']['args'][0]->submit($form, $form_state);
+}
+
+function campaignion_manage_element_info() {
+  $types['campaignion_manage_listing'] = array(
+    '#theme' => 'table',
+  );
+  return $types;
+}
+
+function campaignion_manage_batch_process($handler, &$context) {
+  $handler->apply($context);
+}
+
+function campaignion_manage_batch_finished($success, $results, $operations) {
+  $results['batch']->finish($success, $results, $operations);
+}
+
+function campaignion_manage_activity_how_many_validate($element, &$form_state) {
+  $values = drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+  if ((string)(int)$values != $values || (int) $values < 0) {
+    form_error($element, t('The number of times has to be a positive integer value.'));
+  }
+}
+
+/**
+ * Implements hook_campaignion_manage_filter_info().
+ */
+function campaignion_manage_campaignion_manage_filter_info() {
+  $filters['supporter']['state'] = cm\Filter\SupporterState::class;
+  $filters['supporter']['name'] = cm\Filter\SupporterName::class;
+  if (module_exists('campaignion_supporter_tags')) {
+    $filters['supporter']['tags'] = cm\Filter\SupporterTag::class;
+  }
+  $filters['supporter']['country']  = cm\Filter\SupporterCountry::class;
+  $filters['supporter']['activity'] = cm\Filter\SupporterActivity::class;
+  return $filters;
+}

@@ -1,0 +1,82 @@
+.manage-links .ctools-dropbutton {
+  width: 12em;
+  position: absolute;
+  font-weight: bold;
+  border-color: #CCCCCC;
+  background-color: #f5f1e8;
+  border: 1px solid #e3dfd7;
+  border-radius: 5px;
+  color: #a29f98;
+  cursor: pointer;
+  display: block;
+  font-size: 13px;
+  margin: 0;  
+}
+.manage-links .ctools-dropbutton a,
+.manage-links .ctools-dropbutton a:hover,
+.manage-links .ctools-dropbutton a:link,
+.manage-links .ctools-dropbutton a:focus,
+.manage-links .ctools-dropbutton a:visited,
+.manage-links .ctools-dropbutton a:active {
+  text-decoration: none;
+  color: #a29f98;
+  padding: 1.1em 0 1.1em 1.3em;
+}
+.manage-links .ctools-dropbutton a:hover {
+  color: #8b8882;
+	background: #faf7f1;
+}
+.manage-links .ctools-dropbutton a:active {
+  color: #b03F08;
+}
+.manage-links .open {
+  box-shadow: 0px 0px 5px #CACACA;
+}
+.manage-links .ctools-content li a {
+  padding: 1.1em 0 1.1em 1.3em;
+  display: block;
+}
+.manage-links .ctools-content li {
+  padding: 0;
+}
+
+.campaignion-manage-content-listing .ctools-button-processed .ctools-content {
+  padding: 0;
+}
+
+.manage-links .ctools-dropbutton .ctools-link a {
+  top: 0;
+  right: 0;
+  padding: 0;
+  width: 37px;
+  height: 3.5em;
+  background: #f5f1e8 url(../img/down_transparent.png) no-repeat center right;
+  border: 0px solid transparent;
+}
+.manage-links .open ul li {
+  border-bottom: 1px solid #e3dfd7;
+}
+
+ .manage-links .ctools-dropbutton-processed {
+   padding-right: 0;
+ }
+ 
+
+ .manage-links .ctools-dropbutton-processed li a {
+   background-color: #F5F1E8;
+ }
+ 
+  .manage-links .ctools-dropbutton-processed.open li a {
+   background-color: #fff;
+   margin: 0;
+   width: 100%;
+}
+ 
+ .manage-links .ctools-dropbutton-processed li a:hover { 
+  background-color: #FAF7F1;
+ }
+
+ .manage-links .ctools-dropbutton-processed.open li {
+  padding: 0;
+}
+

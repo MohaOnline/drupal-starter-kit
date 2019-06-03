@@ -1,0 +1,65 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_recent_supporters_webform_schema() {
+  $tables['campaignion_recent_supporters_webform'] = array(
+    'fields' => array(
+      'sid' => array(
+        'description' => 'Foreign key for webform_submissions.sid',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'nid' => array(
+        'description' => 'Foreign key for node.nid',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'timestamp' => array(
+        'description' => 'Timestamp for when the action was submitted.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'first_name' => array(
+        'description' => 'First name of the supporter',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'last_name' => array(
+        'description' => 'Last name of the supporter',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'country' => array(
+        'description' => 'Country ISO-Code',
+        'type' => 'varchar',
+        'length' => 2,
+      ),
+      'comment' => array(
+        'description' => 'Users comment',
+        'type' => 'text',
+      ),
+    ),
+    'primary key' => array('sid'),
+    'indexes' => array('node' => array('nid'))
+  );
+  return $tables;
+}
+
+/**
+ * Add comment field to recent supporters table.
+ */
+function campaignion_recent_supporters_webform_update_7101() {
+  db_add_field('campaignion_recent_supporters_webform', 'comment', array(
+    'description' => 'Users comment',
+    'type' => 'text',
+  ));
+}
+

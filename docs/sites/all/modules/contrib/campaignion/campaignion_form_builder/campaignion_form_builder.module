@@ -1,0 +1,251 @@
+<?php
+
+use Drupal\campaignion_activity\WebformSubmission as SubmissionActivity;
+use Drupal\campaignion_opt_in\OptInRecordFactory;
+use Drupal\form_builder\Loader;
+use Drupal\little_helpers\Webform\Submission;
+
+/**
+ * Implements hook_webform_component_info().
+ */
+function campaignion_form_builder_webform_component_info() {
+  $info['phone_number'] = [
+    'label' => t('Phone number'),
+    'description' => t('Textfield for entering a phone number with additional opt-in options.'),
+    'file' => 'components/phone_number.inc',
+  ] + webform_webform_component_info()['textfield'];
+  return $info;
+}
+
+/**
+ * Implements hook_webform_validator_alter().
+ */
+function campaignion_form_builder_webform_validator_alter(&$validators) {
+  foreach ($validators as &$info) {
+    if (!empty($info['component_types']) && in_array('textfield', $info['component_types'], TRUE)) {
+      $info['component_types'][] = 'phone_number';
+    }
+  }
+}
+
+/**
+ * Implements hook_campaignion_action_taken().
+ */
+function campaignion_form_builder_campaignion_action_taken($node, Submission $submission) {
+  $activity = SubmissionActivity::byNidSid($node->nid, $submission->sid);
+  if (!$activity) {
+    watchdog('campaignion_form_builder', 'Can’t record opt-in without activity for submission [nid: %nid, sid: %sid].', ['%nid' => $node->nid, '%sid' => $submission->sid], WATCHDOG_ERROR);
+    return;
+  }
+  $factory = new OptInRecordFactory($activity);
+
+  $components = $submission->webform->componentsByType('phone_number');
+  foreach ($components as $cid => $component) {
+    if (!empty($component['extra']['implies_optin'])) {
+      $values = $submission->valuesByCid($cid);
+      $value = reset($values);
+      if ($value) {
+        $component['extra']['channel'] = 'phone';
+        $factory->recordOptIn($component, ['phone-number:opt-in']);
+      }
+    }
+  }
+}
+
+
+/**
+ * Implements hook_form_builder_element_types_alter().
+ * remove elements from the default palette
+ */
+function campaignion_form_builder_form_builder_element_types_alter(&$types, $form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  if (isset($types['email'])) {
+    $field                              = &$types['email'];
+    $field['unique']                    = TRUE;
+    $field['palette_group']             = 'supporter_data';
+    $field['default']['#title']         = t('Email address');
+    $field['default']['#default_value'] = '[current-page:query:p5]';
+    $field['default']['#key']           = $field['default']['#webform_component']['form_key'] = 'email';
+  }
+  if (isset($types['country_list'])) {
+    $types['country'] = $types['country_list'];
+    unset($types['country_list']);
+    $field = &$types['country'];
+    $field['default']['#form_builder']['element_type'] = 'country';
+    $field['palette_group'] = 'supporter_data';
+    $field['unique'] = TRUE;
+    $field['weight'] = -73;
+  }
+  uasort($types, 'drupal_sort_weight');
+}
+
+/**
+ * Implements hook_form_builder_webform_property_map_alter().
+ */
+function campaignion_form_builder_form_builder_webform_property_map_alter(&$map, $type) {
+  if ($type == 'country_list') {
+    $map['form_builder_type'] = 'country';
+  }
+}
+
+/**
+ * Implements hook_form_builder_palette_fields_alter().
+ *
+ * This is a hack to get unique to work with reused webform components.
+ */
+function campaignion_form_builder_form_builder_palette_fields_alter(&$fields, $form_type, $form_id) {
+  if ($form_type == 'webform') {
+    $elements = Loader::instance()
+      ->fromCache($form_type, $form_id)
+      ->getFormArray();
+    $active_keys = campaignion_form_builder_get_element_keys($elements);
+    foreach ($active_keys as $key) {
+      if (isset($fields[$key]) && $fields[$key]['unique']) {
+        $fields[$key]['in_use'] = TRUE;
+      }
+    }
+    unset($fields['opt_in']);
+  }
+}
+
+/**
+ * Recursive function to get the types of all element within a form.
+ */
+function campaignion_form_builder_get_element_keys(&$form) {
+  $keys = array();
+  foreach (element_children($form) as $key) {
+    if (isset($form[$key]['#key'])) {
+      $keys[] = $form[$key]['#key'];
+    }
+    $child_keys = campaignion_form_builder_get_element_keys($form[$key]);
+    $keys = array_merge($keys, $child_keys);
+  }
+
+  return $keys;
+}
+
+/**
+ * Implements hook_form_builder_palette_groups().
+ * we want to define our own group of form elements
+ * hence we define our own palette of elements
+ */
+function campaignion_form_builder_form_builder_palette_groups() {
+  $palette = array();
+
+  $palette['supporter_data'] = array(
+    'weight' => -17,
+    'title'  => t('Supporter Data'),
+  );
+
+  return $palette;
+}
+
+/**
+ * Implements hook_form_builder_element_types().
+ * define all form elements that we want to have at display
+ */
+function campaignion_form_builder_form_builder_element_types($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  module_load_include('inc', 'form_builder_webform', 'form_builder_webform.components');
+
+  $fields = array();
+
+  $types = ['textfield', 'select', 'textarea', 'opt_in'];
+
+  foreach ($types as $type) {
+    module_load_include("type_{$type}.inc", 'campaignion_form_builder');
+    $map               = _form_builder_webform_property_map($type);
+    $properties        = array_keys($map['properties']);
+    $function          = '_campaignion_form_builder_form_builder_types_' . $type;
+    $additional_fields = $function();
+    if (   $additional_fields == FALSE
+        || empty($additional_fields) == TRUE) {
+      continue;
+    }
+
+    foreach ($additional_fields as &$field) {
+      $field['properties'] += $properties;
+    }
+    $fields = array_merge($fields, $additional_fields);
+  }
+  return $fields;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_webform_client_form_alter().
+ */
+function campaignion_form_builder_webform_client_form_alter(&$form, &$form_state) {
+  if (isset($form['actions']['previous'])) {
+    $form['actions']['previous']['#value'] = t('Previous');
+  }
+  $form['actions']['previous']['#access'] = FALSE;
+}
+
+/**
+ * Implements hook_form_builder_palette_groups_alter().
+ */
+function campaignion_form_builder_form_builder_palette_groups_alter(&$groups, $type, $form_id) {
+  $groups['default']['title'] = t('Generic fields');
+}
+
+/**
+  * Implements hook_menu().
+  */
+function campaignion_form_builder_menu() {
+  $items = array();
+
+  $items['node/%webform_menu/webform-ui'] = array(
+    'title' => 'Webform',
+    'page callback' => 'webform_components_page',
+    'page arguments' => array(1),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'file' => 'includes/webform.components.inc',
+    'file path' => drupal_get_path('module', 'webform'),
+    'weight' => 1,
+    'type' => MENU_CALLBACK,
+    'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+  );
+  $items['node/%webform_menu/webform-ui/components'] = array(
+    'title' => 'Form components',
+    'page callback' => 'webform_components_page',
+    'page arguments' => array(1),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'file' => 'includes/webform.components.inc',
+    'file path' => drupal_get_path('module', 'webform'),
+    'weight' => 0,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function campaignion_form_builder_admin_paths() {
+  if (variable_get('node_admin_theme')) {
+    return array(
+      'node/*/webform-ui' => TRUE,
+      'node/*/webform-ui/*' => TRUE,
+    );
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_form_builder_webform_save_form_alter().
+ *
+ * Work around for form_builder.js not loading additional Javascripts. Make
+ * states.js work.
+ */
+function campaignion_form_builder_form_form_builder_webform_save_form_alter(&$form, &$form_state) {
+  $form['#attached']['js'][] = 'misc/ajax.js';
+  $form['#attached']['js'][] = 'misc/states.js';
+}

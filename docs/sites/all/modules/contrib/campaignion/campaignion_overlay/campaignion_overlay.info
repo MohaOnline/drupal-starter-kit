@@ -1,0 +1,30 @@
+name = campaignion_overlay
+core = 7.x
+package = Features
+dependencies[] = entity
+dependencies[] = entityreference
+dependencies[] = features
+dependencies[] = field_collection
+dependencies[] = list
+dependencies[] = options
+dependencies[] = text
+dependencies[] = views
+dependencies[] = webform (>=4.0)
+scripts[] = campaignion_overlay.js
+stylesheets[all][] = campaignion_overlay.css
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[field_base][] = campaignion_overlay_content
+features[field_base][] = campaignion_overlay_enabled
+features[field_base][] = campaignion_overlay_introduction
+features[field_base][] = campaignion_overlay_options
+features[field_instance][] = field_collection_item-campaignion_overlay_options-campaignion_overlay_content
+features[field_instance][] = field_collection_item-campaignion_overlay_options-campaignion_overlay_enabled
+features[field_instance][] = field_collection_item-campaignion_overlay_options-campaignion_overlay_introduction
+features[views_view][] = actions_reference
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

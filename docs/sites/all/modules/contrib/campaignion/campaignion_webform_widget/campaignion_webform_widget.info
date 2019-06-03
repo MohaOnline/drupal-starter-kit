@@ -1,0 +1,20 @@
+name = Webform Widget
+description = Webform Widget for embedding webforms into other sites
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion_action
+dependencies[] = cck_blocks
+dependencies[] = context
+dependencies[] = context_get
+dependencies[] = ctools
+dependencies[] = webform_block
+features[context][] = current_webform_embedded
+features[ctools][] = context:context:3
+features[features_api][] = api:2
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

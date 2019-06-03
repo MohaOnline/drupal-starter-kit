@@ -1,0 +1,368 @@
+<?php
+
+/**
+ * @file
+ * Schema definitions and migration functions.
+ */
+
+use Drupal\campaignion_activity\WebformSubmission;
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_activity_schema() {
+  $unsigned_int_not_null = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'unsigned' => TRUE,
+  );
+  $schema['campaignion_activity'] = array(
+    'description' => 'Logged activities',
+    'fields' => array(
+      'activity_id' => array(
+        'description' => 'Auto-incrementing ID for activities',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'contact_id' => array(
+        'description' => 'Redhen contact_id',
+      ) + $unsigned_int_not_null,
+      'type' => array(
+        'description' => 'Activity Type key',
+        'type' => 'varchar',
+        'length' => '128',
+        'not null' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'Unix-timestamp when the activity was logged',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'campaignion_activity_contact' => array('contact_id'),
+      'campaignion_activity_type' => array('type'),
+      'campaignion_activity_created' => array('created'),
+    ),
+    'foreign keys' => array(
+      'campaignion_activity_contact' => array(
+        'table' => 'redhen_contact',
+        'columns' => array('contact_id' => 'contact_id'),
+      ),
+    ),
+    'primary key' => array('activity_id'),
+  );
+  $schema['campaignion_activity_webform'] = array(
+    'description' => 'Link an activity to a webform submission.',
+    'fields' => array(
+      'activity_id' => array(
+        'description' => 'Foreign key to the activity.',
+      ) + $unsigned_int_not_null,
+      'nid' => array(
+        'description' => 'Node ID: The webform node this submission belongs to.',
+      ) + $unsigned_int_not_null,
+      'sid' => array(
+        'description' => 'Webform submission ID.',
+      ) + $unsigned_int_not_null,
+      'confirmed' => array(
+        'description' => 'Timestamp for when the webform submission was confirmed (or NULL if not).',
+        'type' => 'int',
+        'default' => NULL,
+      ),
+    ),
+    'primary key' => array('activity_id'),
+    'indexes' => array(
+      'campaignion_activity_webform_activity' => array('activity_id'),
+      'campaignion_activity_webform_node' => array('nid'),
+      'campaignion_activity_webform_submission' => array('nid', 'sid'),
+    ),
+    'foreign keys' => array(
+      'campaignion_activity_webform_activity' => array(
+        'table' => 'campaignion_activity',
+        'columns' => array('activity_id' => 'activity_id'),
+      ),
+      'campaignion_activity_webform_node' => array(
+        'table' => 'node',
+        'columns' => array('nid' => 'nid'),
+      ),
+      'campaignion_activity_webform_submission' => array(
+        'table' => 'webform_submission',
+        'columns' => array('nid' => 'nid', 'sid' => 'sid'),
+      ),
+    ),
+  );
+  $schema['campaignion_activity_payment'] = array(
+    'description' => 'Link an activity to a payment object.',
+    'fields' => array(
+      'activity_id' => array(
+        'description' => 'Foreign key to the activity.',
+      ) + $unsigned_int_not_null,
+      'pid' => array(
+        'description' => 'Foreign key for the payment table.',
+      ) + $unsigned_int_not_null,
+    ),
+    'indexes' => array(
+      'campaignion_activity_payment_activity' => array('activity_id'),
+      'campaignion_activity_payment' => array('pid'),
+    ),
+    'foreign keys' => array(
+      'campaignion_activity_payment_activity' => array(
+        'table' => 'campaignion_activity',
+        'columns' => array('activity_id' => 'activity_id'),
+      ),
+      'campaignion_activity_payment' => array(
+        'table' => 'payment',
+        'columns' => array('pid' => 'pid'),
+      ),
+    ),
+    'primary key' => ['activity_id'],
+  );
+  $schema['campaignion_activity_comment'] = array(
+    'description' => 'Link an activity to a payment object.',
+    'fields' => array(
+      'activity_id' => array(
+        'description' => 'Foreign key to the activity.',
+      ) + $unsigned_int_not_null,
+      'nid' => array(
+        'description' => 'Node ID: The webform node this submission belongs to.',
+      ) + $unsigned_int_not_null,
+      'cid' => array(
+        'description' => 'Comment ID: The comment that was posted.',
+      ) + $unsigned_int_not_null,
+    ),
+    'indexes' => array(
+      'campaignion_activity_comment_activity' => array('activity_id'),
+      'campaignion_activity_comment_node' => array('nid'),
+      'campaignion_activity_comment' => array('cid'),
+    ),
+    'foreign keys' => array(
+      'campaignion_activity_comment_activity' => array(
+        'table' => 'campaignion_activity',
+        'columns' => array('activity_id' => 'activity_id'),
+      ),
+      'campaignion_activity_comment_node' => array(
+        'table' => 'node',
+        'columns' => array('nid' => 'nid'),
+      ),
+      'campaignion_activity_comment' => array(
+        'table' => 'comment',
+        'columns' => array('cid' => 'cid'),
+      ),
+    ),
+    'primary key' => ['activity_id'],
+  );
+
+  $schema['campaignion_activity_newsletter_subscription'] = [
+    'description' => 'Track changes in newsletter subscriptions',
+    'fields' => [
+      'activity_id' => [
+        'description' => 'Foreign key to the activity.',
+      ] + $unsigned_int_not_null,
+      'list_id' => [
+        'description' => 'Foreign key to the newsletter list.',
+      ] + $unsigned_int_not_null,
+      'action' => [
+        'description' => 'Action (subscribe, unsubscribe, …)',
+        'type' => 'varchar',
+        'length' => '16',
+        'not null' => TRUE,
+      ],
+      'from_provider' => [
+        'description' => 'Flag for whether the change was initiated by the provider',
+      ] + $unsigned_int_not_null,
+      'optin_statement' => [
+        'description' => 'Opt-in statement',
+        'type' => 'text',
+        'not null' => FALSE,
+      ],
+      'remote_addr' => array(
+        'description' => 'The IP address of the user that optted in.',
+        'type' => 'varchar',
+        'length' => 128,
+      ),
+    ],
+    'primary key' => ['activity_id'],
+    'indexes' => [
+      'newsletter_list' => ['list_id'],
+      'action' => ['action'],
+    ],
+    'foreign keys' => [
+      'activity' => [
+        'table' => 'campaignion_activity',
+        'columns' => ['activity_id' => 'activity_id'],
+      ],
+      'newsletter_list' => [
+        'table' => 'campaignion_newsletters_lists',
+        'columns' => ['list_id' => 'list_id'],
+      ],
+    ],
+  ];
+
+  return $schema;
+}
+
+/**
+ * Delete all variables that were used.
+ */
+function campaignion_activity_uninstall() {
+  variable_del('campaignion_activity_log_contact_save');
+}
+
+/**
+ * Add opt-in remote_addr logging to newsletter subscription activities.
+ */
+function campaignion_activity_update_7() {
+  db_add_field('campaignion_activity_newsletter_subscription', 'remote_addr', array(
+    'description' => 'The IP address of the user that optted in.',
+    'type' => 'varchar',
+    'length' => 128,
+  ));
+}
+
+/**
+ * Add opt-in statement to newsletter subscription activities.
+ */
+function campaignion_activity_update_6() {
+  db_add_field('campaignion_activity_newsletter_subscription', 'optin_statement', array(
+    'description' => 'Opt-in statement',
+    'type' => 'text',
+    'not null' => FALSE,
+  ));
+}
+
+/**
+ * Add primary keys for all activity tables.
+ */
+function campaignion_activity_update_5() {
+  db_add_primary_key('campaignion_activity_payment', ['activity_id']);
+  db_add_primary_key('campaignion_activity_comment', ['activity_id']);
+}
+
+/**
+ * Create table for newsletter activities.
+ */
+function campaignion_activity_update_4() {
+  $unsigned_int_not_null = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'unsigned' => TRUE,
+  );
+  db_create_table('campaignion_activity_newsletter_subscription', [
+    'description' => 'Track changes in newsletter subscriptions',
+    'fields' => [
+      'activity_id' => [
+        'description' => 'Foreign key to the activity.',
+      ] + $unsigned_int_not_null,
+      'list_id' => [
+        'description' => 'Foreign key to the newsletter list.',
+      ] + $unsigned_int_not_null,
+      'action' => [
+        'description' => 'Action (subscribe, unsubscribe, …)',
+        'type' => 'varchar',
+        'length' => '16',
+        'not null' => TRUE,
+      ],
+      'from_provider' => [
+        'description' => 'Flag for whether the change was initiated by the provider',
+      ] + $unsigned_int_not_null,
+    ],
+    'primary key' => ['activity_id'],
+    'indexes' => [
+      'newsletter_list' => ['list_id'],
+      'action' => ['action'],
+    ],
+    'foreign keys' => [
+      'activity' => [
+        'table' => 'campaignion_activity',
+        'columns' => ['activity_id' => 'activity_id'],
+      ],
+      'newsletter_list' => [
+        'table' => 'campaignion_newsletters_lists',
+        'columns' => ['list_id' => 'list_id'],
+      ],
+    ],
+  ]);
+}
+
+/**
+ * Delete orphaned activities.
+ */
+function campaignion_activity_update_3() {
+  $sql = <<<SQL
+DELETE ca, caw, cap
+FROM {campaignion_activity} ca
+  LEFT OUTER JOIN {campaignion_activity_webform} caw USING(activity_id)
+  LEFT OUTER JOIN {campaignion_activity_payment} cap USING(activity_id)
+  LEFT OUTER JOIN {redhen_contact} c USING(contact_id)
+WHERE c.contact_id IS NULL
+SQL;
+  db_query($sql);
+}
+
+/**
+ * Fixup unconfirmed webform actvities.
+ */
+function campaignion_activity_update_2() {
+  $sql = "SELECT activity_id FROM {campaignion_activity_webform} a INNER JOIN {campaignion_activity} ca USING(activity_id) INNER JOIN {webform_submissions} w USING(nid,sid) WHERE a.confirmed IS NULL AND w.confirmed=1 AND created>=1406851200 LIMIT 1000";
+  while ($ids = db_query($sql)->fetchCol()) {
+    foreach ($ids as $id) {
+      if ($activity = WebformSubmission::load($id)) {
+        $activity->confirmed = time();
+        $activity->save();
+      }
+    }
+  }
+}
+
+/**
+ * Replace redhen_activity and deactivate redhen_engagement.
+ */
+function campaignion_activity_update_1() {
+  if (!module_exists('message')) {
+    return;
+  }
+  /**
+   * Ad-hoc EntityAPIController without cache.
+   */
+  class NoCacheEntityController extends EntityAPIController {
+    protected $cache = FALSE;
+
+  }
+
+  $sql = <<<SQL
+INSERT INTO {campaignion_activity} (contact_id, type, created)
+SELECT message_redhen_contact_target_id AS contact_id, :type AS type, m.timestamp AS created
+FROM {message} m
+  INNER JOIN {field_data_message_redhen_contact} f ON f.entity_id=m.mid
+WHERE type='redhen_contact' AND arguments LIKE :op
+SQL;
+  db_query($sql, array(':type' => 'redhen_contact_create', ':op' => '%"!op";s:7:"created";%'));
+  db_query($sql, array(':type' => 'redhen_contact_edite', ':op' => '%"!op";s:7:"updated";%'));
+
+  // Delete all messages of type redhen_contact in batches of 100.
+  $controller = new NoCacheEntityController('message');
+  $sql = "SELECT mid FROM {message} WHERE type='redhen_contact' LIMIT 100";
+  $mids = db_query($sql)->fetchCol();
+  while (count($mids)) {
+    $controller->delete($mids);
+    $mids = db_query($sql)->fetchCol();
+    drupal_static_reset();
+  }
+
+  module_disable(array(
+    'ae_engagement_scores',
+    'redhen_activity',
+    'redhen_engagement',
+    'message',
+  ));
+  drupal_uninstall_modules(array(
+    'ae_engagement_scores',
+    'redhen_activity',
+    'redhen_engagement',
+    'message',
+  ));
+
+  field_delete_field('message_redhen_contact');
+  field_delete_field('message_redhen_org');
+}

@@ -1,0 +1,13 @@
+name = Campaignion
+description = Base module for all campaignion features.
+core = 7.x
+php = 5.5
+package = Campaignion
+
+dependencies[] = psr0
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

@@ -1,0 +1,39 @@
+.campaignion-overlay .ui-dialog-titlebar {
+  display: none;
+}
+
+.campaignion-overlay .field-collection-view .field-collection-view-links {
+  margin-right: 0em;
+}
+
+.campaignion-overlay .field-collection-view .field-collection-view-links .last a {
+  margin-right: 0.5em;
+}
+
+.campaignion-overlay-introduction {
+  margin-top: 1em;
+}
+
+.campaignion-overlay-content {
+  margin-top: 1em;
+}
+
+.campaignion-overlay-options {
+  margin: 1em;
+  display: none;
+}
+
+/* Remove field collection styling if inside group */
+.group-overlay .field-name-campaignion-overlay-options > div > .fieldset > legend .fieldset-title {
+  display: none;
+}
+
+.group-overlay .field-name-campaignion-overlay-options > div > .fieldset > .fieldset-content {
+  padding-top: 1em;
+  padding-bottom: 1em;
+}
+
+.group-overlay .field-name-campaignion-overlay-options > div > .fieldset {
+  border: 0px;
+  margin-bottom: -2em;
+}

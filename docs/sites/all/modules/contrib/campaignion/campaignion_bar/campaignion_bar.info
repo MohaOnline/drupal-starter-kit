@@ -1,0 +1,15 @@
+name = Campaignion Toolbar
+description = Add a toolbar to the top of the page.
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion_ux
+dependencies[] = campaignion_wizard
+dependencies[] = menu
+dependencies[] = psr0
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

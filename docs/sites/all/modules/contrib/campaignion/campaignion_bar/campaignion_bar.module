@@ -1,0 +1,305 @@
+<?php
+
+use \Drupal\campaignion_bar\MenuFileParser;
+
+/**
+ * Implements hook_menu_links_alter().
+ */
+function campaignion_bar_menu_links_alter(&$links, &$menu, &$parameters) {
+  if ($menu != 'ae-menu' || !($uri = variable_get('campaignion_bar_file'))) {
+    return;
+  }
+
+  if (substr($uri, 0, 1) != '/') {
+    $uri = DRUPAL_ROOT . '/' . $uri;
+  }
+  $parser = new MenuFileParser('ae-menu');
+  $menu_generated = $parser->fileToMenuLinks($uri);
+  foreach ($menu_generated as $mlid => &$item) {
+    $links[$mlid] = &$item;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function campaignion_bar_permission() {
+  return array(
+    'access campaignion bar' => array(
+      'title' => t('Access the campaignion menu bar'),
+      'description' => t('Users with this permission will see the campaignion bar at the top of each page.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_init().
+ */
+function campaignion_bar_init() {
+  global $user;
+
+  if(user_access('access campaignion bar')) {
+    // load js libraries from core
+    drupal_add_library("system", "effects.core");
+    drupal_add_library("system", "effects.slide");
+    drupal_add_library("system", "ui.dialog");
+    drupal_add_library("system", "ui.position");
+    drupal_add_library("system", "jquery.bbq");
+    drupal_add_library("system", "jquery.cookie");
+
+    // load other needed js libs and files
+    $path = drupal_get_path('module', 'campaignion_bar');
+    drupal_add_js($path . '/js/tooltipsy.min.js');
+    drupal_add_js($path . '/js/ae_bar.sliding.js');
+    drupal_add_js($path . '/js/ae_bar.js');
+    drupal_add_css($path . '/theme/ae_bar.css');
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function campaignion_bar_theme($existing, $type, $theme, $path) {
+  $path = drupal_get_path('module', 'campaignion_bar');
+  $items['ae_bar'] = array(
+    'variables' => array('tree' => array(), 'rid' => NULL),
+    'template' => 'ae_bar',
+    'path' => $path . '/theme',
+  );
+  $items['ae_menu'] = array(
+    'variables' => array('sidebar' => FALSE, 'widebar' => FALSE, 'links' => NULL, 'attributes' => array('class' => array('links')), 'heading' => array(), 'wide' => array()),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_page_build()
+ */
+function campaignion_bar_page_build(&$page) {
+  global $user;
+
+  if(user_access('access campaignion bar')) {
+    $build_aebar = TRUE;
+    if(function_exists('context_active_contexts')) {
+      $loaded_contexts = array_keys(context_active_contexts());
+      foreach (array('no_aebar', 'current_webform_embedded', 'colorbox_embedded') as $context) {
+        if (in_array($context, $loaded_contexts)) {
+          $build_aebar = FALSE;
+          break;
+        }
+      }
+    }
+    // Check to see if $user is authenticated
+    if ($build_aebar && in_array('authenticated user', array_values($user->roles))) {
+      $links = '';
+      $links = array();
+      $page['page_top']['ae_bar'] = array(
+        '#type' => 'markup',
+        '#markup' => theme('ae_bar'),
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_menu to display a this-site-is-not-implemented-yet-site
+ */
+function campaignion_bar_menu() {
+  $items['admin/not_implemented'] = array(
+    'page callback' => 'not_implemented_view',
+    'access callback' => TRUE,
+    'title' => 'This feature is not implemented yet. Soon to come!',
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function not_implemented_view() {
+    $page = array(
+    '#type' => 'page',
+  ) + element_info('page');
+  return $page;
+}
+
+function theme_ae_menu($variables) {
+  $toplinks = $variables['links'];
+  $attributes = $variables['attributes'];
+  $heading = $variables['heading'];
+  $is_sidebar = $variables['sidebar'];
+  $is_widebar = $variables['widebar'];
+  $wide = $variables['wide'];
+  global $language_url;
+  $output = '';
+
+  if (count($toplinks) > 0) {
+    if (!$is_sidebar && !$is_widebar) {
+      $output .= '<ul id="ae-menu" class="clearfix">';
+      foreach ($toplinks as $item) {
+        $class = array('');
+        $link = $item['link'];
+
+        if (!$link['hidden']) {
+          $id = drupal_html_class($link['title']);
+
+          $output .= '<li' . drupal_attributes(array('id' => 'ae-menu-for-'.$id, 'class' => $class)) . '>';
+
+          // top level
+          if ($link['plid'] == 0) {
+            $title = isset($link['options']['attributes']['title']) ? $link['options']['attributes']['title'] : '';
+            if ($link['link_title'] == 'Home') {
+              $output .= '<a class="tooltipped" href="/" title="'.$title.'">'.$link['title']."</a>";
+            }
+            else {
+              $output .= '<a class="tooltipped" href="#'.$id.'" title="'.$title.'">'.$link['title']."</a>";
+            }
+          }
+
+          $output .= "</li>\n";
+        }
+      }
+      $output .= '</ul>';
+    } else {
+      foreach ($toplinks as $item) {
+        $link = $item['link'];
+        if ($is_widebar && in_array($link['link_title'], $wide)) {
+          if (!$link['hidden']) {
+            $id = drupal_html_class($link['title']);
+
+            $output .= '<div id="ae-popup-'.$id.'" class="popup wideside clearfix">';
+
+            $output .= '<h2 class="element-invisible">'.$link['title'].'</h2>';
+
+            if (count($item['below']) > 0) {
+              $collinks = $item['below'];
+
+              $displaycols = 0;
+              // but if any col has more than 6 elements we get an threecol layout
+              foreach ($collinks as $col) {
+                $displaycols += 1; // add one for the col
+                if (count($col['below']) > 6) {
+                  $displaycols += 1; // add anotherone if its a loong col
+                }
+              }
+              switch ($displaycols) {
+              case 1:
+              case 2:
+                $cssclass = "twocol";
+                break;
+              case 3:
+                $cssclass = "threecol";
+                break;
+              case 4:
+                $cssclass = "fourcol";
+                break;
+              case 5:
+                $cssclass = "fivecol";
+                break;
+              case 6:
+                $cssclass = "sixcol";
+                break;
+              case 7:
+                $cssclass = "sevencol";
+                break;
+              default:
+                $cssclass = "";
+                break;
+              }
+              $output .= '<ol class="' . $cssclass . '">';
+
+              foreach ($collinks as $col) {
+                $classes = array("col");
+                if (count($col['below']) > 6) {
+                  $classes[] = "span2cols";
+                }
+                $output .= '<li class="'.implode(' ', $classes).'">';
+                $output .= '<h3>'.$col['link']['link_title'].'</h3>';
+                if (count($col['below']) > 0) {
+                  _campaignion_bar_add_sublinks_to_output($output, $col['below']);
+                }
+                $output .= '</li>';
+              }
+
+              $output .= '</ol>';
+            }
+
+            $output .= '</div>';
+          }
+        }
+        elseif ($is_sidebar && !in_array($link['link_title'], $wide)) {
+          if (!$link['hidden']) {
+            $id = drupal_html_class($link['title']);
+
+            $output .= '<div id="ae-popup-'.$id.'" class="popup sidepopup clearfix">';
+
+            $output .= '<h2 class="element-invisible">'.$link['title'].'</h2>';
+
+            if (count($item['below']) > 0) {
+              $class = array();
+              $sublinks = $item['below'];
+              _campaignion_bar_add_sublinks_to_output($output, $sublinks);
+            }
+
+            $output .= '</div>';
+          }
+        }
+      }
+    }
+  }
+
+  return $output;
+}
+
+function _campaignion_bar_add_sublinks_to_output(&$output, $sublinks) {
+  $num_links = count($sublinks);
+  $i = 1;
+
+  $output .= '<ul class="menu">';
+  foreach ($sublinks as $subitem) {
+    $link = $subitem['link'];
+    $class = array();
+    $empty_container = empty($subitem['below']) && $link['link_path'] == variable_get('site_frontpage', 'node');
+
+    if (!$link['hidden'] && !$empty_container) {
+      // Add first, last and active classes to the list of links to help out themers.
+      if ($i == 1) {
+        $class[] = 'first';
+      }
+      if ($i == $num_links) {
+        $class[] = 'last';
+      }
+//      if (isset($link['href']) && ($link['href'] == $_GET['q'] || ($link['href'] == '<front>' && drupal_is_front_page()))
+//        && (empty($link['language']) || $link['language'] == $language_url->language)) {
+//          $class[] = 'active';
+//        }
+      $output .= '<li' . drupal_attributes(array('class' => $class)) . '>';
+
+      if (isset($link['href'])) {
+        // Pass in $options manually.
+        $output .= l($link['title'], $link['href'], array('html' => TRUE));
+      }
+      elseif (!empty($link['title'])) {
+        // Some links are actually not links, but we wrap these in <span> for adding title and class attributes.
+        if (empty($link['html'])) {
+          $link['title'] = check_plain($link['title']);
+        }
+        $span_attributes = '';
+        if (isset($link['attributes'])) {
+          $span_attributes = drupal_attributes($link['attributes']);
+        }
+        $output .= '<span' . $span_attributes . '>' . $link['title'] . '</span>';
+      }
+
+
+      // recurse into any menu items below...
+      if (count($subitem['below']) > 0) {
+        $subsublinks = $subitem['below'];
+        _campaignion_bar_add_sublinks_to_output($output, $subsublinks);
+      }
+
+      $i++;
+      $output .= "</li>\n";
+    }
+  }
+  $output .= '</ul>';
+}

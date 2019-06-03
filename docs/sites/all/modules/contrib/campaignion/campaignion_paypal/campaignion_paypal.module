@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * Implements hook_payment_method_controller_info_alter().
+ */
+function campaignion_paypal_payment_method_controller_info_alter(&$info) {
+  if (isset($info['PayPalPaymentPPSPaymentMethodController'])) {
+    $info['PayPalPaymentPPSPaymentMethodController'] = '\Drupal\campaignion_paypal\PPSPaymentController';
+  }
+  if (isset($info['PayPalPaymentECPaymentMethodController'])) {
+    $info['PayPalPaymentECPaymentMethodController'] = '\Drupal\campaignion_paypal\ECPaymentController';
+  }
+}
+
+/**
+ * callback for the ECPaymentController
+ */
+function campaignion_paypal_payment_method_form(array $element, array &$form_state) {
+  $form = array();
+  $form['info_text'] = array(
+    '#markup' => '<p class="payment-method-info-text">' . t('Please click on the button to proceed with the payment. You will be redirected to PayPal.') . '</p>',
+  );
+  return $form;
+}
+
+/**
+ * Implements hook_paypal_payment_pps_data_alter().
+ */
+function campaignion_paypal_paypal_payment_pps_data_alter($payment, &$data) {
+  $map = [
+    'first_name' => ['first_name'],
+    'last_name' => ['last_name'],
+    'email' => ['email'],
+    'address1' => ['street_address'],
+    'city' => ['city'],
+    'state' => ['state'],
+    'zip' => ['postcode', 'zip_code'],
+    'lc' => ['country'],
+  ];
+
+  if (empty($payment->contextObj)) {
+    return;
+  }
+  $c = $payment->contextObj;
+
+  foreach ($map as $key => $candidates) {
+    if ($v = $c->valueByKeys($candidates)) {
+      $data[$key] = $v;
+    }
+  }
+}

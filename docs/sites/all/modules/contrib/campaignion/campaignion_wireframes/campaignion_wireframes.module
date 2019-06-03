@@ -1,0 +1,139 @@
+<?php
+/**
+ * @file
+ * Code for the AE Wireframes module
+ */
+
+/** 
+ * we define the site where we want our wireframes to appear
+ */
+ function campaignion_wireframes_menu() {
+  $items['wireframe'] = array(
+    'page callback' => 'campaignion_wireframes_view',
+    'access callback' => TRUE,
+  );
+  return $items;
+}
+
+/**
+ *  we make and display our wireframe-blocks and give them unique id's
+ */
+function _campaignion_wireframes_block($content) {
+  static $id = 0;
+  $block = array(
+    '#markup' => $content,
+    '#block' => (object) array(
+      'title' => '',
+      'module' => 'campaignion_wireframes',
+      'delta' => $id++,
+      'region' => 'all',
+      'subject' => '',
+    ),
+    '#theme_wrappers' => array('block'),
+  );
+  return $block;
+}
+
+/**
+ * every region gets a specific block content here
+ */
+ function campaignion_wireframes_view() {
+  $GLOBALS['campaignion_wireframe_mode'] = TRUE;
+  
+  $page = array(
+    '#type' => 'page',
+  ) + element_info('page');
+  
+  $c = &drupal_static('system_main_content_added', FALSE);
+  $c = TRUE;
+  
+  $page['top_bar']['top_bar_block'] = _campaignion_wireframes_block('');
+  
+  $page['header']['header_block'] = _campaignion_wireframes_block('');
+  
+  $page['banner']['banner_block'] = _campaignion_wireframes_block('<div class="wireframe-box"></div>');
+  
+  $page['featured']['featured_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+  $page['featured']['featured_block_twocol'] = _campaignion_wireframes_block(
+    '<ul class="twocol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+
+  $page['featured']['featured_block_threecol'] = _campaignion_wireframes_block(
+    '<ul class="threecol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col"><div class="wireframe-box"></div></li><li class="last col"><div class="wireframe-box"></div></li></ul>'
+  );
+  $page['featured']['featured_block_fourcol'] = _campaignion_wireframes_block(
+    '<ul class="fourcol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col"><div class="wireframe-box"></div></li><li  class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+
+  
+  $page['content_top']['content_top_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+  $page['content_top']['content_top_block_twocol'] = _campaignion_wireframes_block(
+        '<ul class="twocol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+  
+  $page['content']['content_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+  
+  $page['content_bottom']['content_bottom_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+  $page['content_bottom']['content_bottom_block_twocol'] = _campaignion_wireframes_block(
+        '<ul class="twocol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+    
+  $page['sidebar_first']['sidebar_first_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+  
+  $page['sidebar_second']['sidebar_second_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+
+  $page['bottom']['bottom_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+  $page['bottom']['bottom_block_twocol'] = _campaignion_wireframes_block(
+        '<ul class="twocol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+  $page['bottom']['bottom_block_threecol'] = _campaignion_wireframes_block(
+   '<ul class="threecol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col"><div class="wireframe-box"></div></li><li class="last col"><div class="wireframe-box"></div></li></ul>'
+  );
+  $page['bottom']['bottom_block_fourcol'] = _campaignion_wireframes_block(
+    '<ul class="fourcol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col"><div class="wireframe-box"></div></li><li  class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+  
+  $page['footer']['footer_block'] = _campaignion_wireframes_block(
+    '<div class="wireframe-box"></div>'
+  );
+  $page['footer']['footer_block_twocol'] = _campaignion_wireframes_block(
+        '<ul class="twocol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+
+  $page['footer']['footer_block_threecol'] = _campaignion_wireframes_block(
+    '<ul class="threecol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col"><div class="wireframe-box"></div></li><li class="last col"><div class="wireframe-box"></div></li></ul>'
+  );
+  $page['footer']['footer_block_fourcol'] = _campaignion_wireframes_block(
+    '<ul class="fourcol clearfix"><li class="col"><div class="wireframe-box"></div></li><li class="col"><div class="wireframe-box"></div></li><li  class="col"><div class="wireframe-box"></div></li><li class="col last"><div class="wireframe-box"></div></li></ul>'
+  );
+  
+  //$page['content']['main']['#markup'] = 'abcdef';
+  return $page;
+}
+
+/**
+ *  we want our region to display their names in a nice way
+ */
+function campaignion_wireframes_get_region_name($region){
+  $regions = &drupal_static(__FUNCTION__, FALSE);
+  if (!$regions) {
+    $regions = system_region_list($GLOBALS['theme'], REGIONS_VISIBLE);
+  }
+  return $regions[$region];
+}
+
+

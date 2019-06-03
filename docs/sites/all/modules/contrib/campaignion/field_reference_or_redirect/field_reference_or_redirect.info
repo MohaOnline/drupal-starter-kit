@@ -1,0 +1,12 @@
+name = "Field Reference or Redirect"
+description = "Defines a new field that either contains a node reference (nid) or a redirect URL (textfield)"
+core = 7.x
+package = Campaignion
+
+dependencies[] = node_reference
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

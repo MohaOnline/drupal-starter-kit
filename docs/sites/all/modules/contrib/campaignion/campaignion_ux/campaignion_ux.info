@@ -1,0 +1,14 @@
+name = Campaignion UX
+description = Shared UX assets (images, styles)
+core = 7.x
+package = Campaignion
+
+scripts[] = "js/campaignion_ux.js"
+
+stylesheets[all][] = "css/campaignion_ux.css"
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

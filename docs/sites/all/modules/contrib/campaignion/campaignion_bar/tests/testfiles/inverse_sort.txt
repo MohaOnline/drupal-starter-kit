@@ -1,0 +1,2 @@
+A {"url":"admin/config","weight":"4", "description":"Manage your site settings" }
+B {"url":"admin/appearance","weight":"3", "description":"Change the appearance of your site" }

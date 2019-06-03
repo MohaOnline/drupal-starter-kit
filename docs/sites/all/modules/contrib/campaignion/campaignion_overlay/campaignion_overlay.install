@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @file
+ * Database migrations for the campaignion_overlay module.
+ */
+
+/**
+ * Migrate to long text field.
+ */
+function campaignion_overlay_update_1() {
+  // Change the field type and settings.
+  $field_name = 'campaignion_overlay_introduction';
+  $field = db_select('field_config', 'c')
+    ->fields('c')
+    ->condition('field_name', $field_name)
+    ->execute()
+    ->fetchAssoc();
+  $field['data'] = unserialize($field['data']);
+  $field['data']['settings'] = [];
+  db_update('field_config')
+    ->fields([
+      'type' => 'text_long',
+      'data' => serialize($field['data']),
+    ])
+    ->condition('field_name', $field_name)
+    ->execute();
+
+  // Change the value column’s type to text big.
+  foreach (['field_data', 'field_revision'] as $p) {
+    db_change_field("{$p}_{$field_name}", "{$field_name}_value", "{$field_name}_value", [
+      'type' => 'text',
+      'size' => 'big',
+    ]);
+    // Wrap field values in <em> as it has been removed from the template.
+    db_update("{$p}_{$field_name}")
+      ->fields(["{$field_name}_format" => 'full_html_with_editor'])
+      ->expression("{$field_name}_value", "CONCAT('<em>', {$field_name}_value, '</em>')")
+      ->execute();
+  }
+
+  // Update field instances.
+  $instances = field_read_instances([
+    'field_name' => 'campaignion_overlay_introduction',
+    'entity_type' => 'field_collection_item',
+  ]);
+  foreach ($instances as $instance) {
+    $instance['settings']['text_processing'] = 1;
+    $instance['widget']['type'] = 'text_textarea';
+    $instance['widget']['settings'] = ['rows' => 5];
+    field_update_instance($instance);
+  }
+}

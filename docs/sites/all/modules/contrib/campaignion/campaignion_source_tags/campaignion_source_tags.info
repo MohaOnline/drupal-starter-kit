@@ -1,0 +1,24 @@
+name = Campaignion source tags
+description = Auto-tagging based on utm_source parameters.
+core = 7.x
+package = Campaignion
+dependencies[] = campaignion_supporter_tags
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = strongarm
+dependencies[] = taxonomy
+dependencies[] = variable
+dependencies[] = uuid
+dependencies[] = uuid_features
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[field_base][] = campaign_tag
+features[field_base][] = source_tag
+features[uuid_term][] = 0fd2977e-9927-4de7-b4c2-e0bde71fc605
+features[uuid_term][] = 3eb2137a-f1dc-44e2-9216-93f2e8c91093
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

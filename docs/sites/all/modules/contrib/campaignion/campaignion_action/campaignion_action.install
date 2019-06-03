@@ -1,0 +1,298 @@
+<?php
+
+/**
+ * @file
+ * Schema definitions and migration functions.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_action_schema() {
+  $schema['webform_deleted_submissions'] = [
+    'description' => 'Information about when and how a webform submission was deleted.',
+    'fields' => [
+      'sid' => [
+        'description' => 'The unique identifier for the submission.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'nid' => [
+        'description' => 'The node identifier of the webform.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'uid' => [
+        'description' => 'The id of the user that deleted this submission.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'deleted' => [
+        'description' => 'Timestamp when the submission was deleted.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'reason' => [
+        'description' => 'Hint about how this submission was deleted.',
+        'type' => 'varchar',
+        'length' => 255,
+      ],
+    ],
+    'primary key' => ['sid'],
+    'unique keys' => [
+      'sid_nid' => ['sid', 'nid'],
+    ],
+  ];
+  $schema['campaignion_action_redirect'] = [
+    'description' => 'Store redirects for an action.',
+    'fields' => [
+      'id' => [
+        'description' => 'Redirect ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'nid' => [
+        'description' => 'node.nid of the action',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'delta' => [
+        'description' => 'Identifies a redirect set (ie. for before or after the confirmation).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting redirects',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'label' => [
+        'description' => 'Redirect label',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'destination' => [
+        'description' => 'Destination path or URL.',
+        'type' => 'varchar',
+        'length' => 4096,
+        'not null' => TRUE,
+      ],
+    ],
+    'indexes' => [
+      'action' => ['nid'],
+    ],
+    'primary key' => ['id'],
+  ];
+  $schema['campaignion_action_redirect_filter'] = [
+    'description' => 'Filters for action redirects.',
+    'fields' => [
+      'id' => [
+        'description' => 'Filter ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'redirect_id' => [
+        'description' => 'Redirect ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting filters',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'type' => [
+        'description' => 'Filter plugin-type',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ],
+      'config' => [
+        'description' => 'Configuration for the filter',
+        'type' => 'blob',
+        'serialize' => TRUE,
+      ],
+    ],
+    'indexes' => [
+      'message' => ['redirect_id'],
+    ],
+    'primary key' => ['id'],
+  ];
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function campaignion_action_install() {
+  campaignion_action_update_1();
+  DrupalQueue::get('campaignion_action')->createQueue();
+}
+
+/**
+ * Create tables for custom redirects.
+ */
+function campaignion_action_update_3() {
+  $schema['campaignion_action_redirect'] = [
+    'description' => 'Store redirects for an action.',
+    'fields' => [
+      'id' => [
+        'description' => 'Redirect ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'nid' => [
+        'description' => 'node.nid of the action',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'delta' => [
+        'description' => 'Identifies a redirect set (ie. for before or after the confirmation).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting redirects',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'label' => [
+        'description' => 'Redirect label',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ],
+      'destination' => [
+        'description' => 'Destination path or URL.',
+        'type' => 'varchar',
+        'length' => 4096,
+        'not null' => TRUE,
+      ],
+    ],
+    'indexes' => [
+      'action' => ['nid'],
+    ],
+    'primary key' => ['id'],
+  ];
+  $schema['campaignion_action_redirect_filter'] = [
+    'description' => 'Filters for action redirects.',
+    'fields' => [
+      'id' => [
+        'description' => 'Filter ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'redirect_id' => [
+        'description' => 'Redirect ID',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting filters',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'type' => [
+        'description' => 'Filter plugin-type',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ],
+      'config' => [
+        'description' => 'Configuration for the filter',
+        'type' => 'blob',
+        'serialize' => TRUE,
+      ],
+    ],
+    'indexes' => [
+      'message' => ['redirect_id'],
+    ],
+    'primary key' => ['id'],
+  ];
+  foreach ($schema as $table => $s) {
+    db_create_table($table, $s);
+  }
+}
+
+/**
+ * Add a table to log information about deleted submissions.
+ */
+function campaignion_action_update_2() {
+  db_create_table('webform_deleted_submissions', [
+    'description' => 'Information about when and how a webform submission was deleted.',
+    'fields' => [
+      'sid' => [
+        'description' => 'The unique identifier for the submission.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'nid' => [
+        'description' => 'The node identifier of the webform.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'uid' => [
+        'description' => 'The id of the user that deleted this submission.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'deleted' => [
+        'description' => 'Timestamp when the submission was deleted.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+      'reason' => [
+        'description' => 'Hint about how this submission was deleted.',
+        'type' => 'varchar',
+        'length' => 255,
+      ],
+    ],
+    'primary key' => ['sid'],
+    'unique keys' => [
+      'sid_nid' => ['sid', 'nid'],
+    ],
+  ]);
+}
+
+/**
+ * Set module weight=1 so hooks are called after dependee module.
+ */
+function campaignion_action_update_1() {
+  db_query("UPDATE {system} SET weight=1 WHERE name='campaignion_action'");
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function campaignion_action_uninstall() {
+  DrupalQueue::get('campaignion_action')->deleteQueue();
+}

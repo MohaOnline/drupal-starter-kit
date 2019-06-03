@@ -1,0 +1,233 @@
+<?php
+/**
+ * @file
+ */
+
+/**
+ * Implements hook_install().
+ */
+function campaignion_recent_supporters_install() {
+  if (module_exists('variable_realm')) {
+    $lang_realm_vars   = variable_get('variable_realm_list_language', array());
+    $lang_realm_vars[] = 'campaignion_recent_supporters_settings_types';
+    variable_set('variable_realm_list_language', $lang_realm_vars);
+  }
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function campaignion_recent_supporters_modules_enabled($modules) {
+  if (in_array('variable_realm', $modules)) {
+    $lang_realm_vars   = variable_get('variable_realm_list_language', array());
+    $lang_realm_vars[] = 'campaignion_recent_supporters_settings_types';
+    variable_set('variable_realm_list_language', $lang_realm_vars);
+  }
+}
+/**
+ * Implements hook_enable().
+ */
+function campaignion_recent_supporters_enable() {
+  // create field type if not already defined
+  if (!field_read_field('recent_supporters')) {
+    // deal with field cache
+    _field_info_collate_types(TRUE);
+    // create field
+    _campaignion_recent_supporters_define_fields();
+  }
+  // update the old field to the new one
+  // if we do not find any old fields it is most likely a fresh install
+  if (field_read_instances(array('field_name' => 'field_show_recent_supporters', entity_type => 'node'))) {
+    campaignion_recent_supporters_update_1();
+  };
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function campaignion_recent_supporters_update_dependencies() {
+  $d['campaignion_recent_supporters'][4]['campaignion_recent_supporters_webform'] = 7101;
+  return $d;
+}
+
+/**
+ * Migrate to the separate recent_supporters module.
+ */
+function campaignion_recent_supporters_update_4() {
+  module_enable(['recent_supporters', 'recent_supporters_webform', 'polling']);
+  db_drop_table('recent_supporters_webform');
+  db_rename_table('campaignion_recent_supporters_webform', 'recent_supporters_webform');
+  foreach (['name_display_default', 'settings', 'settings_types'] as $v) {
+    db_query("UPDATE {variable} SET name='recent_supporters_$v' WHERE name='campaignion_recent_supporters_$v'");
+  }
+  module_disable(['campaignion_recent_supporters_webform', 'campaignion_recent_supporters']);
+  drupal_uninstall_modules(['campaignion_recent_supporters_webfom', 'campaignion_recent_supporters']);
+}
+
+/**
+ * Migrate from the activity to the webform backend.
+ */
+function campaignion_recent_supporters_update_3() {
+  if (module_exists('campaignion_recent_supporters_webform')) {
+    return;
+  }
+  require_once drupal_get_path('module', 'webform') . '/includes/webform.submissions.inc';
+  // Only migrate if the activity backend is currently used.
+  $settings = variable_get('campaignion_recent_supporters_settings', []);
+  $settings += ['backend' => 'activity', 'query_limit' => 10];
+  if ($settings['backend'] != 'activity') {
+    return;
+  }
+
+  module_enable(['campaignion_recent_supporters_webform']);
+
+  $types = variable_get('webform_node_types', ['webform']);
+  $nids = db_select('node', 'n')
+    ->fields('n', ['nid'])
+    ->condition('type', $types)
+    ->execute();
+
+  while ($nid = $nids->fetchColumn()) {
+    $node = node_load($nid);
+    // Get the most recent published submissions.
+    $sids = db_select('webform_submissions', 's')->extend('PagerDefault')
+      ->fields('s', ['sid'])
+      ->condition('is_draft', 0)
+      ->condition('nid', $nid)
+      ->orderBy('submitted', 'DESC')
+      ->limit($settings['query_limit'] * 2)
+      ->execute();
+
+    while ($sid = $sids->fetchColumn()) {
+      $submission = webform_get_submission($nid, $sid);
+      campaignion_recent_supporters_webform_webform_submission_insert($node, $submission);
+    }
+  }
+}
+
+/**
+ * change variable name to campaignion_recent_supporters_name_display_default
+ */
+function campaignion_recent_supporters_update_2() {
+  // the default was to show the full name, this has now changed to show initials
+  // if the variable would evaluate to not '1' ('1' being the default if the
+  // variable is not set) then the last_name would be stripped to initials.
+  // so: if the old variable was not set or set to '1' the full name display was
+  // configured; the new default is wanted otherwise
+  $old_value = variable_get('recent_supporters_show_full_name');
+  if ($old_value === NULL || $old_value == '1') {
+    variable_set('campaignion_recent_supporters_name_display_default', CAMPAIGNION_RECENT_SUPPORTERS_NAME_DISPLAY_FULL);
+  }
+  variable_del('recent_supporters_show_full_name');
+}
+
+/**
+ * migrate field_show_recent_supporters -> recent_supporters
+ */
+function campaignion_recent_supporters_update_1() {
+  // rename field to new name
+  db_query("UPDATE {field_config_instance} SET field_name='recent_supporters', field_id=(SELECT id from {field_config} WHERE field_name='recent_supporters') WHERE field_name='field_show_recent_supporters'");
+
+  // adapt old table to new schema
+  db_add_field('field_data_field_show_recent_supporters', 'recent_supporters_options', array('type' => 'blob', 'not null' => FALSE, 'serialize' => TRUE));
+  db_query("UPDATE {field_data_field_show_recent_supporters} SET recent_supporters_options=?", array(serialize(array())));
+  db_add_field('field_revision_field_show_recent_supporters', 'recent_supporters_options', array('type' => 'blob', 'not null' => FALSE, 'serialize' => TRUE));
+  db_query("UPDATE {field_revision_field_show_recent_supporters} SET recent_supporters_options=?", array(serialize(array())));
+  // copy old data into new tables
+  db_query("INSERT INTO {field_data_recent_supporters} SELECT entity_type,bundle,deleted,entity_id,revision_id,language,delta,recent_supporters_options,field_show_recent_supporters_value FROM {field_data_field_show_recent_supporters}");
+  db_query("INSERT INTO {field_revision_recent_supporters} SELECT entity_type,bundle,deleted,entity_id,revision_id,language,delta,recent_supporters_options,field_show_recent_supporters_value  FROM {field_revision_field_show_recent_supporters");
+  // delete old tables
+  db_query("DELETE FROM {field_data_field_show_recent_supporters}");
+  db_query("DELETE FROM {field_revision_field_show_recent_supporters}");
+  db_drop_table('field_data_field_show_recent_supporters');
+  db_drop_table('field_revision_field_show_recent_supporters');
+  // delete old field
+  db_query("DELETE FROM {field_config} WHERE field_name='field_show_recent_supporters'");
+
+  /* $oldinstances = field_read_instances(array('field_name' => 'field_show_recent_supporters', entity_type => 'node')); */
+  $newinstances = field_read_instances(array('field_name' => 'recent_supporters', entity_type => 'node'));
+  foreach ($newinstances as $instance) {
+    $instance['widget']['type'] = 'recent_supporters';
+    $instance['widget']['module'] = 'campaignion_recent_supporters';
+    $instance['widget']['settings'] = array();
+    $instance['display']['default']['label'] = 'hidden';
+    $instance['display']['default']['type'] = 'hidden';
+    $instance['display']['cck_blocks']['label'] = 'hidden';
+    $instance['display']['cck_blocks']['type'] = 'hidden';
+    $instance['display']['teaser']['label'] = 'hidden';
+    $instance['display']['teaser']['type'] = 'hidden';
+    field_update_instance($instance);
+  }
+
+}
+
+/**
+ * Define fields for recent supporters toggle, cycle toggle, visible count and country toggle. Use utility function to add instance.
+ */
+function _campaignion_recent_supporters_define_fields() {
+
+  $field = array (
+    'global_block_settings' => '1',
+    'field_name' => 'recent_supporters',
+    'settings' => array (),
+    'type' => 'recent_supporters',
+    'module' => 'campaignion_recent_supporters',
+    'active' => '1',
+    'cardinality' => '1',
+    'deleted' => '0',
+  );
+  field_create_field($field);
+}
+
+/**
+ * Utility function that let's you conveniently add instances
+ * of the recent supporter fields to your content-type.
+ */
+function _campaignion_recent_supporters_create_instances($bundle) {
+  $instance = array (
+    'bundle' => $bundle,
+    'label' => 'Display a recent supporters box.',
+    'widget' => array (
+      'weight' => '7',
+      'type' => 'recent_supporters',
+      'module' => 'campaignion_recent_supporters',
+      'active' => 1,
+      'settings' => array (),
+    ),
+    'display' => array (
+      'default' => array (
+        'label' => 'hidden',
+        'type' => 'hidden',
+      ),
+    ),
+    'required' => 0,
+    'description' => '',
+    'exclude_cv' => 0,
+    'field_name' => 'recent_supporters',
+    'entity_type' => 'node',
+  );
+
+  field_create_instance($instance);
+}
+
+/**
+ * Implements hook_field_schema().
+ */
+function campaignion_recent_supporters_field_schema($field) {
+  if ($field['type'] == 'recent_supporters') {
+    $columns['options'] = array(
+      'type' => 'blob',
+      'not null' => FALSE,
+      'serialize' => TRUE,
+    );
+    $columns['toggle'] = array(
+      'type' => 'int',
+      'not null' => FALSE,
+      'default' => 0,
+    );
+  return array(
+    'columns' => $columns,
+  );
+  }
+}
+

@@ -1,0 +1,81 @@
+<?php
+
+use \Drupal\campaignion_activity\ActivityBase;
+
+function campaignion_activity_types() {
+  $info = module_invoke_all('campaignion_activity_type_info');
+  return $info;
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function campaignion_activity_views_api() {
+  return array(
+    'api'  => 3,
+  );
+}
+
+if (module_exists('webform')) {
+  require_once dirname(__FILE__) . '/modules/webform.php';
+  if (module_exists('webform_paymethod_select')) {
+    require_once dirname(__FILE__) . '/modules/webform_paymethod_select.php';
+  }
+}
+if (module_exists('campaignion_newsletters')) {
+  require_once dirname(__FILE__) . '/modules/campaignion_newsletters.php';
+}
+
+/**
+ * Implements hook_campaignion_activity_type_info().
+ *
+ * … on behalf of redhen_contact().
+ */
+function redhen_contact_campaignion_activity_type_info() {
+  $info['redhen_contact_create'] = '\Drupal\campaignion_activity\ActivityTypeBase';
+  $info['redhen_contact_edit'] = '\Drupal\campaignion_activity\ActivityTypeBase';
+
+  return $info;
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function campaignion_activity_entity_insert($entity, $entity_type) {
+  if ($entity_type == 'redhen_contact') {
+    $activity = new ActivityBase(array(
+      'type' => 'redhen_contact_create',
+      'contact_id' => $entity->contact_id,
+    ));
+    $activity->save();
+  }
+}
+
+/**
+ * Implements hook_entity_update().
+ */
+function campaignion_activity_entity_update($entity, $entity_type) {
+  if ($entity_type == 'redhen_contact') {
+    $activity = new ActivityBase(array(
+      'type' => 'redhen_contact_edit',
+      'contact_id' => $entity->contact_id,
+    ));
+    $activity->save();
+  }
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function campaignion_activity_entity_delete($entity, $entity_type) {
+  if ($entity_type == 'redhen_contact') {
+    $sql = <<<SQL
+DELETE ca, caw, cap
+FROM {campaignion_activity} ca
+  LEFT OUTER JOIN {campaignion_activity_webform} caw USING(activity_id)
+  LEFT OUTER JOIN {campaignion_activity_payment} cap USING(activity_id)
+WHERE ca.contact_id=:contact_id
+SQL;
+    db_query($sql, [':contact_id' => $entity->contact_id]);
+  }
+}

@@ -1,0 +1,9 @@
+<?php
+
+/**
+ * Load menu from install profile.
+ */
+function campaignion_bar_update_1() {
+  $profile = variable_get('install_profile');
+  variable_set('campaignion_bar_file', drupal_get_path('profile', $profile) . '/campaignion_bar.txt');
+}

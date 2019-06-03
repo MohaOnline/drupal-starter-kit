@@ -1,0 +1,381 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for the campaignion_action module.
+ */
+
+use Drupal\campaignion\ContactTypeManager;
+use Drupal\campaignion\NoEmailException;
+use Drupal\campaignion_action\Loader;
+use Drupal\campaignion_action\Redirects\Endpoint;
+use Drupal\campaignion_action\Redirects\Redirect;
+use Drupal\campaignion_action\SignedLink;
+use Drupal\campaignion\CRM\Import\Source\WebformSubmission;
+use Drupal\little_helpers\Webform\Submission;
+
+/**
+ * Implements hook_menu().
+ */
+function campaignion_action_menu() {
+  $info['node/%node/redirects/%'] = array(
+    'title' => 'API for editing a node’s redirects.',
+    'page callback' => 'campaignion_action_edit_redirects',
+    'page arguments' => [1, 3],
+    'access callback' => 'node_access',
+    'access arguments' => ['update', 1],
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'little_helpers_deliver_json',
+  );
+  return $info;
+}
+
+/**
+ * Page callback: Redirect editing API.
+ */
+function campaignion_action_edit_redirects($node, $delta) {
+  if (!in_array($delta, [Redirect::CONFIRMATION_PAGE, REDIRECT::THANK_YOU_PAGE])) {
+    return MENU_NOT_FOUND;
+  }
+  $delta = (int) $delta;
+  $endpoint = new Endpoint($node, $delta);
+  switch ($_SERVER['REQUEST_METHOD']) {
+    case 'GET':
+      return $endpoint->get();
+
+    case 'PUT':
+      $data = drupal_json_decode(file_get_contents('php://input'));
+      return $endpoint->put($data);
+  }
+  return 405;
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function campaignion_action_module_implements_alter(&$impl, $hook) {
+  if ($hook == 'node_delete') {
+    // Add our implementation right before webform's.
+    $new_impl = [];
+    $ours = $impl['campaignion_action'];
+    unset($impl['campaignion_action']);
+    foreach ($impl as $module => $group) {
+      if ($module == 'webform') {
+        $new_impl['campaignion_action'] = $ours;
+      }
+      $new_impl[$module] = $group;
+    }
+    $impl = $new_impl;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function campaignion_action_permission() {
+  $permissions['campaignion view test-mode'] = array(
+    'title' => t('View unpublished actions via a test link.'),
+    'description' => t('Allow users to view unpublished actions with unique key in URL path'),
+  );
+  $permissions['campaignion view test-mode link'] = array(
+    'title' => t('Generate test links.'),
+    'description' => t('Allow users to see the link that can be used to access actions in test-mode.'),
+  );
+  return $permissions;
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function campaignion_action_node_view($node) {
+  // Test publish and view node status.
+  // Only unpublished nodes in full page view are affected.
+  if ($node->status == NODE_NOT_PUBLISHED && node_is_page($node)) {
+    // Test user permission.
+    if (user_access('campaignion view test-mode link')) {
+      // Construct URL link.
+      if (($action = Loader::instance()->actionFromNode($node)) && ($link = $action->testLink(t('test-mode link')))) {
+        $link_html = drupal_render($link);
+        $link_text = t("You can use !link to view this action in test-mode.", ['!link' => $link_html]);
+        drupal_set_message($link_text, 'status', FALSE);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * Return NODE_ACCESS_ALLOW if url hash matches the path.
+ * In other cases return NODE_ACCESS_IGNORE to allow other modules
+ * or the node_access table to control access.
+ */
+function campaignion_action_node_access($node, $op) {
+  if ($op == 'view' && isset($node->nid) && $node->status == NODE_NOT_PUBLISHED) {
+    // Check whether this node's page is being viewed.
+    // We can't use node_is_page() here since that results in a recursion-loop.
+    if (arg(0) == 'node' && arg(1) == $node->nid) {
+      // Check user permission.
+      if (user_access('campaignion view test-mode')) {
+        $link = SignedLink::fromCurrentLocation();
+        if ($link->checkHash() && !empty($link->query['test-mode'])) {
+          // Add global flag for later reference.
+          return NODE_ACCESS_ALLOW;
+        }
+      }
+    }
+  }
+  return NODE_ACCESS_IGNORE;
+}
+
+/**
+ * Implements hook_node_prepare().
+ */
+function campaignion_action_node_prepare($node) {
+  if ($action = Loader::instance()->actionFromNode($node)) {
+    $action->prepare();
+  }
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function campaignion_action_node_presave($node) {
+  if ($action = Loader::instance()->actionFromNode($node)) {
+    $action->presave();
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function campaignion_action_node_update($node) {
+  if ($action = Loader::instance()->actionFromNode($node)) {
+    $action->update();
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function campaignion_action_node_insert($node) {
+  if ($action = Loader::instance()->actionFromNode($node)) {
+    $action->insert();
+  }
+}
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter() for webform_client_form().
+ *
+ * Insert a custom submit handler.
+ */
+function campaignion_action_form_webform_client_form_alter(&$form, &$form_state) {
+  $link = SignedLink::fromCurrentLocation();
+  if ($link->checkHash() && !empty($link->query['test-mode'])) {
+    $form_state['test_mode'] = TRUE;
+  }
+  $submit = [];
+  foreach ($form['#submit'] as $handler) {
+    $submit[] = $handler;
+    if ($handler == 'webform_client_form_submit') {
+      $submit[] = '_campaignion_action_custom_redirect';
+    }
+  }
+  $form['#submit'] = $submit;
+  $form['#submit'][] = '_campaignion_action_webform_share_redirect';
+}
+
+/**
+ * Form submission handler for webform_client_form().
+ *
+ * @see campaignion_action_form_webform_client_form_alter()
+ */
+function _campaignion_action_custom_redirect($form, &$form_state) {
+  if (!$form_state['webform_completed'] || !$form_state['redirect']) {
+    return;
+  }
+
+  if ($action = Loader::instance()->actionFromNode($form['#node'])) {
+    $sid = $form_state['values']['details']['sid'];
+    $submission = Submission::load($form['#node']->nid, $sid);
+    $delta = $submission->webform->needsConfirmation() ? Redirect::CONFIRMATION_PAGE : Redirect::THANK_YOU_PAGE;
+    if ($redirect = $action->redirect($submission, $delta)) {
+      $form_state['redirect'] = $redirect;
+    }
+  }
+}
+
+/**
+ * Form-submit callback for webform_client_form.
+ *
+ * Always set the share and sid query-parameters.
+ */
+function _campaignion_action_webform_share_redirect($form, &$form_state) {
+  if (!$form_state['webform_completed'] || !$form_state['redirect']) {
+    return;
+  }
+
+  $redirect = Redirect::normalizeRedirect($form_state['redirect']);
+  $action_path = 'node/' . $form['#node']->nid;
+  $redirect[1]['query']['share'] = $action_path;
+  $redirect[1]['query']['sid'] = $form_state['values']['details']['sid'];
+  $form_state['redirect'] = $redirect;
+}
+
+/**
+ * Implements hook_webform_confirm_email_confirmation_redirect_alter().
+ */
+function campaignion_action_webform_confirm_email_confirmation_redirect_alter(&$redirect, $node, $submission) {
+  if ($action = Loader::instance()->actionFromNode($node)) {
+    $submission_o = new Submission($node, $submission);
+    if ($r = $action->redirect($submission_o, Redirect::THANK_YOU_PAGE)) {
+      $redirect = ['path' => $r[0]] + $r[1];
+    }
+  }
+  $redirect['query']['share'] = "node/{$node->nid}";
+  $redirect['query']['sid'] = $submission->sid;
+}
+
+/**
+ * Implements hook_webform_paymethod_select_redirect_alter().
+ */
+function campaignion_action_webform_paymethod_select_redirect_alter(&$redirect, $submission) {
+  if ($action = Loader::instance()->actionFromNode($submission->node)) {
+    $delta = $submission->webform->needsConfirmation() ? Redirect::CONFIRMATION_PAGE : Redirect::THANK_YOU_PAGE;
+    if ($r = $action->redirect($submission, $delta)) {
+      $redirect = $r;
+      $redirect[1]['query']['share'] = "node/{$submission->node->nid}";
+      $redirect[1]['query']['sid'] = $submission->sid;
+    }
+  }
+}
+
+/**
+ * Implements hook_webform_submission_insert().
+ */
+function campaignion_action_webform_submission_insert($node, $submission) {
+  $item = array('nid' => $node->nid, 'sid' => $submission->sid);
+  DrupalQueue::get('campaignion_action')->createItem($item);
+}
+
+/**
+ * Implements hook_webform_submission_update().
+ */
+function campaignion_action_webform_submission_update($node, $submission) {
+  campaignion_action_webform_submission_insert($node, $submission);
+}
+
+/**
+ * Implements hook_webform_submission_delete().
+ *
+ * Log that the submission was deleted and by whom.
+ */
+function campaignion_action_webform_submission_delete($node, $submission) {
+  db_merge('webform_deleted_submissions')
+    ->key(['sid' => $submission->sid])
+    ->fields([
+      'sid' => $submission->sid,
+      'nid' => $submission->nid,
+      'uid' => $GLOBALS['user']->uid,
+      'deleted' => REQUEST_TIME,
+      'reason' => 'webform_submission_delete',
+    ])
+    ->execute();
+}
+
+/**
+ * Implements hook_node_delete().
+ *
+ * Log all deleted submission. This hook is made to be called right before
+ * webform_node_delete() using hook_module_implements_alter().
+ */
+function campaignion_action_node_delete($node) {
+  $sql = <<<SQL
+INSERT INTO {webform_deleted_submissions}
+SELECT sid, nid, :uid, :deleted, :func
+FROM {webform_submissions}
+WHERE nid=:nid
+SQL;
+  db_query($sql, [
+    ':uid' => $GLOBALS['user']->uid,
+    ':deleted' => REQUEST_TIME,
+    ':func' => 'node_delete',
+    ':nid' => $node->nid,
+  ]);
+}
+
+/**
+ * Implements hook_cronapi().
+ */
+function campaignion_action_cronapi($op, $job = NULL) {
+  $items['campaignion_action_cron'] = array(
+    'description' => 'Import webform submission into redhen.',
+    'rule' => '*/2+@ * * * *',
+    'weight' => 100,
+    'callback' => 'campaignion_action_cron',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_cron().
+ */
+function campaignion_action_cron() {
+  // Run for 10 seconds.
+  $end = time() + 10;
+  $queue = DrupalQueue::get('campaignion_action');
+  while (time() < $end && ($item = $queue->claimItem())) {
+    $d = &$item->data;
+    $node = node_load($d['nid']);
+    if ($submissionObj = WebformSubmission::load($d['nid'], $d['sid'])) {
+      module_invoke_all('campaignion_action_taken', $node, $submissionObj);
+    }
+    else {
+      watchdog('campaignion_action', 'Submission(!nid,!sid) has vanished before import.', array('!nid' => $d['nid'], '!sid' => $d['sid']), WATCHDOG_INFO);
+    }
+    $queue->deleteItem($item);
+  }
+}
+
+/**
+ * Implements hook_campaignion_action_taken().
+ *
+ * Import supporter data into the CRM if possible.
+ */
+function campaignion_action_campaignion_action_taken($node, Submission $submission) {
+  // Backwards compatiblity: Don’t run import twice if campaignion_supporter
+  // does it already.
+  if (function_exists('campaignion_supporter_campaignion_action_taken')) {
+    return;
+  }
+  // Don’t import drafts or forms without email address.
+  if ($submission->is_draft || !$submission->webform->componentByKey('email')) {
+    return;
+  }
+  $m = ContactTypeManager::instance();
+  if (!$m->crmEnabled()) {
+    return;
+  }
+  $importer = $m->importer('campaignion_action_taken');
+  try {
+    $contact = $importer->findOrCreateContact($submission);
+  }
+  catch (NoEmailException $e) {
+    // Log the missing email address.
+    $ids = $submission->ids();
+    $args = array('@nid' => $ids['nid'], '@sid' => $ids['sid']);
+    $msg = "Can't import supporter without email-address for Submission(@nid, @sid).";
+    watchdog_exception('campaignion_supporter', $e, $msg, $args);
+    return;
+  }
+  $changed = $importer->import($submission, $contact);
+  // Allow other modules to change the contact.
+  foreach (module_implements('campaignion_action_contact_alter') as $module) {
+    $function = $module . '_campaignion_action_contact_alter';
+    $changed = $function($contact, $submission, $node) || $changed;
+  }
+  if ($changed) {
+    $contact->save();
+  }
+  return $contact;
+}

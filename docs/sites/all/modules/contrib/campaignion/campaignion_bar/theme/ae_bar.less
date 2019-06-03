@@ -1,0 +1,495 @@
+@color_font: #e4dede;
+@color_shadow: #413f3f;
+@color_hover_shadow: #6d6a6a;
+@color_link: @color_font;
+@color_heading: #706e6e;
+@color_dark: #595757;
+@color_verydark: #4d4b4b;
+@color_wideside: #878484;
+@color_sidepopup: #888585;
+@color_sidepopup_link: #f7f1f1;
+@color_bg_link: #787575;
+@color_border_link: #716e6e;
+@color_bghover_link: #5e5c5c;
+@color_bghover_link_light: #918e8e;
+@color_border_aebar: black;
+@bg_dark: url("../img/ae_dark_bg.png") repeat @color_dark;
+@bg_verydark: url("../img/ae_verydark_bg.png") repeat @color_verydark;
+@bg_link: url() repeat @color_bg_link;
+
+@link_border_radius: 0.5em;
+
+@fontsizeabsolute: 11px !important;
+@lineheightabsolute: 2.272727em !important;
+@lineheightpopup: 2.363636em;
+@aebar_height: 5.545454em;
+@fontfamily: "Helvetica Neue", Helvetica, Verdana, sans-serif !important;
+
+@font_shadow: 1px 1px 2px @color_shadow;
+@box_shadow: 2px 2px 3px @color_shadow inset;
+@box_hover_shadow: 0px 0px 1px @color_hover_shadow;
+
+/* this is an ae interface stylesheet */
+
+body.aetoolbar {
+  padding: 0;
+  padding-top: 4.692307em;
+  position: relative;
+  
+  .ui-page {
+    padding-top: 4.692307em;
+  }
+}
+
+/* ae bar reset css styles */
+
+#ae-bar, #ae-popups, #ae-widepopups {
+  font-family: @fontfamily;
+  font-size: @fontsizeabsolute;
+  line-height: @lineheightabsolute;
+  ul, ol, li {
+    font-family: @fontfamily;
+    font-size: @fontsizeabsolute;
+    line-height: @lineheightabsolute;
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+  a, a:hover, a:focus, a:active {
+    font-family: @fontfamily;
+    font-size: @fontsizeabsolute;
+    line-height: @lineheightabsolute;
+    outline: medium none;
+  }
+  h2, h3, h4, h5, h6 {
+    font-family: @fontfamily;
+    font-size: @fontsizeabsolute;
+    line-height: @lineheightabsolute;
+  }
+}
+    
+/* general ae-bar styling */
+
+#ae-bar {
+  background: @bg_dark;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: @aebar_height;
+  color: @color_font;
+  border-bottom: 1px solid @color_border_aebar;
+  font-family: @fontfamily;
+  z-index: 420;
+  #ae-logo {
+    float: left;
+    padding: 0.5em 1em 0.2em 1em;
+    
+    line-height: 0px; } }
+
+
+/* ae bar menu styling */
+
+#ae-menu, #ae-sidemenu {
+  list-style: none;
+  background: @bg_dark;
+  li {
+    display: inline;
+    margin-bottom: 0;
+    margin-top: 0;
+    float: left; }
+  a {
+    display: block;
+    padding: 1.818181em 1.2em 1.454545em;
+    color: @color_font;
+    text-decoration: none;
+    text-shadow: @font_shadow; } }
+
+/* ae-menu styling */
+
+#ae-menu {
+  float: left;
+  a {
+    font-weight: bold;
+    border-right: 1px solid @color_shadow; }
+  li.active a, a.active, li.active a:hover, a.active:hover, li.active a:focus, a.active:focus a:active {
+    background: url("../img/ae_zacke.png") no-repeat bottom center transparent;
+    border-right: 0px solid transparent;
+    position: relative;
+    z-index: 430;
+    margin-bottom: 0;
+    margin-top: 0;
+/*    padding-bottom: 1.5em;*/
+    bottom: -3px; }
+  li.active {
+    background: @bg_verydark;
+    border-right: 1px solid @color_shadow;
+
+  }
+  a {
+    &:hover, &:focus {
+      background: @color_bghover_link;
+      box-shadow: 2px #706d6d; } } }
+
+#ae-menu-for-home a {
+    background: url('../img/ae_bar_icons.png') no-repeat center 7px transparent;
+    color: transparent;  
+    text-shadow: 0 0 0 transparent;
+}
+
+#ae-menu-for-home a:hover, #ae-menu-for-home a:focus  {
+  background: url('../img/ae_bar_icons.png') no-repeat center -128px @color_bghover_link;
+  outline:medium none;
+
+}
+/* sidemenu styling */
+
+#ae-sidemenu {
+  float: right;
+  a {
+    &:hover, &:focus {
+      text-decoration: underline; }}
+  li.active a, a.active, li.active a:hover, a.active:hover, li.active a:focus, a.active:focus a:active {}
+  
+  li#ae-menu-hide a {
+    color: transparent;
+    background: url('../img/ae_bar_icons.png') no-repeat center -56px;
+    text-shadow: 0 0 0 transparent;
+    width: 40px;
+    height: 2.2em;
+    overflow: hidden;
+  }
+  li#ae-menu-hide a:hover, li#ae-menu-hide a:focus {
+    background: url('../img/ae_bar_icons.png') no-repeat center -192px @color_bghover_link;
+  }
+}
+
+/* popup styles and side menu styles */
+
+#ae-popups,
+#ae-widepopups {
+  font-family: @fontfamily;
+  position: absolute;
+  top: 5.636363em;
+  left: 0;
+  background: @color_sidepopup;
+  border: 0;
+  border-right: 1px solid @color_border_aebar;
+  z-index: 451;
+  display: none;
+  .popup {
+    line-height: @lineheightpopup;
+    font-size: 11px;
+    -moz-box-shadow: 4px 0px 0px #595757;
+    -webkit-box-shadow:  4px 0px 0px #595757;
+    box-shadow:  4px 0px 0px #595757;
+    position: relative;
+    z-index: 461; }
+  /* menus */
+  ul.menu, .sidepopup ul.menu {
+    margin-top: 1.5em;
+    li {
+      padding: 0;
+      border: none;
+      &.has-submenu a, &.has-submenu a:visited {
+        padding-right: 30px;
+        background: url("../img/ae_pfeil.png") no-repeat right center @color_bg_link;
+        outline: none;
+        &:hover, &:focus {
+          background: url("../img/ae_pfeil.png") no-repeat right center @color_dark;
+          outline: none;
+        } }
+      &.menu-back a, &.menu-back a:visited {
+        padding-left: 41px;
+        background: url("../img/ae_pfeil_back.png") no-repeat .7em center transparent;
+        outline: none;
+        font-weight: normal;
+        border: 0px solid transparent;
+        -moz-box-shadow:  0 0 0 transparent;
+        -webkit-box-shadow:  0 0 0 transparent;
+        box-shadow:  0 0 0 transparent;
+        &:hover, &:focus {
+          background: url("../img/ae_pfeil_back.png") no-repeat .7em center transparent;
+          outline: none;
+          text-decoration: underline;
+          border: 0px solid transparent;
+          -moz-box-shadow: 0 0 0 transparent;
+          -webkit-box-shadow:  0 0 0 transparent;
+          box-shadow:  0 0 0 transparent;          
+        } } }
+    a {
+      padding: 0.5em 1em;
+      display: block;
+      background: @bg_link;
+      -moz-border-radius: @link_border_radius;
+      -webkit-border-radius: @link_border_radius;
+      border-radius: @link_border_radius;
+      margin-bottom: 0.5em;
+      border: 1px solid @color_border_link;
+      &.active {
+        background: @bg_verydark; }
+      &:hover, &:focus {
+        background: @bg_dark;
+        border: 1px solid @color_bg_link;
+        text-shadow: @font_shadow;
+        -moz-box-shadow: @box_hover_shadow;
+        -webkit-box-shadow: @box_hover_shadow;
+        box-shadow: @box_hover_shadow; }
+      &:active {
+        -moz-box-shadow: @box_shadow;
+        -webkit-box-shadow: @box_shadow;
+        box-shadow: @box_shadow; } } }
+  ol {
+    list-style: none;
+    li.col {
+      display: block;
+      float: left;
+      list-style: none;
+      ul li {
+        width: 100%;
+        float: none;
+        margin-right: 0;
+      }
+    }
+    &.twocol,
+    &.threecol,
+    &.fourcol,
+    &.fivecol,
+    &.sixcol,
+    &.sevencol {
+      li.col.span2cols {
+        ul.menu > li {
+          display: block;
+          float: left;
+          margin-right: 1%;
+          width: 48%;
+        }
+      }
+    }
+    &.twocol {
+      li.col {
+        width: 44%;
+        margin-right: 3.5%;
+      }
+    }
+    &.threecol {
+      li.col {
+        width: 29%;
+        margin-right: 3%;
+      }
+      li.col.span2cols {
+        width: 61%;
+        margin-right: 3%;
+      }
+    }
+    &.fourcol {
+      li.col {
+        width: 22.5%;
+        margin-right: 2%;
+      }
+      li.col.span2cols {
+        width: 47%;
+        margin-right: 2%;
+      }
+    }
+    &.fivecol {
+      li.col {
+        width: 18%;
+        margin-right: 1%;
+      }
+      li.col.span2cols {
+        width: 37%;
+        margin-right: 1%;
+      }
+    }
+    &.sixcol {
+      li.col {
+        width: 13%;
+        margin-right: 1%;
+      }
+      li.col.span2cols {
+        width: 27%;
+        margin-right: 1%;
+      }
+    }
+  }
+}
+
+#ae-popups {
+  /* sidepopup styles */
+  .sidepopup {
+    width: 100%;
+    height: auto;
+//    padding: 1.5em 3%;
+    bottom: 0;
+    a {
+      color: @color_sidepopup_link;
+      text-decoration: none;
+      font-weight: bold;
+      text-shadow: @font_shadow; }
+    .menu {
+      position: absolute;
+      width: 100%;
+      top: 0;
+      left: 0;
+      li {
+        width: 94%;
+        margin-left: 3%;
+      }
+      a {
+        padding: .5em 1.5em .5em 1em;
+        display: block; }
+        list-style: none; }}
+  .element-invisible {
+    display: none; }
+  /* main popup stlyes */
+}
+#ae-widepopups {
+  border-bottom: 1px solid @color_border_aebar;
+  /* width: 50em; this is for three col dropdown */
+  min-height: 22em;
+  width: 44em; /* this is better for two col dropdown */
+  -moz-box-shadow: 0px 5px 5px #3D3B3B;
+  -webkit-box-shadow: 0px 5px 5px #3D3B3B;
+  box-shadow: 0px 5px 5px #3D3B3B;
+  .wideside {
+    display: none;
+    padding: 1em 0em 1em 2em;
+    background: @color_wideside;
+    -moz-box-shadow: 0px 0px 0px #595757;
+    -webkit-box-shadow:  0px 0px 0px #595757;
+    box-shadow:  0px 0px 0px #595757;
+    a {
+      color: @color_link;
+      text-decoration: none;
+      font-weight: bold;
+      text-shadow: @font_shadow; }
+    a:hover, a:focus, a:active {
+      outline: none;
+    }
+    h3 {
+      color: @color_font;
+      text-decoration: none;
+      font-weight: bold;
+      text-transform: uppercase;
+      text-shadow: @font_shadow;
+      }
+    ul.menu {
+      margin-top: 1em;
+      li {
+        padding: 0; } } }
+    }
+
+/* ul.menu
+ *   a
+ *     background-color: #999
+ *     border-radius: 5px
+ *     border: none */
+
+/* fix first limiter */
+
+#ae-menu-for-home {
+  border-left: 1px solid @color_shadow; }
+
+/* to show menu after hiding */
+
+#ae-menu-show {
+  font-size: @fontsizeabsolute;
+  color: transparent;
+  text-decoration: none;
+  display: none;
+  position: absolute;
+  border: 0px solid transparent;
+  background: none transparent;
+  right: 0;
+  top: 0;
+  -moz-border-radius: 0 0 0 3px;
+  -webkit-border-radius: 0 0 0 3px;
+  border-radius: 0 0 0 3px;
+  background: @bg_dark;
+  z-index: 100;
+  
+  a, a:hover, a:focus, a:active {
+    display: block;
+    background: url('../img/ae_bar_icons.png') no-repeat center -320px;
+    border-left: 1px solid @color_border_aebar;
+    border-bottom: 1px solid @color_border_aebar;
+    text-shadow: 0 0 0 transparent;
+    width: 40px;
+    font-size: 0px;
+    line-height: 0px;
+    color: transparent;
+    text-decoration: none;
+    height: 40px;
+    -moz-border-radius: 0 0 0 3px;
+    -webkit-border-radius: 0 0 0 3px;
+    border-radius: 0 0 0 3px;
+    overflow: hidden;}
+  
+  a:hover, a:focus {
+    background: url('../img/ae_bar_icons.png') no-repeat center -454px;
+  }
+  
+}
+
+#ae-menu-modal-hotkey-menu {
+  padding-top: 30px;
+  padding-bottom: 30px;
+  display: none;
+  ul {
+    clear: both;
+    margin: auto 0;
+    li {
+      border-bottom: 1px solid gray;
+      border-right: 1px solid gray;
+      float: left;
+      text-align: center;
+      padding: 5px;
+      position: relative;
+      &:last-of-type {
+        border-right: none; }
+      a {
+        vertical-align: bottom;
+        display: inline-block;
+        width: 100px;
+        color: @color_link; } }
+    &.big-icons {
+      li a {
+        font-weight: bold;
+        padding-top: 20px; } }
+    &.last {
+      li {
+        border-bottom: none; } } } }
+
+body.aetoolbar .ae-menu-modal-hotkey-menu-dialog {
+  top: 40px;
+  background: #333333;
+  border-radius: none;
+  .ui-dialog-titlebar {
+    display: none; } }
+
+body.aetoolar .ui-widget-overlay {
+  background-color: #333333;
+  opacity: 0.5; }
+
+.tooltipsy {
+  padding: 1px 8px;
+  border-radius: 5px;
+  border: 1px solid black;
+  color: white;
+  background-color: #2D2C2C;
+  max-width: 200px;
+  font-size: @fontsizeabsolute;
+  font-weight: normal;
+  text-shadow: 1px 1px 1px #000;
+  text-align: center;
+  &:after /* arrow */ {
+    content: "";
+    position: absolute;
+    border: 5px solid transparent;
+    border-bottom-color: black;
+    top: -9px;
+    right: 47%;
+    z-index: -1;
+  }
+}
+

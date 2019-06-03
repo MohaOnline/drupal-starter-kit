@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * Implements hook_campaignion_newsletters_provider_info().
+ */
+function campaignion_newsletters_dotmailer_campaignion_newsletters_provider_info() {
+  $keys = variable_get('dotmailer_api_keys', array());
+  $providers = array();
+  foreach ($keys as $name => $data) {
+    $providers['dotmailer-' . $name] = [
+      'class' => '\\Drupal\\campaignion_newsletters_dotmailer\\Provider',
+      'params' => ['name' => $name] + $data,
+    ];
+  }
+  return $providers;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_campaignion_newsletters_admin_settings_alter().
+ */
+function campaignion_newsletters_dotmailer_form_campaignion_newsletters_admin_settings_alter(&$form, &$form_state) {
+  form_load_include($form_state, 'php', 'campaignion_newsletters_dotmailer', 'admin_pages');
+  _campaignion_newsletters_dotmailer_form_campaignion_newsletters_admin_settings_alter($form, $form_state);
+}
+
+/**
+ * Get API-key by machine name.
+ */
+function campaignion_newsletters_dotmailer_get_key($name) {
+  $keys = variable_get('dotmailer_api_keys', array());
+  if (isset($keys[$name])) {
+    return $keys[$name];
+  }
+}

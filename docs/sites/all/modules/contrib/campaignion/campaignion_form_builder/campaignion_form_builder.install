@@ -1,0 +1,156 @@
+<?php
+
+/**
+ * Migrate old-style checkboxes to campaignion_newsletters.
+ */
+function campaignion_form_builder_update_4() {
+  require_once drupal_get_path('module', 'webform') . '/components/select.inc';
+  if (!module_enable(['campaignion_newsletters'], TRUE)) {
+    new DrupalUpdateException("Unable to enable campaignion_newsletters. Please verify it (and all it's dependencies) can be found by Drupal.");
+  }
+
+    // Map old to new values.
+  $sql = <<<SQL
+UPDATE webform_submitted_data d
+INNER JOIN webform_component c USING(nid, cid)
+SET d.data=CASE WHEN d.data='' THEN 'no-change' ELSE 'opt-in' END
+WHERE c.form_key='email_newsletter' AND c.type<>'newsletter'
+SQL;
+  db_query($sql);
+
+  $sql = <<<SQL
+SELECT nid, cid
+FROM webform_component
+WHERE form_key='email_newsletter' AND type<>'newsletter'
+ORDER BY nid
+SQL;
+  $cid_map = [];
+  foreach (db_query($sql) as $row) {
+    $cid_map[$row->nid][] = $row->cid;
+  }
+
+  foreach ($cid_map as $nid => $cids) {
+    $node = node_load($nid);
+    foreach ($cids as $cid) {
+      $old_component = $node->webform['components'][$cid];
+      $old_options = _webform_select_options($old_component, TRUE, FALSE);
+      if (count($old_options) > 1) {
+        new DrupalUpdateException('Unable to migrate a “email_newsletter” component with multiple options.');
+      }
+      $component = [
+        'type' => 'newsletter',
+        'cid' => $cid,
+        'name' => $old_component['name'],
+        'pid' => $old_component['pid'],
+        'weight' => $old_component['weight'],
+        'required' => $old_component['required'],
+        'value' => $old_component['value'] ? 'opt-in' : '',
+        'form_key' => 'newsletter',
+        'extra' => [
+          'checkbox_label' => reset($old_options),
+          'optin_statement' => reset($old_options),
+          'title_display' => $old_component['extra']['title_display'],
+        ],
+      ];
+      webform_component_defaults($component);
+      $node->webform['components'][$cid] = $component;
+    }
+    node_save($node);
+  }
+}
+
+/**
+ * Migrate to campaignion_opt_in.
+ */
+function campaignion_form_builder_update_3() {
+  require_once drupal_get_path('module', 'webform') . '/components/select.inc';
+  if (!module_enable(['campaignion_opt_in'], TRUE)) {
+    new DrupalUpdateException("Unable to enable campaignion_opt_in. Please verify it (and all it's dependencies) can be found by Drupal.");
+  }
+
+  $sql = <<<SQL
+SELECT nid, cid
+FROM webform_component
+WHERE form_key='direct_mail_newsletter'
+ORDER BY nid
+SQL;
+  $cid_map = [];
+  foreach (db_query($sql) as $row) {
+    $cid_map[$row->nid][] = $row->cid;
+  }
+
+  foreach ($cid_map as $nid => $cids) {
+    $node = node_load($nid);
+    foreach ($cids as $cid) {
+      $old_component = $node->webform['components'][$cid];
+      $old_options = _webform_select_options($old_component, TRUE, FALSE);
+      $component = [
+        'type' => 'opt_in',
+        'cid' => $cid,
+        'name' => $old_component['name'],
+        'pid' => $old_component['pid'],
+        'weight' => $old_component['weight'],
+        'form_key' => 'post_opt_in',
+        'extra' => [
+          'channel' => 'post',
+          'fixed_channel' => TRUE,
+          'checkbox_label' => reset($old_options),
+        ],
+      ];
+      webform_component_defaults($component);
+      $node->webform['components'][$cid] = $component;
+    }
+    node_save($node);
+  }
+}
+
+/**
+ * Migrate to the country_list component provided by webform_country_list.
+ */
+function campaignion_form_builder_update_2() {
+  if (!module_enable(['webform_country_list'], TRUE)) {
+    new DrupalUpdateException("Unable to enable webform_country_list. Please verify it (and all it's dependencies) can be found by Drupal.");
+  }
+  
+  $sql = <<<SQL
+SELECT nid, cid
+FROM webform_component
+WHERE type='select' AND form_key='country'
+ORDER BY nid
+SQL;
+  $cid_map = [];
+  foreach (db_query($sql) as $row) {
+    $cid_map[$row->nid][] = $row->cid;
+  }
+
+  require_once drupal_get_path('module', 'webform') . '/components/select.inc';
+
+  $countries = country_get_list();
+  foreach ($cid_map as $nid => $cids) {
+    $node = node_load($nid);
+    foreach ($cids as $cid) {
+      $component = &$node->webform['components'][$cid];
+      $component['type'] = 'country_list';
+      $old_options = _webform_select_options($component, TRUE, FALSE);
+      $enabled_countries = [];
+      foreach ($old_options as $code => $label) {
+        if (isset($countries[$code])) {
+          $enabled_countries[$code] = $code;
+        }
+        else {
+          new DrupalUpdateException("Found invalid country code '$code' in component($nid,$cid).");
+        }
+      }
+      unset($component['extra']['items']);
+      $component['extra']['available_countries'] = $enabled_countries;
+    }
+    node_save($node);
+  }
+}
+
+/**
+ * form_of_address -> salutation
+ */
+function campaignion_form_builder_update_1() {
+  db_query("UPDATE {webform_component} SET form_key='salutation' WHERE form_key='form_of_address'");
+}

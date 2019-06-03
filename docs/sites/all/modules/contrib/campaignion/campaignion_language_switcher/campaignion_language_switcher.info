@@ -1,0 +1,12 @@
+name = Campaignion Language Switcher
+description = Provides a block with a select box to switch the page language
+core = 7.x
+package = Campaignion
+
+scripts[] = campaignion_language_switcher.js
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

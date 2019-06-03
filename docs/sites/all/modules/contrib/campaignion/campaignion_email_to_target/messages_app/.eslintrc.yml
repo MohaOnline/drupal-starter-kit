@@ -1,0 +1,22 @@
+root: true
+extends: standard
+env:
+  browser: true
+globals:
+  Drupal: false
+parser: 'babel-eslint'
+parserOptions:
+  sourceType: module
+plugins:
+  - html
+rules:
+  allow-parens: 0
+  generator-star-spacing: 0
+  no-multi-spaces:
+    - error
+    - {ignoreEOLComments: true}
+  no-debugger: 0
+  require-jsdoc: error
+  valid-jsdoc:
+    - error
+    - {requireReturn: false}

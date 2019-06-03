@@ -1,0 +1,99 @@
+<?php
+/**
+ * @file
+ * Code for the campaignion_supporter_tags feature.
+ */
+
+include_once 'campaignion_supporter_tags.features.inc';
+
+/**
+ * @file
+ * Hook implementation for the campaignion_supporter_tags module.
+ */
+
+use Drupal\campaignion\Contact;
+use Drupal\campaignion_newsletters\Subscription;
+use Drupal\campaignion_supporter_tags\Tagger;
+
+/**
+ * Implements hook_form_node_form_alter().
+ *
+ * Render our field widget under additional settings.
+ */
+function campaignion_supporter_tags_form_node_form_alter(&$form, &$form_state) {
+  $node = $form['#node'];
+  if (isset($node) && field_read_instance('node', 'supporter_tags', $node->type)) {
+    $form['segmentation'] = array(
+      '#type'  => 'fieldset',
+      '#title' => t('Auto segmentation'),
+      '#group' => 'additional_settings',
+      '#tree'  => FALSE,
+    );
+    $form['segmentation']['supporter_tags'] = $form['supporter_tags'];
+    hide($form['supporter_tags']);
+  }
+}
+
+/**
+ * Implements campaignion_action_contact_alter().
+ *
+ * Add all tags from action to supporter.
+ */
+function campaignion_supporter_tags_campaignion_action_contact_alter($contact, $submission, $action_node) {
+  if (!isset($contact->supporter_tags)) {
+    return FALSE;
+  }
+  if ($submission->is_draft) {
+    return FALSE;
+  }
+  $changed = FALSE;
+
+  if (module_exists('webform_tracking')) {
+    $tagger = Tagger::byNameAndParentUuid('supporter_tags');
+    $changed = $tagger->tag($contact->supporter_tags, $submission->tracking->tags);
+  }
+
+  $contact_tids = array();
+  $wrappedContact = $contact->wrap();
+  foreach ($wrappedContact->supporter_tags->value() as $term) {
+    $contact_tids[$term->tid] = $term->tid;
+  }
+  if (!empty($action_node->supporter_tags)) {
+    foreach ($action_node->supporter_tags[LANGUAGE_NONE] as $tag) {
+      $tid = $tag['tid'];
+      if (!isset($contact_tids[$tid])) {
+        $changed = TRUE;
+        $contact_tids[$tid] = $tid;
+      }
+    }
+  }
+
+  if ($changed) {
+    $wrappedContact->supporter_tags->set($contact_tids);
+  }
+  return $changed;
+}
+
+/**
+ * Implements hook_campaignion_newsletters_mailchimp_data_alter().
+ */
+function campaignion_supporter_tags_campaignion_newsletters_mailchimp_data_alter(array &$data, Subscription $subscription) {
+  $list = $subscription->newsletterList();
+
+  $groups = [];
+  if (($contact = Contact::byEmail($subscription->email)) && !empty($contact->supporter_tags)) {
+    $terms = [];
+    foreach ($contact->wrap()->supporter_tags->value() as $term) {
+      $terms[$term->name] = TRUE;
+    }
+
+    foreach ($list->data->groups as $id => $name) {
+      if (isset($terms[$name])) {
+        $groups[$id] = TRUE;
+      }
+    }
+  }
+  if (!empty($groups)) {
+    $data['interests'] = $groups;
+  }
+}

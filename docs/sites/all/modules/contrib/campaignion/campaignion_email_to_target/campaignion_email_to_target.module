@@ -1,0 +1,384 @@
+<?php
+
+/**
+ * @file
+ * Main module file that implements hooks and some callbacks.
+ *
+ * - Menu entry, page callback and delivery callback for the message API.
+ * - Permission to view the user edited messages.
+ * - Tokens integration.
+ * - Libraries needed for the HAWK authentication.
+ * - Declare the webform component type and its form_builder integration.
+ */
+
+require_once dirname(__FILE__) . '/campaignion_email_to_target.field.inc';
+
+use \Drupal\little_helpers\Webform\Submission;
+use \Drupal\little_helpers\Webform\Webform;
+
+use \Drupal\campaignion_action\Loader;
+use \Drupal\campaignion_email_to_target\Component;
+use \Drupal\campaignion_email_to_target\MessageEndpoint;
+use \Drupal\campaignion_email_to_target\Api\Client;
+use \Drupal\campaignion_email_to_target\SelectionMode\All;
+use \Drupal\campaignion_email_to_target\SelectionMode\One;
+use \Drupal\campaignion_email_to_target\SelectionMode\OneOrMore;
+
+/**
+ * Implements hook_permission().
+ */
+function campaignion_email_to_target_permission() {
+  $p['view email_to_target messages'] = [
+    'title' => t('View Email-to-target messages'),
+    'description' => t('View and export the contents of messages sent to targets.'),
+  ];
+  return $p;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function campaignion_email_to_target_menu() {
+  $menu['node/%node/email-to-target-messages'] = [
+    'page callback' => 'campaignion_email_to_target_edit_messages',
+    'page arguments' => [1],
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'delivery callback' => 'campaignion_email_to_target_deliver_json',
+  ];
+  return $menu;
+}
+
+/**
+ * Implemnts hook_campaignion_email_to_target_selection_modes().
+ */
+function campaignion_email_to_target_campaignion_email_to_target_selection_modes() {
+  $plugins['one_or_more'] = [
+    'class' => OneOrMore::class,
+    'title' => t('At least one — Let users deselect specific targets. (checkboxes)'),
+  ];
+  $plugins['all'] = [
+    'class' => All::class,
+    'title' => t('All — Messages are sent to all targets.'),
+  ];
+  $plugins['one'] = [
+    'class' => One::class,
+    'title' => t('Exactly one — Users can choose exactly one target. (select box)')
+  ];
+  return $plugins;
+}
+
+/**
+ * Delivery callback for the JSON API.
+ */
+function campaignion_email_to_target_deliver_json($result) {
+  switch ($result) {
+    case MENU_NOT_FOUND:
+      drupal_add_http_header('Status', '404 Not found');
+      return;
+
+    case MENU_ACCESS_DENIED:
+      drupal_add_http_header('Status', '403 Forbidden');
+      return;
+
+    case MENU_SITE_OFFLINE:
+      drupal_add_http_header('Status', '503 Service unavailable');
+      return;
+  }
+  echo drupal_json_output($result);
+  drupal_page_footer();
+}
+
+/**
+ * Page callback: Message editing API.
+ */
+function campaignion_email_to_target_edit_messages($node) {
+  $endpoint = new MessageEndpoint($node);
+  switch ($_SERVER['REQUEST_METHOD']) {
+    case 'GET':
+      return $endpoint->get();
+
+    case 'PUT':
+      $data = drupal_json_decode(file_get_contents('php://input'));
+      return $endpoint->put($data);
+  }
+  return MENU_ACCESS_DENIED;
+}
+
+/**
+ * Helper to smuggle additional context into our hook_tokens() function.
+ */
+function campaignion_email_to_target_tokens_dataset_hint($set_ds = NULL, $reset = FALSE) {
+  if ($reset) {
+    drupal_static_reset(__FUNCTION__);
+  }
+  $ds = &drupal_static(__FUNCTION__, NULL);
+  if ($set_ds) {
+    $ds = $set_ds;
+  }
+  // Try to tget a default from the menu system, but only if it has been
+  // initialized. Otherwise we might end up in a recursion loop.
+  if (!$ds && drupal_static('menu_get_item') && ($node = menu_get_object()) && ($node->type == 'email_to_target')) {
+    $action = Loader::instance()->actionFromNode($node);
+    $options = $action->getOptions() + ['dataset_name' => 'mp'];
+    $ds = $options['dataset_name'];
+  }
+  return $ds;
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function campaignion_email_to_target_token_info() {
+  $info = [];
+  if ($ds_name = campaignion_email_to_target_tokens_dataset_hint()) {
+    try {
+      $api = Client::fromConfig();
+      $dataset = $api->getDataset($ds_name);
+      $type = 'email-to-target';
+      $info['types'][$type] = [
+        'name' => t('Email-to-Target dataset: %name', ['%name' => $dataset->title]),
+        'description' => t('Replace values based on the selected target(s).'),
+      ];
+      foreach ($dataset->attributes as $attribute) {
+        $info['tokens'][$type][$attribute->key] = [
+          'name' => $attribute->title,
+          'description' => $attribute->description,
+        ];
+      }
+    }
+    catch (\Exception $e) {
+      watchdog_exception('campaignion_email_to_target', $e);
+      drupal_set_message(t('We are sorry! The service is temporary unavailable. The administrators have been informed. Please try again in a few minutes …'), 'error');
+    }
+  }
+  return $info;
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function campaignion_email_to_target_tokens($type, array $tokens, array $data = array(), array $options = array()) {
+  if ($type != 'email-to-target' || empty($data['email-to-target'])) {
+    return;
+  }
+
+  $my_data['contact'] = $data['email-to-target'];
+  foreach ($my_data['contact'] as $key => $sub_array) {
+    if (is_array($sub_array)) {
+      $my_data[$key] = $sub_array;
+    }
+  }
+
+  $replacements = [];
+  foreach ($tokens as $name => $original) {
+    if (strpos($name, '.') === FALSE) {
+      $name = 'contact.' . $name;
+    }
+    $value = drupal_array_get_nested_value($my_data, explode('.', $name));
+    if (!is_null($value)) {
+      $replacements[$original] = (string) $value;
+    }
+    else {
+      watchdog('campaignion_email_to_target', 'No data for token "%original" in dataset.', ['%original' => $original], WATCHDOG_ERROR);
+    }
+  }
+  return $replacements;
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function campaignion_email_to_target_libraries_info() {
+  $libraries['dflydev-hawk'] = [
+    'name' => 'Hawk — A PHP Implementation',
+    'vendor url' => 'https://github.com/dflydev/dflydev-hawk',
+    'download url' => 'https://github.com/dflydev/dflydev-hawk',
+    'version' => '0.0.0',
+    'xautoload' => function ($adapter) {
+      $adapter->composerJson('composer.json');
+    },
+    'dependencies' => ['RandomLib (>=1.0)'],
+  ];
+  $libraries['RandomLib'] = [
+    'name' => 'RandomLib — A library for generating random numbers and strings of various strengths.',
+    'vendor url' => 'https://github.com/paragonie/RandomLib',
+    'download url' => 'https://github.com/paragonie/RandomLib',
+    'version' => '2.0.0',
+    'xautoload' => function ($adapter) {
+      $adapter->composerJson('composer.json');
+    },
+    'dependencies' => ['SecurityLib (>=1.1)'],
+  ];
+  $libraries['SecurityLib'] = [
+    'name' => 'SecurityLib',
+    'vendor url' => 'https://github.com/ircmaxell/SecurityLib',
+    'download url' => 'https://github.com/ircmaxell/SecurityLib',
+    'version' => '1.1.0',
+    'xautoload' => function ($adapter) {
+      $adapter->composerJson('composer.json');
+    },
+  ];
+  return $libraries;
+}
+
+/**
+ * Implements hook_webform_component_info().
+ */
+function campaignion_email_to_target_webform_component_info() {
+  // Component types may only have 16 chars. So we can't use our namespace.
+  $component_info['e2t_selector'] = [
+    'label' => t('Target selector & Message editor'),
+    'description' => t('Allows users to select the target of an email to target action and allows them to edit the messages.'),
+    'file' => 'webform.php',
+    'features' => [],
+  ];
+  return $component_info;
+}
+
+/**
+ * Implements hook_form_webform_client_form_alter().
+ */
+function campaignion_email_to_target_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
+  $webform = new Webform($form['#node']);
+  $components = $webform->componentsByType('e2t_selector');
+  if (!$components) {
+    return;
+  }
+
+  // Initialize all component objects in the $form_state if needed.
+  $pfx = 'campaignion_email_to_target';
+  if (!isset($form_state[$pfx])) {
+    for ($i = 1; $i <= $form_state['webform']['page_count']; $i++) {
+      $form_state[$pfx]['pages'][$i] = [];
+    }
+    foreach ($components as $cid => $component) {
+      $page_num = $component['page_num'];
+      $form_state[$pfx]['components'][$cid] = Component::fromComponent($component);
+      $form_state[$pfx]['pages'][$page_num][] = $cid;
+    }
+  }
+
+  // Render all components for the current page.
+  $page_num = $form_state['webform']['page_num'];
+  foreach ($form_state[$pfx]['pages'][$page_num] as $cid) {
+    $componentObj = $form_state[$pfx]['components'][$cid];
+    $parents = $componentObj->parents($webform);
+    $element = &drupal_array_get_nested_value($form['submitted'], $parents);
+    $componentObj->render($element, $form, $form_state);
+  }
+
+}
+
+/**
+ * Implements hook_webform_submission_confirmed().
+ *
+ * Send emails for newly confirmed webform submissions.
+ */
+function campaignion_email_to_target_webform_submission_confirmed(Submission $submission) {
+  $components = $submission->webform->componentsByType('e2t_selector');
+  foreach ($components as $cid => $component) {
+    $component_o = Component::fromComponent($component);
+    $component_o->sendEmails($submission->valuesByCid($cid), $submission);
+  }
+}
+
+/**
+ * Element validate handler for campaignion_email_to_target_selector components.
+ */
+function campaignion_email_to_target_selector_validate(array $element, array &$form_state) {
+  $pfx = 'campaignion_email_to_target';
+  $component = $form_state[$pfx]['components'][$element['#cid']];
+  $component->validate($element, $form_state);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function campaignion_email_to_target_theme() {
+  $options = array(
+    'render element' => 'element',
+    'file' => 'theme.php',
+  );
+  $hooks['campaignion_email_to_target_selector_component'] = $options;
+  $hooks['campaignion_email_to_target_selector_placeholder'] = $options;
+  $hooks['campaignion_email_to_target_mail'] = [
+    'variables' => [
+      'message' => NULL,
+      'submission' => NULL,
+    ],
+    'template' => 'campaignion-email-to-target-mail',
+  ];
+  $hooks['campaignion_email_to_target_results_table_entry'] = [
+    'template' => 'campaignion-email-to-target-results-table-entry',
+  ] + $options;
+  return $hooks;
+}
+
+/**
+ * Implements hook_form_builder_palette_groups().
+ */
+function campaignion_email_to_target_form_builder_palette_groups($form_type, $form_id) {
+  if ($form_type != 'webform' || !($node = node_load($form_id)) || $node->type != 'email_to_target') {
+    return;
+  }
+  $palette = array();
+  $palette['email_to_target'] = array(
+    'weight' => -18,
+    'title'  => t('Email To Target'),
+  );
+  return $palette;
+}
+
+/**
+ * Implements hook_form_builder_element_types().
+ */
+function campaignion_email_to_target_form_builder_element_types($form_type, $form_id) {
+  if ($form_type != 'webform' || !($node = node_load($form_id)) || $node->type != 'email_to_target') {
+    return;
+  }
+  module_load_include('components.inc', 'form_builder_webform');
+  $types['e2t_selector'] = [
+    'palette_group' => 'email_to_target',
+    'title' => t('Target & Message'),
+    // Properties that may be edited on this field type.
+    'properties' => [
+      'title',
+      'description',
+      'field_prefix',
+      'field_suffix',
+      'required',
+      'key',
+    ],
+    'unique' => TRUE,
+    'default' => _form_builder_webform_default('e2t_selector'),
+  ];
+  return $types;
+}
+
+/**
+ * Implements hook_form_builder_element_types_alter().
+ */
+function campaignion_email_to_target_form_builder_element_types_alter(&$types, $form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  // We don't want the zip_code and postcode to co-exist. We hope for a more
+  // generalized webform component sometime in the future.
+  unset($types['zip_code']);
+  $types['postcode']['palette_group'] = 'supporter_data';
+
+  if (!($node = node_load($form_id)) || $node->type != 'email_to_target') {
+    return;
+  }
+  $types['postcode']['palette_group'] = 'email_to_target';
+}
+
+/**
+ * Implements hook_mail().
+ */
+function campaignion_email_to_target_mail($key, &$message, $params) {
+  $message['headers'] = array_merge($message['headers'], $params['headers']);
+  $message['subject'] = $params['subject'];
+  $message['body'][] = $params['message'];
+}

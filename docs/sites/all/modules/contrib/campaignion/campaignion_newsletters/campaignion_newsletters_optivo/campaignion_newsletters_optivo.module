@@ -1,0 +1,76 @@
+<?php
+/**
+ * @file
+ * Campaignion newsletter Optivo integration module.
+ */
+
+use \Drupal\campaignion_newsletters_optivo\Optivo;
+use \Drupal\campaignion_newsletters\Subscription;
+
+define('CAMPAIGNION_NEWSLETTERS_OPTIVO_WEBHOOK_URL',
+  'campaignion_newsletters_optivo_webhook');
+
+/**
+ * Implements hook_menu().
+ */
+function campaignion_newsletters_optivo_menu() {
+  $items = array();
+
+  // webhook handler
+  $items[CAMPAIGNION_NEWSLETTERS_OPTIVO_WEBHOOK_URL] = array(
+    'title' => 'Webhook',
+    'page callback' => 'campaignion_newsletters_optivo_webhook',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_campaignion_newsletters_provider_info().
+ */
+function campaignion_newsletters_optivo_campaignion_newsletters_provider_info() {
+  $keys = variable_get('optivo_credentials', array());
+  $providers = array();
+  foreach ($keys as $name => $params) {
+    $params['name'] = $name;
+    $providers['Optivo-' . $name] = array(
+      'class' => '\\Drupal\\campaignion_newsletters_optivo\\Optivo',
+      'params' => $params,
+    );
+  }
+  return $providers;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_campaignion_newsletters_admin_settings_alter().
+ */
+function campaignion_newsletters_optivo_form_campaignion_newsletters_admin_settings_alter(&$form, &$form_state) {
+  form_load_include($form_state, 'php', 'campaignion_newsletters_optivo', 'includes/admin_pages');
+  _campaignion_newsletters_optivo_form_campaignion_newsletters_admin_settings_alter($form, $form_state);
+}
+
+/**
+ * Get API-key by machine name.
+ */
+function campaignion_newsletters_optivo_get_key($name) {
+  $keys = variable_get('optivo_credentials', array());
+  if (isset($keys[$name])) {
+    return $keys[$name];
+  }
+}
+
+/**
+ * Page callback for Optivos webhooks
+ */
+function campaignion_newsletters_optivo_webhook() {
+  if (!empty($_POST['data']) && $_POST['data']['action'] === 'unsub') {
+    $list_id = db_query('SELECT list_id FROM {campaignion_newsletters_lists} ' .
+              'WHERE identifier=:identifier', array(
+                ':identifier' => check_plain($_POST['data']['list_id']),
+              ))->fetchField();
+    Subscription::byData($list_id, $_POST['data']['email'])->delete();
+  }
+}

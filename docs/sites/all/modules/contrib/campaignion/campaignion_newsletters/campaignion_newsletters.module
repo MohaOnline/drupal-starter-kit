@@ -1,0 +1,262 @@
+<?php
+
+/**
+ * @file
+ * Campaignion newsletter module.
+ */
+
+use Drupal\campaignion_newsletters\Component;
+use Drupal\campaignion_newsletters\CronRunner;
+use Drupal\campaignion_newsletters\FormBuilderElementNewsletter;
+use Drupal\campaignion_newsletters\NewsletterList;
+use Drupal\campaignion_newsletters\ProviderFactory;
+use Drupal\campaignion_newsletters\QueueItem;
+use Drupal\campaignion_newsletters\Subscription;
+use Drupal\campaignion_newsletters\Subscriptions;
+use Drupal\campaignion\CRM\Import\Source\WebformSubmission;
+use Drupal\little_helpers\Webform\Submission;
+
+/**
+ * Implements hook_cron().
+ */
+function campaignion_newsletters_cron() {
+  _campaignion_newsletters_poll();
+}
+
+/**
+ * Polling function.
+ */
+function _campaignion_newsletters_poll() {
+  $factory = ProviderFactory::getInstance();
+  foreach ($factory->providers() as $source) {
+    $provider = $factory->providerByKey($source);
+    foreach ($provider->getLists() as $list) {
+      $list->save();
+    }
+  }
+  variable_set('campaignion_newsletters_last_list_poll', REQUEST_TIME);
+}
+
+/**
+ * Implements hook_permission().
+ */
+function campaignion_newsletters_permission() {
+  return [
+    'administer newsletters' => [
+      'title' => t('Administer Newsletters'),
+    ],
+  ];
+}
+
+/**
+ * Implements hook_menu().
+ */
+function campaignion_newsletters_menu() {
+  $items['admin/config/services/campaignion_newsletters'] = [
+    'title' => 'Newsletter settings',
+    'description' => 'Configure newsletter API behavior',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['campaignion_newsletters_admin_settings'],
+    'access arguments' => ['administer newsletters'],
+    'file' => 'includes/pages.php',
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  return $items;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Implements hook_form_redhen_contact_contact_form_alter().
+ */
+function campaignion_newsletters_form_redhen_contact_contact_form_alter(&$form, &$form_state) {
+  form_load_include($form_state, 'php', 'campaignion_newsletters', 'includes/pages');
+  _campaignion_newsletters_form_redhen_contact_contact_form_alter($form, $form_state);
+}
+
+/**
+ * Implements hook_webform_submission_confirmed().
+ */
+function campaignion_newsletters_webform_submission_confirmed(Submission $submission) {
+  $s = new WebformSubmission($submission->node, $submission);
+  // Use value of the component with key 'email' as email address.
+  if (!($email = $s->value('email'))) {
+    return;
+  }
+  foreach ($s->webform->componentsByType('opt_in') as $component) {
+    if ($component['extra']['channel'] == 'email') {
+      Component::fromComponent($component)->submit($email, $s);
+    }
+  }
+}
+
+/**
+ * Implements hook_webform_component_defaults_alter().
+ */
+function campaignion_webform_component_defaults_alter(&$component, $type) {
+  if ($type != 'opt_in') {
+    return;
+  }
+  $component['extra'] += [
+    'lists' => [],
+    'opt_in_implied' => 1,
+    'send_welcome' => 0,
+    'optout_all_lists' => TRUE,
+  ];
+}
+
+/**
+ * Implements hook_form_webform_component_edit_form_alter().
+ */
+function campaignion_newsletters_form_webform_component_edit_form_alter(&$element, &$form_state) {
+  $component = $form_state['build_info']['args'][1];
+  if ($component['type'] != 'opt_in') {
+    return;
+  }
+  if (!empty($component['extra']['fixed_channel']) && $component['extra']['channel'] != 'email') {
+    return;
+  }
+
+  $newsletters = db_select('campaignion_newsletters_lists', 'l')
+    ->fields('l', ['list_id', 'title'])
+    ->execute()
+    ->fetchAllKeyed();
+
+  $element['list_management'] = [
+    '#type' => 'fieldset',
+    '#title' => t('List management'),
+  ];
+
+  natcasesort($newsletters);
+  $element['list_management']['lists'] = [
+    '#type' => module_exists('select2') && count($newsletters) > 5 ? 'select' : 'checkboxes',
+    '#title' => t('Newsletter'),
+    '#default_value' => $component['extra']['lists'],
+    '#description' => t('Which lists should the user be subscribed to?'),
+    '#options' => $newsletters,
+    // Only relevant if type is 'select':
+    '#empty_option' => t('Select newsletters'),
+    '#multiple' => 1,
+    '#select2' => [],
+    '#parents' => ['extra', 'lists'],
+  ];
+
+  $element['list_management']['opt_in_implied'] = [
+    '#type' => 'radios',
+    '#title' => t('Double opt-in'),
+    '#default_value' => $component['extra']['opt_in_implied'],
+    '#options' => [
+      0 => t("Newsletter provider: This form doesn't provide double-opt-in functionality the newsletter provider should take care of it."),
+      1 => t('Included in this form: This form includes a double-opt-in process no further action is needed'),
+    ],
+    '#parents' => ['extra', 'opt_in_implied'],
+  ];
+
+  $element['list_management']['welcome'] = [
+    '#type' => 'container',
+    '#attributes' => ['class' => ['form-item']],
+  ];
+  $element['list_management']['welcome']['label'] = [
+    '#theme' => 'form_element_label',
+    '#title' => t('Welcome email'),
+    '#title_display' => 'before',
+  ];
+  $element['list_management']['welcome']['enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Send a welcome email (for new subscribers).'),
+    '#default_value' => !empty($component['extra']['send_welcome']),
+    '#parents' => ['extra', 'send_welcome'],
+  ];
+
+  $element['behavior']['optout_all_lists'] = [
+    '#type' => 'checkbox',
+    '#title' => t('If the email address is unsubscribed it will be unsubscribed from all email lists.'),
+    '#default_value' => !empty($component['extra']['optout_all_lists']),
+    '#states' => [
+      'visible' => [
+        "#{$element['behavior']['no_is_optout']['#id']}" => ['checked' => TRUE],
+        "#{$element['extra']['display']['#id']}" => ['value' => 'radios'],
+      ],
+    ],
+    '#parents' => ['extra', 'optout_all_lists'],
+  ];
+
+  if (empty($component['extra']['fixed_channel'])) {
+    $channel_id = drupal_html_id('opt-in-channel');
+    $element['extra']['channel']['#id'] = $channel_id;
+    $element['list_management']['#states']['visible']["#$channel_id"]['value'] = 'email';
+    $element['behavior']['optout_all_lists']['#states']['visible']["#$channel_id"]['value'] = 'email';
+  }
+}
+
+/**
+ * Implements hook_entity_insert().
+ *
+ * Save all subscriptions for the redhen_contact.
+ */
+function campaignion_newsletters_entity_insert($entity, $entity_type) {
+  campaignion_newsletters_entity_update($entity, $entity_type);
+}
+
+/**
+ * Implements hook_entity_update().
+ *
+ * Save all subscriptions for the redhen_contact.
+ */
+function campaignion_newsletters_entity_update($entity, $entity_type) {
+  if ($entity_type != 'redhen_contact') {
+    return;
+  }
+  if (empty($entity->newsletters)) {
+    $entity->newsletters = Subscriptions::byContact($entity);
+  }
+  $entity->newsletters->save();
+}
+
+/**
+ * Implements hook_entity_delete().
+ *
+ * Unsubscribe from all newsletters.
+ */
+function campaignion_newsletters_entity_delete($entity, $entity_type) {
+  if ($entity_type != 'redhen_contact') {
+    return;
+  }
+  if (empty($entity->newsletters)) {
+    $entity->newsletters = Subscriptions::byContact($entity);
+  }
+  $entity->newsletters->unsubscribeAll();
+  $entity->newsletters->save();
+}
+
+/**
+ * Implements hook_cronapi().
+ */
+function campaignion_newsletters_cronapi($op, $job = NULL) {
+  $items['campaignion_newsletters_send_queue'] = [
+    'description' => 'Send queue data to newsletter providers',
+    'rule' => '*/2+@ * * * *',
+    'weight' => 100,
+    'callback' => [CronRunner::class, 'cronSendQueue'],
+  ];
+  $items['campaignion_newsletters_poll_subscriptions'] = [
+    'descriptions' => 'Let providers poll their subscriptions in order to cach changes from the provider side.',
+    'rule' => '*/2+@ * * * *',
+    'callback' => [CronRunner::class, 'cronPoll'],
+  ];
+  $daily['scheduler']['simple']['rules'] = ['0+@ 0 * * *'];
+  $items['campaignion_newsletters_remove_stale_lists'] = [
+    'descriptions' => 'Remove lists that haven’t been seen in a while.',
+    'callback' => [NewsletterList::class, 'deleteStaleLists'],
+  ] + $daily;
+  return $items;
+}
+
+/**
+ * Implements hook_campaignion_newsletters_list_deleted().
+ */
+function campaignion_newsletters_campaignion_newsletters_list_deleted(NewsletterList $list) {
+  Component::pruneList($list->list_id);
+  Subscription::bulkDelete($list->list_id);
+  QueueItem::bulkDelete($list->list_id);
+}

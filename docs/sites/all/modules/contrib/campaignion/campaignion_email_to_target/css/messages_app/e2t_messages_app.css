@@ -1,0 +1,136 @@
+.e2tmw *,
+.e2tmw *:before,
+.e2tmw *:after {
+  box-sizing: border-box;
+}
+
+.e2tmw ul,
+.e2tmw li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.e2tmw .e2t-col {
+  margin-top: 1rem;
+}.e2tmw ul.specs {
+  margin: 1rem 0;
+}
+
+.e2tmw li.spec {
+  margin: 0.75rem 0;
+}
+
+.e2tmw .spec-card {
+  display: inline-block;
+  padding: 1rem;
+  border: 1px solid #aaa;
+  background-color: #fff;
+}
+
+.e2tmw .spec-handle {
+  display: inline-block;
+  vertical-align: middle;
+  width: 0.5rem;
+  height: 1.3rem;
+  margin-right: 0.5rem;
+  border-left: 0.2rem solid #aaa;
+  border-right: 0.2rem solid #aaa;
+  cursor: move;
+  /* fallback if grab cursor is unsupported */
+  cursor: grab;
+  cursor: -webkit-grab;
+}
+
+.e2tmw .spec-info {
+  display: inline-block;
+  vertical-align: middle;
+  width: calc(100% - 10rem);
+  padding-right: 2rem;
+}
+
+.e2tmw .spec-label {
+  font-weight: bold;
+}
+
+.e2tmw .spec-actions {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.e2tmw .spec-errors {
+  display: inline-block;
+  width: calc(40% - 4rem);
+  margin-left: 1rem;
+  padding-left: 0;
+  list-style: none;
+  color: red;
+}
+
+.e2tmw .sortable-ghost .spec-card {
+  background-color: #eee;
+}
+
+.e2tmw .sortable-ghost *:not(.spec-card) {
+  visibility: hidden;
+}
+
+.e2tmw .sortable-drag .spec-errors {
+  visibility: hidden;
+}
+
+body.dragging,
+body.dragging * {
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+}.e2tmw fieldset.message-editor label {
+  display: block;
+}.e2tmw th {
+  text-align: left;
+}.e2tmw .typeahead.field-has-error input {
+  border-color: red;
+}
+
+.e2tmw section {
+  margin-bottom: 1rem;
+}
+
+.e2tmw section.spec-message-fields {
+  margin-bottom: 0;
+}.typeahead {
+  display: inline-block;
+}
+
+.typeahead .dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 100%;
+  max-height: 12rem;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  z-index: 2000;
+}
+
+.typeahead .dropdown-menu > li {
+  width: 100%;
+}
+
+.typeahead .dropdown-menu > li.active {
+  color: #fff;
+  background-color: #aaa;
+}
+
+.typeahead .dropdown-menu > li > a {
+  display: inline-block;
+  width: 100%;
+  cursor: pointer;
+}
+
+.typeahead.open .dropdown-menu {
+  display: block;
+}
+/*# sourceMappingURL=../../campaignion_email_to_target/messages_app/e2t_messages_app.vue.js.map*/

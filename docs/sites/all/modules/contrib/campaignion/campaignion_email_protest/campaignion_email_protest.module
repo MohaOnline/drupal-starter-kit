@@ -1,0 +1,144 @@
+<?php
+/**
+ * @file
+ * Code for the campaignion_email_protest feature.
+ */
+
+use Drupal\campaignion_wizard\EmailProtestEmailStep;
+use Drupal\campaignion_action\Loader;
+use Drupal\little_helpers\Webform\Webform;
+
+/**
+ * Helper function to check whether a node is a email protest node.
+ */
+function _campaignion_email_protest_node_is_instance($node) {
+  return $node && ($type = Loader::instance()->type($node->type)) && $type->isEmailProtest();
+}
+
+/**
+ * Implements hook_form_(form_id)_alter().
+ *
+ * We're setting a form submit handler that is called before webform_client_form.
+ */
+function campaignion_email_protest_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
+  if (_campaignion_email_protest_node_is_instance($form['#node'])) {
+    // Add our own submit-handler right before webform_client_form_submit.
+    $submit = array();
+    foreach ($form['#submit'] as $handler) {
+      if ($handler == 'webform_client_form_submit') {
+        $submit[] = 'campaignion_email_protest_pre_webform_client_form_submit';
+      }
+      $submit[] = $handler;
+    }
+    $form['#submit'] = $submit;
+  }
+}
+
+/**
+ * Helper function that changes webform email data that we can't set anywhere else
+ *
+ * 1) webform doesn't support loading the target email address from a redhen contact
+ * 2) webform doesn't support putting together the email from name from 2 form fields
+ *    (first_name, last_name)
+ * 3) webform doesn't support loading the body from a form field
+ */
+function campaignion_email_protest_pre_webform_client_form_submit(&$form, &$form_state) {
+  if (   ($form_state['webform']['page_count'] != $form_state['webform']['page_num'])
+      || empty($form_state['submitted'])
+      || !empty($form_state['save_draft'])) {
+    return;
+  }
+
+  $node = $form['#node'];
+  $submission = Webform::fromNode($node)->formStateToSubmission($form_state);
+  Loader::instance()->actionFromNode($node)->sendEmail($submission);
+
+
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function campaignion_email_protest_theme_registry_alter(&$theme_registry) {
+  $theme_registry['webform_mail_headers']['theme path'] = drupal_get_path('module', 'campaignion_email_protest');
+  $theme_registry['webform_mail_headers']['function']   = 'campaignion_email_protest_webform_mail_headers';
+}
+
+function campaignion_email_protest_webform_mail_headers($variables) {
+  $headers = array(
+    'X-Mailer' => 'Drupal Webform (PHP/' . phpversion() . ')',
+  );
+  if (!empty($variables['email']['headers']['X-Mail-Domain'])) {
+    $headers['X-Mail-Domain'] = $variables['email']['headers']['X-Mail-Domain'];
+  }
+  if (!empty($variables['email']['headers']['X-Action-UUID'])) {
+    $headers['X-Action-UUID'] = $variables['email']['headers']['X-Action-UUID'];
+  }
+  return $headers;
+}
+
+/**
+ * Implements hook_form_builder_palette_groups().
+ */
+function campaignion_email_protest_form_builder_palette_groups($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  $palette = array();
+  if (_campaignion_email_protest_node_is_instance(node_load($form_id))) {
+    $palette['email_protest'] = array(
+      'weight' => -18,
+      'title'  => t('Email Protest Data'),
+    );
+  }
+  return $palette;
+}
+
+/**
+ * Implements hook_form_builder_element_types().
+ */
+function campaignion_email_protest_form_builder_element_types($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  module_load_include('inc', 'form_builder_webform', 'form_builder_webform.components');
+  if (_campaignion_email_protest_node_is_instance(node_load($form_id))) {
+    $fields['email_subject'] = array(
+      'title' => t('Email subject'),
+      'weight' => -70,
+      'palette_group' => 'email_protest',
+      'unique'        => TRUE,
+      'properties'    => array('default_value'),
+      'default'       => array(
+        '#title' => t('Email subject'),
+        '#default_value' => '',
+      ) + _form_builder_webform_default('textfield'),
+    );
+
+    $fields['email_body'] = array(
+      'title'  => t('Email body'),
+      'weight' => -60,
+      'palette_group' => 'email_protest',
+      'unique'        => TRUE,
+      'properties'    => array('default_value'),
+      'default'       => array(
+        '#title' => t('Email body'),
+        '#default_value' => '',
+      ) + _form_builder_webform_default('textarea'),
+    );
+    return $fields;
+  }
+}
+
+/**
+ * Implements hook_form_builder_element_types_alter().
+ */
+function campaignion_email_protest_form_builder_element_types_alter(&$types, $form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  if (_campaignion_email_protest_node_is_instance(node_load($form_id))) {
+    $types['protest_target']['palette_group'] = 'email_protest';
+    $types['protest_target']['addable'] = TRUE;
+  }
+}

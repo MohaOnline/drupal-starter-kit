@@ -1,0 +1,112 @@
+<?php
+
+use \Drupal\campaignion_action\Loader;
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_wizard_schema() {
+  $schema['campaignion_wizard_status'] = array(
+    'description' => 'Store the wizard status of an action.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Foreign key to node.nid',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'step' => array(
+        'description' => 'machine name of the latest completed step.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function campaignion_wizard_update_dependencies() {
+  $deps['campaignion_wizard'][3]['webform_confirm_email'] = 7205;
+  return $deps;
+}
+
+/**
+ * Enable campaignion_vue if needed.
+ */
+function campaignion_wizard_update_6() {
+  if (!module_enable(['campaignion_vue'], TRUE)) {
+    throw new DrupalUpdateException('Unable to enable campaignion_vue.');
+  }
+}
+
+/**
+ * Update the request_lifetime of all confirmation emails.
+ */
+function campaignion_wizard_update_3() {
+  db_update('webform')
+    ->fields(['confirm_email_request_lifetime' => 60 * 60 * 24 * 30 * 3])
+    ->condition('confirm_email_request_lifetime', NULL, 'IS')
+    ->execute();
+}
+
+/**
+ * Create campaignion_wizard_status table.
+ */
+function campaignion_wizard_update_2() {
+  db_create_table('campaignion_wizard_status', array(
+    'description' => 'Store the wizard status of an action.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'Foreign key to node.nid',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'step' => array(
+        'description' => 'machine name of the latest completed step.',
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('nid'),
+  ));
+
+  $sql = <<<SQL
+INSERT INTO {campaignion_wizard_status}
+SELECT nid, IF(status=1, 'confirm', 'content') AS step
+FROM {node}
+WHERE type IN(:types)
+SQL;
+  db_query($sql, array(':types' => array_keys(Loader::instance()->actionNodeTypes())));
+}
+
+/**
+ * Migrate wizard.module -> oowizard.module.
+ */
+function campaignion_wizard_update_1() {
+  module_disable(array('wizard'), FALSE);
+  drupal_uninstall_modules(array('wizard'), FALSE);
+  module_enable(array('oowizard'));
+}
+
+function campaignion_wizard_uninstall() {
+  variable_del(array(
+    'campaignion_wizard_text_format_plain',
+    'campaignion_wizard_text_format_html',
+  ));
+}
+
+/**
+ * Implement hook_node_delete().
+ *
+ * Delete wizard status of the node.
+ */
+function campaignion_node_delete($node) {
+  db_delete('campaignion_wizard_status')
+    ->condition('nid', $node->nid)
+    ->execute();
+}

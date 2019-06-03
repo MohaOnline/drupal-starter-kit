@@ -1,0 +1,83 @@
+<?php
+
+function campaignion_action_template_selector_form($form, &$unused_form_state, $node) {
+  $form['#node'] = $node;
+  $sql = <<<SQL
+SELECT n.nid, n.title, n.language
+FROM {node} n
+  INNER JOIN {field_data_action_template} t ON t.entity_type='node' AND t.entity_id=n.nid
+WHERE n.type=:type AND t.action_template_value = 1
+ORDER BY n.tnid, n.nid
+SQL;
+  $result = db_query($sql, array(':type' => $node->type));
+
+  $templates[] = '- ' . t('none') . ' -';
+
+  foreach ($result as $row) {
+    $templates[$row->nid] = $row->title . ' [' . $row->language . ']';
+  }
+
+  $form['webform_template'] = array(
+    '#type'        => 'fieldset',
+    '#collapsible' => FALSE,
+    '#collapsed'   => FALSE,
+    '#title'       => t('Form Templates'),
+  );
+
+  $form['webform_template']['source'] = array(
+    '#type'          => 'select',
+    '#title'         => t('Available action-templates'),
+    '#options'       => $templates,
+    '#default_value' => 'none',
+    '#description'   => t('Pick an action template to use pre-defined forms and emails.'),
+  );
+
+  if (empty($nid) == FALSE) {
+    $form['webform_template']['source']['#description'] .= '<br /><strong>' . t('Applying an action-template will overwrite the form and email settings for this action!') . '</strong>';
+  }
+
+  // add a submit function before the usual submit
+  $form['#submit'] = array('campaignion_action_template_selector_form_submit');
+  // define the submit button
+  $form['webform_template']['submit-template'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Apply template'),
+  );
+  return $form;
+}
+
+function campaignion_action_template_selector_form_submit($form, &$form_state) {
+  if (!empty($form_state['values']['source'])) {
+    // the webform_template parameter has to be stored into the super global _SESSION array
+    // as the _webform_template_attach function will need it
+    $template_nid = $form_state['values']['source'];
+    $_SESSION['webform_template'] = $template_nid;
+    $form['#node']->webform_template = (int) $template_nid;
+    node_save($form['#node']);
+
+    // form_builder doesn't realize that the form has changed and would reload the old
+    // form from its own cache; hence we clean the cache for this form (and session)
+    module_load_include('inc', 'form_builder', 'form_builder.cache');
+    form_builder_cache_delete('webform', $form['#node']->nid);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_node_form_alter().
+ *
+ * Render our field widget under additional settings.
+ */
+function campaignion_action_template_form_node_form_alter(&$form, &$form_state) {
+  if (!isset($form['action_template'])) {
+    return;
+  }
+  $form['campaignion_action_template'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Action-Template settings'),
+    '#group' => 'additional_settings',
+    '#tree' => FALSE,
+  );
+  $form['campaignion_action_template']['action_template'] = $form['action_template'];
+  hide($form['action_template']);
+}

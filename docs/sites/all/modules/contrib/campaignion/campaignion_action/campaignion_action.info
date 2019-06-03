@@ -1,0 +1,14 @@
+name = Campaignion actions
+description = This is the base for all campaignion actions
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion
+dependencies[] = psr0
+dependencies[] = webform_template
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

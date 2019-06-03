@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * @file
+ * Schema definitions for the campaignion_opt_in module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_opt_in_schema() {
+  $schema['campaignion_opt_in'] = [
+    'description' => 'Opt-in trail for a contact.',
+    'fields' => [
+      'id' => [
+        'description' => 'The primary identifier for the opt-in event.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'activity_id' => [
+        'description' => 'Activity ID (FK: campaignion_activity.activity_id)',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'channel' => [
+        'description' => 'Communication channel this opt-in/opt-out is meant for (ie. phone, post, email)',
+        'type' => 'varchar',
+        'length' => 128,
+      ],
+      'operation' => [
+        'description' => 'Whether this is an opt-in (1) or an opt-out (0).',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+      ],
+      'value' => [
+        'description' => 'Value of the opt-in field.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+      ],
+      'statement' => [
+        'description' => 'Legally binding opt-in statement. This should reflect the language the user actually opted in.',
+        'type' => 'text',
+      ],
+      'ip_address' => [
+        'description' => 'The IP address used to make the opt-in.',
+        'type' => 'varchar',
+        'length' => 15,
+      ],
+    ],
+    'primary key' => ['id'],
+    'indexes' => [
+      'activity' => ['activity_id'],
+      'channel' => ['channel'],
+      'operation' => ['operation'],
+    ],
+  ];
+  return $schema;
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function campaignion_opt_in_update_dependencies() {
+  $dependencies['campaignion_opt_in'][2]['campaignion_newsletters'] = 20;
+}
+
+/**
+ * Explicitly set NOT_SELECTED as default value.
+ */
+function campaignion_opt_in_update_2() {
+  db_update('webform_component')
+    ->fields(['value' => 'not-selected'])
+    ->condition('type', 'opt_in')
+    ->condition('value', '0')
+    ->execute();
+}
+
+/**
+ * Migrate inverted checkboxes to their own display option.
+ */
+function campaignion_opt_in_update_1() {
+  $controller = entity_get_controller('node');
+  $result = db_query("SELECT nid, cid FROM {webform_component} WHERE type='opt_in'");
+  foreach ($result as $row) {
+    $node = node_load($row->nid);
+    $component = &$node->webform['components'][$row->cid];
+
+    if ($component['extra']['display'] == 'checkbox' && $component['extra']['invert_checkbox']) {
+      $component['extra']['display'] = 'checkbox-inverted';
+      $component['extra']['no_is_optout'] = FALSE;
+      webform_component_update($component);
+    }
+    $controller->resetCache();
+  }
+}

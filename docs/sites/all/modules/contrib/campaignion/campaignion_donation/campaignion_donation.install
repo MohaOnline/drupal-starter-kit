@@ -1,0 +1,33 @@
+<?php
+
+/**
+ * @file
+ *
+ * Database updates for the campaignion donation module.
+ */
+
+/**
+ * Introduce a variable.
+ */
+function campaignion_donation_update_2() {
+  if (!module_enable(['variable'], TRUE)) {
+    throw new DrupalUpdateException('Could not enable the variable module.');
+  }
+}
+
+/**
+ * Enable the campaignion_donation_type.
+ */
+function campaignion_donation_update_1() {
+  db_delete('system')
+    ->condition('name', 'campaignion_donation_templates')
+    ->execute();
+  // We don’t want to revert this feature just because we moved the components.
+  // @see features_modules_enabled()
+  $conf_backup = $GLOBALS['conf'];
+  $GLOBALS['conf']['features_rebuild_on_module_install'] = FALSE;
+  if (!module_enable(['campaignion_donation_type'], TRUE)) {
+    throw new DrupalUpdateException('Could not enable the campaignion_donation_type module.');
+  }
+  $GLOBALS['conf'] = $conf_backup;
+}

@@ -1,0 +1,209 @@
+<?php
+/**
+ * @file
+ * Code for the Campaignion webform widget feature.
+ */
+
+include_once 'campaignion_webform_widget.features.inc';
+
+use \Drupal\campaignion_action\Loader;
+
+/**
+ * helper function: returns TRUE if context $cname is active
+ */
+function campaignion_webform_widget_context_is_active($cname) {
+  if (!function_exists('context_active_contexts'))
+    return FALSE;
+  return in_array($cname, array_keys(context_active_contexts()));
+}
+
+/**
+ * Implements hook_form_webform_client_form_alter().
+ */
+function campaignion_webform_widget_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
+  // TODO make this optional:
+  if (campaignion_webform_widget_context_is_active('embedded') || campaignion_webform_widget_context_is_active('current_webform_embedded')) {
+    $form['#attributes']['target'] = '_blank';
+    // Override the X-Frame-Options header for this request.
+    drupal_add_http_header('X-Frame-Options', 'allowall');
+    // if user wants, open the redirected page in same iframe with qurey paramter embed=1
+    /* $form['#submit'][] = '_campaignion_webform_widget_redirect'; */
+  }
+}
+
+/**
+ * callback to set the embed query parameter also on the thank you page (the page
+ * to which an user gets redirected after submit.
+ */
+function _campaignion_webform_widget_redirect($form, &$form_state) {
+  if(is_array($form_state['redirect'])) {
+    $form_state['redirect'][1]['query']['embed'] = '1';
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function campaignion_webform_widget_menu() {
+  $items['node/%node/widget'] = array(
+    'title' => t('Widget'),
+    'page callback' => '_campaignion_webform_widget_page',
+    'page arguments' => array(1),
+    'access callback' => '_campaignion_webform_widget_access',
+    'access arguments' => array(1),
+    'weight' => 100,
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function campaignion_webform_widget_admin_paths() {
+  $paths = array();
+  $paths['node/*/widget'] = TRUE;
+  return $paths;
+}
+
+/**
+ * page callback
+ */
+function _campaignion_webform_widget_page($node) {
+  $path = url('node/' . $node->nid, array('absolute' => TRUE));
+  $path_embed = url('node/' . $node->nid, array('absolute' => TRUE, 'query' => array('embed' => '1', 'source' => 'widget')));
+  $path_fallback = url('node/' . $node->nid, array('absolute' => TRUE, 'query' => array('source' => 'widget')));
+  $embed_js = drupal_get_path('module', 'campaignion_webform_widget') . '/js/embed.js';
+  global $base_url;
+  global $theme;
+  $embed_css = drupal_get_path('module', 'campaignion_webform_widget') . '/css/button.css';
+  $container_id = 'embed';
+  $code = <<<CODE
+<link rel="stylesheet" href="{$base_url}/{$embed_css}" type="text/css">
+<script type="text/javascript" src="{$base_url}/{$embed_js}"></script>
+<script type="text/javascript">
+var referer = window.location.href;
+window.onload = function() {
+  var options = {
+    src : '{$path_embed}&external_referer=' +  referer,
+    domain : '{$base_url}',
+    element : '{$container_id}'
+  };
+  if (IframeResize.load(options)) {
+    var link = document.getElementById(options.element + '-fallback-link');
+    if (link) {
+      link.style.display = 'none';
+    }
+  }
+}
+</script>
+CODE;
+
+  $fallback_link_title = !empty($node->webform['submit_text']) ? $node->webform['submit_text'] : $node->title;
+  $fallback_link_title = htmlspecialchars($fallback_link_title);
+  $placeholder = <<<PLACEHOLDER
+<div class="form-widget" id="{$container_id}">
+<a id="{$container_id}-fallback-link" href="{$path_fallback}" target="_blank" class="button">{$fallback_link_title}</a>
+</div>
+PLACEHOLDER;
+
+  $code_ga_linker = <<<CODE_LINKER
+<link rel="stylesheet" href="{$base_url}/{$embed_css}" type="text/css">
+<script type="text/javascript" src="{$base_url}/{$embed_js}"></script>
+<script type="text/javascript">
+var referer = window.location.href;
+window.onload = function() {
+  var options = {
+    src : '{$path_embed}&external_referer=' +  referer,
+    domain : '{$base_url}',
+    element : '{$container_id}'
+  };
+
+  var iframeLoaded = false;
+  var loadIframe = function (options) {
+    if (!iframeLoaded) {
+      iframeLoaded = true;
+      if (IframeResize.load(options)) {
+        var link = document.getElementById(options.element + '-fallback-link');
+        if (link) {
+          link.style.display = 'none';
+        }
+      }
+    }
+  }
+  if(typeof ga === 'function') {
+    setTimeout(function() {
+      loadIframe(options);
+    }, 3000);
+    ga(function(tracker) {
+      var linkerParam = tracker.get('linkerParam');
+      options.src = '{$path_embed}&' + linkerParam + '&external_referer=' +  referer;
+      loadIframe(options);
+    });
+  } else {
+    loadIframe(options);
+  }
+}
+</script>
+CODE_LINKER;
+
+  $output = array();
+  $output['description'] = array(
+    '#markup' => '<div><p>' . t('Use this code to embed the webform in your Website. You will need an element with the id "embed" (see code below) to which an iframe with the petition in it will be appended.') . '</p></div>',
+  );
+  $output['embeddable_code'] = array(
+    '#markup' => '<div class="ae-webform-widget"><textarea rows="20" cols="60">' . htmlspecialchars($code) . '</textarea></div>',
+  );
+  $output['container_code'] = array(
+    '#markup' => '<div><p>' . t('Use this code to provide the needed container for the embeddable webform and a fallback link in case the iframe is not loaded.') . '</p></div><div class="ae-webform-widget"><textarea rows="5" cols="60">' . htmlspecialchars($placeholder) . '</textarea></div>',
+  );
+  // load only when GA is enabled
+  if (module_exists('googleanalytics')) {
+    $wrapper = array(
+      '#type'  => 'fieldset',
+      '#title' => t('Cross domain analytics embeddable code'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#tree' => FALSE,
+      '#parents' => array(),
+    );
+    $wrapper['ga_embeddable_code'] = array(
+      '#markup' => '<div><p>' . t('Use this code instead of the code above instead of the code above to provide the needed container for the embeddable webform with cross domain Google Analytics linking. A fallback link is provided in case the iframe is not loaded.<br>NB: The Google Analytics module has to be set up correctly in order to work for Cross domain tracking. Please check with our support if you are not sure.') . '</p></div><div class="ae-webform-widget"><textarea rows="25" cols="60">' . htmlspecialchars($code_ga_linker) . '</textarea></div>',
+    );
+    $dummy_state = array();
+    $output['cross_domain_code_wrapper'] = form_process_fieldset($wrapper, $dummy_state);
+  }
+  return $output;
+}
+
+/**
+ * access callback
+ */
+function _campaignion_webform_widget_access($node) {
+  return user_access('access widget tab') && Loader::instance()->isActionType($node->type);
+}
+
+/**
+ * Implements hook_permission().
+ */
+function campaignion_webform_widget_permission() {
+  return array(
+    'access widget tab' => array(
+      'title' => t('Access widget tab'),
+    ),
+  );
+}
+
+function campaignion_webform_widget_preprocess_page(&$vars) {
+  // generic context: embedded
+  if (campaignion_webform_widget_context_is_active('embedded')) {
+    $vars['theme_hook_suggestions'][] = 'page__embedded';
+    drupal_add_js(drupal_get_path('module', 'campaignion_webform_widget') . '/js/widget.js');
+  }
+  // more specific context: current_webform_embedded
+  if (campaignion_webform_widget_context_is_active('current_webform_embedded')) {
+    $vars['theme_hook_suggestions'][] = 'page__current_webform_embedded';
+    drupal_add_js(drupal_get_path('module', 'campaignion_webform_widget') . '/js/widget.js');
+  }
+}
+

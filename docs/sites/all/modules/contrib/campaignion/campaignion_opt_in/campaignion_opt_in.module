@@ -1,0 +1,156 @@
+<?php
+
+use Drupal\campaignion_activity\WebformSubmission as SubmissionActivity;
+use Drupal\campaignion_opt_in\FormBuilderElementOptIn;
+use Drupal\campaignion_opt_in\OptInRecordFactory;
+use Drupal\campaignion_opt_in\Values;
+use Drupal\little_helpers\Webform\Submission;
+
+/**
+ * Implements hook_webform_component_info().
+ */
+function campaignion_opt_in_webform_component_info() {
+  $info['opt_in'] = [
+    'label' => t('Opt-in'),
+    'description' => t('Offers a user to opt-in to future communication.'),
+    'features' => [
+      'conditional' => TRUE,
+    ],
+    'file' => 'campaignion_opt_in.component.inc',
+    'conditional_type' => 'opt_in',
+  ];
+  return $info;
+}
+
+/**
+ * Implements hook_webform_conditional_operator_info().
+ */
+function campaignion_opt_in_webform_conditional_operator_info() {
+  $operators['opt_in']['equal'] = [
+    'label' => t('is'),
+    'comparison callback' => '_webform_conditional_comparison_opt_in_equal',
+    'js comparison callback' => 'conditionalOperatorOptInEqual',
+    'form callback' => 'campaignion_opt_in_webform_conditional_form',
+  ];
+  $operators['opt_in']['not_equal'] = [
+    'label' => t('is not'),
+    'comparison callback' => '_webform_conditional_comparison_opt_in_not_equal',
+    'js comparison callback' => 'conditionalOperatorOptInNotEqual',
+    'form callback' => 'campaignion_opt_in_webform_conditional_form',
+  ];
+  return $operators;
+}
+
+/**
+ * Form callback for opt_in conditionals.
+ */
+function campaignion_opt_in_webform_conditional_form($node) {
+  $forms = [];
+  foreach ($node->webform['components'] as $cid => $component) {
+    if (webform_component_property($component['type'], 'conditional_type') == 'opt_in') {
+      $element = [
+        '#type' => 'select',
+        '#options' => Values::optionsByComponent($component),
+      ];
+      $forms[$cid] = drupal_render($element);
+    }
+  }
+  return $forms;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for webform_client_form().
+ *
+ * Load the JavaScript needed for same-page conditionals.
+ */
+function campaignion_opt_in_form_webform_client_form_alter(&$form, &$form_state) {
+  // Webfrom (4.16) provides no concise way to test whether a component with the
+  // 'opt_in' conditional type is the source for a same-page conditional on
+  // the current webform page. For simplicity we simply do the same as webform
+  // does: Load the JavaScript for every webform.
+  $path = drupal_get_path('module', 'campaignion_opt_in');
+  $form['#attached']['js'][] = "$path/campaignion_opt_in.conditionals.js";
+}
+
+/**
+ * Implements hook_form_builder_element_types().
+ *
+ * Defines a new form_builder field:
+ * - 'title'
+ * - in which ['palette_group'] it appears.
+ * - it's ['default'] representation (is used when dragging it into the preview
+ *   area) including:
+ *   - ['#webform_component'] the component array for webform (most important
+ *     it's ['#webform_component']['type'].
+ *   - ['#type'] the form-API type is used as the default form_builder
+ *     element_type.
+ *   - ['#form_builder'] the form_builder type (again).
+ * - whether or not the field is ['unique'].
+ *
+ * Fields are defined per form_type (so far only 'webform' is relevant for us).
+ *
+ * @see hook_form_builder_palette_groups()
+ * @see hook_webform_component_info()
+ * @see hook_element_info()
+ * @see hook_form_builder_element_types()
+ */
+function campaignion_opt_in_form_builder_element_types($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+  module_load_include('components.inc', 'form_builder_webform');
+  require_once dirname(__FILE__) . '/campaignion_opt_in.component.inc';
+  $map = _form_builder_webform_property_map('opt_in');
+  // Default value is handled by the form builder elment class.
+  unset($map['properties']['default_value']);
+  $fields['opt_in'] = [
+    'title' => t('Opt-in'),
+    'class' => FormBuilderElementOptIn::class,
+    'properties' => array_keys($map['properties']),
+    'default' => [
+      '#form_builder' => ['element_type' => 'opt_in'],
+    ] + _form_builder_webform_default('opt_in'),
+  ];
+  return $fields;
+}
+
+/**
+ * Implements hook_webform_submission_campaignion_action_taken().
+ */
+function campaignion_opt_in_campaignion_action_taken($node, Submission $submission) {
+  $activity = SubmissionActivity::byNidSid($node->nid, $submission->sid);
+  if (!$activity) {
+    watchdog('campaignion_opt_in', 'Can’t record opt-in without activity for submission [nid: %nid, sid: %sid].', ['%nid' => $node->nid, '%sid' => $submission->sid], WATCHDOG_ERROR);
+    return;
+  }
+  $factory = new OptInRecordFactory($activity);
+
+  $components = $submission->webform->componentsByType('opt_in');
+  foreach ($components as $cid => $component) {
+    $values = $submission->valuesByCid($cid);
+    $factory->recordOptIn($component, $values);
+  }
+}
+
+/**
+ * Implements hook_campaignion_opt_in_channel_info().
+ */
+function campaignion_opt_in_campaignion_opt_in_channel_info() {
+  $channels['email']['title'] = t('Email');
+  $channels['phone']['title'] = t('Phone');
+  $channels['post']['title'] = t('Post');
+  return $channels;
+}
+
+/**
+ * Get all configured opt-in channels.
+ *
+ * @return array
+ *   Channels keyed by their machine name. Each channel has these keys:
+ *   - title: The human-readable and translated title for the channel.
+ */
+function campaignion_opt_in_channel_info() {
+  $channels = module_invoke_all('campaignion_opt_in_channel_info');
+  drupal_alter('campaignion_opt_in_channel_info', $channels);
+  return $channels;
+}

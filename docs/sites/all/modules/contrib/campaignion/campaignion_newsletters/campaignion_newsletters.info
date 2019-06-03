@@ -1,0 +1,16 @@
+name = Campaignion Newsletters
+description = Allow to manage newsletters from external sources (CleverReach, etc.) and their subscriptions
+core = 7.x
+package = Campaignion
+
+dependencies[] = little_helpers
+dependencies[] = psr0
+dependencies[] = ultimate_cron
+dependencies[] = webform
+dependencies[] = webform_confirm_email
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

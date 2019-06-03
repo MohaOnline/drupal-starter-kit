@@ -1,0 +1,28 @@
+<?php
+
+/**
+ * Implements hook_variable_info()
+ */
+function campaignion_logo_links_variable_info() {
+  $vars['site_logo_link_url'] = [
+    'title' => t('Link URL for site logo'),
+    'description' => t('A custom (external) URL that your site logo should link to.'),
+    'type' => 'url',
+    'default' => '/',
+    'group' => 'site_information',
+    'localize' => TRUE
+  ];
+  return $vars;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter()
+ */
+function campaignion_logo_links_form_system_site_information_settings_alter(&$form, &$form_state) {
+  module_load_include('form.inc', 'variable');
+  $form['site_information']['site_logo_link_url'] = variable_form_element('site_logo_link_url');
+}
+
+function campaignion_logo_links_preprocess_page(&$vars) {
+  $vars['front_page'] = variable_get('site_logo_link_url');
+}

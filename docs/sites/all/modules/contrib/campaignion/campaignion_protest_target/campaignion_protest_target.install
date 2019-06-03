@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * Enable campaignion_protest_target_contact_type.
+ */
+function campaignion_protest_target_update_1() {
+  // We don’t want to revert this feature just because we moved the components.
+  // @see features_modules_enabled()
+  $conf_backup = $GLOBALS['conf'];
+  $GLOBALS['conf']['features_rebuild_on_module_install'] = FALSE;
+  if (!module_enable(['campaignion_protest_target_contact_type'], TRUE)) {
+    throw new DrupalUpdateException('Unable to enable campaignion_protest_target_contact_type.');
+  }
+  $GLOBALS['conf'] = $conf_backup;
+}

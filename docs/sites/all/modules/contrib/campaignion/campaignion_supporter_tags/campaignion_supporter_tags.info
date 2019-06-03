@@ -1,0 +1,19 @@
+name = Campaignion supporter tags
+description = Adds field for handling supporter tags with actions pages.
+core = 7.x
+package = Campaignion
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = i18n_taxonomy
+dependencies[] = little_helpers
+dependencies[] = strongarm
+dependencies[] = taxonomy
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[field_base][] = supporter_tags
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

@@ -1,0 +1,309 @@
+{
+  "datasets": [
+    {
+      "attributes": [
+        {"description": "", "key": "contact.title", "title": "Title"},
+        {"description": "", "key": "contact.first_name", "title": "First name"},
+        {"description": "", "key": "contact.last_name", "title": "Last name"},
+        {"description": "", "key": "contact.email", "title": "Email address"},
+        {"description": "Full name and titles", "key": "contact.salutation", "title": "Salutation"},
+        {"description": "", "key": "contact.political_affiliation", "title": "Political Affiliation"},
+        {"description": "", "key": "constituency.name", "title": "Constituency name"},
+        {"description": "Country code (E, N, S or W)", "key": "constituency.country.code", "title": "Country code"},
+        {"description": "Country name (ie. England)", "key": "constituency.country.name", "title": "Country name"}
+      ],
+      "description": "",
+      "is_custom": false,
+      "key": "mp",
+      "title": "MPs"
+    },
+    {
+      "attributes": [
+        {"description": "", "key": "contact.title", "title": "Title"},
+        {"description": "", "key": "contact.first_name", "title": "First name"},
+        {"description": "", "key": "contact.last_name", "title": "Last name"},
+        {"description": "", "key": "contact.email", "title": "Email address"},
+        {"description": "Full name and titles", "key": "contact.salutation", "title": "Salutation"},
+        {"description": "", "key": "contact.political_affiliation", "title": "Political Affiliation"},
+        {"description": "", "key": "constituency.name", "title": "Constituency name"},
+        {"description": "Country code (E, N, S or W)", "key": "constituency.country.code", "title": "Country code"},
+        {"description": "Country name (ie. England)", "key": "constituency.country.name", "title": "Country name"}
+      ],
+      "description": "",
+      "is_custom": false,
+      "key": "mep",
+      "title": "MEPs"
+    },
+    {
+      "attributes": [
+        {"description": "", "key": "contact.email", "title": "Email address"},
+        {"description": "", "key": "contact.title", "title": "Title"},
+        {"description": "", "key": "contact.first_name", "title": "First name"},
+        {"description": "", "key": "contact.last_name", "title": "Last name"},
+        {"description": "Full name and titles", "key": "contact.salutation", "title": "Salutation"},
+        {"description": "Political affiliation", "key": "contact.political_affiliation", "title": "Color"}
+      ],
+      "description": "Lorem ipsum...",
+      "is_custom": true,
+      "key": "39f93565-d491-4e3f-99a5-fc5c83446e2f",
+      "title": "My custum dataset"
+    }
+  ],
+  "contacts": [
+    {
+      "key": 0,
+      "datasetId": "mp",
+      "contacts": [
+        {
+          "title": "Mrs",
+          "first_name": "Jane",
+          "last_name": "Doe",
+          "email": "jane@doe.com",
+          "salutation": "Jane Doe MP",
+          "id": 1,
+          "political_affiliation": "Purple"
+        },
+        {
+          "title": "Mrs",
+          "first_name": "Neddy",
+          "last_name": "Grossier",
+          "email": "ngrossier1@bigcartel.com",
+          "salutation": "Neddy Grossier MP",
+          "id": 2,
+          "political_affiliation": "Pink"
+        }
+      ]
+    },
+    {
+      "key": 1,
+      "datasetId": "mep",
+      "contacts": [
+        {
+          "title": "Mr",
+          "first_name": "John",
+          "last_name": "Doe",
+          "email": "john@doe.com",
+          "salutation": "John Doe MEP",
+          "id": 1,
+          "political_affiliation": "Purple"
+        },
+        {
+          "title": "Honorable",
+          "first_name": "Jaclyn",
+          "last_name": "Dodworth",
+          "email": "jdodworth3@clickbank.net",
+          "salutation": "Jaclyn Dodworth MEP",
+          "id": 2,
+          "political_affiliation": "Pink"
+        }
+      ]
+    },
+    {
+      "key": 2,
+      "datasetId": "39f93565-d491-4e3f-99a5-fc5c83446e2f",
+      "contacts": [
+        {
+          "title": "Mr",
+          "first_name": "Lenette",
+          "last_name": "Barnby",
+          "email": "lbarnby0@ustream.tv",
+          "salutation": "Lenette Barnby",
+          "id": 1,
+          "political_affiliation": "Purple"
+        }, {
+          "title": "Mrs",
+          "first_name": "Neddy",
+          "last_name": "Grossier",
+          "email": "ngrossier1@bigcartel.com",
+          "salutation": "Neddy Grossier",
+          "id": 2,
+          "political_affiliation": "Pink"
+        }, {
+          "title": "Ms",
+          "first_name": "Kenn",
+          "last_name": "Weinmann",
+          "email": "kweinmann2@webnode.com",
+          "salutation": "Kenn Weinmann",
+          "id": 3,
+          "political_affiliation": "Mauv"
+        }, {
+          "title": "Honorable",
+          "first_name": "Jaclyn",
+          "last_name": "Dodworth",
+          "email": "jdodworth3@clickbank.net",
+          "salutation": "Jaclyn Dodworth",
+          "id": 4,
+          "political_affiliation": "Maroon"
+        }, {
+          "title": "Honorable",
+          "first_name": "Rolfe",
+          "last_name": "Monckman",
+          "email": "rmonckman4@mozilla.com",
+          "salutation": "Rolfe Monckman",
+          "id": 5,
+          "political_affiliation": "Mauv"
+        }, {
+          "title": "Ms",
+          "first_name": "Shayne",
+          "last_name": "Heinrich",
+          "email": "sheinrich5@newyorker.com",
+          "salutation": "Shayne Heinrich",
+          "id": 6,
+          "political_affiliation": "Goldenrod"
+        }, {
+          "title": "Dr",
+          "first_name": "Frannie",
+          "last_name": "McCuis",
+          "email": "fmccuis6@1und1.de",
+          "salutation": "Frannie McCuis",
+          "id": 7,
+          "political_affiliation": "Mauv"
+        }, {
+          "title": "Dr",
+          "first_name": "Danya",
+          "last_name": "Stapylton",
+          "email": "dstapylton7@google.com.br",
+          "salutation": "Danya Stapylton",
+          "id": 8,
+          "political_affiliation": "Goldenrod"
+        }, {
+          "title": "Ms",
+          "first_name": "Harmonie",
+          "last_name": "Everard",
+          "email": "heverard8@wisc.edu",
+          "salutation": "Harmonie Everard",
+          "id": 9,
+          "political_affiliation": "Red"
+        }, {
+          "title": "Rev",
+          "first_name": "Olwen",
+          "last_name": "Zuenelli",
+          "email": "ozuenelli9@skype.com",
+          "salutation": "Olwen Zuenelli",
+          "id": 10,
+          "political_affiliation": "Aquamarine"
+        }, {
+          "title": "Honorable",
+          "first_name": "Rianon",
+          "last_name": "Whitehead",
+          "email": "rwhiteheada@salon.com",
+          "salutation": "Rianon Whitehead",
+          "id": 11,
+          "political_affiliation": "Blue"
+        }, {
+          "title": "Mr",
+          "first_name": "Christopher",
+          "last_name": "Cadreman",
+          "email": "ccadremanb@posterous.com",
+          "salutation": "Christopher Cadreman",
+          "id": 12,
+          "political_affiliation": "Mauv"
+        }, {
+          "title": "Mrs",
+          "first_name": "Griffy",
+          "last_name": "MacKeller",
+          "email": "gmackellerc@cisco.com",
+          "salutation": "Griffy MacKeller",
+          "id": 13,
+          "political_affiliation": "Maroon"
+        }, {
+          "title": "Mr",
+          "first_name": "Gustaf",
+          "last_name": "Logie",
+          "email": "glogied@ebay.co.uk",
+          "salutation": "Gustaf Logie",
+          "id": 14,
+          "political_affiliation": "Purple"
+        }, {
+          "title": "Ms",
+          "first_name": "Barney",
+          "last_name": "Tort",
+          "email": "btorte@tripadvisor.com",
+          "salutation": "Barney Tort",
+          "id": 15,
+          "political_affiliation": "Red"
+        }, {
+          "title": "Mrs",
+          "first_name": "Pembroke",
+          "last_name": "Goodlett",
+          "email": "pgoodlettf@symantec.com",
+          "salutation": "Pembroke Goodlett",
+          "id": 16,
+          "political_affiliation": "Aquamarine"
+        }, {
+          "title": "Dr",
+          "first_name": "Eugine",
+          "last_name": "Moreno",
+          "email": "emorenog@oakley.com",
+          "salutation": "Eugine Moreno",
+          "id": 17,
+          "political_affiliation": "Fuscia"
+        }, {
+          "title": "Honorable",
+          "first_name": "Addison",
+          "last_name": "Sankey",
+          "email": "asankeyh@apache.org",
+          "salutation": "Addison Sankey",
+          "id": 18,
+          "political_affiliation": "Purple"
+        }, {
+          "title": "Dr",
+          "first_name": "Minny",
+          "last_name": "Giovanitti",
+          "email": "mgiovanittii@quantcast.com",
+          "salutation": "Minny Giovanitti",
+          "id": 19,
+          "political_affiliation": "Orange"
+        }, {
+          "title": "Mrs",
+          "first_name": "Sean",
+          "last_name": "Essam",
+          "email": "sessamj@sciencedirect.com",
+          "salutation": "Sean Essam",
+          "id": 20,
+          "political_affiliation": "Puce"
+        }, {
+          "title": "Rev",
+          "first_name": "Klarika",
+          "last_name": "Farish",
+          "email": "kfarishk@jigsy.com",
+          "salutation": "Klarika Farish",
+          "id": 21,
+          "political_affiliation": "Goldenrod"
+        }, {
+          "title": "Mr",
+          "first_name": "Laverna",
+          "last_name": "Woodrup",
+          "email": "lwoodrupl@quantcast.com",
+          "salutation": "Laverna Woodrup",
+          "id": 22,
+          "political_affiliation": "Teal"
+        }, {
+          "title": "Mrs",
+          "first_name": "Camey",
+          "last_name": "Moorerud",
+          "email": "cmoorerudm@xing.com",
+          "salutation": "Camey Moorerud",
+          "id": 23,
+          "political_affiliation": "Orange"
+        }, {
+          "title": "Rev",
+          "first_name": "Demetrius",
+          "last_name": "Gowrie",
+          "email": "dgowrien@soundcloud.com",
+          "salutation": "Demetrius Gowrie",
+          "id": 24,
+          "political_affiliation": "Khaki"
+        }, {
+          "title": "Mrs",
+          "first_name": "Charlean",
+          "last_name": "Cottell",
+          "email": "ccottello@ucoz.ru",
+          "salutation": "Charlean Cottell",
+          "id": 25,
+          "political_affiliation": "Blue"
+        }
+      ]
+    }
+  ]
+}

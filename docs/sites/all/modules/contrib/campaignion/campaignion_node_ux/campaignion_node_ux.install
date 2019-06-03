@@ -1,0 +1,5 @@
+<?php
+
+function campaignion_node_ux_install() {
+  db_query("UPDATE {system} SET weight=20 WHERE name='campaignion_node_ux'");
+}

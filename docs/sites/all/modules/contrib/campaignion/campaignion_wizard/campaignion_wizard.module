@@ -1,0 +1,186 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations and page callbacks for the campaignion wizard.
+ */
+
+use Drupal\campaignion_action\Loader;
+
+/**
+ * Implements hook_menu().
+ */
+function campaignion_wizard_menu() {
+  foreach (Loader::instance()->actionNodeTypes() as $type) {
+    $url_type = str_replace('_', '-', $type);
+    $info['wizard/' . str_replace('_', '-', $url_type)] = array(
+      'title'            => 'Wizard',
+      'page callback'    => 'campaignion_wizard_new',
+      'page arguments'   => array($url_type),
+      'access callback' => 'node_access',
+      'access arguments' => array('create', $type),
+      'type' => MENU_CALLBACK,
+    );
+  }
+  $info['node/%node/wizard/%'] = array(
+    'title'            => 'Edit',
+    'page callback'    => 'campaignion_wizard',
+    'page arguments'   => array(1, 3),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'type' => MENU_CALLBACK,
+  );
+  $info['node/%node/wizard'] = array(
+    'title'          => 'Edit',
+    'page arguments' => array(1, 'content'),
+  ) + $info['node/%node/wizard/%'];
+  $info['wizard/nodes'] = [
+    'title' => 'Search node titles',
+    'page callback' => 'campaignion_wizard_search_nodes',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+    'delivery callback' => 'little_helpers_deliver_json',
+  ];
+  return $info;
+}
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Override core node edit pages.
+ */
+function campaignion_wizard_menu_alter(&$info) {
+  foreach (Loader::instance()->actionNodeTypes() as $type) {
+    $url_type = str_replace('_', '-', $type);
+    $info['node/add/' . $url_type]['page callback'] = 'campaignion_wizard_redirect_add';
+  }
+  $info['node/%node/edit']['page callback'] = 'campaignion_wizard_redirect_edit';
+  $info['node/%node/webform']['type'] = MENU_LOCAL_TASK;
+}
+
+/**
+ * Page callback for node/%/edit.
+ */
+function campaignion_wizard_redirect_edit($node) {
+  $l = Loader::instance();
+  if ($l->isActionType($node->type)) {
+    campaignion_wizard_redirect("node/{$node->nid}/wizard");
+  }
+  elseif ($nid = $l->actionNidByThankYouNode($node)) {
+    campaignion_wizard_redirect("node/{$nid}/wizard/thank");
+  }
+  return node_page_edit($node);
+}
+
+/**
+ * Page callback for node/add/%type.
+ */
+function campaignion_wizard_redirect_add($type) {
+  $type = str_replace('_', '-', $type);
+  campaignion_wizard_redirect("wizard/$type");
+  return node_add($type);
+}
+
+/**
+ * Page callback for wizard/nodes.
+ */
+function campaignion_wizard_search_nodes() {
+  $search = isset($_GET['s']) ? $_GET['s'] : '';
+  $q = db_select('node', 'n')
+    ->addTag('node_access')
+    ->fields('n', ['nid', 'title'])
+    ->range(0, 100);
+  if (is_numeric($search)) {
+    $s = db_or()
+      ->condition('n.nid', $search)
+      ->condition('n.title', '%' . db_like($search) . '%', 'LIKE');
+    $q->condition($s);
+    $q->addExpression('n.nid=:nid', 'nid_match', [':nid' => $search]);
+    $q->orderBy('nid_match', 'DESC');
+  }
+  else {
+    $q->condition('n.title', '%' . db_like($search) . '%', 'LIKE');
+  }
+  $data = [];
+  foreach ($q->execute() as $row) {
+    $data[] = [
+      'value' => 'node/' . $row->nid,
+      'label' => "{$row->title} [{$row->nid}]",
+    ];
+  }
+  return ['values' => $data];
+}
+
+
+/**
+ * Redirect keeping all query parameters.
+ *
+ * Redirect if redirecting is not explicitly deactivated
+ * via $_GET['wizard'] = 'off' .
+ */
+function campaignion_wizard_redirect($path) {
+  if (!(isset($_GET['wizard']) && $_GET['wizard'] == 'off')) {
+    $options = array();
+    $options['query'] = drupal_get_query_parameters();
+    unset($_GET['destination']);
+    drupal_goto($path, $options, 301);
+  }
+}
+
+/**
+ * Page callback for wizard/$type.
+ */
+function campaignion_wizard_new($type) {
+  $type = str_replace('-', '_', $type);
+  if ($wizard = Loader::instance()->wizard($type)) {
+    return $wizard->run('content');
+  }
+  return drupal_not_found();
+}
+
+/**
+ * Page callback for wizard/%node/%step.
+ */
+function campaignion_wizard($node = NULL, $step = 'content') {
+  if ($wizard = Loader::instance()->wizard($node->type, $node)) {
+    return $wizard->run($step);
+  }
+  else {
+    require_once drupal_get_path('module', 'node') . '/node.pages.inc';
+    return node_page_edit($node);
+  }
+}
+
+/**
+ * Implements hook_admin_paths().
+ */
+function campaignion_wizard_admin_paths() {
+  $paths = array();
+  $paths['node/*/wizard/*'] = TRUE;
+  $paths['node/*/wizard'] = TRUE;
+  $paths['wizard/*'] = TRUE;
+  return $paths;
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * Used for better control of webform emails setting form.
+ */
+function campaignion_wizard_theme() {
+  $items['campaignion_wizard_form'] = [
+    'render element' => 'form',
+    'template' => 'templates/campaignion-wizard-form',
+  ];
+  $items['campaignion_wizard_email_form'] = [
+    'render element' => 'form',
+    'file'           => 'campaignion_wizard.theme.php',
+  ];
+  $items['campaignion_wizard_thank_summary'] = [
+    'render element' => 'element',
+    'template' => 'templates/campaignion-wizard-thank-summary',
+    'file' => 'campaignion_wizard.theme.php',
+  ];
+
+  return $items;
+}

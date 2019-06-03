@@ -1,0 +1,372 @@
+<?php
+
+/**
+ * @file
+ * campaignion_email_to_target.install
+ */
+
+use Drupal\campaignion_email_to_target\Api\Client;
+use Drupal\campaignion_email_to_target\Api\ConfigError;
+
+/**
+ * Implements hook_schema()
+ */
+function campaignion_email_to_target_schema() {
+  $tables['campaignion_email_to_target_messages'] = [
+    'description' => 'Message templates for email to target actions',
+    'fields' => [
+      'id' => [
+        'description' => 'Message ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'nid' => [
+        'description' => "Action node ID",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting messages',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'type' => [
+        'description' => 'Message type',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+      ],
+      'label' => [
+        'description' => 'Message label',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+      ],
+      'subject' => [
+        'description' => 'Message subject',
+        'type' => 'varchar',
+        'length' => 256,
+      ],
+      'header' => [
+        'description' => 'Message header',
+        'type' => 'text',
+      ],
+      'message' => [
+        'description' => 'Message content',
+        'type' => 'text',
+      ],
+      'footer' => [
+        'description' => 'Message footer',
+        'type' => 'text',
+      ],
+      'url' => [
+        'description' => 'Redirect URL',
+        'type' => 'text',
+      ],
+    ],
+    'indexes' => [
+      'action' => ['nid'],
+    ],
+    'primary key' => ['id'],
+  ];
+  $tables['campaignion_email_to_target_filters'] = [
+    'description' => 'Message filters for email to target actions',
+    'fields' => [
+      'id' => [
+        'description' => 'Filter ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'message_id' => [
+        'description' => "Message ID",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting messages',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'type' => [
+        'description' => 'Filter plugin-type',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ],
+      'config' => [
+        'description' => 'Configuration for the filter',
+        'type' => 'blob',
+        'serialize' => TRUE,
+      ],
+    ],
+    'indexes' => [
+      'message' => ['message_id'],
+    ],
+    'primary key' => ['id'],
+  ];
+  return $tables;
+}
+
+/**
+ * Implements hook_field_schema().
+ */
+function campaignion_email_to_target_field_schema($field) {
+  if ($field['type'] == 'email_to_target_options') {
+    $columns['users_may_edit'] = [
+      'type' => 'int',
+      'size' => 'tiny',
+    ];
+    $columns['dataset_name'] = [
+      'type' => 'varchar',
+      'length' => 64,
+    ];
+    $columns['selection_mode'] = [
+      'type' => 'varchar',
+      'length' => 64,
+    ];
+    return ['columns' => $columns];
+  }
+}
+
+/**
+ * Implements hook_enable().
+ */
+function campaignion_email_to_target_enable() {
+  variable_set('cache_class_cache_token', '\\Drupal\\campaignion_email_to_target\\NullCacheBin');
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function campaignion_email_to_target_requirements($phase) {
+  if ($phase == 'runtime') {
+    $requirements['e2t_api']['title'] = 'Email to target API connection.';
+    try {
+      Client::fromConfig();
+      $requirements['e2t_api'] += [
+        'severity' => REQUIREMENT_OK,
+        'description' => t('e2t API connection is configured.'),
+      ];
+    }
+    catch (ConfigError $e) {
+      $requirements['e2t_api'] += [
+        'severity' => REQUIREMENT_ERROR,
+        'description' => $e->getMessage(),
+      ];
+    }
+    return $requirements;
+  }
+}
+
+/**
+ * Add url field to {campaignion_email_to_target_messages}.
+ */
+function campaignion_email_to_target_update_9() {
+  db_add_field('campaignion_email_to_target_messages', 'url', [
+    'description' => 'Redirect URL',
+    'type' => 'text',
+  ]);
+}
+
+/**
+ * Enable the variable module.
+ */
+function campaignion_email_to_target_update_8() {
+  if (!module_enable(['variable'])) {
+    $err = 'Could not enable variable.';
+    throw new \DrupalUpdateException($err);
+  }
+}
+
+/**
+ * Add selection_mode column to all fields.
+ */
+function campaignion_email_to_target_update_7() {
+  foreach (field_read_fields(['type' => 'email_to_target_options']) as $field) {
+    if ($field['storage']['type'] == 'field_sql_storage') {
+      foreach (['data', 'revision'] as $t) {
+        $table = "field_{$t}_{$field['field_name']}";
+        $value = "{$field['field_name']}_selection_mode";
+        db_add_field($table, $value, [
+          'type' => 'varchar',
+          'length' => 64,
+        ]);
+        db_update($table)
+          ->fields([$value => 'one_or_more'])
+          ->execute();
+      }
+    }
+  }
+}
+
+/**
+ * Enable campaignion_vue.
+ */
+function campaignion_email_to_target_update_6() {
+  if (!module_enable(['campaignion_vue'])) {
+    $err = 'Could not enable campaignion_vue.';
+    throw new \DrupalUpdateException($err);
+  }
+}
+
+/**
+ * Update stored submitted data fields to new format.
+ */
+function campaignion_email_to_target_update_5() {
+  $sql = <<<SQL
+UPDATE {webform_submitted_data} d
+  INNER JOIN {webform_component} c USING(nid, cid)
+SET data=CONCAT(:pfx, data, :sfx)
+WHERE c.type='e2t_selector'
+SQL;
+  db_query($sql, [':pfx' => 'a:1:{s:7:"message";', ':sfx' => '}']);
+}
+
+/**
+ * Enable the feature.
+ */
+function campaignion_email_to_target_update_4() {
+  if (!module_enable(['campaignion_email_to_target_type'])) {
+    $err = 'Could not enable campaignion_email_to_target_type.';
+    throw new \DrupalUpdateException($err);
+  }
+  db_query("DELETE FROM {system} WHERE name='campaignion_email_to_target_templates'");
+}
+
+/**
+ * Remove version from configured API endpoints.
+ */
+function campaignion_email_to_target_update_3() {
+  $v = variable_get('campaignion_email_to_target_credentials');
+  if (isset($v['url'])) {
+    $v['url'] = str_replace('/v1', '', $v['url']);
+    variable_set('campaignion_email_to_target_credentials', $v);
+  }
+}
+
+/**
+ * Switch from uk_postcode to postcode.
+ */
+function campaignion_email_to_target_update_2() {
+  module_enable(['postcode']);
+}
+
+/**
+ * Add tables for message templates and filters and migrate data.
+ */
+function campaignion_email_to_target_update_1() {
+  $tables['campaignion_email_to_target_messages'] = [
+    'description' => 'Message templates for email to target actions',
+    'fields' => [
+      'id' => [
+        'description' => 'Message ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'nid' => [
+        'description' => "Action node ID",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting messages',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'type' => [
+        'description' => 'Message type',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+      ],
+      'label' => [
+        'description' => 'Message label',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => TRUE,
+      ],
+      'subject' => [
+        'description' => 'Message subject',
+        'type' => 'varchar',
+        'length' => 256,
+      ],
+      'header' => [
+        'description' => 'Message header',
+        'type' => 'text',
+      ],
+      'message' => [
+        'description' => 'Message content',
+        'type' => 'text',
+      ],
+      'footer' => [
+        'description' => 'Message footer',
+        'type' => 'text',
+      ],
+    ],
+    'indexes' => [
+      'action' => ['nid'],
+    ],
+    'primary key' => ['id'],
+  ];
+  $tables['campaignion_email_to_target_filters'] = [
+    'description' => 'Message filters for email to target actions',
+    'fields' => [
+      'id' => [
+        'description' => 'Filter ID',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'message_id' => [
+        'description' => "Message ID",
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'weight' => [
+        'description' => 'Weight value used for sorting messages',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ],
+      'type' => [
+        'description' => 'Filter plugin-type',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ],
+      'config' => [
+        'description' => 'Configuration for the filter',
+        'type' => 'blob',
+        'serialize' => TRUE,
+      ],
+    ],
+    'indexes' => [
+      'message' => ['message_id'],
+    ],
+    'primary key' => ['id'],
+  ];
+  foreach ($tables as $name => $definition) {
+    db_create_table($name, $definition);
+  }
+
+  $fs = \Drupal\little_helpers\Field\Field::byType('email_to_target_message');
+  foreach ($fs as $name => $field) {
+    $sql = <<<SQL
+INSERT INTO {campaignion_email_to_target_messages} (nid, weight, type, label, subject, header, message, footer)
+SELECT entity_id as nid, 0 as weight, 'message', 'Default message', {$name}_subject, {$name}_header, {$name}_message, {$name}_footer
+FROM field_data_{$name}
+SQL;
+    db_query($sql);
+    $field->delete();
+  }
+}

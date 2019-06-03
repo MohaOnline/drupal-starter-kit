@@ -1,0 +1,17 @@
+name = Email to target
+description = Functionality of email to target actions.
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion_action
+dependencies[] = campaignion_vue
+dependencies[] = libraries
+dependencies[] = little_helpers:little_helpers (>=2.0-alpha2)
+dependencies[] = variable
+dependencies[] = xautoload
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

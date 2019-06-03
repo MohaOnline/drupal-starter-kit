@@ -1,0 +1,506 @@
+<?php
+
+/**
+ * @file
+ * Campaignion newsletter install file.
+ */
+
+use Drupal\little_helpers\Webform\Submission;
+
+/**
+ * Implements hook_schema().
+ */
+function campaignion_newsletters_schema() {
+  return [
+    'campaignion_newsletters_lists' => [
+      'description' => 'Table for newsletter lists',
+      'fields' => [
+        'list_id' => [
+          'description' => 'Primary identifier for newsletter lists.',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'identifier' => [
+          'description' => 'The identifier of this newsletter.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ],
+        'title' => [
+          'description' => 'The title of this newsletter.',
+          'type' => 'varchar',
+          'length' => 512,
+          'not null' => TRUE,
+          'default' => '',
+        ],
+        'language' => [
+          'description' => 'The {languages}.language of this newsletter.',
+          'type' => 'varchar',
+          'length' => 12,
+          'not null' => TRUE,
+          'default' => '',
+        ],
+        'source' => [
+          'description' => 'The source of this newsletter.',
+          'type' => 'varchar',
+          'length' => 64,
+          'not null' => TRUE,
+          'default' => '',
+        ],
+        'data' => [
+          'description' => 'Store for extra data given by the newsletter provider.',
+          'type' => 'blob',
+          'size' => 'big',
+        ],
+        'updated' => [
+          'description' => 'The timestamp of the last time this list was synced from the provider.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+        ],
+      ],
+      'primary key' => ['list_id'],
+    ],
+    'campaignion_newsletters_subscriptions' => [
+      'description' => 'Table for joining users to newsletter lists',
+      'fields' => [
+        'email' => [
+          'description' => 'The email address of the subscribed user.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ],
+        'list_id' => [
+          'description' => 'Reference to newsletter lists.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'fingerprint' => [
+          'description' => 'A unique hash of this subscription to check if it has changed',
+          'type' => 'char',
+          'length' => 40,
+          'not null' => TRUE,
+          // Some impossible hash so that newly added values always need update.
+          'default' => '123456789x123456789x123456789x123456789x',
+        ],
+        'updated' => [
+          'description' => 'The timestamp of the last update to this subscription.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+        ],
+        'last_sync' => [
+          'description' => 'Timestamp for when this subscription was last synced with the provider',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'default' => 0,
+          'not null' => TRUE,
+        ],
+      ],
+      'primary key' => ['email', 'list_id'],
+      'indexes' => [
+        'campaignion_newsletters_subscriptions_list' => ['list_id'],
+        'campaignion_newsletters_subscriptions_email' => ['email'],
+        'last_sync' => ['last_sync'],
+      ],
+    ],
+    'campaignion_newsletters_queue' => [
+      'description' => 'Send queue for newsletter subscriptions.',
+      'fields' => [
+        'id' => [
+          'description' => 'Primary key ID',
+          'type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'list_id' => [
+          'description' => 'Reference to newsletter lists.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ],
+        'email' => [
+          'description' => 'The email address of the subscribed user.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ],
+        'created' => [
+          'description' => 'The Unix timestamp when the node was created.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ],
+        'locked' => [
+          'description' => 'This queue item is locked until this time.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0,
+        ],
+        'action' => [
+          'description' => 'Subscribe / unsubscribe flag.',
+          'type' => 'varchar',
+          'length' => 32,
+          'not null' => TRUE,
+        ],
+        'args' => [
+          'description' => 'Additional arguments for the provider function',
+          'type' => 'blob',
+          'size' => 'big',
+        ],
+        'data' => [
+          'description' => 'Random data used by the newsletter provider.',
+          'type' => 'blob',
+          'size' => 'big',
+        ],
+        'optin_info' => [
+          'description' => 'Data about the form-submission to prove the opt-in.',
+          'type' => 'blob',
+          'size' => 'big',
+        ],
+      ],
+      'primary key' => ['id'],
+      'indexes' => [
+        'list_email' => ['list_id', 'email'],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_install().
+ */
+function campaignion_newsletters_install() {
+  // We need to run after redhen_contact.
+  $weight = db_select('system', 's')
+    ->fields('s', ['weight'])
+    ->condition('name', 'redhen_contact', '=')
+    ->execute()
+    ->fetchField();
+
+  db_update('system')
+    ->fields(['weight' => $weight + 1])
+    ->condition('name', 'campaignion_newsletters', '=')
+    ->execute();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function campaignion_newsletters_uninstall() {
+  variable_del('campaignion_newsletters_batch_size');
+  variable_del('campaignion_newsletters_last_list_poll');
+  variable_del('campaignion_newsletters_poll_time');
+}
+
+/**
+ * Migrate to using opt_in components.
+ */
+function campaignion_newsletters_update_20() {
+  if (!module_enable(['campaignion_opt_in'], TRUE)) {
+    throw new \DrupalUpdateException('Unable to enable campaignion_opt_in. Please verify it (and all it’s dependencies) can be found by Drupal.');
+  }
+
+  // Loop through all nodes with newsletter field(s).
+  $rows = db_select('webform_component', 'c')
+    ->fields('c', ['nid', 'cid'])
+    ->condition('type', 'newsletter')
+    ->execute();
+  foreach ($rows as $row) {
+    $node = node_load($row->nid);
+    $component = &$node->webform['components'][$row->cid];
+    $component['type'] = 'opt_in';
+    $component['extra']['channel'] = 'email';
+    $component['extra']['fixed_channel'] = TRUE;
+    node_save($node);
+  }
+}
+
+/**
+ * Add {campaignion_newsletters_lists}.updated column.
+ */
+function campaignion_newsletters_update_19() {
+  db_add_field('campaignion_newsletters_lists', 'updated', [
+    'description' => 'The timestamp of the last time this list was synced from the provider.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+  ]);
+  db_update('campaignion_newsletters_lists')
+    ->fields(['updated' => REQUEST_TIME])
+    ->execute();
+}
+
+/**
+ * Migrate newsletter default values.
+ */
+function campaignion_newsletters_update_18() {
+  $map = [
+    '' => 'a:1:{s:10:"subscribed";i:0;}',
+    'opt-in' => 'a:1:{s:10:"subscribed";s:10:"subscribed";}',
+  ];
+  foreach ($map as $new => $old) {
+    db_update('webform_component')
+      ->fields(['value' => $new])
+      ->condition('type', 'newsletter')
+      ->condition('value', $old)
+      ->execute();
+  }
+}
+
+/**
+ * Migrate old newsletter conditional filters to new filters.
+ */
+function campaignion_newsletters_update_17() {
+  // Replace rule values.
+  $map = [
+    'checkbox:opt-in' => ['subscribed', 'Subscribed'],
+    'radios:opt-in' => ['yes', 'Yes'],
+    'radios:no-change' => ['no', 'No', 'Nein', 'no change'],
+    'radios:not-selected' => [''],
+  ];
+  foreach ($map as $new => $old) {
+    $sql = <<<SQL
+UPDATE webform_conditional_rules r
+  INNER JOIN webform_component c ON r.nid=c.nid AND r.source=c.cid
+SET r.value=:new
+WHERE source_type='component' AND c.type='newsletter' AND r.value IN (:old)
+SQL;
+    db_query($sql, [':new' => $new, ':old' => $old]);
+  }
+
+  // Replace rule operators.
+  $map = [
+    'equal' => 'empty',
+    'not_equal' => 'not_empty',
+  ];
+  foreach ($map as $new => $old) {
+    $sql = <<<SQL
+UPDATE webform_conditional_rules r
+  INNER JOIN webform_component c ON r.nid=c.nid AND r.source=c.cid
+SET r.operator=:new
+WHERE source_type='component' AND c.type='newsletter' AND r.operator=:old
+SQL;
+    db_query($sql, [':new' => $new, ':old' => $old]);
+  }
+}
+
+/**
+ * Migrate old newsletter values to new ones with prefix.
+ */
+function campaignion_newsletters_update_16() {
+  // Map old to new values.
+  $map = [
+    '' => 'no-change',
+    'subscribed' => 'opt-in',
+    'unsubscribed' => 'opt-out',
+    'no change' => 'no-change',
+    'no selection' => 'not-selected',
+  ];
+  // Loop through all nodes with newsletter field(s).
+  $component_keys = db_select('webform_component', 'c')
+    ->fields('c', ['nid', 'cid'])
+    ->condition('type', 'newsletter')
+    ->execute();
+  $controller = entity_get_controller('node');
+  foreach ($component_keys as $component_key) {
+    $node = reset($controller->load([$component_key->nid]));
+    $display = $node->webform['components'][$component_key->cid]['extra']['display'];
+    // Replace old values in DB with prefix + new value.
+    foreach ($map as $old => $new) {
+      $new_prefixed = $display . ':' . $new;
+      db_update('webform_submitted_data')
+        ->fields(['data' => $new_prefixed])
+        ->condition('nid', $component_key->nid)
+        ->condition('cid', $component_key->cid)
+        ->condition('data', $old)
+        ->execute();
+    }
+    $controller->resetCache();
+  }
+}
+
+/**
+ * Add an updated and last_sync timestamps to newsletter subscriptions.
+ */
+function campaignion_newsletters_update_15() {
+  db_add_field('campaignion_newsletters_subscriptions', 'updated', [
+    'description' => 'The timestamp of the last update to this subscription.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+  ]);
+  db_add_field('campaignion_newsletters_subscriptions', 'last_sync', [
+    'description' => 'Timestamp for when this subscription was last synced from the provider',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'default' => 0,
+    'not null' => TRUE,
+  ], ['indexes' => ['last_sync' => ['last_sync']]]);
+}
+
+/**
+ * Replace 'subscribed' in webform_submitted_data.no with 0.
+ */
+function campaignion_newsletters_update_14() {
+  $sql = <<<SQL
+UPDATE
+  {webform_submitted_data} d
+  INNER JOIN {webform_component} c USING(nid, cid)
+SET d.no='0'
+WHERE c.type='newsletter' AND d.no='subscribed';
+SQL;
+  db_query($sql);
+}
+
+/**
+ * Replace '0' entries for not-subscribed submissions with ''.
+ */
+function campaignion_newsletters_update_13() {
+  $sql = <<<SQL
+UPDATE
+  {webform_submitted_data} d
+  INNER JOIN {webform_component} c USING(nid, cid)
+SET d.data='', d.no='0'
+WHERE c.type='newsletter' AND d.data='0';
+SQL;
+  db_query($sql);
+}
+
+/**
+ * Make campaignion_newsletters_queue.action a string column + custom args.
+ */
+function campaignion_newsletters_update_12() {
+  db_add_field('campaignion_newsletters_queue', 'action_new', [
+    'description' => 'Subscribe / unsubscribe flag.',
+    'type' => 'varchar',
+    'length' => 32,
+    'default' => '',
+    'not null' => TRUE,
+  ]);
+  db_add_field('campaignion_newsletters_queue', 'args', [
+    'description' => 'Additional arguments for the provider function',
+    'type' => 'blob',
+    'size' => 'big',
+  ]);
+  $sql = <<<SQL
+UPDATE {campaignion_newsletters_queue}
+SET
+ action_new=CASE WHEN action=0 THEN 'unsubscribe' ELSE 'subscribe' END,
+ args=CONCAT('a:2:{s:10:"send_optin";b:', ROUND((action & 2) / 2),';s:12:"send_welcome";b:', ROUND((action & 4) / 4), ';}')
+SQL;
+  db_query($sql);
+
+  db_drop_field('campaignion_newsletters_queue', 'action');
+  db_change_field('campaignion_newsletters_queue', 'action_new', 'action', [
+    'description' => 'Subscribe / unsubscribe flag.',
+    'type' => 'varchar',
+    'length' => 32,
+    'not null' => TRUE,
+  ]);
+}
+
+/**
+ * Add campaignion_newsletters_queue.opt_in column.
+ */
+function campaignion_newsletters_update_11() {
+  db_add_field('campaignion_newsletters_queue', 'optin_info', [
+    'description' => 'Data about the form-submission to prove the opt-in.',
+    'type' => 'blob',
+    'size' => 'big',
+  ]);
+}
+
+/**
+ * Update webform components: Move description to checkbox_label.
+ */
+function campaignion_newsletters_update_10() {
+  db_query("UPDATE {webform_component} SET extra=REPLACE(extra, 's:11:\"description\"', 's:14:\"checkbox_label\"') WHERE type='newsletter'");
+}
+
+/**
+ * Add new id column to {campaignion_newsletters_queue}.
+ */
+function campaignion_newsletters_update_9() {
+  db_drop_primary_key('campaignion_newsletters_queue');
+  db_add_field('campaignion_newsletters_queue', 'id', [
+    'description' => 'Primary key ID',
+    'type' => 'serial',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+  ], ['primary key' => ['id']]);
+  db_add_index('campaignion_newsletters_queue', 'list_email', ['list_id', 'email']);
+}
+
+/**
+ * Fixup change of hook_webform_confirm_email_email_confirmed().
+ */
+function campaignion_newsletters_update_8() {
+  $last_id = 0;
+  $sql = "SELECT nid, sid FROM {webform_submissions} s WHERE s.confirmed=1 AND s.submitted>=1406851200 AND sid>:last_id LIMIT 1000";
+  while ($rows = db_query($sql, ['last_id' => $last_id])->fetchAll()) {
+    foreach ($rows as $row) {
+      $s = Submission::load($row->nid, $row->sid);
+      campaignion_newsletters_webform_confirm_email_email_confirmed($s->getNode(), $s->unwrap());
+    }
+    $last_id = $row->sid;
+  }
+}
+
+/**
+ * Drop subscription_id column and deduplicate.
+ */
+function campaignion_newsletters_update_7() {
+  $t = 'campaignion_newsletters_subscriptions';
+  db_query("DELETE s1 FROM {{$t}} s1 LEFT OUTER JOIN (SELECT MIN(subscription_id) AS subscription_id FROM {{$t}} GROUP BY email, list_id) s2 USING(subscription_id) WHERE s2.subscription_id IS NULL");
+  db_drop_field($t, 'subscription_id');
+  db_add_primary_key($t, ['email', 'list_id']);
+}
+
+/**
+ * Add fingerprint column to subscriptions.
+ */
+function campaignion_newsletters_update_6() {
+  db_add_field('campaignion_newsletters_subscriptions', 'fingerprint', [
+    'description' => 'A unique hash of this subscription to check if it has changed',
+    'type' => 'char',
+    'length' => 40,
+    // Some impossible hash so that newly added values always need update.
+    'default' => '123456789x123456789x123456789x123456789x',
+  ]);
+}
+
+/**
+ * Migrate old webform components.
+ */
+function campaignion_newsletters_update_5() {
+  $result = db_query("SELECT c.*, l.list_id FROM {webform_component} c LEFT OUTER JOIN {campaignion_newsletters_lists} l ON c.value=l.identifier WHERE c.type='newsletter'");
+
+  foreach ($result as $component) {
+    $component->extra = unserialize($component->extra);
+    if ($component->list_id) {
+      $component->extra['lists'][$component->list_id] = $component->list_id;
+    }
+    else {
+      $component->extra['lists'] = [];
+    }
+    $component->extra['title_display'] = 'none';
+    $component->value = serialize(['subscribed' => 'subscribed']);
+
+    unset($component->list_id);
+    $component->extra = serialize($component->extra);
+    db_update('webform_component')
+      ->condition('nid', $component->nid)
+      ->condition('cid', $component->cid)
+      ->fields($component)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function campaignion_newsletters_update_last_removed() {
+  // Removed old updates using the old Contact-API.
+  return 4;
+}

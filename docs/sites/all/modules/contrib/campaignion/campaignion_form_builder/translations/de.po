@@ -1,0 +1,157 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (modules-campaignion_form_builder)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  modules/campaignion_form_builder/campaignion_form_builder.module: n/a
+#  modules/campaignion_form_builder/campaignion_form_builder.info: n/a
+#
+# Florian Engel, 2013.
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-12-13 15:20+0100\n"
+"PO-Revision-Date: 2013-01-14 16:08+0100\n"
+"Last-Translator: Florian Engel\n"
+"Language-Team: German <>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: de\n"
+"X-Generator: Lokalize 1.4\n"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:27
+msgid "Supporter Data"
+msgstr "Unterstützer/innen-Daten"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:50
+msgid "Salutation"
+msgstr "Anrede"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:55
+msgid "Mrs"
+msgstr "Frau"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:55
+msgid "Mr"
+msgstr "Herr"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:66
+msgid "female"
+msgstr "weiblich"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:66
+msgid "male"
+msgstr "männlich"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:66
+msgid "other"
+msgstr "anders"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:83
+msgid "Newsletter"
+msgstr "Newsletter"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:86
+msgid "Yes, I'd like to get email newsletters"
+msgstr "Ja, ich möchte den E-Mail Newsletter erhalten"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:88
+msgid "Email Newsletter"
+msgstr "E-Mail Newsletter"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:93
+msgid "Snail Mail Opt-In"
+msgstr "Postzusendung"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:93
+msgid "Direct Mail Newsletter"
+msgstr "Postzusendung"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:96
+msgid "Yes, I'd like to get direct mail newsletters"
+msgstr "Ja, ich möchte postalische Zusendungen erhalten."
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:112;117
+msgid "Email address"
+msgstr "E-Mail-Adresse"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:139;142
+msgid "First name"
+msgstr "Vorname"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:146;149
+msgid "Last name"
+msgstr "Nachname"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:165
+msgid "Please use the following format: 16/9/1983"
+msgstr "Bitte folgendermaßen eintragen: 16/9/1983"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:168;171
+msgid "Street address"
+msgstr "Straße"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:175;178
+msgid "ZIP code"
+msgstr "PLZ"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:182;185
+msgid "City"
+msgstr "Stadt"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:196;199
+msgid "Mobile number"
+msgstr "Handy-Nummer"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:237;252;289
+msgid "Take action!"
+msgstr "Jetzt mitmachen!"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:258
+msgid "Submit button text (first)"
+msgstr "Button-Text (erster)"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:260
+msgid ""
+"By default the next step button on this form (multistep) will have the label "
+"<em>Next</em>. Enter a new title here to override the default for the first "
+"one."
+msgstr ""
+"Standard-mäßig steht auf dem \"weiter\" Button auf diesem Formular der Text <"
+"em>Weiter</em>. Hier kann man einen angepassten Text eintragen, der dann "
+"statt \"weiter\" erscheint.."
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:264
+msgid "Submit button text (intermediate)"
+msgstr "Button-Text (Zwischenschritt)"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:266
+msgid ""
+"By default the next step button on this form (multistep) will have the label "
+"<em>Next</em>. Enter a new title here to override the default."
+msgstr ""
+"Standard-mäßig steht auf dem \"weiter\" Button auf diesem Formular der Text <"
+"em>Weiter</em>. Hier kann man einen angepassten Text eintragen, der dann "
+"statt \"weiter\" erscheint.."
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:299
+msgid "Submit button text"
+msgstr "Button-Text"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.module:301
+msgid "This button will appear on your form. Click here to change it's text."
+msgstr ""
+"Dieser Button scheint am Formular auf. Klicke hier, um den Text auf dem "
+"Button zu ändern."
+
+#: modules/campaignion_form_builder/campaignion_form_builder.info:0
+msgid "AE Form Builder"
+msgstr "AE Form Builder"
+
+#: modules/campaignion_form_builder/campaignion_form_builder.info:0
+msgid "Definitions of form builder extensions for Advocacy Engine"
+msgstr "Definition der Form Builder Erweiterungen für Advocacy Engine"
+
+

@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * Enable campaignion_email_protest_type.
+ */
+function campaignion_email_protest_update_1() {
+  db_delete('system')
+    ->condition('name', 'campaignion_email_protest_templates')
+    ->execute();
+  // We don’t want to revert this feature just because we moved the components.
+  // @see features_modules_enabled()
+  $conf_backup = $GLOBALS['conf'];
+  $GLOBALS['conf']['features_rebuild_on_module_install'] = FALSE;
+  if (!module_enable(['campaignion_email_protest_type'], TRUE)) {
+    throw new DrupalUpdateException('Could not enable the campaignion_email_protest_type module.');
+  }
+  $GLOBALS['conf'] = $conf_backup;
+}

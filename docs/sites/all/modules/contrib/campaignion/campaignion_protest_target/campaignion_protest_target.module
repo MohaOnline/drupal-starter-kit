@@ -1,0 +1,171 @@
+<?php
+/**
+ * @file
+ * Protest target functionality used for email protests.
+ */
+
+use \Drupal\campaignion\ContactTypeManager;
+use \Drupal\campaignion\CRM\Import\Source\ArraySource;
+
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function campaignion_protest_target_field_widget_info() {
+  $fields['email_protest_target'] = array(
+    'label'       => t('Email protest target'),
+    'field types' => array('entityreference'),
+    'behaviors'   => array(
+      'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+    ),
+  );
+
+  return $fields;
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function campaignion_protest_target_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+
+  $default_values = array(
+    'first_name'    => NULL,
+    'last_name'     => NULL,
+    'email' => NULL,
+  );
+
+  if (isset($items[$delta]['target_id']) == TRUE) {
+    $target_contact = entity_load('redhen_contact', array($items[$delta]['target_id']));
+    if ($target_contact != FALSE) {
+      $target_contact = array_shift($target_contact);
+      $default_values = array(
+        'first_name'    => $target_contact->first_name,
+        'last_name'     => $target_contact->last_name,
+        'email' => $target_contact->redhen_contact_email['und']['0']['value'],
+      );
+    }
+  }
+
+  $element['email_protest_target'] = array(
+    '#type'  => 'fieldset',
+  );
+
+  // when a drupal user is also created, first & last name are concatenated
+  // with a blank between; the drupal core users table has a maximum length
+  // for the name of 60, so we can only allow 29 characters for first and last name
+  $element['email_protest_target']['first_name'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('First Name'),
+    '#maxlength'     => 29,
+    '#default_value' => $default_values['first_name'],
+  );
+  $element['email_protest_target']['last_name'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Last Name'),
+    '#maxlength'     => 29,
+    '#default_value' => $default_values['last_name'],
+  );
+  $element['email_protest_target']['email'] = array(
+    '#type'          => 'textfield',
+    '#title'         => t('Email Address'),
+    '#maxlength'     => 128,
+    '#default_value' => $default_values['email'],
+  );
+  $element['#element_validate'] = array('campaignion_protest_target_validate');
+
+  return $element;
+}
+
+/**
+ * Field validation callback function referenced in campaignion_protest_target_field_widget_form
+ */
+function campaignion_protest_target_validate($element, &$form_state, $form) {
+  $values = &drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+  $details = &$values['email_protest_target'];
+  $e = $element['email_protest_target'];
+  foreach ($details as &$s) {
+    $s = trim($s);
+  }
+  // Only import data if at least one field is non-empty.
+  if (implode('', $details) != '') {
+    $valid = TRUE;
+    if (empty($details['first_name'])) {
+      form_error($e['first_name'], t('First name has to be a non empty string.'));
+      $valid = FALSE;
+    }
+    if (empty($details['last_name'])) {
+      form_error($e['last_name'], t('Last name has to be a non empty string.'));
+      $valid = FALSE;
+    }
+    if (empty($details['email'])) {
+      form_error($e['email'], t('The email address has to be a non empty string.'));
+      $valid = FALSE;
+    }
+    elseif (!valid_email_address($details['email'])) {
+      form_error($e['email'], t('The email address you entered is not a valid email address.'));
+      $valid = FALSE;
+    }
+
+    if ($valid) {
+      $contact_type = variable_get_value('campaignion_protest_target_contact_type');
+      $importer = ContactTypeManager::instance()->importer('protest_target_field_widget', $contact_type);
+      $source = new ArraySource($details);
+      if ($contact = $importer->findOrCreateContact($source, 'email_protest_target')) {
+        if ($importer->import($source, $contact)) {
+          $contact->save();
+        }
+      }
+      $values['target_id'] = $contact ? $contact->contact_id : NULL;
+    }
+  }
+}
+
+/* ********************************************************************************* */
+/*                           webform component code                                  */
+/* ********************************************************************************* */
+
+/**
+ * Implements hook_webform_component_info().
+ */
+function campaignion_protest_target_webform_component_info() {
+  $components['protest_target'] = array(
+    'label'       => t('Send your protest to'),
+    'description' => t('Webform component to select a target person for an email protest.'),
+    'features'    => array(
+      'csv' => TRUE,
+      'default_value' => TRUE,
+      'required'      => TRUE,
+    ),
+    'file' => 'campaignion_protest_target.webform.inc',
+  );
+
+  return $components;
+}
+
+/**
+ * Implements hook_form_builder_element_types().
+ */
+function campaignion_protest_target_form_builder_element_types($form_type, $form_id) {
+  if ($form_type != 'webform') {
+    return;
+  }
+
+  require_once dirname(__FILE__) . '/campaignion_protest_target.webform.inc';
+  require_once drupal_get_path('module', 'form_builder') . '/modules/webform/form_builder_webform.components.inc';
+
+  $map = _form_builder_webform_property_map('protest_target');
+  unset($map['properties']['default_value']);
+  $fields['protest_target'] = array(
+    'title'         => t('Target Selector'),
+    'palette_group' => 'default',
+    'properties'    => array_keys($map['properties']),
+    'default'       => array('#form_builder' => array('element_type' => 'protest_target')),
+    'unique'        => TRUE,
+    'addable'       => FALSE,
+  );
+
+  $component['nid'] = $form_id;
+  $fields['protest_target']['default'] += _form_builder_webform_default('protest_target', array(), $component);
+
+  return $fields;
+}

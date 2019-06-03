@@ -1,0 +1,139 @@
+<?php
+
+/**
+ * @file
+ * Implementation of the reference_or_redirect field type.
+ */
+
+/**
+ * Implements hook_field_info().
+ *
+ * Provides the description of the field.
+ */
+function field_reference_or_redirect_field_info() {
+  return array(
+    'reference_or_redirect' => array(
+      'label'             => t('Node Reference or Redirect URL'),
+      'description'       => t('Field to store either a node reference (nid) or a redirect (URL).'),
+      'settings'          => array(),
+      'default_widget'    => 'reference_or_redirect_widget',
+      'default_formatter' => 'reference_or_redirect_formatter',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function field_reference_or_redirect_field_widget_info() {
+  $info['reference_or_redirect_widget'] = array(
+    'label'       => t('Node Reference or Redirect URL widget'),
+    'field types' => array('reference_or_redirect'),
+    'settings'    => array(),
+    'behaviors'   => array(
+      'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+      'default value'   => FIELD_BEHAVIOR_DEFAULT,
+    ),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function field_reference_or_redirect_field_formatter_info() {
+  $info['reference_or_redirect_formatter'] = array(
+    'label'       => t('Node Reference or Redirect URL widget'),
+    'field types' => array('reference_or_redirect'),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_field_is_empty().
+ */
+function field_reference_or_redirect_field_is_empty($item, $field) {
+  // The only module using this (campaignion_wizard) takes over
+  // management of deltas / items.
+  return FALSE;
+}
+
+/**
+ * Implements hook_field_presave().
+ */
+function field_reference_or_redirect_field_presave($entity_type, $entity, $field, $instance, $langcode, &$items) {
+  foreach ($items as &$item) {
+    if (!empty($item['node'])) {
+      $node = $item['node'];
+      if (empty($node->nid)) {
+        node_save($node);
+        $item['node_reference_nid'] = $node->nid;
+        unset($item['node']);
+      }
+    }
+  }
+}
+
+/**
+ * Prepare new node as a translation of an existing one.
+ *
+ * This simulates the behavior of i18n_node/translation.
+ *
+ * Translation uses $_GET-parameters to get the source node
+ * and the target language. So we need to emulate that.
+ */
+function _field_reference_or_redirect_copy_node_for_translation($source, $target) {
+  $original = array();
+  foreach (array('translation', 'target') as $key) {
+    if (isset($_GET[$key])) {
+      $original[$key] = $_GET[$key];
+    }
+  }
+  $_GET['translation'] = $source->nid;
+  $_GET['target'] = $target;
+
+  $new_node = (object) array('type' => $source->type);
+  node_object_prepare($new_node);
+
+  foreach (array('translation', 'target') as $key) {
+    if (isset($original[$key])) {
+      $_GET[$key] = $original[$key];
+    }
+    else {
+      unset($_GET[$key]);
+    }
+  }
+  return $new_node;
+}
+
+/**
+ * Implements hook_field_prepare_translation().
+ *
+ * When preparing a translation, load any translations of existing
+ * references.
+ */
+function field_reference_or_redirect_field_prepare_translation($entity_type, $entity, $field, $instance, $langcode, &$items, $source_entity, $source_langcode) {
+  if (isset($items) && is_array($items)) {
+    // Match each reference with its matching translation, if it exists.
+    foreach ($items as $key => &$item) {
+      if (isset($item['node_reference_nid'])) {
+        $reference_node = node_load($item['node_reference_nid']);
+        $nid = node_reference_find_translation($reference_node, $entity->language);
+        if ($nid != $reference_node->nid) {
+          $item['node_reference_nid'] = $nid;
+        }
+        else {
+          $new_node = _field_reference_or_redirect_copy_node_for_translation($reference_node, $entity->language);
+          $new_node->status = $entity->status;
+          $item['node'] = $new_node;
+        }
+      }
+      if (isset($item['redirect_url'])) {
+        $links = language_negotiation_get_switch_links('language_url', $item['redirect_url']);
+        if ($links && isset($links->links[$langcode]) && isset($links->links[$langcode]['href'])) {
+          $item['redirect_url'] = $links->links[$langcode]['href'];
+        }
+      }
+    }
+  }
+}

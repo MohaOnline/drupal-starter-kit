@@ -1,0 +1,216 @@
+# #-#-#-#-#  ae_wizard1.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id$
+#
+# LANGUAGE translation of Drupal (modules-ae_wizard)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  modules/ae_wizard/ae_wizard.module: n/a
+#  modules/wizard/wizard.info: n/a
+#  modules/ae_wizard/ae_wizard.info: n/a
+#
+# Florian Engel, 2013.
+# #-#-#-#-#  ae_wizard-includes.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id$
+#
+# LANGUAGE translation of Drupal (modules-ae_wizard-includes)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from file: modules/ae_wizard/includes/wizard.inc.php: n/a
+#
+# Florian Engel, 2013.
+# #-#-#-#-#  ae_wizard-plugins.pot (PROJECT VERSION)  #-#-#-#-#
+# $Id$
+#
+# LANGUAGE translation of Drupal (modules-ae_wizard-plugins)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  modules/ae_wizard/plugins/donation.inc.php: n/a
+#  modules/ae_wizard/plugins/petition.inc.php: n/a
+#
+# Florian Engel, 2013.
+#, fuzzy
+msgid ""
+msgstr ""
+"#-#-#-#-#  ae_wizard1.pot (PROJECT VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-12-13 15:20+0100\n"
+"PO-Revision-Date: 2013-01-14 16:44+0100\n"
+"Last-Translator: Florian Engel\n"
+"Language-Team: German <>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: de\n"
+"X-Generator: Lokalize 1.4\n"
+"#-#-#-#-#  ae_wizard-includes.pot (PROJECT VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-12-13 15:20+0100\n"
+"PO-Revision-Date: 2013-01-14 16:34+0100\n"
+"Last-Translator: Florian Engel\n"
+"Language-Team: German <>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: de\n"
+"X-Generator: Lokalize 1.4\n"
+"#-#-#-#-#  ae_wizard-plugins.pot (PROJECT VERSION)  #-#-#-#-#\n"
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-12-13 15:20+0100\n"
+"PO-Revision-Date: 2013-01-14 16:41+0100\n"
+"Last-Translator: Florian Engel\n"
+"Language-Team: German <>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Language: de\n"
+"X-Generator: Lokalize 1.4\n"
+
+#: modules/ae_wizard/ae_wizard.module:89
+msgid "none"
+msgstr ""
+
+#: modules/ae_wizard/ae_wizard.module:108
+msgid "Available templates"
+msgstr ""
+
+#: modules/ae_wizard/ae_wizard.module:111
+msgid "Pick a form template to use pre-defined forms and emails."
+msgstr ""
+
+#: modules/ae_wizard/ae_wizard.module:115
+msgid "Setting this will overwrite any webform you previously defined!"
+msgstr ""
+
+#: modules/ae_wizard/ae_wizard.module:123
+msgid "Apply form template"
+msgstr ""
+
+#: modules/ae_wizard/ae_wizard.module:8;15;22 modules/wizard/wizard.info:0
+msgid "Wizard"
+msgstr ""
+
+#: modules/ae_wizard/ae_wizard.info:0
+msgid "AE Petition Wizard"
+msgstr ""
+
+#: modules/ae_wizard/ae_wizard.info:0
+msgid "Wizard for the AE petition tool"
+msgstr ""
+
+#: modules/ae_wizard/includes/wizard.inc.php:79
+msgid "Save & return"
+msgstr ""
+
+#: modules/ae_wizard/includes/wizard.inc.php:210
+msgid "Edit"
+msgstr ""
+
+#: modules/ae_wizard/includes/wizard.inc.php:245
+msgid "Publish now!"
+msgstr ""
+
+#: modules/ae_wizard/includes/wizard.inc.php:252
+msgid "Schedule publishing"
+msgstr ""
+
+#: modules/ae_wizard/includes/wizard.inc.php:259
+msgid "Save as draft"
+msgstr ""
+
+#: modules/ae_wizard/plugins/donation.inc.php:53
+#: modules/ae_wizard/plugins/petition.inc.php:52
+msgid "Your copy is great"
+msgstr ""
+
+#: modules/ae_wizard/plugins/donation.inc.php:54
+#: modules/ae_wizard/plugins/petition.inc.php:53
+msgid "You have added content, a nice picture and a convincing title."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:61
+msgid "Your form is ready to go"
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:62
+msgid "You have the following fields on your form: TODO."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:110
+msgid "Redirect supporters to a URL after the action"
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:117
+msgid "Redirect URL"
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:123
+msgid "or"
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:127
+msgid "Create new thank you page"
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:180
+msgid "You have to create either a thank you page or provide a redirect."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:186
+msgid "!name field is required."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:190
+msgid "You need to provide either a redirect url or create a thank you page."
+msgstr ""
+"Du musst entweder eine Danke-Seite, oder eine URL Weiterleitung angeben."
+
+#: modules/ae_wizard/plugins/petition.inc.php:221
+msgid "You have configured a thank you page !node."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:223
+msgid ""
+"You have created a thank you page !node but you are redirecting your "
+"supporters to !link."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:226
+msgid "You're redirecting your supporters to !link ."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:270
+msgid "Subject"
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:292;323
+msgid "Thank you email"
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:293
+msgid ""
+"This email is sent to the signee immediately after the petition form is "
+"submitted."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:324
+msgid ""
+"You've set up a \"thank you\" email that will be sent to your supporters."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:338
+msgid "Petition published successfully."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:344
+msgid "Petition saved as draft."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:348
+msgid "Schedule is not implemented yet."
+msgstr ""
+
+#: modules/ae_wizard/plugins/petition.inc.php:353
+msgid "Where is my node? Did you fill out the first step?"
+msgstr ""

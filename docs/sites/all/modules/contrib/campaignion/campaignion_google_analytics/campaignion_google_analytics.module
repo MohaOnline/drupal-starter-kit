@@ -1,0 +1,244 @@
+<?php
+
+use \Drupal\little_helpers\Webform\Webform;
+use \Drupal\campaignion_action\Loader;
+
+function _campaignion_google_analytics_load_payment($nid, $sid) {
+  $subquery = db_select('campaignion_activity_webform', 'w')
+    ->fields('w', array('activity_id'))
+    ->condition('nid', $nid)
+    ->condition('sid', $sid);
+  $pid = db_select('campaignion_activity_payment', 'p')
+    ->fields('p', array('pid'))
+    ->condition('p.activity_id', $subquery, 'in')
+    ->execute()
+    ->fetchColumn();
+  if ($pid) {
+    $payments = entity_load('payment', array($pid));
+    return array_shift($payments);
+  } else {
+    return false;
+  }
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function campaignion_google_analytics_node_view($node, $view_mode, $langcode) {
+  $type = Loader::instance()->type($node->type);
+  if ($type && $type->isDonation()) {
+    drupal_add_js(drupal_get_path('module', 'campaignion_google_analytics') . '/tracking.js');
+    drupal_add_js(drupal_get_path('module', 'campaignion_google_analytics') . '/donation.js');
+
+    // general informatio about the node
+    drupal_add_js(
+      array(
+        'campaignion_google_analytics' => array(
+          'nid' => $node->nid,
+          'language' => $node->language,
+          'title' => $node->title,
+          'actions' => [],
+        ),
+      ),
+      'setting');
+    // add impressions keys to control which events will be
+    if ($view_mode == 'teaser') {
+      // current_path ist always set, but menu_get_object() may not return a
+      // node object every time, e.g. when on a view
+      $path = current_path();
+      if ($parentnode = menu_get_object()) {
+        $list = $parentnode->title . ' [' . $path . ']';
+      } else {
+        $list = '[' . $path . ']';
+      }
+
+      drupal_add_js(
+        array(
+          'campaignion_google_analytics' => array(
+            'actions' => ['impression'],
+            // an impression object
+            'impression' => array(
+              // need to prefix index, otherwise "deduplicating" the
+              // impressions would not work... (same php indexes would simply
+              // be appended in JavaScript, propably because of PHP numeric
+              // array key behaviour
+              'nid-' . $node->nid => array(
+                'id' => $node->nid,
+                'name' => $node->title . " [" . $node->language . "]",
+                'list' => $list
+              ),
+            ),
+          ),
+        ),
+        'setting');
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function campaignion_google_analytics_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
+  $node = $form['#node'];
+  $type = Loader::instance()->type($node->type);
+  if ($type && $type->isDonation()) {
+    $donation_title = $node->title;
+    $donation_lang = $node->language;
+
+    $webform = Webform::fromNode($form['#node']);
+    $paymethod = $webform->componentByKey('paymethod_select');
+    $currency_code = isset($paymethod['extra']['currency_code']) ? $paymethod['extra']['currency_code'] : 'EUR';
+
+    $ga_product_name = $donation_title . ' [' . $donation_lang . ']';
+    // add common product properties
+    drupal_add_js(
+      array(
+        'campaignion_google_analytics' => array(
+          'actions' => [], // reset action
+          'currency' => $currency_code,
+          'product' => array(
+            'id' => $node->nid,
+            'name' => $ga_product_name,
+          ))),
+      'setting');
+    // merge specific product into common properties depending on step
+    // we define the view with the 1st step
+    if ($form_state['webform']['page_num'] == 1) {
+      drupal_add_js(
+        array(
+          'campaignion_google_analytics' => array(
+            'actions' => ['view'],
+            'product' => array(
+            ))),
+        'setting');
+    }
+
+    // This data is only available if we already have a submission.
+    if (isset($form_state['values']['submitted']) && ($submission = $webform->formStateToSubmission($form_state))) {
+      $interval = '';
+      switch ($submission->valueByKey('donation_interval')) {
+      case '1':
+        $interval = 'only once';
+        break;
+      case 'm':
+        $interval = 'monthly';
+        break;
+      case 'y':
+        $interval = 'yearly';
+        break;
+      default:
+        $interval = "unknown [" . $submission->valueByKey('donation_interval') . "]";
+      }
+
+      $amount = intval($submission->valueByKey('donation_amount'));
+
+      // We define the add to cart with completion of the 1st step, usually this
+      // means we have successfully selected the amount and interval.
+      if ($form_state['webform']['page_num'] == 2) {
+        drupal_add_js(['campaignion_google_analytics' => [
+          'actions' => ['add'],
+          'product' => [
+            'price' => $amount,
+            'category' => $interval,
+            'quantity' => '1',
+          ],
+        ]], 'setting');
+      }
+      // We define the checkout begin with the *completion* of the 2nd step or
+      // with the last step.
+      if ($form_state['webform']['page_num'] == 3 || $form_state['webform']['page_num'] == $form_state['webform']['page_count']) {
+        drupal_add_js(['campaignion_google_analytics' => [
+          'actions' => ['checkoutBegin'],
+          'product' => [
+            'price' => $amount,
+            'category' => $interval,
+            'quantity' => '1',
+          ],
+        ]], 'setting');
+      }
+      // We define the checkout end with the last step.
+      if ($form_state['webform']['page_num'] == $form_state['webform']['page_count']) {
+        drupal_add_js(['campaignion_google_analytics' => [
+          'actions' => ['checkoutEnd'],
+          'product' => [
+            'price' => $amount,
+            'category' => $interval,
+            'quantity' => '1',
+          ],
+        ]], 'setting');
+      }
+    }
+    // the purchase has to be on the thanlyou page, because only there we can
+    // be sure whether the payment was successful
+  }
+}
+
+function campaignion_google_analytics_page_build(&$page) {
+  $parameters = drupal_get_query_parameters();
+
+  if (!isset($parameters['sid'])) {
+    return;
+  }
+
+  $sid = intval($parameters['sid']);
+  $nid = db_query('SELECT nid FROM {webform_submissions} WHERE sid=:sid', [':sid' => $sid])->fetchField();
+  if (!($submission = \Drupal\little_helpers\Webform\Submission::load($nid, $sid))) {
+    return;
+  }
+  $node = $submission->getNode();
+
+  // as long as share and sid are there, we are on a thank you page.
+  // general informatio about the node
+  drupal_add_js(
+    array(
+      'campaignion_google_analytics' => array(
+        'nid' => $node->nid,
+        'language' => $node->language,
+        'title' => $node->title,
+        'actions' => [],
+      ),
+    ),
+    'setting');
+
+  if ($payment = _campaignion_google_analytics_load_payment($nid, $sid)) {
+    $donation_title = $node->title;
+    $donation_lang = $node->language;
+    $interval = '';
+    switch ($submission->valueByKey('donation_interval')) {
+    case '1':
+      $interval = 'only once';
+      break;
+    case 'm':
+      $interval = 'monthly';
+      break;
+    case 'y':
+      $interval = 'yearly';
+      break;
+    default:
+      $interval = "unknown [" . $submission->valueByKey('donation_interval') . "]";
+    }
+    $ga_product_name = $donation_title . ' [' . $donation_lang . ']';
+    $amount = $payment->totalAmount(false);
+
+    drupal_add_js(
+      array(
+        'campaignion_google_analytics' => array(
+          'actions' => ['purchase'],
+          'product' => array(
+            'id' => $node->nid,
+            'name' => $ga_product_name,
+            'price' => $amount,
+            'category' => $interval,
+            'currency' => $payment->currency_code,
+            'quantity' => '1',
+          ),
+          'purchase' => array(
+            'id' => $payment->pid,
+            'revenue' => $amount,
+            'currency' => $payment->currency_code,
+        ))),
+      'setting');
+  }
+  drupal_add_js(drupal_get_path('module', 'campaignion_google_analytics') . '/tracking.js');
+  drupal_add_js(drupal_get_path('module', 'campaignion_google_analytics') . '/thank_you_page.js');
+}

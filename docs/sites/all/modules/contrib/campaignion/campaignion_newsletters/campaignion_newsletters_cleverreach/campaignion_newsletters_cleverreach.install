@@ -1,0 +1,36 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function campaignion_newsletters_cleverreach_uninstall() {
+  variable_del(array(
+    'cleverreach_api_keys',
+    'cleverreach_wsdl_url',
+  ));
+}
+
+/**
+ * Implements hook_update_dependencies().
+ */
+function campaignion_newsletters_update_dependencies() {
+  $deps['campaignion_newsletters_cleverreach'][1] = array(
+    'campaignion_newsletters' => 1,
+  );
+  $deps['campaignion_newsletters'][2] = array(
+    'campaignion_newsletters_cleverreach' => 1,
+  );
+  return $deps;
+}
+
+/**
+ * Change variable to store more than one key.
+ */
+function campaignion_newsletters_cleverreach_update_1() {
+  variable_set('cleverreach_api_keys', array(
+    'default' => variable_get('cleverreach_api_key'),
+  ));
+  variable_del('cleverreach_api_key');
+
+  db_query("UPDATE {campaignion_newsletters_lists} SET source='CleverReach-default' WHERE source='CleverReach'");
+}

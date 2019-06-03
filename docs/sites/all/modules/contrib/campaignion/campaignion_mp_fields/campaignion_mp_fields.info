@@ -1,0 +1,33 @@
+name = Campaignion MP fields
+description = CRM fields for MP data (based on postcode)
+core = 7.x
+package = Campaignion
+dependencies[] = campaignion_email_to_target
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = postal_code_validation
+dependencies[] = psr0
+dependencies[] = strongarm
+dependencies[] = taxonomy
+dependencies[] = text
+dependencies[] = uuid
+dependencies[] = uuid_features
+dependencies[] = variable
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[field_base][] = mp_constituency
+features[field_base][] = mp_country
+features[field_base][] = mp_party
+features[field_base][] = mp_salutation
+features[taxonomy][] = mp_country
+features[taxonomy][] = mp_party
+features[uuid_term][] = 3e4dc5dd-0335-4e6a-bd68-585a87aa9a80
+features[uuid_term][] = 48bba52f-836f-4ccf-afac-9944e9eaf599
+features[uuid_term][] = 578118e7-477e-44b7-85df-cd897437c91d
+features[uuid_term][] = 60c353e3-7079-40ff-9790-264bd1a19a1f
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

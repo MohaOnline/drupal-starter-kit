@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * Implements hook_form_node_form_alter().
+ *
+ * Hide some settings behind a "advanced settings" checkbox.
+ */
+function campaignion_node_ux_form_node_form_alter(&$form, &$form_state) {
+  // toggle visibility of advanced settings
+  $form['settings_advanced'] = array(
+    '#type' => 'container',
+    '#weight' => 2000,
+    '#tree' => TRUE,
+  );
+
+  $form['additional_settings']['#weight'] = 1000;
+  $form['settings_advanced']['additional_settings'] = $form['additional_settings'];
+  unset($form['additional_settings']);
+
+  foreach ($form as $key => &$element) {
+    $isFieldSet = $key[0] != '#' && isset($element['#type']) && $element['#type'] == 'fieldset'; 
+    if ($isFieldSet && isset($element['#group']) && $element['#group'] == 'additional_settings') {
+      $element['#group'] = 'settings_advanced][' . $element['#group'];
+    }
+  }
+
+  // toggle display state for wizard_advanced vertical tabs
+  $id = drupal_html_id('toggle-advanced-settings');
+  $form['toggle_settings_advanced'] = array(
+    '#type' => 'checkbox',
+    '#weight' => 1001,
+    '#attributes' => array('id' => $id),
+    '#title' => t('Show advanced settings'),
+  );
+  $form['settings_advanced']['#states'] = array(
+    'invisible' => array("#$id" => array('checked' => FALSE)),
+  );
+
+  // move settings-advanced into group_advanced_settings if available
+  if (!empty($form['#fieldgroups']['group_advanced_settings'])) {
+    $form['#group_children']['toggle_settings_advanced'] = "group_advanced_settings";
+    $form['#group_children']['settings_advanced'] = "group_advanced_settings";
+  }
+
+  if (isset($form_state['#wizard_type']) && $form_state['#wizard_type'] == 'thank_you') {
+    // Thank you pages won't be shared. So we don't need users
+    // to configure opengraph_meta data.
+    unset($form['opengraph_meta']);
+
+    // Inherit the language from the action.
+    if (isset($form['language'])) {
+      $form['language']['#default_value'] = $form_state['#wizard_node']->language;
+      $form['language']['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function campaignion_node_ux_node_presave($node) {
+  if (!module_exists('metatag')) {
+    return;
+  }
+  $lang = metatag_entity_get_language('node', $node);
+  $metatag = &$node->metatags[$lang];
+
+  if (empty($metatag['og:image']) && ($items = field_get_items('node', $node, 'field_main_image'))) {
+    $file = file_load($items[0]['fid']);
+    $metatag['og:image']['value'] = $file->uri;
+  }
+}

@@ -1,0 +1,30 @@
+Home {"url":"<front>", "description":"Go to your front page!" }
+Manage {"description":"Manage your Campaignion" }
+- Content & Actions {"url":"admin/manage/content_and_actions","weight":"0", "description":"View your content and actions" }
+- Supporters {"url":"", "weight":"1", "description":"View and manage your supporters" }
+-- Supporter management {"url":"admin/supporters","weight":"0","description":"Filter and perform bulk actions on your supporter base" }
+-- Supporter Tags {"url":"admin/structure/taxonomy/supporter_tags","weight":"2", "description":"Manage tags assigned to supporters" }
+-- Data management {"url":"admin/structure/redhen/contact_types/manage/contact/fields","hidden":"true", "weight":"3", "description":"Define which data is collected about supporters" }
+- Structure & Appearance {"url":"", "weight":"2", "description":"Configure the strucutre of your site" }
+-- Menus {"url":"admin/structure/menu","weight":"1", "description":"Edit menus and menu items" }
+-- Tags and Categories {"url":"admin/structure/taxonomy","weight":"1", "description":"Edit taxonomies, tags and categories" }
+-- Blocks {"url":"admin/structure/block","weight":"2", "description":"Place blocks and arrange them" }
+-- Theme {"url":"admin/appearance","weight":"3", "description":"Change the appearance of your site" }
+-- Advanced structure {"url":"admin/structure", "weight":"6", "description":"View the Drupal structure settings page" }
+- Media gallery {"url":"admin/manage/media", "weight":"2", "description":"View and edit the media content of your site." }
+- Advanced Settings {"url":"", "weight":"50", "description":"Change settings and configure the site" }
+-- Site settings {"url":"admin/config","weight":"0", "description":"Manage your site settings" }
+-- User accounts {"url":"admin/people","weight":"1", "description":"Manage user accounts and permissions" }
+New {"description":"Add new content or actions" }
+- New actions
+-- Petition {"url":"wizard/petition","weight":"0", "description":"Create a new petition for your campaign" }
+-- Donation page {"url":"wizard/donation","weight":"4", "description":"Create a new donation form" }
+-- Email protest {"url":"wizard/email-protest", "weight":"1", "description":"Launch a new email protest for your campaign" }
+-- Flexible form {"url":"wizard/webform","weight":"3", "description":"Create a flexible form" }
+-- Email to target {"url":"wizard/email-to-target","weight":"2", "description":"Create a Email to Target action" }
+- New content
+-- Campaign {"url":"node/add/campaign","weight":"0", "description":"Choose this if you want to launch a campaing site" }
+-- Static page {"url":"node/add/static-page","weight":"1", "description":"This is your common static page, for sites that don't change often" }
+-- News item {"url":"", "description":"Post a news article!","weight":"2", "hidden":"true" }
+-- Block {"url":"admin/structure/block/add", "weight":"4", "description":"Create a new box" }
+

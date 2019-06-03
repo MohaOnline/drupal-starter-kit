@@ -1,0 +1,82 @@
+<?php
+
+/**
+ * @file
+ * Code for the Campaignion source tags feature.
+ */
+
+use Drupal\campaignion_supporter_tags\Tagger;
+
+include_once 'campaignion_source_tags.features.inc';
+
+/**
+ * Implements hook_campaignion_action_contact_alter().
+ */
+function campaignion_source_tags_campaignion_action_contact_alter($contact, $submission, $action_node) {
+  if (!isset($contact->supporter_tags)) {
+    return FALSE;
+  }
+  $add_tags = variable_get_value('campaignion_source_tags_new_tags');
+
+  $changed = FALSE;
+  foreach (_campaignion_source_tags_map() as $property => $uuid) {
+    if (!empty($submission->tracking->$property)) {
+      $tag = $submission->tracking->$property;
+      $tagger = Tagger::byNameAndParentUuid('supporter_tags', $uuid);
+      $changed = $tagger->tag($contact->supporter_tags, [$tag], $add_tags) || $changed;
+    }
+  }
+
+  return $changed;
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function campaignion_source_tags_entity_presave($entity, $entity_type) {
+  if (isset($entity->supporter_tags)) {
+    $wrapped = entity_metadata_wrapper($entity_type, $entity);
+    foreach (_campaignion_source_tags_map() as $property => $uuid) {
+      $attr = "{$property}_tag";
+      if (!isset($wrapped->$attr) || $wrapped->$attr->value()) {
+        // Either the field doesn’t exist or it already has a value.
+        continue;
+      }
+      foreach ($wrapped->supporter_tags->value() as $term) {
+        // Check whether the term is a source tag.
+        foreach (taxonomy_get_parents($term->tid) as $pterm) {
+          if ($pterm->uuid == $uuid) {
+            $wrapped->$attr->set($term);
+            break 2;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_redhen_settings().
+ */
+function campaignion_source_tags_redhen_settings() {
+  $form['tags'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Tags'),
+  ];
+  $form['tags']['campaignion_source_tags_new_tags'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Allow new tags to be added using source URL parameters.'),
+    '#default_value' => variable_get_value('campaignion_source_tags_new_tags'),
+  ];
+  return $form;
+}
+
+/**
+ * Helper function to get the property UUID mapping.
+ */
+function _campaignion_source_tags_map() {
+  return [
+    'source' => '0fd2977e-9927-4de7-b4c2-e0bde71fc605',
+    'campaign' => '3eb2137a-f1dc-44e2-9216-93f2e8c91093',
+  ];
+}

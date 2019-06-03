@@ -1,0 +1,129 @@
+<?php
+
+function campaignion_uninstall() {
+  variable_del('campaignion_contact_type_supporter');
+}
+
+/**
+ * Delete duplicate contacts.
+ */
+function campaignion_update_8() {
+  $sql = <<<SQL
+SELECT f1.entity_id AS did, f2.entity_id AS oid
+FROM {field_data_redhen_contact_email} f1
+  INNER JOIN {field_data_redhen_contact_email} f2 ON f1.entity_id > f2.entity_id AND f1.bundle = f2.bundle AND f1.redhen_contact_email_value=f2.redhen_contact_email_value
+  LEFT OUTER JOIN {field_data_redhen_contact_email} f3 ON f2.entity_id > f3.entity_id AND f2.bundle=f3.bundle AND f3.redhen_contact_email_value=f2.redhen_contact_email_value
+WHERE f3.entity_id IS NULL
+SQL;
+
+  $i = 0;
+  foreach (db_query($sql) as $row) {
+    if (module_exists('campaignion_activity')) {
+      // Remap all activities to the "original" contact.
+      db_query("UPDATE {campaignion_activity} SET contact_id={$row->oid} WHERE contact_id={$row->did}");
+    }
+    if (module_exists('campaignion_newsletters')) {
+      // Avoid deleting subscriptions by feeding an empty Subscriptions object
+      // into campaignion_newsletters_entity_delete().
+      $contact = entity_load_single('redhen_contact', $row->did);
+      $contact->newsletters = new \Drupal\campaignion_newsletters\Subscriptions([], [], []);
+    }
+    entity_delete('redhen_contact', $row->did);
+    $i++;
+  }
+
+  return t("!count duplicate contacts have been deleted.", ['!count' => $i]);
+}
+
+/**
+ * Increase weight above i18n. -> switch_links_alter()
+ */
+function campaignion_update_7() {
+  db_query("UPDATE {system} SET weight=11 WHERE name='campaignion'");
+}
+
+/**
+ * Enable campaignion_node_ux().
+ */
+function campaignion_update_6() {
+  module_enable(array('campaignion_node_ux'));
+}
+
+/**
+ * ae_wizard.module -> campaignion_wizard.module
+ */
+function campaignion_update_5() {
+  module_disable(array('ae_wizard'));
+  drupal_uninstall_modules(array('ae_wizard'));
+  module_enable(array('campaignion_wizard'));
+}
+
+/**
+ * action.module -> campaignion_action.module
+ */
+function campaignion_update_4() {
+  module_disable(array('action'));
+  drupal_uninstall_modules(array('action'));
+  module_enable(array('campaignion_action'));
+}
+ 
+/**
+ * Rerun update fixed update 2: pgbar fixup.
+ */
+function campaignion_update_3() {
+  campaignion_update_2();
+}
+
+/**
+ * Fixup overridden contexts broken by pgbar rename.
+ */
+function campaignion_update_2() {
+  $result = db_query('SELECT name FROM {context}');
+
+  foreach ($result as $row) {
+    $context = context_load($row->name);
+
+    $reactions = &$context->reactions;
+
+    $changed = FALSE;
+
+    if (isset($reactions['block']['blocks'])) {
+      $new_block = array();
+      foreach ($reactions['block']['blocks'] as $block) {
+        if ($block['module'] == 'cck_blocks' && (strpos($block['delta'], 'pgbar') !== FALSE)) {
+          $block['delta'] = 'pgbar_default';
+	  $block['title'] = '<none>';
+          $changed = TRUE;
+        }
+        $new_block[$block['module'] . '-' . $block['delta']] = $block;
+      }
+      $reactions['block']['blocks'] = $new_block;
+    }
+    if ($changed) {
+      context_save($context);
+    }
+  }
+  variable_set('cck_blocks_pgbar_default_block_availability', 2);
+}
+
+/**
+ * Deactivate youtube tab on all file-fields.
+ */
+function campaignion_update_1() {
+  $opts = array('include_inactive' => TRUE);
+  $fields = field_read_fields(array('type' => array('file', 'image')), $opts);
+  foreach ($fields as $field) {
+    $instances = field_read_instances(array('field_name' => $field['field_name']), $opts);
+    foreach ($instances as $instance) {
+      if ($instance['widget']['type'] == 'media_generic') {
+        $instance['widget']['settings']['browser_plugins'] = array(
+          'upload' => 'upload',
+          'media_default--media_browser_1' => 'media_default--media_browser_1',
+          'media_default--media_browser_my_files' => 'media_default--media_browser_my_files',
+          'media_internet' => 'media_internet',
+        );
+        field_update_instance($instance);
+      }
+    }
+  }
+}

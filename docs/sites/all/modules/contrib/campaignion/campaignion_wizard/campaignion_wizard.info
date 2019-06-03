@@ -1,0 +1,17 @@
+name = Campaignion Wizard
+description = Wizards for creating actions. This module implements a generic frame-work for action wizards and also provides pre-configured wizard classes for the most common action types (NOTE: You need to take care of their module dependencies, when you use them!).
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion_action
+dependencies[] = campaignion_vue
+dependencies[] = form_builder_webform (>=7.x-1.14)
+dependencies[] = oowizard
+dependencies[] = psr0
+dependencies[] = webform_confirm_email (>7.x-2.5)
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"

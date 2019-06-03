@@ -1,0 +1,16 @@
+name = Campaignion Activity
+description = Activity logging for CRM contacts
+core = 7.x
+package = Campaignion
+
+dependencies[] = campaignion
+dependencies[] = little_helpers
+dependencies[] = entity
+
+files[] = views_handler_filter_activity_type.inc
+
+; Information added by Drupal.org packaging script on 2019-05-07
+version = "7.x-2.3"
+core = "7.x"
+project = "campaignion"
+datestamp = "1557239296"
