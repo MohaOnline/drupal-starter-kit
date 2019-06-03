@@ -1,0 +1,162 @@
+<?php
+
+/**
+ * @file
+ * The main code of Finteza Analytics module.
+ */
+
+define('FINTEZA_ANALYTICS_API_URL', 'https://panel.finteza.com/register?utm_source=drupal.admin&utm_term=finteza.register&utm_content=finteza.plugin.drupal&utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_REGISTRATION_URL', 'https://www.finteza.com/en/register?utm_source=drupal.admin&amp;utm_medium=link&amp;utm_term=finteza.register&amp;utm_content=finteza.plugin.drupal&amp;utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_DASHBOARD_URL', 'https://panel.finteza.com?utm_source=drupal.admin&amp;utm_medium=link&amp;utm_content=finteza.plugin.drupal&amp;utm_term=finteza.panel&amp;utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_PASSWORD_RECOVERY_URL', 'https://panel.finteza.com/recovery?utm_source=drupal.admin&amp;utm_medium=link&amp;utm_term=finteza.password.recovery&amp;utm_content=finteza.plugin.drupal&amp;utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_PRIVACY_URL', 'https://www.finteza.com/en/privacy?utm_source=drupal.admin&amp;utm_medium=link&amp;utm_term=finteza.privacy.policy&amp;utm_content=finteza.plugin.drupal&amp;utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_AGREEMENT_URL', 'https://www.finteza.com/en/agreement?utm_source=drupal.admin&amp;utm_medium=link&amp;utm_term=finteza.subscription.agreement&amp;utm_content=finteza.plugin.drupal&amp;utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_WEBSITE_URL', 'https://www.finteza.com?utm_source=drupal.admin&utm_medium=link&utm_term=finteza.website&utm_content=finteza.plugin.drupal&utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_DEMO_URL', 'https://panel.finteza.com/login?login=demo@finteza.com&pass=fintezademo7&utm_source=drupal.admin&utm_medium=link&utm_content=finteza.plugin.drupal&utm_term=finteza.demo&utm_campaign=finteza.drupal');
+define('FINTEZA_ANALYTICS_CKEDITOR_URL', 'https://www.drupal.org/project/ckeditor');
+
+/**
+ * Implements hook_permission().
+ */
+function finteza_analytics_permission() {
+  return array(
+    'administer Finteza Analytics settings' => array(
+      'title' => t('Finteza Analytics Settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function finteza_analytics_menu() {
+  $items = array();
+
+  $items['admin/config/system/finteza_analytics'] = array(
+    'access arguments' => array('administer Finteza Analytics settings'),
+    'page callback' => 'finteza_analytics_admin_page',
+    'title' => 'Finteza Analytics',
+    'type' => MENU_NORMAL_ITEM,
+    'description' => 'Finteza web analytics module for your website.',
+    'file' => 'finteza_analytics.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Register a new website via Finteza API.
+ */
+function finteza_analytics_register_website($registration) {
+  $url = url(FINTEZA_ANALYTICS_API_URL, array('query' => array('back_ref' => $GLOBALS['base_url'])));
+
+  $response = drupal_http_request(
+    $url,
+    array(
+      "headers" => array(
+        'Content-Type' => 'application/x-www-form-urlencoded',
+        'X-Requested-With' => 'XMLHttpRequest',
+      ),
+      "method"  => 'POST',
+      "data"    => http_build_query($registration),
+    )
+  );
+
+  if ($response->code == 200) {
+    return drupal_json_decode($response->data);
+  }
+
+  return NULL;
+}
+
+/**
+ * Validates email address.
+ */
+function finteza_analytics_email_element_validate($element, &$form_state, $form) {
+  if (!valid_email_address($element['#value'])) {
+    form_error($element, t('Please enter a valid email address.'));
+  }
+}
+
+/**
+ * Implements hook_page_build().
+ *
+ * Inject Finteza Analytics tracking script to the site header.
+ */
+function finteza_analytics_page_build(&$page) {
+  if (!finteza_analytics_show_tracker()) {
+    return;
+  }
+
+  $website_id = variable_get('finteza_analytics_website_id', '');
+  $settings = finteza_analytics_tracking_settings_get();
+  $script = file_get_contents(drupal_get_path('module', 'finteza_analytics') . '/finteza_analytics.js.template');
+  $script = str_replace('$websiteId', '"' . htmlspecialchars($website_id, ENT_QUOTES) . '"', $script);
+  $script = str_replace('$trackHash', !!$settings['track_hash'] ? 'true' : 'false', $script);
+  $script = str_replace('$trackLinks', !!$settings['track_links'] ? 'true' : 'false', $script);
+  $script = str_replace('$timeOnPage', !!$settings['time_on_page'] ? 'true' : 'false', $script);
+
+  $page['content']['#attached']['js'][] = array(
+    'type' => 'inline',
+    'data' => $script,
+  );
+}
+
+/**
+ * Returns FALSE if tracker should be disabled on page.
+ *
+ * @return bool
+ *   Visibility of tracker.
+ */
+function finteza_analytics_show_tracker() {
+  $settings = finteza_analytics_tracking_settings_get();
+  $is_admin_page = path_is_admin(current_path());
+  $is_configured = !!variable_get('finteza_analytics_website_id', '');
+  $is_admin = user_access('access administration pages');
+  $track_admins = !$settings['dont_track_admins'];
+
+  return $is_configured && !$is_admin_page && ($track_admins || !$is_admin);
+}
+
+/**
+ * Implements hook_help().
+ */
+function finteza_analytics_help($path, $arg) {
+  $is_configured = !!variable_get('finteza_analytics_website_id', '');
+
+  switch ($path) {
+    case 'admin/config/system/finteza_analytics':
+      $output = "<div class='finteza-analytics__help'>";
+      $output .= '<p>';
+      $output .= "<img alt='Finteza Analytics' class='finteza-analytics__logo' src='" . file_create_url(drupal_get_path('module', 'finteza_analytics') . '/images/logo.svg') . "' width='36' height='36' />";
+      $output .= t('Real-time web analytics. Track your site visits, page views and events. Analyze the incoming traffic quality, explore user behavior and create conversion funnels. With the user-friendly interface, you can access the most realistic unsampled data without delays');
+      $output .= '</p>';
+      $output .= '<ul>';
+      $output .= "<li><a href='" . FINTEZA_ANALYTICS_WEBSITE_URL . "' target='_blank'>" . t('Official website') . '</a></li>';
+      if ($is_configured) {
+        $output .= "<li><a href='" . FINTEZA_ANALYTICS_DASHBOARD_URL . "' target='_blank'>" . t('View statistics') . '</a></li>';
+      }
+      else {
+        $output .= "<li><a href='" . FINTEZA_ANALYTICS_DEMO_URL . "' target='_blank'>" . t('Demo') . '</a></li>';
+      }
+      $output .= '</ul>';
+      $output .= '</div>';
+
+      return $output;
+  }
+}
+
+/**
+ * Returns complete list of tracking settings (with fallback to defaults)
+ */
+function finteza_analytics_tracking_settings_get() {
+  $settings = variable_get('finteza_analytics_tracking_settings', array());
+  $defaults = array(
+    "track_hash" => FALSE,
+    "track_links" => TRUE,
+    "time_on_page" => FALSE,
+    "dont_track_admins" => TRUE,
+  );
+  return array_merge($defaults, $settings);
+}

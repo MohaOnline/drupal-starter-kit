@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @file
+ * Finteza Analytics installation file.
+ */
+
+define('FINTEZA_ANALYTICS_PING_INSTALL_URL', 'https://content.mql5.com/tr?event=Plugin%2BDrupal%2BActivate&id=cbgspzdebnimbhhkhankjnebjfajvaceho&ref=https%3A%2F%2Fwww.finteza.com%2F');
+define('FINTEZA_ANALYTICS_PING_UNINSTALL_URL', 'https://content.mql5.com/tr?event=Plugin%2BDrupal%2BDeactivate&id=cbgspzdebnimbhhkhankjnebjfajvaceho&ref=https%3A%2F%2Fwww.finteza.com%2F');
+
+/**
+ * Implements hook_enable().
+ */
+function finteza_analytics_enable() {
+  finteza_analytics_ping(FINTEZA_ANALYTICS_PING_INSTALL_URL);
+}
+
+/**
+ * Implements hook_disable().
+ */
+function finteza_analytics_disable() {
+  finteza_analytics_ping(FINTEZA_ANALYTICS_PING_UNINSTALL_URL);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function finteza_analytics_uninstall() {
+  // Delete module variables and clear variables cache.
+  db_delete('variable')
+    ->condition('name', 'finteza_analytics_%', 'LIKE')
+    ->execute();
+  cache_clear_all('variables', 'cache_bootstrap');
+}
+
+/**
+ * Sends GET requests with custom user agent headers.
+ */
+function finteza_analytics_ping($url) {
+  $user_agent = 'Drupal/' . VERSION . ';' . $GLOBALS['base_url'];
+
+  $options = array(
+    'method' => 'GET',
+    'data' => '',
+    'timeout' => 15,
+    'headers' => array('User-Agent' => $user_agent),
+  );
+
+  drupal_http_request($url, $options);
+
+  return NULL;
+
+}

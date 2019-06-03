@@ -1,0 +1,52 @@
+<?php
+
+/**
+ * @file
+ * The main code of Finteza Analytics CKEditor integration module.
+ */
+
+/**
+ * Implements hook_ckeditor_plugin().
+ */
+function finteza_analytics_ckeditor_ckeditor_plugin() {
+  return array(
+    'finteza_analytics_ckeditor' => array(
+      'name' => 'fintezaAnalyticsCustomEvents',
+      'desc' => t('Finteza web analytics module for your website'),
+      'path' => drupal_get_path('module', 'finteza_analytics_ckeditor') . '/static/',
+      'buttons' => array(
+        'fintezaAnalyticsAddEvent' => array(
+          'icon' => 'icons/fintezaAnalyticsAddEvent.png',
+          'label' => t('Add an event to Finteza'),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_help().
+ */
+function finteza_analytics_ckeditor_help($path, $arg) {
+  $output = '';
+
+  switch ($path) {
+    case 'admin/help#finteza_analytics_ckeditor':
+      $output = "<div class='finteza-analytics__help'>";
+      $output .= '<p>';
+      $output .= t(
+        "To enable tracking of link click events in your website:<br />&nbsp;<br />&nbsp;1. Open a website page or message for editing<br />&nbsp;2. In the text editor, select the link element and click on the Finteza button<br />&nbsp;3. Enter the click event name to be used in statistics<br />&nbsp;4. View event statistics in the <a href='@dashboard_url' target='_blank'>Finteza dashboard</a><br /><p>For the event addition button to appear, you should install the <a href='@ckeditor_url' target='_blank'>CKEditor</a> module and enable plugin use in the editor profile.</p>",
+        array(
+          '@dashboard_url' => FINTEZA_ANALYTICS_DASHBOARD_URL,
+          '@ckeditor_url' => FINTEZA_ANALYTICS_CKEDITOR_URL,
+        )
+      );
+      $output .= '</p>';
+      $output .= '</div>';
+      break;
+
+    default:
+      break;
+  }
+  return $output;
+}

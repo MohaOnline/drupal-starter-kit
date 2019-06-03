@@ -1,0 +1,14 @@
+core            = "7.x"
+description     = "Allows to setup Finteza events via CKEditor"
+name            = "Finteza Analytics CKEditor Plugin"
+package         = Finteza Analytics
+
+; Dependencies.
+dependencies[]  = ckeditor
+dependencies[]  = finteza_analytics
+
+; Information added by Drupal.org packaging script on 2019-04-15
+version = "7.x-1.1"
+core = "7.x"
+project = "finteza_analytics"
+datestamp = "1555319288"

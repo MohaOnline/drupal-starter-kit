@@ -1,0 +1,13 @@
+name            = "Finteza Analytics"
+description     = "Allows to setup Finteza web-analytics on the site."
+package         = Finteza Analytics
+core            = "7.x"
+configure       = admin/config/system/finteza_analytics
+
+files[]         = finteza_analytics.test
+
+; Information added by Drupal.org packaging script on 2019-04-15
+version = "7.x-1.1"
+core = "7.x"
+project = "finteza_analytics"
+datestamp = "1555319288"

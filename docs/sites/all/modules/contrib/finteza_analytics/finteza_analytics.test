@@ -1,0 +1,149 @@
+<?php
+
+/**
+ * @file
+ * Tests for Finteza Analytics module.
+ */
+
+/**
+ * Tests of Finteza Analytics functionality.
+ */
+class FintezaAnalyticsTestCase extends DrupalWebTestCase {
+
+  /**
+   * Return information about test case.
+   *
+   * @return array
+   *   Information about test case.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Finteza Analytics',
+      'description' => 'Tests of Finteza Analytics functionality.',
+      'group' => 'Finteza Analytics',
+    );
+  }
+
+  /**
+   * Test case presets.
+   */
+  public function setUp() {
+    parent::setUp('finteza_analytics');
+
+    $admin_user_permissions = array(
+      'administer Finteza Analytics settings',
+      'access administration pages',
+      'access content overview',
+    );
+    $this->admin_user = $this->drupalCreateUser($admin_user_permissions);
+
+    // Create regular user.
+    $regular_user_permissions = array(
+      'access content',
+      'access comments',
+    );
+    $this->regular_user = $this->drupalCreateUser($regular_user_permissions);
+  }
+
+  /**
+   * Try to find Finteza Analytics tracker code on current page.
+   *
+   * @return bool
+   *   TRUE if tracker code was found.
+   */
+  public function checkTracker() {
+    return $this->assertRaw('fz("register","website"', 'Finteza Analytics tracker detected on page.');
+  }
+
+  /**
+   * Try not to find Finteza Analytics tracker code on current page.
+   *
+   * @return bool
+   *   TRUE if tracker code wasn't found.
+   */
+  public function checkNoTracker() {
+    return $this->assertNoRaw('@fz("register","website"', 'Finteza Analytics tracker was not detected on page.');
+  }
+
+  /**
+   * Test tracker with no setup.
+   */
+  public function testTrackerWithNoSetup() {
+    // Test as Anonymous user.
+    // Front page.
+    $this->drupalGet('');
+    $this->checkNoTracker();
+
+    // Administration page.
+    $this->drupalGet('admin');
+    $this->checkNoTracker();
+
+    // Login as administrator.
+    $this->drupalLogin($this->admin_user);
+
+    // Front page.
+    $this->drupalGet('');
+    $this->checkNoTracker();
+
+    // Administration page.
+    $this->drupalGet('admin/content');
+    $this->checkNoTracker();
+  }
+
+  /**
+   * Test configured tracker with default settings.
+   */
+  public function testDontTrackAdminsEnabledSetting() {
+    variable_set('finteza_analytics_website_id', $this->randomName(16));
+    variable_set('finteza_analytics_tracking_settings', array('dont_track_admins' => TRUE));
+
+    // Test as Anonymous user.
+    // Front page.
+    $this->drupalGet('');
+    $this->checkTracker();
+
+    // Administration page.
+    $this->drupalGet('admin');
+    $this->checkNoTracker();
+
+    // Login as administrator.
+    $this->drupalLogin($this->admin_user);
+
+    // Front page.
+    $this->drupalGet('');
+    $this->checkNoTracker();
+
+    // Administration page.
+    $this->drupalGet('admin/content');
+    $this->checkNoTracker();
+  }
+
+  /**
+   * Test configured tracker with disabled `dont-track-admin` setting.
+   */
+  public function testDontTrackAdminsDisabledSetting() {
+    variable_set('finteza_analytics_website_id', $this->randomName(16));
+    variable_set('finteza_analytics_tracking_settings', array('dont_track_admins' => FALSE));
+
+    // Test as Anonymous user.
+    // Front page.
+    $this->drupalGet('');
+    $this->checkTracker();
+
+    // Administration page.
+    $this->drupalGet('admin');
+    $this->checkNoTracker();
+
+    // Login as administrator.
+    $this->drupalLogin($this->admin_user);
+
+    // Front page.
+    $this->drupalGet('');
+    $this->checkTracker();
+
+    // Administration page.
+    $this->drupalGet('admin/content');
+    $this->checkNoTracker();
+  }
+
+}
