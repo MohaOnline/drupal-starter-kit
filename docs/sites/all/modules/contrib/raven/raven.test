@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * Tests for Raven.module.
+ */
+
+/**
+ * Tests logging messages to the database.
+ */
+class RavenTestCase extends DrupalWebTestCase {
+
+  /**
+   * A user with some relevant administrative permissions.
+   *
+   * @var object
+   */
+  protected $adminUser;
+
+  /**
+   * A user without any permissions.
+   *
+   * @var object
+   */
+  protected $anyUser;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Raven',
+      'description' => 'Tests for Raven Sentry module.',
+      'group' => 'Raven',
+    );
+  }
+
+  /**
+   * Enable modules and create users with specific permissions.
+   */
+  public function setUp() {
+    $modules = array(
+      function_exists('composer_autoloader') ? 'composer_autoloader' : 'composer_manager',
+      'libraries',
+      'xautoload',
+      'raven',
+      'raven_test',
+    );
+    parent::setUp($modules);
+    $this->ensureAutoloader();
+    $this->adminUser = $this->drupalCreateUser(array(
+      'administer site configuration',
+      'access administration pages',
+      'access site reports',
+    ));
+    $this->anyUser = $this->drupalCreateUser(array());
+  }
+
+  /**
+   * Ensures that the Composer autoloader is set up properly.
+   *
+   * Must be run after the composer_manager module is enabled.
+   */
+  protected function ensureAutoloader() {
+    // Test to see if one of the classes that the autoloader should know
+    // about has been defined.
+    if (!class_exists('Raven_Client')) {
+      // This most likely means that we are running on DrupalCI, so set
+      // up for that.
+      variable_set('composer_manager_vendor_dir', 'vendor');
+      composer_manager_register_autoloader();
+    }
+  }
+
+  /**
+   * Tests Raven module functionality.
+   */
+  public function testRaven() {
+    $this->drupalLogin($this->adminUser);
+    $this->drupalGet('admin/reports/status');
+    $this->drupalGet('admin/config/development/logging');
+    $edit['raven_enabled'] = TRUE;
+    $edit['raven_watchdog_handler'] = TRUE;
+    $edit['raven_watchdog_levels[4]'] = 4;
+    $edit['raven_watchdog_levels[6]'] = 6;
+    $edit['raven_fatal_error_handler'] = TRUE;
+    $this->drupalPost(NULL, $edit, 'Save configuration');
+    $this->drupalLogout();
+    $this->drupalLogin($this->anyUser);
+    $this->assertNoText('Sentry PHP library cannot be loaded. Check status report for more details.');
+    $this->assertIdentical($this->drupalGetHeader('X-Logged'), 'Logged');
+    $this->assertFalse($this->drupalGetHeader('X-Not-Logged'));
+    $this->assertIdentical(realpath($this->drupalGetHeader('X-Watchdog-File')), realpath(drupal_get_filename('module', 'raven_test')));
+    $this->assertIdentical(realpath($this->drupalGetHeader('X-Watchdog-Exception-File')), realpath(drupal_get_filename('module', 'raven_test')));
+    $this->assertIdentical($this->drupalGetHeader('X-Watchdog-Exception-Function'), 'raven_test_throw_exception');
+    $memory_limit = mt_rand(8000000, 9999999);
+    $this->assertEqual($memory_limit, $this->drupalGet('', array('query' => array('memory_limit' => $memory_limit))));
+  }
+
+}

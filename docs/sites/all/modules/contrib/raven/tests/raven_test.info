@@ -1,0 +1,12 @@
+name = 'Raven module tests'
+type = module
+description = 'Support module for Raven tests.'
+package = Testing
+core = 7.x
+hidden = TRUE
+
+; Information added by Drupal.org packaging script on 2019-04-29
+version = "7.x-2.15"
+core = "7.x"
+project = "raven"
+datestamp = "1556518690"

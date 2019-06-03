@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * @file
+ * Raven test module.
+ */
+
+/**
+ * Implements hook_page_build().
+ */
+function raven_test_page_build(array &$page) {
+  $client = raven_get_client();
+  $client->setSendCallback(function ($data) use (&$page) {
+    if (!empty($data['logger']) && !empty($data['sentry.interfaces.Message']['formatted'])) {
+      $page['content']['#attached']['drupal_add_http_header'][] = array(
+        $data['logger'],
+        $data['sentry.interfaces.Message']['formatted'],
+        FALSE,
+      );
+      if (strpos($data['logger'], 'X-Watchdog') === 0) {
+        $last_frame = end($data['stacktrace']['frames']);
+        $page['content']['#attached']['drupal_add_http_header'][] = array(
+          $data['logger'] . '-File',
+          $last_frame['filename'],
+          FALSE,
+        );
+        $page['content']['#attached']['drupal_add_http_header'][] = array(
+          $data['logger'] . '-Function',
+          $last_frame['function'],
+          FALSE,
+        );
+      }
+    }
+    if (!empty($data['exception']['values'][0]['value'])) {
+      if (preg_match('/Allowed memory size of ([0-9]+) bytes exhausted/', $data['exception']['values'][0]['value'], $matches)) {
+        echo $matches[1];
+      }
+    }
+    return FALSE;
+  });
+  watchdog('X-Logged', 'Logged');
+  watchdog('X-Not-Logged', 'Not logged');
+  watchdog('X-Logged', 'Logged');
+  watchdog('X-Watchdog', 'This is a watchdog message.');
+  try {
+    raven_test_throw_exception();
+  }
+  catch (Exception $e) {
+    watchdog_exception('X-Watchdog-Exception', $e);
+  }
+  if (!empty($_GET['memory_limit'])) {
+    ini_set('memory_limit', (int) $_GET['memory_limit']);
+    while (TRUE) {
+      $page[] = 1;
+    }
+  }
+}
+
+/**
+ * Implements hook_raven_filter_alter().
+ */
+function raven_test_raven_watchdog_filter_alter(&$filter) {
+  if ($filter['log_entry']['type'] === 'X-Not-Logged') {
+    $filter['process'] = FALSE;
+  }
+}
+
+/**
+ * Throws an exception.
+ */
+function raven_test_throw_exception() {
+  throw new Exception('This exception will be caught.');
+}

@@ -1,0 +1,21 @@
+{
+    "name": "drupal/raven",
+    "description": "Raven is an exception logging client for Sentry (sentry.io).",
+    "type": "drupal-module",
+    "license": "GPL-2.0+",
+    "homepage": "https://www.drupal.org/project/raven",
+    "authors": [
+        {
+            "name": "Mark Burdett (mfb)",
+            "homepage": "https://www.drupal.org/u/mfb",
+            "role": "Maintainer"
+        }
+    ],
+    "support": {
+        "issues": "https://www.drupal.org/project/issues/raven",
+        "source": "http://cgit.drupalcode.org/raven"
+    },
+    "require": {
+        "sentry/sentry": "^1.2.0"
+    }
+}
