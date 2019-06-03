@@ -1,0 +1,14 @@
+name = Workflow Node Search API
+description = Adds Workflow Node's state information to Search API index.
+package = Workflow
+core = 7.x
+
+dependencies[] = entity
+dependencies[] = workflow
+dependencies[] = workflownode
+
+; Information added by Drupal.org packaging script on 2019-05-23
+version = "7.x-2.13"
+core = "7.x"
+project = "workflow"
+datestamp = "1558597389"
