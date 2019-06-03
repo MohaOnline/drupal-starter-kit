@@ -1,0 +1,12 @@
+name = Simple Login
+description = Simple Login, Register, Password Reset with Background Image
+core = 7.x
+
+configure = admin/config/simplelogin/loginbg
+
+; Information added by Drupal.org packaging script on 2016-07-19
+version = "7.x-1.0"
+core = "7.x"
+project = "simplelogin"
+datestamp = "1468942452"
+

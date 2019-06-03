@@ -1,0 +1,306 @@
+/**
+ * @file
+ * The Login screens, which controls the customized background image.
+ */
+
+.simplelogin {
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+  background-color: #606060;
+}
+
+.simplelogin .signup {
+  position: absolute;
+  text-transform: uppercase;
+  z-index: 9;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.5);
+  top: 40px;
+  right: 40px;
+  padding: 13px 40px;
+}
+
+#user-login,
+.loginregis {
+  max-width: 450px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.loginregis input[type="text"],
+.loginregis input[type="password"] {
+  background-color: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  margin-bottom: 10px;
+  height: 60px;
+  font-size: 20px;
+  font-weight: 300;
+  background-repeat: no-repeat;
+  background-position: 20px center;
+  width: 96%;
+  text-indent: 80px;
+  text-align: left;
+  font-weight: lighter;
+}
+
+.loginregis .form-item-name input {
+  background-image: url(../images/login-name.png);
+}
+
+.loginregis .form-item-pass input,
+.loginregis .form-item-captcha-response input {
+  background-image: url(../images/login-pass.png);
+}
+
+.loginregis input[type="submit"],
+.loginregis input[type="submit"] {
+  margin: 15px 0;
+  width: 96%;
+  background-color: rgba(0,0,0,0.20);
+  color: #fff;
+  text-align: center;
+  height: 60px;
+  border: 1px solid rgba(255,255,255,0.3);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 18px;
+  background-image: none;
+  border-radius: 0;
+  outline: none;
+  font-weight: lighter;
+}
+
+.login-logo {
+  text-decoration: none;
+}
+.ex-center-position h3 {
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.ex-center-position {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -o-transform: translate(-50%,-50%);
+  -ms-transform: translate(-50%,-50%);
+  -moz-transform: translate(-50%,-50%);
+  -webkit-transform: translate(-50%,-50%);
+  transform: translate(-50%,-50%);
+  text-align: center;
+  padding: 0 20px;
+}
+
+.login-logo {
+  display: inline-block;
+  margin-bottom: 35px;
+}
+
+.loginregis p,
+.simplelogin p,
+.loginregis p a,
+.simplelogin p a {
+  color: #fff;
+  text-transform: uppercase;
+  padding-top: 10px;
+}
+
+.simplelogin p a,
+.loginregis p a {
+  text-decoration: underline;
+}
+
+.loginregis .password {
+  text-align: right;
+}
+
+.loginregis .password label,
+.loginregis .password label {
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.loginregis .login-organisation {
+  background-image: url(../images/organization.png) !important;
+}
+
+.loginregis .login-purpose {
+  background-image: url(../images/purpose.png) !important;
+}
+
+.loginregis .form-item-mail input {
+  background-image: url(../images/email.png) !important;
+}
+
+.ex-center-position {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -o-transform: translate(-50%,-50%);
+  -ms-transform: translate(-50%,-50%);
+  -moz-transform: translate(-50%,-50%);
+  -webkit-transform: translate(-50%,-50%);
+  transform: translate(-50%,-50%);
+  text-align: center;
+}
+
+.login-logo {
+  display: inline-block;
+  margin-bottom: 35px;
+}
+
+.loginregis input::-webkit-input-placeholder {
+  color: #fff !important;
+}
+
+.loginregis input:-moz-placeholder {
+  color: #fff !important;
+}
+
+.loginregis input::-moz-placeholder {
+  color: #fff !important;
+}
+
+.loginregis input:-ms-input-placeholder {
+  color: #fff !important;
+}
+
+/* placeholder */
+.simplelogin ::-webkit-input-placeholder {
+  color: #fff;
+}
+
+/* Firefox 18- */
+.simplelogin :-moz-placeholder {
+  color: #fff;
+}
+
+/* Firefox 19+ */
+.simplelogin ::-moz-placeholder {
+  color: #fff;
+}
+
+.simplelogin :-ms-input-placeholder {
+  color: #fff;
+}
+
+.simplelogin .captcha {
+  width: 100%;
+}
+
+.simplelogin .captcha .form-item-captcha-response {
+  width: 65%;
+  position: relative;
+  float: left;
+  margin-left: 5px;
+}
+
+.simplelogin .captcha img {
+  width: 30%;
+}
+
+.simplelogin label.password-toggle {
+  float: right;
+  margin-right: 10px;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.simplelogin input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px #846e8a inset;
+  -webkit-text-fill-color: #fff;
+  opacity: .3;
+  background-image: url(../images/login-name.png);
+}
+
+.simplelogin input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #846e8a inset;
+  -webkit-text-fill-color: #fff;
+}
+
+.simplelogin label.password-toggle input {
+  background-image: none !important;
+}
+
+.simplelogin .messages.error {
+  text-align: left;
+}
+
+/* Iphone and Smartphone */
+@media only screen and (max-width: 991px) {
+  .simplelogin input[type="text"],
+  .simplelogin input[type="password"] {
+    background-position: 10px center;
+    padding: 10px 10px 10px 50px;
+  }
+}
+
+/* Between Smart phones and Tablet Screen Sizes*/
+@media only screen and (max-width: 767px) {
+  .simplelogin .ex-center-position {
+    position: static;
+    display: block;
+    transform: none;
+    -o-transform: none;
+    -ms-transform: none;
+    -moz-transform: none;
+    -webkit-transform: none;
+  }
+
+  .simplelogin p,
+  .simplelogin p a,
+  .simplelogin p,
+  .simplelogin p a {
+    font-size: 14px;
+  }
+
+  .simplelogin {
+    padding-bottom: 100px;
+  }
+
+  .simplelogin .sign-up {
+    margin: 30px;
+    position: static;
+    text-align: right;
+  }
+
+  .simplelogin .sign-up p {
+    padding: 10px 25px;
+  }
+
+  .simplelogin .sign-up p a {
+    padding: 10px 25px;
+  }
+
+  .simplelogin input[type="text"],
+  .simplelogin input[type="password"],
+  .simplelogin input[type="submit"],
+  .simplelogin input[type="email"] {
+    height: 60px;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  .simplelogin .login-logo {
+    width: 50%;
+    float: left;
+  }
+
+  .simplelogin .login-logo img {
+    width: 100%;
+  }
+
+  .simplelogin .signup {
+    top: 10px;
+    right: 25px;
+    padding: 10px 20px;
+  }
+}
+
+@media only screen and (max-width:480px) {
+  .ex-center-position {
+    left: 0%;
+  }
+}

@@ -1,0 +1,160 @@
+<?php
+
+/**
+ * @file
+ * The Login screens, which controls the customized background image.
+ */
+
+/**
+ * Implements hook_preprocess_page() for page--simplelogin.tpl.php.
+ */
+function simplelogin_preprocess_page(&$variables, $hook) {
+  $path = drupal_get_path_alias();
+  $user_path = array('user', 'user/login', 'user/password', 'user/register');
+  if (user_is_anonymous()) {
+    if (in_array($path, $user_path)) {
+      $array = array('type' => 'file', 'weight' => 999, 'group' => CSS_THEME);
+      drupal_add_css(drupal_get_path('module', 'simplelogin') . "/css/simplelogin.css", $array);
+      $variables['theme_hook_suggestions'][] = 'page__simplelogin';
+      $variable = variable_get('simplelogin_fid', '');
+      if ($variable) {
+        $file = file_load($variable);
+        $bgimg = file_create_url($file->uri);
+        $css = "body.simplelogin {background-image: url('$bgimg') }";
+        drupal_add_css($css, 'inline');
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function simplelogin_preprocess_html(&$variables) {
+  $path = drupal_get_path_alias();
+  $user_path = array('user', 'user/login', 'user/password', 'user/register');
+  if (in_array($path, $user_path)) {
+    $variables['classes_array'][] = 'simplelogin';
+  }
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function simplelogin_theme_registry_alter(&$theme_registry) {
+  $module_path = drupal_get_path('module', 'simplelogin');
+  $theme_registry['page__simplelogin'] = array(
+    'template' => $module_path . '/templates/page--simplelogin',
+    'type' => 'theme_engine',
+    'theme path' => $module_path . '/templates',
+    'render element' => 'page',
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function simplelogin_form_alter(&$form, &$form_state, $form_id) {
+  $types = array('textfield', 'email', 'textarea', 'password', 'container');
+  foreach ($form as $key => $value) {
+    switch ($form_id) {
+      case 'user_register_form':
+        foreach ($form['account'] as $key => $val) {
+          if (isset($form['account'][$key]['#type'])) {
+            if (in_array($form['account'][$key]['#type'], $types)) {
+              $form['account'][$key]['#attributes']["placeholder"] = $form['account'][$key]["#title"];
+              $form['account'][$key]['#title_display'] = 'invisible';
+              $form['account'][$key]['#description'] = '';
+            }
+          }
+        }
+        break;
+
+      case 'user_login':
+        $form['actions']['submit']['#value'] = t('Login to Account');
+      case 'user_pass':
+        if (isset($value['#type']) && in_array($value['#type'], $types)) {
+          $form[$key]['#attributes']["placeholder"] = $value["#title"];
+          $form[$key]['#title_display'] = 'invisible';
+          $form[$key]['#description'] = '';
+        }
+        break;
+
+    }
+  }
+  if (module_exists('captcha')) {
+    $form['captcha']['#after_build'][] = 'simplelogin_set_captcha';
+  }
+
+}
+
+/**
+ * Add Placeholders, Title(invisible), Description(hide) to captcha input field.
+ */
+function simplelogin_set_captcha(&$element) {
+  $element['captcha_widgets']['captcha_response']['#attributes']['placeholder'] = t('Verification Code');
+  $element['captcha_widgets']['captcha_response']['#title_display'] = 'invisible';
+  $element['captcha_widgets']['captcha_response']['#description'] = '';
+  return $element;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function simplelogin_menu() {
+  $items = array();
+  $items['admin/config/simplelogin'] = array(
+    'title' => 'Simple Login',
+    'description' => 'Configuration of simple login image',
+    'position' => 'right',
+    'weight' => 3,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+  $items['admin/config/simplelogin/loginbg'] = array(
+    'title' => 'Login Configuration Settings',
+    'description' => 'A form to upload an Image purpose of login background',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('simplelogin_background_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'simplelogin.inc',
+    'file path' => drupal_get_path('module', 'simplelogin') . '/inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function simplelogin_theme() {
+  return array(
+    'simplelogin_imageupload' => array(
+      'render element' => 'element',
+    ),
+  );
+}
+
+/**
+ * Implements theme_sl_imageupload theme callback.
+ */
+function theme_simplelogin_imageupload($variables) {
+  $element = $variables['element'];
+  $opt = '';
+  if ($element['fid']['#value'] != 0) {
+    $uri = file_load($element['fid']['#value'])->uri;
+    $array = array(
+      'style_name' => 'thumbnail',
+      'path' => $uri,
+      'getsize' => FALSE,
+    );
+    $opt .= '<div>' . theme('image_style', $array) . '</div>';
+  }
+  if ($element['fid']['#value'] != 0) {
+    $element['filename']['#markup'] .= ' <span class="file-size">(' . format_size($element['#file']->filesize) . ')</span> ';
+  }
+  $opt .= drupal_render_children($element);
+  return $opt;
+}

@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Installation file for simplelogin.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function simplelogin_uninstall() {
+  variable_del('simplelogin_fid');
+}
