@@ -1,0 +1,12 @@
+name = CodeMirror Field
+description = Integrates CodeMirror as a customizable field.
+core = 7.x
+
+dependencies[] = libraries
+
+; Information added by Drupal.org packaging script on 2015-10-15
+version = "7.x-1.1"
+core = "7.x"
+project = "codemirror_field"
+datestamp = "1444919040"
+

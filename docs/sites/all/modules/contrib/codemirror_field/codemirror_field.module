@@ -1,0 +1,683 @@
+<?php
+
+/**
+ * @file
+ * CodeMirror Editor integration with field widget and formatter.
+ */
+
+/**
+ * Implements hook_libraries_info().
+ */
+function codemirror_field_libraries_info() {
+  $libraries = array();
+
+  $libraries['codemirror'] = array(
+    'name' => 'CodeMirror',
+    'vendor url' => 'http://codemirror.net/',
+    'download url' => 'https://github.com/marijnh/CodeMirror/downloads',
+    'files' => array(
+      'js' => array(
+        'lib/codemirror.js',
+      ),
+      'css' => array(
+        'lib/codemirror.css',
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function codemirror_field_field_widget_info() {
+  return array(
+    'text_source_code' => array(
+      'label' => t('Source Code'),
+      'field types' => array(
+        'text_long',
+        'text_with_summary',
+      ),
+      'settings' => array(
+        'theme' => 'default',
+        'mode' => 'text/html',
+        'indentUnit' => 2,
+        'smartIndent' => 1,
+        'tabSize' => 4,
+        'indentWithTabs' => 0,
+        'electricChars' => 1,
+        'autoClearEmptyLines' => 0,
+        'lineWrapping' => 1,
+        'lineNumbers' => 1,
+        'lint' => 0,
+        'gutter' => 0,
+        'fixedGutter' => 0,
+        'showCursorWhenSelecting' => 0,
+        'readOnly' => 0,
+        'matchBrackets' => 1,
+        'cursorBlinkRate' => 530,
+        'undoDepth' => 40,
+        'autofocus' => 0,
+        'dragDrop' => 1,
+        'matchTags' => 0,
+      ),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+        'default value' => FIELD_BEHAVIOR_DEFAULT,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function codemirror_field_field_formatter_info() {
+  return array(
+    'text_source_code_formatter' => array(
+      'label' => t('Source Code'),
+      'field types' => array('text_long', 'text_with_summary'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ */
+function codemirror_field_field_widget_settings_form($field, $instance) {
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+
+  $form = array();
+
+  if ($widget['type'] == 'text_source_code') {
+
+    $mode_names = array_keys(codemirror_field_get_mode());
+
+    $mode_options = array_combine($mode_names, $mode_names);
+
+    // The form values are passed directly to the javascript library as settings
+    // object so I prefer to use camel case instead of drupal standard array
+    // keys to avoid code complexity.
+    $form['mode'] = array(
+      '#type' => 'select',
+      '#title' => t('Mode'),
+      '#default_value' => $settings['mode'],
+      '#required' => TRUE,
+      '#options' => $mode_options,
+      '#description' => t('The source code programming language. (E.g.: CSS, Less, Javascript, etc.)'),
+      '#weight' => -99,
+    );
+
+    $form['theme'] = array(
+      '#type' => 'select',
+      '#title' => t('Syntax highlight theme'),
+      '#default_value' => $settings['theme'],
+      '#required' => TRUE,
+      '#options' => codemirror_field_get_themes(),
+      '#weight' => -98,
+    );
+
+    $form['indentUnit'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Indent unit'),
+      '#description' => t('How many spaces a block (whatever that means in the edited language) should be indented. The default is 2.'),
+      '#default_value' => isset($settings['indentUnit']) ? $settings['indentUnit'] : 2,
+      '#required' => TRUE,
+      '#weight' => -97,
+    );
+
+    $form['smartIndent'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Smart indent'),
+      '#description' => t('Whether to use the context-sensitive indentation that the mode provides (or just indent the same as the line before). Defaults to TRUE.'),
+      '#default_value' => isset($settings['smartIndent']) ? $settings['smartIndent'] : 1,
+      '#weight' => -96,
+    );
+
+    $form['lint'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Linter'),
+      '#description' => t('Defines an interface component for showing linting warnings, with pluggable warning sources. Defaults to FALSE.'),
+      '#default_value' => isset($settings['lint']) ? $settings['lint'] : 0,
+      '#weight' => -96,
+    );
+
+    $form['tabSize'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Tab size'),
+      '#description' => t('The width of a tab character. Defaults to 4.'),
+      '#default_value' => isset($settings['tabSize']) ? $settings['tabSize'] : 4,
+      '#required' => TRUE,
+      '#weight' => -95,
+    );
+
+    $form['indentWithTabs'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Indent with tabs'),
+      '#description' => t('Whether, when indenting, the first N*tabSize spaces should be replaced by N tabs. Default is FALSE.'),
+      '#default_value' => isset($settings['indentWithTabs']) ? $settings['indentWithTabs'] : 1,
+      '#weight' => -94,
+    );
+
+    $form['electricChars'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Electric characters'),
+      '#description' => t('Configures whether the editor should re-indent the current line when a character is typed that might change its proper indentation (only works if the mode supports indentation). Default is TRUE.'),
+      '#default_value' => isset($settings['electricChars']) ? $settings['electricChars'] : 1,
+      '#weight' => -93,
+    );
+
+    $form['autoClearEmptyLines'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Auto clear empty lines'),
+      '#description' => t('When turned on (default is off), this will automatically clear lines consisting only of whitespace when the cursor leaves them. This is mostly useful to prevent auto indentation from introducing trailing whitespace in a file.'),
+      '#default_value' => isset($settings['autoClearEmptyLines']) ? $settings['autoClearEmptyLines'] : 0,
+      '#weight' => -92,
+    );
+
+    $form['lineWrapping'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Line wrapping'),
+      '#description' => t('Whether CodeMirror should scroll or wrap for long lines. Defaults to FALSE (scroll).'),
+      '#default_value' => isset($settings['lineWrapping']) ? $settings['lineWrapping'] : 1,
+      '#weight' => -91,
+    );
+
+    $form['lineNumbers'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Line numbers'),
+      '#description' => t('Whether to show line numbers to the left of the editor.'),
+      '#default_value' => isset($settings['lineNumbers']) ? $settings['lineNumbers'] : 1,
+      '#weight' => -90,
+    );
+
+    $form['gutter'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Gutter'),
+      '#description' => t('Can be used to force a "gutter" (empty space on the left of the editor) to be shown even when no line numbers are active.'),
+      '#default_value' => isset($settings['gutter']) ? $settings['gutter'] : 0,
+      '#weight' => -89,
+    );
+
+    $form['fixedGutter'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Fixed gutter'),
+      '#description' => t('When enabled (off by default), this will make the gutter stay visible when the document is scrolled horizontally.'),
+      '#default_value' => isset($settings['fixedGutter']) ? $settings['fixedGutter'] : 0,
+      '#weight' => -88,
+    );
+
+    $form['showCursorWhenSelecting'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Show cursor when selecting'),
+      '#description' => t('Whether the cursor should be drawn when a selection is active. Defaults to FALSE.'),
+      '#default_value' => isset($settings['showCursorWhenSelecting']) ? $settings['showCursorWhenSelecting'] : 0,
+      '#weight' => -87,
+    );
+
+    $form['readOnly'] = array(
+      '#type' => 'select',
+      '#title' => t('Read only'),
+      '#description' => t('This disables editing of the editor content by the user. If the special value "nocursor" is given (instead of simply TRUE), focusing of the editor is also disallowed.'),
+      '#default_value' => isset($settings['readOnly']) ? $settings['readOnly'] : 0,
+      '#options' => array(
+        0 => t('Editable'),
+        1 => t('Read only with cursor enabled'),
+        'nocursor' => t('Read only and disable cursor'),
+      ),
+      '#weight' => -86,
+    );
+
+    $form['matchBrackets'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Match brackets'),
+      '#description' => t('Determines whether brackets are matched whenever the cursor is moved next to a bracket.'),
+      '#default_value' => isset($settings['matchBrackets']) ? $settings['matchBrackets'] : 1,
+      '#weight' => -85,
+    );
+
+    $form['matchTags'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Match tags'),
+      '#description' => t('Highlights the start and end tag.'),
+      '#default_value' => isset($settings['matchTags']) ? $settings['matchTags'] : 0,
+      '#weight' => -85,
+    );
+
+    $form['cursorBlinkRate'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Cursor blink rate'),
+      '#description' => t('Half-period in milliseconds used for cursor blinking. The default blink rate is 530ms.'),
+      '#default_value' => isset($settings['cursorBlinkRate']) ? $settings['cursorBlinkRate'] : 530,
+      '#required' => TRUE,
+      '#weight' => -84,
+    );
+
+    $form['undoDepth'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Undo depth'),
+      '#description' => t('The maximum number of undo levels that the editor stores. Defaults to 40.'),
+      '#default_value' => isset($settings['undoDepth']) ? $settings['undoDepth'] : 40,
+      '#required' => TRUE,
+      '#weight' => -83,
+    );
+
+    $form['autofocus'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Autofocus'),
+      '#description' => t('Can be used to make CodeMirror focus itself on initialization. Defaults to off.'),
+      '#default_value' => isset($settings['autofocus']) ? $settings['autofocus'] : 0,
+      '#weight' => -82,
+    );
+
+    $form['dragDrop'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Drag and Drop'),
+      '#description' => t('Controls whether drag-and-drop is enabled. On by default.'),
+      '#default_value' => isset($settings['dragDrop']) ? $settings['dragDrop'] : 1,
+      '#weight' => -81,
+    );
+  }
+  return $form;
+}
+
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function codemirror_field_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $widget = $element;
+  $widget['#delta'] = $delta;
+
+  if ($instance['widget']['type'] == 'text_source_code') {
+    $instance_id = $instance['field_name'] . '-' . $instance['field_id'];
+
+    $codemirror_path = libraries_get_path('codemirror');
+
+    $settings['config'] = $instance['widget']['settings'];
+    $mode = $instance['widget']['settings']['mode'];
+    $theme = $instance['widget']['settings']['theme'];
+
+    $settings['mode'] = codemirror_field_get_mode($mode);
+
+    if (isset($settings['mode']['extraKeys'])) {
+      $settings['config']['extraKeys'] = $settings['mode']['extraKeys'];
+    }
+
+    if (!$settings['mode']) {
+      return $element;
+    }
+
+    $mode_id = drupal_html_class($mode);
+    $settings['mode_id'] = $mode_id;
+
+    $codemirror_js = array(
+      array(
+        'data' => $codemirror_path . '/lib/codemirror.js',
+        'type' => 'file',
+        'weight' => 0,
+      ),
+      array(
+        'data' => array(
+          'codemirror' => array(
+            'settings' => array(
+              'codemirror-instance-' . drupal_html_class($instance_id) => $settings['config'],
+            ),
+          ),
+        ),
+        'type' => 'setting',
+        'weight' => 1,
+      ),
+      array(
+        'data' => drupal_get_path('module', 'codemirror_field') . '/codemirror_field.js',
+        'type' => 'file',
+        'weight' => 2,
+      ),
+    );
+
+    $codemirror_css = array(
+      array(
+        'data' => $codemirror_path . '/lib/codemirror.css',
+        'type' => 'file',
+        'weight' => 0,
+      ),
+    );
+
+    // Load codemirror component js.
+    foreach ($settings['mode']['components'] as $component) {
+      $codemirror_js[] = array(
+        'data' => $codemirror_path . '/mode/' . $component . '/' . $component . '.js',
+        'type' => 'file',
+        'weight' => 3,
+      );
+    }
+
+    // Load codemirror theme.
+    $codemirror_css[] = array(
+      'data' => $codemirror_path . '/theme/' . $theme . '.css',
+      'type' => 'file',
+      'weight' => 3,
+    );
+
+    // Load codemirror addons.
+    $addons = isset($settings['mode']['addons']) ? $settings['mode']['addons'] : FALSE;
+
+    if (isset($addons)) {
+      foreach ($addons as $type => $config) {
+        switch ($type) {
+          case 'hint':
+            $codemirror_js[] = array(
+              'data' => $codemirror_path . '/addon/hint/show-hint.js',
+              'type' => 'file',
+              'weight' => 98,
+            );
+
+            $codemirror_css[] = array(
+              'data' => $codemirror_path . '/addon/hint/show-hint.css',
+              'type' => 'file',
+              'weight' => 98,
+            );
+
+            foreach ($config as $hint) {
+              $codemirror_js[] = array(
+                'data' => $codemirror_path . '/addon/hint/' . $hint['type'] . '-hint.js',
+                'type' => 'file',
+                'weight' => 99,
+              );
+            }
+            break;
+
+          case 'lint':
+            $codemirror_js[] = array(
+              'data' => $codemirror_path . '/addon/lint/lint.js',
+              'type' => 'file',
+              'weight' => 98,
+            );
+
+            $codemirror_js[] = array(
+              'data' => 'http://ajax.aspnetcdn.com/ajax/jshint/r07/jshint.js',
+              'type' => 'external',
+              'weight' => 98,
+            );
+
+            $codemirror_css[] = array(
+              'data' => $codemirror_path . '/addon/lint/lint.css',
+              'type' => 'file',
+              'weight' => 98,
+            );
+
+            foreach ($config as $lint) {
+              $codemirror_js[] = array(
+                'data' => $codemirror_path . '/addon/lint/' . $lint['type'] . '-lint.js',
+                'type' => 'file',
+                'weight' => 99,
+              );
+            }
+            break;
+
+          case 'edit':
+            foreach ($config as $edit_addon => $edit_addon_config) {
+              $codemirror_js[] = array(
+                'data' => $codemirror_path . '/addon/edit/' . $edit_addon . '.js',
+                'type' => 'file',
+                'weight' => 98,
+              );
+            }
+            break;
+
+          case 'fold':
+            foreach ($config as $type => $fold_addon) {
+              $codemirror_js[] = array(
+                'data' => $codemirror_path . '/addon/fold/' . $fold_addon . '.js',
+                'type' => 'file',
+                'weight' => 98,
+              );
+            }
+            break;
+        }
+      }
+    }
+
+    $widget += array(
+      '#type' => 'textarea',
+      '#attributes' => array(
+        'class' => array(
+          'codemirror',
+          'codemirror-' . $mode_id, 'codemirror-instance-' . drupal_html_class($instance_id),
+        ),
+      ),
+      '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : '',
+      '#attached' => array(
+        'js' => $codemirror_js,
+        'css' => $codemirror_css,
+      ),
+    );
+  }
+
+  if ($instance['settings']['text_processing']) {
+    $element = $widget;
+    $element['#type'] = 'text_format';
+    $element['#format'] = isset($items[$delta]['format']) ? $items[$delta]['format'] : NULL;
+    $element['#base_type'] = $widget['#type'];
+  }
+  else {
+    $element['value'] = $widget;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function codemirror_field_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+
+  switch ($display['type']) {
+    case 'text_source_code_formatter':
+      $instance_id = $instance['field_name'] . '-' . $instance['field_id'];
+      $codemirror_path = libraries_get_path('codemirror');
+
+      $settings['config'] = $instance['widget']['settings'];
+
+      // @todo : Implement field formatter settings UI to alter the formatter instance.
+      // Let's set the output readOnly with nocursor.
+      $settings['config']['readOnly'] = 'nocursor';
+
+      $mode = $instance['widget']['settings']['mode'];
+      $theme = $instance['widget']['settings']['theme'];
+      $settings['mode'] = codemirror_field_get_mode($mode);
+
+      $mode_id = drupal_html_class($mode);
+      $settings['mode_id'] = $mode_id;
+
+      $codemirror_js = array(
+        array(
+          'data' => $codemirror_path . '/lib/codemirror.js',
+          'type' => 'file',
+          'weight' => 0,
+        ),
+        array(
+          'data' => array(
+            'codemirror' => array(
+              'settings' => array(
+                'codemirror-instance-' . drupal_html_class($instance_id) => $settings['config'],
+              ),
+            ),
+          ),
+          'type' => 'setting',
+          'weight' => 1,
+        ),
+        array(
+          'data' => drupal_get_path('module', 'codemirror_field') . '/codemirror_field.js',
+          'type' => 'file',
+          'weight' => 2,
+        ),
+      );
+
+      $codemirror_css = array(
+        array(
+          'data' => $codemirror_path . '/lib/codemirror.css',
+          'type' => 'file',
+          'weight' => 0,
+        ),
+        array(
+          'data' => '.field-label-inline .field-label, .field-label-inline .field-items { float: none; !important }',
+          'type' => 'inline',
+          'weight' => 99,
+        ),
+      );
+
+      // Load codemirror component js.
+      foreach ($settings['mode']['components'] as $component) {
+        $codemirror_js[] = array(
+          'data' => $codemirror_path . '/mode/' . $component . '/' . $component . '.js',
+          'type' => 'file',
+          'weight' => 3,
+        );
+      }
+
+      // Load codemirror theme.
+      $codemirror_css[] = array(
+        'data' => $codemirror_path . '/theme/' . $theme . '.css',
+      );
+
+      foreach ($items as $delta => $item) {
+        $element[$delta] = array(
+          '#prefix' => '<div class="codemirror-block">',
+          '#suffix' => '</div>',
+          '#type' => 'textarea',
+          '#attributes' => array(
+            'class' => array(
+              'codemirror',
+              'codemirror-' . $mode_id,
+              'codemirror-instance-' . drupal_html_class($instance_id),
+            ),
+            'disabled' => 'disabled',
+          ),
+          '#value' => isset($item['value']) ? $item['value'] : '',
+          '#attached' => array(
+            'js' => $codemirror_js,
+            'css' => $codemirror_css,
+          ),
+        );
+      }
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Returns a single codemirror mode or all codemirror modes.
+ *
+ * @param string $mode
+ *   The mode identifier for which the results are returned.
+ *
+ * @return array
+ *   If a mode is given the function returns the settings for that, otherwise
+ *   it returns all modes.
+ */
+function codemirror_field_get_mode($mode = NULL) {
+  $default_modes = array(
+    'text/html' => array(
+      'components' => array('xml', 'htmlmixed'),
+      'addons' => array(
+        'hint' => array(
+          array('type' => 'xml'),
+          array('type' => 'html'),
+        ),
+        'edit' => array(
+          'matchbrackets' => array(),
+          'matchtags' => array(),
+        ),
+        'fold' => array('xml-fold'),
+      ),
+      'extraKeys' => array(
+        "Ctrl-Space" => "autocomplete",
+      ),
+    ),
+
+    'css' => array(
+      'components' => array('css'),
+      'addons' => array(
+        'hint' => array(
+          array('type' => 'css'),
+        ),
+        'lint' => array(
+          array('type' => 'css'),
+        ),
+        'edit' => array(
+          'matchbrackets' => array(),
+        ),
+      ),
+      'extraKeys' => array(
+        "Ctrl-Space" => "autocomplete",
+      ),
+    ),
+
+    'text/x-less' => array(
+      'components' => array('css'),
+      'addons' => array(
+        'hint' => array(
+          array('type' => 'css'),
+        ),
+        'lint' => array(
+          array('type' => 'css'),
+        ),
+        'edit' => array(
+          'matchbrackets' => array(),
+        ),
+      ),
+      'extraKeys' => array(
+        "Ctrl-Space" => "autocomplete",
+      ),
+    ),
+
+    'javascript' => array(
+      'components' => array('javascript'),
+      'addons' => array(
+        'hint' => array(
+          array('type' => 'javascript'),
+        ),
+        'lint' => array(
+          array('type' => 'javascript'),
+        ),
+        'edit' => array(
+          'matchbrackets' => array(),
+        ),
+      ),
+      'extraKeys' => array(
+        "Ctrl-Space" => "autocomplete",
+      ),
+    ),
+  );
+
+  // @todo : Implement UI for overriding mode settings.
+  $modes = variable_get('codemirror_modes', $default_modes);
+
+  return isset($mode) ? (isset($modes[$mode]) ? $modes[$mode] : FALSE) : $modes;
+}
+
+/**
+ * Helper function to get the available codemirror themes.
+ *
+ * @return array
+ *   Available codemirror themes.
+ */
+function codemirror_field_get_themes() {
+  $themes = file_scan_directory(libraries_get_path('codemirror') . '/theme', '/\.css/', array('key' => 'name'));
+
+  foreach ($themes as $name => $theme) {
+    $themes[$name] = $name;
+  }
+
+  $themes = array('default' => 'default') + $themes;
+
+  ksort($themes);
+
+  return $themes;
+}
