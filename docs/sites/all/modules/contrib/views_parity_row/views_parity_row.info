@@ -1,0 +1,16 @@
+name = "Views Parity Row"
+description = "Provide a new Views row plugin that enable alternate view mode on particular rows."
+core = "7.x"
+package = Views
+dependencies[] = views
+php = 5.4
+files[] = views/views_parity_row_views_plugin_row_node_view.inc
+files[] = views/views_parity_row_views_plugin_row_entity_view.inc
+files[] = views/views_parity_row_base.inc
+
+; Information added by Drupal.org packaging script on 2015-04-29
+version = "7.x-1.4"
+core = "7.x"
+project = "views_parity_row"
+datestamp = "1430287983"
+
