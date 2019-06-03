@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * @file
+ * Contains class OgonePaymentMethodCRUD.
+ */
+
+/**
+ * Tests the OgonePaymentMethodController UI.
+ */
+class OgonePaymentMethodUI extends DrupalWebTestCase {
+
+  /**
+   * Implements DrupalTestCase::getInfo().
+   */
+  static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'Payment method UI',
+      'group' => 'Ogone',
+    );
+  }
+
+  /**
+   * Overrides parent::setUp().
+   */
+  function setUp(array $modules = array()) {
+    $this->profile = 'testing';
+    parent::setUp($modules + array('ogone'));
+  }
+
+  /**
+   * Tests
+   * OgonePaymentMethodController::payment_method_configuration_form_elements_callback.
+   */
+  function testUI() {
+    $controller_class_name = 'OgonePaymentMethodController';
+    $controller = payment_method_controller_load($controller_class_name);
+    $controller_data = array(
+      'ogone_payment_method' => 'iDEAL',
+      'ogone_payment_method_brand' => 'iDEAL',
+      'passphrase_algorithm' => 'sha512',
+      'passphrase_in' => 'foo',
+      'passphrase_out' => 'bar',
+      'pspid' => $this->randomName(30),
+      'server' => $controller_class_name::SERVER_TESTING,
+    ) + $controller->controller_data_defaults;
+    $account = $this->drupalCreateUser(array('payment.payment_method.create.' . $controller_class_name));
+    $this->drupalLogin($account);
+    $this->drupalPost('admin/config/services/payment/method/add/' . $controller_class_name, array(
+      'title_specific' => 'Foo',
+      'name' => 'foo',
+      'controller_form[ogone_payment_method]' => $controller_data['ogone_payment_method'] . ':' . $controller_data['ogone_payment_method_brand'],
+      'controller_form[pspid]' => $controller_data['pspid'],
+      'controller_form[server]' => $controller_data['server'],
+      'controller_form[passphrase_algorithm]' => $controller_data['passphrase_algorithm'],
+      'controller_form[passphrase_in]' => $controller_data['passphrase_in'],
+      'controller_form[passphrase_out]' => $controller_data['passphrase_out'],
+    ), t('Save'));
+    $payment_method_loaded = entity_load_single('payment_method', 1);
+    $this->assertEqual($controller_data, $payment_method_loaded->controller_data);
+  }
+}

@@ -1,0 +1,52 @@
+<?php
+/**
+ * @file
+ * Code for the Content Type: Block feature.
+ */
+
+include_once 'dvg_ct_block.context.inc';
+include_once 'dvg_ct_block.features.inc';
+include_once 'dvg_ct_block.dvg.user_permission.inc';
+
+/**
+ * Implements hook_functional_content().
+ *
+ * @todo: group?
+ */
+function dvg_ct_block_functional_content() {
+  $fc = array(
+    'dvg_ct_block_contact' => array(
+      'label' => t('Contact block'),
+    ),
+  );
+
+  return $fc;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function dvg_ct_block_block_info() {
+  $blocks = array();
+
+  if ($node = functional_content_node('dvg_ct_block_contact')) {
+    $blocks['dvg_ct_block_contact'] = array(
+      'info' => t('Contact block: @title', array('@title' => $node->title)),
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function dvg_ct_block_block_view($delta = '') {
+  $node = functional_content_node($delta);
+  if ($node && node_access('view', $node)) {
+    $node_view = node_view($node);
+    return array(
+      'content' => render($node_view),
+    );
+  }
+}

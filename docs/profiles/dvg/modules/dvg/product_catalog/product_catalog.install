@@ -1,0 +1,235 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function product_catalog_install() {
+  _product_catalog_import_owms_terms(TRUE);
+}
+
+/**
+ * Helper for importing the OWMS terms into the vocabularies.
+ */
+function _product_catalog_import_owms_terms($force_insert = FALSE) {
+  $t = get_t();
+  $operations = array();
+
+  $audience_items = _product_catalog_get_owms_audience_terms();
+  if (!empty($audience_items)) {
+    $operations[] = array('_product_catalog_batch_import_operation', array('owms_audience', $audience_items, $force_insert));
+  }
+
+  $authority_items = _product_catalog_get_owms_authority_import();
+  if (!empty($authority_items)) {
+    $operations[] = array('_product_catalog_batch_import_operation', array('owms_authority', $authority_items, $force_insert));
+  }
+
+  $uniform_product_name_items = _product_catalog_get_owms_uniform_product_name_terms();
+  if (!empty($uniform_product_name_items)) {
+    $operations[] = array('_product_catalog_batch_import_operation', array('owms_uniform_product_name', $uniform_product_name_items, $force_insert));
+  }
+
+  // Rebuild menu.
+  $operations[] = array('menu_rebuild', array());
+
+  $batch = array(
+    'operations' => $operations,
+    'finished' => '_product_catalog_batch_import_operation_finished',
+    'title' => $t('Importing OWMS terms'),
+    'error_message' => $t('An error occurred while importing the OWMS terms'),
+    'file' => drupal_get_path('module', 'product_catalog') . '/product_catalog.install',
+  );
+
+  batch_set($batch);
+}
+
+/**
+ * Batch operation handler for importing the OWMS term.
+ */
+function _product_catalog_batch_import_operation($voc, $items, $force_insert, &$context) {
+  // Disable menu rebuild because this slows down import enormous during installation.
+  global $conf;
+  $conf['menu_rebuild_needed'] = FALSE;
+
+  $t = get_t();
+  $voc = taxonomy_vocabulary_machine_name_load($voc);
+  $batch_limit = 25;
+
+  if (empty($context['sandbox'])) {
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['max'] = count($items);
+  }
+
+  $term_items = array_splice($items, $context['sandbox']['progress'], $batch_limit);
+  foreach ($term_items as $key => $item) {
+    _product_catalog_update_term($voc, $item['prefix_label'], $item['term_fields'], $force_insert);
+    $context['results'][] = check_plain($item['prefix_label']);
+    $context['sandbox']['progress']++;
+    $context['message'] = $t('Importing terms for %voc_name (@progress of @max)', array(
+      '%voc_name' => $voc->name,
+      '@progress' => $context['sandbox']['progress'],
+      '@max' => $context['sandbox']['max'],
+    ));
+  }
+
+  $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
+}
+
+/**
+ * Finish handler for the completion of the term import batch.
+ */
+function _product_catalog_batch_import_operation_finished($success, $results, $operations) {
+  $t = get_t();
+
+  if ($success) {
+    $message = $t('OWMS terms import successful');
+  }
+  else {
+    $message = $t('An error occurred while importing the OWMS terms', TRUE);
+  }
+  drupal_set_message($message);
+}
+
+/**
+ * Helper function to insert or update terms in the specified vocabulary.
+ */
+function _product_catalog_update_term($voc, $term_name, $term_fields = array(), $force_insert = FALSE) {
+  $insert = $terms = FALSE;
+
+  if ($force_insert == FALSE) {
+    $terms = taxonomy_get_term_by_name($term_name, $voc->machine_name);
+  }
+
+  if ($terms) {
+    $term = reset($terms);
+
+    // Check for updated values.
+    foreach ($term_fields as $key => $value) {
+      if (array_intersect_assoc($term->{$key}[LANGUAGE_NONE][0], $value)) {
+        unset($term_fields[$key]);
+      }
+    }
+
+    // No changes left?
+    if (empty($term_fields)) {
+      return;
+    }
+  }
+  else {
+    $term = new stdClass();
+    $term->vid = $voc->vid;
+    $term->name = $term_name;
+    $insert = TRUE;
+  }
+
+  // Set the term field values.
+  foreach ($term_fields as $field_name => $value) {
+    foreach ($value as $key => $field_value) {
+      $term->{$field_name}[LANGUAGE_NONE][0][$key] = $field_value;
+    }
+  }
+  taxonomy_term_save($term);
+
+  // Log the results.
+  watchdog('product_catalog', '@action the "@name" term in the "@voc" vocabulary.', array(
+    '@action' => ($insert) ? 'Inserted' : 'Updated',
+    '@name' => $term->name,
+    '@voc' => $voc->machine_name,
+  ));
+}
+
+/**
+ * Load the owms_audience terms.
+ *
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.doelgroep
+ */
+function _product_catalog_get_owms_audience_terms() {
+  $xml = simplexml_load_file(drupal_get_path('module', 'dvg_voc_owms_audience') . '/xml/Doelgroep.xml');
+
+  $term_items = array();
+  foreach ($xml as $row) {
+    $term_items[] = array(
+      'prefix_label' => (string) $row->prefLabel,
+      'term_fields' => array(),
+    );
+  }
+
+  return $term_items;
+}
+
+/**
+ * Load the owms_authority terms.
+ *
+ * @see http://standaarden.overheid.nl/sc
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.andereorganisatie
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.gemeente
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.ggd
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.ministerie
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.provincie
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.waterschap
+ */
+function _product_catalog_get_owms_authority_import() {
+  $lists = array(
+    'overheid:AndereOrganisatie' => 'AndereOrganisatie.xml',
+    'overheid:Gemeente' => 'Gemeente.xml',
+    'overheid:GGD' => 'GGD.xml',
+    'overheid:Ministerie' => 'Ministerie.xml',
+    'overheid:Provincie' => 'Provincie.xml',
+    'overheid:Waterschap' => 'Waterschap.xml',
+  );
+
+  $term_items = array();
+  foreach ($lists as $scheme => $filename) {
+    $xml = simplexml_load_file(drupal_get_path('module', 'dvg_voc_owms_authority') . '/xml/' . $filename);
+    foreach ($xml as $row) {
+      $term_fields = array(
+        'field_resource_identifier' => array('url' => (string) $row->resourceIdentifier),
+        'field_scheme' => array('value' => $scheme),
+      );
+
+      $term_items[] = array(
+        'prefix_label' => (string) $row->prefLabel,
+        'term_fields' => $term_fields,
+      );
+    }
+  }
+
+  return $term_items;
+}
+
+/**
+ * Load the owms_uniform_product_name terms.
+ *
+ * @see http://standaarden.overheid.nl/owms/4.0/doc/waardelijsten/overheid.uniformeproductnaam
+ */
+function _product_catalog_get_owms_uniform_product_name_terms() {
+  $xml = simplexml_load_file(drupal_get_path('module', 'dvg_voc_owms_uniform_product_name') . '/xml/UniformeProductnaam.xml');
+
+  $term_items = array();
+  foreach ($xml as $row) {
+    $term_fields = array(
+      'field_resource_identifier' => array('url' => (string) $row->resourceIdentifier),
+    );
+
+    $term_items[] = array(
+      'prefix_label' => (string) $row->prefLabel,
+      'term_fields' => $term_fields,
+    );
+  }
+
+  return $term_items;
+}
+
+/**
+ * Update OWMS vocabularies with terms from overheid.nl.
+ */
+function product_catalog_update_7001() {
+  _product_catalog_import_owms_terms();
+}
+
+/**
+ * Update OWMS vocabularies with terms from overheid.nl.
+ */
+function product_catalog_update_7002() {
+  _product_catalog_import_owms_terms();
+}

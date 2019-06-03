@@ -1,0 +1,678 @@
+<?php
+/**
+ * @file
+ * Code for the DigiD feature.
+ */
+
+include_once 'dvg_digid.features.inc';
+include_once 'dvg_digid.dvg.user_permission.inc';
+
+define('DVG_DIGID_SECTOR_BSN', 'S00000000');
+define('DVG_DIGID_SECTOR_SOFI', 'S00000001');
+define('DVG_DIGID_DUMMY_SERVICE', 'dummy');
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_digid_menu() {
+  $items = array();
+
+  $items['user/digid'] = array(
+    'title' => 'DigiD',
+    'page callback' => 'dvg_digid_login_page',
+    'access callback' => 'user_is_anonymous',
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'dvg_digid.pages.inc',
+    'weight' => 10,
+  );
+  $items['admin/config/services/digid'] = array(
+    'title' => 'DigiD',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dvg_digid_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'dvg_digid.admin.inc',
+  );
+
+  // Set the DigiD Error callback.
+  $items['digid-error-callback'] = array(
+    'title' => 'DigiD error callback',
+    'page callback' => 'dvg_digid_error_callback',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('access content'),
+  );
+
+  // Set the DigiD Error page callback.
+  $items['digid-error'] = array(
+    'title' => 'DigiD error',
+    'page callback' => 'dvg_digid_error_page',
+    'type' => MENU_CALLBACK,
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+/**
+ * Helper function to load, or create a Drupal DigiD user.
+ */
+function _dvg_digid_get_drupal_user($saml_attributes) {
+  $nameid = $saml_attributes['nameid'][0];
+  $authname = _dvg_digid_hash($nameid);
+
+  // Store the BSN in the session object.
+  list($sector, $value) = explode(':', $nameid);
+  $_SESSION['dvg_digid'][strtoupper($sector)] = $value;
+
+  // Load or create the account.
+  if ($account = user_load_by_name($authname)) {
+    return $account;
+  }
+  else {
+    $edit = array(
+      'name' => $authname,
+      'mail' => drupal_substr($authname, 0, 16) . '@' . drupal_substr($authname, 16) . '.dvg_digid',
+      'pass' => _dvg_digid_hash($authname . microtime()),
+      'status' => 1,
+      'init' => 'dvg_digid',
+      'timezone' => variable_get('date_default_timezone', @date_default_timezone_get()),
+    );
+    if ($role = user_role_load_by_name(variable_get('dvg_digid_role', FALSE))) {
+      $edit['roles'][$role->rid] = $role->name;
+    }
+
+    // Save the new account.
+    if ($account = user_save(array(), $edit)) {
+      return $account;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
+ * Helper function to generate safe hashes for storage of sensitive data.
+ */
+function _dvg_digid_hash($value) {
+  return substr(hash('sha256', $value . drupal_get_hash_salt()), 0, 32);
+}
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Change the access callback for the user profile pages.
+ */
+function dvg_digid_menu_alter(&$items) {
+  $items['user/%user']['access callback'] = 'dvg_digid_user_profile_access';
+  $items['user/%user']['access arguments'] = array(1, 'view');
+  $items['user/%user/edit']['access callback'] = 'dvg_digid_user_profile_access';
+  $items['user/%user/edit']['access arguments'] = array(1, 'edit');
+}
+
+/**
+ * Check if the user is logged in with DigiD.
+ */
+function _dvg_digid_logged_in($account) {
+  return in_array(variable_get('dvg_digid_role', FALSE), $account->roles);
+}
+
+/**
+ * Check if the user is fake logged in as a user with the DigiD role for test purposes.
+ */
+function _dvg_digid_fake_logged_in($account) {
+  return in_array(variable_get('dvg_digid_role', FALSE), $account->roles) && ((!isset($_COOKIE['SimpleSAMLSessionID']) && !isset($_COOKIE['SimpleSAMLAuthToken'])) || $account->name == 'test.digid');
+}
+
+/**
+ * Custom access callback for user profiles.
+ */
+function dvg_digid_user_profile_access($account, $op) {
+
+  // Deny access to user profiles for all digid-users.
+  if (_dvg_digid_logged_in($account) && !user_access('administer users')) {
+    return FALSE;
+  }
+
+  // Fallback to default behavior.
+  switch ($op) {
+    case 'view': return user_view_access($account);
+    case 'edit': return user_edit_access($account);
+  }
+}
+
+/**
+ * Get the BSN from the $_SESSION object and disable the page cache.
+ */
+function dvg_digid_get_bsn() {
+  if (isset($_SESSION['dvg_digid'][DVG_DIGID_SECTOR_BSN])) {
+    drupal_page_is_cacheable(FALSE);
+    return str_pad($_SESSION['dvg_digid'][DVG_DIGID_SECTOR_BSN], 9, '0', STR_PAD_LEFT);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_user_logout().
+ */
+function dvg_digid_user_logout($account) {
+  if (_dvg_digid_logged_in($account) && !_dvg_digid_fake_logged_in($account)) {
+    if (!isset($_GET['digid-logout'])) {
+      $simplesamlphp = _dvg_digid_load_simplesamlphp();
+      $simplesamlphp->logout(array(
+        'ReturnTo' => url(current_path(), array('query' => array('digid-logout' => 0))),
+      )); // @TODO: Does not work -> 500.
+    }
+    else {
+      _dvg_digid_delete_cookies();
+    }
+  }
+}
+
+/**
+ * Helper function to delete SAML cookies.
+ */
+function _dvg_digid_delete_cookies() {
+  _drupal_session_delete_cookie('SimpleSAMLSessionID');
+  _drupal_session_delete_cookie('SimpleSAMLAuthToken');
+}
+
+/**
+ * Helper function to load the SimpleSAMLphp library.
+ */
+function _dvg_digid_load_simplesamlphp() {
+  if (($library = libraries_load('simplesamlphp')) && !empty($library['loaded'])) {
+    return new SimpleSAML_Auth_Simple(variable_get('dvg_digid_auth_source', FALSE));
+  }
+}
+
+/**
+ * Implements hook_init().
+ *
+ * Checks $_GET for an SAML exception, logs it and redirects the user to the same page without it.
+ */
+function dvg_digid_init() {
+  if (isset($_GET['SimpleSAML_Auth_State_exceptionId'])) {
+
+    _dvg_digid_load_simplesamlphp();
+    if ($state = SimpleSAML_Auth_State::loadExceptionState()) {
+      $exception = $state[SimpleSAML_Auth_State::EXCEPTION_DATA];
+
+      // Has the user cancelled the login?
+      if (method_exists($exception, 'getSubStatus') && strpos($exception->getSubStatus(), 'AuthnFailed') !== FALSE) {
+        drupal_set_message(t('Login cancelled.'), 'warning');
+        _dvg_digid_delete_cookies();
+        drupal_goto(current_path());
+      }
+
+      // Log the error.
+      else {
+        watchdog('dvg_digid', 'Error logging into Drupal. SAML exception: !exception', array('!exception' => var_export($exception, 1)), WATCHDOG_ERROR);
+        drupal_set_message('Er is een fout opgetreden in de communicatie met DigiD. Probeert u het later nogmaals. Indien deze fout blijft aanhouden, kijk dan op de website <a href="https://www.digid.nl">https://www.digid.nl</a> voor de laatste informatie.', 'error');
+      }
+    }
+    else {
+      watchdog('dvg_digid', 'Unknown error logging into Drupal. SAML exception url: !exception', array('!exception' => var_export($_GET['SimpleSAML_Auth_State_exceptionId'], 1)), WATCHDOG_ERROR);
+      drupal_set_message('Er is een fout opgetreden in de communicatie met DigiD. Probeert u het later nogmaals. Indien deze fout blijft aanhouden, kijk dan op de website <a href="https://www.digid.nl">https://www.digid.nl</a> voor de laatste informatie.', 'error');
+    }
+  }
+}
+
+/**
+ * Helper function that loads the user supplied by SAML, or redirect the user to DigiD.
+ */
+function _dvg_digid_user_login() {
+  global $user;
+  if (variable_get('dvg_digid_auth_source', '') == DVG_DIGID_DUMMY_SERVICE) {
+    drupal_goto();
+  }
+  else {
+    $simplesamlphp = _dvg_digid_load_simplesamlphp();
+    // Is the user logged into SimpleSAMLphp?
+    if ($simplesamlphp->isAuthenticated()) {
+      $attributes = $simplesamlphp->getAttributes();
+      if ($account = _dvg_digid_get_drupal_user($attributes)) {
+        $user = $account;
+        $edit = array('name' => $user->name);
+        user_login_finalize($edit);
+        drupal_set_message(t('You have successfully logged into @site using your DigiD credentials.', array(
+          '@site' => variable_get('site_name', t('Drupal')),
+        )));
+      }
+      else {
+        watchdog('dvg_digid', 'Error logging into Drupal. SAML attributes: @attributes', array('@attributes' => var_export($attributes, 1)), WATCHDOG_ERROR);
+        drupal_set_message('Er is een fout opgetreden in de communicatie met DigiD. Probeert u het later nogmaals. Indien deze fout blijft aanhouden, kijk dan op de website <a href="https://www.digid.nl">https://www.digid.nl</a> voor de laatste informatie.', 'error');
+      }
+
+      drupal_goto();
+    }
+    else {
+      $simplesamlphp->requireAuth(array(
+        'ErrorURL' => isset($_GET['destination']) ? url($_GET['destination']) : base_path(),
+      ));
+    }
+  }
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function dvg_digid_token_info() {
+  return array(
+    'tokens' => array(
+      'dvg' => array(
+        'bsn' => array(
+          'name' => t('BSN'),
+          'description' => t('The BSN of the logged in user.'),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function dvg_digid_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+
+  if ($type == 'dvg') {
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'bsn':
+          $replacements[$original] = dvg_digid_get_bsn();
+          break;
+      }
+    }
+  }
+
+  return $replacements;
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function dvg_digid_libraries_info() {
+  $libraries['simplesamlphp'] = array(
+    'name' => 'SimpleSAMLphp library',
+    'vendor url' => 'http://simplesamlphp.org/',
+    'download url' => 'https://code.google.com/p/simplesamlphp/downloads/list',
+    'version arguments' => array(
+      'file' => 'docs/simplesamlphp-changelog.md',
+      'pattern' => '@Version\s+([0-9a-zA-Z\.-]+)@',
+    ),
+    'files' => array(
+      'php' => array('lib/_autoload.php', 'lib/_autoload_modules.php'),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_digid_dvg_requirements() {
+  $requirements = array();
+
+  $libraries = libraries_get_libraries();
+
+  $requirements['dvg_digid_simplesaml'] = array(
+    'title' => t('DigiD simplesamlphp library'),
+    'value' => t('Ok'),
+    'severity' => REQUIREMENT_OK,
+  );
+  if (!isset($libraries['simplesamlphp'])) {
+    $requirements['dvg_digid_simplesaml']['value'] = t('Library not found.');
+    $requirements['dvg_digid_simplesaml']['description'] = t('Please refer to the installation manual to install the simplesamlphp library');
+    $requirements['dvg_digid_simplesaml']['severity'] = REQUIREMENT_ERROR;
+  }
+
+  $digid_logo_fid = variable_get('dvg_digid_logo');
+
+  $requirements['dvg_digid_logo'] = array(
+    'title' => t('DigiD Logo'),
+    'value' => t('Ok'),
+    'severity' => REQUIREMENT_OK,
+  );
+  if (empty($digid_logo_fid)) {
+    $requirements['dvg_digid_logo']['value'] = t('No logo uploaded.');
+    $requirements['dvg_digid_logo']['description'] = l(t('Upload a DigiD logo.'), 'admin/config/services/digid');
+    $requirements['dvg_digid_logo']['severity'] = REQUIREMENT_ERROR;
+  }
+  if (($library = libraries_load('simplesamlphp')) && !empty($library['loaded']) && !SimpleSAML_Auth_Source::getSources()) {
+    $requirements['dvg_digid_authentication_services'] = array(
+      'title' => t('DigiD Authentication services'),
+      'value' => t('No DigiD Authentication services found in SAML configuration.'),
+      'severity' => REQUIREMENT_ERROR,
+    );
+  }
+  else {
+    $requirements['dvg_digid_authentication_source'] = array(
+      'title' => t('DigiD Authentication source'),
+      'value' => variable_get('dvg_digid_auth_source'),
+      'severity' => REQUIREMENT_INFO,
+    );
+  }
+
+  // Check if there's no-cache and no-store in the cache control header.
+  $cache_control = variable_get('page_header_default_cache_control', '');
+  $requirements['dvg_cache_control'] = array(
+    'title' => t('Page header default cache control'),
+    'value' => t('Ok'),
+    'severity' => REQUIREMENT_OK,
+  );
+  $cache_controls = array_map('trim', explode(',', $cache_control));
+  $not_set_cache_controls = array_diff(array('no-cache', 'no-store'), $cache_controls);
+  if ($not_set_cache_controls) {
+    $requirements['dvg_cache_control']['value'] = t('Page header cache control not set.');
+    $requirements['dvg_cache_control']['description'] = t('Set the variable "page_header_default_cache_control" to "no-cache, no-store, must-revalidate, post-check=0, pre-check=0"');
+    $requirements['dvg_cache_control']['severity'] = REQUIREMENT_ERROR;
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_digid_form_views_exposed_form_alter(&$form, &$form_state, $form_id) {
+  global $user;
+
+  if ($user->uid != 1 && $form_state['view']->name == 'dvg_administration_users') {
+    if ($role = user_role_load_by_name(variable_get('dvg_digid_role', FALSE))) {
+      unset($form['rid']['#options'][$role->rid]);
+    }
+  }
+}
+
+/**
+ * Implements hook_views_pre_view().
+ */
+function dvg_digid_views_pre_view(View &$view, &$display_id, &$args) {
+  global $user;
+
+  if ($user->uid != 1 && $view->name == 'dvg_administration_users') {
+    if ($role = user_role_load_by_name(variable_get('dvg_digid_role', FALSE))) {
+      // Filter out DigiD-role.
+      $view->add_item($view->current_display, 'filter', 'users_roles', 'rid', array(
+        'exposed' => FALSE,
+        'value' => array($role->rid => $role->rid),
+        'operator' => 'not',
+        'group' => 1,
+      ), 'dvg_digid_filter');
+
+      // This will change handlers, so make sure any existing handlers get
+      // tossed.
+      // @see View::fix_missing_relationships().
+      $view->display_handler->handlers = array();
+      $view->relationships_changed = TRUE;
+      $view->changed = TRUE;
+    }
+  }
+}
+
+/**
+ * Creates a DigiD-login-button.
+ */
+function _dvg_digid_digid_login_button($show_message = TRUE) {
+  $settings = array(
+    'title' => t('Log in with DigiD'),
+    'message' => t('Log in with your DigiD'),
+    'show_message' => $show_message,
+    'path' => 'user/digid',
+    'redirect' => drupal_get_destination(),
+    'attributes' => array('class' => array('btn'), 'rel' => 'nofollow'),
+    'logo' => '',
+  );
+
+  if (variable_get('dvg_digid_auth_source', '') == DVG_DIGID_DUMMY_SERVICE) {
+    $settings['path'] = 'user/login';
+  }
+
+  $fid = variable_get('dvg_digid_logo', FALSE);
+  if ($fid) {
+    $file = file_load($fid);
+    $settings['logo'] = theme_image_style(array(
+      'style_name' => 'digid_logo',
+      'path' => $file->uri,
+      'width' => NULL,
+      'height' => NULL,
+      'alt' => t('DigiD logo'),
+      'title' => t('DigiD logo'),
+      'attributes' => array('class' => 'digid-logo'),
+    ));
+  }
+
+  $button = l($settings['title'], $settings['path'], array(
+    'attributes' => $settings['attributes'],
+    'query' => $settings['redirect'],
+  ));
+
+  $message = '';
+  if ($settings['show_message'] == TRUE && !empty($settings['message'])) {
+    $message = '<p>' . $settings['message'] . '</p>';
+  }
+
+  $html = '<div class="digid">' . $message . $button . $settings['logo'] . '</div>';
+
+  // Make the button output stylable.
+  drupal_alter('dvg_digid_login_button', $html, $settings);
+
+  return $html;
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ *
+ * Adds a 'rel=nofollow' to user/digid links in the primary and secondary links.
+ */
+function dvg_digid_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  for ($i = 0; $i <= 1; $i++) {
+    if (isset($data['tabs'][$i]['output'])) {
+      foreach ($data['tabs'][$i]['output'] as &$item) {
+        if ($item['#link']['path'] == 'user/digid') {
+          $item['#link']['localized_options']['attributes']['rel'] = 'nofollow';
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_digid_form_webform_configure_form_alter(&$form, &$form_state) {
+  $node = &$form['#node'];
+
+  $digid_role = user_role_load_by_name(variable_get('dvg_digid_role', 'digid'));
+  $digid_enabled = FALSE;
+  // Check if the DigiD rid is present.
+  foreach ($node->webform['roles'] as $key => $rid) {
+    if ($digid_role->rid == $rid) {
+      $digid_enabled = TRUE;
+    }
+  }
+
+  $form['dvg_digid'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('DigiD'),
+    '#collapsible' => TRUE,
+    '#collapsed' => $digid_enabled == FALSE,
+  );
+  $form['dvg_digid']['dvg_digid_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Require DigiD login'),
+    '#description' => t('Require a user to be logged in with DigiD to use this form.'),
+    '#default_value' => $digid_enabled,
+  );
+
+  // Disable the default role-based access form element.
+  $form['role_control']['#access'] = FALSE;
+
+  // Add our form submit handler.
+  array_unshift($form['#submit'], 'dvg_digid_webform_configure_form_submit');
+}
+
+/**
+ * Submit handler for webform_configure_form().
+ */
+function dvg_digid_webform_configure_form_submit(&$form, &$form_state) {
+  $digid_role = user_role_load_by_name(variable_get('dvg_digid_role', 'digid'));
+  if ($form_state['values']['dvg_digid_enabled']) {
+    $form_state['values']['roles'] = drupal_map_assoc(array(
+      $digid_role->rid,
+    ));
+  }
+  else {
+    if (isset($form_state['values']['roles'][$digid_role->rid])) {
+      unset($form_state['values']['roles'][$digid_role->rid]);
+    }
+
+    // If another module already sets roles in the form don't override.
+    $roles_set = array();
+    if (count($form_state['values']['roles']) > 0) {
+      $roles_set = array_flip($form_state['values']['roles']);
+      unset($roles_set[0]);
+    }
+
+    if (count($roles_set) == 0) {
+      $form_state['values']['roles'] = drupal_map_assoc(array(
+        DRUPAL_ANONYMOUS_RID,
+        DRUPAL_AUTHENTICATED_RID,
+      ));
+    }
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dvg_digid_permission() {
+  return array(
+    'edit webform digid settings' => array(
+      'title' => t('Edit webform DigiD settings'),
+      'description' => '',
+    ),
+  );
+}
+
+/**
+ * Implements hook_fea_form_config_alter().
+ */
+function dvg_digid_fea_form_config_alter(&$config, $form_id) {
+  $roles = user_roles(FALSE, 'edit webform digid settings');
+  if ($form_id == 'webform_configure_form') {
+    foreach ($config['elements'] as &$element) {
+      if ($element['tree'][0] == 'dvg_digid') {
+        $element['roles'] = drupal_map_assoc(array_values($roles));
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_functional_content().
+ */
+function dvg_digid_functional_content() {
+  return array(
+    '#group' => array(
+      'label' => t('DigiD'),
+    ),
+    'dvg_digid__error_page' => array(
+      'label' => t('Error page'),
+      'description' => t('Enter the related node ID of the page.') . '<br>' . t('This page will be shown to the user when a DigiD login error occurs'),
+    ),
+  );
+}
+
+/**
+ * Process the information from the digid callback.
+ */
+function dvg_digid_error_callback() {
+  global $language;
+
+  $param = drupal_get_query_parameters();
+
+  // Only send mails if the referer is a SimpleSAML call.
+  if (!empty($_SERVER['HTTP_COOKIE']) && strpos($_SERVER['HTTP_COOKIE'], 'SimpleSAMLSessionID') !== FALSE) {
+    // Notify the admin.
+    $admin = user_load(1);
+    $recipient = $admin->mail;
+
+    // Send mail with the occured SimpleSAML error.
+    drupal_mail("dvg_digid", "error_notification", $recipient, $language, array("error_message" => $param['error']));
+  }
+
+  // Redirect to the custom error page.
+  drupal_goto('digid-error');
+}
+
+/**
+ * Page callback to show an error message/form on a SimpleSAML error.
+ */
+function dvg_digid_error_page() {
+  global $language;
+
+  // Show the errorpage, if set trough functional content.
+  $nid = functional_content_nid("dvg_digid__error_page");
+  if ($nid) {
+    $node = node_load($nid);
+    $node->digid_error = TRUE;
+    drupal_set_title($node->title);
+    $view = node_view($node);
+    return drupal_render($view);
+  }
+  else {
+    return t("An error occured, unable to login.");
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ */
+function dvg_digid_preprocess_node(&$variables) {
+  // Make sure the error page and form are rendered correctly.
+  if (isset($variables['node']->digid_error)) {
+    $variables['page'] = TRUE;
+  }
+  if (isset($variables['webform'])) {
+    global $user;
+
+    $webform = $variables['webform'];
+    $text = isset($variables['digid']) ? $variables['digid'] : '';
+
+    if ($role = user_role_load_by_name(variable_get('dvg_digid_role', 'digid'))) {
+      $user_role_digid = in_array($role->name, $user->roles);
+      $form_role_digid = in_array($role->rid, $webform['roles']);
+
+      // Show DigiD login if webform is accessible for digid role
+      // and user is has not a digid role.
+      if (!$user_role_digid && $form_role_digid) {
+        $text = _dvg_digid_digid_login_button(FALSE);
+      }
+    }
+    else {
+      watchdog('dvg_digid', 'Unable to get DigiD role %role.', array('%role' => variable_get('dvg_digid_role', '')), WATCHDOG_ERROR);
+    }
+
+    $variables['digid'] = $text;
+  }
+}
+
+/**
+ * Implements hook_mail().
+ */
+function dvg_digid_mail($key, &$message, $params) {
+  if ($key == "error_notification") {
+    $message['subject'] = t('DigiD error on @site_name', array(
+      '@site_name' => variable_get('site_name', ''),
+    ));
+    $message['body'][] = t("A DigiD user tried to login.") . "<br />";
+    $message['body'][] = t("Error code id: @error_message",
+        array(
+          "@error_message" => $params['error_message'],
+        )) . "<br />";
+    $message['body'][] = t('( description: [Error_code]_[reportId]_[trackId] )') . "<br />";
+    $message['body'][] = t('A SimpleSAML error has been triggered. Check the digid status.');
+  }
+}

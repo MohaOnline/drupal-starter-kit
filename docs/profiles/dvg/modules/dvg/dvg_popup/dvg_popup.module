@@ -1,0 +1,81 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_popup_menu() {
+  return array(
+    'admin/config/content/dvg-popup' => array(
+      'title' => 'DVG popup',
+      'description' => 'Configure the popup.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('dvg_popup_admin_form'),
+      'access arguments' => array('administer dvg popup'),
+      'file' => 'dvg_popup.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dvg_popup_permission() {
+  return array(
+    'administer dvg popup' => array(
+      'title' => t('Administer DVG popup'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function dvg_popup_theme($existing, $type, $theme, $path) {
+  return array(
+    'dvg_popup' => array(
+      'variables' => array(
+        'title' => NULL,
+        'body' => NULL,
+        'button' => NULL,
+      ),
+      'template' => 'dvg_popup',
+    ),
+  );
+}
+
+/**
+ * Helper function that grabs the popup config with defaults.
+ */
+function _dvg_popup_config() {
+  return variable_get('dvg_popup_config', array(
+    'enabled' => FALSE,
+    'title' => NULL,
+    'cookie_name' => NULL,
+    'body' => array('value' => '', 'format' => 'filtered_html'),
+    'button' => NULL,
+  ));
+}
+
+/**
+ * Implements hook_preprocess_page().
+ */
+function dvg_popup_preprocess_page(&$variables) {
+  $popup_config = _dvg_popup_config();
+  if ($popup_config['enabled']) {
+    $dvg_popup_settings = array(
+      'dvg_popup_cookie_name' => $popup_config['cookie_name'],
+      'dvg_popup_cookie_expiry' => variable_get('dvg_popup_cookie_expiry', 365),
+    );
+    drupal_add_js(array('dvg_popup' => $dvg_popup_settings), 'setting');
+    drupal_add_js(drupal_get_path('module', 'dvg_popup') . '/dvg_popup.js');
+
+    $variables['page']['popup'] = array(
+      '#markup' => theme('dvg_popup', array(
+          'title' => check_plain($popup_config['title']),
+          'body' => check_markup($popup_config['body']['value'], $popup_config['body']['format']),
+          'button' => check_plain($popup_config['button']),
+        )
+      ),
+    );
+  }
+}

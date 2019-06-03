@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Search API Noindex module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function search_api_noindex_install() {
+  $field = array(
+    'type' => 'blob',
+    'not null' => FALSE,
+    'default' => NULL,
+    'description' => 'Contains excluded Search API index systemnames.',
+  );
+  db_add_field('node', 'search_api_noindex', $field);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function search_api_noindex_uninstall() {
+  db_drop_field('node', 'search_api_noindex');
+}
+
+/**
+ * Implements hook_schema_alter().
+ */
+function search_api_noindex_schema_alter(&$schema) {
+  // Add field to node table
+  $schema['node']['fields']['search_api_noindex'] = array(
+    'type' => 'blob',
+    'not null' => FALSE,
+    'default' => NULL,
+    'description' => 'Contains excluded Search API index systemnames.',
+  );
+}

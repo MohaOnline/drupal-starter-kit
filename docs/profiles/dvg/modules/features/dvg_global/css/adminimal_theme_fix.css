@@ -1,0 +1,44 @@
+/**
+ * Module: CKeditor
+ */
+.cke_dialog_contents_body .cke_dialog_page_contents {
+  height: 100%;
+}
+
+/**
+ * Module: Exposed Filter Content
+ */
+.exposed-filters .form-item label {
+  padding: 0.1em 0;
+}
+.exposed-filters .container-inline.form-actions {
+  margin: 0;
+}
+
+.field-widget-media-generic .form-type-media .button.form-button-disabled:active, .field-widget-media-generic .form-type-media .button.form-button-disabled:focus, .field-widget-media-generic .form-type-media .button.form-button-disabled:hover {
+  background: #e3e3e3;
+  box-shadow: none;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.form-type-textfield input[disabled] {
+  cursor: not-allowed;
+}
+
+/**
+ * Module: Admin views
+ */
+.admin-views-view .views-exposed-form .form-text {
+  width: auto;
+}
+.admin-views-view .views-exposed-form .form-submit {
+  margin-top: 2.5em;
+}
+
+/**
+ * Module: Drupal Multiple Field
+ */
+th.field-label label {
+  margin: 0;
+}

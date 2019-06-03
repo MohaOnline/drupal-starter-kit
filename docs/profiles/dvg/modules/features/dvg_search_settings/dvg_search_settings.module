@@ -1,0 +1,9 @@
+<?php
+/**
+ * @file
+ * Code for the Search Settings feature.
+ */
+
+include_once 'dvg_search_settings.features.inc';
+include_once 'dvg_search_settings.dvg.user_permission.inc';
+

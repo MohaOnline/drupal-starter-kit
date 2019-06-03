@@ -1,0 +1,72 @@
+<?php
+/**
+ * @file
+ * Code for the Admin Views feature.
+ */
+
+include_once 'handlers/views_handler_filter_menu.inc';
+include_once 'dvg_admin_views.features.inc';
+include_once 'dvg_admin_views.views.inc';
+
+/**
+ * Implements hook_user_cancel_methods_alter().
+ */
+function dvg_admin_views_user_cancel_methods_alter(&$methods) {
+  global $user;
+
+  // Disable delete action for non-admins.
+  if (!isset($user->roles[variable_get('user_admin_role', FALSE)])) {
+    unset($methods['user_cancel_delete']);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_admin_views_form_views_exposed_form_alter(&$form, &$form_state, $form_id) {
+  global $user;
+
+  if ($user->uid != 1 && $form_state['view']->name == 'dvg_administration_users') {
+    if ($rid = variable_get('user_admin_role', FALSE)) {
+      unset($form['rid']['#options'][$rid]);
+    }
+    if ($role = user_role_load_by_name('administrator')) {
+      unset($form['rid']['#options'][$role->rid]);
+    }
+  }
+}
+
+/**
+ * Implements hook_views_pre_view().
+ */
+function dvg_admin_views_views_pre_view(View &$view, &$display_id, &$args) {
+  global $user;
+
+  if ($user->uid != 1 && $view->name == 'dvg_administration_users') {
+    $filter_rids = array();
+
+    if ($rid = variable_get('user_admin_role', FALSE)) {
+      $filter_rids[$rid] = $rid;
+    }
+    if ($role = user_role_load_by_name('administrator')) {
+      $filter_rids[$role->rid] = $role->rid;
+    }
+
+    if (!empty($filter_rids)) {
+      // Filter out administrator-roles.
+      $view->add_item($view->current_display, 'filter', 'users_roles', 'rid', array(
+        'exposed' => FALSE,
+        'value' => $filter_rids,
+        'operator' => 'not',
+        'group' => 1,
+      ), 'dvg_admin_views_filter');
+
+      // This will change handlers, so make sure any existing handlers get
+      // tossed.
+      // @see View::fix_missing_relationships().
+      $view->display_handler->handlers = array();
+      $view->relationships_changed = TRUE;
+      $view->changed = TRUE;
+    }
+  }
+}

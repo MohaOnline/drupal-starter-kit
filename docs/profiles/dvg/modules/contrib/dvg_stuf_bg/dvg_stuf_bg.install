@@ -1,0 +1,50 @@
+<?php
+/**
+ * @file
+ * This file contains the install and update hooks of the DvG StUF module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function dvg_stuf_bg_install() {
+  dvg_roles_and_permissions_set_permissions('dvg_stuf_bg');
+}
+
+/**
+ * Update admin settings StUF-BG.
+ */
+function dvg_stuf_bg_update_7001() {
+  $stuf_bg_setting = variable_get('dvg_stuf_bg_api_url', NULL);
+  if (!empty($stuf_bg_setting)) {
+    variable_set('dvg_stuf_bg_natuurlijkpersoon_api_url', $stuf_bg_setting);
+  }
+  else {
+    variable_set('dvg_stuf_bg_natuurlijkpersoon_enabled', FALSE);
+  }
+  if (variable_get('dvg_stuf_bg_api_url', FALSE)) {
+    variable_del('dvg_stuf_bg_api_url');
+  }
+  $stuf_bg_setting = variable_get('dvg_stuf_bg_api_method', NULL);
+  if (!empty($stuf_bg_setting)) {
+    variable_set('dvg_stuf_bg_natuurlijkpersoon_api_method', $stuf_bg_setting);
+  }
+  if (variable_get('dvg_stuf_bg_api_method', FALSE)) {
+    variable_del('dvg_stuf_bg_api_method');
+  }
+  $stuf_bg_setting = variable_get('dvg_stuf_bg_api_scope', NULL);
+  if (!empty($stuf_bg_setting)) {
+    variable_set('dvg_stuf_bg_natuurlijkpersoon_api_scope', $stuf_bg_setting);
+  }
+  if (variable_get('dvg_stuf_bg_api_scope', FALSE)) {
+    variable_del('dvg_stuf_bg_api_scope');
+  }
+  $stuf_bg_setting = variable_get('dvg_stuf_bg_gezinssituatieopadresaanvrager_api_url', NULL);
+  if (!empty($stuf_bg_setting)) {
+    variable_set('dvg_stuf_bg_gezinssituatieopadresaanvrager_enabled', TRUE);
+  }
+  $stuf_bg_setting = variable_get('dvg_stuf_bg_aoa_api_url', NULL);
+  if (!empty($stuf_bg_setting)) {
+    variable_set('dvg_stuf_bg_aoa_enabled', TRUE);
+  }
+}

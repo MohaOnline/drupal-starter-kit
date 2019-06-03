@@ -1,0 +1,16 @@
+name = "Inline Form Errors"
+description = "Put form error messages inline with the form elements"
+package = User interface
+core = 7.x
+configure = admin/config/user-interface/ife
+
+dependencies[] = ctools
+
+files[] = ife.settings.inc
+files[] = ife.theme.inc
+files[] = ife.variable.inc
+
+; Information added by drush on 2017-02-24
+version = "7.x-2.0-alpha2"
+project = "ife"
+datestamp = "1487971109"

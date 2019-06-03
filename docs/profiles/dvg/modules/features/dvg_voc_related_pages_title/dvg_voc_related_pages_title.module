@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Global VOC Related pages title feature.
+ */
+
+include_once 'dvg_voc_related_pages_title.features.inc';

@@ -1,0 +1,259 @@
+<?php
+/**
+ * @file
+ * Code for the Task feature.
+ */
+
+include_once 'dvg_ct_task.features.inc';
+include_once 'dvg_ct_task.dvg.user_permission.inc';
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Disables field-collection-item specific urls.
+ * @see field_collection_menu().
+ */
+function dvg_ct_task_menu_alter(&$items) {
+  foreach (field_info_fields() as $field) {
+    if ($field['type'] == 'field_collection') {
+      $path = field_collection_field_get_path($field);
+      $items[$path . '/%field_collection_item']['access callback'] = FALSE;
+      $items[$path . '/%field_collection_item/view']['access callback'] = FALSE;
+      $items[$path . '/%field_collection_item/edit']['access callback'] = FALSE;
+      $items[$path . '/%field_collection_item/delete']['access callback'] = FALSE;
+      $items[$path . '/add/%/%']['access callback'] = FALSE;
+      $items[$path . '/%field_collection_item/revisions/%field_collection_item_revision']['access callback'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_access().
+ *
+ * Hide appointment and/or webform fields when those modules do not exist.
+ */
+function dvg_ct_task_field_access($op, $field, $entity_type, $entity, $account) {
+  if ($entity_type == 'node' && is_object($entity) && $entity->type == 'task') {
+    switch ($field['field_name']) {
+      case 'field_webform':
+      case 'field_btn_webform':
+      case 'field_confirm_webform':
+        if (!module_exists('webform')) {
+          return FALSE;
+        }
+        break;
+
+      case 'field_product_code_appointment':
+      case 'field_btn_appointment':
+      case 'field_confirm_appointment':
+        if (!module_exists('appointment') && !module_exists('webform_appointment') && !module_exists('dvg_appointments')) {
+          return FALSE;
+        }
+        break;
+    }
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dvg_ct_task_permission() {
+  return array(
+    'dvg_ct_task reference webforms' => array(
+      'title' => t('Reference webforms'),
+      'description' => t('Reference a webform within tasks.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function dvg_ct_task_field_extra_fields() {
+  $extra['node']['task']['display'] = array(
+    'dvg_ct_task_section_list' => array(
+      'label' => t('Section list'),
+      'weight' => 0,
+    ),
+  );
+  return $extra;
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function dvg_ct_task_node_view($node, $view_mode) {
+  switch ($node->type) {
+    case 'task':
+
+      // Create menu list for field_sections
+      $items = field_get_items('node', $node, 'field_sections');
+      if ($items) {
+        $section_list = array();
+
+        foreach ($items as $key => $item) {
+          $fc = field_collection_field_get_entity($item);
+          $options = array('fragment' => 'section-' . ($key + 1));
+          if (isset($fc->field_title[LANGUAGE_NONE][0]['safe_value'])) {
+            $section_list[] = l($fc->field_title[LANGUAGE_NONE][0]['safe_value'], current_path(), $options);
+          }
+        }
+
+        $node->content['dvg_ct_task_section_list'] = array(
+          '#prefix' => '<div class="section-list">',
+          '#markup' => theme('item_list', array('items' => $section_list)),
+          '#suffix' => '</div>',
+        );
+      }
+
+      if ($view_mode == 'full') {
+        // Display a warning if an unpublished or closed webform is being referenced.
+        _dvg_ct_task_check_webform_reference($node);
+      }
+      break;
+  }
+}
+
+/**
+ * Implements hook_preprocess_field().
+ */
+function dvg_ct_task_preprocess_field(&$variables) {
+  $element = $variables['element'];
+
+  // Wrap H2 around fields of selected bundles
+  $bundles = array('field_sections', 'task');
+  $fields = array('field_title', 'field_title_related_pages');
+
+  if ($element['#view_mode'] == 'full' && in_array($element['#field_name'], $fields) && in_array($element['#bundle'], $bundles)) {
+    foreach ($variables['items'] as $key => $item) {
+      $variables['items'][$key]['#prefix'] = '<h2 class="title">';
+      $variables['items'][$key]['#suffix'] = '</h2>';
+    }
+  }
+
+  if ($element['#entity_type'] == 'node') {
+    $node = $element['#object'];
+
+    if($element['#field_name'] == 'field_btn_appointment') {
+      $link = FALSE;
+
+      // Grab appointment url, hide the link if none found.
+      $fcnid_create = 'webform_appointment_create';
+      if (module_exists('dvg_appointments')) {
+        $fcnid_create = 'dvg_appointments_create';
+      }
+      if ($create_nid = functional_content_nid($fcnid_create)) {
+
+        // Give a warning if multiple urls?
+        $field_btn_appointment = field_get_items('node', $node, 'field_btn_appointment', $node->language);
+        $field_product_code_appointment = field_get_items('node', $node, 'field_product_code_appointment', $node->language);
+        if (!empty($field_btn_appointment) && !empty($field_product_code_appointment)) {
+          $label = $field_btn_appointment[0]['taxonomy_term']->name;
+          $product_code = $field_product_code_appointment[0]['value'];
+
+          $link = l($label, 'node/' . $create_nid, array('query' => array('product_code' => $product_code), 'attributes' => array('class' => array('btn-small'))));
+        }
+      }
+
+      // @todo: legacy appointments link code
+      else {
+        $appointment_url = module_invoke_all('dvg_appointment_url');
+        if (!empty($appointment_url)) {
+          // Give a warning if multiple urls?
+          $field_btn_appointment = field_get_items('node', $node, 'field_btn_appointment', $node->language);
+          $field_product_code_appointment = field_get_items('node', $node, 'field_product_code_appointment', $node->language);
+          if (!empty($field_btn_appointment) && !empty($field_product_code_appointment)) {
+            $label = $field_btn_appointment[0]['taxonomy_term']->name;
+            $product_code = $field_product_code_appointment[0]['value'];
+
+            $link = l($label, $appointment_url[0], array('query' => array('product_code' => $product_code), 'attributes' => array('class' => array('btn-small'))));
+          }
+        }
+      }
+      // end of @todo
+
+      if ($link) {
+        $variables['items'][0]['#markup'] = $link;
+      }
+      else {
+        // Don't display if there isn't a valid product_code or label set.
+        $variables['items'][0]['#access'] = FALSE;
+      }
+    }
+    elseif ($element['#field_name'] == 'field_btn_webform') {
+      $webform = _dvg_ct_task_get_referenced_webform_by_task($node);
+      $field_btn_webform = field_get_items('node', $node, 'field_btn_webform', $node->language);
+      if (module_exists('dvg_ct_webform') && $webform && $webform->nid && !empty($field_btn_webform)) {
+        $label = $field_btn_webform[0]['taxonomy_term']->name;
+        $variables['items'][0]['#markup'] = l($label, 'node/' . $webform->nid, array('attributes' => array('class' => array('btn-small'))));
+      }
+      else {
+        // Don't display if there isn't a valid webform referenced or the label isn't set.
+        $variables['items'][0]['#access'] = FALSE;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_ct_task_form_task_node_form_alter(&$form, &$form_state, $form_id) {
+  $node = $form['#node'];
+
+  // Check if the user may reference webforms within tasks.
+  if (!user_access('dvg_ct_task reference webforms')) {
+    $form['field_webform']['#access'] = FALSE;
+  }
+
+  // Display a warning if an unpublished or closed webform is referenced.
+  if (isset($node->nid)) {
+    _dvg_ct_task_check_webform_reference($node);
+  }
+}
+
+/**
+ * Helper function for displaying a warning if a referenced webform is unpublished or closed.
+ */
+function _dvg_ct_task_check_webform_reference($task) {
+  if (user_access('dvg_ct_task reference webforms')) {
+    $node = _dvg_ct_task_get_referenced_webform_by_task($task);
+
+    if ($node && ($node->status == NODE_NOT_PUBLISHED || $node->webform['status'] == 0)) {
+      drupal_set_message(t('The webform referenced by %task is unpublished or closed.', array('%task' => $task->title)), 'warning');
+    }
+  }
+}
+
+/**
+ * Helper function to get the webform being referenced by a task.
+ */
+function _dvg_ct_task_get_referenced_webform_by_task($task) {
+  $cache = &drupal_static(__FUNCTION__);
+  if (isset($cache[$task->nid])) {
+    return $cache[$task->nid];
+  }
+
+  $field_webform = field_get_items('node', $task, 'field_webform', $task->language);
+  if (!empty($field_webform)) {
+    $webform_nid = $field_webform[0]['target_id'];
+
+    // Check if the webform exists and is published.
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node')
+      ->entityCondition('bundle', 'webform')
+      ->propertyCondition('nid', $webform_nid)
+      ->propertyOrderBy('created', 'ASC')
+      ->range(0, 1);
+    $result = $query->execute();
+    if (isset($result['node'])) {
+      $webform_nid = key($result['node']);
+      $webform = node_load($webform_nid);
+      if ($cache[$task->nid] = $webform) {
+        return $cache[$task->nid];
+      }
+    }
+  }
+
+  return FALSE;
+}

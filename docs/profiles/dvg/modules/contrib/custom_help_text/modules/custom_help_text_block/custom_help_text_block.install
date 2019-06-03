@@ -1,0 +1,53 @@
+<?php
+
+/**
+ * @file
+ *   Custom Help Text Block install file.
+ */
+
+/**
+ * Implements hook_schema_alter().
+ */
+function custom_help_text_block_schema_alter(&$schema) {
+  $schema['custom_help_text']['fields'] += _custom_help_text_block_fields();
+}
+
+/**
+ * Field definitions.
+ */
+function _custom_help_text_block_fields() {
+  return array(
+    'module' => array(
+      'type' => 'varchar',
+      'length' => 64,
+      'not null' => TRUE,
+      'default' => 'system',
+      'description' => 'The module of the registrated block.',
+    ),
+    'delta' => array(
+      'type' => 'varchar',
+      'length' => 32,
+      'not null' => TRUE,
+      'default' => 'help',
+      'description' => 'The unique identifying block name within the module.',
+    ),
+  );
+}
+
+/**
+ * Implements hook_install().
+ */
+function custom_help_text_block_install() {
+  foreach (_custom_help_text_block_fields() as $field => $spec) {
+    db_add_field('custom_help_text', $field, $spec);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function custom_help_text_block_uninstall() {
+  foreach (_custom_help_text_block_fields() as $field => $spec) {
+    db_drop_field('custom_help_text', $field);
+  }
+}

@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * @file
+ * Contains class OgonePaymentMethodCRUD.
+ */
+
+/**
+ * Tests OgonePaymentMethodController CRUD.
+ */
+class OgonePaymentMethodCRUD extends OgoneWebTestCase {
+
+  /**
+   * Implements DrupalTestCase::getInfo().
+   */
+  static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'Payment method CRUD',
+      'group' => 'Ogone',
+    );
+  }
+
+  /**
+   * Overrides parent::setUp().
+   */
+  function setUp(array $modules = array()) {
+    $this->profile = 'testing';
+    parent::setUp($modules + array('ogone'));
+  }
+
+  /**
+   * Tests CRUD.
+   */
+  function testCRUD() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $payment_method = new PaymentMethod(array(
+      'controller' => $controller,
+      'controller_data' => $controller->controller_data_defaults,
+    ));
+    entity_save('payment_method', $payment_method);
+    $this->assertTrue($this->paymentMethodControllerDataExists($payment_method, 'ogone_payment_method'));
+
+    // Test loading a payment method.
+    $payment_method_loaded = entity_load_single('payment_method', $payment_method->pmid);
+    $this->assertEqual($payment_method->controller_data, $payment_method_loaded->controller_data);
+
+    // Test updating a payment method.
+    $payment_method->controller_data = array(
+      'ogone_payment_method' => 'iDEAL',
+      'ogone_payment_method_brand' => 'iDEAL',
+      'passphrase_algorithm' => 'SHA-512',
+      'passphrase_in' => 'foo',
+      'passphrase_out' => 'bar',
+      'pspid' => $this->randomName(30),
+      'server' => $controller::SERVER_TESTING,
+    );
+    entity_save('payment_method', $payment_method);
+    $this->assertTrue($this->paymentMethodControllerDataExists($payment_method, 'ogone_payment_method'));
+
+    // Test deleting a payment method.
+    entity_delete('payment_method', $payment_method->pmid);
+    $count = db_select('ogone_payment_method', 'mpi')
+      ->condition('pmid', $payment_method->pmid)
+      ->countQuery()
+      ->execute()
+      ->fetchField();
+    $this->assertFalse($count);
+  }
+}

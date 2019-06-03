@@ -1,0 +1,37 @@
+<?php
+/**
+ * Migrate settings to new config system.
+ */
+function fea_update_7000() {
+  $form_config = variable_get('fea__form_config', array());
+  $new_config = array();
+
+  foreach (variable_get('fea__form_ids', array()) as $form_id) {
+    $safe_form_id = _fea_safe_form_id($form_id);
+
+    foreach ($form_config[$form_id] as $info) {
+      $roles = array();
+      if ($access = db_query("SELECT value FROM {variable} WHERE name = :name", array(
+        ':name' => 'fea__' . $form_id . '__' . implode('__', $info['tree']),
+      ))->fetchAssoc()) {
+        $roles = unserialize($access['value']);
+      }
+
+      $new_config[$safe_form_id]['elements'][implode('|', $info['tree'])] = array(
+        'tree' => $info['tree'],
+        'type' => $info['type'],
+        'roles' => $roles,
+      );
+    }
+    $new_config[$safe_form_id]['form_id'] = $form_id;
+    $new_config[$safe_form_id]['invert'] = variable_get('fea__invert__' . $form_id, FALSE);
+  }
+
+  // Delete all old settings.
+  db_query("DELETE FROM {variable} WHERE name LIKE 'fea\_\_%' AND name <> 'fea__display_form_id'");
+
+  // Store the new settings.
+  foreach ($new_config as $safe_form_id => $config) {
+    variable_set($safe_form_id, $config);
+  }
+}

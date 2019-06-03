@@ -1,0 +1,423 @@
+<?php
+
+/**
+ * @file
+ * Provides customizable auto logout functionality.
+ */
+
+use Drupal\dvg_authentication_auto_logout\AutoLogout;
+
+include_once 'includes/dvg_authentication_auto_logout.context.inc';
+
+/**
+ * The minimal timeout for auto logout.
+ */
+define('DVG_AUTHENTICATION_AUTO_LOGOUT_MIN_TIMEOUT', 60);
+
+/**
+ * Default settings for auto logout.
+ */
+define('DVG_AUTHENTICATION_AUTO_LOGOUT_DEFAULTS', [
+  'timeout' => 900,
+  'max_session_time' => 7200,
+  'inactivity_message' => t('You have been logged out due to inactivity.'),
+  'redirect_url' => 'user/login',
+  'use_watchdog' => FALSE,
+]);
+
+/**
+ * Implements hook_menu().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_auto_logout_menu() {
+  $items = [];
+  $items['admin/config/services/dvg-authentication/auto-logout'] = [
+    'title' => 'Auto Logout',
+    'description' => 'Administer auto logout settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['dvg_authentication_auto_logout_settings_form'],
+    'access arguments' => ['access authentication administration pages'],
+    'file' => 'includes/dvg_authentication_auto_logout.admin.inc',
+  ];
+
+  $items['auto-logout/logout'] = [
+    'title' => 'Auto Logout',
+    'description' => 'Logout the user due to inactivity',
+    'page callback' => 'dvg_authentication_auto_logout_logout_callback',
+    // Always allow users to logout, when already logged out the user is
+    // redirected to the front page to prevent them seeing access denied
+    // messages.
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  ];
+
+  $items['auto-logout/still-alive'] = [
+    'title' => 'Send still alive message for auto logout',
+    'page callback' => 'dvg_authentication_auto_logout_still_alive_callback',
+    'access callback' => 'dvg_authentication_auto_logout_is_active',
+    'type' => MENU_CALLBACK,
+  ];
+
+  $items['auto-logout/time-remaining'] = [
+    'title' => 'Returns the remaining session time until auto logout',
+    'page callback' => 'dvg_authentication_auto_logout_get_remaining_time_callback',
+    'access callback' => 'dvg_authentication_auto_logout_is_active',
+    'type' => MENU_CALLBACK,
+  ];
+
+  return $items;
+}
+
+/**
+ * Access callback for the AJAX calls.
+ *
+ * @return bool
+ *   If the user has access.
+ */
+function dvg_authentication_auto_logout_is_active() {
+  return AutoLogout::getInstance()->isActive();
+}
+
+/**
+ * Implements hook_init().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_auto_logout_init() {
+  // Quick returns first.
+  if (user_is_anonymous()) {
+    return;
+  }
+  $auto_logout = AutoLogout::getInstance();
+  if (
+    !$auto_logout->isActive() ||
+    // Don't include JS on pages that should be excluded from auto logout.
+    $auto_logout->preventAutoLogout() ||
+    // Don't act on auto-logout paths as activity should not always be
+    // updated there.
+    arg(0) === 'auto-logout'
+  ) {
+    return;
+  }
+
+  $time_remaining = $auto_logout->getRemainingTime();
+  $keep_alive = $auto_logout->keepAlive();
+
+  // We need a backup plan if JS is disabled or if the page was closed.
+  // Logout if the user was inactive for longer than the configured timeout.
+  if (!$keep_alive && $time_remaining < 0) {
+    // This ends the request due to a drupal_goto().
+    $auto_logout->logout();
+  }
+
+  $_SESSION['auto_logout_last_activity'] = REQUEST_TIME;
+}
+
+/**
+ * Implements hook_page_build().
+ *
+ * Add a form element to every page which is used to detect if the page was
+ * loaded from browser cache. This happens when the browser's back button is
+ * pressed for example. The JS will set the value of the hidden input element
+ * to 1 after initial load. If this is 1 on subsequent loads, the page was
+ * loaded from cache and an auto logout timeout refresh needs to be triggered.
+ */
+function dvg_authentication_auto_logout_page_build(&$page) {
+  $auto_logout = AutoLogout::getInstance();
+  if (
+    !$auto_logout->isActive() ||
+    // Don't include JS on pages that should be excluded from auto logout.
+    $auto_logout->preventAutoLogout() ||
+    // Don't act on auto-logout paths as activity should not always be
+    // updated there.
+    arg(0) === 'auto-logout'
+  ) {
+    return;
+  }
+
+  $time_remaining = $auto_logout->getRemainingTime();
+  $keep_alive = $auto_logout->keepAlive();
+
+  $settings = [
+    'time_remaining' => $time_remaining,
+    'can_refresh' => $auto_logout->canRefresh(),
+    'keep_alive' => $keep_alive,
+  ];
+  $trusted_urls = [
+    '/auto-logout/still-alive' => TRUE,
+    '/auto-logout/time-remaining' => TRUE,
+  ];
+
+  drupal_add_library('system', 'drupal.ajax');
+  drupal_add_library('system', 'jquery', TRUE);
+  drupal_add_library('system', 'jquery.once', TRUE);
+  $page['header']['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => [
+      'auto_logout' => $settings,
+      'urlIsAjaxTrusted' => $trusted_urls,
+    ],
+  ];
+  $logout_script = drupal_get_path('module', 'dvg_authentication_auto_logout') . '/js/dvg_authentication_auto_logout.js';
+  $page['header']['#attached']['js'][] = $logout_script;
+
+  $auto_logout = AutoLogout::getInstance();
+  if ($auto_logout->isActive() && !$auto_logout->preventAutoLogout()) {
+    $page['page_bottom']['auto_logout'] = [
+      '#markup' => '<form id="auto-logout-cache-check"><input type="hidden" id="auto-logout-cache-check-bit" value="0" /></form>',
+    ];
+  }
+}
+
+/**
+ * Implements hook_auto_logout_profiles().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_auto_logout_auto_logout_profiles() {
+  $profiles = [];
+  $roles = user_roles(TRUE);
+  foreach ($roles as $rid => $role) {
+    $profiles['role_' . $role] = [
+      'callback' => 'dvg_authentication_auto_logout_is_role_profile_callback',
+      'title' => t('By role: !role', ['!role' => $role]),
+      'data' => $rid,
+    ];
+  }
+
+  return $profiles;
+}
+
+/**
+ * Callback for hook_auto_logout_profiles().
+ *
+ * @param \stdClass $user
+ *   A Drupal user object.
+ * @param int $data
+ *   Role id for the profile.
+ *
+ * @return bool
+ *   If the user belongs to the profile.
+ */
+function dvg_authentication_auto_logout_is_role_profile_callback(\stdClass $user, $data) {
+  return isset($user->roles[$data]);
+}
+
+/**
+ * Implements hook_prevent_auto_logout().
+ */
+function dvg_authentication_auto_logout_prevent_auto_logout() {
+  // Don't include auto logout JS checks on ajax callbacks.
+  $paths = [
+    'system',
+    'auto_logout',
+  ];
+
+  if (in_array(arg(0), $paths)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_auto_logout_keep_alive().
+ */
+function dvg_authentication_auto_logout_auto_logout_keep_alive() {
+  // An open admin page will keep login alive.
+  if (path_is_admin(current_path())) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * AJAX callback that returns the time remaining for this user is logged out.
+ */
+function dvg_authentication_auto_logout_get_remaining_time_callback() {
+  $auto_logout = AutoLogout::getInstance();
+  $time_remaining = $auto_logout->getRemainingTime();
+
+  $data = [
+    'time_remaining' => $time_remaining,
+    'can_refresh' => $auto_logout->canRefresh(),
+  ];
+
+  drupal_json_output($data);
+  drupal_exit();
+}
+
+/**
+ * Ajax callback to reset the last activity session variable.
+ */
+function dvg_authentication_auto_logout_still_alive_callback() {
+  $_SESSION['auto_logout_last_activity'] = REQUEST_TIME;
+  // Return updated timeout values.
+  dvg_authentication_auto_logout_get_remaining_time_callback();
+}
+
+/**
+ * Callback that performs the actual logout and redirects the user.
+ *
+ * To preserve the original destination the "destination" GET parameter
+ * should be set.
+ */
+function dvg_authentication_auto_logout_logout_callback() {
+  // This ends the request due to a drupal_goto().
+  AutoLogout::getInstance()->logout();
+}
+
+/**
+ * Implements hook_user_login().
+ *
+ * Delete stale sessions for the user on login. This stops
+ * session_limit module thinking the user has reached their
+ * session limit.
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_auto_logout_user_login(&$edit, $account) {
+  $auto_logout = AutoLogout::getInstance();
+  if (!$auto_logout->isActive($account)) {
+    return;
+  }
+  $_SESSION['auto_logout_start'] = REQUEST_TIME;
+
+  // Cleanup old sessions.
+  $time_left = $auto_logout->getRemainingTime();
+
+  if ($time_left === 0) {
+    // Users that don't get logged have their sessions left.
+    return;
+  }
+
+  $timestamp = REQUEST_TIME - $time_left;
+
+  // Find all stale sessions.
+  db_delete('sessions')
+    ->condition('uid', $account->uid)
+    ->condition('timestamp', $timestamp, '<')
+    ->execute();
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function dvg_authentication_auto_logout_block_info() {
+  $blocks = [];
+
+  // The block machine name can't be too long, so deviating from the standard
+  // of prepending the full module name.
+  $blocks['auto_logout_info'] = [
+    'info' => t('Automated Logout info'),
+    'cache' => DRUPAL_NO_CACHE,
+  ];
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_auto_logout_block_view($delta = '') {
+  if ($delta !== 'auto_logout_info') {
+    return NULL;
+  }
+
+  $auto_logout = AutoLogout::getInstance();
+  if ($auto_logout->isActive() && $auto_logout->preventAutologout()) {
+    // Don't display the block if the user is not going
+    // to be logged out on this page.
+    return NULL;
+  }
+
+  $time_remaining = $auto_logout->getRemainingTime();
+  if ($time_remaining > 0) {
+    $time_remaining = round(($time_remaining % 3600) / 60);
+  }
+  else {
+    $time_remaining = 0;
+  }
+
+  $block = [];
+  $block['subject'] = '';
+  if ($auto_logout->keepAlive()) {
+    $block['content'] = t('Auto logout does not apply on the current page, you will be kept logged in while this page remains open.');
+  }
+  else {
+    $link_text = t('Refresh your session');
+    $link = l($link_text, 'auto-logout/still-alive', [
+      'attributes' => [
+        'id' => 'auto-logout-refresh-link',
+      ],
+    ]);
+
+    $max_session_time = round($auto_logout->getConfig('max_session_time') / 60);
+    $time_remaining_text = $time_remaining . ' ' . format_plural($time_remaining, 'minute', 'minutes');
+    $max_session_time_text = $max_session_time . ' ' . format_plural($max_session_time, 'minute', 'minutes');
+    $time = [
+      '#type' => 'html_tag',
+      '#tag' => 'span',
+      '#attributes' => ['class' => 'timeout'],
+      '#value' => $time_remaining_text,
+    ];
+
+    $logged_in_message = $auto_logout->getLoginMessage();
+
+    $markup = [
+      '#theme_wrappers' => ['container'],
+      '#attributes' => ['class' => ['dvgautologout']],
+      'timer_container' => [
+        '#theme_wrappers' => ['container'],
+        '#attributes' => ['class' => ['dvgautologout__column1']],
+        'session_time' => [
+          '#type' => 'html_tag',
+          '#tag' => 'span',
+          '#attributes' => ['class' => ['refresh']],
+          '#value' => t('Your session will be active for !time.', ['!time' => drupal_render($time)]),
+        ],
+        'refresh_link' => [
+          '#type' => 'html_tag',
+          '#tag' => 'span',
+          '#attributes' => ['class' => ['refresh']],
+          '#value' => $link,
+        ],
+        'noscript' => [
+          '#type' => 'html_tag',
+          '#tag' => 'noscript',
+          '#value' => t('Your session will be active for up to !max_session_time and shall disconnect when the connection is inactive for !time_remaining.', [
+            '!max_session_time' => $max_session_time_text,
+            '!time_remaining' => $time_remaining_text,
+          ]),
+        ],
+      ],
+      'logout' => [
+        '#type' => 'html_tag',
+        '#attributes' => ['class' => ['dvgautologout__column2']],
+        '#tag' => 'div',
+        '#value' => $logged_in_message . ' ' . l(t('Logout'), 'user/logout', [
+          'attributes' => [
+            'id' => 'auto-logout-logout-link',
+            'target' => $auto_logout->getLinkTarget(),
+          ],
+        ]),
+      ],
+    ];
+
+    if (!$auto_logout->canRefresh()) {
+      $markup['timer_container']['session_time']['#attributes']['class'][] = 'element-hidden';
+      $markup['timer_container']['refresh_link']['#attributes']['class'][] = 'hidden';
+      $markup['timer_container']['refresh_link']['#attributes']['class'][] = 'element-hidden';
+    }
+
+    $block['content'] = $markup;
+  }
+
+  $path = drupal_get_path('module', 'dvg_authentication_auto_logout');
+  drupal_add_js($path . '/js/dvg_authentication_auto_logout_block.js');
+
+  return $block;
+}

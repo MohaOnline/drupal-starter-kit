@@ -1,0 +1,15 @@
+<?php
+/**
+ * @file
+ * Code for the Basicpage Content Type feature.
+ */
+
+include_once 'dvg_ct_basicpage.features.inc';
+include_once 'dvg_ct_basicpage.dvg.user_permission.inc';
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_ct_basicpage_dvg_requirements() {
+  return _dvg_global_voc_requirements('related_pages_title', t('Related pages title'));
+}

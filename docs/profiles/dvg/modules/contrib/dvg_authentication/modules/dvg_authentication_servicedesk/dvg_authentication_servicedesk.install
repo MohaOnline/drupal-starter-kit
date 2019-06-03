@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for DvG Authentication Servicedesk.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_servicedesk_install() {
+  dvg_roles_and_permissions_set_roles();
+  dvg_roles_and_permissions_set_permissions();
+}

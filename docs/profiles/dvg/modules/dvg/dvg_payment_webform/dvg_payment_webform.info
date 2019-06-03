@@ -1,0 +1,16 @@
+name = DVG Payment for Webform
+description = Allows Webform submissions to receive payments.
+core = 7.x
+configure = admin/config/services/payment/dvg-payment-webform
+dependencies[] = currency
+dependencies[] = payment (>=1.8)
+dependencies[] = paymentreference
+dependencies[] = webform
+dependencies[] = dvg_roles_and_permissions
+package = Drupal voor Gemeenten - Beta
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

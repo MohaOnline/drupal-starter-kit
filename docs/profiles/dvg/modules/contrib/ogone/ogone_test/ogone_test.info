@@ -1,0 +1,13 @@
+name = Ogone tests
+description = Supports Ogone testing.
+package = Payment
+dependencies[] = ogone
+core = 7.x
+hidden = TRUE
+
+; Information added by Drupal.org packaging script on 2014-02-27
+version = "7.x-2.3"
+core = "7.x"
+project = "ogone"
+datestamp = "1393508989"
+

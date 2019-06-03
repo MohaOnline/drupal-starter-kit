@@ -1,0 +1,18 @@
+name = DVG Crisis Dashboard
+description = Manage all crisis related settings for all crisis content types.
+core = 7.x
+package = Drupal voor Gemeenten - Beta
+
+configure = admin/config/system/dvg-crisis
+
+dependencies[] = dvg_ct_crisis_banner
+dependencies[] = dvg_ct_crisis_block
+dependencies[] = dvg_ct_live_blog
+dependencies[] = functional_content
+dependencies[] = dvg_roles_and_permissions
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

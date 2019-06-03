@@ -1,0 +1,301 @@
+<?php
+/**
+ * @file
+ * The Roles And Permissions module.
+ */
+
+include_once 'dvg_roles_and_permissions.dvg.user_permission.inc';
+include_once 'dvg_roles_and_permissions.admin.inc';
+
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_roles_and_permissions_menu() {
+  $items = array();
+
+  $items['admin/people/permissions/dvg'] = array(
+    'title' => 'Roles and Permissions',
+    'description' => '',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dvg_roles_and_permissions_admin_permissions'),
+    'access arguments' => array('administer dvg_roles_and_permissions'),
+    'file' => 'dvg_roles_and_permissions.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dvg_roles_and_permissions_permission() {
+  return array(
+    'administer dvg_roles_and_permissions' => array(
+      'title' => t('Administer Roles and Permissions'),
+      'description' => t('Perform administration tasks for the Roles and Permissions module.'),
+    ),
+    'edit basic webform components settings' => array(
+      'title' => t('Edit basic webform components settings'),
+      'description' => t('Edit basic settings of webform components'),
+    ),
+    'edit basic webform configuration settings' => array(
+      'title' => t('Edit basic webform configuration settings'),
+      'description' => t('Edit basic settings of webform configuration'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function dvg_roles_and_permissions_theme() {
+  return array(
+    'dvg_roles_and_permissions_admin_permissions' => array(
+      'render element' => 'form',
+      'file' => 'dvg_roles_and_permissions.admin.inc',
+    ),
+    'dvg_roles_and_permissions_permission_description' => array(
+      'variables' => array('permission_item' => NULL, 'hide' => NULL),
+      'file' => 'dvg_roles_and_permissions.admin.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_help().
+ */
+function dvg_roles_and_permissions_help($path, $arg) {
+  switch ($path) {
+    case 'admin/people/permissions/dvg':
+      return '<p>' . t("Permissions let you control what users can do and see on your site. You can see the specific set of permissions for each role. Pressing 'Update roles & permissions' will restore the set of permissions to the default set of permissions defined for this installation.", array()) . '</p>';
+  }
+  return NULL;
+}
+
+/**
+ * Sets all defined permissions.
+ * 
+ *  * @param string $module
+ *   Only the permissions defined in the hook_dvg_default_permissions
+ *   of the given module wil be set.
+ */
+function dvg_roles_and_permissions_set_permissions($module = NULL) {
+  foreach (_dvg_roles_and_permissions_incorrect_user_role_permissions($module) as $rid => $permissions) {
+    foreach ($permissions as $permission => $permission_error) {
+      if ($permission_error == DVG_ROLES_AND_PERMISSIONS_ERRORCODE_SHOULD_BE_ON) {
+        user_role_grant_permissions($rid, array($permission));
+      }
+      elseif ($permission_error == DVG_ROLES_AND_PERMISSIONS_ERRORCODE_SHOULD_BE_OFF) {
+        user_role_revoke_permissions($rid, array($permission));
+      }
+    }
+  }
+}
+
+/**
+ * Sets all defined roles.
+ */
+function dvg_roles_and_permissions_set_roles() {
+  foreach (_dvg_roles_and_permissions_missing_user_roles() as $role_name) {
+    $role = new stdClass();
+    $role->name = $role_name;
+    user_role_save($role);
+  }
+}
+
+/**
+ * Helper function to retrieve all currently incorrect permissions.
+ *
+ * @param string $module
+ *   Only the incorrect permissions defined in the
+ *   hook_dvg_default_permissions of the given module wil be retrieved.
+ *
+ * @return array
+ *   An associative array incorrect permissions by
+ *   role with value the reason why it is incorrect.
+ */
+function _dvg_roles_and_permissions_incorrect_user_role_permissions($module = NULL) {
+  if (!isset($module)) {
+    module_implements('permission', FALSE, TRUE);
+    module_implements('dvg_default_roles', FALSE, TRUE);
+    module_implements('dvg_default_roles_alter', FALSE, TRUE);
+    module_implements('dvg_default_permissions', FALSE, TRUE);
+    module_implements('dvg_default_permissions_alter', FALSE, TRUE);
+  }
+  $role_names = _dvg_roles_and_permissions_user_role_names();
+  $user_role_permissions = _dvg_roles_and_permissions_user_role_permissions($module);
+  $role_permissions = user_role_permissions($role_names);
+  $module_info = system_get_info('module');
+  $incorrect_permissions = array();
+  $modules = module_implements('permission');
+
+  foreach ($modules as $implementing_module) {
+    $modules[$implementing_module] = $module_info[$implementing_module]['name'];
+    if (isset($user_role_permissions[$implementing_module])) {
+      $permissions = module_invoke($implementing_module, 'permission');
+      if ($permissions) {
+        foreach ($permissions as $perm => $perm_item) {
+          if (isset($user_role_permissions[$implementing_module][$perm])) {
+            foreach ($role_names as $rid => $name) {
+              // Builds arrays for checked boxes for each role.
+              $current_value = isset($role_permissions[$rid][$perm]);
+              $required_value = (isset($user_role_permissions[$implementing_module][$perm]['roles'][$name]) && ($user_role_permissions[$implementing_module][$perm]['roles'][$name] == $name));
+              if (!($current_value == $required_value)) {
+                if ($current_value) {
+                  $incorrect_permissions[$rid][$perm] = DVG_ROLES_AND_PERMISSIONS_ERRORCODE_SHOULD_BE_OFF;
+                }
+                else {
+                  $incorrect_permissions[$rid][$perm] = DVG_ROLES_AND_PERMISSIONS_ERRORCODE_SHOULD_BE_ON;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return $incorrect_permissions;
+}
+
+/**
+ * Helper function to retrieve all currently missing roles.
+ */
+function _dvg_roles_and_permissions_missing_user_roles() {
+  $missing_roles = array();
+  $dvg_roles = _dvg_roles_and_permissions_user_roles();
+  $user_roles = user_roles();
+  foreach ($dvg_roles as $key => $value) {
+    if (!in_array($key, $user_roles) && !in_array($key, array('anonymous user', 'authenticated user'))) {
+      $missing_roles[] = $key;
+    }
+  }
+  return $missing_roles;
+}
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_roles_and_permissions_dvg_requirements() {
+  $requirements = array();
+
+  $requirements['dvg_roles_and_permissions_roles'] = array(
+    'title' => t('Roles and Permissions (roles)'),
+    'value' => t('Ok'),
+    'severity' => REQUIREMENT_OK,
+  );
+  $roles = _dvg_roles_and_permissions_missing_user_roles();
+  if (!empty($roles)) {
+    $requirements['dvg_roles_and_permissions_roles']['value'] = t('There are missing roles');
+    $requirements['dvg_roles_and_permissions_roles']['description'] = l(t('Update roles and permissions.'), 'admin/people/permissions/dvg');
+    $requirements['dvg_roles_and_permissions_roles']['severity'] = REQUIREMENT_ERROR;
+  }
+
+  $requirements['dvg_roles_and_permissions_permissions'] = array(
+    'title' => t('Roles and Permissions (permissions)'),
+    'value' => t('Ok'),
+    'severity' => REQUIREMENT_OK,
+  );
+  $permissions = _dvg_roles_and_permissions_incorrect_user_role_permissions();
+  if (!empty($permissions)) {
+    $requirements['dvg_roles_and_permissions_permissions']['value'] = t('There are incorrect permissions');
+    $requirements['dvg_roles_and_permissions_permissions']['description'] = l(t('Update roles and permissions.'), 'admin/people/permissions/dvg');
+    $requirements['dvg_roles_and_permissions_permissions']['severity'] = REQUIREMENT_ERROR;
+  }
+  return $requirements;
+}
+
+
+/**
+ * Implements hook_fea_form_config_alter().
+ */
+function dvg_roles_and_permissions_fea_form_config_alter(&$config, $form_id) {
+  $basic_webform_components_settings_roles = user_roles(FALSE, 'edit basic webform components settings');
+  $basic_webform_components_settings = array();
+  $basic_webform_components_settings[] = 'actions';
+  $basic_webform_components_settings[] = 'actions|submit';
+  $basic_webform_components_settings[] = 'display';
+  $basic_webform_components_settings[] = 'display|aslist';
+  $basic_webform_components_settings[] = 'display|datepicker';
+  $basic_webform_components_settings[] = 'display|field_prefix';
+  $basic_webform_components_settings[] = 'display|field_suffix';
+  $basic_webform_components_settings[] = 'display|optrand';
+  $basic_webform_components_settings[] = 'display|placeholder';
+  $basic_webform_components_settings[] = 'display|type';
+  $basic_webform_components_settings[] = 'display|year_textfield';
+  $basic_webform_components_settings[] = 'display|display_on';
+  $basic_webform_components_settings[] = 'display|separator';
+  $basic_webform_components_settings[] = 'display|point';
+  $basic_webform_components_settings[] = 'display|minuteincrements';
+  $basic_webform_components_settings[] = 'extra|description';
+  $basic_webform_components_settings[] = 'extra|items';
+  $basic_webform_components_settings[] = 'extra|maxlength';
+  $basic_webform_components_settings[] = 'extra|multiple';
+  $basic_webform_components_settings[] = 'extra|next_page_label';
+  $basic_webform_components_settings[] = 'extra|options_source';
+  $basic_webform_components_settings[] = 'extra|prev_page_label';
+  $basic_webform_components_settings[] = 'form_key';
+  $basic_webform_components_settings[] = 'name';
+  $basic_webform_components_settings[] = 'validation';
+  $basic_webform_components_settings[] = 'validation|end_date';
+  $basic_webform_components_settings[] = 'validation|extensions';
+  $basic_webform_components_settings[] = 'validation|extensions|addextensions';
+  $basic_webform_components_settings[] = 'validation|extensions|types|archives';
+  $basic_webform_components_settings[] = 'validation|extensions|types|documents';
+  $basic_webform_components_settings[] = 'validation|extensions|types|desktopimages';
+  $basic_webform_components_settings[] = 'validation|extensions|types|media';
+  $basic_webform_components_settings[] = 'validation|extensions|types|webimages';
+  $basic_webform_components_settings[] = 'validation|max';
+  $basic_webform_components_settings[] = 'validation|message';
+  $basic_webform_components_settings[] = 'validation|min';
+  $basic_webform_components_settings[] = 'validation|required';
+  $basic_webform_components_settings[] = 'validation|size';
+  $basic_webform_components_settings[] = 'validation|start_date';
+  $basic_webform_components_settings[] = 'validation|step';
+  $basic_webform_components_settings[] = 'value';
+
+  drupal_alter('dvg_basic_webform_components_settings', $basic_webform_components_settings);
+
+  if ($form_id == 'webform_component_edit_form') {
+    foreach ($config['elements'] as &$element) {
+      $key = implode('|', $element['tree']);
+      if (in_array($key, $basic_webform_components_settings)) {
+        $element['roles'] = drupal_map_assoc(array_values($basic_webform_components_settings_roles));
+      }
+    }
+  }
+  $basic_webform_configuration_settings_roles = user_roles(FALSE, 'edit basic webform configuration settings');
+  $basic_webform_configuration_settings = array();
+  $basic_webform_configuration_settings[] = 'actions';
+  $basic_webform_configuration_settings[] = 'actions|submit';
+  $basic_webform_configuration_settings[] = 'advanced';
+  $basic_webform_configuration_settings[] = 'advanced|hide_back_to_form';
+  $basic_webform_configuration_settings[] = 'advanced|submit_text';
+  $basic_webform_configuration_settings[] = 'preview';
+  $basic_webform_configuration_settings[] = 'preview|preview';
+  $basic_webform_configuration_settings[] = 'preview|settings';
+  $basic_webform_configuration_settings[] = 'preview|settings|preview_components';
+  $basic_webform_configuration_settings[] = 'preview|settings|preview_message';
+  $basic_webform_configuration_settings[] = 'preview|settings|preview_next_button_label';
+  $basic_webform_configuration_settings[] = 'preview|settings|preview_prev_button_label';
+  $basic_webform_configuration_settings[] = 'preview|settings|preview_title';
+  $basic_webform_configuration_settings[] = 'preview|exclude_empty_items_preview';
+  $basic_webform_configuration_settings[] = 'progressbar';
+  $basic_webform_configuration_settings[] = 'progressbar|progressbar_label_confirmation';
+  $basic_webform_configuration_settings[] = 'progressbar|progressbar_label_first';
+  $basic_webform_configuration_settings[] = 'submission';
+  $basic_webform_configuration_settings[] = 'submission|confirmation';
+  $basic_webform_configuration_settings[] = 'submission|status';
+
+  drupal_alter('dvg_basic_webform_configuration_settings', $basic_webform_configuration_settings);
+
+  if ($form_id == 'webform_configure_form') {
+    foreach ($config['elements'] as &$element) {
+      $key = implode('|', $element['tree']);
+      if (in_array($key, $basic_webform_configuration_settings)) {
+        $element['roles'] = drupal_map_assoc(array_values($basic_webform_configuration_settings_roles));
+      }
+    }
+  }
+}

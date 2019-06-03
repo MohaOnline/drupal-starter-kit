@@ -1,0 +1,19 @@
+name = Dashboard
+core = 7.x
+package = Drupal voor Gemeenten
+dependencies[] = dashboard
+dependencies[] = features
+dependencies[] = menu
+dependencies[] = views
+dependencies[] = dvg_roles_and_permissions
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[menu_custom][] = menu-dashboard-menu
+features[views_view][] = dashboard
+features_exclude[dependencies][ctools] = ctools
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

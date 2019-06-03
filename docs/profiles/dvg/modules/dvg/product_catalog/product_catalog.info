@@ -1,0 +1,15 @@
+name = Product catalog
+description = Provides an xml product catalog using the Samenwerkende Catalogi standard
+core = 7.x
+package = Drupal voor Gemeenten
+
+dependencies[] = dvg_ct_task
+dependencies[] = dvg_voc_owms_audience
+dependencies[] = dvg_voc_owms_authority
+dependencies[] = dvg_voc_owms_uniform_product_name
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

@@ -1,0 +1,286 @@
+<?php
+
+/**
+ * @file
+ * Hooks and helpers for Product Catalog module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function product_catalog_menu() {
+  $items = array();
+
+  $items['productcatalogus/xml'] = array(
+    'title' => 'Product catalog XML',
+    'description' => 'Product catalog XML',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'page callback' => 'product_catalog_product_catalog_xml',
+  );
+  $items['admin/config/content/productcatalog'] = array(
+    'title' => 'Product catalog',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('product_catalog_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'product_catalog.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function product_catalog_dvg_requirements() {
+  $requirements = array();
+
+  $requirements['product_catalog'] = array(
+    'title' => t('Product catalog'),
+  );
+
+  $product_catalog_spatial = variable_get('product_catalog_spatial', '');
+  $product_catalog_spatial_id = variable_get('product_catalog_spatial_id', '');
+
+  if ($product_catalog_spatial && $product_catalog_spatial_id) {
+    $requirements['product_catalog']['value'] = t('Ok');
+    $requirements['product_catalog']['severity'] = REQUIREMENT_OK;
+  }
+  else {
+    $requirements['product_catalog']['value'] = l(t('Configure the product catalog.'), 'admin/config/content/productcatalog');
+    $requirements['product_catalog']['description'] = t('The product catalog is not fully configured.');
+    $requirements['product_catalog']['severity'] = REQUIREMENT_WARNING;
+  }
+
+  return $requirements;
+}
+
+
+/**
+ * Menu callback for the product catalog xml.
+ */
+function product_catalog_product_catalog_xml() {
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'task')
+    ->addTag('node_access')
+    ->propertyCondition('status', NODE_PUBLISHED);
+
+  $result = $query->execute();
+
+  // Using DOMDocument because new SimpleXMLElement throws warnings when
+  // creating an element with an undefined prefix.
+  $dom = new DOMDocument('1.0', 'UTF-8');
+  $element = $dom->createElement('p:scproducten');
+  $dom->appendChild($element);
+  $xml = simplexml_import_dom($dom);
+
+  $xml->addAttribute('xmlns:xmlns:p', 'http://standaarden.overheid.nl/product/terms/');
+  $xml->addAttribute('xmlns:xmlns:overheid', 'http://standaarden.overheid.nl/owms/terms/');
+  $xml->addAttribute('xmlns:xmlns:dcterms', 'http://purl.org/dc/terms/');
+  $xml->addAttribute('xmlns:xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+  $xml->addAttribute('xmlns:xsi:schemaLocation', 'http://standaarden.overheid.nl/product/terms/ http://standaarden.overheid.nl/sc/4.0/xsd/sc.xsd');
+
+  drupal_add_http_header('Content-Type', 'text/xml; utf-8');
+
+  // Add header to prevent search bots from indexing the page.
+  drupal_add_http_header('X-Robots-Tag', 'noindex, nofollow');
+
+  // Finish early if no results.
+  if (!isset($result['node'])) {
+    print $xml->asXML();
+    drupal_exit();
+  }
+
+  $nodes = node_load_multiple(array_keys($result['node']));
+
+  foreach ($nodes as $node) {
+    $product = $xml->addChild('xmlns:p:scproduct');
+    $product->addAttribute('owms-version', '4.0');
+
+    $node_url = url('node/' . $node->nid, array('absolute' => TRUE));
+
+    // Product -> Meta
+    $meta = $product->addChild('xmlns:p:meta');
+
+    // Product -> Meta -> Kern
+    $kern = $meta->addChild('xmlns:p:owmskern');
+    $kern->addChild('xmlns:dcterms:identifier', $node_url);
+
+    $kern->addChild('xmlns:dcterms:title', check_plain($node->title));
+
+    $kern->addChild('xmlns:dcterms:language', $node->language);
+
+    $type = $kern->addChild('xmlns:dcterms:type', 'productbeschrijving');
+    $type->addAttribute('scheme', 'overheid:Informatietype');
+
+    $kern->addChild('xmlns:dcterms:modified', format_date($node->changed, 'custom', 'Y-m-d'));
+
+    $spatial = $kern->addChild('xmlns:dcterms:spatial', variable_get('product_catalog_spatial', ''));
+    $spatial->addAttribute('scheme', 'overheid:Gemeente');
+    $spatial->addAttribute('resourceIdentifier', variable_get('product_catalog_spatial_id', ''));
+
+    $field_authority = field_get_items('node', $node, 'field_owms_authority');
+    if ($field_authority) {
+      $term = taxonomy_term_load($field_authority[0]['tid']);
+      if ($term) {
+        $field_scheme = field_get_items('taxonomy_term', $term, 'field_scheme');
+        $field_resource_identifier = field_get_items('taxonomy_term', $term, 'field_resource_identifier');
+
+        $authority = $kern->addChild('xmlns:overheid:authority', $term->name);
+        $authority->addAttribute('scheme', $field_scheme[0]['value']);
+        $authority->addAttribute('resourceIdentifier', $field_resource_identifier[0]['url']);
+      }
+    }
+
+    // Product -> Meta -> Mantel
+    $mantel = $meta->addChild('xmlns:p:owmsmantel');
+    $audience_fields = field_get_items('node', $node, 'field_owms_audience');
+    if ($audience_fields) {
+      foreach ($audience_fields as $audience_field) {
+        $audience_term = taxonomy_term_load($audience_field['tid']);
+        if ($audience_term) {
+          $audience = $mantel->addChild('xmlns:dcterms:audience', $audience_term->name);
+          $audience->addAttribute('scheme', 'overheid:Doelgroep');
+        }
+      }
+    }
+
+    $keywords = field_get_items('node', $node, 'field_alternate_keywords');
+    if ($keywords) {
+      $mantel->addChild('xmlns:dcterms:subject', $keywords[0]['safe_value']);
+    }
+
+    $mantel->addChild('xmlns:dcterms:abstract', _product_catalog_node_abstract($node));
+
+    // Product -> Meta -> SCMeta
+    $scmeta = $meta->addChild('xmlns:p:scmeta');
+    $scmeta->addChild('xmlns:p:productID', $node->nid);
+
+    $online_aanvragen = _product_catalog_node_online_aanvragen($node);
+    $scmeta->addChild('xmlns:p:onlineAanvragen', $online_aanvragen);
+
+    if ($online_aanvragen != 'nee') {
+      $webform_node = _dvg_ct_task_get_referenced_webform_by_task($node);
+      if ($webform_node && isset($webform_node->nid)) {
+        $aanvraagURL = $scmeta->addChild('xmlns:p:aanvraagURL');
+        $aanvraagURL->addAttribute('resourceIdentifier', url('node/' . $webform_node->nid, array('absolute' => TRUE)));
+      }
+    }
+
+    $scmeta->addChild('xmlns:p:eenmaligAanmelden', 'nee');
+
+    $field_upn = field_get_items('node', $node, 'field_owms_uniform_product_name');
+    if ($field_upn) {
+      $term_upn = taxonomy_term_load($field_upn[0]['tid']);
+      if ($term_upn) {
+        $field_resource_identifier = field_get_items('taxonomy_term', $term_upn, 'field_resource_identifier');
+
+        $uniforme_productnaam = $scmeta->addChild('xmlns:p:uniformeProductnaam', $term_upn->name);
+        $uniforme_productnaam->addAttribute('scheme', 'overheid:UniformeProductnaam');
+        $uniforme_productnaam->addAttribute('resourceIdentifier', $field_resource_identifier[0]['url']);
+      }
+    }
+
+    // Product -> Body
+    $body = $product->addChild('xmlns:p:body');
+    $body->addChild('xmlns:p:productHTML', _product_catalog_node_body($node));
+  }
+
+  print $xml->asXML();
+  drupal_exit();
+}
+
+/**
+ * Helper function that determines the correct value for onlineAanvragen.
+ */
+function _product_catalog_node_online_aanvragen($node) {
+  $online_aanvragen = 'nee';
+  if (function_exists('_dvg_ct_task_get_referenced_webform_by_task')) {
+    $webform_node = _dvg_ct_task_get_referenced_webform_by_task($node);
+    if ($webform_node && isset($webform_node->nid)) {
+      $online_aanvragen = 'ja';
+
+      if (module_exists('dvg_authentication') || module_exists('dvg_authentication_tmp_mapping')) {
+        if (dvg_authentication_node_authentication_provider_enabled($webform_node, 'digid')) {
+          $online_aanvragen = 'digid';
+        }
+      }
+    }
+  }
+
+  return $online_aanvragen;
+}
+
+/**
+ * Helper function that grabs the correct value for the abstract.
+ *
+ * Renders a string of the introduction -or- menu description.
+ */
+function _product_catalog_node_abstract($node) {
+  $field = field_get_items('node', $node, 'field_introduction');
+  if ($field) {
+    return $field[0]['safe_value'];
+  }
+
+  if (empty($abstract)) {
+    $field = field_get_items('node', $node, 'field_menu_description');
+    return $field[0]['safe_value'];
+  }
+}
+
+/**
+ * Helper function that grabs the correct value for the body.
+ *
+ * Renders a string of the introduction + sections -or- menu description.
+ */
+function _product_catalog_node_body($node) {
+  global $base_url, $base_path;
+  $body = array();
+
+  $field = field_get_items('node', $node, 'field_introduction');
+  if ($field) {
+    $body['field_intro'] = $field[0]['safe_value'];
+  }
+
+  $field = field_get_items('node', $node, 'field_callout');
+  if ($field) {
+    $body['field_callout'] = check_markup($field[0]['value'], $field[0]['format']);
+  }
+
+  $field = field_get_items('node', $node, 'field_callus');
+  if ($field) {
+    $body['field_callus'] = check_markup($field[0]['value'], $field[0]['format']);
+  }
+
+  $field_sections = field_get_items('node', $node, 'field_sections');
+  if ($field_sections) {
+    foreach ($field_sections as $key => $field_section) {
+      $field_section_value = field_view_value('node', $node, 'field_sections', $field_section);
+
+      if (isset($field_section_value['entity']['field_collection_item'][$field_section['value']]['field_title']['#items'][0])) {
+        $section_title = $field_section_value['entity']['field_collection_item'][$field_section['value']]['field_title']['#items'][0];
+        $body['field_sections_' . $key . '_title'] = '<h2>' . $section_title['safe_value'] . '</h2>';
+      }
+
+      if (isset($field_section_value['entity']['field_collection_item'][$field_section['value']]['field_body']['#items'][0])) {
+        $section_body = $field_section_value['entity']['field_collection_item'][$field_section['value']]['field_body']['#items'][0];
+        $body['field_sections_' . $key . '_body'] = '<div>' . check_markup($section_body['value'], $section_body['format']) . '</div>';
+      }
+    }
+  }
+
+  if (empty($body)) {
+    $field = field_get_items('node', $node, 'field_menu_description');
+    $body['field_menu_description'] = $field[0]['safe_value'];
+  }
+
+  // Allow other modules to alter the output.
+  drupal_alter('catalog_node_body', $body, $node);
+
+  $body = preg_replace('@href="(' . preg_quote($base_path, '@') . '(:?[^/][^"]*)??)"@i', 'href="' . $base_url . '$1"', implode("\n", $body));
+  // &nbsp; will result in a 'entity not defined error', replace it by utf-8 space.
+  $body = str_replace('&nbsp;', '&#160;', $body);
+
+  return $body;
+}

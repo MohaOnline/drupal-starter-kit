@@ -1,0 +1,604 @@
+<?php
+
+/**
+ * @file
+ * Custom Help Text module file.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function custom_help_text_help($path, $arg) {
+  $help = array();
+
+  switch ($path) {
+    case 'admin/help#custom_help_text':
+      return 'This module integrates into the Help module (using the hook_help()
+        hook) to add help messages based on the URL. There is an administration
+        form that allows users to set the messages and where they appear on the
+        site. Multiple help messages can be added to the same page at once, the
+        administration form can be ordered to sort the order that these messages
+        appear.';
+  }
+
+  if (!user_access('view custom help text') && !user_access('administer custom help text')) {
+    // User does not have access to view this so just return false.
+    return '';
+  }
+
+  // Get all custom help text and sort by weight.
+  $objects = _custom_help_text_get_all_objects();
+
+  foreach ($objects as $object) {
+    $filterd = _custom_help_text_filter($object);
+
+    drupal_alter('custom_help_text_help_filter', $filterd, $object);
+
+    if ($filterd) {
+      continue;
+    }
+
+    $help[] = _custom_help_text_string($object->name, 'help', $object->help);
+  }
+
+  if (empty($help)) {
+    return '';
+  }
+  elseif (count($help) == 1) {
+    return implode($help);
+  }
+  else {
+    return theme('item_list', array('items' => $help));
+  }
+}
+
+/**
+ * Helper for getting all custom help text objects, sorted by weight.
+ */
+function _custom_help_text_get_all_objects() {
+  $objects = &drupal_static(__FUNCTION__);
+
+  if (!isset($objects)) {
+    $objects = ctools_export_crud_load_all('custom_help_text');
+
+    // Sort by Weight.
+    uasort($objects, function ($a, $b) {
+      strcmp($b->weight, $a->weight);
+    });
+
+    foreach ($objects as &$object) {
+      if (!is_array($object->options)) {
+        $object->options = unserialize($object->options);
+      }
+    }
+  }
+
+  return $objects;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function custom_help_text_permission() {
+  return array(
+    'administer custom help text settings' => array(
+      'title' => t('Administer settings'),
+      'description' => t('Allow users to administer the custom help text settings.'),
+    ),
+    'administer custom help text' => array(
+      'title' => t('Administer texts'),
+      'description' => t('Administer help text messages with a very permissive XSS/HTML filter that allows all HTML tags.'),
+      'restrict access' => TRUE,
+    ),
+    'view custom help text' => array(
+      'title' => t('View custom help texts'),
+      'description' => t('Allow users to view help message.'),
+    ),
+    'export custom help text' => array(
+      'title' => t('Export and Import custom help texts'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function custom_help_text_menu() {
+  $items = array();
+
+  $items['admin/structure/custom-help-text/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('custom_help_text_settings_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer custom help text settings'),
+    'file' => 'custom_help_text.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 50,
+  );
+
+  $items['admin/structure/custom-help-text/restore'] = array(
+    'title' => 'Restore',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('custom_help_text_restore_form'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer permissions'),
+    'file' => 'custom_help_text.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 49,
+  );
+
+  return $items;
+}
+
+/**
+ * Custom access callback.
+ */
+function custom_help_text_access_translation_pages(stdClass $account = NULL) {
+  global $user;
+
+  if (is_null($account)) {
+    $account = $user;
+  }
+
+  return user_access('administer custom help text', $account) && user_access('translate user-defined strings', $account);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function custom_help_text_theme($existing, $type, $theme, $path) {
+  return array(
+    'custom_help_text_list_form' => array(
+      'render element' => 'form',
+    ),
+  );
+}
+
+/**
+ * The custom help text main admin page form.
+ *
+ * @param array $form_state
+ *   The current form state.
+ *
+ * @return array
+ *   The form.
+ */
+function custom_help_text_list_form() {
+  $form = array();
+  $form['#method'] = 'post';
+  $form['rows'] = array(
+    '#tree' => TRUE,
+  );
+
+  // Get all custom help texts and sorted by weight.
+  ctools_include('export');
+  $objects = ctools_export_crud_load_all('custom_help_text');
+  uasort($objects, function ($a, $b) {
+    return strcmp($b->weight, $a->weight);
+  });
+
+  $objects_count = sizeof($objects);
+  foreach ($objects as $object) {
+    $element = array();
+
+    // Administrative Title
+    $element['admin_title'] = array(
+      '#markup' => check_plain($object->admin_title),
+    );
+
+    // Path(s)
+    $paths = explode(PHP_EOL, $object->path);
+    $paths = array_map(function ($a) {
+      return trim($a);
+    }, $paths);
+
+    foreach ($paths as $key => $path) {
+      if ($path == '<front>') {
+        $paths[$key] = l('<front>', '');
+      }
+      elseif (empty($object->disabled) && drupal_valid_path($path)) {
+        $paths[$key] = l('/' . $path, $path);
+      }
+      else {
+        $paths[$key] = check_plain($path);
+      }
+    }
+
+    $element['path'] = array(
+      '#markup' => implode(', ', $paths),
+    );
+
+    // System Name
+    $element['name'] = array(
+      '#type' => 'hidden',
+      '#value' => $object->name,
+    );
+
+    // Weight
+    $element['weight'] = array(
+      '#type' => 'weight',
+      '#delta' => $objects_count + 50,
+      '#default_value' => $object->weight,
+      '#attributes' => array(
+        'class' => array(
+          'weight',
+        ),
+      ),
+    );
+
+    // Help message
+    $element['help'] = array(
+      '#markup' => _custom_help_text_string($object->name, 'help', $object->help)
+    );
+
+    $operations = array();
+
+    // Enable
+    if (!empty($object->disabled)) {
+      $operations[] = array(
+        'title' => t('Enable'),
+        'href' => "admin/structure/custom-help-text/list/{$object->name}/enable",
+        'ajax' => TRUE,
+        'query' => array(
+          'token' => drupal_get_token('enable'),
+        ),
+        'attributes' => array('class' => array('use-ajax')),
+      );
+    }
+
+    // Edit
+    $operations[] = array(
+      'title' => t('Edit'),
+      'href' => "admin/structure/custom-help-text/list/{$object->name}",
+    );
+
+    // Translate
+    if (function_exists('i18n_string')) {
+      $operations[] = array(
+        'title' => t('Translate'),
+        'href' => "admin/structure/custom-help-text/list/{$object->name}/translate",
+      );
+    }
+
+    // Clone
+    $operations[] = array(
+      'title' => t('Clone'),
+      'href' => "admin/structure/custom-help-text/list/{$object->name}/clone",
+    );
+
+    // Disable
+    if (empty($object->disabled)) {
+      $operations[] = array(
+        'title' => t('Disable'),
+        'href' => "admin/structure/custom-help-text/list/{$object->name}/disable",
+        'ajax' => TRUE,
+        'query' => array(
+          'token' => drupal_get_token('disable'),
+        ),
+        'attributes' => array('class' => array('use-ajax')),
+      );
+    }
+
+    // Revert
+    if ($object->export_type == EXPORT_IN_CODE + EXPORT_IN_DATABASE) {
+      $operations[] = array(
+        'title' => t('Revert'),
+        'href' => "admin/structure/custom-help-text/list/{$object->name}/revert",
+      );
+    }
+
+    // Export
+    if (user_access('export custom help text')) {
+      $operations[] = array(
+        'title' => t('Export'),
+        'href' => "admin/structure/custom-help-text/list/{$object->name}/export",
+      );
+    }
+
+    // Delete
+    if ($object->export_type == EXPORT_IN_DATABASE) {
+      $operations[] = array(
+        'title' => t('Delete'),
+        'href' => "admin/structure/custom-help-text/list/{$object->name}/delete",
+      );
+    }
+
+    // Operation links
+    $element['action'] = array(
+      '#markup' => theme('links__ctools_dropbutton', array(
+        'links' => $operations,
+        'attributes' => array('class' => array('links', 'inline')),
+      )),
+    );
+
+    $element['#object'] = $object;
+
+    $form['rows'][] = $element;
+  }
+
+  // Submit
+  $form['submit'] = array(
+    '#callback' => 'custom_help_text_list_form_submit',
+    '#type' => 'submit',
+    '#value' => t('Save changes'),
+  );
+
+  return $form;
+}
+
+/**
+ * The theme for the custom help text administration form.
+ *
+ * This will take the form data and wrap it in a tabledrag element.
+ *
+ * @param array $variables
+ *   The form
+ *
+ * @return array
+ *   The rendered form.
+ */
+function theme_custom_help_text_list_form($variables) {
+  $elements = isset($variables['form']['rows']) ? $variables['form']['rows'] : array();
+
+  $rows = array();
+  // Loop through each "row" in the table array.
+  foreach (element_children($elements) as $item) {
+    $element = $elements[$item];
+
+    // Add form data.
+    $data = array(
+      drupal_render($element['admin_title']),
+      drupal_render($element['path']),
+      drupal_render($element['weight']),
+      array(
+        'data' => $element['action'],
+        'class' => array('ctools-export-ui-operations'),
+      ),
+    );
+
+    // Add the row to the array of rows.
+    $rows[] = array(
+      'data' => $data,
+      'title' => drupal_render($element['help']),
+      'class' => array(
+        'draggable',
+        (empty($element['#object']->disabled)) ? 'ctools-export-ui-enabled' : 'ctools-export-ui-disabled',
+      ),
+    );
+  }
+
+  // Make sure the header count matches the column count.
+  $header = array(
+    t('Name'),
+    t('Path'),
+    t('Weight'),
+    array(
+      'data' => t('Operations'),
+      'class' => array('ctools-export-ui-operations'),
+    ),
+  );
+
+  $actions = (user_access('export custom help text')) ? t('Add or Import') : t('Add');
+  $empty = '<p>' . t('No custom help text found. Use @actions to create one.', array('@actions' => $actions)) . '</p>';
+
+  $options = array(
+    'header' => $header,
+    'rows' => $rows,
+    'attributes' => array(
+      'id' => 'ctools-export-ui-list-items',
+    ),
+    'empty' => $empty,
+  );
+
+  drupal_alter('custom_help_text_table', $options, $variables['form']);
+  unset($variables['form']['rows']);
+
+  $output = theme('table', $options);
+
+  if (empty($variables['js'])) {
+    drupal_add_tabledrag('ctools-export-ui-list-items', 'order', 'sibling', 'weight');
+    $output .= drupal_render_children($variables['form']);
+  }
+
+  return '<div id="custom_help_text_table">' . $output . '</div>';
+}
+
+/**
+ * Implements hook_submit().
+ *
+ * For the custom_help_text_list_form() form.
+ */
+function custom_help_text_list_form_submit($form, &$form_state) {
+  foreach ($form_state['values']['rows'] as $element) {
+    custom_help_text_admin_update($element['name'], $element['weight']);
+  }
+
+  drupal_set_message(t('Order of help items updated.'));
+}
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function custom_help_text_block_view_alter(&$data, $block) {
+  if ($block->module == 'system' && $block->delta == 'help' && !empty($data['content'])) {
+    $data['content'] = _custom_help_text_generate_help($data['content']);
+  }
+}
+
+/**
+ * Helper to generate custom help text.
+ */
+function _custom_help_text_generate_help($content) {
+  if (variable_get('custom_help_text_fieldset', FALSE)) {
+    $fieldset = array(
+      '#theme' => 'fieldset',
+      '#title' => t('!custom_help_text_title', array('!custom_help_text_title' => variable_get('custom_help_text_title', t('Help')))),
+      '#children' => $content,
+    );
+
+    if (variable_get('custom_help_text_collapsible', FALSE)) {
+      drupal_add_library('system', 'drupal.collapse');
+      $fieldset['#attributes'] = array('class' => array('collapsible'));
+
+      if (variable_get('custom_help_text_collapsed', FALSE)) {
+        $fieldset['#attributes']['class'][] = 'collapsed';
+      }
+    }
+    $content = render($fieldset);
+  }
+  return $content;
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ *
+ * Tell CTools that we support the default_mymodule_presets API.
+ */
+function custom_help_text_ctools_plugin_api($owner, $api) {
+  if ($owner == 'custom_help_text' && $api == 'custom_help_text') {
+    return array('version' => 1);
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function custom_help_text_ctools_plugin_directory($module, $type) {
+  // Load the export_ui plugin.
+  if ($type == 'export_ui') {
+    return 'plugins/export_ui';
+  }
+}
+
+/**
+ * Helper function to update a single help item.
+ *
+ * @param string $machine_name
+ *   The help machine name to update.
+ * @param int $weight
+ *   The weight of the help item.
+ */
+function custom_help_text_admin_update($name, $weight) {
+  $object = ctools_export_crud_load('custom_help_text', $name);
+
+  $object->weight = (int) $weight;
+  ctools_export_crud_save('custom_help_text', $object);
+}
+
+/**
+ * Implements hook_variable_info().
+ */
+function custom_help_text_variable_info($options) {
+  $variable['custom_help_text_title'] = array(
+    'type' => 'string',
+    'title' => t('Title', array(), $options),
+    'description' => t('Title', array(), $options),
+    'required' => TRUE,
+    'localize' => TRUE,
+    'group' => 'custom_help_text',
+  );
+
+  return $variable;
+}
+
+/**
+ * Implements hook_variable_group_info().
+ */
+function custom_help_text_variable_group_info() {
+  $groups['custom_help_text'] = array(
+    'title' => t('Custom Help Text'),
+    'access' => 'administer custom help text settings',
+    'path' => array('admin/structure/custom-help-text/settings'),
+  );
+
+  return $groups;
+}
+
+/**
+ * Implements hook_i18n_string_info().
+ */
+function custom_help_text_i18n_string_info() {
+  $groups['custom_help_text'] = array(
+    'title' => t('Custom Help Text'),
+    'description' => t('Configurable help messages per page and role.'),
+    'format' => TRUE,
+    'list' => TRUE,
+  );
+
+  return $groups;
+}
+
+/**
+ * Implements hook_i18n_object_info().
+ */
+function custom_help_text_i18n_object_info() {
+  $info['custom_help_text'] = array(
+    'title' => t('Custom Help Text'),
+    'key' => 'name',
+    'placeholders' => array(
+      '%ctools_export_ui' => 'name',
+    ),
+    'edit path' => 'admin/structure/custom-help-text/list/%ctools_export_ui',
+    'translate tab' => 'admin/structure/custom-help-text/list/%ctools_export_ui/translate',
+    'string translation' => array(
+      'textgroup' => 'custom_help_text',
+      'type' => 'text',
+      'properties' => array(
+        'help' => array(
+          'title' => t('Help message'),
+          'format' => 'format',
+        ),
+      ),
+    ),
+    'translate path' => 'admin/structure/custom-help-text/list/%ctools_export_ui/translate/%i18n_language',
+  );
+
+  return $info;
+}
+
+/**
+ * Helper for creating the string or translated string if i18n_string is enabled.
+ */
+function _custom_help_text_string($name, $field, $string, $options = array()) {
+  global $language;
+
+  if (function_exists('i18n_string')) {
+    $options += array(
+      'langcode' => $language->language,
+      'format' => I18N_STRING_FILTER_XSS_ADMIN
+    );
+    $name = 'custom_help_text:text:' . $name . ':' . $field;
+    return i18n_string($name, $string, $options);
+  }
+  else {
+    return filter_xss_admin($string);
+  }
+}
+
+/**
+ * Helper for checking if the custom help text needs to be filtered out.
+ */
+function _custom_help_text_filter($object) {
+  global $user;
+
+  if (isset($object->disabled)) {
+    return TRUE;
+  }
+
+  $path_alias = drupal_get_path_alias();
+  $path = drupal_is_front_page() ? variable_get('site_frontpage', 'node') : current_path();
+
+  if (!drupal_match_path($path, $object->path) || !drupal_match_path($path_alias, $object->path)) {
+    return TRUE;
+  }
+
+  $user_roles = array_values($user->roles);
+  $access_roles = array_intersect($user_roles, array_values($object->options['roles']));
+  if (empty($access_roles)) {
+    return TRUE;
+  }
+
+  return FALSE;
+}

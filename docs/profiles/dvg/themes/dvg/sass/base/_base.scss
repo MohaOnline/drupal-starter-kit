@@ -1,0 +1,94 @@
+//-----------------------------------------------------------------------------
+// Imports
+
+// Basic compass framework.
+@import "compass";
+@import "compass/css3";
+
+// Variables for respond-to mixin.
+$media-queries:               true !default;
+
+// Image sprite.
+//----------------------------------------
+$sprite:                      sprite-map("sprite/*.png",  $spacing: 10px);
+
+//-----------------------------------------------------------------------------
+// Website Settings
+
+$browser-context:             16; // Default for em calculation.
+
+$site_width:                  56.111em; // 1010px / base font size 18px
+
+
+//-----------------------------------------------------------------------------
+// Break points.
+
+$bp-search:                   26.5625em; // 425px / base font size 16px
+$bp-small:                    32.8125em; // 525px / base font size 16x
+$bp-medium:                   38.8889em; // 700px / base font size 18px
+$bp-large:                    53.3334em; // 960px / base font size 18px
+$bp-desktop:                  56.8889em; // 1024px / base font size 18px
+
+
+//-----------------------------------------------------------------------------
+// Descriptive colors.
+
+$main-color:                  #456479;
+$main-color-light:            lighten($main-color, 60%);
+$sub-color:                   #F8A403;
+$sub-color-light:             lighten($sub-color, 47.5%);
+
+$black:                       #000000;
+$red:                         #F40419;
+
+
+//-----------------------------------------------------------------------------
+// Functional colors.
+
+$text-color:                  #000000;
+$text-color-light:            lighten($text-color, 65%);
+$text-color-alt:              #FFFFFF;
+
+$link-color:                  $main-color;
+$link-color-hover:            $sub-color;
+
+$border-color:                $main-color;
+$border-color-active:         $sub-color;
+
+$btn-color:                   $main-color;
+$btn-color-hover:             $sub-color;
+
+$error:                       #D20012;
+$succes:                      #468847;
+$warning:                     #EFCF7A;
+
+//-----------------------------------------------------------------------------
+// Fonts.
+
+$font-family-default:         Arial, Helvetica, Verdana, sans-serif;
+$font-family-alt:             Georgia, 'Times New Roman', Serif;
+$font-size-default:           16px;
+
+$font-size-mega:              44px;
+$font-size-super:             30px;
+$font-size-xlarge:            24px;
+$font-size-large:             22px;
+$font-size-medium:            18px;
+$font-size-regular:           16px;
+$font-size-small:             14px;
+$font-size-tiny:              12px;
+
+//-----------------------------------------------------------------------------
+// Other variables.
+
+$crisis-banner-bg:              #FBDE89;
+$crisis-banner-text-color:      $text-color;
+$crisis-banner-text-color-alt:  white;
+$crisis-banner-link-color:      $text-color;
+$crisis-banner-link-color-alt:  white;
+
+$crisis-bg:                   #FFF6F6;
+$crisis-border:               $red;
+$crisis-text-color:           $text-color;
+$crisis-link-color:           $link-color;
+$crisis-link-color-hover:     $link-color-hover;

@@ -1,0 +1,18 @@
+name = Admin Views
+core = 7.x
+package = Drupal voor Gemeenten
+dependencies[] = admin_views
+dependencies[] = ctools
+dependencies[] = menu_node
+dependencies[] = views
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[views_view][] = dvg_administration_files
+features[views_view][] = dvg_administration_nodes
+features[views_view][] = dvg_administration_users
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

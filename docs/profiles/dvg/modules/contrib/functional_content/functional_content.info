@@ -1,0 +1,15 @@
+name = Functional Content
+description = Provides Functional Content nodes
+core = 7.x
+
+dependencies[] = context_callback
+dependencies[] = views
+
+configure = admin/config/content/functional-content/settings
+
+; Information added by Drupal.org packaging script on 2015-06-24
+version = "7.x-1.0-rc3"
+core = "7.x"
+project = "functional_content"
+datestamp = "1435176213"
+

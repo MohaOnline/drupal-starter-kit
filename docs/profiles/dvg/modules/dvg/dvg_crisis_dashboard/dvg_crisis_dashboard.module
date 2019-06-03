@@ -1,0 +1,187 @@
+<?php
+
+include_once 'dvg_crisis_dashboard.dvg.user_permission.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_crisis_dashboard_menu() {
+  $items = array();
+
+  $items['admin/dvg-crisis'] = array(
+    'title' => 'Crisis',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dvg_crisis_dashboard_form'),
+    'access arguments' => array('access dvg crisis dashboard'),
+    'weight' => 8,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function dvg_crisis_dashboard_menu_alter(&$items) {
+  // Remove the Crisis dashboard items from the normal 'add content' menu.
+  $bundles = array(
+    'crisis_banner',
+    'crisis_block',
+    'live_blog',
+  );
+
+  foreach ($bundles as $index => $bundle) {
+    $bundle_url_str = str_replace('_', '-', $bundle);
+    $items['admin/dvg-crisis/' . $bundle_url_str . '/add'] = $items['node/add/' . $bundle_url_str];
+    $items['admin/dvg-crisis/' . $bundle_url_str . '/add']['type'] = MENU_LOCAL_ACTION;
+    unset($items['node/add/' . $bundle_url_str]);
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dvg_crisis_dashboard_permission() {
+  return array(
+    'access dvg crisis dashboard' =>  array(
+      'title' => t('Access the DVG crisis dashboard'),
+      'description' => t('Perform administration tasks for all crisis related content types and settings.'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * The crisis administration form.
+ */
+function dvg_crisis_dashboard_form() {
+  $form = array();
+
+  $header = array(
+    'title' => array('data' => t('Title'), 'class' => 'title'),
+    'actions' => array('data' => t('Actions'), 'class' => 'actions'),
+  );
+
+  $form['crisis'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Content settings'),
+  );
+  $form['crisis'][FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_crisis_banner'] = array(
+    '#prefix' => '<label>' . t('Crisis banner') . '</label>',
+    '#suffix' => '<div class="description">' . implode(' ', array(
+      t('A banner can be configured to display on all pages, or limited to specific pages.'),
+      t('When a crisis block is active, the banner will not be displayed on the front page.'),
+    )) . '</div>',
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => _dvg_crisis_dashboard_get_nodes('crisis_banner', TRUE),
+    '#default_value' => functional_content_nid('dvg_ct_crisis_banner'),
+    '#multiple' => FALSE,
+  );
+  $form['crisis'][FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_crisis_block'] = array(
+    '#prefix' => '<label>' . t('Crisis block') . '</label>',
+    '#suffix' => '<div class="description">' . t('The block will be displayed on the front page only.') . '</div>',
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => _dvg_crisis_dashboard_get_nodes('crisis_block', TRUE),
+    '#default_value' => functional_content_nid('dvg_ct_crisis_block'),
+    '#multiple' => FALSE,
+  );
+
+  $themes = list_themes();
+  $form['crisis'][FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_live_blog'] = array(
+    '#prefix' => '<label>' . t('Live blog') . '</label>',
+    '#suffix' => '<div class="description">' . t('!warning This will put the entire site in "crisis mode" using the %plain_theme theme.', array(
+      '%plain_theme' => $themes[variable_get('dvg_global_plain_theme', 'dvg_plain_theme')]->info['name'],
+      '!warning' => '<strong>' . t('Warning!') . '</strong>',
+    )). '</div>',
+    '#type' => 'tableselect',
+    '#header' => $header,
+    '#options' => _dvg_crisis_dashboard_get_nodes('live_blog', TRUE),
+    '#default_value' => functional_content_nid('dvg_ct_live_blog'),
+    '#multiple' => FALSE,
+  );
+
+  $form['#attached']['css'][] = drupal_get_path('module', 'dvg_crisis_dashboard') . '/css/dashboard.css';
+
+  $form['#submit'][] = 'dvg_crisis_dashboard_form_submit';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Form validator.
+ */
+function dvg_crisis_dashboard_form_validate(&$form, &$form_state) {
+  $crisis_block = $form_state['values'][FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_crisis_block'];
+  $crisis_banner = $form_state['values'][FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_crisis_banner'];
+  $live_blog = $form_state['values'][FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_live_blog'];
+
+  // Crisis block?
+  if (!empty($crisis_block) && empty($crisis_banner)) {
+    form_set_error(FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_crisis_banner', t('An active crisis block requires a banner to be active.'));
+  }
+
+  // Live blog take-over?
+  if (!empty($live_blog) && empty($crisis_banner)) {
+    form_set_error(FUNCTIONAL_CONTENT_PREFIX . 'dvg_ct_live_blog', t('An active live blog requires a banner to be active.'));
+  }
+}
+
+/**
+ * Submit handler to purge all cache.
+ */
+function dvg_crisis_dashboard_form_submit() {
+  cache_clear_all();
+}
+
+/**
+ * Helper that fetches all published node id's, actions and titles for a bundle.
+ */
+function _dvg_crisis_dashboard_get_nodes($bundle, $empty_option) {
+  $nodes = array();
+
+  // Add empty option.
+  if ($empty_option) {
+    $nodes[''] = array('title' => t('None'), 'actions' => '');
+  }
+
+  // Fetch all published bundle entities.
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', $bundle)
+    ->propertyCondition('status', NODE_PUBLISHED);
+
+  // If domain access is enabled, show only the nodes for the current domain.
+  if (module_exists('domain') && variable_get('dvg_crisis_dashboard_domains_filter', TRUE)) {
+    global $_domain;
+
+    // Create a subquery to check the domain access.
+    $domain_access_subquery = db_select('domain_access', 'da');
+    $domain_access_subquery->fields('da', array('nid'));
+    $domain_access_subquery->condition('gid', $_domain['domain_id']);
+
+    // Add the subquery to the original query.
+    $query->propertyCondition('nid', $domain_access_subquery, 'IN');
+  }
+
+  $result = $query->execute();
+  if (isset($result['node'])) {
+    foreach (entity_load('node', array_keys($result['node'])) as $node) {
+      $actions = array();
+      if (node_access('update', $node)) {
+        $actions[] = l(t('edit'), 'node/' . $node->nid . '/edit');
+      }
+      if (node_access('delete', $node)) {
+        $actions[] = l(t('delete'), 'node/' . $node->nid . '/delete');
+      }
+
+      $nodes[$node->nid] = array(
+        'title' => l($node->title, 'node/' . $node->nid),
+        'actions' => implode(' ', $actions),
+      );
+    }
+  }
+
+  return $nodes;
+}

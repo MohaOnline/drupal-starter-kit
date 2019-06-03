@@ -1,0 +1,19 @@
+name = Ogone
+description = Provides an <a href="http://ogone.com">Ogone</a> payment method type.
+package = Payment
+dependencies[] = currency (7.x-2.x)
+dependencies[] = payment (>=1.8)
+core = 7.x
+files[] = includes/OgonePaymentMethodController.inc
+files[] = tests/OgonePaymentExecution.test
+files[] = tests/OgonePaymentMethodControllerTest.test
+files[] = tests/OgonePaymentMethodCRUD.test
+files[] = tests/OgonePaymentMethodUI.test
+files[] = tests/OgoneWebTestCase.test
+
+; Information added by Drupal.org packaging script on 2014-02-27
+version = "7.x-2.3"
+core = "7.x"
+project = "ogone"
+datestamp = "1393508989"
+

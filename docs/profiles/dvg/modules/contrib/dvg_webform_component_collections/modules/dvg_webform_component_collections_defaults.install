@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function dvg_webform_component_collections_defaults_install() {
+
+  // Default collections
+  if (module_exists('node_export')) {
+    module_load_include('inc', 'node_export', 'formats/drupal');
+    $node = node_export_drupal_import(file_get_contents(__DIR__ . '/import/01_uw_gegevens.txt'));
+    _dvg_import_nodes($node);
+    $node = node_export_drupal_import(file_get_contents(__DIR__ . '/import/02_bedrijfsgegevens.txt'));
+    _dvg_import_nodes($node);
+    $node = node_export_drupal_import(file_get_contents(__DIR__ . '/import/03_contactpersoon.txt'));
+    _dvg_import_nodes($node);
+    $node = node_export_drupal_import(file_get_contents(__DIR__ . '/import/04_digid_email_telefoon.txt'));
+    _dvg_import_nodes($node);
+    $node = node_export_drupal_import(file_get_contents(__DIR__ . '/import/05_toelichting.txt'));
+    _dvg_import_nodes($node);
+    $node = node_export_drupal_import(file_get_contents(__DIR__ . '/import/06_bijlagen.txt'));
+    _dvg_import_nodes($node);
+    $node = node_export_drupal_import(file_get_contents(__DIR__ . '/import/07_rekeningnummer.txt'));
+    _dvg_import_nodes($node);
+  }
+}

@@ -1,0 +1,75 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function dvg_datab_install() {
+  _dvg_datab_create_doclist_node();
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function dvg_datab_uninstall() {
+  variable_del(FUNCTIONAL_CONTENT_PREFIX . 'dvg_datab_doclist');
+}
+
+/**
+ * Implements hook_enable().
+ */
+function dvg_datab_enable() {
+  $node = functional_content_node('dvg_datab_doclist');
+
+  if ($node) {
+    drupal_set_message(t('The node "!title" (nid:@nid) is selected for displaying the Data B. DocList.', array(
+      '!title' => l($node->title, 'node/' . $node->nid),
+      '@nid' => $node->nid,
+    )));
+  }
+}
+
+/**
+ * Create default node for DocList.
+ */
+function _dvg_datab_create_doclist_node() {
+  $node = new stdClass();
+  $language = language_default();
+  node_object_prepare($node);
+
+  $title = t('OZB and WOZ documents', array(), array('langcode' => $language->language));
+  $summary = t('List of OZB and WOZ documents.', array(), array('langcode' => $language->language));
+  $body = t('<p>You can view your list of OZB and WOZ documents after loggin in with DigiD.</p>', array(), array('langcode' => $language->language));
+
+  $node->title = $title;
+  $node->type = 'page';
+  $node->uid = 1;
+  $node->is_new = TRUE;
+  $node->language = $language->language;
+  $node->body[LANGUAGE_NONE][0] = array(
+    'value' => $body,
+    'summary' => '',
+    'format' => 'filtered_html',
+  );
+  $node->field_search_result[LANGUAGE_NONE][0] = array(
+    'value' => $summary,
+    'format' => NULL,
+    'safe_value' => $summary,
+  );
+  $node->field_menu_description[LANGUAGE_NONE][0] = array(
+    'value' => $summary,
+    'format' => NULL,
+    'safe_value' => $summary,
+  );
+
+  node_save($node);
+
+  variable_set(FUNCTIONAL_CONTENT_PREFIX . 'dvg_datab_doclist', $node->nid);
+}
+
+/**
+ * Move the 'no result text' to it's own variable.
+ */
+function dvg_datab_update_7000() {
+  $datab = variable_get('dvg_datab', array());
+  variable_set('dvg_datab_no_result', $datab['no_result']);
+}

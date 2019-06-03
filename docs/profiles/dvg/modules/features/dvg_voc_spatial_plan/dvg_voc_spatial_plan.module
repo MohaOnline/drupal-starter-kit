@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file
+ * Code for the Plan Taxonomy feature.
+ */
+
+include_once 'dvg_voc_spatial_plan.features.inc';
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_voc_spatial_plan_dvg_requirements() {
+  return _dvg_global_voc_requirements('spatial_plan', t('Spatial plan'));
+}

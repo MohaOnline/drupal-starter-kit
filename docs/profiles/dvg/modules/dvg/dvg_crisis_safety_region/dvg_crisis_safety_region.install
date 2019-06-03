@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Installation and uninstallation functions.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function dvg_crisis_safety_region_install() {
+  dvg_roles_and_permissions_set_permissions('dvg_crisis_safety_region');
+}

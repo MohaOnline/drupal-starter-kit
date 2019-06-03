@@ -1,0 +1,288 @@
+<?php
+/**
+ * @file
+ * Code for the Content Type: Live blog feature.
+ */
+
+include_once 'dvg_ct_live_blog.features.inc';
+include_once 'dvg_ct_live_blog.dvg.user_permission.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_ct_live_blog_menu() {
+  $items = array();
+  $items['crisis'] = array(
+    'title' => 'Crisis blog',
+    'title callback' => 'dvg_ct_live_blog_crisis_title_callback',
+    'page callback' => 'dvg_ct_live_blog_crisis_page',
+    // Everyone may access the crisis blog.
+    'access callback' => TRUE,
+    'theme callback' => 'dvg_ct_live_blog_crisis_theme_callback',
+  );
+  return $items;
+}
+
+/**
+ * Theme callback for crisis page.
+ *
+ * @return string
+ */
+function dvg_ct_live_blog_crisis_theme_callback() {
+  return variable_get('dvg_global_plain_theme', 'dvg_plain_theme');
+}
+
+/**
+ * Title callback for the crisis page.
+ *
+ * @param string $menu_title
+ *   The title from the menu hook.
+ * @return string
+ *   The final title to use for the crisis page.
+ */
+function dvg_ct_live_blog_crisis_title_callback($menu_title) {
+  if ($node = functional_content_node('dvg_ct_live_blog')) {
+    return $node->title;
+  }
+  else {
+    return t($menu_title);
+  }
+}
+
+/**
+ * Implements hook_functional_content().
+ */
+function dvg_ct_live_blog_functional_content() {
+  $fc = array(
+    'dvg_ct_live_blog' => array(
+      'label' => t('Live blog'),
+    ),
+  );
+
+  return $fc;
+}
+
+/**
+ * Crisis live blog page callback.
+ */
+function dvg_ct_live_blog_crisis_page() {
+  // Add meta tag to let robots ignore the crisis page.
+  $robots_ignore = array(
+    '#tag' => 'meta',
+    '#attributes' => array(
+      'name' => 'robots',
+      'content' => 'noindex',
+    ),
+  );
+  drupal_add_html_head($robots_ignore, 'dvg_crisis_blog_robots');
+
+  if ($node = functional_content_node('dvg_ct_live_blog')) {
+    $node_show = node_show($node);
+    $page = array();
+    $page['content_top'] = array(
+      '#markup' => l(t('Back to the normal website'), '<front>', array(
+        'attributes' => array('class' => array('back-link'), 'rel' => 'nofollow'),
+      )),
+    );
+    foreach (element_children($node_show['nodes']) as $nid) {
+      unset($node_show['nodes'][$nid]['links']);
+      unset($node_show['nodes'][$nid]['#contextual_links']);
+    }
+    $page['content'] = array(
+      '#markup' => render($node_show),
+    );
+    $page['content_bottom'] = array(
+      '#markup' => views_embed_view('live_blog_items', 'block', $node->nid),
+    );
+    return $page;
+  }
+  else {
+    drupal_goto('<front>', array(), 307);
+    return FALSE;
+  }
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function dvg_ct_live_blog_page_alter(&$page) {
+  if ($node = functional_content_node('dvg_ct_live_blog')) {
+    if (current_path() == 'crisis') {
+      // Move top/bottom parts to content_top/bottom.
+      if (isset($page['content']['system_main']['content_top'])) {
+        $page['content_top'] = $page['content']['system_main']['content_top'];
+        unset($page['content']['system_main']['content_top']);
+      }
+      if (isset($page['content']['system_main']['content_bottom'])) {
+        $page['content_bottom'] = $page['content']['system_main']['content_bottom'];
+        unset($page['content']['system_main']['content_bottom']);
+      }
+      if (isset($page['page_bottom']['admin_menu'])) {
+        unset($page['page_bottom']['admin_menu']);
+      }
+    }
+    elseif (dvg_ct_live_blog_should_do_redirect()) {
+      if (isset($_GET['destination'])) {
+        // Unset the destination, because you're not going anywhere when it's crisis.
+        // But mostly because 404 pages otherwise get in an infinite loop.
+        unset($_GET['destination']);
+      }
+      drupal_goto('crisis', array(), 307);
+    }
+
+    // Add notice that crisis mode is on for users who can do something about it.
+    if (user_access('access dvg crisis dashboard')) {
+
+      // Add a message.
+      $xmlhttprequest = (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+      if (!$xmlhttprequest && current_path() != 'admin/dvg-crisis') {
+        $message = t('Operating in crisis mode.');
+
+        // Add the clean link to the crisis dashboard.
+        if (drupal_valid_path('admin/dvg-crisis')) {
+          $clean_url = $GLOBALS['conf']['clean_url'];
+          $GLOBALS['conf']['clean_url'] = 1;
+          $message .= ' ' . l(t('Go online.'), 'admin/dvg-crisis', array('query' => array('crisis' => 1)));
+          $GLOBALS['conf']['clean_url'] = $clean_url;
+        }
+
+        drupal_set_message($message, 'error', FALSE);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_field().
+ */
+function dvg_ct_live_blog_preprocess_field(&$variables) {
+  if ($variables['element']['#field_name'] == 'field_publication_date_time' && $variables['element']['#bundle'] == 'field_blog') {
+    $variables['items'][0]['#prefix'] = '<h3>';
+    $variables['items'][0]['#markup'] = strip_tags($variables['items'][0]['#markup']);
+    $variables['items'][0]['#suffix'] = ' ' . t('hour') . '</h3>';
+  }
+}
+
+/**
+ * Implements hook_field_collection_is_empty_alter().
+ *
+ * Don't save field collections with only a dates set.
+ */
+function dvg_ct_live_blog_field_collection_is_empty_alter(&$is_empty, FieldCollectionItemEntity $item) {
+  if (!$is_empty && $item->field_name == 'field_blog') {
+    $is_empty = empty($item->field_body[LANGUAGE_NONE][0]['value']);
+  }
+}
+
+/**
+ * Check if the user should be redirected to the Live Blog.
+ */
+function dvg_ct_live_blog_should_do_redirect() {
+  $node = functional_content_node('dvg_ct_live_blog');
+
+  // Nothing to do if the blog is not enabled.
+  if (!$node) {
+    return FALSE;
+  }
+
+  // Do not show when this "secret" parameter is set.
+  if (isset($_GET['crisis'])) {
+    return FALSE;
+  }
+
+  // Do not redirect if we're already there.
+  if (current_path() == 'crisis') {
+    return FALSE;
+  }
+
+  // Do not show on these paths.
+  if (strpos(current_path(), 'user/') === 0 || current_path() == '503-page') {
+    return FALSE;
+  }
+
+  // Is the target node accessible?
+  if (!node_access('view', $node)) {
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+/**
+ * Implements hook_html_head_alter().
+ */
+function dvg_ct_live_blog_html_head_alter(&$head_elements) {
+  if (isset($_GET['crisis']) && dvg_ct_live_blog_should_do_redirect()) {
+    foreach ($head_elements as $key => $element) {
+      if (isset($element['#attributes']['rel'])) {
+        switch ($element['#attributes']['rel']) {
+          case 'canonical':
+            $head_elements[$key]['#attributes']['href'] = base_path() . drupal_get_path_alias();
+            break;
+
+          case 'shortlink':
+            $head_elements[$key]['#attributes']['href'] = base_path() . current_path();
+            break;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_url_outbound_alter().
+ */
+function dvg_ct_live_blog_url_outbound_alter(&$path, &$options, $original_path) {
+  if (
+    !isset($options['query']['crisis']) &&
+    !url_is_external($path) &&
+    $path != 'crisis' &&
+    functional_content_node('dvg_ct_live_blog')
+  ) {
+    $options['query']['crisis'] = 1;
+  }
+}
+
+/**
+ * Implements hook_survey_form_is_visible_alter().
+ */
+function dvg_ct_live_blog_survey_form_is_visible_alter(&$visible) {
+  if (!isset($_GET['crisis']) && functional_content_node('dvg_ct_live_blog')) {
+    $visible = FALSE;
+  }
+}
+
+/**
+ * Implements hook_dvg_kif_is_visible_alter().
+ */
+function dvg_ct_live_blog_dvg_kif_is_visible_alter(&$visible) {
+  if (!isset($_GET['crisis']) && functional_content_node('dvg_ct_live_blog')) {
+    $visible = FALSE;
+  }
+}
+
+/**
+ * Implements dvg_ct_crisis_banner_button_is_visible_alter().
+ */
+function dvg_ct_live_blog_dvg_ct_crisis_banner_button_is_visible_alter(&$visible) {
+  if (!isset($_GET['crisis']) && functional_content_node('dvg_ct_live_blog')) {
+    $visible = FALSE;
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function dvg_ct_live_blog_form_alter(&$form, &$form_state, $form_id) {
+  if (
+    !isset($_GET['crisis']) &&
+    functional_content_node('dvg_ct_live_blog') &&
+    isset($form['#method']) &&
+    $form['#method'] == 'get'
+  ) {
+    $form['crisis'] = array(
+      '#type' => 'hidden',
+      '#value' => 1,
+    );
+  }
+}

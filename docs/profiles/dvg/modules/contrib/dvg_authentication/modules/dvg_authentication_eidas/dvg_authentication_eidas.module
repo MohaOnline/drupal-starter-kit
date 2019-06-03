@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Contains hooks for DvG Authentication eIDAS.
+ */
+
+/**
+ * Implements hook_dvg_authentication_register_providers().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_eidas_dvg_authentication_register_providers() {
+  return [
+    'eidas' => 'Drupal\dvg_authentication_eidas\EidasAuthenticationProvider',
+  ];
+}
+
+/**
+ * Implements hook_auto_logout_profiles_alter().
+ */
+function dvg_authentication_eidas_auto_logout_profiles_alter(array &$profiles) {
+  // The logout url should open in a new tab, because the external callback
+  // can result in a dead end for the user, leading away from the website.
+  $profiles['provider_eidas']['logout_open_blank'] = TRUE;
+}

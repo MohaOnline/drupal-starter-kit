@@ -1,0 +1,4 @@
+name = "Node clone shim"
+core = 7.x
+hidden = 1
+dependencies[] = clone

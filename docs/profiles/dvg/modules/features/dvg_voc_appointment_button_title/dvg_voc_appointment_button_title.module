@@ -1,0 +1,24 @@
+<?php
+/**
+ * @file
+ * Code for the Taxonomy: Appointment button title feature.
+ */
+
+include_once 'dvg_voc_appointment_button_title.features.inc';
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_voc_appointment_button_title_form_taxonomy_form_term_alter(&$form, &$form_state) {
+  if (!empty($form['#bundle']) && $form['#bundle'] == 'appointment_button_title') {
+    $form['description']['#access'] = FALSE;
+    $form['relations']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_voc_appointment_button_title_dvg_requirements() {
+  return _dvg_global_voc_requirements('appointment_button_title', t('Appointment button title'));
+}

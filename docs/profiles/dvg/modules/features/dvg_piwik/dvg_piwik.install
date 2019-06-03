@@ -1,0 +1,9 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function dvg_piwik_install() {
+  dvg_roles_and_permissions_set_permissions('dvg_piwik');
+}
+

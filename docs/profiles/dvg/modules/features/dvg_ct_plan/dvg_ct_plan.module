@@ -1,0 +1,52 @@
+<?php
+/**
+ * @file
+ * Code for the Drupal voor gemeenten | Plan feature.
+ */
+
+include_once 'dvg_ct_plan.features.inc';
+include_once 'dvg_ct_plan.dvg.user_permission.inc';
+
+/**
+ * Implements hook_preprocess_node().
+ */
+function dvg_ct_plan_preprocess_node(&$variables) {
+  $node = $variables['node'];
+
+  // Render field_for_inspection as a link.
+  if (isset($variables['content']['field_for_inspection'])) {
+    $field_for_inspection = field_get_items('node', $node, 'field_for_inspection', $node->language);
+    if (!empty($field_for_inspection) && $field_for_inspection[0]['value']) {
+      $variables['content']['field_for_inspection'] = array(
+        array(
+          '#markup' => l(t('For inspection'), 'node/' . $node->nid, array('attributes' => array('class' => array('inspection')))),
+        ),
+      );
+    }
+    else {
+      $variables['content']['field_for_inspection']['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_context_callback_info().
+ */
+function dvg_ct_plan_context_callback_info() {
+  return array(
+    'reactions' => array(
+      'dvg_ct_plan_plan_node_breadcrumb' => array(
+        'label' => 'DVG - CT Plan node breadcrumb',
+        'callback' => 'dvg_ct_plan_plan_node_breadcrumb',
+      ),
+    ),
+  );
+}
+
+/**
+ * Callback function that sets the breadcrumb.
+ */
+function dvg_ct_plan_plan_node_breadcrumb() {
+  $nid = functional_content_nid(_functional_content_item_name('spatial_plan', 'block'));
+  _dvg_global_set_breadcrumb_nid($nid, TRUE);
+}

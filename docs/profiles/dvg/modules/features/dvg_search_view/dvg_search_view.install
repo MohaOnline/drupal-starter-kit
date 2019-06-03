@@ -1,0 +1,7 @@
+<?php
+
+/**
+ * Empty update hook for backwards compatibility.
+ */
+function dvg_search_view_update_7001() {
+}

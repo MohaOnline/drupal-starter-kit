@@ -1,0 +1,57 @@
+# $Id$
+#
+# Dutch translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  search_api_noindex.module: n/a
+#  search_api_noindex.info: n/a
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2014-05-20 16:11+0200\n"
+"PO-Revision-Date: 2014-05-20 16:15+0100\n"
+"Last-Translator: Tessa Bakker <tessa@ezcompany.nl>\n"
+"Language-Team: Dutch <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+"X-Generator: Poedit 1.5.7\n"
+
+#: search_api_noindex.module:53
+msgid "Do not index this node in the following search lists."
+msgstr "Index deze node niet in de volgende zoeklijsten."
+
+#: search_api_noindex.module:54
+msgid "Internal search options"
+msgstr "Interne zoek opties"
+
+#: search_api_noindex.module:74
+msgid "Change the noindex value"
+msgstr "Verander de noindex waarde"
+
+#: search_api_noindex.module:75
+msgid "Show the Search API noindex option for nodes."
+msgstr "Toon de Search API noindex opties voor node's."
+
+#: search_api_noindex.module:85
+msgid "Noindex filter"
+msgstr "Noindex filter"
+
+#: search_api_noindex.module:86
+msgid "Exclude items from indexing based on their node noindex setting."
+msgstr ""
+"Items uitsluiten van indexering, gebaseerd op de noindex waarde van de node."
+
+#: search_api_noindex.info:0
+msgid "Search API noindex"
+msgstr "Search API noindex"
+
+#: search_api_noindex.info:0
+msgid "Adds a Search API Index filter to exclude nodes"
+msgstr "Voegt een Search API Index filter om nodes uit te sluiten"
+
+#: search_api_noindex.info:0
+msgid "Search"
+msgstr "Zoeken"

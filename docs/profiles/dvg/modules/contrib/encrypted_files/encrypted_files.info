@@ -1,0 +1,18 @@
+name = Encrypted Files
+description = This module allows Drupal to store encrypted files.
+core = 7.x
+package = Encryption
+
+dependencies[] = file
+dependencies[] = field
+dependencies[] = encrypt
+
+files[] = includes/EncryptedStreamWrapper.inc
+files[] = tests/encrypted_files.test
+
+; Information added by Drupal.org packaging script on 2016-08-31
+version = "7.x-2.0-beta2"
+core = "7.x"
+project = "encrypted_files"
+datestamp = "1472677740"
+

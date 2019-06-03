@@ -1,0 +1,17 @@
+name = Domain Access Entity
+description = Defines Domain access for entities
+package = Domain Access (contrib)
+core = 7.x
+configure = admin/structure/domain/entities
+
+dependencies[] = domain
+dependencies[] = entity
+
+files[] = includes/domain_entity_views_handler_filter_domain_domain_id.inc
+
+; Information added by Drupal.org packaging script on 2014-06-30
+version = "7.x-1.4"
+core = "7.x"
+project = "domain_entity"
+datestamp = "1404133140"
+

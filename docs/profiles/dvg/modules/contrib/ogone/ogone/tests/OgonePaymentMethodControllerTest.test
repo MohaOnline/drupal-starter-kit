@@ -1,0 +1,214 @@
+<?php
+
+/**
+ * @file
+ * Contains class OgonePaymentMethodControllerTest.
+ */
+
+/**
+ * Tests payment execution.
+ */
+class OgonePaymentMethodControllerTest extends PaymentWebTestCase {
+
+  static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'OgonePaymentMethodController',
+      'group' => 'Ogone',
+      'dependencies' => array('ogone_test'),
+    );
+  }
+
+  function setUp(array $modules = array()) {
+    parent::setUp(array_merge($modules, array('ogone_test')));
+  }
+
+  /**
+   * Tests statusMap().
+   */
+  function testStatusMap() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $status_map = $controller->statusMap();
+    $this->assertTrue(is_array($status_map));
+    if (is_array($status_map)) {
+      foreach ($status_map as $ogone_status => $payment_status) {
+        $this->assertTrue(is_int($ogone_status));
+        $this->assertTrue(is_string($payment_status));
+      }
+    }
+  }
+
+  /**
+   * Tests convertStatus().
+   */
+  function testConvertStatus() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    // Keys are Ogone statuses, values are the expected Payment statuses.
+    $map = array(
+      // Existing statuses.
+      0 => PAYMENT_STATUS_FAILED,
+      41 => PAYMENT_STATUS_PENDING,
+      // Non-existing statuses.
+      19 => PAYMENT_STATUS_CANCELLED,
+      3 => PAYMENT_STATUS_UNKNOWN,
+    );
+    foreach ($map as $ogone_status => $payment_status) {
+      $this->assertIdentical($controller->convertStatus($ogone_status), $payment_status);
+    }
+  }
+
+  /**
+   * Tests brandMap().
+   */
+  function testBrandMap() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $brand_map = $controller->brandMap();
+    $this->assertTrue(is_array($brand_map));
+    if (is_array($brand_map)) {
+      foreach ($brand_map as $ogone_payment_method => $ogone_payment_method_brands) {
+        $this->assertTrue(is_string($ogone_payment_method));
+        $this->assertTrue(is_array($ogone_payment_method_brands));
+        if (is_array($ogone_payment_method_brands)) {
+          foreach ($ogone_payment_method_brands as $i => $brand) {
+            $this->assertTrue(is_int($i));
+            $this->assertTrue(is_string($brand));
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Tests brandOptions().
+   */
+  function testBrandOptions() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $options = $controller->brandOptions();
+    $this->assertTrue(is_array($options));
+    if (is_array($options)) {
+      foreach ($options as $value => $label) {
+        $this->assertTrue(is_string($value));
+        $this->assertNotEqual(strpos($value, ':'), FALSE);
+        $this->assertTrue(is_string($label));
+      }
+    }
+  }
+
+  /**
+   * Tests signData().
+   */
+  function testSignData() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $data = array(
+      'ORDERID' => 'bar',
+    );
+    $passphrase = 'baz';
+    $this->assertEqual($controller->signData($data, $controller->signatureIncomingParameters(), $passphrase, 'sha1'), 'CA59560A4C240377A5D2C9167B7058655E78DF6F');
+    $this->assertEqual($controller->signData($data, $controller->signatureIncomingParameters(), $passphrase, 'sha512'), 'D02CCD6223F83C880D762689CF0521CAC12215852F9B0665FBEB4AD883610161FC7193B647DDAAE090ABA6A0D79172BE4B333656D810453F545B0CBD2A765FEB');
+  }
+
+  /**
+   * Tests signIncomingData().
+   */
+  function testSignIncomingData() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $payment_method = $this->paymentMethodCreate(2, $controller);
+    $payment_method->controller_data['passphrase_algorithm'] = 'sha1';
+    $payment_method->controller_data['passphrase_in'] = 'foo';
+    $data = array(
+      // ORDERID exists for both incoming and outgoing messages.
+      'ORDERID' => '123',
+      // ORDERID exists for outgoing messages only.
+      'AAVADDRESS' => 'baz',
+      // ITEMPRICE*XX* exists for incoming messages only and it has a wildcard.
+      'ITEMPRICE1' => '999',
+      // FOO does not exist.
+      'FOO' => 'bar',
+    );
+    $this->assertEqual($controller->signIncomingData($data, $payment_method), '3B6ABAF734D1A64981354EE007E69073E93D5F8B');
+  }
+
+  /**
+   * Tests signData().
+   */
+  function testSignOutgoingData() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $payment_method = $this->paymentMethodCreate(2, $controller);
+    $payment_method->controller_data['passphrase_algorithm'] = 'sha1';
+    $payment_method->controller_data['passphrase_out'] = 'foo';
+    $data = array(
+      // ORDERID exists for both incoming and outgoing messages.
+      'ORDERID' => '123',
+      // ORDERID exists for outgoing messages only.
+      'AAVADDRESS' => 'baz',
+      // ITEMPRICE*XX* exists for incoming messages only and it has a wildcard.
+      'ITEMPRICE1' => '999',
+      // FOO does not exist.
+      'FOO' => 'bar',
+    );
+    $this->assertEqual($controller->signOutgoingData($data, $payment_method), 'BB9F69DBD6F36E9AADCEE0198C3E2A55795600A1');
+  }
+
+  /**
+   * Tests redirectData().
+   */
+  function testRedirectData() {
+    $user = $this->drupalCreateUser();
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $payment_method = $this->paymentMethodCreate($user->uid, $controller);
+    $payment_method->controller_data['passphrase_algorithm'] = 'sha1';
+    $payment_method->controller_data['passphrase_in'] = 'foo';
+    $payment = $this->paymentCreate($user->uid, $payment_method);
+    $redirect_data = $controller->redirectData($payment);
+    $this->assertTrue(variable_get('ogone_test_hook_ogone_redirect_data_alter', FALSE));
+    $this->assertTrue(is_array($redirect_data));
+    if (is_array($redirect_data)) {
+      foreach ($redirect_data as $parameter => $value) {
+        $this->assertTrue(is_string($parameter));
+        $this->assertEqual((string) $value, $value);
+      }
+    }
+  }
+
+  /**
+   * Tests supportedLocales().
+   */
+  function testSupportedLocales() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    foreach ($controller->supportedLocales() as $locale) {
+      $this->assertTrue(is_string($locale));
+    }
+  }
+
+  /**
+   * Tests locale().
+   */
+  function testLocale() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $this->assertEqual($controller->locale(), 'en_US');
+  }
+
+  /**
+   * Tests signatureIncomingParameters().
+   */
+  function testSignatureIncomingParameters() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    foreach ($controller->signatureIncomingParameters() as $parameter) {
+      // Parameters consist of uppercase letters, digits, underscores, and
+      // asterisks.
+      $this->assertFalse(preg_match('/[^\dA-Z_*]/', $parameter));
+    }
+  }
+
+  /**
+   * Tests signatureOutgoingParameters().
+   */
+  function testSignatureOutgoingParameters() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    foreach ($controller->signatureOutgoingParameters() as $parameter) {
+      // Parameters consist of uppercase letters, digits, underscores, and
+      // asterisks.
+      $this->assertFalse(preg_match('/[^\dA-Z_*]/', $parameter));
+    }
+  }
+}

@@ -1,0 +1,129 @@
+<?php
+/**
+ * @file
+ * Code for the File Type feature.
+ */
+
+include_once 'dvg_file_category_type.features.inc';
+include_once 'dvg_file_category_type.dvg.user_permission.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_file_category_type_menu() {
+  $items['admin/content/file/add'] = array(
+    'title' => 'Add file',
+    'weight' => -50,
+    'page arguments' => array('file/add'),
+    'page callback' => 'drupal_goto',
+    'access callback' => 'file_entity_access',
+    'access arguments' => array('create'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_file_category_type_form_functional_content_admin_alter(&$form, $form_state) {
+  $terms = _dvg_file_category_type_file_category_terms();
+
+  // Display 'Add file categories' link in case no file categories have been added yet.
+  if (empty($terms)) {
+    $link = l(t('Add file categories'), 'admin/structure/taxonomy/file_category');
+    $form['dvg_file_category_type']['add_file_categories'] = array(
+      '#weight' => -99,
+      '#markup' => t('No file categories have been added yet. !link.', array('!link' => $link )),
+    );
+  }
+}
+
+/**
+ * Helper function that grabs an array of the file category term tid/names.
+ */
+function _dvg_file_category_type_file_category_terms() {
+  $terms = array();
+  $voc = taxonomy_vocabulary_machine_name_load('file_category');
+
+  foreach (taxonomy_get_tree($voc->vid) as $term) {
+    $terms[$term->tid] = $term->name;
+  }
+
+  return $terms;
+}
+
+/**
+ * Helper function that grabs an array of the file category term tid and
+ * functional content nids.
+ */
+function _dvg_file_category_type_file_category_terms_nids() {
+  $file_cat_nids = array();
+
+  foreach (_dvg_file_category_type_file_category_terms() as $term_tid => $term_name) {
+    $file_cat_nids[$term_tid] = functional_content_nid('dvg_file_category_type__term_' . $term_tid);
+  }
+
+  return $file_cat_nids;
+}
+
+/**
+ * Implements hook_functional_content().
+ */
+function dvg_file_category_type_functional_content() {
+  $fc = array(
+    '#group' => array(
+      'label' => t('File category'),
+    ),
+  );
+
+  foreach (_dvg_file_category_type_file_category_terms() as $term_tid => $term_name) {
+    $fc['dvg_file_category_type__term_' . $term_tid] = array(
+      'label' => $term_name,
+      'description' => t('Enter the related node ID of the page.') . '<br>' . t('This page will be placed above the %view view.', array('%view' => t('File list by category'))),
+    );
+  }
+
+  return $fc;
+}
+
+/**
+ * Implements hook_context_callback_info().
+ */
+function dvg_file_category_type_context_callback_info() {
+  return array(
+    'conditions' => array(
+      'dvg_file_category_type' => array(
+        'label' => 'DVG File Category - Views File list by category',
+        'callback' => 'dvg_file_category_type_callback',
+      ),
+    ),
+  );
+}
+
+/**
+ * Callback function that checks if the current page should show the file category view.
+ */
+function dvg_file_category_type_callback() {
+  $node = menu_get_object('node');
+
+  if ($node) {
+    return in_array($node->nid, _dvg_file_category_type_file_category_terms_nids());
+  }
+
+  return FALSE;
+}
+
+/**
+ * Implements hook_views_query_alter().
+ */
+function dvg_file_category_type_views_query_alter(&$view, &$query) {
+  if ($view->name == 'file_list_by_category' && $view->current_display == 'block') {
+    $node = menu_get_object('node');
+    if ($node && $keys = array_keys(_dvg_file_category_type_file_category_terms_nids(), $node->nid)) {
+      $query->add_table('field_data_field_file_category');
+      $condition = db_and()->condition('field_data_field_file_category.field_file_category_tid', $keys, 'IN');
+      $query->add_where(1, $condition);
+    }
+  }
+}

@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function dvg_ct_task_install() {
+  dvg_roles_and_permissions_set_permissions('dvg_ct_task');
+}
+
+
+/**
+ * Update path for moving the entity ref data from CT Webform to CT Task.
+ */
+function dvg_ct_task_update_7001() {
+  $query = new EntityFieldQuery();
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'webform');
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $nids = array_keys($result['node']);
+    $webforms = node_load_multiple($nids);
+
+    foreach ($webforms as $webform) {
+      $field_task = field_get_items('node', $webform, 'field_task');
+      if (!empty($field_task)) {
+        $task = node_load($field_task[0]['target_id']);
+
+        $wrapper = entity_metadata_wrapper('node', $task);
+        $wrapper->field_webform->set($webform->nid);
+        $wrapper->save();
+      }
+    }
+  }
+
+  // Delete field 'field_task' from CT Webform.
+  if ($instance = field_info_instance('node', 'field_task', 'webform')) {
+    field_delete_instance($instance);
+  }
+}
+
+/**
+ * Fixes duplicate index error when flushing cache.
+ */
+function dvg_ct_task_update_7002() {
+  db_query('ALTER TABLE `field_data_field_sections` DROP INDEX `field_sections_revision_id`');
+  db_query('ALTER TABLE `field_revision_field_sections` DROP INDEX `field_sections_revision_id`');
+}

@@ -1,0 +1,54 @@
+<?php
+/**
+ * @file
+ * Code for the Search View feature.
+ */
+
+include_once 'dvg_search_view.features.inc';
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function dvg_search_view_views_pre_render(&$view) {
+  global $conf;
+  if ($view->name == 'search') {
+    $result_text = variable_get('no_search_results_found_text', array('value' => '<p>' . t('No results found') . '</p>', 'format' => 'filtered_html'));
+    $view->empty['area']->options['content'] = check_markup($result_text['value'], $result_text['format']);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_search_view_form_dvg_global_texts_alter(&$form, &$form_state) {
+  $form['dvg_search_view'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Search result'),
+  );
+  $result_text = variable_get('no_search_results_found_text', array('value' => 'No results found', 'format' => 'filtered_html'));
+  $form['dvg_search_view']['no_search_results_found_text'] = array(
+    '#type' => 'text_format',
+    '#title' => t('No results message'),
+    '#default_value' => $result_text['value'],
+    '#format' => $result_text['format'],
+  );
+}
+
+/**
+ * Implements hook_variable_info().
+ */
+function dvg_search_view_variable_info($options) {
+  // Add the variable to make it translatable.
+  $variables = array();
+
+  $variables['no_search_results_found_text'] = array(
+    'type' => 'string',
+    'title' => t('No results message', array(), $options),
+    'default' => '',
+    'description' => t('Text shown on the searchpage when there are no results.', array(), $options),
+    'localize' => TRUE,
+    'group' => 'texts',
+  );
+
+  return $variables;
+}

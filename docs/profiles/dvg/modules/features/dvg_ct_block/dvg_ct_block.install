@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function dvg_ct_block_install() {
+  dvg_roles_and_permissions_set_permissions('dvg_ct_block');
+}

@@ -1,0 +1,25 @@
+name = DvG Appointments
+description = Adds appointment functionality to DvG.
+core = 7.x
+package = Drupal voor gemeenten | Appointment
+
+dependencies[] = webform
+dependencies[] = functional_content
+dependencies[] = wfm
+dependencies[] = dvg_global
+
+files[] = dvg_appointments.client.inc
+files[] = clients/gplan.inc
+files[] = clients/gplan_multiple.inc
+files[] = clients/orchestra.inc
+files[] = appointment/DvgAppointment.inc
+
+scripts[] = dvg_appointments.js
+
+config = admin/config/services/dvg_appointments
+
+; Information added by Drupal.org packaging script on 2019-04-26
+version = "7.x-1.0"
+core = "7.x"
+project = "dvg_appointments"
+datestamp = "1556270297"

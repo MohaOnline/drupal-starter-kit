@@ -1,0 +1,129 @@
+<?php
+
+/**
+ * Helper function to check if the active theme is the admin theme.
+ */
+function _webrichtlijnen_fieldset_is_admin_theme() {
+  global $theme;
+  return ($theme === variable_get('admin_theme', FALSE));
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function webrichtlijnen_fieldset_theme_registry_alter(&$theme_registry) {
+  $theme_registry['radios']['function'] = 'webrichtlijnen_fieldset_radios';
+  $theme_registry['checkboxes']['function'] = 'webrichtlijnen_fieldset_checkboxes';
+}
+
+/**
+ * Radios theme function. Wrap radios in a fieldset.
+ *
+ * @see theme_radios()
+ */
+function webrichtlijnen_fieldset_radios($variables) {
+  if (_webrichtlijnen_fieldset_is_admin_theme()) {
+    return theme_radios($variables);
+  }
+  $element = &$variables['element'];
+  $element['#value'] = '';
+  $element['#description'] = '';
+  $element['#attributes']['class'][] = 'form-radios';
+  if (isset($element['#attributes']['required'])) {
+    unset($element['#attributes']['required']);
+  }
+  return webrichtlijnen_fieldset_fieldset($variables);
+}
+
+/**
+ * Checkboxes theme function. Wrap checkboxes in a fieldset.
+ *
+ * @see theme_checkboxes()
+ */
+function webrichtlijnen_fieldset_checkboxes($variables) {
+  if (_webrichtlijnen_fieldset_is_admin_theme()) {
+    return theme_checkboxes($variables);
+  }
+  $element = &$variables['element'];
+  $element['#value'] = '';
+  $element['#description'] = '';
+  $element['#attributes']['class'][] = 'form-checkboxes';
+  if (isset($element['#attributes']['required'])) {
+    unset($element['#attributes']['required']);
+  }
+  return webrichtlijnen_fieldset_fieldset($variables);
+}
+
+/**
+ * Fieldset theme function. Add inline form errors.
+ *
+ * @see theme_fieldset()
+ */
+function webrichtlijnen_fieldset_fieldset($variables) {
+  if (_webrichtlijnen_fieldset_is_admin_theme()) {
+    return theme_fieldset($variables);
+  }
+  $wrap_types = array('checkboxes', 'radios');
+
+  $element = $variables['element'];
+  element_set_attributes($element, array('id'));
+  _form_set_class($element, array('form-wrapper'));
+
+  $element['#attributes']['class'][] = 'fieldset-no-border';
+  $output = '<fieldset' . drupal_attributes($element['#attributes']) . '>';
+  if (!empty($element['#title'])) {
+    // Add an asterisk for required radios and checkboxes.
+    if (isset($element['#type']) && in_array($element['#type'], $wrap_types) && $element['#required']) {
+      // Add required marker.
+      $element['#title'] .= ' ' . theme('form_required_marker');
+    }
+    // Always wrap fieldset legends in a SPAN for CSS positioning.
+    $output .= '<legend><span class="fieldset-legend">' . $element['#title'] . '</span></legend>';
+  }
+  $output .= '<div class="fieldset-wrapper">';
+  if (!empty($element['#description'])) {
+    $output .= '<div class="fieldset-description">' . $element['#description'] . '</div>';
+  }
+  $output .= $element['#children'];
+  $output .= '</div>';
+  $output .= "</fieldset>\n";
+
+  // Make sure IFE module handles the errors for this field on the fieldset.
+  if (module_exists('ife') && function_exists('theme_ife_form_element')) {
+    if (!isset($element['#type']) || !in_array($element['#type'], $wrap_types)) {
+      $variables['element']['#children'] = $output;
+      $output = theme_ife_form_element($variables);
+    }
+  }
+
+  return $output;
+}
+
+/**
+ * Implements template_preprocess_form_element().
+ */
+function webrichtlijnen_fieldset_preprocess_form_element(&$variables) {
+  $element = &$variables['element'];
+  if (isset($element['#type']) && in_array($element['#type'], array('radios', 'checkboxes')) && _webrichtlijnen_fieldset_is_admin_theme() == FALSE) {
+    // Remove the webform title. We already have a legend.
+    $element['#title_display'] = 'none';
+  }
+}
+
+/**
+ * Implements template_preprocess_webform_element().
+ */
+function webrichtlijnen_fieldset_preprocess_webform_element(&$variables) {
+  $element = &$variables['element'];
+  if (isset($element['#type'])) {
+    if (in_array($element['#type'], array('radios', 'checkboxes'))) {
+      // Remove the webform title. We already have a legend.
+      $element['#title_display'] = 'none';
+      // Remove the form-item class.
+      $key = array_search('form-item', $element['#wrapper_attributes']['class']);
+      if ($key !== FALSE) {
+        unset($element['#wrapper_attributes']['class'][$key]);
+      }
+    }
+  }
+}

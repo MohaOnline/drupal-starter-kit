@@ -1,0 +1,39 @@
+<?php
+/**
+ * @file
+ * Code for the Taxonomy: File category feature.
+ */
+
+include_once 'dvg_voc_file_category.features.inc';
+include_once 'dvg_voc_file_category.dvg.user_permission.inc';
+
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_voc_file_category_form_file_entity_edit_alter(&$form) {
+  if (isset($form['field_publication_date']) && !isset($form['#entity']->field_publication_date[LANGUAGE_NONE][0]['value'])) {
+    $date = (array) date_create();
+
+    $form['field_publication_date'][LANGUAGE_NONE][0]['#default_value'] = array(
+      'value' => $date['date'],
+      'date_type' => 'date',
+    );
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_voc_file_category_form_file_entity_add_upload_alter(&$form) {
+  if (isset($form['field_publication_date'])) {
+    dvg_voc_file_category_form_file_entity_edit_alter($form);
+  }
+}
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_voc_file_category_dvg_requirements() {
+  return _dvg_global_voc_requirements('file_category', t('File categories'));
+}

@@ -1,0 +1,141 @@
+//-----------------------------------------------------------------------------
+// Module: Crisis Block.
+//-----------------------------------------------------------------------------
+
+.node-crisis-block {
+  margin-bottom: 20px;
+  padding: 20px;
+
+  background: $crisis-bg;
+  border: 5px solid $crisis-border;
+  color: $crisis-text-color;
+
+  .field-name-field-link {
+    a {
+      font-size: $font-size-large;
+      color: $crisis-link-color;
+
+      &:hover {
+        color: $crisis-link-color-hover;
+      }
+    }
+  }
+
+  @include respond-to($bp-medium) {
+    margin: 0 20px 20px;
+  }
+}
+
+//-----------------------------------------------------------------------------
+// Module: Crisis Banner.
+//-----------------------------------------------------------------------------
+
+.node-crisis-banner {
+  padding: 20px;
+  width: 100%;
+
+  background: $crisis-banner-bg;
+  color: $crisis-banner-text-color;
+
+  * {
+    margin: 0;
+    padding: 0;
+  }
+
+  .field {
+    float: left;
+    width: 95%;
+
+    p {
+      a {
+        color: $crisis-banner-link-color;
+
+        &:hover {
+          text-decoration: none;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+  .content {
+    // Close link.
+    ul {
+      float: right;
+      width: 1.5em;
+
+      li {
+        text-indent: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-align: right;
+
+        .banner-close-button {
+          display: block;
+          color: $crisis-banner-link-color;
+
+          @include svg-or-not('../images/close');
+          background-size: 1.5em;
+          background-position: right center;
+
+          &:hover {
+            opacity: 0.8;
+          }
+        }
+      }
+    }
+  }
+  // Change color if type is crisis.
+  &.crisis {
+    background: $crisis-border;
+    color: $crisis-banner-text-color-alt;
+
+    p {
+      a {
+        color: $crisis-banner-link-color-alt;
+      }
+    }
+    // Close link.
+    ul {
+      li {
+        .banner-close-button {
+          color: $crisis-banner-text-color-alt;
+
+          @include svg-or-not('../images/close-white');
+        }
+      }
+    }
+  }
+  @include respond-to($bp-medium) {
+    padding: 20px 60px;
+  }
+  @include respond-to($bp-large) {
+    padding: 20px 50px;
+  }
+}
+
+//-----------------------------------------------------------------------------
+// Module: Live Blog.
+//-----------------------------------------------------------------------------
+
+.live-blog {
+  margin-top: 20px;
+
+  h2 {
+    margin-bottom: 15px;
+  }
+  .entity-field-collection-item:not(:last-child) {
+    margin-bottom: 30px;
+
+    border-bottom: 1px solid $border-color;
+  }
+  .field {
+    margin: 0;
+
+    h3 {
+      margin-bottom: 0;
+    }
+    &.field-type-date {
+      font-weight: 600;
+    }
+  }
+}

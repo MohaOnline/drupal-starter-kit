@@ -1,0 +1,105 @@
+<?php
+/**
+ * @file
+ * DvG Crisis Safety Banner functionality.
+ */
+
+// Access dvg crisis safety region.
+include_once 'dvg_crisis_safety_region.dvg.user_permission.inc';
+module_load_include('inc', 'dvg_crisis_safety_region', 'includes/dvg_crisis_safety_region.middenwestbrabant');
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_crisis_safety_region_menu() {
+  $items = array();
+
+  $items['admin/dvg-crisis/dvg-crisis-safety-region'] = array(
+    'title' => 'Safety region banner',
+    'description' => 'The Safety region Crisis functionality settings screen',
+    'type' => MENU_NORMAL_ITEM,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dvg_crisis_safety_region_form'),
+    'access arguments' => array('access dvg crisis safety region'),
+    'weight' => 8,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dvg_crisis_safety_region_permission() {
+  return array(
+    'access dvg crisis safety region' => array(
+      'title' => t('Access the DvG crisis Safety region settings'),
+      'description' => t('Perform administration tasks for the Safety region settings.'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * The crisis Safety region form.
+ */
+function dvg_crisis_safety_region_form() {
+  $form = array();
+
+  $form['dvg_crisis_safety_region'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Safety region settings'),
+  );
+
+  // Choose Safety region.
+  $options = array(
+    0 => t('- None -'),
+    1 => t('Midden- en West-Brabant (MWB)'),
+  );
+  $form['dvg_crisis_safety_region']['dvg_crisis_safety_region_selected_region'] = array(
+    '#type' => 'select',
+    '#title' => t('Select the Safety region'),
+    '#options' => $options,
+    '#default_value' => variable_get('dvg_crisis_safety_region_selected_region', 0),
+    '#description' => t('Choose the region and save the form for region specific settings.'),
+  );
+
+  // Nice to have: Alters instead of this fancy switch
+  // if there are more Safety regions.
+  if (variable_get('dvg_crisis_safety_region_selected_region', 0) == 1) {
+    // Midden- en West-Brabant.
+    $form['dvg_crisis_safety_region'] += dvg_crisis_safety_form_options_region_middenwestbrabant();
+  }
+
+  // Override Safety region banner! (turn off).
+  $form['dvg_crisis_safety_region']['dvg_crisis_safety_region_override_banner'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Force the Safety region banner off'),
+    '#default_value' => variable_get('dvg_crisis_safety_region_override_banner', FALSE),
+    '#description' => t('Use this for overriding the Safety region banner, when they forget to turn the banner off or something.'),
+  );
+
+  $form['#submit'][] = 'dvg_crisis_safety_region_form_submit';
+
+  return system_settings_form($form);
+}
+
+/**
+ * Submit handler to purge all cache.
+ */
+function dvg_crisis_safety_region_form_submit() {
+  cache_clear_all();
+}
+
+/**
+ * Implements hook_init().
+ */
+function dvg_crisis_safety_region_init() {
+  $banner_override = variable_get('dvg_crisis_safety_region_override_banner', FALSE);
+  if ($banner_override != 1) {
+    if (variable_get('dvg_crisis_safety_region_selected_region', 0) == 1) {
+      // MWB.
+      dvg_crisis_safety_region_middenwestbrabant_include();
+    }
+  }
+}

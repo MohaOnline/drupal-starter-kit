@@ -1,0 +1,77 @@
+<?php
+/**
+ * @file
+ * Code for the Content Type: External link feature.
+ */
+
+include_once 'dvg_ct_external_link.features.inc';
+include_once 'dvg_ct_external_link.dvg.user_permission.inc';
+
+/**
+ * Implements hook_node_view().
+ */
+function dvg_ct_external_link_node_view($node, $view_mode, $langcode) {
+  if ($node->type == 'external_link' && $view_mode == 'full' && !node_access('update', $node)) {
+    $url = field_get_items('node', $node, 'field_external_url');
+    if (!empty($url)) {
+      drupal_goto($url[0]['url']);
+    }
+  }
+}
+
+/**
+ * Implements hook_url_outbound_alter().
+ */
+function dvg_ct_external_link_url_outbound_alter(&$path, &$options, $original_path) {
+  $arg = arg(NULL, $path);
+
+  if ($arg[0] == 'node' && count($arg) == 2 && is_numeric($arg[1])) {
+    $node = node_load($arg[1]);
+
+    if ($node && $node->type == 'external_link' && !node_access('update', $node)) {
+      $field_ext_url = field_get_items('node', $node, 'field_external_url');
+      if ($field_ext_url) {
+        $path = $field_ext_url[0]['url'];
+        $options['external'] = TRUE;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_validate().
+ */
+function dvg_ct_external_link_node_validate($node, $form, &$form_state) {
+  if (!empty($node->field_external_url) && !url_is_external($url = $node->field_external_url[LANGUAGE_NONE][0]['url'])) {
+    $instance = field_info_instance('node', 'field_external_url', $node->type);
+
+    form_set_error('field_external_url', t('@title %url does not link to an external site.', array(
+      '@title' => $instance['label'],
+      '%url' => $url,
+    )));
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_ct_external_link_form_menu_edit_item_alter(&$form, &$form_state, $form_id) {
+  $node_types = node_type_get_types();
+
+  $form['link_path']['#description'] = t('The path for this menu link. This can only be an internal Drupal path such as %add-node. External URLs such as %drupal can be added using the %external_link content type. Enter %front to link to the front page.', array(
+    '%front' => '<front>',
+    '%add-node' => 'node/add',
+    '%drupal' => 'http://drupal.org',
+    '%external_link' => $node_types['external_link']->name,
+  ));
+  $form['link_path']['#element_validate'][] = 'dvg_ct_external_link_path_validator';
+}
+
+/**
+ * Element validator for checking if an url is external.
+ */
+function dvg_ct_external_link_path_validator($element) {
+  if (url_is_external($element['#value'])) {
+    form_set_error('link_path', t('Links to external websites are not allowed.'));
+  }
+}

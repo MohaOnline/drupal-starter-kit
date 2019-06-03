@@ -1,0 +1,12 @@
+name = StUF-BG Tokens
+description = Tokens module for StUF-BG
+core = 7.x
+package = "Drupal voor Gemeenten - Beta"
+
+dependencies[] = dvg_stuf_bg
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.0"
+core = "7.x"
+project = "dvg_stuf_bg"
+datestamp = "1559554995"

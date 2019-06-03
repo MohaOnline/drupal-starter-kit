@@ -1,0 +1,23 @@
+name = Search View
+core = 7.x
+package = Drupal voor Gemeenten
+dependencies[] = context
+dependencies[] = ctools
+dependencies[] = dvg_search_settings
+dependencies[] = entity
+dependencies[] = functional_content
+dependencies[] = strongarm
+dependencies[] = views
+features[context][] = search
+features[ctools][] = context:context:3
+features[ctools][] = strongarm:strongarm:1
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[variable][] = functional_content_config__search__block
+features[views_view][] = search
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

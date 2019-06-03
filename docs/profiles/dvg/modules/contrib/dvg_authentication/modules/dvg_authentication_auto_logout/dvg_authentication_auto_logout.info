@@ -1,0 +1,17 @@
+name = DvG Authentication Auto Logout
+description = Provides customizable auto logout functionality.
+package = Drupal voor Gemeenten - Beta
+core = 7.x
+
+; styles
+stylesheets[all][] = css/dvg_authentication_auto_logout.css
+
+dependencies[] = context_callback
+dependencies[] = dvg_roles_and_permissions
+dependencies[] = xautoload
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.1"
+core = "7.x"
+project = "dvg_authentication"
+datestamp = "1559557992"

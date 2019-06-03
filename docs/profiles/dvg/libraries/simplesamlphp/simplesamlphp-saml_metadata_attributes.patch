@@ -1,0 +1,45 @@
+diff --git a/lib/SimpleSAML/Metadata/SAMLBuilder.php b/lib/SimpleSAML/Metadata/SAMLBuilder.php
+index ba584c5..43646f2 100644
+--- a/lib/SimpleSAML/Metadata/SAMLBuilder.php
++++ b/lib/SimpleSAML/Metadata/SAMLBuilder.php
+@@ -338,6 +338,7 @@ class SimpleSAML_Metadata_SAMLBuilder
+
+             $t->Binding = $ep['Binding'];
+             $t->Location = $ep['Location'];
++            $t->isDefault = $ep['isDefault'] ?? NULL;
+             if (isset($ep['ResponseLocation'])) {
+                 $t->ResponseLocation = $ep['ResponseLocation'];
+             }
+@@ -424,6 +425,9 @@ class SimpleSAML_Metadata_SAMLBuilder
+             if (in_array($attribute, $attributesrequired, true)) {
+                 $t->isRequired = true;
+             }
++            else {
++              $t->isRequired = false;
++            }
+             $attributeconsumer->RequestedAttribute[] = $t;
+         }
+
+diff --git a/modules/saml/www/sp/metadata.php b/modules/saml/www/sp/metadata.php
+index 66885d7..11d5f62 100644
+--- a/modules/saml/www/sp/metadata.php
++++ b/modules/saml/www/sp/metadata.php
+@@ -62,7 +62,7 @@ $eps = array();
+ $supported_protocols = array();
+ foreach ($assertionsconsumerservices as $services) {
+
+-    $acsArray = array('index' => $index);
++    $acsArray = array('index' => $index, 'isDefault' => FALSE);
+     switch ($services) {
+         case 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST':
+             $acsArray['Binding'] = \SAML2\Constants::BINDING_HTTP_POST;
+@@ -104,7 +104,8 @@ foreach ($assertionsconsumerservices as $services) {
+     $eps[] = $acsArray;
+     $index++;
+ }
+-
++// Force the first service entry as the default.
++$eps[0]['isDefault'] = TRUE;
+ $metaArray20['AssertionConsumerService'] = $eps;
+
+ $keys = array();

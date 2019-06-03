@@ -1,0 +1,123 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function dvg_global_install() {
+
+  // Creates an empty_page callback for the frontpage.
+  $callback = (object) array(
+    'created' => REQUEST_TIME,
+    'changed' => REQUEST_TIME,
+    'path' => 'node',
+    'page_title' => '',
+  );
+  empty_page_save_callback($callback);
+
+  _dvg_global_set_user_menu_configuration();
+
+  // Change module weight to override Linkit functions
+  db_query("UPDATE {system} SET weight = 10 WHERE name = 'dvg_global'");
+  dvg_roles_and_permissions_set_permissions('dvg_global');
+}
+
+/**
+ * Make the user-menu title translatable and disable the default 'My account' menu-item.
+ */
+function _dvg_global_set_user_menu_configuration() {
+  db_update('block')
+    ->fields(array(
+      'i18n_mode' => 1,
+    ))
+    ->condition('delta', 'user-menu')
+    ->execute();
+
+  db_update('menu_links')
+    ->fields(array(
+      'hidden' => 1,
+      'customized' => 1,
+    ))
+    ->condition('menu_name', 'user-menu')
+    ->condition('link_path', 'user')
+    ->execute();
+}
+
+/**
+ * Helper function to add form ids to the IFE settings.
+ */
+function _dvg_global_add_ife_form_id($form_id) {
+  if (!module_exists('ife')) {
+    return;
+  }
+
+  $form_ids = ife_load_form_ids();
+  if (isset($form_ids[$form_id])) {
+    return;
+  }
+
+  $record = array(
+    'form_id' => $form_id,
+    'status' => 1,
+  );
+  drupal_write_record('ife', $record);
+  cache_clear_all('ife_form_ids', 'cache');
+}
+
+/**
+ * Empty update hook for backwards compatibility.
+ */
+function dvg_global_update_7008() {
+}
+
+/**
+ * Delete obsolete menu blocks.
+ */
+function dvg_global_update_7009() {
+  $max = (module_exists('dvg_town_council')) ? 5 : 4;
+
+  for ($i = 1; $i <= $max; $i++) {
+    menu_block_delete($i);
+  }
+}
+
+/**
+ * Migrate functional_content variables to rc3.
+ */
+function dvg_global_update_7010() {
+
+  // Fetch all variables width the old prefix.
+  $result = db_select('variable', 'v')
+    ->fields('v')
+    ->condition('name', 'functional_content_nodes__%', 'LIKE')
+    ->execute()
+    ->fetchAllAssoc('name');
+
+  if (count($result) > 0) {
+    foreach ($result as $var_name => $var) {
+      // Strip the old prefixes to cleanup the variable names.
+      $new_var_name = str_replace(array('functional_content_nodes__', 'functional_content__nid__'), '', $var_name);
+      // And add the new prefix.
+      $new_var_name = 'functional_content_nid__' . $new_var_name;
+
+      // Update the variable names.
+      db_update('variable')
+        ->fields(array('name' => $new_var_name))
+        ->condition('name', $var_name, '=')
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Set max path length for large filenames, prevents url alias loops on /file.
+ */
+function dvg_global_update_7011() {
+  variable_set("pathauto_max_length", 255);
+}
+
+/**
+ * Set default page headers for DVG.
+ */
+function dvg_global_update_7012() {
+  variable_set("page_header_default_cache_control", "no-cache, no-store, must-revalidate, post-check=0, pre-check=0");
+}

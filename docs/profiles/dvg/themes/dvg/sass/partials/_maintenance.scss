@@ -1,0 +1,205 @@
+html {
+
+}
+body.maintenance-page {
+ background:  $main-color-light;
+ height: auto;
+    min-height: 100%;
+  .r-header {
+    background: transparent;
+  }
+  .sidebar {
+    display: inline-block;
+    width: 30%;
+  }
+  .content {
+    display: inline-block;
+    width: 65%;
+    min-height: 420px;
+    padding-left: 5%;
+
+    vertical-align: top;
+    border-left: 1px solid $border-color;
+  }
+  .task-list {
+    list-style-type: none;
+
+    li {
+      margin: 0 0 10px 0;
+      padding:  0 0 0 40px;
+
+      color: $text-color-light;
+
+      &.done {
+        color: $text-color;
+        background: transparent url(../images/done.svg) no-repeat 0 0;
+      }
+      &.active {
+        color: $text-color;
+        background: transparent url(../images/active.svg) no-repeat 0 0;
+      }
+    }
+  }
+
+
+
+  //-----------------------------------------------------------------------------
+  // Module: Messages.
+  //-----------------------------------------------------------------------------
+  
+  .messages {
+    position: relative;
+
+    margin: 0 0 40px 0;
+    padding: 20px 70px 20px 20px;
+
+    border-left: 5px solid;
+
+    .menu {
+      margin-bottom: 0;
+    }
+    &:before {
+      background: none;
+    }
+    &:after {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+
+      content: '';
+      height: 40px;
+      width: 40px;
+    }
+    a {
+      color: inherit;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+    // Succes message.
+    &.status {
+      background-color: lighten($succes, 49%);
+      border-color: $succes;
+
+      &:after {
+        background: url(../images/succes.svg) no-repeat 0 0;
+      }
+    }
+    // Warning message.
+    &.warning {
+      background-color: lighten($warning, 20%);
+      border-color: $warning;
+
+      &:after {
+        background: url(../images/warning.svg) no-repeat 0 0;
+      }
+    }
+    // Error message.
+    &.error {
+      background-color: lighten($error, 49%);
+      border-color: $error;
+
+      &:after {
+        background: url(../images/error.svg) no-repeat 0 0;
+      }
+    }
+  }
+
+  //-----------------------------------------------------------------------------
+  // Module: Forms.
+  //-----------------------------------------------------------------------------
+
+
+  input:not([type="image"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="radio"]):not([type="checkbox"]):not([type="number"]):not([type="password"]), select, input[type="number"], body.maintenance-page .form-type-password input[type="password"] {
+    max-width: none;
+  }
+
+  .form-type-password {
+    position: relative;
+    margin-bottom: 13px;
+
+    .password-strength,
+    div.password-confirm {
+      position: absolute;
+      right: 0;
+      top: 25px;
+      width: 45%;
+
+      text-align: left;
+      font-size: 14px;
+
+      .ok {
+        color: #468847;
+      }
+      .error {
+        color: $red;
+      }
+    }
+    input[type="password"] {
+      @extend %input;
+
+      width: 50%;
+    }
+    label {
+      margin:0 0 5px;
+    }
+  }
+  .password-strength {
+    .password-strength-title {
+      float: left;
+    }
+    .password-strength-title,
+    .password-strength-text {
+      display: inline-block;
+      padding-right: 5px;
+    }
+    .password-indicator {
+      display: inline-block;
+      margin: 5px 0 8px 0;
+      width: 100%;
+
+      .indicator {
+        float: left;
+        height: .2em;
+
+        background-color: #468847;
+      }
+    }
+  }
+  .password-suggestions { 
+    position: relative;
+    display: block;
+    height: auto;
+    ul {
+      float: right;
+      text-align: left;
+
+      width: 45%;
+
+      li {
+        margin-bottom: 0;
+        margin-left: 0.75em;
+      }
+    }
+  }
+
+
+
+  //-----------------------------------------------------------------------------
+  // Module: Progress.
+  //-----------------------------------------------------------------------------
+  .progress .bar {
+    background-color: #fff;
+    border: 1px solid $main-color;
+  }
+  .progress .filled {
+    background-color: $main-color;
+    height: 1.5em;
+    width: 5px;
+  }
+  .progress .percentage {
+    float: right; /* LTR */
+  }
+
+} // Maintenance

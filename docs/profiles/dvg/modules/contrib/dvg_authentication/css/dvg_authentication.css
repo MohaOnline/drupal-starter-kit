@@ -1,0 +1,90 @@
+/*
+  DVG Authenticion login variables.
+  1. Gutter between blocks. (default: 1.5rem)
+  2. block padding. (default: 1rem)
+  3. Vertical rhythm. (default: 1rem)
+  4. Gutter between logo images (bottom-margin needed for small viewport). (default: .5rem)
+  5. Min height for logo-wrapper, adjust to your tallest image (In pixels, images don't scale with font-size change). (default: 100px)
+*/
+
+.dvgauth {
+  --dvgauth-item-margin: 1.5rem;  /* 1 */
+  --dvgauth-item-padding: 1rem; /* 2 */
+  --dvgauth-elements-margin: 1rem; /* 3 */
+  --dvgauth-logo-margin: .5rem; /* 4 */
+  --dvgauth-logo-min-height: 100px; /* 5 */
+}
+
+.dvgauth__description {
+  margin-top: 0;
+  margin-bottom: var(--dvgauth-elements-margin);
+}
+
+/* authentication block wrapper */
+.dvgauth__items {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -.75rem; /* IE11 fallback */
+  margin-right: -.75rem; /* IE11 fallback */
+  margin-left: calc(-1 * (.5 * var(--dvgauth-item-margin)));
+  margin-right: calc(-1 * (.5 * var(--dvgauth-item-margin)));
+}
+
+/* authentication block */
+.dvgauth__item {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  width: 100%; /* IE11 fix */
+  margin-bottom: 1.5rem; /* IE11 fallback */
+  margin-bottom: var(--dvgauth-item-margin);
+  margin-left: .75rem; /* IE11 fallback */
+  margin-right: .75rem; /* IE11 fallback */
+  margin-left: calc(.5 * var(--dvgauth-item-margin));
+  margin-right: calc(.5 * var(--dvgauth-item-margin));
+  padding: 1rem; /* IE11 fallback */
+  padding: var(--dvgauth-item-padding);
+  border: .125rem solid currentColor;
+}
+
+/* logos wrapper */
+.dvgauth__logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  min-height: 109px; /* IE11 fallback */
+  min-height: calc(var(--dvgauth-logo-min-height) + var(--dvgauth-logo-margin));
+  margin-bottom: .5rem; /* IE11 fallback */
+  margin-bottom: calc(var(--dvgauth-elements-margin) - var(--dvgauth-logo-margin));
+}
+
+/* margin-bottom needed for small screens  */
+.dvgauth__logo {
+  margin-right: .5rem; /* IE11 fallback */
+  margin-right: var(--dvgauth-logo-margin);
+  margin-bottom: .5rem; /* IE11 fallback */
+  margin-bottom: var(--dvgauth-logo-margin);
+}
+
+/* Prevent early flow-wrap. */
+.dvgauth__logo:last-child {
+  margin-right: 0;
+}
+
+/* authentication button aligned to right & sticky to bottom of block. */
+.btn__dvgauth {
+  align-self: flex-end;
+  max-width: 100%; /* IE11 fix word-break */
+  margin-top: auto;
+}
+
+@media (min-width: 56.8889em) {
+  .dvgauth__item {
+    max-width: calc(50% - 1.5rem);
+    max-width: calc(50% - var(--dvgauth-item-margin));
+  }
+
+  .dvgauth__skip-authentication {
+    max-width: 100%;
+  }
+}

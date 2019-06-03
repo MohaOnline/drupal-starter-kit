@@ -1,0 +1,27 @@
+<?php
+
+/**
+ * @file
+ * This module provides a digid login method for the dvg_authentication module.
+ */
+
+/**
+ * Is used to store the BSN in a session variable.
+ *
+ * Corresponds with the return value of the SAML authentication response.
+ *
+ * Not prefixed with "DVG_AUTHENTICATION" for backwards compatibility with
+ * dvg_digid.
+ */
+define('DIGID_SECTOR_BSN', 'S00000000');
+
+/**
+ * Implements hook_dvg_authentication_register_providers().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_digid_dvg_authentication_register_providers() {
+  return [
+    'digid' => 'Drupal\dvg_authentication_digid\DigidAuthenticationProvider',
+  ];
+}

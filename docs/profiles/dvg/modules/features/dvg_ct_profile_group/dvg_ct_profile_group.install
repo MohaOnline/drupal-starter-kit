@@ -1,0 +1,10 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function dvg_ct_profile_group_install() {
+  dvg_roles_and_permissions_set_permissions('dvg_ct_profile_group');
+}
+
+

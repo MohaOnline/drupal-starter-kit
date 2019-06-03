@@ -1,0 +1,323 @@
+<?php
+
+require_once(__DIR__ . '/dvg_logger.cron.inc');
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function dvg_logger_module_implements_alter(&$implementations, $hook) {
+  $module = 'dvg_logger';
+
+  // Make sure the failed login attempt check happens in the very last validation function.
+  if ($hook == 'form_user_login_alter' && isset($implementations[$module])) {
+    $group = $implementations[$module];
+    unset($implementations[$module]);
+    $implementations[$module] = $group;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function dvg_logger_menu() {
+  $items = array();
+
+  $items['admin/config/content/dvg-logger'] = array(
+    'title' => 'DVG Logger settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dvg_logger_admin_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'dvg_logger.admin.inc',
+  );
+  $items['admin/reports/dvg-logger'] = array(
+    'title' => 'DVG Logger',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dvg_logger_list_form'),
+    'access arguments' => array('view dvg logger reports'),
+    'file' => 'dvg_logger.admin.inc',
+  );
+  $items['admin/reports/dvg-logger/%'] = array(
+    'title' => 'Detail',
+    'page callback' => 'dvg_logger_event',
+    'page arguments' => array(3),
+    'access arguments' => array('view dvg logger reports'),
+    'file' => 'dvg_logger.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function dvg_logger_permission() {
+  return array(
+    'view dvg logger reports' => array(
+      'title' => t('View DvG logger reports'),
+      'description' => t('Allow users to view DvG logs'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_logger_dvg_requirements() {
+  $requirements = array();
+
+  $requirements['dvg_logger'] = array(
+    'title' => t('DVG Logger'),
+  );
+
+  $login_attempts_recipient_emails = variable_get('dvg_logger_recipient_emails', '');
+  $login_attempts_email_subject = variable_get('dvg_logger_email_subject', '');
+
+  if ($login_attempts_recipient_emails && $login_attempts_email_subject) {
+    $requirements['dvg_logger']['value'] = t('Ok');
+    $requirements['dvg_logger']['severity'] = REQUIREMENT_OK;
+  }
+  else {
+    $requirements['dvg_logger']['value'] = l(t('Configure the failed login attempts email.'), 'admin/config/content/dvg-logger');
+    $requirements['dvg_logger']['description'] = t('The DVG Logger is not fully configured.');
+    $requirements['dvg_logger']['severity'] = REQUIREMENT_WARNING;
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_mail().
+ */
+function dvg_logger_mail($key, &$message, $params) {
+  $default_subject = t('DvG Logger Mail for @site_name regarding @key', array(
+    '@site_name' => variable_get('site_name', ''),
+    '@key' => $key,
+  ));
+  $message['subject'] = variable_get('dvg_logger_email_subject', $default_subject);
+  $message['body'][] = t('This is an automated email containing a @period list of @key', array(
+    '@period' => variable_get('dvg_logger_attempts_digest', ''),
+    '@key' => $key,
+  ));
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for login_form().
+ */
+function dvg_logger_form_user_login_alter(&$form, &$form_state) {
+  $form['#validate'][] = 'dvg_logger_register_failed_login_attempt';
+}
+
+/**
+ * Custom validate which checks if the user's login attempt failed and registers this.
+ */
+function dvg_logger_register_failed_login_attempt($form, &$form_state) {
+  $errors = form_get_errors();
+  $name = $form_state['values']['name'];
+  $password = $form_state['values']['pass'];
+  $type = 'failed_login_attempts';
+
+  if (!empty($errors) && $name && $password) {
+    _dvg_logger_register_log($type, $name);
+  }
+}
+
+/**
+ * Register an event in dvg_logger table.
+ */
+function _dvg_logger_register_log($type, $name, $encrypted = FALSE) {
+  $table = 'dvg_logger';
+
+  if ($encrypted) {
+    $name = encrypt($name);
+  }
+
+  $data = array(
+    'type' => $type,
+    'message' => $name,
+    'hostname' => ip_address(),
+    'timestamp' => REQUEST_TIME,
+    'encrypted' => $encrypted,
+  );
+
+  drupal_write_record($table, $data);
+}
+
+/**
+ * Returns an array of recipient emails.
+ */
+function _dvg_logger_get_configured_recipient_emails() {
+  $email_string = str_replace(' ', '', variable_get('dvg_logger_recipient_emails', ''));
+  $emails = explode(',', $email_string);
+  return $emails;
+}
+
+/**
+ * Helper function to retrieve available types in the current logs.
+ *
+ * @return array
+ *    An array of log types.
+ */
+function _dvg_logger_get_types() {
+  $query = db_select('dvg_logger', 'dl');
+  $result = $query->fields('dl', array(
+    'type',
+  ))
+    ->distinct()
+    ->execute();
+
+  $types = array();
+  foreach ($result as $row) {
+    $types[$row->type] = $row->type;
+  }
+  return $types;
+}
+
+/**
+ * Logs account creation for non digid users.
+ *
+ * Implements hook_user_insert().
+ */
+function dvg_logger_user_insert(&$edit, $account, $category) {
+  if (!in_array(variable_get('dvg_digid_role', array()), $account->roles, TRUE)) {
+    // status, roles.
+    $log_args = array(
+      '@username' => $account->name,
+      '@uid' => $account->uid,
+      '@new' => $edit['mail'],
+      '@current_username' => $GLOBALS['user']->name,
+      '@current_uid' => $GLOBALS['user']->uid,
+      '@mail' => $edit['mail'],
+      '@status' => $edit['status'] ? t('Active') : t('Blocked'),
+      '@roles' => implode(', ', _dvg_logger_get_role_names(array_keys($edit['roles']))),
+    );
+    $msg = t('Account @username (@uid) created by user @current_username (@current_uid). Email @mail, status @status, roles @roles.', $log_args);
+    _dvg_logger_register_log('user_account', $msg);
+  }
+}
+
+/**
+ * Logs certain account edits.
+ *
+ * Implements hook_user_update().
+ */
+function dvg_logger_user_update(&$edit, $account, $category) {
+  if ($category !== 'account') {
+    return;
+  }
+
+  $original = $edit['original'];
+
+  // Log password changes.
+  $log_args = array(
+    '@username' => $account->name,
+    '@uid' => $account->uid,
+    '@current_username' => $GLOBALS['user']->name,
+    '@current_uid' => $GLOBALS['user']->uid,
+  );
+  if (isset($edit['pass']) && $edit['pass'] !== $original->pass) {
+    $msg = t('Password changed for @username (@uid) by user @current_username (@current_uid).', $log_args);
+    _dvg_logger_register_log('user_account', $msg);
+  }
+
+  // Log email changes.
+  if (isset($edit['mail']) && $edit['mail'] !== $original->mail) {
+    $log_args += array(
+      '@old' => $original->mail,
+      '@new' => $edit['mail'],
+    );
+    $msg = t('Mail changed for @username (@uid) from @old to @new by user @current_username (@current_uid).', $log_args);
+    _dvg_logger_register_log('user_account', $msg);
+  }
+
+  // Log status changes.
+  if (isset($edit['status']) && $edit['status'] !== $original->status) {
+    if ($edit['status']) {
+      $msg = t('@username (@uid) has been activated by user @current_username (@current_uid).', $log_args);
+      _dvg_logger_register_log('user_account', $msg);
+    }
+    else {
+      $msg = t('@username (@uid) has been blocked by user @current_username (@current_uid).', $log_args);
+      _dvg_logger_register_log('user_account', $msg);
+    }
+  }
+
+  // Log role changes.
+  if (isset($edit['roles'])) {
+    $added_rids = array_diff_key($edit['roles'], $original->roles);
+    $removed_rids = array_diff_key($original->roles, $edit['roles']);
+
+    if ($added_rids || $removed_rids) {
+      $added_roles = _dvg_logger_get_role_names($added_rids);
+      $removed_roles = _dvg_logger_get_role_names(array_keys($removed_rids));
+
+      $log_args += array(
+        '@added_count' => count($added_rids),
+        '@removed_count' => count($removed_rids),
+        '@added' => $added_roles ? implode(', ', $added_roles) : '-',
+        '@removed' => $removed_roles ? implode(', ', $removed_roles) : '-',
+      );
+      $msg = t('Roles changed on @username (@uid) (added: @added_count, removed: @removed_count) by user @current_username (@current_uid). Added: @added. Removed: @removed.', $log_args);
+      _dvg_logger_register_log('user_account', $msg);
+    }
+  }
+}
+
+/**
+ * Obtains role names for given role ids.
+ *
+ * @param array $rids
+ *   An array of role ids.
+ *
+ * @return array
+ *   An array of role names keyed by role id.
+ */
+function _dvg_logger_get_role_names($rids) {
+  static $roles = NULL;
+  if ($roles === NULL) {
+    $roles = user_roles();
+  }
+  return array_map(function ($rid) use ($roles) {
+    return isset($roles[$rid]) ? $roles[$rid] : t('Unknown role');
+  }, $rids);
+}
+
+/**
+ * Implements hook_user_delete().
+ */
+function dvg_logger_user_delete($account) {
+  $log_args = array(
+    '@username' => $account->name,
+    '@uid' => $account->uid,
+    '@current_username' => $GLOBALS['user']->name,
+    '@current_uid' => $GLOBALS['user']->uid,
+  );
+  $msg = t('@username (@uid) has been deleted by user @current_username (@current_uid).', $log_args);
+  _dvg_logger_register_log('user_account', $msg);
+}
+
+/**
+ * Implements hook_user_login().
+ */
+function dvg_logger_user_login(&$edit, $account) {
+  $login_via_form = isset($edit['values']['form_id']);
+  $login_via_digid = isset($_SESSION['dvg_digid']) && module_exists('dvg_digid');
+
+  $log_args = array(
+    '@username' => $account->name,
+    '@uid' => $account->uid,
+  );
+  if ($login_via_form) {
+    $log_args += array(
+      '@form_id' => $edit['values']['form_id'],
+    );
+    $msg = t('@username (@uid) logged in via the form @form_id.', $log_args);
+    _dvg_logger_register_log('user_login', $msg);
+  }
+  else if ($login_via_digid) {
+    $msg = t('@username (@uid) logged in via DigiD.', $log_args);
+    _dvg_logger_register_log('user_login', $msg);
+  }
+  else {
+    $msg = t('@username (@uid) logged in via password reset url.', $log_args);
+    _dvg_logger_register_log('user_login', $msg);
+  }
+}

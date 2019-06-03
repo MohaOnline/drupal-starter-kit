@@ -1,0 +1,174 @@
+article, aside, details, figcaption, figure, footer, header, hgroup, menu, nav, section {
+  display: block;
+}
+
+// Headings
+//------------------------------------------------------------
+h1, h2, h3, h4 {
+  margin: 0 0 30px 0;
+}
+h1 {
+  margin: 0 0 0.5em 0;
+
+  line-height: 1.2em;
+  font-size: 1.875em;
+  font-weight: 700;
+}
+h2 {
+  font-size: 1.375em;
+}
+h3 {
+  font-weight: normal;
+  margin: 0 0 0.6em 0;
+  font-size: 1.125em;
+}
+h4 {
+  font-weight: normal;
+  font-size: 1em;
+}
+
+//----------------------------------------------------------
+// Media Query
+@include respond-to($bp-medium)  {
+  h1 {
+    font-size: 2.444em;
+  }
+  h2 {
+    font-size: 1.333em;
+  }
+  h3 {
+    font-size: 1.222em;
+  }
+  h4 {
+    font-size: 1em;
+  }
+}
+
+/// Links
+//------------------------------------------------------------
+a {
+  color: $link-color;
+
+  &:active {
+
+  }
+  &:hover,
+  &:focus {
+    color: $link-color-hover;
+  }
+}
+
+// Paragraphs
+//------------------------------------------------------------
+p {
+  margin: 0 0 30px 0;
+}
+
+// Object and images.
+//------------------------------------------------------------
+img, object, video {
+  max-width: 100%;
+  height: auto;
+}
+
+// Lists
+//------------------------------------------------------------
+ul, ol {
+  list-style-position: outside;
+  padding: 0;
+  margin: 0 0 30px 0;
+}
+
+li ul,
+li ol {
+  margin: 0 1.625em;
+}
+
+ul li,
+ol li {
+  margin-bottom: 1em;
+}
+
+ul {
+  list-style-type: square;
+
+  li {
+    margin-left: 1.4em;
+    padding-left: .3em;
+  }
+}
+
+ol {
+  list-style-type: decimal;
+
+  li {
+    margin-left: 2em;
+    padding-left: .3em;
+  }
+}
+
+dl dd {
+  margin-left: 1.625em;
+}
+
+// Horizontal rule
+//------------------------------------------------------------
+hr {
+  margin: 30px 0;
+  height: 1px;
+  border: none;
+
+  background-color: black;
+}
+
+// Blockquote
+//------------------------------------------------------------
+.quote {
+  max-width: 35em;
+  margin: 0 0 1.25em 0;
+  padding-left: 1em;
+
+  border-left: 1px solid;
+
+  @include respond-to($bp-large) {
+    font-size: $font-size-medium;
+  }
+}
+// Table
+//------------------------------------------------------------
+table {
+  border: 1px dotted;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  width: 100%;
+  th {
+    font-size: $font-size-large;
+    text-align: left;
+    font-weight: normal;
+  }
+  th,
+  tr,
+  td {
+    border: 1px dotted;
+    padding: 9px 5px;
+    vertical-align: text-top;
+  }
+  tbody {
+    tr {
+      &:nth-child(even) {
+        background-color: white;
+      }
+      &:nth-child(odd) {
+        background-color: lighten($black, 95%);
+      }
+    }
+  }
+  p {
+    margin-bottom: 0;
+  }
+}
+.content {
+  table,th,tr,td {
+    border: 0;
+  }
+}

@@ -1,0 +1,10 @@
+name = DvG Logger
+description = Dvg Logger module for several logging tasks and report mailing.
+core = 7.x
+package = Drupal voor Gemeenten
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

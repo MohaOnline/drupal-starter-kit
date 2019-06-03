@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * @file
+ * Contains hooks for DvG Authentication eHerkenning.
+ */
+
+/**
+ * Implements hook_dvg_authentication_register_providers().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_eherkenning_dvg_authentication_register_providers() {
+  return [
+    'eherkenning' => 'Drupal\dvg_authentication_eherkenning\EherkenningAuthenticationProvider',
+  ];
+}
+
+/**
+ * Implements hook_auto_logout_profiles_alter().
+ */
+function dvg_authentication_eherkenning_auto_logout_profiles_alter(array &$profiles) {
+  // The logout url should open in a new tab, because the external callback
+  // can result in a dead end for the user, leading away from the website.
+  $profiles['provider_eherkenning']['logout_open_blank'] = TRUE;
+}

@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function domain_traversal_schema() {
+  $schema['domain_traversal'] = array(
+    'description' => 'Table that contains domain traversal secrets.',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique user ID.',
+        'default' => 0,
+      ),
+      'domain_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Domain numeric id.',
+        'default' => 0,
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Unix timestamp of when the secret was created.',
+      ),
+      'secret' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The secret.',
+      ),
+    ),
+    'primary key' => array('uid', 'domain_id', 'created', 'secret'),
+  );
+
+  return $schema;
+}

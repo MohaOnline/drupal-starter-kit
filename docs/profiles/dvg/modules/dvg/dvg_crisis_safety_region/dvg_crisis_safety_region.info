@@ -1,0 +1,10 @@
+name = DvG Crisis Safety region
+core = 7.x
+description = Adds the possibility for the Safety region to remotely activate their own crisis banner.
+package = "Drupal voor Gemeenten"
+dependencies[] = dvg_roles_and_permissions
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

@@ -1,0 +1,71 @@
+<?php
+
+/**
+ * @file
+ * Contains class OgonePaymentExecution.
+ */
+
+/**
+ * Tests payment execution.
+ */
+class OgonePaymentExecution extends PaymentWebTestCase {
+
+  static function getInfo() {
+    return array(
+      'description' => '',
+      'name' => 'Payment execution',
+      'group' => 'Ogone',
+      'dependencies' => array('ogone_test'),
+    );
+  }
+
+  function setUp(array $modules = array()) {
+    parent::setUp(array_merge($modules, array('ogone_test')));
+  }
+
+  /**
+   * Tests payment execution.
+   */
+  function testPaymentExecution() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $payment_method = $this->paymentMethodCreate(2, $controller);
+    $payment_method->controller_data = array(
+      'pspid' => OGONE_TEST_PSPID,
+      'passphrase_algorithm' => OGONE_TEST_PASSPHRASE_ALGORITHM,
+      'passphrase_in' => OGONE_TEST_PASSPHRASE_IN,
+      'passphrase_out' => OGONE_TEST_PASSPHRASE_OUT,
+      'server' => $controller::SERVER_PRODUCTION,
+    );
+    $this->assertPaymentExecution($payment_method);
+  }
+
+  /**
+   * Tests payment execution using the sandbox server.
+   */
+  function testSandboxPaymentExecution() {
+    $controller = payment_method_controller_load('OgonePaymentMethodController');
+    $payment_method = $this->paymentMethodCreate(2, $controller);
+    $payment_method->controller_data = array(
+      'pspid' => OGONE_TEST_PSPID,
+      'passphrase_algorithm' => OGONE_TEST_PASSPHRASE_ALGORITHM,
+      'passphrase_in' => OGONE_TEST_PASSPHRASE_IN,
+      'passphrase_out' => OGONE_TEST_PASSPHRASE_OUT,
+      'server' => $controller::SERVER_TESTING,
+    );
+    $this->assertPaymentExecution($payment_method);
+  }
+
+  /**
+   * Asserts a correct payment execution.
+   */
+  function assertPaymentExecution(PaymentMethod $payment_method) {
+    entity_save('payment_method', $payment_method);
+    $data = array(
+    );
+    $this->drupalPost('ogone_test/form/' . $payment_method->pmid, $data, t('Pay'));
+    $this->drupalPost(NULL, array(), t('Continue'));
+    $this->drupalPost(NULL, array(), t('Continue'));
+    $this->assertURL('<front>');
+    $this->assertTrue(variable_get('ogone_test_hook_ogone_feedback', FALSE));
+  }
+}

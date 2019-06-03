@@ -1,0 +1,9 @@
+Sport en vrije tijd {"url":"node\/337","options":{"attributes":[]},"node_uuid":"363c09ec-7226-4a7e-a568-4397af576768","weight":"-46"}
+Toeristische informatie en evenementen {"url":"node\/338","options":{"attributes":[]},"node_uuid":"99c78657-aae0-4ad5-bf1f-e2c42e8f6a23","weight":"-45"}
+Bedrijven {"url":"node\/185","options":{"attributes":[]},"node_uuid":"7af1fdde-8cea-4acd-b40c-4d501effbcf4","weight":"-49"}
+Openingstijden winkels {"url":"node\/214","options":{"attributes":[]},"node_uuid":"5f501b79-f9fa-45df-b3ef-74c795e37e41","weight":"-48"}
+Monumentale panden {"url":"node\/375","options":{"attributes":[]},"node_uuid":"2167b047-6e2c-4012-abe7-29c423063e98","weight":"-44"}
+-Rijksmonumenten {"url":"node\/215","options":{"attributes":[]},"node_uuid":"c91ba9ba-77dc-483b-8396-dcd697a0bba2","weight":"-50"}
+-Gemeentelijke monumenten {"url":"node\/216","options":{"attributes":[]},"node_uuid":"e0688e52-cb4d-4a0d-a791-0c48db979b2f","weight":"-49"}
+-Beeldbepalende panden {"url":"node\/217","options":{"attributes":[]},"node_uuid":"5467fe91-5fc3-4362-8853-3905392fbe11","weight":"-48"}
+Parkeren {"url":"node\/469","options":{"attributes":[]},"node_uuid":"a9b1ecf4-c65b-4d38-a8cd-c5733e9d801e","weight":"-47"}

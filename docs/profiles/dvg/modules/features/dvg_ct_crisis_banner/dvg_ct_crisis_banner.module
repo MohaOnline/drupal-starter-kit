@@ -1,0 +1,203 @@
+<?php
+/**
+ * @file
+ * Code for the Content Type: Crisis banner feature.
+ */
+
+include_once 'dvg_ct_crisis_banner.features.inc';
+include_once 'dvg_ct_crisis_banner.dvg.user_permission.inc';
+
+
+/**
+ * Implements hook_functional_content().
+ */
+function dvg_ct_crisis_banner_functional_content() {
+  $fc = array(
+    'dvg_ct_crisis_banner' => array(
+      'label' => t('Crisis banner'),
+    ),
+  );
+
+  return $fc;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Check all search_api_noindex options for new crisis_banner nodes.
+ */
+function dvg_ct_crisis_banner_form_crisis_banner_node_form_alter(&$form, &$form_state, $form_id) {
+  if (!isset($form['#node']->nid) && !empty($form['search_api_noindex'])) {
+    foreach (element_children($form['search_api_noindex']) as $child) {
+      $form['search_api_noindex'][$child]['#default_value'] = TRUE;
+    }
+  }
+
+  // Add reactivation button + handler.
+  if (isset($form['#node']->nid)) {
+    $form['actions']['save_reset_code'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save and reactivate'),
+      '#weight' => 10,
+      '#submit' => $form['actions']['submit']['#submit'],
+    );
+
+    $form['#validate'][] = 'dvg_ct_crisis_banner_reset_code';
+  }
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function dvg_ct_crisis_banner_node_presave($node) {
+  if ($node->type == 'crisis_banner' && empty($node->field_code[LANGUAGE_NONE])) {
+    $node->field_code[LANGUAGE_NONE][0]['value'] = uniqid();
+  }
+}
+
+/**
+ * Validation handler to flush the stored code.
+ *
+ * @see dvg_ct_crisis_banner_node_presave().
+ */
+function dvg_ct_crisis_banner_reset_code($form, &$form_state) {
+  if ($form_state['clicked_button']['#value'] == $form['actions']['save_reset_code']['#value']) {
+    drupal_set_message(t('The banner has been reactivated.'));
+    $form_state['values']['field_code'][LANGUAGE_NONE] = array();
+  }
+}
+
+/**
+ * Implements hook_preprocess_html().
+ */
+function dvg_ct_crisis_banner_preprocess_html(&$variables) {
+  if (dvg_ct_crisis_banner_is_visible()) {
+    $node = functional_content_node('dvg_ct_crisis_banner');
+    $variables['classes_array'][] = 'with-crisis-banner';
+    $variables['classes_array'][] = drupal_html_class($node->field_type_banner[LANGUAGE_NONE][0]['value']);
+  }
+}
+
+/**
+ * Check if the Crisis Banner should be visible.
+ */
+function dvg_ct_crisis_banner_is_visible() {
+  $visible = TRUE;
+
+  // Filter non-content pages.
+  if (!_dvg_global_is_content_page()) {
+    $visible = FALSE;
+  }
+
+  // Don't display the banner when a front page crisis block is active.
+  if ($visible && drupal_is_front_page() && module_exists('dvg_ct_crisis_block') && _dvg_ct_crisis_block_get_block() !== FALSE) {
+    $visible = FALSE;
+  }
+
+  // Fetch the node.
+  if ($visible && !$node = functional_content_node('dvg_ct_crisis_banner')) {
+    $visible = FALSE;
+  }
+
+  // No access?
+  if ($visible && !node_access('view', $node)) {
+    $visible = FALSE;
+  }
+
+  // Are there page restrictions set?
+  if ($visible && !empty($node->field_reference[LANGUAGE_NONE]) && arg(0) == 'node') {
+    $references = array();
+    foreach ($node->field_reference[LANGUAGE_NONE] as $reference) {
+      $references[] = $reference['target_id'];
+    }
+
+    // Don't display the banner if we're not on a referenced page.
+    if (!in_array(arg(1), $references)) {
+      $visible = FALSE;
+    }
+  }
+
+  // Don't display on your own detail page.
+  if ($visible && current_path() == 'node/' . $node->nid) {
+    $visible = FALSE;
+  }
+
+  // Allow other modules to change the visibility.
+  drupal_alter('dvg_ct_crisis_banner_is_visible', $visible);
+
+  return $visible;
+}
+
+/**
+ * Implements hook_page_alter().
+ */
+function dvg_ct_crisis_banner_page_alter(&$page) {
+  if (dvg_ct_crisis_banner_is_visible()) {
+    $node = functional_content_node('dvg_ct_crisis_banner');
+    $node_view = node_view($node);
+
+    // Add the close button.
+    $visible = TRUE;
+    drupal_alter('dvg_ct_crisis_banner_button_is_visible', $visible);
+    if ($visible) {
+      $node_view['links']['node']['#links']['close'] = array(
+        'title' => t('Close'),
+        'href' => current_path(),
+        'fragment' => 'close',
+        'attributes' => array(
+          'class' => array('banner-close-button'),
+          'title' => t('Close this banner'),
+        ),
+      );
+
+      // Add the JavaScript to the page.
+      $settings = array(
+        'nid' => $node->nid,
+        'code' => $node->field_code[LANGUAGE_NONE][0]['value'],
+      );
+      drupal_add_js(array('dvgCrisisBanner' => $settings), 'setting');
+      drupal_add_js(drupal_get_path('module', 'dvg_ct_crisis_banner') . '/js/banner.js');
+    }
+
+    // Put the node in the top region.
+    $page['top'][] = $node_view;
+  }
+}
+
+/**
+ * Implements hook_preprocess_node().
+ */
+function dvg_ct_crisis_banner_preprocess_node(&$variables) {
+  $node = $variables['elements']['#node'];
+
+  if ($node->type == 'crisis_banner') {
+    $variables['classes_array'][] = $node->field_type_banner[LANGUAGE_NONE][0]['value'];
+  }
+}
+
+/**
+ * Implements hook_field_access().
+ */
+function dvg_ct_crisis_banner_field_access($op, $field, $entity_type, $entity, $account) {
+  if ($entity_type == 'node' && $field['field_name'] == 'field_code') {
+    return $account->uid == 1;
+  }
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * Disable node detail pages for the crisis_banner content type.
+ * Unless the user has create permissions (to allow cloning).
+ */
+function dvg_ct_crisis_banner_node_access($node, $op, $account) {
+  if (
+    $op == 'view' &&
+    $node->type == 'crisis_banner' &&
+    $node->nid == arg(1) &&
+    !node_access('update', $node, $account) &&
+    !node_access('create', $node, $account)
+  ) {
+    return NODE_ACCESS_DENY;
+  }
+}

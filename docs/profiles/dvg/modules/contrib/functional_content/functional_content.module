@@ -1,0 +1,394 @@
+<?php
+
+/**
+ * @file
+ * The Functional Content module.
+ */
+
+define('FUNCTIONAL_CONTENT_PREFIX', 'functional_content_nid__');
+define('FUNCTIONAL_CONTENT_CONFIG', 'functional_content_config__');
+
+/**
+ * Implements hook_menu().
+ */
+function functional_content_menu() {
+  return array(
+    'admin/config/content/functional-content' => array(
+      'title' => 'Functional Content',
+      'description' => 'Configure functional content nodes.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('functional_content_admin'),
+      'access arguments' => array('administer functional content'),
+      'file' => 'functional_content.admin.inc',
+    ),
+    'admin/config/content/functional-content/list' => array(
+      'title' => 'Nodes',
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
+    ),
+    'admin/config/content/functional-content/settings' => array(
+      'title' => 'Settings',
+      'description' => 'Configure functional content settings.',
+      'type' => MENU_LOCAL_TASK,
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('functional_content_admin_config'),
+      'access arguments' => array('administer functional content settings'),
+      'file' => 'functional_content.admin.inc',
+    ),
+  );
+}
+/**
+ * Implements hook_module_implements_alter().
+ */
+function functional_content_module_implements_alter(&$implementations, $hook) {
+  $module = 'functional_content';
+  if ($hook == 'variable_settings_form_alter' && isset($implementations[$module])) {
+    $group = $implementations[$module];
+    unset($implementations[$module]);
+    $implementations[$module] = $group;
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function functional_content_permission() {
+  return array(
+    'administer functional content' => array(
+      'title' => t('Administer functional content'),
+    ),
+    'administer functional content settings' => array(
+      'title' => t('Administer functional content settings'),
+    ),
+  );
+}
+
+/**
+ * Helper function that grabs the configured nid.
+ */
+function functional_content_nid($setting) {
+
+  $nid = variable_get(_function_content_variable_name($setting));
+
+  // Fallback for non-prefixed variables (rc3 or earlier).
+  if (!$nid) {
+    $nid = variable_get($setting);
+  }
+
+  return $nid;
+}
+
+/**
+ * Helper function that grabs the configured node.
+ */
+function functional_content_node($setting) {
+  if ($nid = functional_content_nid($setting)) {
+    return node_load($nid);
+  }
+  return FALSE;
+}
+
+/**
+ * Helper function that creates the functional content item name for a view-
+ * and display name.
+ */
+function _functional_content_item_name($view_name, $display_name) {
+  return FUNCTIONAL_CONTENT_PREFIX . $view_name . '__' . $display_name;
+}
+
+/**
+ * Helper function that adds the prefix if none existant.
+ *
+ * @param string $var_name
+ *   Name of the functional_content variable.
+ *
+ * @return string
+ *   Prefixed variable name.
+ */
+function _function_content_variable_name($var_name) {
+  if (strpos($var_name, FUNCTIONAL_CONTENT_PREFIX) !== 0) {
+    $var_name = FUNCTIONAL_CONTENT_PREFIX . $var_name;
+  }
+
+  return $var_name;
+}
+
+/**
+ * Helper function that grabs all info required.
+ */
+function _functional_content_items($reset = FALSE) {
+  $items = &drupal_static(__FUNCTION__);
+
+  if ($reset || empty($items)) {
+    $items = array();
+
+    foreach (_functional_content_get_view_displays() as $var_name => $view_info) {
+      if (variable_get($var_name, FALSE)) {
+        $item_name = _functional_content_item_name($view_info['view_name'], $view_info['display_name']);
+        $items[$item_name] = array(
+          'label' => $view_info['view_label'] . ' - ' . $view_info['display_label'],
+          'callback' => 'functional_content__callback',
+          'callback arguments' => array($item_name),
+          'breadcrumb callback' => 'functional_content__reaction_callback',
+          'breadcrumb callback arguments' => array($item_name),
+          'view' => $view_info['view_name'],
+          'view_display' => $view_info['display_name'],
+        );
+      }
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Helper function that gets all available view & display info.
+ */
+function _functional_content_get_view_displays() {
+  $views = array();
+  foreach (views_get_all_views() as $view) {
+    if ($view->disabled) {
+      continue;
+    }
+
+    foreach ($view->display as $display) {
+      // Skip non-block displays.
+      if ($display->display_plugin != 'block') {
+        continue;
+      }
+
+      $views[FUNCTIONAL_CONTENT_CONFIG . $view->name . '__' . $display->id] = array(
+        'view_name' => $view->name,
+        'display_name' => $display->id,
+        'view_label' => $view->human_name,
+        'display_label' => $display->display_title,
+      );
+    }
+  }
+
+  return $views;
+}
+
+/**
+ * Implements hook_functional_content().
+ */
+function functional_content_functional_content($reset = FALSE) {
+  $items = array();
+
+  foreach (_functional_content_items() as $item_var => $item) {
+    $items[$item_var] = array(
+      'label' => $item['label'],
+      'description' => t('Generated functional Content for this view'),
+    );
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function functional_content_node_access($node, $op, $account) {
+  $vars = &drupal_static(__FUNCTION__);
+
+  // We prevent deletion of the node, to make sure the functional content
+  // setup keeps working.
+  if ($op == 'delete') {
+    if (empty($vars)) {
+      $vars = module_invoke_all('functional_content');
+    }
+
+    foreach ($vars as $var_name => $var_label) {
+      if ($node->nid == functional_content_nid($var_name)) {
+        return NODE_ACCESS_DENY;
+      }
+    }
+  }
+
+  return NODE_ACCESS_IGNORE;
+}
+
+/**
+ * Implements hook_context_callback_info().
+ */
+function functional_content_context_callback_info() {
+  $items = array();
+
+  foreach (_functional_content_items() as $item_name => $item) {
+    $items['conditions'][$item_name] = array(
+      'label' => $item['label'],
+      'callback' => $item['callback'],
+      'callback arguments' => $item['callback arguments'],
+    );
+    if (isset($item['breadcrumb callback'])) {
+      $items['reactions'][$item_name . '_breadcrumb'] = array(
+        'label' => t('Breadcrumb for @item', array('@item' => $item['label'])),
+        'callback' => $item['breadcrumb callback'],
+        'callback arguments' => $item['breadcrumb callback arguments'],
+      );
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Context Callback callback function.
+ */
+function functional_content__callback($item_name = '') {
+  if (!empty($item_name)) {
+    $nid = functional_content_nid($item_name);
+    $node = menu_get_object('node');
+
+    // Only trigger the functional content context on node/<nid> pages, but not
+    // on node/<nid>/edit, etc.
+    return ($node && $node->nid == $nid && !arg(2));
+  }
+
+  return FALSE;
+}
+
+/**
+ * Context Callback reaction callback function that sets the breadcrumb.
+ */
+function functional_content__reaction_callback($item_name = '') {
+  if (!empty($item_name)) {
+    $nid = functional_content_nid($item_name);
+    _functional_content_set_breadcrumb_nid($nid);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Fixes functional-content views exposed filters.
+ */
+function functional_content_form_views_exposed_form_alter(&$form, &$form_state) {
+  foreach (_functional_content_items() as $item_name => $fc_info) {
+    if ($form_state['view']->name == $fc_info['view']) {
+      $form_state['view']->use_ajax = FALSE;
+      $nid = functional_content_nid($item_name);
+      if ($nid) {
+        $form['#action'] = url('node/' . $nid);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_load().
+ *
+ * Adds the functional-content variable name to the loaded nodes. This is useful
+ * when importing these nodes; the functional-content variable name will be
+ * automatically set (@see functional_content_node_insert()).
+ */
+function functional_content_node_load($nodes, $types) {
+  $fc_nids = &drupal_static(__FUNCTION__, NULL);
+  if (is_null($fc_nids)) {
+    $fc_nids = NULL;
+    $hook = 'functional_content';
+    foreach (module_implements($hook) as $module) {
+      $function = $module . '_' . $hook;
+      if (function_exists($function)) {
+        foreach ($function() as $var_name => $var_info) {
+          if ($var_name != '#group') {
+            $fc_nids[functional_content_nid($var_name)] = FUNCTIONAL_CONTENT_PREFIX . $var_name;
+          }
+        }
+      }
+    }
+  }
+
+  if (!empty($fc_nids)) {
+    foreach ($nodes as $nid => $node) {
+      if (isset($fc_nids[$nid])) {
+        $node->functional_content_variable = $fc_nids[$nid];
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_node_insert().
+ *
+ * Stores the new nid in the functional-content variable, if set.
+ */
+function functional_content_node_insert($node) {
+  if (!empty($node->nid) && !empty($node->functional_content_variable)) {
+    variable_set($node->functional_content_variable, $node->nid);
+  }
+}
+
+/**
+ * Implements hook_variable_group_info().
+ */
+function functional_content_variable_group_info() {
+  $groups['functional_content'] = array(
+    'title' => t('Functional Content'),
+    'access' => 'administer functional content',
+    'path' => array('admin/config/content/functional-content'),
+  );
+
+  return $groups;
+}
+
+/**
+ * Implements hook_variable_info().
+ */
+function functional_content_variable_info($options) {
+  $variable = array();
+
+  $hook = 'functional_content';
+  foreach (module_implements($hook) as $module) {
+    $function = $module . '_' . $hook;
+    if (function_exists($function)) {
+      foreach ($function() as $var_name => $var_info) {
+        $variable[$var_name] = array(
+          'type' => 'string',
+          'title' => check_plain($var_info['label']),
+          'default' => array('*' => 0),
+          'description' => t('Functional content item', array(), $options),
+          'localize' => TRUE,
+          'group' => 'functional_content',
+        );
+      }
+    }
+  }
+
+  return $variable;
+}
+
+/**
+ * Helper function to set the active menu item + breadcrumb for a nid.
+ */
+function _functional_content_set_breadcrumb_nid($nid) {
+  $breadcrumb = array(l(t('Home'), '<front>', array('purl' => array('disabled' => TRUE))));
+  $result = db_select('menu_links')
+    ->fields('menu_links', array('p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'))
+    ->condition('hidden', 0)
+    ->condition('link_path', 'node/' . $nid)
+    ->execute();
+  while ($parents = $result->fetchAssoc()) {
+    $set = FALSE;
+    foreach (array_filter($parents) as $plid) {
+      $parent = menu_link_load($plid);
+      if ($parent && $parent['access'] && empty($parent['hidden']) && !empty($parent['title'])) {
+        $set = TRUE;
+        $breadcrumb[] = l($parent['title'], $parent['href']);
+      }
+    }
+    // Only set the breadcrumb if one or more links were added to the
+    // trail. If not, continue iterating through possible menu links.
+    if ($set) {
+      drupal_set_breadcrumb($breadcrumb);
+      break;
+    }
+  }
+
+  // Fallback breadcrumb if the node is not part of a menu.
+  if (count($breadcrumb) == 1) {
+    $node = node_load($nid);
+    $breadcrumb[] = l($node->title, 'node/' . $node->nid);
+    drupal_set_breadcrumb($breadcrumb);
+  }
+}

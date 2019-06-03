@@ -1,0 +1,1153 @@
+<?php
+
+/**
+ * @file
+ * Contains hooks and logic for DvG Authentication.
+ */
+
+use Drupal\dvg_authentication\AuthenticationManager;
+use Drupal\dvg_authentication\AuthenticationProviderBase;
+
+/**
+ * @file
+ * DvG Authentication Manager.
+ */
+
+include_once 'includes/dvg_authentication.dvg.user_permission.inc';
+include_once 'includes/dvg_authentication.custom.inc';
+
+/**
+ * Implements hook_permission().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_permission() {
+  $permissions = [
+    'access authentication administration pages' => [
+      'title' => t('Administer external authentication settings'),
+    ],
+    'edit webform external authentication settings' => [
+      'title' => t('Edit webform External authentication settings'),
+      'description' => '',
+    ],
+    'edit authentication provider user settings' => [
+      'title' => t('Edit Authentication Provider user settings'),
+      'description' => t('Edit user specific settings for DvG Authentication.'),
+    ],
+  ];
+  return $permissions;
+}
+
+/**
+ * Implements hook_menu().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_menu() {
+  $items = [];
+  $items['admin/config/services/dvg-authentication'] = [
+    'title' => 'Authentication Manager',
+    'description' => 'Administer external authentication settings.',
+    'position' => 'left',
+    'weight' => -5,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => ['access authentication administration pages'],
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  ];
+
+  // Set the provider error callback.
+  $items['user/external/saml-error-callback'] = [
+    'title' => 'Callback error',
+    'page callback' => 'dvg_authentication_error_callback',
+    'page arguments' => [2],
+    'type' => MENU_CALLBACK,
+    'access arguments' => ['access content'],
+  ];
+
+  // Set the provider error page callback.
+  $items['user/external/saml-error'] = [
+    'title' => 'Page error',
+    'page callback' => 'dvg_authentication_error_page',
+    'page arguments' => [2],
+    'type' => MENU_CALLBACK,
+    'access arguments' => ['access content'],
+  ];
+
+  // Set privacy page on a hardcoded path.
+  // It needs to be specified for some eToegang connections.
+  $items['privacy'] = [
+    'title' => 'Privacy',
+    'page callback' => 'dvg_authentication_privacy_page',
+    'type' => MENU_CALLBACK,
+    'access arguments' => ['access content'],
+  ];
+
+  // Also add all routes for the enabled authentication types.
+  $providers = AuthenticationManager::getInstance()
+    ->getAuthenticationProviders();
+
+  /** @var \Drupal\dvg_authentication\AuthenticationProviderBase $provider */
+  foreach ($providers as $provider) {
+    $provider_id = $provider->getId();
+    $items['admin/config/services/dvg-authentication/' . $provider_id] = [
+      'title' => $provider->getLabel(),
+      'description' => $provider->getAdminDescription(),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => ['dvg_authentication_provider_configuration_form', 4],
+      'access arguments' => ['access authentication administration pages'],
+      'file' => 'includes/dvg_authentication.admin.inc',
+      'type' => MENU_NORMAL_ITEM,
+    ];
+
+    // Create callbacks for all levels for this provider.
+    $levels = $provider->getLevels();
+    foreach ($levels as $level_id => $level_label) {
+      // Define the default login callback url for all enabled
+      // AuthenticationProviders.
+      $items[$provider->getLoginPath($level_id)] = [
+        'title' => $provider->getLabel(),
+        'page callback' => 'dvg_authentication_login_callback',
+        'page arguments' => [2, 3],
+        'access callback' => 'user_is_anonymous',
+      ];
+    }
+  }
+
+  // @todo: This is a temporary test page for external logins.
+  $items['user/external'] = [
+    'title' => 'External login',
+    'page callback' => 'dvg_authentication_login_page',
+    'access callback' => 'user_is_anonymous',
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/dvg_authentication.pages.inc',
+    'weight' => 10,
+  ];
+
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Change the access callback for the user profile pages.
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_menu_alter(&$items) {
+  $items['user/%user']['access callback'] = 'dvg_authentication_user_profile_access';
+  $items['user/%user']['access arguments'] = [1, 'view'];
+  $items['user/%user/edit']['access callback'] = 'dvg_authentication_user_profile_access';
+  $items['user/%user/edit']['access arguments'] = [1, 'edit'];
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_theme($existing, $type, $theme, $path) {
+  return [
+    'authentication_login_options' => [
+      'render element' => 'element',
+      'path' => $path . '/templates',
+      'template' => 'dvg-authentication-login-options',
+      'file' => '../includes/dvg_authentication.pages.inc',
+    ],
+    'authentication_login_button' => [
+      'render element' => 'element',
+      'path' => $path . '/templates',
+      'template' => 'dvg-authentication-login-button',
+      'file' => '../includes/dvg_authentication.pages.inc',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function dvg_authentication_element_info() {
+  $types['authentication_login_button'] = [
+    '#theme' => 'authentication_login_button',
+  ];
+  return $types;
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_module_implements_alter(&$implementations, $hook) {
+  $module = 'dvg_authentication';
+  // Make sure dvg_authentication_menu() is run before user_menu(),
+  // Otherwise 'user/%user' will override the external login callback.
+  _dvg_global_module_implements_first($module, ['menu'], $implementations, $hook);
+  // Implement dvg_authentication_menu_alter() after all other
+  // hook_menu_alter() implementations, to make sure our access callback is set.
+  _dvg_global_module_implements_last($module, ['menu_alter'], $implementations, $hook);
+}
+
+/**
+ * Custom access callback for user profiles.
+ *
+ * @param \stdClass $account
+ *   Drupal user object.
+ * @param string $op
+ *   Action the access is checked for, one of "view" or "edit".
+ *
+ * @return bool
+ *   User has access?
+ */
+function dvg_authentication_user_profile_access(\stdClass $account, $op) {
+  // Deny access to user profiles for all external users.
+  if (AuthenticationManager::getInstance()->isExternalUser($account)
+    && !user_access('administer users')) {
+    return FALSE;
+  }
+  // Fallback to default behavior.
+  switch ($op) {
+    case 'view':
+      return user_view_access($account);
+
+    case 'edit':
+      return dvg_global_user_edit_access($account);
+  }
+  // Unsupported $op.
+  return FALSE;
+}
+
+/**
+ * Default callback for login with the specified provider.
+ *
+ * When the login call of $provider->login() returns a boolean, the user is
+ * redirected to the destination url parameter or the homepage and this callback
+ * returns nothing.
+ * In the other cases, the result of the login call is returned, e.g. to show a
+ * confirmation page to the user before the actual login happens.
+ *
+ * @param string $provider_id
+ *   Id of the authentication provider.
+ * @param string|false $level
+ *   (Optional) Level of authentication, defaults to LEVEL_NONE.
+ *
+ * @return mixed
+ *   NULL if the login fails or succeeds directly, or a mixed response.
+ *
+ * @throws \Exception
+ */
+function dvg_authentication_login_callback($provider_id, $level = AuthenticationProviderBase::LEVEL_NONE) {
+  drupal_page_is_cacheable(FALSE);
+  $authenticationManager = AuthenticationManager::getInstance();
+  if ($provider = $authenticationManager->getAuthenticationProvider($provider_id)) {
+    $login = $provider->login($level);
+    // If the login method returns an other value than TRUE or FALSE,
+    // return the response of the login callback.
+    if (!is_bool($login)) {
+      return $login;
+    }
+  }
+  else {
+    drupal_set_message(t('Unable to login, the login method is unavailable.'));
+  }
+  drupal_goto();
+}
+
+/**
+ * Process the information from the provider callback.
+ *
+ * @param string $provider_id
+ *   The id of the provider that was used for authentication.
+ */
+function dvg_authentication_error_callback($provider_id) {
+  global $language;
+
+  $param = drupal_get_query_parameters();
+
+  // Only send mails if the referer is a SimpleSAML call.
+  if (!empty($_SERVER['HTTP_COOKIE']) && strpos($_SERVER['HTTP_COOKIE'], 'SimpleSAMLSessionID') !== FALSE) {
+    // Notify the admin.
+    $admin = user_load(1);
+    $recipient = $admin->mail;
+
+    // Send mail with the occurred SimpleSAML error.
+    drupal_mail('dvg_authentication', 'error_notification', $recipient, $language, ['error_message' => $param['error'], 'provider' => $provider_id]);
+  }
+  drupal_goto('user/external/saml-error');
+}
+
+/**
+ * Page callback to show an error message/form on a SimpleSAML error.
+ *
+ * @param string $provider_id
+ *   The authentication provider id.
+ *
+ * @return string
+ *   Html view|translations
+ */
+function dvg_authentication_error_page($provider_id) {
+  $authenticationManager = AuthenticationManager::getInstance();
+  if ($provider = $authenticationManager->getAuthenticationProvider($provider_id)) {
+
+    // Show the error page, if set through functional content.
+    $nid = functional_content_nid($provider->getErrorPageFunctionalContentId());
+    if ($nid) {
+      $node = node_load($nid);
+      $node->saml_error = TRUE;
+      drupal_set_title($node->title);
+      $view = node_view($node);
+      return drupal_render($view);
+    }
+
+  }
+  return t('An error occured, unable to login.');
+}
+
+/**
+ * Page callback for the Privacy statement page.
+ *
+ * @return array
+ *   Html view|translations
+ */
+function dvg_authentication_privacy_page() {
+  $build = [];
+  // Show the error page, if set through functional content.
+  if ($nid = functional_content_nid('dvg_authentication_privacy_statement')) {
+    if ($node = node_load($nid)) {
+      $build = node_page_view($node);
+      // Remove duplicate title.
+      // Set as empty because some places expect this field.
+      $build['nodes'][$nid]['body']['#object']->title = '';
+    }
+  }
+
+  return $build;
+}
+
+/**
+ * Implements hook_functional_content().
+ */
+function dvg_authentication_functional_content() {
+  $return = [
+    '#group' => [
+      'label' => t('Authentication Manager'),
+    ],
+  ];
+  // Also add all routes for the enabled authentication types.
+  $providers = AuthenticationManager::getInstance()
+    ->getAuthenticationProviders();
+
+  $return['dvg_authentication_privacy_statement'] = [
+    'label' => t('Privacy statement'),
+    'description' => t('Enter the related node ID of the page.'),
+  ];
+
+  /** @var \Drupal\dvg_authentication\AuthenticationProviderBase $provider */
+  foreach ($providers as $provider) {
+    $return[$provider->getErrorPageFunctionalContentId()] = [
+      'label' => t('!provider error page', ['!provider' => $provider->getLabel()]),
+      'description' => t('Enter the related node ID of the page.') . t('This page will be shown to the user when a @provider login error occurs', ['@provider' => $provider->getLabel()]),
+    ];
+  }
+
+  return $return;
+}
+
+/**
+ * Implements hook_dvg_requirements().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_dvg_requirements() {
+
+  $requirements = [];
+  $requirements['dvg_authentication'] = [
+    'title' => t('DvG Authentication'),
+  ];
+  $authenticationProviders = AuthenticationManager::getInstance()->getAuthenticationProviders();
+  if (empty($authenticationProviders)) {
+    $requirements['dvg_authentication']['value'] = t('No authentication providers available');
+    $requirements['dvg_authentication']['severity'] = REQUIREMENT_WARNING;
+  }
+  else {
+    $requirements['dvg_authentication']['value'] = t('Enabled');
+    $requirements['dvg_authentication']['severity'] = REQUIREMENT_INFO;
+  }
+
+  // Check if there's no-cache and no-store in the cache control header.
+  $cache_control = variable_get('page_header_default_cache_control', '');
+  $requirements['dvg_cache_control'] = [
+    'title' => t('Page header default cache control'),
+    'value' => t('Ok'),
+    'severity' => REQUIREMENT_OK,
+  ];
+  $cache_controls = array_map('trim', explode(',', $cache_control));
+  $not_set_cache_controls = array_diff(['no-cache', 'no-store'], $cache_controls);
+  if ($not_set_cache_controls) {
+    $requirements['dvg_cache_control']['value'] = t('Page header cache control not set.');
+    $requirements['dvg_cache_control']['description'] = t('Set the variable "page_header_default_cache_control" to "no-cache, no-store, must-revalidate, post-check=0, pre-check=0"');
+    $requirements['dvg_cache_control']['severity'] = REQUIREMENT_ERROR;
+  }
+
+  // Show additional requirements for the enabled authentication providers.
+  foreach ($authenticationProviders as $provider) {
+    $requirements += $provider->getRequirementsInfo();
+  }
+
+  $is_provider_config_domain_specific = strpos(
+    variable_get('domain_settings_forms', ''),
+    'dvg_authentication_provider_configuration_form'
+  ) !== FALSE;
+  if (
+    module_exists('domain_settings') &&
+    $is_provider_config_domain_specific
+  ) {
+    $provider_classes = module_invoke_all('dvg_authentication_register_providers');
+    $selected_classes = array_intersect_key($provider_classes, $authenticationProviders);
+
+    // Get list of domains without the current domain.
+    $domains = domain_domains();
+    $current_domain = domain_get_domain();
+    unset($domains[$current_domain['domain_id']]);
+
+    foreach ($domains as $domain) {
+      $summary = _dvg_authentication_dvg_requirements_other_domains($domain, $selected_classes);
+      $requirements['dvg_authentication_other_domain_' . $domain['domain_id']] = $summary;
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Helper function to get the requirements info summary for another domain.
+ *
+ * @param array $domain
+ *   Domain details.
+ * @param array $providers
+ *   List of providers that provide status information.
+ *
+ * @return array
+ *   A single status page line describing the status of the settings for
+ *   another domain.
+ */
+function _dvg_authentication_dvg_requirements_other_domains(array $domain, array $providers) {
+  global $conf;
+  $full_status = [];
+  $domain_id = $domain['domain_id'];
+
+  // Collect the full status information as if we are on that domain.
+  $authentication_manager = AuthenticationManager::getInstance();
+  foreach ($providers as $provider_id => $provider_class) {
+    $target_setting = "dvg_authentication_$provider_id";
+    // Store the current config as we need to temporarily override it as if
+    // we are on a different domain.
+    $current_config = variable_get($target_setting);
+    unset($conf[$target_setting]);
+
+    $domain_config = domain_conf_variable_get($domain_id, $target_setting);
+    if ($domain_config !== NULL) {
+      $conf[$target_setting] = $domain_config;
+    }
+
+    /** @var \Drupal\dvg_authentication\AuthenticationProviderBase $provider */
+    $provider = new $provider_class($authentication_manager, 'unknown');
+    $full_status += $provider->getRequirementsInfo();
+
+    // Restore the config for this domain.
+    $conf[$target_setting] = $current_config;
+  }
+
+  // Make the default status summary if everything is fine.
+  $domain_name = $domain['sitename'];
+  $status_link_message = t('the other status page');
+  $status_link_path = $domain['path'] . '/admin/reports/dvg-status';
+  $other_status_link = l($status_link_message, $status_link_path);
+  $summary = [
+    'title' => t('DvG Authentication status summary for other domain: %domain', ['%domain' => $domain_name]),
+    'description' => t('Summary status for the other domain, for details open !the_status_page_link.',
+      ['!the_status_page_link' => $other_status_link]
+    ),
+    'value' => t('Ok'),
+    'severity' => REQUIREMENT_OK,
+  ];
+
+  // Override the summary when a more severe severity is present.
+  foreach ($full_status as $status_line) {
+    if ($status_line['severity'] > $summary['severity']) {
+      $summary['value'] = $status_line['value'] . ' (' . $status_line['title'] . ')';
+      $summary['severity'] = $status_line['severity'];
+    }
+  }
+
+  return $summary;
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_mail($key, &$message, $params) {
+  if ($key === 'error_notification') {
+    $authenticationManager = AuthenticationManager::getInstance();
+    if ($provider = $authenticationManager->getAuthenticationProvider($params['provider'])) {
+      $message['subject'] = t('@provider error on @site_name', [
+        '@site_name' => variable_get('site_name', ''),
+        '@provider' => $provider->getLabel(),
+      ]);
+      $message['body'][] = t('A @provider user tried to login.', ['@provider' => $provider->getLabel()]) . '<br />';
+      $message['body'][] = t('Error code id: @error_message',
+          [
+            '@error_message' => $params['error_message'],
+          ]) . '<br />';
+      $message['body'][] = t('( description: [Error_code]_[reportId]_[trackId] )') . '<br />';
+      $message['body'][] = t('A SimpleSAML error has been triggered. Check the @provider status.', ['@provider' => $provider->getLabel()]);
+    }
+  }
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function dvg_authentication_libraries_info() {
+  $libraries['simplesamlphp'] = [
+    'name' => 'SimpleSAMLphp library',
+    'vendor url' => 'http://simplesamlphp.org/',
+    'download url' => 'https://code.google.com/p/simplesamlphp/downloads/list',
+    'version arguments' => [
+      'file' => 'docs/simplesamlphp-changelog.md',
+      'pattern' => '@Version\s+([0-9a-zA-Z\.-]+)@',
+    ],
+    'files' => [
+      'php' => ['lib/_autoload.php', 'lib/_autoload_modules.php'],
+    ],
+  ];
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_webform_node_defaults_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_webform_node_defaults_alter(&$defaults) {
+  $defaults['dvg_authentication_enabled'] = 0;
+  $defaults['dvg_authentication_settings'] = serialize([]);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_form_views_exposed_form_alter(&$form, &$form_state, $form_id) {
+  global $user;
+
+  if ($user->uid !== 1 && $form_state['view']->name === 'dvg_administration_users') {
+    if ($role = AuthenticationManager::getInstance()->getExternalUserRole()) {
+      unset($form['rid']['#options'][$role->rid]);
+    }
+  }
+}
+
+/**
+ * Implements hook_views_pre_view().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_views_pre_view(View $view, &$display_id, &$args) {
+  global $user;
+
+  if ($user->uid !== 1 && $view->name === 'dvg_administration_users') {
+    if ($role = AuthenticationManager::getInstance()->getExternalUserRole()) {
+      // Filter out external user role.
+      $view->add_item($view->current_display, 'filter', 'users_roles', 'rid', [
+        'exposed' => FALSE,
+        'value' => [$role->rid => $role->rid],
+        'operator' => 'not',
+        'group' => 1,
+      ], 'dvg_authentication_filter');
+
+      // This will change handlers, so make sure any existing handlers get
+      // tossed.
+      // @see View::fix_missing_relationships().
+      $view->display_handler->handlers = [];
+      $view->relationships_changed = TRUE;
+      $view->changed = TRUE;
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_form_webform_configure_form_alter(&$form, &$form_state) {
+  $node = $form['#node'];
+
+  $authentication_manager = AuthenticationManager::getInstance();
+  $authentication_enabled = $authentication_manager->nodeHasAuthentication($node);
+  $form['dvg_authentication'] = [
+    '#type' => 'fieldset',
+    '#title' => t('External authentication'),
+    '#collapsible' => TRUE,
+    '#collapsed' => !$authentication_enabled,
+  ];
+
+  $form['dvg_authentication']['dvg_authentication_enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Require external authentication'),
+    '#description' => t('Require a user to be logged in with one of the selected authentication methods to use this form.'),
+    '#default_value' => $authentication_enabled,
+    '#id' => 'dvg-authentication-enabled',
+  ];
+
+  $form['dvg_authentication']['dvg_authentication_settings'] = [
+    '#type' => 'container',
+    '#tree' => TRUE,
+    '#states' => [
+      'visible' => [
+        '#dvg-authentication-enabled' => [
+          'checked' => TRUE,
+        ],
+      ],
+    ],
+  ];
+
+  // Get the current settings, if any.
+  $settings = $authentication_manager->getNodeAuthenticationSettings($node);
+
+  $skip_description = t('Gives the user the option to skip authentication, besides the selected methods below.<br>Keep in mind that the form can be used by anonymous users, if enabled.');
+  $form['dvg_authentication']['dvg_authentication_settings']['dvg_authentication_skip_authentication_enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Allow users to skip authentication'),
+    '#description' => $skip_description,
+    '#default_value' => !empty($settings['dvg_authentication_skip_authentication_enabled']),
+  ];
+
+  $form['dvg_authentication']['dvg_authentication_settings']['methods_header'] = [
+    '#type' => 'html_tag',
+    '#tag' => 'strong',
+    '#value' => t('Authentication methods'),
+  ];
+
+  $providers = $authentication_manager->getAuthenticationProviders();
+  $form['dvg_authentication']['dvg_authentication_settings']['methods'] = [
+    '#type' => 'container',
+    '#tree' => TRUE,
+  ];
+  foreach ($providers as $provider) {
+    // Add the provider specific settings.
+    $form['dvg_authentication']['dvg_authentication_settings']['methods'][$provider->getId()] = $provider->getWebformConfiguration($settings);
+  }
+
+  // Disable the default role-based access form element.
+  $form['role_control']['#access'] = FALSE;
+
+  // Add our form validation and submit handlers.
+  array_unshift($form['#validate'], 'dvg_authentication_webform_configure_form_validate');
+  array_unshift($form['#submit'], 'dvg_authentication_webform_configure_form_submit');
+}
+
+/**
+ * Validation handler for webform_configure_form().
+ *
+ * @param array $form
+ *   The form array.
+ * @param array $form_state
+ *   The form_state array.
+ */
+function dvg_authentication_webform_configure_form_validate(array $form, array &$form_state) {
+  if ($form_state['values']['dvg_authentication_enabled']) {
+    $providers = AuthenticationManager::getInstance()
+      ->getAuthenticationProviders();
+
+    // Flag to check if any provider is enabled.
+    $has_selected_providers = FALSE;
+    foreach ($providers as $provider) {
+      $provider_webform_settings = $form_state['values']['dvg_authentication_settings']['methods'][$provider->getId()];
+      $provider->validateWebformConfigureSettings($provider_webform_settings);
+      if ($provider_webform_settings['enabled']) {
+        $has_selected_providers = TRUE;
+      }
+    }
+
+    // At least one authentication provider is required when authentication
+    // is enabled.
+    if (!$has_selected_providers) {
+      form_set_error('dvg_authentication_enabled', t('At least one authentication method is required for external authentication.'));
+    }
+  }
+}
+
+/**
+ * Submit handler for webform_configure_form().
+ *
+ * @param array $form
+ *   The form array.
+ * @param array $form_state
+ *   The form_state array.
+ */
+function dvg_authentication_webform_configure_form_submit(array &$form, array &$form_state) {
+  $node = $form['#node'];
+
+  $authentication_role = AuthenticationManager::getInstance()
+    ->getExternalUserRole();
+  if ($form_state['values']['dvg_authentication_enabled']) {
+    $form_state['values']['roles'] = drupal_map_assoc([
+      $authentication_role->rid,
+    ]);
+    $settings = $form_state['values']['dvg_authentication_settings'];
+
+    // Allow anonymous user if auth skip is enabled.
+    if ($settings['dvg_authentication_skip_authentication_enabled']) {
+      $form_state['values']['roles'][DRUPAL_ANONYMOUS_RID] = DRUPAL_ANONYMOUS_RID;
+    }
+
+    // Only store enabled authentication providers.
+    foreach ($settings['methods'] as $provider => $provider_settings) {
+      if (!$provider_settings['enabled']) {
+        unset($settings['methods'][$provider]);
+      }
+    }
+
+    $node->webform['dvg_authentication_settings'] = serialize($settings);
+  }
+  else {
+    // Cleanup the old settings if authentication is disabled.
+    if (isset($form_state['values']['roles'][$authentication_role->rid])) {
+      unset($form_state['values']['roles'][$authentication_role->rid]);
+    }
+    $node->webform['dvg_authentication_settings'] = serialize([]);
+
+    // If another module already sets roles in the form don't override them.
+    $roles_set = [];
+    if (count($form_state['values']['roles']) > 0) {
+      $roles_set = array_filter($form_state['values']['roles']);
+    }
+
+    if (count($roles_set) === 0) {
+      $form_state['values']['roles'] = drupal_map_assoc([
+        DRUPAL_ANONYMOUS_RID,
+        DRUPAL_AUTHENTICATED_RID,
+      ]);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_form_webform_component_edit_form_alter(&$form, &$form_state, $form_id) {
+  // Change hidden component display options to be more descriptive.
+  if ($form['type']['#value'] === 'hidden') {
+    $form['display']['hidden_type']['#options']['hidden'] = t('Hidden element (less secure, but can be used with webform conditionals)');
+  }
+}
+
+/**
+ * Implements hook_fea_form_config_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_fea_form_config_alter(&$config, $form_id) {
+  $roles = user_roles(FALSE, 'edit webform external authentication settings');
+  if ($form_id === 'webform_configure_form') {
+    foreach ($config['elements'] as &$element) {
+      if ($element['tree'][0] === 'dvg_authentication') {
+        $element['roles'] = drupal_map_assoc(array_values($roles));
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_form_webform_client_form_alter(&$form, &$form_state) {
+  $node = $form['#node'];
+  $authentication_manager = AuthenticationManager::getInstance();
+  if ($authentication_manager->nodeHasAuthentication($node)) {
+    $settings = $authentication_manager->getNodeAuthenticationSettings($node);
+    if (
+      !empty($settings['dvg_authentication_skip_authentication_enabled']) &&
+      !empty($_GET['skip_auth']) &&
+      (
+        !isset($form_state['storage']['page_num']) ||
+        $form_state['storage']['page_num'] === 1
+      )
+    ) {
+      // Skip auth is enabled and it is the first page of the form.
+      // Add back button to auth method selection.
+      $form['actions']['back_to_login'] = [
+        '#type' => 'markup',
+        '#markup' => l(
+          t('Select login method'),
+          current_path(),
+          [
+            'attributes' => [
+              'class' => [
+                'webform-previous',
+                'form-submit',
+              ],
+            ],
+          ]
+        ),
+      ];
+    }
+  }
+}
+
+/**
+ * Implements hook_node_view_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_node_view_alter(&$build) {
+  if (isset($build['webform'])) {
+    global $user;
+    $node = $build['#node'];
+
+    // We use $build['webform']['#enabled'] to hide the form when external
+    // login and optionally skip authentication is enabled. We can only set
+    // #enabled to false if it's not FALSE already, because this value is set
+    // by webform based on a couple of webform settings (e.g. open/closed,
+    // max submissions per user and overall etc.).
+    $authentication_manager = AuthenticationManager::getInstance();
+    if (!$authentication_manager->nodeHasAuthentication($node) ||
+      !$node->webform['status']) {
+      // No external authentication required for this node.
+      return;
+    }
+
+    // Load the authentication settings for this node.
+    $authentication_settings = $authentication_manager->getNodeAuthenticationSettings($node);
+
+    // Show the login buttons to anonymous users.
+    if (!user_is_logged_in()) {
+      if (
+        !empty($authentication_settings['dvg_authentication_skip_authentication_enabled']) &&
+        !empty($_GET['skip_auth'])
+      ) {
+        // Auth is skipped, just show the form normally based on the
+        // webform's value.
+        return;
+      }
+      // Hide the webform and show the login selection screen.
+      $build['webform']['#enabled'] = FALSE;
+      $build['external_authentication'] = $authentication_manager->buildLoginSelection($authentication_settings['methods'], $node);
+      // Use the weight of the webform if possible to place the login options.
+      $build['external_authentication']['#weight'] = $build['webform']['#weight'];
+      return;
+    }
+    else {
+      $alternatives = module_invoke_all('dvg_authentication_selection_alternatives');
+      foreach ($alternatives as $permission => $callback) {
+        if (user_access($permission)) {
+          $callback($build);
+          return;
+        }
+      }
+    }
+
+    $providers = [];
+    foreach ($authentication_settings['methods'] as $provider_id => $provider_settings) {
+      if ($provider = $authentication_manager->getAuthenticationProvider($provider_id)) {
+        $label = $provider->getLabel();
+        if (isset($provider_settings['level'])) {
+          $label .= ' (' . $provider->getLevelLabel($provider_settings['level']) . ')';
+        }
+        $providers[] = $label;
+      }
+    }
+
+    // Show a message for Form editors and administrators that
+    // external authentication is enabled on this form.
+    if (user_access('edit webform external authentication settings')) {
+      $message = t("External authentication is enabled for this form.<br>Some functionality may depend on the user's login provider, so to test the form you may need to login using one of the following external authentication providers: @providers.",
+        ['@providers' => implode(', ', $providers)]
+      );
+      drupal_set_message($message, 'warning');
+    }
+    elseif (!$authentication_manager->checkUserAccess($user, $authentication_settings['methods'])) {
+      // Don't display the form for external users from providers
+      // that are not allowed for this form.
+      $build['webform']['#enabled'] = FALSE;
+
+      $message = '<p>';
+      // If the user is not in the allowed roles list for this form,
+      // Drupal already set an error message with this same text.
+      if ($authentication_manager->isExternalUser($user)) {
+        $message .= t('You do not have permission to view this form.');
+        $message .= '</p>';
+        $message .= '<p>';
+      }
+
+      $message .= format_plural(count($providers),
+        'Please <a href="@logout">logout</a> and login with the following login method: @providers.',
+        'Please <a href="@logout">logout</a> and login with one of the following login methods: @providers.',
+        [
+          '@logout' => url('user/logout', ['query' => drupal_get_destination()]),
+          '@providers' => implode(', ', $providers),
+        ]
+      );
+      $message .= '</p>';
+      drupal_set_message($message, 'error');
+    }
+  }
+}
+
+/**
+ * Implements hook_init().
+ *
+ * Checks $_GET for a SAML exception, logs it and redirects the user to the
+ * same page without it.
+ */
+function dvg_authentication_init() {
+  if (isset($_GET['SimpleSAML_Auth_State_exceptionId'])) {
+    $manager = AuthenticationManager::getInstance();
+    if (!isset($_GET['provider_id'])) {
+      watchdog('dvg_authentication', 'Unknown error logging into Drupal, no authentication method provider. SAML exception url: !exception', ['!exception' => var_export($_GET['SimpleSAML_Auth_State_exceptionId'], 1)], WATCHDOG_ERROR);
+      drupal_set_message(t('An error has occurred. Please try again later.'), 'error');
+    }
+    /** @var \Drupal\dvg_authentication\SamlAuthenticationProviderBase $provider */
+    if ($provider = $manager->getAuthenticationProvider($_GET['provider_id'])) {
+      $provider->processSamlError();
+    }
+  }
+}
+
+/**
+ * Implements hook_user_logout().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_user_logout($account) {
+  if ($external_user = AuthenticationManager::getInstance()->getExternalUser($account)) {
+    $external_user->getProvider()->logoutCallback($account);
+  }
+}
+
+/**
+ * Implements hook_auto_logout_profiles().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_auto_logout_profiles() {
+  $profiles = [];
+  $providers = AuthenticationManager::getInstance()->getAuthenticationProviders();
+  foreach ($providers as $provider_id => $provider) {
+    $profiles['provider_' . $provider_id] = [
+      'callback' => 'dvg_authentication_is_provider_profile_callback',
+      'title' => t('By authentication provider: !provider', ['!provider' => $provider_id]),
+      'data' => $provider_id,
+      'default_enabled' => TRUE,
+      'login_message_callback' => 'dvg_authentication_profile_auto_logout_login_message_callback',
+    ];
+  }
+
+  return $profiles;
+}
+
+/**
+ * Callback for hook_auto_logout_profiles().
+ *
+ * @param \stdClass $user
+ *   A Drupal user object.
+ * @param int $data
+ *   Profile id for the profile.
+ *
+ * @return bool
+ *   If the user belongs to the profile.
+ */
+function dvg_authentication_is_provider_profile_callback(\stdClass $user, $data) {
+  $manager = AuthenticationManager::getInstance();
+  if ($external_user = $manager->getExternalUser($user)) {
+    return $external_user->getProviderId() === $data;
+  }
+  return FALSE;
+}
+
+/**
+ * Login message callback for hook_auto_logout_profiles().
+ *
+ * @param \stdClass $user
+ *   A Drupal user object.
+ * @param int $data
+ *   Profile id for the profile.
+ *
+ * @return string|null
+ *   The login message for the current user.
+ */
+function dvg_authentication_profile_auto_logout_login_message_callback(\stdClass $user, $data) {
+  $manager = AuthenticationManager::getInstance();
+  if ($external_user = $manager->getExternalUser($user)) {
+    return $external_user->getProvider()->getLoginSuccessMessage();
+  }
+  return NULL;
+}
+
+/**
+ * Implements hook_preprocess_html().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_preprocess_html(&$variables) {
+  $dvg_auth_manager = drupal_get_path('module', 'dvg_authentication') . '/css/dvg_authentication.css';
+  drupal_add_css($dvg_auth_manager);
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ *
+ * Adds a 'rel=nofollow' to user/external links in the primary and
+ * secondary links.
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  for ($i = 0; $i <= 1; $i++) {
+    if (isset($data['tabs'][$i]['output'])) {
+      foreach ($data['tabs'][$i]['output'] as &$item) {
+        if ($item['#link']['path'] === 'user/external') {
+          $item['#link']['localized_options']['attributes']['rel'] = 'nofollow';
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function dvg_authentication_field_extra_fields() {
+  $fields = [
+    'authentication_provider' => [
+      'label' => t('Authentication Provider'),
+      'description' => t('DvG Authentication module settings form elements.'),
+      'weight' => 0,
+    ],
+    'authentication_level' => [
+      'label' => t('Authentication Level'),
+      'description' => t('DvG Authentication module settings form elements.'),
+      'weight' => 0,
+    ],
+  ];
+
+  $extra['user']['user'] = [
+    'form' => $fields,
+    'display' => $fields,
+  ];
+
+  return $extra;
+}
+
+/**
+ * Implements hook_user_view().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_user_view($account, $view_mode, $langcode) {
+  if (!empty($account->data['authentication_provider'])) {
+    $account->content['authentication_provider'] = [
+      '#type' => 'user_profile_category',
+      '#title' => t('Authentication Provider'),
+      'textonly' => [
+        '#type' => 'user_profile_item',
+        '#title' => t('DvG Authentication only'),
+        '#markup' => $account->data['authentication_provider'],
+      ],
+    ];
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_form_alter(&$form, &$form_state, $form_id) {
+  if (in_array($form_id, ['user_register_form', 'user_profile_form']) &&
+    in_array($form['#user_category'], ['register', 'account'])) {
+    $account = $form['#user'];
+
+    $form['dvg_authentication'] = [
+      '#type' => 'fieldset',
+      '#title' => t('DvG Authentication settings'),
+      '#weight' => 5,
+      '#collapsible' => TRUE,
+      '#access' => user_access('edit authentication provider user settings'),
+    ];
+
+    $providers = AuthenticationManager::getInstance()->getAuthenticationProviders();
+    $provider_options = ['' => t('None')];
+    $provider_levels = [];
+    foreach ($providers as $provider) {
+      $provider_options[$provider->getId()] = $provider->getLabel();
+      if ($provider->hasLevels()) {
+        $provider_levels[$provider->getId()] = $provider->getLabel() . ': ' . implode(', ', array_keys($provider->getLevels()));
+      }
+    }
+
+    $form['dvg_authentication']['authentication_provider'] = [
+      '#type' => 'select',
+      '#title' => t('Authentication Provider'),
+      '#options' => $provider_options,
+      '#default_value' => !empty($account->data['authentication_provider']) ? $account->data['authentication_provider'] : '',
+    ];
+    $form['dvg_authentication']['authentication_level'] = [
+      '#type' => 'textfield',
+      '#title' => t('Level'),
+      '#default_value' => !empty($account->data['authentication_level']) ? $account->data['authentication_level'] : '',
+      '#description' => implode('<br>', $provider_levels),
+    ];
+  }
+}
+
+/**
+ * Implements hook_user_presave().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_user_presave(&$edit, $account, $category) {
+  $edit['data']['authentication_provider'] = $edit['authentication_provider'] ?? '';
+  $edit['data']['authentication_level'] = $edit['authentication_level'] ?? '';
+}
+
+/**
+ * Implements hook_query_TAG_alter().
+ *
+ * Filter external authenticated users from the user view. They are not intended
+ * to be managed by admins.
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_query_dvg_authentication_role_filter_alter(QueryAlterableInterface $query) {
+  $role = user_role_load_by_name(AuthenticationManager::USER_ROLE);
+  $query->leftJoin('users_roles', 'r', 'users.uid = r.uid');
+  $and = db_and()
+    ->condition('r.rid', $role->rid, '=');
+  $query
+    ->condition($and);
+}
+
+/**
+ * Implements hook_query_TAG_alter().
+ *
+ * Filter test users from external user clean up.
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_query_dvg_authentication_test_user_filter_alter(QueryAlterableInterface $query) {
+  $and = db_and()
+    ->condition('name', 'test.%', 'NOT LIKE');
+  $query
+    ->condition($and);
+}

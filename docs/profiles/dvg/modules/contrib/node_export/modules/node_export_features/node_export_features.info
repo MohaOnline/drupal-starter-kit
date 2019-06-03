@@ -1,0 +1,11 @@
+name = Node export features
+description = Adds Features support to Node export, so you can put your exports into Features modules.
+dependencies[] = node_export
+dependencies[] = uuid
+dependencies[] = features
+core = 7.x
+package = "Node export"
+; Information added by drush on 2019-04-01
+version = "7.x-3.1+7-dev"
+project = "node_export"
+datestamp = "1554126993"

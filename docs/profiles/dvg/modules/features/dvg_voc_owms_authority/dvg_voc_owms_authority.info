@@ -1,0 +1,27 @@
+name = Taxonomy: OWMS authority
+core = 7.x
+package = Drupal voor Gemeenten
+dependencies[] = ctools
+dependencies[] = dvg_global
+dependencies[] = features
+dependencies[] = link
+dependencies[] = list
+dependencies[] = options
+dependencies[] = strongarm
+dependencies[] = taxonomy
+dependencies[] = taxonomy_access_fix
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[field_base][] = field_resource_identifier
+features[field_base][] = field_scheme
+features[field_instance][] = taxonomy_term-owms_authority-field_resource_identifier
+features[field_instance][] = taxonomy_term-owms_authority-field_scheme
+features[taxonomy][] = owms_authority
+features[variable][] = dvg_vocabulary__hide_description__owms_authority
+features[variable][] = dvg_vocabulary__hide_relations__owms_authority
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

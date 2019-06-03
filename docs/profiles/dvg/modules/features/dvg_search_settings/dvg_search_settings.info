@@ -1,0 +1,19 @@
+name = Search Settings
+core = 7.x
+package = Drupal voor Gemeenten
+dependencies[] = entity
+dependencies[] = features
+dependencies[] = search_api
+dependencies[] = search_api_db
+dependencies[] = search_api_noindex
+dependencies[] = search_api_views
+dependencies[] = dvg_roles_and_permissions
+features[features_api][] = api:2
+features[search_api_index][] = default_node_index
+features[search_api_server][] = custom
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

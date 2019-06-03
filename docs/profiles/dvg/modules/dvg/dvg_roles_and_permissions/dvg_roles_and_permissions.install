@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Installation and update functions.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function dvg_roles_and_permissions_install() {
+  dvg_roles_and_permissions_set_roles();
+  dvg_roles_and_permissions_set_permissions('dvg_roles_and_permissions');
+}

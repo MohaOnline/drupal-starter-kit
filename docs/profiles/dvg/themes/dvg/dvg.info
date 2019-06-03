@@ -1,0 +1,27 @@
+name = DVG
+description = "Basic theme Drupal voor gemeenten"
+core = 7.x
+
+; styles
+
+stylesheets[all][] = css/dvg.css
+
+; regions
+regions[top] = Top
+regions[header] = Header
+regions[navigation] = Navigation
+regions[content_top] = Content top
+regions[above_content] = Above content
+regions[content] = Content
+regions[below_content] = Below content
+regions[content_bottom] = Content bottom
+regions[footer_top] = Footer Top
+regions[footer] = Footer
+regions[footer_bottom] = Footer Bottom
+regions[sidebar_first] = Sidebar First
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

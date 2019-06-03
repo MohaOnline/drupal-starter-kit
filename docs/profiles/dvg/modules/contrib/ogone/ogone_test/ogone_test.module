@@ -1,0 +1,137 @@
+<?php
+
+/**
+ * @file
+ * Contains hook implementations and global functions.
+ */
+
+/**
+ * The PSPID to use for testing.
+ */
+define('OGONE_TEST_PSPID', 'foobarbaz_pspid');
+
+/**
+ * The signature hashing algorithm to use for testing.
+ */
+define('OGONE_TEST_PASSPHRASE_ALGORITHM', 'sha256');
+
+/**
+ * The passphrase to use for communication from Drupal to Ogone.
+ */
+define('OGONE_TEST_PASSPHRASE_IN', 'foobarbaz_passphrase_in');
+
+/**
+ * The passphrase to use for communication from Ogone to Drupal.
+ */
+define('OGONE_TEST_PASSPHRASE_OUT', 'foobarbaz_passphrase_out');
+
+/**
+ * Implements hook_menu().
+ */
+function ogone_test_menu() {
+  $items['ogone_test/form/%entity_object'] = array(
+    'load arguments' => array('payment_method'),
+    'title' => 'Go to payment server',
+    'page callback' => 'ogone_test_payment_form',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+  );
+  $items['ogone_test/ogone_server'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ogone_test_server_form', 2),
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_url_outbound_alter().
+ */
+function ogone_test_url_outbound_alter(&$path, array &$options, $original_path) {
+  $controller = payment_method_controller_load('OgonePaymentMethodController');
+  if ($original_path == $controller::SERVER_PRODUCTION_URL) {
+    $path = url('ogone_test/ogone_server/41', array(
+      'absolute' => TRUE,
+    ));
+  }
+  elseif ($original_path == $controller::SERVER_TESTING_URL) {
+    $path = url('ogone_test/ogone_server/1', array(
+      'absolute' => TRUE,
+    ));
+  }
+}
+
+/**
+ * Implements hook_ogone_redirect_data_alter().
+ */
+function ogone_test_ogone_redirect_data_alter(array &$data, Payment $payment) {
+  variable_set('ogone_test_hook_ogone_redirect_data_alter', TRUE);
+}
+
+/**
+ * Implements hook_ogone_feedback().
+ */
+function ogone_test_ogone_feedback(array $data, Payment $payment) {
+  variable_set('ogone_test_hook_ogone_feedback', TRUE);
+}
+
+/**
+ * Returns a payment form.
+ *
+ * @return array
+ *   A Drupal form.
+ */
+function ogone_test_payment_form(PaymentMethod $payment_method) {
+  $payment = new Payment(array(
+    // Use JPY, because it has 1000 subunits, rather than the more common 100.
+    'currency_code' => 'JPY',
+    'description' => 'foo',
+    'finish_callback' => 'ogone_test_finish_callback',
+    'method' => $payment_method,
+    'uid' => 1,
+  ));
+  $payment->setLineItem(new PaymentLineItem(array(
+    'name' => 'foo',
+    'amount' => 1.0,
+    'tax_rate' => 0.1,
+  )));
+
+  return drupal_get_form('payment_form_standalone', $payment);
+}
+
+/**
+ * Returns the form that redirects the user from the server to the client site.
+ *
+ * @return array
+ *   A Drupal form.
+ */
+function ogone_test_server_form(array $form, array &$form_state, $ogone_status) {
+  $pid = $_POST['ORDERID'];
+  $payment = entity_load_single('payment', $pid);
+  $form['#action'] = $_POST['ACCEPTURL'];
+  $data = array(
+    'ORDERID' => $payment->pid,
+    'STATUS' => $ogone_status,
+  );
+  $data['SHASIGN'] = $payment->method->controller->signOutgoingData($data, $payment->method);
+  foreach ($data as $parameter => $value) {
+    $form[$parameter] = array(
+      '#type' => 'hidden',
+      '#value' => $value,
+    );
+  }
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Continue'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements Payment::finish_callback.
+ */
+function ogone_test_finish_callback(Payment $payment) {
+  drupal_goto('<front>');
+}

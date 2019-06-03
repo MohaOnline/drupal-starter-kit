@@ -1,0 +1,315 @@
+<?php
+
+/**
+ * @file
+ * DVG Webform components module.
+ */
+
+/**
+ * Define component and its basic capabilities.
+ *
+ * @return array
+ *   Array of components.
+ */
+function dvg_webform_components_webform_component_info() {
+  $components = array();
+  $components['postal_code'] = array(
+    'label' => t('Postal code'),
+    'description' => t('Create a postal code field with validation.'),
+    'features' => array(
+      'csv' => TRUE,
+      'email' => TRUE,
+      'email_address' => FALSE,
+      'email_name' => FALSE,
+      'required' => TRUE,
+      'title_display' => TRUE,
+      'title_inline' => TRUE,
+      'conditional' => TRUE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+    'file' => 'components/postal_code.inc',
+  );
+  $components['bsn'] = array(
+    'label' => t('BSN'),
+    'description' => t('Create a BSN field with validation.'),
+    'features' => array(
+      'csv' => TRUE,
+      'email' => TRUE,
+      'email_address' => FALSE,
+      'email_name' => FALSE,
+      'required' => TRUE,
+      'title_display' => TRUE,
+      'title_inline' => TRUE,
+      'conditional' => TRUE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+    'file' => 'components/bsn.inc',
+  );
+  $components['stopform'] = array(
+    'label' => t('Stopform'),
+    'description' => t('Markup field which will also stop the form at the point where it is displayed.'),
+    'features' => array(
+      'csv' => FALSE,
+      'email' => FALSE,
+      'email_address' => FALSE,
+      'email_name' => FALSE,
+      'required' => FALSE,
+      'title_display' => FALSE,
+      'title_inline' => FALSE,
+      'conditional' => FALSE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+    'file' => 'components/stopform.inc',
+  );
+  $components['readonly'] = array(
+    'label' => t('Readonly'),
+    'description' => t('Create a readonly field.'),
+    'features' => array(
+      'csv' => TRUE,
+      'email' => TRUE,
+      'email_address' => FALSE,
+      'email_name' => FALSE,
+      'required' => TRUE,
+      'title_display' => TRUE,
+      'title_inline' => TRUE,
+      'conditional' => TRUE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+    'file' => 'components/readonly.inc',
+  );
+  $components['phone_number'] = array(
+    'label' => t('Phone number'),
+    'description' => t('Create a phone number field with validation.'),
+    'features' => array(
+      'csv' => TRUE,
+      'email' => TRUE,
+      'email_address' => FALSE,
+      'email_name' => FALSE,
+      'required' => TRUE,
+      'title_display' => TRUE,
+      'title_inline' => TRUE,
+      'conditional' => TRUE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+    'file' => 'components/phone_number.inc',
+  );
+  $components['address'] = array(
+    'label' => t('DvG Address'),
+    'description' => t('DvG Address field'),
+    'features' => array(
+      'analysis' => FALSE,
+      'csv' => TRUE,
+      'email' => TRUE,
+      'email_address' => FALSE,
+      'email_name' => FALSE,
+      'required' => TRUE,
+      'conditional' => TRUE,
+      'title_display' => TRUE,
+      'title_inline' => TRUE,
+      'private' => FALSE,
+      'group' => FALSE,
+      'spam_analysis' => FALSE,
+      'attachment' => FALSE,
+    ),
+    'file' => 'components/address.inc',
+  );
+  return $components;
+}
+
+/**
+ * Implements hook_implements_alter().
+ *
+ * Makes sure the form alter is run last.
+ */
+function dvg_webform_components_module_implements_alter(&$implementations, $hook) {
+  _dvg_global_module_implements_last('dvg_webform_components', array('form_alter'), $implementations, $hook);
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * This alter is implemented last and adds an additional validator.
+ */
+function dvg_webform_components_form_alter(&$form, $form_state, $form_id) {
+  if (isset($form['#node']) && $form['#node']->type == 'webform' && (!path_is_admin(current_path()))) {
+    $ife_key = array_search('ife_form_validator', $form['#validate']);
+    if ($ife_key !== FALSE) {
+      // Insert before ife_form_validate.
+      array_splice($form['#validate'], --$ife_key, 0, array('_dvg_webform_components_webform_validator'));
+    }
+    else {
+      // No ife_form_validate simply append the validator.
+      $form['#validate'][] = '_dvg_webform_components_webform_validator';
+    }
+  }
+}
+
+/**
+ * Validator for webforms to add the address error messages to parent elements.
+ *
+ * This runs before the ife validator that reshuffles the errors so the ife
+ * display is correct and conditionals are still handled properly.
+ */
+function _dvg_webform_components_webform_validator($form, &$form_state) {
+  // Save current error messages to restore later.
+  $old_messages = array();
+  if (!empty($_SESSION['messages']['error'])) {
+    $old_messages = $_SESSION['messages']['error'];
+  }
+
+  $form_errors = form_get_errors();
+  // Reset all form errors to selectively set them again.
+  form_clear_error();
+  $group_errors = array();
+
+  if (!empty($form_errors)) {
+    foreach ($form_errors as $key => $message) {
+      $parts = explode('][', $key);
+      $last_part = array_pop($parts);
+      // Set all address errors on their matching parent.
+      if (in_array($last_part, _dvg_webform_components_custom_validator_components())) {
+        if ($last_part != 'block') {
+          // Set empty message on the element for highlighting the element.
+          form_set_error($key, '');
+          switch ($last_part) {
+            case 'po_box':
+              $group = 'po_box_block';
+              break;
+
+            case 'street_name':
+              $group = 'street_block';
+              break;
+
+            case 'city':
+              $group = 'city_block';
+              break;
+
+            case 'postal_code':
+              // Group is po_box if po_box is enabled, otherwise fall through to default group.
+              $element = _dvg_webform_components_find_element(array_merge($parts, array($last_part)), $form);
+              if ($element['#webform_component']['extra']['po_box']) {
+                $group = 'po_box_block';
+                break;
+              }
+
+            default:
+              $group = 'block';
+              break;
+          }
+          $group_path = implode('][', $parts) . '][' . $group;
+          $group_errors[$group_path][] = $message;
+        }
+        $message_key = array_search($message, $old_messages);
+        if ($message_key !== FALSE) {
+          // Unset all messages handled by IFE.
+          unset($old_messages[$message_key]);
+        }
+      }
+      else {
+        // Set all other errors again.
+        form_set_error($key, $message);
+      }
+    }
+  }
+  // Set the grouped and cleaned messages.
+  if (!empty($old_messages)) {
+    $_SESSION['messages']['error'] = $old_messages;
+  }
+
+  foreach ($group_errors as $path => $errors) {
+    if (count($errors) > 1) {
+      $items = array(
+        'items' => $errors,
+        'title' => '',
+        'type' => 'ul',
+        'attributes' => array(),
+      );
+      $errors = theme_item_list($items);
+    }
+    else {
+      $errors = $errors[0];
+    }
+    form_set_error($path, $errors);
+    // Set the session messages to an empty string so IFE properly handles them.
+    $_SESSION['messages']['error'][$path] = '';
+  }
+
+  // Return TRUE because this doesn't really validate anything.
+  return TRUE;
+}
+
+/**
+ * Finds element based on parent path.
+ */
+function _dvg_webform_components_find_element(array $path, $form) {
+  while (count($path) > 0) {
+    $part = array_shift($path);
+    $form = $form[$part];
+  }
+  return $form;
+}
+
+/**
+ * Returns an array of all component names that need processing in validator.
+ */
+function _dvg_webform_components_custom_validator_components() {
+  return array(
+    'postal_code',
+    'house_number',
+    'house_letter',
+    'house_number_addition',
+    'block',
+    'street_name',
+    'street_block',
+    'council_code',
+    'po_box',
+    'city',
+    'city_block',
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_webform_components_form_webform_client_form_alter(&$form, &$form_state) {
+  if (is_array($form['submitted'])) {
+    // Loop through submitted fields.
+    // If a 'stopform' type is found, unset the next button.
+    foreach   ($form['submitted'] as $submitted) {
+      if (isset($submitted['#webform_component']['type']) && $submitted['#webform_component']['type'] === 'stopform') {
+        unset($form['actions']['next'], $form['actions']['submit']);
+        // Also, if found, unset all other form elements.
+        foreach ($form['submitted'] as $key => $value) {
+          if (
+            ($value['#webform_component']['type'] !== 'stopform') &&
+            is_array($form['submitted'][$key])
+          ) {
+            $form['submitted'][$key]['#access'] = FALSE;
+          }
+        }
+        break;
+      }
+    }
+  }
+}
+
+/**
+ * Add custom postal code properties to the phone number component.
+ *
+ * @param array $basic_webform_components_settings
+ *   An array of web form settings.
+ */
+function dvg_webform_components_dvg_basic_webform_components_settings_alter(&$basic_webform_components_settings) {
+  $basic_webform_components_settings[] = 'extra|country';
+  $basic_webform_components_settings[] = 'extra|phone_country_code';
+}

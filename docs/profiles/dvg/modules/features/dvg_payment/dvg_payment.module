@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Payment feature.
+ */
+
+include_once 'dvg_payment.dvg.user_permission.inc';

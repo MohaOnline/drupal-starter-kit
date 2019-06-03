@@ -1,0 +1,136 @@
+<?php
+/**
+ * @file
+ * Code for the Town Council feature.
+ */
+
+include_once 'dvg_town_council.features.inc';
+include_once 'dvg_town_council.dvg.user_permission.inc';
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dvg_town_council_form_views_form_town_council_page_alter(&$form, &$form_state, $form_id) {
+  $form['actions']['submit']['#submit'][] = '_dvg_global_cache_clear_all';
+}
+
+/**
+ * Implements hook_views_post_execute().
+ */
+function dvg_town_council_views_post_execute(&$view) {
+  if ($view->name == 'town_council' && $view->current_display == 'block') {
+    foreach ($view->result as $result) {
+      // Hide menu description if a group photo is set or hide group photo description if no photo is set
+      if ($result->field_field_profile_group_photo && isset($result->field_field_menu_description) && !empty($result->field_field_menu_description)) {
+        $result->field_field_menu_description = array();
+      }
+      elseif (!$result->field_field_profile_group_photo && isset($result->field_field_profile_group_description) && !empty($result->field_field_profile_group_description)) {
+        $result->field_field_profile_group_description = array();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_functional_content().
+ *
+ * @todo: group?
+ */
+function dvg_town_council_functional_content() {
+  $fc = array();
+
+  $fc['dvg_town_council_page'] = array(
+    'label' => t('Town council page'),
+    'description' => t('This is the page on which the town council block should be shown.'),
+  );
+
+  if (module_exists('dvg_ct_block')) {
+    $fc['dvg_town_council_block'] = array(
+      'label' => t('Town council extra block'),
+      'description' => t('The node with extra information about the town council.'),
+    );
+  }
+
+  return $fc;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function dvg_town_council_block_info() {
+  $blocks = array();
+
+  if (module_exists('dvg_ct_block') && $node = functional_content_node('dvg_town_council_block')) {
+    $blocks['dvg_town_council_block'] = array(
+      'info' => t('Town council block: @title', array('@title' => $node->title)),
+    );
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_context_callback_info().
+ */
+function dvg_town_council_context_callback_info() {
+  return array(
+    'conditions' => array(
+      'dvg_town_council' => array(
+        'label' => 'DVG Town Council',
+        'callback' => 'dvg_town_council_page',
+      ),
+    ),
+  );
+}
+
+/**
+ * Context callback callback.
+ */
+function dvg_town_council_page() {
+  if (arg(0) == 'node' && !arg(2) && arg(1) == functional_content_nid('dvg_town_council_page')) {
+    return TRUE;
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function dvg_town_council_block_view($delta = '') {
+  $blocks = array();
+
+  if (module_exists('dvg_ct_block')) {
+    $blocks = dvg_ct_block_block_view($delta);
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_menu_breadcrumb_alter().
+ */
+function dvg_town_council_menu_breadcrumb_alter(&$active_trail, $item) {
+  $last = end($active_trail);
+
+  if (!empty($last['menu_name']) && $last['menu_name'] == 'menu-town-council') {
+    $node = functional_content_node('dvg_town_council_page');
+    if ($node && node_access('view', $node)) {
+      $first = array_shift($active_trail);
+
+      array_unshift($active_trail, array(
+        'title' => $node->title,
+        'href' => 'node/' . $node->nid,
+        'localized_options' => array(),
+        'type' => 0,
+      ));
+
+      array_unshift($active_trail, $first);
+    }
+  }
+}
+
+/**
+ * Implements hook_dvg_global_menu_block_menu_names_alter().
+ */
+function dvg_town_council_dvg_global_menu_block_menu_names_alter(&$menu_names) {
+  $menu_names[] = 'menu-town-council';
+}

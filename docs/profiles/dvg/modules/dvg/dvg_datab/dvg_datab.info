@@ -1,0 +1,17 @@
+name = DVG Data B.
+description = Data B. document server
+core = 7.x
+package = Drupal voor Gemeenten
+
+configure = admin/config/services/datab
+
+dependencies[] = functional_content
+dependencies[] = dvg_authentication_tmp_mapping
+
+files[] = includes/dvg_datab.error.inc
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

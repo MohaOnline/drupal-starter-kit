@@ -1,0 +1,14 @@
+<?php
+/**
+ * @file
+ * Code for the Task VOC OWMS  uniform product name feature.
+ */
+
+include_once 'dvg_voc_owms_uniform_product_name.features.inc';
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_voc_owms_uniform_product_name_dvg_requirements() {
+  return _dvg_global_voc_requirements('owms_uniform_product_name', t('OWMS uniform product name'));
+}

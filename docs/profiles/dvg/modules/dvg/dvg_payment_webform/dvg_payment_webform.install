@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * @file
+ * Installation and uninstallation functions.
+ */
+
+/**
+ * Implements hook_schema_alter().
+ */
+function dvg_payment_webform_schema_alter(&$schema) {
+  $schema['webform']['fields'] += _dvg_payment_schema_fields();
+}
+
+/**
+ * Implements hook_install().
+ */
+function dvg_payment_webform_install() {
+  $schema = drupal_get_schema('webform');
+  $fields = _dvg_payment_schema_fields();
+  foreach ($fields as $field_name => $field) {
+    db_add_field('webform', $field_name, $schema['fields'][$field_name]);
+  }
+  dvg_roles_and_permissions_set_permissions('dvg_payment_webform');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function dvg_payment_webform_uninstall() {
+  $fields = _dvg_payment_schema_fields();
+  foreach ($fields as $field_name => $field) {
+    db_drop_field('webform', $field_name);
+  }
+}
+
+/**
+ * Helper function that returns the new fields.
+ */
+function _dvg_payment_schema_fields() {
+  return array(
+    'dvg_payment_enabled' => array(
+      'type' => 'int',
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    'dvg_payment_amount' => array(
+      'type' => 'float',
+      'size' => 'big',
+    ),
+    'dvg_payment_method' => array(
+      'type' => 'int',
+      'not null' => TRUE,
+      'default' => 0,
+    ),
+    'dvg_payment_button_label' => array(
+      'type' => 'varchar',
+      'length' => 255,
+    ),
+    'dvg_payment_description' => array(
+      'type' => 'varchar',
+      'length' => 255,
+    ),
+  );
+}
+
+/**
+ * Implements hook_schema().
+ *
+ * @todo is deze wel nodig?
+ */
+function dvg_payment_webform_schema() {
+  $schema['dvg_payment_webform'] = array(
+    'fields' => array(
+      'pid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'sid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('pid'),
+    'foreign keys' => array(
+      'pid' => array(
+        'table' => 'payment',
+        'columns' => array(
+          'pid' => 'pid',
+        ),
+      ),
+      'sid' => array(
+        'table' => 'webform_submissions',
+        'columns' => array(
+          'sid' => 'sid',
+        ),
+      ),
+    ),
+    'indexes' => array(
+      'sid' => array('sid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Add payment method field to webform settings.
+ */
+function dvg_payment_webform_update_7001() {
+  $fields = _dvg_payment_schema_fields();
+  $extra_field = $fields['dvg_payment_method'];
+  if (!db_field_exists('webform', 'dvg_payment_method')) {
+    db_add_field('webform', 'dvg_payment_method', $extra_field);
+  }
+}

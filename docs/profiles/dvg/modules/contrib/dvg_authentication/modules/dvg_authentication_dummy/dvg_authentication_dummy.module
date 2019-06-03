@@ -1,0 +1,17 @@
+<?php
+
+/**
+ * @file
+ * Provide a dummy login method for the testing of dvg_authentication.
+ */
+
+/**
+ * Implements hook_dvg_authentication_register_providers().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_dummy_dvg_authentication_register_providers() {
+  return [
+    'dummy' => 'Drupal\dvg_authentication_dummy\DummyAuthenticationProvider',
+  ];
+}

@@ -1,0 +1,8 @@
+<?php
+
+/**
+ * Implements hook_uninstall().
+ */
+function dvg_popup_uninstall() {
+  variable_del('dvg_popup_config');
+}

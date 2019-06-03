@@ -1,0 +1,15 @@
+<?php
+/**
+ * @file
+ * Code for the Town council Taxonomy feature.
+ */
+
+include_once 'dvg_voc_town_council.features.inc';
+include_once 'dvg_voc_town_council.dvg.user_permission.inc';
+
+/**
+ * Implements hook_dvg_requirements().
+ */
+function dvg_voc_town_council_dvg_requirements() {
+  return _dvg_global_voc_requirements('town_council', t('Town council'));
+}

@@ -1,0 +1,255 @@
+<?php
+
+/**
+ * @file
+ * Custom Help Text module file.
+ */
+
+define('CUSTOM_HELP_TEXT_GLUE', '_cht_glue_');
+
+require_once 'custom_help_text_block.admin.inc';
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function custom_help_text_block_form_ctools_export_ui_edit_item_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_state['plugin']['schema'] != 'custom_help_text') {
+    return;
+  }
+
+  $item = $form_state['item'];
+
+  $form['block'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Block'),
+    '#group' => 'options',
+  );
+
+  $allowed_blocks = variable_get('custom_help_text_block_access', array());
+  $allowed_blocks['system' . CUSTOM_HELP_TEXT_GLUE . 'help'] = 'system' . CUSTOM_HELP_TEXT_GLUE . 'help';
+
+  $all_blocks = _custom_help_text_get_blocks();
+
+  foreach ($all_blocks as $module => $blocks) {
+    foreach ($blocks as $block_id => $delta) {
+      if ($block_id == 'system' . CUSTOM_HELP_TEXT_GLUE . 'help') {
+        continue;
+      }
+
+      if (!in_array($block_id, $allowed_blocks)) {
+        unset($all_blocks[$module][$block_id]);
+      }
+    }
+
+    if (count($all_blocks[$module]) === 0) {
+      unset($all_blocks[$module]);
+    }
+  }
+
+  $form['block']['block_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Choose block'),
+    '#required' => TRUE,
+    '#element_validate' => array('custom_help_text_block_validate_block_id'),
+    '#empty_option' => t('- Reset to default -'),
+    '#empty_value' => 'system' . CUSTOM_HELP_TEXT_GLUE . 'help',
+    '#default_value' => array(
+      $item->module => $item->module . CUSTOM_HELP_TEXT_GLUE . $item->delta,
+    ),
+    '#options' => $all_blocks,
+  );
+
+  array_unshift($form['#submit'], 'custom_help_text_block_form_submit');
+}
+
+/**
+ * Element validation of block_id
+ */
+function custom_help_text_block_validate_block_id($element, $form, $form_state) {
+  $allowed_blocks = variable_get('custom_help_text_block_access', array());
+  $allowed_blocks['system' . CUSTOM_HELP_TEXT_GLUE . 'help'] = 'system' . CUSTOM_HELP_TEXT_GLUE . 'help';
+
+  if (!in_array($element['#value'], $allowed_blocks)) {
+    form_error($element, t('%title does not contain a valid selection.', array(
+      '%title' => $element['#title'],
+    )));
+  }
+}
+
+/**
+ * Submit handler to save the 'module' and 'delta' value separately.
+ */
+function custom_help_text_block_form_submit($form, &$form_state) {
+  $block_info = explode(CUSTOM_HELP_TEXT_GLUE, $form_state['values']['block_id']);
+  list($module, $delta) = $block_info;
+  $form_state['values']['module'] = $module;
+  $form_state['values']['delta'] = $delta;
+}
+
+/**
+ * Helper to get all system blocks.
+ */
+function _custom_help_text_get_blocks() {
+  $query = db_select('block', 'b');
+  $query->join('system', 's', 'b.module = s.name');
+  $query->fields('b')
+    ->condition('s.type', 'module', '=')
+    ->condition('s.status', '1', '=')
+    ->orderBy('b.module')
+    ->orderBy('b.delta')
+    ->addTag('block_load')
+    ->addTag('translatable');
+
+  $result = $query->execute();
+
+  $block_info = $result->fetchAllAssoc('bid');
+  $modules = system_get_info('module');
+
+  $blocks = array();
+  foreach ($block_info as $block) {
+    $module_name = check_plain($modules[$block->module]['name']);
+    $blocks[$module_name][$block->module . CUSTOM_HELP_TEXT_GLUE . $block->delta] = $block->delta;
+  }
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Alter the 'Path' value to the module and delta value.
+ */
+function custom_help_text_block_form_custom_help_text_list_form_alter(&$form, &$form_state, $form_id) {
+  foreach (element_get_visible_children($form['rows']) as $key) {
+
+    // Replace block tag with nothing.
+    if ($form['rows'][$key]['path']['#markup'] == '<block>') {
+      $form['rows'][$key]['path']['#markup'] = '';
+    }
+
+    $module = system_get_info('module', $form['rows'][$key]['#object']->module);
+
+    // Prepend block info.
+    $form['rows'][$key]['block'] = array(
+      '#markup' => t('@module: @delta', array(
+        '@module' => $module['name'],
+        '@delta' => $form['rows'][$key]['#object']->delta,
+      ))
+    );
+  }
+}
+
+/**
+ * Implements hook_custom_help_text_table_alter().
+ */
+function custom_help_text_block_custom_help_text_table_alter(&$options, $form) {
+  $action_column_number = count($options['header']) - 1;
+
+  // Add 'block' column header.
+  $actions = $options['header'][$action_column_number];
+  unset($options['header'][$action_column_number]);
+  $options['header'][] = t('Block');
+  $options['header'][] = $actions;
+
+  // Add 'block' column data.
+  foreach ($options['rows'] as $key => $values) {
+    $actions = $options['rows'][$key]['data'][$action_column_number];
+    unset($options['rows'][$key]['data'][$action_column_number]);
+    $options['rows'][$key]['data'][] = drupal_render($form['rows'][$key]['block']);
+    $options['rows'][$key]['data'][] = $actions;
+  }
+}
+
+/**
+ * Implements hook_block_view_alter().
+ */
+function custom_help_text_block_block_view_alter(&$data, $block) {
+  $allowed_blocks = variable_get('custom_help_text_block_access', array());
+
+  // Cancel everything if it isn't an allowed block.
+  if (!in_array($block->module . CUSTOM_HELP_TEXT_GLUE . $block->delta, $allowed_blocks)) {
+    return;
+  }
+
+  $objects = _custom_help_text_get_all_objects();
+  $help = array();
+
+  foreach ($objects as $object) {
+    if (_custom_help_text_filter($object)) {
+      continue;
+    }
+
+    if ($block->module === $object->module && $block->delta === $object->delta) {
+      $help[] = $object;
+    }
+  }
+
+  if (empty($help)) {
+    return;
+  }
+
+  if (is_array($data['content'])) {
+    if (isset($data['content']['#markup'])) {
+      $data['content']['#markup'] = _custom_help_text_block_block_help($help) . $data['content']['#markup'];
+    }
+    else {
+      $weight = array(1);
+
+      // Get lowest weight.
+      foreach ($data['content'] as $element) {
+        if (isset($element['#weight'])) {
+          $weight[] = (int) $element['#weight'];
+        }
+      }
+
+      $data['content']['custom_help_text_block_help'] = array(
+        '#markup' => _custom_help_text_block_block_help($help),
+        '#weight' => min($weight) - 1,
+      );
+    }
+  }
+  else {
+    $data['content'] = _custom_help_text_block_block_help($help) . (string) $data['content'];
+  }
+}
+
+/**
+ *
+ */
+function _custom_help_text_block_block_help($objects) {
+  $help = array();
+
+  foreach ($objects as $object) {
+    $help[] = _custom_help_text_string($object->name, 'help', $object->help);
+  }
+
+  $cnt = count($help);
+
+  if ($cnt === 0) {
+    return '';
+  }
+  elseif ($cnt === 1) {
+    $content = implode($help);
+  }
+  else {
+    $content = theme('item_list', array('items' => $help));
+  }
+
+  return _custom_help_text_generate_help($content);
+}
+
+/**
+ * Implements hook_filtered_object_alter().
+ */
+function custom_help_text_block_custom_help_text_help_filter_alter(&$filterd, $object) {
+  if (!$filterd && $object->module != 'system' && $object->delta != 'help') {
+    $filterd = TRUE;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function custom_help_text_block_form_custom_help_text_settings_form_alter(&$form, &$form_state, $form_id) {
+  _custom_help_text_block_admin_form_alter($form, $form_state, $form_id);
+}

@@ -1,0 +1,20 @@
+name = Taxonomy: OWMS audience
+core = 7.x
+package = Drupal voor Gemeenten
+dependencies[] = ctools
+dependencies[] = dvg_global
+dependencies[] = features
+dependencies[] = strongarm
+dependencies[] = taxonomy
+dependencies[] = taxonomy_access_fix
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[taxonomy][] = owms_audience
+features[variable][] = dvg_vocabulary__hide_description__owms_audience
+features[variable][] = dvg_vocabulary__hide_relations__owms_audience
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

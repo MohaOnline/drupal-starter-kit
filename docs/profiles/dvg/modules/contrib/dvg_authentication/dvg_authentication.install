@@ -1,0 +1,154 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for DvG Authentication.
+ */
+
+/**
+ * Implements hook_schema_alter().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_schema_alter(&$schema) {
+  $schema['webform']['fields'] += _dvg_authentication_webform_schema_fields();
+}
+
+/**
+ * Implements hook_install().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_install() {
+  // Create the external user role.
+  dvg_roles_and_permissions_set_roles();
+
+  _dvg_authentication_install_webform_fields();
+
+  // Enable default modules, but don't register as hard dependencies.
+  module_enable(['dvg_authentication_privacy', 'dvg_authentication_auto_logout']);
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_uninstall() {
+  $fields = _dvg_authentication_webform_schema_fields();
+  foreach ($fields as $field_name => $field) {
+    if (db_field_exists('webform', $field_name)) {
+      db_drop_field('webform', $field_name);
+    }
+  }
+}
+
+/**
+ * Helper function that returns the new webform schema fields.
+ */
+function _dvg_authentication_webform_schema_fields() {
+  return [
+    'dvg_authentication_settings' => [
+      'description' => 'Additional settings for the Dvg Authentication Manager',
+      'type' => 'text',
+    ],
+  ];
+}
+
+/**
+ * Helper function for adding extra webform table fields for webform settings.
+ */
+function _dvg_authentication_install_webform_fields() {
+  $schema = drupal_get_schema('webform');
+  $fields = _dvg_authentication_webform_schema_fields();
+  foreach ($fields as $field_name => $field) {
+    if (!db_field_exists('webform', $field_name) && isset($schema['fields'][$field_name])) {
+      db_add_field('webform', $field_name, $schema['fields'][$field_name]);
+    }
+  }
+}
+
+/**
+ * Implements hook_requirements().
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_requirements($phase) {
+  $t = get_t();
+  $requirements = [];
+  if ($phase === 'runtime') {
+    $requirements['dvg_authentication_simplesamlphp'] = [
+      'title' => 'SimpleSAMLphp',
+      'value' => $t('Not installed'),
+      'description' => $t('The %name plugin could not be detected.', ['%name' => 'SimpleSAMLphp']),
+      'severity' => REQUIREMENT_ERROR,
+    ];
+
+    if (module_exists('libraries')) {
+      $info = libraries_detect('simplesamlphp');
+
+      if ($info['installed']) {
+        $requirements['dvg_authentication_simplesamlphp']['description'] = $t('The %name plugin is installed at %path', [
+          '%name' => $requirements['dvg_authentication_simplesamlphp']['title'],
+          '%path' => libraries_get_path('simplesamlphp'),
+        ]);
+        $requirements['dvg_authentication_simplesamlphp']['severity'] = REQUIREMENT_OK;
+
+        if (!empty($info['version'])) {
+          $requirements['dvg_authentication_simplesamlphp']['value'] = $info['version'];
+        }
+        else {
+          $requirements['dvg_authentication_simplesamlphp']['value'] = $t('Installed');
+        }
+      }
+      else {
+        $requirements['dvg_authentication_simplesamlphp']['value'] = drupal_ucfirst($info['error']);
+        $requirements['dvg_authentication_simplesamlphp']['description'] = $info['error message'];
+      }
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Add field to webform table for external authentication.
+ */
+function dvg_authentication_update_7000() {
+  _dvg_authentication_install_webform_fields();
+  dvg_roles_and_permissions_set_permissions();
+}
+
+/**
+ * Update webform configuration settings.
+ */
+function dvg_authentication_update_7001() {
+
+  $nodes = node_load_multiple([], ['type' => 'webform']);
+  $roles = user_roles();
+  $external_user_rid = array_search('external user', $roles);
+
+  foreach ($nodes as $node) {
+    if (!in_array($external_user_rid, $node->webform['roles']) || empty($node->webform['dvg_authentication_settings'])) {
+      continue;
+    }
+    $settings = unserialize($node->webform['dvg_authentication_settings'], ['allowed_classes' => FALSE]);
+    foreach ($settings['methods'] as $method_id => $method_settings) {
+      if (!is_array($method_settings)) {
+        $settings['methods'][$method_id] = ['enabled' => 1];
+      }
+    }
+
+    $node->webform['dvg_authentication_settings'] = serialize($settings);
+    // Save webform.
+    node_save($node);
+  }
+
+}
+
+/**
+ * Enable dvg_authentication_privacy and dvg_authentication_auto_logout module.
+ */
+function dvg_authentication_update_7002() {
+  module_enable(['dvg_authentication_privacy', 'dvg_authentication_auto_logout']);
+}

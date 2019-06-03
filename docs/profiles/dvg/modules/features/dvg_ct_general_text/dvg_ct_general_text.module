@@ -1,0 +1,20 @@
+<?php
+/**
+ * @file
+ * Code for the General Text Content Type feature.
+ */
+
+include_once 'dvg_ct_general_text.features.inc';
+include_once 'dvg_ct_general_text.dvg.user_permission.inc';
+
+
+/**
+ * Implements hook_node_access().
+ */
+function dvg_ct_general_text_node_access($node, $op, $account) {
+  if (($op == 'view') && is_object($node) && ($node->type == 'general_text') && (arg(1) == $node->nid) && !node_access('update', $node, $account)) {
+    return NODE_ACCESS_DENY;
+  }
+
+  return NODE_ACCESS_IGNORE;
+}

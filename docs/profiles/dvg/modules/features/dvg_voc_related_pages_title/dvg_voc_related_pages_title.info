@@ -1,0 +1,18 @@
+name = Taxonomy: Related pages title
+core = 7.x
+package = Drupal voor Gemeenten
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = strongarm
+dependencies[] = taxonomy
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:2
+features[taxonomy][] = related_pages_title
+features[variable][] = dvg_vocabulary__hide_description__related_pages_title
+features[variable][] = dvg_vocabulary__hide_relations__related_pages_title
+
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-1.12"
+core = "7.x"
+project = "dvg"
+datestamp = "1559563366"

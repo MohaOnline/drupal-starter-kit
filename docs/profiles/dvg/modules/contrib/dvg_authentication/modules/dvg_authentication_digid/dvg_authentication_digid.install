@@ -1,0 +1,104 @@
+<?php
+
+/**
+ * @file
+ * Install and update functions for DvG Authentication DigiD.
+ */
+
+/**
+ * Implements hook_install().
+ *
+ * Migrate the digid webform settings for webforms with digid enabled.
+ *
+ * {@inheritdoc}
+ */
+function dvg_authentication_digid_install() {
+
+  // Remap the old DigiD authentication source to the DigiD Basic level.
+  dvg_authentication_digid_update_7001();
+
+  // Get all roles.
+  $roles = user_roles();
+  $digid_rid = array_search('digid', $roles);
+  $ext_user_rid = array_search('external user', $roles);
+
+  // Is there anything to migrate?
+  if ($digid_rid === FALSE || $ext_user_rid === FALSE) {
+    return;
+  }
+  // Get all webforms.
+  $nodes = node_load_multiple([], ['type' => 'webform']);
+
+  foreach ($nodes as $node) {
+    // Get webform roles.
+    $role_ids = $node->webform['roles'];
+    if (in_array($digid_rid, $role_ids)) {
+      // Remove old digid setting.
+      unset($node->webform['roles'][array_search($digid_rid, $role_ids)]);
+
+      // Add digid to the new settings.
+      if (!in_array($ext_user_rid, $role_ids)) {
+        // Add external user role only once.
+        $node->webform['roles'][] = $ext_user_rid;
+
+        // Set new digid property.
+        $settings = [];
+        if (!empty($node->webform['dvg_authentication_settings'])) {
+          $settings = unserialize($node->webform['dvg_authentication_settings'], ['allowed_classes' => FALSE]);
+        }
+        $settings['methods']['digid']['enabled'] = 1;
+        // Enable the basic level by default.
+        $settings['methods']['digid']['level'] = 'basic';
+        $node->webform['dvg_authentication_settings'] = serialize($settings);
+        // Save webform.
+        node_save($node);
+      }
+    }
+  }
+}
+
+/**
+ * Remap the DigiD auth_source as basic level Auth source.
+ */
+function dvg_authentication_digid_update_7001() {
+  if ($digid_settings = variable_get('dvg_authentication_digid', FALSE)) {
+    if (isset($digid_settings['auth_source']) && !isset($digid_settings['levels'])) {
+      // Create the new level config.
+      $digid_settings['levels']['basic'] = [
+        'auth_source' => $digid_settings['auth_source'],
+        'logo' => '',
+      ];
+      $digid_settings['levels']['middle'] = $digid_settings['levels']['substantial'] = [];
+      // Remove the old config setting to prevent odd behaviour.
+      unset($digid_settings['auth_source']);
+      variable_set('dvg_authentication_digid', $digid_settings);
+    }
+  }
+}
+
+/**
+ * Update DigiD authenticated forms to basic-level digid authentication.
+ */
+function dvg_authentication_digid_update_7002() {
+
+  // Get all webforms.
+  $nodes = node_load_multiple([], ['type' => 'webform']);
+
+  foreach ($nodes as $node) {
+    // Skip if no authentication settings are available.
+    if (empty($node->webform['dvg_authentication_settings'])) {
+      continue;
+    }
+    $settings = unserialize($node->webform['dvg_authentication_settings'], ['allowed_classes' => FALSE]);
+    if (
+      isset($settings['methods']['digid']) &&
+      $settings['methods']['digid']['enabled'] === 1 &&
+      !isset($settings['methods']['digid']['levels'])
+    ) {
+      $settings['methods']['digid']['level'] = 'basic';
+      $node->webform['dvg_authentication_settings'] = serialize($settings);
+      // Save webform.
+      node_save($node);
+    }
+  }
+}

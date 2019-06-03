@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update scripts for dvg_logger.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function dvg_logger_schema() {
+  $schema['dvg_logger'] = array(
+    'description' => 'Table that contains DVG related logs.',
+    'fields' => array(
+      'lid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique log event ID.',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Type of log message.',
+      ),
+      'message' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'big',
+        'description' => 'Event description.',
+      ),
+      'hostname' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Hostname of the user who triggered the event.',
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Unix timestamp of when event occurred.',
+      ),
+      'encrypted' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Determines whether this field is encrypted.',
+      ),
+    ),
+    'primary key' => array('lid'),
+    'indexes' => array(
+      'type' => array('type'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Set old variables to new variables.
+ */
+function dvg_logger_update_7001() {
+  variable_set('dvg_logger_recipient_emails', variable_get('dvg_logger_login_attempts_recipient_emails'));
+  variable_set('dvg_logger_email_subject', variable_get('dvg_logger_login_attempts_email_subject'));
+  variable_set('dvg_logger_attempts_digest', variable_get('dvg_logger_login_attempts_digest'));
+  variable_del('dvg_logger_login_attempts_recipient_emails');
+  variable_del('dvg_logger_login_attempts_email_subject');
+  variable_del('dvg_logger_login_attempts_digest');
+}
+
+/**
+ * Add new field to dvg_logger table.
+ */
+function dvg_logger_update_7002() {
+  $schema = drupal_get_schema('dvg_logger');
+  $field_name = 'encrypted';
+  if (!db_field_exists('dvg_logger', $field_name) && isset($schema['fields'][$field_name])) {
+    db_add_field('dvg_logger', $field_name, $schema['fields'][$field_name]);
+  }
+}

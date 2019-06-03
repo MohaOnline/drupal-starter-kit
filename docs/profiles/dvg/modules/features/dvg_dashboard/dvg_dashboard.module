@@ -1,0 +1,17 @@
+<?php
+/**
+ * @file
+ * Code for the Dashboard feature.
+ */
+
+include_once 'dvg_dashboard.features.inc';
+include_once 'dvg_dashboard.dvg.user_permission.inc';
+
+/**
+ * Implements hook_user_login().
+ */
+function dvg_dashboard_user_login(&$edit, $account) {
+  if (user_access('access dashboard', $account)) {
+    $edit['redirect'] = 'admin/dashboard';
+  }
+}
