@@ -1,0 +1,11 @@
+name = Hosting Logs
+description = Provides a site's error and watchdog logs to hostmaster front end.
+core = 7.x
+package = Hosting
+
+dependencies[] = hosting_site
+
+; Information added by drush on 2017-10-27
+version = "7.x-3.170"
+project = "hosting_logs"
+datestamp = "1509130750"

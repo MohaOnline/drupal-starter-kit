@@ -1,0 +1,54 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function hosting_site_backup_manager_schema() {
+  $schema = array();
+
+  $schema['hosting_backup_gc_sites'] = array(
+    'description' => 'A cache of the last gc times of all enabled sites.',
+    'fields' => array(
+      'site_id' => array(
+        'description' => 'The sites nid from the {node} table.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'last_gc' => array(
+        'description' => 'The timestamp of the last gc of this site.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('site_id'),
+    'indexes' => array(
+      'last_gc' => array('last_gc'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Adds a table to record the gc times for sites.
+ */
+function hosting_site_backup_manager_update_6101() {
+
+  $schema = hosting_site_backup_manager_schema();
+
+  if (!db_table_exists('hosting_backup_gc_sites')) {
+    db_create_table('hosting_backup_gc_sites', $schema['hosting_backup_gc_sites']);
+  }
+}
+
+/**
+ * Remove the obsolete variable hosting_site_backup_manager_base_path.
+ */
+function hosting_site_backup_manager_update_6201() {
+
+  variable_del('hosting_site_backup_manager_base_path');
+}

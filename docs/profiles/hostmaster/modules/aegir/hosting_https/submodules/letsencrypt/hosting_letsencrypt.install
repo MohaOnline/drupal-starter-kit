@@ -1,0 +1,22 @@
+<?php
+/**
+ * @file
+ * Define update functions for the hosting_https letsencrypt submodule.
+ */
+
+
+/**
+ * Verify the server node to get the dehydrated code updated.
+ */
+function hosting_letsencrypt_update_7300() {
+  // node_access from the the hosting_add_task hook fails without the following defintion.
+  if (!defined('HOSTING_ADMIN_CLIENT')) {
+    define('HOSTING_ADMIN_CLIENT', variable_get('hosting_admin_client', 1));
+  }
+
+  $hostmaster_nid = hosting_get_hostmaster_site_nid();
+  $hm = node_load($hostmaster_nid);
+  $server_nid = $hm->web_server;
+
+  hosting_add_task($server_nid, 'verify');
+}

@@ -1,0 +1,21 @@
+api = 2
+
+core = 7.x
+projects[] = "drupal"
+
+projects[civicrm][type] = "module"
+projects[civicrm][directory_name] = "civicrm"
+projects[civicrm][download][type] = "get"
+projects[civicrm][download][url] = "http://downloads.sourceforge.net/project/civicrm/civicrm-stable/4.7.11/civicrm-4.7.11-drupal.tar.gz"
+
+libraries[aegirtests][download][type] = "get"
+libraries[aegirtests][download][url] = "https://github.com/coopsymbiotic/coop.symbiotic.aegirtests/archive/master.zip"
+libraries[aegirtests][directory_name] = "coop.symbiotic.aegirtests"
+libraries[aegirtests][type] = "library"
+libraries[aegirtests][destination] = "../../vendor/civicrm"
+
+libraries[iatspayments][download][type] = "get"
+libraries[iatspayments][download][url] = "https://github.com/iATSPayments/com.iatspayments.civicrm/archive/master.zip"
+libraries[iatspayments][directory_name] = "com.iatspayments.civicrm"
+libraries[iatspayments][type] = "library"
+libraries[iatspayments][destination] = "../../vendor/civicrm"

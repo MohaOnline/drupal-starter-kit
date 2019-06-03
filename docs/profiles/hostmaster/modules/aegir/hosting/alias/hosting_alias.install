@@ -1,0 +1,104 @@
+<?php
+/**
+ * @file
+ * Define database schema and update function for the site aliases module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function hosting_alias_schema() {
+  $schema['hosting_site_alias'] = array(
+    'fields' => array(
+      'vid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'alias' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+      ),
+      'automatic' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'redirection' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'vid' => array('vid'),
+      'alias' => array('alias'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * This removes dodgy data created by an import bug.
+ */
+function hosting_alias_update_1() {
+  $ret = array();
+  $ret[] = update_sql("DELETE FROM {hosting_site_alias} WHERE alias='Array'");
+  return $ret;
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Add the redirection field.
+ */
+function hosting_alias_update_2() {
+  $ret = array();
+  db_add_field($ret, 'hosting_site_alias', 'redirection', array('type' => 'int', 'not null' => TRUE, 'default' => 0, 'size' => 'tiny'));
+  return $ret;
+}
+
+
+/**
+ * Alter the redirection field to a varchar
+ */
+function hosting_alias_update_6203() {
+  $ret = array();
+  $spec = array(
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+  );
+  db_change_field($ret, 'hosting_site_alias', 'redirection', 'redirection', $spec);
+  return $ret;
+}
+
+/**
+* Fixup redirection data after table change in hosting_alias_update_6203()
+*/
+function hosting_alias_update_6204() {
+  $ret = array();
+  $result = db_query("SELECT alias.nid FROM {hosting_site_alias} alias INNER JOIN {hosting_site} site ON site.nid = alias.nid WHERE redirection=1 AND site.status>-2");
+  while ($obj = db_fetch_object($result)) {
+    $node = node_load($obj->nid);
+    if (is_object($node)) {
+      $node->redirection = $node->title;
+      hosting_alias_update($node);
+
+      // Run a verify task to update the vhost
+      hosting_add_task($node->nid, 'verify');
+    }
+  }
+
+  return $ret;
+}

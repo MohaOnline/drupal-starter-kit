@@ -1,0 +1,13 @@
+name = Aegir HTTPS Apache
+description = A service to support the Apache web server with HTTPS functionality.
+package = Aegir HTTPS
+dependencies[] = hosting_https
+dependencies[] = hosting_web_server
+core = 7.x
+
+files[] = hosting_apache_https.service.inc
+
+; Information added by drush on 2018-12-20
+version = "7.x-3.171"
+project = "hosting_https"
+datestamp = "1545325489"

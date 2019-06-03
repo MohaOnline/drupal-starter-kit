@@ -1,0 +1,198 @@
+<?php
+/**
+ * @file
+ * Hook implementations for the Hosting SSL module.
+ */
+
+/**
+ * SSL is disabled for this site.
+ */
+define('HOSTING_SSL_DISABLED', 0);
+
+/**
+ * SSL is enabled for this site.
+ */
+define('HOSTING_SSL_ENABLED', 1);
+
+/**
+ * SSL is required for this site.
+ */
+define('HOSTING_SSL_REQUIRED', 2);
+
+include_once 'hosting_ssl.nodeapi.inc';
+
+/**
+ * Implements hook_hosting_service().
+ */
+function hosting_ssl_hosting_service() {
+  return array(
+    'apache_ssl' => 'http',
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_ssl_permission() {
+  return array(
+    'create ssl certificate' => array(
+      'title' => t('create ssl certificate'),
+    ),
+  );
+}
+
+/**
+ * Return a list of servers which have SSL enabled web services.
+ */
+function hosting_ssl_get_servers() {
+  $servers = hosting_get_servers('http');
+  $ssl_servers = array();
+  foreach ($servers as $nid => $title) {
+    $node = node_load($nid);
+    if ($node->services['http']->ssl_enabled) {
+      $ssl_servers[] = $nid;
+    }
+  }
+  return $ssl_servers;
+}
+
+/**
+ * Return a list of platforms on SSL enabled servers.
+ */
+function hosting_ssl_get_platforms() {
+  $servers = hosting_ssl_get_servers();
+  $ssl_platforms = array();
+
+  $platforms = _hosting_get_platforms();
+  foreach ($platforms as $nid => $title) {
+    $platform = node_load($nid);
+    if (in_array($platform->web_server, $servers)) {
+      $ssl_platforms[] = $nid;
+    }
+  }
+
+  return $ssl_platforms;
+}
+
+/**
+ * Return a list of profiles with SSL enabled platforms.
+ */
+function hosting_ssl_get_profiles() {
+  $platforms = hosting_ssl_get_platforms();
+
+  $ssl_profiles = array();
+  foreach ($platforms as $nid) {
+    $platform = node_load($nid);
+    $ssl_profiles = array_merge($ssl_profiles, array_keys($platform->profiles));
+  }
+
+  return array_unique($ssl_profiles);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function hosting_ssl_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'site_node_form') {
+    hosting_ssl_site_form($form, $form_state, $form_id);
+  }
+}
+
+/**
+ * Per-server, per-ip certificate listing.
+ */
+function hosting_ssl_menu() {
+  $items = array();
+  $items['node/%hosting_ssl_cert_node/ssl'] = array(
+    'title' => 'Certificates',
+    'description' => 'SSL certificates deployed on this server',
+    'page callback' => 'hosting_ssl_server_cert_list',
+    'page arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'access arguments' => array('view server'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_load() from hook_menu().
+ *
+ * This is a weird hook that is not well documented but allows loads from the
+ * menu system. This is *not* the regular hook_load().
+ *
+ * @see hosting_ssl_menu()
+ */
+function hosting_ssl_cert_node_load($arg) {
+  if (!is_numeric($arg)) {
+    return FALSE;
+  }
+  if ($node = node_load($arg)) {
+    if ($node->type == 'server') {
+      return $node;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * List SSL certificates associated with the given server.
+ */
+function hosting_ssl_server_cert_list($node) {
+  drupal_set_title(t('Certificates installed on server @server', array('@server' => $node->title)), PASS_THROUGH);
+  $header = array(
+    array(
+      'data' => t('Domain'),
+      'field' => 'domain',
+    ),
+    array(
+      'data' => t('IP address'),
+      'field' => 'ip_address',
+    ),
+    array(
+      'data' => t('Client'),
+      'field' => 'client',
+    ),
+  );
+  $query = db_select('hosting_ip_addresses', 'ips');
+  $query = $query->extend('PagerDefault');
+  $query = $query->extend('TableSort');
+  $query->join('hosting_ssl_cert_ips', 'cert_ip', 'cert_ip.ip_address = ips.id');
+  $query->join('hosting_ssl_cert', 'cert', 'cert.cid = cert_ip.cid');
+  $query->join('node', 'client', 'client.nid = cert.client');
+  $query->element(2);
+  $query->addField('ips', 'ip_address');
+  $query->addField('cert', 'ssl_key', 'domain');
+  $query->addField('cert', 'status');
+  $query->addField('client', 'title', 'client');
+  $query->condition('ips.nid', $node->nid)
+    ->limit(25)
+    ->orderByHeader($header)
+    ->addTag('node_access');
+  $result = $query->execute();
+
+  $rows = array();
+  foreach ($result as $cert) {
+    $row = array();
+    $row[] = $cert->domain;
+    $row[] = $cert->ip_address;
+    $row[] = filter_xss($cert->client);
+    $rows[] = $row;
+  }
+  return theme('table',
+    array(
+      'header' => $header,
+      'rows' => $rows,
+      'attributes' => array('class' => array('hosting-table')),
+    ))
+    . theme('pager', array('tags' => NULL, 'element' => 2));
+}
+
+/**
+ * Callback function to execute on enabling this module's feature.
+ *
+ * @see: hosting_example_hosting_feature().
+ */
+function hosting_ssl_feature_enable_callback() {
+  drupal_set_message(t("Please make sure you have enabled SSL support in your webserver, e.g. by enabling mod_ssl in Apache."));
+  drupal_set_message(t("To start using SSL please edit the desired server node within Aegir to set in from e.g. 'apache' to 'apache_ssl'."));
+}

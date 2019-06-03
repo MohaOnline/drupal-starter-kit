@@ -1,0 +1,37 @@
+Hosting Logs
+============
+
+This module extends drush/provision to better present logs to the user.
+
+Supported commands are:
+
+- Makes a site's apache error log visible at http://hostmaster/node/123/logs/errors
+- Makes a site's watchdog log visible at http://hostmaster/node/123/logs/dblog
+- Makes the Git commit log for a site or platform repository visible at http://hostmaster/node/123/logs/git
+- Can expose the apache error log at http://aegirhostedsite/error.log
+
+
+Installation
+============
+
+- Install as a normal drupal module in a hostmaster site.
+
+- As root create a directory for the logs. Default is '/var/log/aegir', set the 'provision_logs_file_path' drush option to override.
+
+```console
+# mkdir /var/log/aegir
+```
+
+- Add this to e.g. ~/config/server_master/apache/pre.d/hosting_logs.conf to to allow http access to http://aegirhostedsite/error.log.
+
+NOTE: The basic auth placed before a site is not effective here.
+```apache
+<Directory /var/log/aegir>
+    Require all granted
+    <IfModule mod_headers>
+        Header add Content-Type text/plain
+    </IfModule>
+</Directory>
+```
+
+- For log rotation with the standard logrotate utility, copy logrotate.d.example to /etc/logrotate.d/hosting_logs

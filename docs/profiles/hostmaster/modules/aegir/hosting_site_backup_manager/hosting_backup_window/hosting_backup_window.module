@@ -1,0 +1,167 @@
+<?php
+
+/**
+ * @file
+ * General module code.
+ */
+
+/**
+ * Checks whether we are currently within the allowed time window for backups.
+ */
+function hosting_backup_window_is_allowed_time_window($time = NULL) {
+  if ($time === NULL) {
+    $time = REQUEST_TIME;
+  }
+
+  $today = date("D", REQUEST_TIME);
+
+  $start_time = variable_get('hosting_backup_window_time_window_start', '00:00');
+  $end_time = variable_get('hosting_backup_window_time_window_end', '23:59');
+
+  // Date field shenanigans
+  if (empty($start_time)) {
+    $start_time = strtotime('00:00'); // Midnight "this morning"
+  }
+  else {
+    $start_time = strtotime($start_time);
+  }
+
+  if (empty($end_time)) {
+    $end_time = strtotime('23:59'); // Midnight "this morning"
+  }
+  else {
+    $end_time = strtotime($end_time);
+  }
+
+  /*
+   dsm('Evaluated time: ' . date('m/d/Y h:i:s a', time()));
+   dsm('Start time : ' . date('m/d/Y h:i:s a', $start_time));
+   dsm('End time : ' . date('m/d/Y h:i:s a', $end_time));
+   dsm('Today: ' . $today );
+   */
+
+  if ($time < $start_time) {
+    // Before the start time
+    return FALSE;
+  }
+
+  if ($time > $end_time) {
+    // After the end time
+    return FALSE;
+  }
+
+  $allowed_days_array = variable_get('hosting_backup_window_time_window_days', NULL);
+
+  // All days allowed by default, don't process if variable is not set
+  if ($allowed_days_array !== NULL) {
+    if (!in_array($today, $allowed_days_array)) {
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+/**
+ * Returns the backup task to run for a given site.
+ */
+function _hosting_backup_window_get_backup_task($site) {
+  // Ensure that we have a backup task to run.
+  return hosting_add_task($site, 'backup', array('description' => t('Automated backup')));
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function hosting_backup_window_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'hosting_site_backup_manager_settings' && user_access('administer hosting backup queue')) {
+
+    $days_array = drupal_map_assoc(array('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'));
+
+    $server_time_message = t('The current server time is @time', array('@time' => date("H:i")));
+
+    $form['backup_window'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Backup window'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => -10,
+    );
+
+    $form['backup_window']['backup_window_start'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Start doing automated backups at'),
+      '#description' => t('Format: 00:00. ') . $server_time_message,
+      '#default_value' => variable_get('hosting_backup_window_time_window_start', '00:00'),
+      '#maxlength' => 5,
+      '#size' => 6,
+    );
+
+    $form['backup_window']['backup_window_end'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Stop doing automated backups'),
+      '#description' => t('Format: 23:59. ') . $server_time_message,
+      '#default_value' => variable_get('hosting_backup_window_time_window_end', '23:59'),
+      '#maxlength' => 5,
+      '#size' => 6,
+    );
+
+    $form['backup_window']['backup_window_days'] = array(
+      '#title' => t('Only do backups on those days'),
+      '#type' => 'select',
+      '#options' => $days_array,
+      '#multiple' => TRUE,
+      '#size' => 7,
+      '#default_value' => variable_get('hosting_backup_window_time_window_days', $days_array),
+    );
+
+    $form['#validate'][] = 'hosting_backup_window_time_window_form_validate';
+    $form['#submit'][] = 'hosting_backup_window_time_window_form_submit';
+  }
+}
+
+/**
+ * Validation callback for the hosting_site_backup_manager_settings form.
+ */
+function hosting_backup_window_time_window_form_validate(&$form, &$form_state) {
+  $date_format = 'H:i';
+
+  $values = $form_state['values'];
+
+  if (!empty($values['backup_window_start'])) {
+    if (strtotime($values['backup_window_start']) == 0) {
+      form_set_error('backup_window_start', t('Invalid start time'));
+    }
+  }
+
+  if (!empty($values['backup_window_end'])) {
+    if (strtotime($values['backup_window_end']) == 0) {
+      form_set_error('backup_window_end', t('Invalid end time'));
+    }
+  }
+}
+
+/**
+ * Submit callback for the hosting_site_backup_manager_settings form.
+ */
+function hosting_backup_window_time_window_form_submit(&$form, &$form_state) {
+  $values = $form_state['values'];
+
+  $value_start = '';
+  if (!empty($values['backup_window_start'])) {
+    variable_set('hosting_backup_window_time_window_start', $values['backup_window_start']);
+  }
+  else {
+    variable_del('hosting_backup_window_time_window_start');
+  }
+
+  $value_end = '';
+  if (!empty($values['backup_window_end'])) {
+    variable_set('hosting_backup_window_time_window_end', $values['backup_window_end']);
+  }
+  else {
+    variable_del('hosting_backup_window_time_window_end');
+  }
+
+  variable_set('hosting_backup_window_time_window_days', $values['backup_window_days']);
+}

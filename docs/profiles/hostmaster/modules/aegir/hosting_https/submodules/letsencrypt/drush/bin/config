@@ -1,0 +1,1 @@
+WELLKNOWN="/var/aegir/config/letsencrypt.d/well-known/acme-challenge"

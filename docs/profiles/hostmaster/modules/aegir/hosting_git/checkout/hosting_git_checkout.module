@@ -1,0 +1,129 @@
+<?php
+
+/**
+ * Implements hook_hosting_tasks().
+ */
+function hosting_git_checkout_hosting_tasks() {
+  $tasks = array();
+
+  $tasks['site']['git-checkout'] = array(
+    'title' => t('Git checkout'),
+    'description' => t('Runs a git checkout on the current site.'),
+    'access callback' => 'hosting_git_checkout_access_checkout',
+    'dialog' => TRUE,
+  );
+
+  $tasks['platform']['git-checkout'] = array(
+    'title' => t('Git checkout'),
+    'description' => t('Runs a git checkout on the current platform.'),
+    'access callback' => 'hosting_git_checkout_access_checkout',
+    'dialog' => TRUE,
+  );
+
+  return $tasks;
+}
+
+/**
+ * Access function for the checkout task on platforms.
+ */
+function hosting_git_checkout_access_checkout($node) {
+  // Only consider doing this if we have a git repo.
+  if (empty($node->git['repo_url'])) {
+    return FALSE;
+  }
+  if (($node->type == 'site' && user_access('create site git-checkout task'))
+    || ($node->type == 'platform' && user_access('create platform git-checkout task'))) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_git_checkout_permission() {
+  return array(
+    'create site git-checkout task' => array(
+      'title' => t('create site git-checkout task'),
+      'description' => t('Create a git-checkout task for sites'),
+    ),
+    'create platform git-checkout task' => array(
+      'title' => t('create platform git-checkout task'),
+      'description' => t('Create a git-checkout task for platforms'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form().
+ */
+function hosting_task_git_checkout_form($node) {
+
+  $form['current_git_ref'] = array(
+    '#type' => 'item',
+    '#title' => t('Current Git Reference'),
+    '#markup' => $node->git['git_ref'],
+    '#field_prefix' => '<code>',
+    '#field_suffix' => '</code>',
+    '#description' => t('The current git reference for this !type.', array('!type' => $node->type)),
+  );
+
+  $form['git_ref'] = array(
+    '#title' => t('Git Branch, tag, or hash'),
+    '#description' => t("Check out this branch, tag, or hash."),
+    '#type' => 'textfield',
+    '#default_value' => isset($_GET['checkout_git_ref'])? $_GET['checkout_git_ref']: '',
+  );
+
+  $form['reset_hard'] = array(
+    '#title' => t('Run <code>git reset --hard</code> before checkout?'),
+    '#description' => t("Revert all uncommitted changes before creating or changing the branch"),
+    '#type' => 'checkbox',
+    '#default_value' => TRUE,
+  );
+
+  $form['branch'] = array(
+    '#title' => t('Create a new branch.'),
+    '#description' => t("Use the '-b' option to create a new branch."),
+    '#type' => 'checkbox',
+    '#default_value' => TRUE,
+  );
+
+  $form['push'] = array(
+    '#title' => t('Push the new branch.'),
+    '#description' => t("Push the new branch to the remote repository."),
+    '#type' => 'checkbox',
+    '#default_value' => TRUE,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="parameters[branch]"]' => array(
+          'checked' => TRUE,
+        ),
+      ),
+    )
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function hosting_git_checkout_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'hosting_task_confirm_form' && $form['task']['#value'] == 'git-checkout') {
+    if (isset($_GET['create'])) {
+      drupal_set_title(t('Create a git branch.'));
+      $form['actions']['submit']['#value'] = t('Create Branch');
+      $form['parameters']['git_ref']['#title'] = t('New Branch Name');
+      $form['parameters']['git_ref']['#description'] = t('Enter the desired name of the new git branch.');
+      $form['parameters']['git_ref']['#attributes']['placeholder'] = t('new-branch-1');
+      $form['parameters']['branch']['#type'] = 'value';
+      $form['parameters']['current_git_ref']['#description'] = t('The created git branch will be branched from this git reference.');
+
+    }
+    else {
+      drupal_set_title(t('Create or checkout a git branch.'));
+      $form['actions']['submit']['#value'] = t('Checkout Branch');
+    }
+  }
+}

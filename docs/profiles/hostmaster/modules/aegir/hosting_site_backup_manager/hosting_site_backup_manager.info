@@ -1,0 +1,11 @@
+name = Hosting Site Backup Manager
+description = Provides a user interface to manage site backups.
+package = Aegir Backup
+dependencies[] = hosting_site
+dependencies[] = hosting_task
+core = 7.x
+
+; Information added by drush on 2017-08-24
+version = "7.x-3.170"
+project = "hosting_site_backup_manager"
+datestamp = "1503566798"

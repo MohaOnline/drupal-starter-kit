@@ -1,0 +1,21 @@
+#edit-civicrm-cron-frequency-items-wrapper input, 
+#edit-civicrm-cron-frequency-ticks-wrapper input {
+  width: 3em;
+  margin: 0 5px 0 0;
+}
+
+#edit-civicrm-cron-frequency-ticks-wrapper {
+  float: left;
+  clear: both;
+}
+
+
+#edit-civicrm-cron-frequency-items-wrapper {
+  float: left;
+  margin: 0 0 5px 0;
+}
+
+#edit-civicrm-cron-frequency-unit-wrapper {
+  float: left;
+}
+

@@ -1,0 +1,16 @@
+name = Aegir Objects API
+description = API helpers to simplify interacting with Drupal 7 in an object-oriented fashion.
+core = 7.x
+package = Aegir
+
+dependencies[] = hosting
+files[] = classes/HostingFieldCleanup.inc
+files[] = classes/HostingForm.inc
+files[] = classes/HostingNode.inc
+files[] = traits/HostingFieldable.inc
+
+
+; Information added by drush on 2019-03-29
+version = "7.x-3.1"
+project = "aegir_objects"
+datestamp = "1553885022"

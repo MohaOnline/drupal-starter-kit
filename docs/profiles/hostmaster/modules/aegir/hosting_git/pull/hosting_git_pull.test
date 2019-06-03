@@ -1,0 +1,38 @@
+<?
+
+/**
+ * @file
+ * Test code
+ */
+
+include 'pull/hosting_git_pull.webhook.inc';
+
+$whitelist = array(
+  '192.168.1.1',
+  '192.168.1.1 ', // trailing space.
+  '192.168.2.0/24',
+  '192.168.3.1/32',
+#  // TODO IPv6 support
+#  '2001:0db8:0000:0000:0000:ff00:0042:8329',
+#  '2001:0db8::0/64',
+);
+
+
+$tests = array(
+  '192.168.1.1' => TRUE,
+  '192.168.1.2' => FALSE,
+  '192.168.2.1' => TRUE,
+  '192.168.3.1' => TRUE,
+  // IPv6 - TODO
+#  '2001:0db8:0000:0000:0000:ff00:0042:8329' => TRUE,
+#  '2001:0db8:0000:0000:0000:ff00:0042:42' => TRUE,
+#  '2002:0db8:0000:0000:0000:ff00:0042:42' => FALSE,
+);
+
+foreach ($tests as $test_ip => $expected) {
+  $result = hosting_git_pull_ip_match($test_ip, $whitelist);
+  if ($result != $expected) {
+    echo "BAD: $test_ip results in unexpected $result\n";
+  }
+  echo "\n";
+}

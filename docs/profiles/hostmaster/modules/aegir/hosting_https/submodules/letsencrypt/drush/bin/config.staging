@@ -1,0 +1,2 @@
+WELLKNOWN="/var/aegir/config/letsencrypt.d/well-known/acme-challenge"
+CA="https://acme-staging.api.letsencrypt.org/directory"

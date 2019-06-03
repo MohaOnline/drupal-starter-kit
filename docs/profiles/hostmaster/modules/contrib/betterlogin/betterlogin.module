@@ -1,0 +1,160 @@
+<?php
+
+/**
+ * @file
+ * Make the login screens better :).
+ */
+
+/**
+ * Implements hook_help().
+ */
+function betterlogin_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#betterlogin':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Better Login module is used to remove issue of styling Drupal login/password/registration forms. It is slightly inspired by the way Wordpress login forms work, and uses three page templates to change the style of the forms. It is very simple to use, just install the Better Login module and it starts working immediately.') . '</p>';
+      $output .= '<p>' . t('For more information, see the <a href="https://www.drupal.org/project/betterlogin">BetterLogin module</a>.') . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<p>' . t('This module uses four templates:') . '</p>';
+      $output .= '<ul>';
+      $output .= '<li>' . t('page--user--login.tpl.php') . '</li>';
+      $output .= '<li>' . t('page--user--password.tpl.php') . '</li>';
+      $output .= '<li>' . t('page--user--register.tpl.php') . '</li>';
+      $output .= '<li>' . t('page--user--reset.tpl.php') . '</li>';
+      $output .= '</ul>';
+      $output .= '<p>' . t('These sit in the /templates directory in the module. You can override them by copying the templates out of the module and into your theme directory.') . '</p>';
+      $output .= '<p>' . t('Alternatively if you are happy with the templates you can easily just alter the CSS styles in your theme.') . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function betterlogin_init() {
+  // Make sure that the user is not logged in.
+  global $user;
+
+  if (!$user->uid) {
+    // We need to collect where they were going in the first place
+    // because they may get pissed if
+    // they don't get there after logging in :).
+    $destination = '';
+    if (isset($_GET['destination'])) {
+      $destination = drupal_get_destination();
+    }
+    elseif (isset($_GET['q'])) {
+      $destination = array('destination' => $_GET['q']);
+    }
+
+    // If this site is set to private we want to redirect all anonymous
+    // users to the login form.
+    if (variable_get('betterlogin_private')) {
+      // Because of Drush we only want to block anything not from CLI.
+      if (strtolower(arg(0)) !== 'user' && php_sapi_name() !== 'cli') {
+        drupal_goto('user/login', array('query' => $destination));
+      }
+    }
+
+    // Make sure that anon users cannot go to just /user but directly
+    // to the login form.
+    if (strtolower(arg(0)) == 'user' && !arg(1) && php_sapi_name() !== 'cli') {
+      if (isset($destination)) {
+        unset($_GET['destination']);
+      }
+
+      drupal_goto('user/login', array('query' => $destination));
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Autofocus on the username field.
+ * Some proper page titles would be nice for a change.
+ * User account is a bit boring..
+ */
+function betterlogin_form_alter(&$form, &$form_state, $form_id) {
+  // Autofocus on the username field.
+  // And add some pretty CSS :).
+  // And a few other things too...
+  if ($form_id == 'user_login' || $form_id == 'user_register_form' || $form_id == 'user_pass' || $form_id == 'user_pass_reset') {
+    $form['name']['#attributes']['autofocus'] = 'autofocus';
+
+    // We don't really need descriptions to tell us what we already know...
+    unset($form['name']['#description']);
+    unset($form['pass']['#description']);
+
+    // Add in some CSS.
+    $form['#attached']['css'][] = drupal_get_path('module', 'betterlogin') . '/css/betterlogin.css';
+  }
+
+  // Exit if we're not on a target url, since the form may
+  // have been rendered programmatically.
+  // We don't want to change page titles on other pages.
+  // Array of arg(1) url values on target pages.
+  $pages = array('login', 'register', 'password', 'reset');
+  if (!in_array(arg(1), $pages)) {
+    return;
+  }
+
+  switch ($form_id) {
+    case 'user_login':
+      drupal_set_title(t('Login'));
+      break;
+
+    case 'user_register_form':
+      drupal_set_title(t('Register'));
+
+      // The registration form behaves differently...
+      $form['account']['name']['#attributes']['autofocus'] = 'autofocus';
+      break;
+
+    case 'user_pass':
+      drupal_set_title(t('Forgot your password?'));
+      break;
+
+    case 'user_pass_reset':
+      drupal_set_title(t('Reset password'));
+      break;
+  }
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ *
+ * Original code from http://drupal.stackexchange.com/a/26796/7542.
+ */
+function betterlogin_theme_registry_alter(&$theme_registry) {
+  $mod_path = drupal_get_path('module', 'betterlogin');
+
+  $theme_registry_copy = $theme_registry;
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', '', $mod_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+
+  $hooks = array('page');
+  foreach ($hooks as $h) {
+    if (!isset($theme_registry[$h]['theme paths'])) {
+      $theme_registry[$h]['theme paths'] = array();
+    }
+
+    _betterlogin_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
+  }
+}
+
+/**
+ * Function responsible for inserting a new element after the first one.
+ */
+function _betterlogin_insert_after_first_element(&$a, $element) {
+  if (is_array($a)) {
+    $first_element = array_shift($a);
+    if ($first_element) {
+      array_unshift($a, $first_element, $element);
+    }
+    else {
+      array_unshift($a, $element);
+    }
+  }
+}

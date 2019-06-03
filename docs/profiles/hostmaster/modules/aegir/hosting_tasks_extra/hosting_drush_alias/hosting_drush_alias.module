@@ -1,0 +1,59 @@
+<?php
+
+/**
+ * @file
+ *
+ * Generate drush aliases for sites
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function hosting_drush_alias_menu() {
+  return array(
+    'node/%node/alias' => array(
+      'access callback' => 'hosting_drush_alias_access',
+      'access arguments' => array(1),
+      'page callback' => 'hosting_drush_alias_page',
+      'page arguments' => array(1),
+      'title' => 'Alias',
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 3,
+    )
+  );
+}
+
+function hosting_drush_alias_access($node) {
+  return $node->type == 'site' && node_access('view', $node);
+}
+
+function hosting_drush_alias_page($site) {
+  global $user;
+  global $base_url;
+
+  $platform = node_load($site->platform);
+  $web_server = node_load($platform->web_server);
+  $url = parse_url($base_url);
+
+  $result = array();
+  $result['uri'] = $site->hosting_name;
+  $result['root'] = $platform->publish_path;
+
+  $result['remote-host'] = $url['host'];
+  $result['remote-user'] = 'aegir';
+
+  // Optional use the logged in hostmaster user
+  //$result['remote-user'] = $user->name;
+
+  $return = '&lt;?php' . PHP_EOL . PHP_EOL;
+
+  $return .= '$aliases["' . $site->hosting_name . '"] = ' . var_export( $result, TRUE) . ';' . PHP_EOL;
+
+  $filename = '~/.drush/' . $site->hosting_name . '.alias.drushrc.php';
+  $instruction = "Save to <code>$filename</code>" ;
+
+  return $instruction . '<pre><code>'
+       .  $return . PHP_EOL
+       . '</code></pre>';
+}
+

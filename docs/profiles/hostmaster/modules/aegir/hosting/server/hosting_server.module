@@ -1,0 +1,927 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for the Hosting server module.
+ */
+
+include_once "hosting_server.service.inc";
+include_once "hosting.ip.inc";
+
+/**
+ * This server has been deleted.
+ */
+define('HOSTING_SERVER_DELETED', -2);
+
+/**
+ * This server has been locked. Its services will not be available for use.
+ */
+define('HOSTING_SERVER_LOCKED', -1);
+
+/**
+ * This platform has been queued for registration (and eventually creation).
+ */
+define('HOSTING_SERVER_QUEUED', 0);
+
+/**
+ * This server is created and enabled. Its services will be available for use.
+ */
+define('HOSTING_SERVER_ENABLED', 1);
+
+/**
+ * Helper function to map status codes to labels and classes.
+ */
+function _hosting_server_status_codes() {
+  $codes = array(
+    HOSTING_SERVER_QUEUED => array(
+      'label' => 'Queued',
+      'class' => 'hosting-queue',
+    ),
+    HOSTING_SERVER_ENABLED => array(
+      'label' => 'Enabled',
+      'class' => 'hosting-success',
+    ),
+    HOSTING_SERVER_DELETED => array(
+      'label' => 'Deleted',
+      'class' => 'hosting-error',
+    ),
+    HOSTING_SERVER_LOCKED => array(
+      'label' => 'Locked',
+      'class' => 'hosting-disable',
+    ),
+  );
+  return $codes;
+}
+
+/**
+ * Server status codes to human-readable label map.
+ */
+function _hosting_server_status_codes_labels() {
+  $labels = array();
+  foreach (_hosting_server_status_codes() as $code => $info) {
+    $labels[$code] = $info['label'];
+  }
+  return $labels;
+}
+
+/**
+ * Return the appropriate status label.
+ */
+function _hosting_server_status($status) {
+  static $labels;
+  $labels = _hosting_server_status_codes();
+  return is_object($status) ? $labels[$status->server_status]['label'] : $labels[$status]['label'];
+}
+
+/**
+ * Define the classes that correspond to the platform status.
+ */
+function _hosting_server_list_class($status) {
+  static $labels;
+  $labels = _hosting_server_status_codes();
+  return is_object($status) ? $labels[$status->server_status]['class'] : $labels[$status]['class'];
+}
+
+/**
+ * Implements hook_node_info().
+ */
+function hosting_server_node_info() {
+  $types["server"] = array(
+    "type" => 'server',
+    "name" => t('Server'),
+    'base' => 'hosting_server',
+    "has_title" => TRUE,
+    "title_label" => t('Hostname'),
+    "description" => hosting_node_help("server"),
+    "has_body" => 0,
+    "body_label" => '',
+    "min_word_count" => 0,
+  );
+  return $types;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function hosting_server_menu() {
+  $items = array();
+
+  $items['hosting/servers/list'] = array(
+    'title' => 'List',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+
+  $items['hosting/servers/add'] = array(
+    'title' => 'Add server',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('node/add/server'),
+    'access callback' => 'node_access',
+    'access arguments' => array('create', 'server'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_hosting_tasks().
+ */
+function hosting_server_hosting_tasks() {
+  $tasks = array();
+  $tasks['server']['verify'] = array(
+    'title' => t('Verify Server'),
+    'description' => t('Verify that the server is correctly installed and working.'),
+    'weight' => 10,
+    'provision_save' => TRUE,
+  );
+
+  $tasks['server']['delete'] = array(
+    'title' => t('Delete Server'),
+    'description' => t('Delete the server.'),
+  );
+
+  return $tasks;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_server_permission() {
+  return array(
+    'administer server' => array(
+      'title' => t('administer server'),
+    ),
+    'create server' => array(
+      'title' => t('create server'),
+    ),
+    'view server' => array(
+      'title' => t('view server'),
+    ),
+    'edit server' => array(
+      'title' => t('edit server'),
+    ),
+    'delete server' => array(
+      'title' => t('delete server'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function hosting_server_node_access($node, $op, $account) {
+  if (hosting_feature('client') && $op != 'create') {
+    // We rely on hosting_client_node_grants() instead of global configuration.
+    return NODE_ACCESS_IGNORE;
+  }
+
+  $type = is_string($node) ? $node : $node->type;
+  if ($type != 'server') {
+    return NODE_ACCESS_IGNORE;
+  }
+
+  switch ($op) {
+    case 'create':
+      return user_access('create server', $account);
+
+    case 'update':
+      return user_access('edit server', $account);
+
+    case 'delete':
+      return user_access('delete server', $account);
+
+    case 'view':
+      return user_access('view server', $account);
+
+  }
+}
+
+/**
+ * Return an associative array of services enabled on this system.
+ */
+function hosting_server_services() {
+  static $services;
+
+  if (!isset($services)) {
+    foreach (module_implements('hosting_service_type') as $module) {
+      // Load all service_type classes.
+      module_load_include('service.inc', $module);
+    }
+    // Invoke hook_hosting_service_type().
+    $services = module_invoke_all('hosting_service_type');
+    foreach (module_implements('hosting_service') as $module) {
+      // Invoke hook_hosting_service().
+      foreach (module_invoke($module, 'hosting_service') as $service => $service_type) {
+        // Load all service classes.
+        module_load_include('service.inc', $module);
+        $services[$service_type]['types'][$service] = 'hostingService_' . $service_type . '_' . $service;
+      }
+    }
+  }
+
+  return $services;
+}
+
+/**
+ * Factory method for generating new instance of a service class.
+ */
+function hosting_services_new_object($name, $type, $node, $values = NULL) {
+  $services = hosting_server_services();
+
+  $class = $services[$name]['types'][$type];
+  if (!$class) {
+    return;
+  }
+  return new $class($node, $values);
+}
+
+/**
+ * Add a service to an existing server node.
+ */
+function hosting_services_add(&$node, $name, $type, $values = array()) {
+  $values['available'] = (isset($values['available'])) ? $values['available'] : 1;
+
+  if ($service_object = hosting_services_new_object($name, $type, $node, $values)) {
+    $node->services[$name] = $service_object;
+  }
+}
+
+/**
+ * Initializes the service objects associated with a server node object.
+ *
+ * @paramc $node
+ *   The server node object.
+ *
+ * @return Object
+ *   The server node object with an additional 'services' property. The
+ *   services property is an associative array with the name of the service
+ *   as key, and the service object as value.
+ */
+function hosting_server_init_services(&$node) {
+  $node->services = array();
+  $result = db_query("SELECT service, type
+                      FROM {hosting_service}
+                      WHERE vid = :vid
+                      AND available = :available",
+                      array(
+                        ':vid' => $node->vid,
+                        ':available' => 1,
+                      )
+                    );
+  foreach ($result as $record) {
+    $name = $record->service;
+    if ($service_object = hosting_services_new_object($name, $record->type, $node)) {
+      $node->services[$name] = $service_object;
+    }
+  }
+
+  return $node;
+}
+
+/**
+ * Translate a server form submission into populated server objects on the node.
+ */
+function hosting_server_services_from_post(&$node) {
+  if (isset($node->services) && is_array($node->services)) {
+    foreach (hosting_server_services() as $name => $data) {
+      if (isset($node->services[$name]) && is_array($node->services[$name])) {
+        if ($node->services[$name]['type'] !== 'null') {
+          if ($service_object = hosting_services_new_object($name, $node->services[$name]['type'], $node, $node->services[$name][$node->services[$name]['type']])) {
+            $node->services[$name] = hosting_services_new_object($name, $node->services[$name]['type'], $node, $node->services[$name][$node->services[$name]['type']]);
+            $node->services[$name]->available = TRUE;
+          }
+        }
+        else {
+          unset($node->services[$name]);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Hide the delete button on server nodes.
+ */
+function hosting_server_form_alter(&$form, &$form_state, $form_id) {
+  // Remove delete button from server edit form,
+  // unless the server's already been deleted via the Delete task.
+  if ($form_id == 'server_node_form') {
+    $node = $form['#node'];
+    if (isset($node->server_status) && $node->server_status !== HOSTING_SERVER_DELETED) {
+      $form['actions']['delete']['#type'] = 'hidden';
+    }
+  }
+}
+
+/**
+ * Invoke a method on all enabled services.
+ */
+function hosting_server_invoke_services(&$node, $method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NULL, &$arg4 = NULL) {
+  $return = array();
+  foreach ($node->services as $name => $service) {
+    $result = $service->$method($arg1, $arg2, $arg3, $arg4);
+    if (isset($result) && is_array($result)) {
+      $return = array_merge_recursive($return, $result);
+    }
+    elseif (isset($result)) {
+      $return[] = $result;
+    }
+  }
+  return $return;
+}
+
+
+/**
+ * Implements hook_form().
+ */
+function hosting_server_form($node, &$form_state) {
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Server hostname'),
+    '#required' => TRUE,
+    '#default_value' => $node->title,
+    '#description' => t('The host name of the server. This is the address that will be used by Hostmaster to connect to the server to issue commands. It is to resolve to the internal network, if you have such a separation.<br /><strong>Be careful when changing the node title, it is used to create the SQL users if the IP address, below, is not set.</strong>'),
+    '#weight' => 0,
+  );
+
+  $form['human_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Human-readable name'),
+    '#default_value' => isset($node->human_name) ? $node->human_name : '',
+    '#description' => t('<strong>Optional, but recommended.</strong> Internally, Aegir refers to servers by their hostname. The value of this field will be used throughout the UI, and allows for more meaningful names. While not enforced by the system, it is highly recommended that the name assigned to a server be unique.'),
+    '#weight' => 1,
+  );
+
+  $form['services'] = array(
+    '#weight' => 5,
+    '#tree' => TRUE,
+  );
+
+  if (!isset($node->nid)) {
+    $node->services = array();
+    $node->ip_addresses = array();
+  }
+
+  // Taken mostly from the hosting_site alias stuff.
+  $form['ips_wrapper'] = array(
+    '#title' => t('IP addresses'),
+    '#description' => t('A list of IP addresses this server is publicly available under, one per line. If none is specified, X509 certificates will be offered through the SNI mechanism by TLS-enabled webservers. <br /><strong>This should point to the public network, if you have such a separation.</strong>'),
+    '#type' => 'fieldset',
+    '#tree' => FALSE,
+    '#weight' => 2,
+    '#prefix' => '<div class="clear-block" id="hosting-ips-wrapper">',
+    '#suffix' => '</div>',
+  );
+
+  $form['ips_wrapper']['ip_addresses'] = array(
+    '#prefix' => '<div id="hosting-ip-addresses">',
+    '#suffix' => '</div>',
+    '#tree' => TRUE,
+    // '#theme' => 'hosting_alias_form',
+  );
+
+  // Get the list of existing IPs.
+  $ips = $node->ip_addresses;
+  $ips_count = max(3, empty($ips) ? 3 : count($ips) + 1);
+
+  // Add alias textfields.
+  foreach ($ips as $id => $ip) {
+    $form['ips_wrapper']['ip_addresses'][$id] = array(
+      '#type' => 'textfield',
+      '#default_value' => $ip,
+    );
+    $ips_count--;
+  }
+  $form['ips_wrapper']['new_ip_addresses'] = array(
+    '#prefix' => '<div id="hosting-ip-addresses">',
+    '#suffix' => '</div>',
+    '#tree' => TRUE,
+    // '#theme' => 'hosting_alias_form',
+  );
+  for ($delta = 0; $delta < $ips_count; $delta++) {
+    $form['ips_wrapper']['new_ip_addresses'][$delta] = array(
+      '#type' => 'textfield',
+    );
+  }
+
+  $form['services_tabs'] = array(
+    '#type' => 'vertical_tabs',
+  );
+  foreach (hosting_server_services() as $name => $service) {
+    $form['services'][$name] = array(
+      '#type' => 'fieldset',
+      '#group' => 'services_tabs',
+      '#title' => check_plain($service['title']),
+      '#weight' => isset($service['weight']) ? $service['weight'] : 0,
+    );
+    // Check to ensure at least one service provider for each type exists.
+    if (array_key_exists('types', $service)) {
+
+      $options = array(
+        'null' => t('None'),
+      );
+      foreach ($service['types'] as $type => $class_name) {
+        $service_objects[$name][$type] = hosting_services_new_object($name, $type, $node);
+        $options[$type] = $service_objects[$name][$type]->getName();
+      }
+
+      $form['services'][$name]['type'] = array(
+        '#type' => 'radios',
+        '#weight' => -99,
+        '#options' => $options,
+        '#default_value' => isset($node->services[$name]->available) && $node->services[$name]->available ? $node->services[$name]->type : 'null',
+      );
+
+      // Service-specific configuration.
+      foreach ($service['types'] as $type => $class) {
+        $form['services'][$name][$type] = array(
+          '#states' => array(
+            'visible' => array(
+              ":input[name='services[{$name}][type]']" => array('value' => $type),
+            ),
+          ),
+          '#type' => 'container',
+        );
+        if (isset($node->services[$name]) && $node->services[$name]->type === $type) {
+          $node->services[$name]->form($form['services'][$name][$type]);
+        }
+        else {
+          $service_object = $service_objects[$name][$type];
+          $service_object->form($form['services'][$name][$type]);
+        }
+      }
+    }
+    else {
+      drupal_set_message(t('No implementations available for the :type service. Please visit the !features_link page and enable one.', array(':type' => $service['title'], '!features_link' => l(t('Hosting Features'), '/admin/hosting'))), 'warning');
+    }
+  }
+  foreach (array('verified', 'platform_status') as $extra_attribute) {
+    $form["$extra_attribute"] = array(
+      '#type' => 'value',
+      '#value' => isset($node->$extra_attribute) ? $node->$extra_attribute : NULL,
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Implements hook_presave().
+ *
+ * We notice the operator if no IP was given. We do not set any to allow
+ * operators to use SNI. We also fire up the regular services hooks.
+ */
+function hosting_nodeapi_server_presave(&$node) {
+  if (empty($node->ip_addresses)) {
+    // This returns an array or FALSE.
+    $ips = gethostbynamel($node->title);
+    if ($ips) {
+      drupal_set_message(t('No IP addresses provided for server. We guess the IP is %ip based on hostname %name. You should set IP addreses in the server node unless you are ready to use SNI (Server Name Indication) which is incompatible with IE and Safari on Windows XP.', array('%ip' => join(',', $ips), '%name' => $node->title)), 'message');
+    }
+  }
+  hosting_server_services_from_post($node);
+}
+
+/**
+ * Implements hook_validate().
+ */
+function hosting_server_validate(&$node, &$form, &$form_state) {
+  if ($node->op != t('Delete')) {
+    // Make sure the server name is unique, to avoid context clashes.
+    $result = db_query("SELECT n.title AS name
+                          FROM {hosting_server} AS h
+                    INNER JOIN {node} AS n ON n.nid = h.nid
+                         WHERE n.title = :title
+                           AND n.nid <> :nid
+                           AND h.status >= :status",
+      array(
+        ':title' => $node->title,
+        ':nid' => empty($node->nid) ? '' : $node->nid,
+        ':status' => HOSTING_SERVER_LOCKED,
+      )
+    )->fetchField();
+    if ($result) {
+      form_set_error('title',
+        t('The hostname `%name` is already in use. Server names must be unique.',
+        array('%name' => $result))
+      );
+    }
+
+    _hosting_ip_validate($node);
+    if (!_hosting_valid_fqdn($node->title)) {
+      form_set_error('title', t('Invalid hostname. Use a proper hostname or an IP address.'));
+    }
+
+    hosting_server_services_from_post($node);
+
+    hosting_server_invoke_services($node, 'validate', $node, $form, $form_state);
+  }
+}
+
+
+/**
+ * Implements hook_update().
+ *
+ * As an existing node is being updated in the database, we need to do our own
+ * database updates.
+ */
+function hosting_server_update($node) {
+  // If this is a new node or we're adding a new revision.
+  if (!empty($node->revision)) {
+    hosting_server_insert($node);
+  }
+  else {
+    hosting_server_invoke_services($node, 'save', $node);
+    hosting_server_invoke_services($node, 'update', $node);
+
+    // Remove disabled services.
+    foreach (array_diff(array_keys(hosting_server_services()), array_keys($node->services)) as $name) {
+      db_delete('hosting_service')
+        ->condition('service', $name)
+        ->condition('nid', $node->nid)
+        ->execute();
+    }
+  }
+
+  if ($node->server_status == HOSTING_SERVER_DELETED) {
+    $node->no_verify = TRUE;
+  }
+
+  $id = db_update('hosting_server')
+    ->fields(array(
+      'human_name' => $node->human_name,
+      'verified' => $node->verified,
+      'status' => $node->server_status,
+    ))
+    ->condition('nid', $node->nid)
+    ->execute();
+
+  _hosting_ip_save($node, TRUE);
+
+  if (!isset($node->no_verify) || !$node->no_verify) {
+    hosting_add_task($node->nid, 'verify');
+  }
+}
+
+/**
+ * Implements hook_insert().
+ */
+function hosting_server_insert($node) {
+  // Always generate a new context.
+  $hosting_name = isset($node->hosting_name) ? $node->hosting_name : 'server_' . preg_replace("/[!\W\.\-]/", "", $node->title);
+  hosting_context_register($node->nid, $hosting_name);
+
+  $id = db_insert('hosting_server')
+    ->fields(array(
+      'vid' => $node->vid,
+      'nid' => $node->nid,
+      'human_name' => isset($node->human_name) ? $node->human_name : '',
+      'verified' => isset($node->verified) ? $node->verified : 0,
+      'status' => isset($node->platform_status) ? $node->platform_status : 0,
+    ))
+    ->execute();
+
+  _hosting_ip_save($node, FALSE);
+
+  hosting_server_invoke_services($node, 'save', $node);
+  hosting_server_invoke_services($node, 'insert', $node);
+
+  if (!isset($node->no_verify) || !$node->no_verify) {
+    hosting_add_task($node->nid, 'verify');
+  }
+}
+
+/**
+ * Implements hook_delete_revision().
+ */
+function hosting_nodeapi_server_delete_revision(&$node) {
+  db_delete('hosting_server')
+    ->condition('vid', $node->vid)
+    ->execute();
+  hosting_ip_delete_revision($node);
+  hosting_server_invoke_services($node, 'delete_revision');
+}
+
+/**
+ * Implements hook_delete().
+ */
+function hosting_server_delete($node) {
+  db_delete('hosting_server')
+    ->condition('nid', $node->nid)
+    ->execute();
+  _hosting_ip_delete($node);
+  hosting_context_delete($node->nid);
+  hosting_task_delete_related_tasks($node->nid);
+  hosting_server_invoke_services($node, 'delete_revision');
+}
+
+/**
+ * Implements hook_load().
+ */
+function hosting_server_load($nodes) {
+  foreach ($nodes as $nid => &$node) {
+    $additions = db_query('SELECT human_name, verified, status AS server_status FROM {hosting_server} WHERE vid = :vid', array(':vid' => $node->vid))->fetch();
+    // Avoid PHP 5.4 warning when platform doesn't exist yet.
+    // See: https://drupal.org/node/1940378
+    $additions = $additions ? $additions : new stdClass();
+
+    hosting_server_init_services($node);
+    hosting_server_invoke_services($node, 'load');
+    $additions->services = $node->services;
+    $additions->ip_addresses = _hosting_ip_load($node);
+
+    foreach ($additions as $property => &$value) {
+      $node->$property = is_numeric($value) ? (int) $value : $value;
+    }
+  }
+}
+
+/**
+ * Menu wildcard loader callback.
+ *
+ * Loads a hosting_server node.
+ * @see hosting_task_menu()
+ *
+ * @arg $arg a numeric nid
+ */
+function hosting_server_wildcard_load($arg) {
+  if (!is_numeric($arg)) {
+    return FALSE;
+  }
+  if ($node = node_load($arg)) {
+    if ($node->type === 'server') {
+      return $node;
+    }
+  }
+  return FALSE;
+}
+
+
+/**
+ * Implements hook_view().
+ */
+function hosting_server_view($node, $view_mode, $langcode = NULL) {
+  hosting_set_breadcrumb($node);
+
+  $services = hosting_server_services();
+
+  $node->content['info'] = array(
+    '#prefix' => '<div id="hosting-server-info" class="hosting-info-list">',
+    '#suffix' => '</div>',
+  );
+  $node->content['info']['status'] = array(
+    '#type' => 'item',
+    '#title' => t('Status'),
+    '#markup' => _hosting_server_status($node->server_status),
+  );
+  $node->content['info']['verified'] = array(
+    '#type' => 'item',
+    '#title' => t('Verified'),
+    '#markup' => hosting_format_interval($node->verified),
+    '#weight' => -10,
+  );
+  $node->content['info']['hostname'] = array(
+    '#title' => 'hostname',
+    '#type' => 'item',
+    '#markup' => $node->title,
+    '#weight' => -50,
+  );
+
+  _hosting_ip_view($node);
+  if (isset($node->content->info->ip_addresses['#weight'])) {
+    $node->content->info->ip_addresses['#weight'] = -30;
+  }
+
+  if (isset($node->services)) {
+    foreach ($node->services as $name => $service) {
+      $node->content['info'][$name] = array(
+        '#prefix' => '<div class="hosting-service-info hosting-service-' . $name . '-info">',
+        '#suffix' => '</div>',
+      );
+      if (isset($services[$name]['weight'])) {
+        $node->content['info'][$name]['#weight'] = $services[$name]['weight'];
+      }
+
+      $node->content['info'][$name]['title'] = array(
+        '#title' => $services[$name]['title'],
+        '#markup' => $service->type,
+        '#type' => 'item',
+        '#weight' => -20,
+      );
+
+      $service->view($node->content['info'][$name]);
+    }
+  }
+
+  if ($view_mode == 'full') {
+    // Task list.
+    if (isset($node->nid)) {
+      $node->content['tasks_view'] = array(
+        '#type' => 'item',
+        '#markup' => hosting_task_table($node),
+        '#prefix' => '<div id="hosting-task-list">',
+        '#suffix' => '</div>',
+        '#weight' => 10,
+      );
+      $settings['hostingTaskRefresh'] = array(
+        'nid' => $node->nid,
+        'changed' => $node->changed,
+      );
+      drupal_add_js($settings, array('type' => 'setting', 'scope' => JS_DEFAULT));
+
+      drupal_add_js(drupal_get_path('module', 'hosting_task') . '/hosting_task.js');
+    }
+  }
+
+  if ($node->human_name) {
+    $node->title = $node->human_name;
+  }
+
+  return $node;
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function hosting_server_field_extra_fields() {
+  $return['node']['server'] = array(
+    'display' => array(
+      'info' => array(
+        'label' => t('Aegir Server Information'),
+        'description' => t('Detailed information about this server.'),
+        'weight' => 0,
+      ),
+      'tasks_view' => array(
+        'label' => t('Aegir Server Tasks'),
+        'description' => t('List of available tasks.'),
+        'weight' => 1,
+      ),
+    ),
+  );
+  return $return;
+}
+
+/**
+ * Implements hook_entity_property_info().
+ */
+function hosting_server_entity_property_info() {
+  $info['node']['bundles']['server']['properties'] = array(
+    'human_name' => array(
+      'label' => t('Human-readable name'),
+      'description' => t('The optional human readable name of the server.'),
+      'type' => 'text',
+    ),
+    'verified' => array(
+      'label' => t('Last verification time'),
+      'description' => t('The date and time of the last verification of the server.'),
+      'type' => 'date',
+    ),
+    'server_status' => array(
+      'label' => t('Server status'),
+      'description' => t('The status of the server. E.g. enabled, deleted, etc.'),
+      'type' => 'integer',
+      'options list' => '_hosting_server_status_codes_labels',
+    ),
+    'ip_addresses' => array(
+      'label' => t('IP addresses'),
+      'description' => t('The list of IP addresses the server is assigned.'),
+      // @TODO: use a type that defines an IP address and add validation.
+      'type' => 'list<text>',
+    ),
+  );
+
+  return $info;
+}
+
+/**
+ * Get servers providing a service.
+ *
+ * @param string $service
+ *   Service type string, like 'http' or 'db'
+ *
+ * @param bool $node_access
+ *   Apply node access filters, defaults to TRUE.
+ *
+ * @return array
+ *   An array of enabled servers, keys are the nid's of the nodes representing
+ *   them, values are the titles of the servers.
+ *
+ * @see hook_hosting_servers_titles_alter()
+ */
+function hosting_get_servers($service, $node_access = TRUE) {
+  $return = array();
+  $query = db_select('node', 'n');
+  $query->join('hosting_service', 's', 'n.vid = s.vid');
+  $query
+    ->fields('n', array('nid', 'title'))
+    ->condition('s.available', '1')
+    ->condition('s.service', $service);
+
+  if ($node_access) {
+    $query->addTag('node_access');
+  }
+
+  $result = $query->execute();
+
+  foreach ($result as $server) {
+    $return[$server->nid] = $server->title;
+  }
+  drupal_alter('hosting_servers_titles', $return, $service);
+  return $return;
+}
+
+/**
+ * Views integration.
+ */
+function hosting_server_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'hosting_server') . '/includes/views',
+  );
+}
+
+/**
+ * Implements hook_preprocess().
+ */
+function hosting_server_preprocess(&$variables) {
+  if (isset($variables['view']) && array_key_exists('services', $variables['view']->field)) {
+    if ($variables['header']) {
+      $services = explode(',', $variables['header']['services']);
+      // Split our headers and fields.
+      _hosting_server_preprocess_explode($variables['header']);
+      _hosting_server_preprocess_explode($variables['rows'], 1);
+      // Adjust the rest of the $variables accordingly.
+      _hosting_server_preprocess_expand($variables['header_classes'], $services);
+      _hosting_server_preprocess_expand($variables['field_attributes'], $services);
+      _hosting_server_preprocess_expand($variables['field_classes'], $services);
+      _hosting_server_preprocess_expand($variables['fields'], $services);
+      // Add service availability classes.
+      _hosting_server_preprocess_classes($variables['field_classes'], $variables['rows']);
+    }
+  }
+}
+
+/**
+ * Add fields to table headers or rows.
+ *
+ * In order to allow the our server list view to dynamically respond to the
+ * number of enabled services, we define the field as a comma-separated list
+ * in our field handler. Here we explode that text back into an array, and add
+ * it back to the table render array.
+ *
+ * @see: hosting_server_handler_field_services::label()
+ * @see: hosting_server_handler_field_services::render()
+ */
+function _hosting_server_preprocess_explode(&$element, $depth = 0) {
+  if ($depth) {
+    foreach ($element as $i => $sub_element) {
+      _hosting_server_preprocess_explode($sub_element, $depth - 1);
+      $element[$i] = $sub_element;
+    }
+  }
+  else {
+    $index = array_search('services', array_keys($element));
+    $services = explode(',', $element['services']);
+    array_splice($element, $index, 1, $services);
+  }
+}
+
+/**
+ * Preprocess $variables for all in $services.
+ *
+ * Since we're adding headers and fields to our table render array, we need to
+ * adjust other $variables as their passed to the template.
+ */
+function _hosting_server_preprocess_expand(&$element, $services) {
+  foreach ($services as $i => $name) {
+    $element[$i] = $element['services'];
+  }
+  unset($element['services']);
+}
+
+/**
+ * Add our service availability classes.
+ */
+function _hosting_server_preprocess_classes(&$classes, $rows) {
+  foreach ($classes as $field_label => $field_row) {
+    if (is_numeric($field_label)) {
+      foreach ($field_row as $index => $field_classes) {
+        $classes[$field_label][$index] .= $rows[$index][$field_label] == 'no' ? ' hosting-service-unavailable' : ' hosting-service-available';
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function hosting_server_form_hosting_settings_alter(&$form, $form_state) {
+  $form['hosting_default_db_server'] = array(
+    '#title' => 'Default database server',
+    '#description' => 'When importing sites, and during some other operations, Aegir will use this database, if none was specified.',
+    '#type' => 'select',
+    '#options' => hosting_get_servers('db'),
+    '#default_value' => variable_get('hosting_default_db_server', 4),
+  );
+}

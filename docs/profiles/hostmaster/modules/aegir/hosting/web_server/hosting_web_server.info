@@ -1,0 +1,12 @@
+name = Web Server 
+description = Allow hostmaster to configure web servers.
+package = Hosting
+dependencies[] = hosting
+
+core = 7.x
+files[] = hosting_web_server.service.inc
+
+; Information added by drush on 2018-12-19
+version = "7.x-3.170"
+project = "hosting"
+datestamp = "1545234304"

@@ -1,0 +1,11 @@
+name = "Hosting remote import"
+description = "Helps to import sites from remote Hostmasters"
+core = 7.x
+package = Hosting
+
+files[] = hosting_remote_import.service.inc
+
+; Information added by drush on 2018-05-22
+version = "7.x-3.170"
+project = "hosting_remote_import"
+datestamp = "1527026765"

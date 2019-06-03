@@ -1,0 +1,368 @@
+<?php
+
+/**
+ * @file
+ * Code for the hosting_backup_queue module.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_backup_queue_permission() {
+  return array(
+    'create backup schedules' => array(
+      'title' => t('create backup schedules'),
+      'description' => t('TODO Add a description for \'create backup schedules\''),
+    ),
+    'administer hosting backup queue' => array(
+      'title' => t('administer hosting backup queue'),
+      'description' => t('TODO Add a description for \'administer hosting backup queue\''),
+    ),
+  );
+}
+
+/**
+ * Implements hook_hosting_queues().
+ *
+ * Return a list of queues that this module needs to manage.
+ */
+function hosting_backup_queue_hosting_queues() {
+  $queue['backup_queue'] = array(
+    'name' => t('Backup queue'),
+    'description' => t('Process the queue of backups.'),
+    'type' => 'serial', # run queue sequentially. always with the same parameters.
+    'frequency' => strtotime("1 minute", 0),
+    'items' => 2,
+    'total_items' => 1,
+    'singular' => t('backup'),
+    'plural' => t('backups'),
+    // TODO: Do we need to set this?
+    'running_items' => 0,
+  );
+  return $queue;
+}
+
+
+/**
+ * The main queue callback for the backups.
+ */
+function hosting_backup_queue_queue($count) {
+
+  if (module_exists('hosting_backup_window')) {
+    if (!hosting_backup_window_is_allowed_time_window()) {
+      return;
+    }
+  }
+
+  $sites = _hosting_backup_queue_get_outstanding_backups($count);
+
+  foreach ($sites as $site_id) {
+    if ($task = _hosting_backup_queue_get_backup_task($site_id)) {
+      drush_invoke_process('@self', "hosting-task", array($task->nid), array('strict' => FALSE), array('fork' => TRUE));
+    }
+  }
+}
+
+/**
+ * Returns the backup task to run for a given site.
+ */
+function _hosting_backup_queue_get_backup_task($site) {
+  // Check for an existing task
+  $task = hosting_get_most_recent_task($site, 'backup');
+  if (is_object($task) && in_array($task->task_status, array(HOSTING_TASK_QUEUED, HOSTING_TASK_PROCESSING))) {
+    return $task;
+  }
+  else {
+    return hosting_add_task($site, 'backup', array('description' => t('Automated backup')));
+  }
+}
+
+/**
+ * Retrieve a list of sites to backup, now.
+ *
+ * @param limit
+ *   The amount of items to return.
+ * @return
+ *   An array containing site ids.
+ */
+function _hosting_backup_queue_get_outstanding_backups($limit = 20) {
+  $return = array();
+  $interval = variable_get('hosting_backup_queue_default_interval', strtotime('1 day', 0));
+
+  _hosting_backup_queue_ensure_all_sites_denormalised();
+
+  $all_sites_with_settings = array();
+
+  // Get all the nids of sites that have specific settings.
+  $result = db_query('SELECT b.site_id, b.status, b.schedule, bq.last_backup FROM {hosting_backup_queue_sites_settings} b INNER JOIN {hosting_site} s ON b.site_id = s.nid INNER JOIN {node} n ON s.vid = n.vid LEFT JOIN {hosting_backup_queue_sites} bq ON bq.site_id = s.nid WHERE s.status = :status', array(':status' => HOSTING_SITE_ENABLED));
+
+  while ($record = $result->fetchObject()) {
+    $all_sites_with_settings[] = $record->site_id;
+    if ($record->status == 'enabled') {
+      if ($record->last_backup <= REQUEST_TIME - $record->schedule) {
+        $return[$record->last_backup] = $record->site_id;
+      }
+    }
+  }
+
+  // If site backups are globally enabled, add additional sites we don't have settings for already.
+  if (variable_get('hosting_backup_queue_default_enabled', TRUE)) {
+    // At least have an array with a zero in it.
+    if (empty($all_sites_with_settings)) {
+      $all_sites_with_settings[] = 0;
+    }
+
+    $result = db_query_range("SELECT s.nid, b.last_backup
+      FROM {hosting_site} s
+        INNER JOIN {node} n ON s.vid = n.vid
+        LEFT JOIN {hosting_backup_queue_sites} b ON b.site_id = s.nid
+      WHERE s.status = :status AND b.last_backup <= :last_backup
+        AND NOT(s.nid IN (:nids))
+        ORDER BY b.last_backup, n.nid ASC",
+      0,
+      $limit,
+      array(':status' => HOSTING_SITE_ENABLED, ':last_backup' => REQUEST_TIME - $interval, ':nids' => $all_sites_with_settings)
+    );
+
+    while ($node = $result->fetchObject()) {
+      $return[$node->last_backup] =  $node->nid;
+    }
+  }
+
+  // Now sort and trim the results.
+  ksort($return);
+  $return_sites = array();
+  while ((count($return) > 0) && (count($return_sites) < $limit)) {
+    $return_sites[] = array_shift($return);
+  }
+
+  return $return_sites;
+}
+
+/**
+ * Return the number of sites to backup.
+ */
+function hosting_backup_queue_sites_count() {
+  if (variable_get('hosting_backup_queue_default_enabled', TRUE)) {
+    // Just return the number of enabled sites.
+    $max = db_query("SELECT COUNT(nid) FROM {hosting_site} s INNER JOIN {node} n ON s.vid = n.vid WHERE s.status = :status", array(':status' => HOSTING_SITE_ENABLED))->fetchField();
+
+    $disabled_sites = db_query("SELECT COUNT(site_id) FROM {hosting_backup_queue_sites_settings} b INNER JOIN {hosting_site} s ON b.site_id = s.nid INNER JOIN {node} n ON s.vid = n.vid WHERE s.status = :sstatus AND b.status = :bstatus", array(':sstatus' => HOSTING_SITE_ENABLED, ':bstatus' => 'disabled'))->fetchField();
+
+    return max(0, $max - $disabled_sites);
+  }
+  else {
+    // We don't support per site config, just yet.
+    return db_query("SELECT COUNT(site_id) FROM {hosting_backup_queue_sites_settings} b INNER JOIN {hosting_site} s ON b.site_id = s.nid INNER JOIN {node} n ON s.vid = n.vid WHERE s.status = :sstatus AND b.status = :b.status", array(':status' => HOSTING_SITE_ENABLED, ':b.status' => 'enabled'))->fetchField();
+  }
+}
+
+/**
+ * Update the last backup timestamp of the given site.
+ */
+function hosting_backup_queue_backup_time_update($site, $timestamp = NULL) {
+  $record = array(
+    'site_id' => $site,
+    'last_backup' => !is_null($timestamp) ? $timestamp : REQUEST_TIME,
+  );
+  if (db_query('SELECT COUNT(site_id) FROM {hosting_backup_queue_sites} WHERE site_id = :site_id', array(':site_id' => $record['site_id']))->fetchField()) {
+    // Update query:
+    drupal_write_record('hosting_backup_queue_sites', $record, 'site_id');
+  }
+  else {
+    // Insert query:
+    drupal_write_record('hosting_backup_queue_sites', $record);
+  }
+}
+
+/**
+ * Clear the last backup timestamp for the given site.
+ */
+function hosting_backup_queue_backup_time_clear($site) {
+  db_delete('hosting_backup_queue_sites')
+  ->condition('site_id', $site)
+  ->execute();
+}
+
+/**
+ * Ensure that we have denormalised backup data for all enabled sites.
+ */
+function _hosting_backup_queue_ensure_all_sites_denormalised() {
+  $result = db_query('SELECT n.nid FROM {hosting_site} s INNER JOIN {node} n ON s.vid = n.vid LEFT JOIN {hosting_backup_queue_sites} b ON b.site_id = s.nid WHERE s.status = :status AND b.last_backup IS NULL', array(':status' => HOSTING_SITE_ENABLED));
+  while ($row = $result->fetchObject()) {
+    $timestamp = db_query("SELECT MAX(timestamp) FROM {hosting_site_backups} WHERE site = :site", array(':site' => $row->nid))->fetchField();
+    if (empty($timestamp)) {
+      $timestamp = 0;
+    }
+    hosting_backup_queue_backup_time_update($row->nid, $timestamp);
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function hosting_backup_queue_form_alter(&$form, $form_state, $form_id) {
+  if (($form_id == 'site_node_form') && user_access('create backup schedules')) {
+    $form['hosting_backup_queue'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Backup schedule'),
+    );
+
+    $form['hosting_backup_queue']['hosting_backup_queue_settings'] = array(
+      '#type' => 'radios',
+      '#title' => t('Backup schedule settings'),
+      '#default_value' => isset($form['#node']->hosting_backup_queue_settings) ? $form['#node']->hosting_backup_queue_settings : 'default',
+      '#required' => TRUE,
+      '#options' => array(
+        'default' => t('Default settings'),
+        'custom' => t('Site specific settings'),
+      ),
+    );
+
+    $form['hosting_backup_queue']['hosting_backup_queue_status'] = array(
+      '#type' => 'radios',
+      '#title' => t('Scheduler status'),
+      '#default_value' => isset($form['#node']->hosting_backup_queue_status) ? $form['#node']->hosting_backup_queue_status : (variable_get('hosting_backup_queue_default_enabled', TRUE) ? 'enabled' : 'disabled'),
+      '#required' => TRUE,
+      '#options' => array(
+        'enabled' => t('Backups enabled'),
+        'disabled' => t('Backups disabled'),
+      ),
+      '#states' => array(
+        // Only visible this field when not using default settings
+        'visible' => array(
+          ':input[name="hosting_backup_queue_settings"]' => array('value' => 'custom'),
+        ),
+      ),
+    );
+
+    $intervals = drupal_map_assoc(array(
+      strtotime('1 hour', 0),
+      strtotime('6 hours', 0),
+      strtotime('12 hours', 0),
+      strtotime('1 day', 0),
+      strtotime('7 days', 0),
+      strtotime('28 days', 0),
+      strtotime('1 year', 0),
+    ), 'format_interval');
+
+    $form['hosting_backup_queue']['hosting_backup_queue_schedule'] = array(
+      '#type' => 'select',
+      '#title' => t('Backup interval'),
+      '#default_value' => isset($form['#node']->hosting_backup_queue_schedule) ? $form['#node']->hosting_backup_queue_schedule : variable_get('hosting_backup_queue_default_interval', strtotime('1 day', 0)),
+      '#required' => TRUE,
+      '#options' => $intervals,
+      '#states' => array(
+        // Only enable this field when the 'Site specific settings' is enabled.
+        'enabled' => array(
+          ':input[name="hosting_backup_queue_settings"]' => array('value' => 'custom'),
+        ),
+        // Only visible this field when backups is enabled.
+        'visible' => array(
+          ':input[name="hosting_backup_queue_status"]' => array('value' => 'enabled'),
+          ':input[name="hosting_backup_queue_settings"]' => array('value' => 'custom'),
+        ),
+      ),
+    );
+    return $form;
+  }
+
+  if ($form_id == 'hosting_site_backup_manager_settings' && user_access('administer hosting backup queue')) {
+    $form['hosting_backup_queue_default_enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Backup sites by default'),
+      '#description' => t('Sites without a specific backup schedule specified will get the settings here. These settings can be overriden by configuring specific sites.'),
+      '#default_value' => variable_get('hosting_backup_queue_default_enabled', TRUE),
+      '#weight' => -19,
+    );
+
+    $intervals = drupal_map_assoc(array(
+      strtotime('1 hour', 0),
+      strtotime('6 hours', 0),
+      strtotime('12 hours', 0),
+      strtotime('1 day', 0),
+      strtotime('7 days', 0),
+      strtotime('28 days', 0),
+      strtotime('1 year', 0),
+    ), 'format_interval');
+
+    $form['hosting_backup_queue_default_interval'] = array(
+      '#type' => 'select',
+      '#title' => t('Default backup interval'),
+      '#default_value' => variable_get('hosting_backup_queue_default_interval', strtotime('1 day', 0)),
+      '#options' => $intervals,
+      '#weight' => -20,
+    );
+
+  }
+}
+
+/**
+ * Implements hook_insert().
+ */
+function hosting_backup_queue_insert($node) {
+  if ((!empty($node->hosting_backup_queue_settings)) && ($node->hosting_backup_queue_settings != 'default')) {
+    $record = array(
+      'site_id' => $node->nid,
+      'status' => $node->hosting_backup_queue_status,
+      'schedule' => $node->hosting_backup_queue_schedule,
+    );
+    drupal_write_record('hosting_backup_queue_sites_settings', $record);
+
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function hosting_backup_queue_node_update($node) {
+  if (!empty($node->hosting_backup_queue_settings)) {
+    if ($node->hosting_backup_queue_settings == 'default') {
+      hosting_backup_queue_delete($node);
+    }
+    else {
+      $record = array(
+        'site_id' => $node->nid,
+        'status' => $node->hosting_backup_queue_status,
+        'schedule' => $node->hosting_backup_queue_schedule,
+      );
+      if (db_query('SELECT COUNT(site_id) FROM {hosting_backup_queue_sites_settings} WHERE site_id = :site_id', array(':site_id' => $node->nid))->fetchField()) {
+        // Update
+        drupal_write_record('hosting_backup_queue_sites_settings', $record, 'site_id');
+      }
+      else {
+        // Insert
+        drupal_write_record('hosting_backup_queue_sites_settings', $record);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_delete().
+ */
+function hosting_backup_queue_delete($node) {
+  db_delete('hosting_backup_queue_sites_settings')
+  ->condition('site_id', $node->nid)
+  ->execute();
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function hosting_backup_queue_node_load($nodes, $types) {
+  foreach ($nodes as $node) {
+    if ($node->type == 'site') {
+      if ($record = db_query("SELECT status, schedule FROM {hosting_backup_queue_sites_settings} WHERE site_id = :site_id", array(':site_id' => $node->nid))->fetchObject()) {
+        $node->hosting_backup_queue_settings = 'custom';
+        $node->hosting_backup_queue_status = $record->status;
+        $node->hosting_backup_queue_schedule = $record->schedule;
+      }
+      else {
+        $node->hosting_backup_queue_settings = 'default';
+        $node->hosting_backup_queue_status = variable_get('hosting_backup_queue_default_enabled', TRUE) ? 'enabled' : 'disabled';
+        $node->hosting_backup_queue_schedule = variable_get('hosting_backup_queue_default_interval', strtotime('1 day', 0));
+      }
+    }
+  }
+}

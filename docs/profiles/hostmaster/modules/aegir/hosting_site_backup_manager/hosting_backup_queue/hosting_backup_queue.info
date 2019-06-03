@@ -1,0 +1,11 @@
+name = Backup queue
+description = Allows hourly/daily/weekly scheduled backups of Aegir sites.
+core = 7.x
+package = Aegir Backup
+dependencies[] = hosting_site
+dependencies[] = hosting_site_backup_manager
+
+; Information added by drush on 2017-08-24
+version = "7.x-3.170"
+project = "hosting_site_backup_manager"
+datestamp = "1503566798"

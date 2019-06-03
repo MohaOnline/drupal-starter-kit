@@ -1,0 +1,140 @@
+<?php
+
+/**
+ * Implements hook_hosting_tasks().
+ */
+function hosting_remote_import_hosting_tasks() {
+  $options = array();
+
+  $options['server']['remote_import_list_sites'] = array(
+    'title' => t('List remote sites'),
+    'description' => t('List all the sites on the remote server.'),
+    'dialog' => FALSE,
+    'hidden' => TRUE,
+  );
+
+  $options['server']['remote_import'] = array(
+    'title' => t('Import remote site'),
+    'description' => t('Import a remote site from a server.'),
+    'dialog' => FALSE,
+    'hidden' => TRUE,
+  );
+
+  return $options;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function hosting_remote_import_menu() {
+  $items = array();
+
+  $items['import-remote-sites'] = array(
+    'type' => MENU_NORMAL_ITEM,
+    'title' => 'Import remote sites',
+    'access arguments' => array('view server'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hosting_remote_import_form'),
+    'file' => 'hosting_remote_import.global.inc',
+  );
+
+  $items['node/%node/import-sites'] = array(
+    'type' => MENU_LOCAL_TASK,
+    'title' => 'Import remote sites',
+    'access callback' => 'hosting_remote_import_list_sites_access',
+    'access arguments' => array(1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hosting_remote_import_sites_form', 1),
+    'file' => 'hosting_remote_import.sites_form.inc',
+  );
+
+  $items['node/%node/import-sites/chooser/%/%'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'Import remote sites',
+    'access callback' => 'hosting_remote_import_chooser_access',
+    'access arguments' => array(1, 4, 5),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hosting_remote_import_sites_choose_site_form', 1, 4),
+    'file' => 'hosting_remote_import.site_choose_form.inc',
+  );
+
+  $items['node/%node/import-sites/platform/%/%/%'] = array(
+    'type' => MENU_CALLBACK,
+    'title' => 'Import remote sites',
+    'access callback' => 'hosting_remote_import_platform_access',
+    'access arguments' => array(1, 4, 5, 6),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hosting_remote_import_sites_choose_platform_form', 1, 4, 5),
+    'file' => 'hosting_remote_import.local_settings_form.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_remote_import_permission() {
+  return array(
+    'import sites from remote servers' => array(
+      'title' => t('import sites from remote servers'),
+      'description' => t('TODO Add a description for \'import sites from remote servers\''),
+    ),
+  );
+}
+
+/**
+ * Access callback for the remote import functionality.
+ */
+function hosting_remote_import_list_sites_access($node, $account = NULL) {
+  // We only work on server nodes, nothing else.
+  if ($node->type != 'server') {
+    return FALSE;
+  }
+
+  // The server needs the remote_import service.
+  $servers = hosting_get_servers('remote_import');
+  if (!isset($servers[$node->nid])) {
+    return FALSE;
+  }
+
+  if (is_null($account)) {
+    $account = $GLOBALS['user'];
+  }
+
+  return user_access('import sites from remote servers') && node_access('view', $node, $account);
+
+}
+
+/**
+ * Access callback for the second step of remote import functionality.
+ */
+function hosting_remote_import_chooser_access($node, $vid, $token) {
+  return hosting_remote_import_list_sites_access($node) && ($token == drupal_get_token($vid));
+}
+
+/**
+ * Access callback for the third step of remote import functionality.
+ */
+function hosting_remote_import_platform_access($node, $vid, $url, $token) {
+  return hosting_remote_import_list_sites_access($node) && ($token == drupal_get_token($vid . '/' . $url));
+}
+
+/**
+ * Implements hook_hosting_service_type().
+ */
+function hosting_remote_import_hosting_service_type() {
+  return array(
+    'remote_import' => array(// Machine name
+      'title' => t('Remote Import'), // Human-readable name
+      'weight' => 0, // Optional, defaults to 0
+    ),
+  );
+}
+
+/**
+ * Implements hook_hosting_service().
+ */
+function hosting_remote_import_hosting_service() {
+  return array('hostmaster' => 'remote_import'); // Service implementation => service type.
+}

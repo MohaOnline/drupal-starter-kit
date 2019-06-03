@@ -1,0 +1,26 @@
+name = Aegir Platform Composer
+description = Build Aegir platforms from Composer.
+core = 7.x
+package = Aegir Deployment
+dependencies[] = features
+dependencies[] = aegir_objects
+dependencies[] = features
+dependencies[] = hosting_platform
+dependencies[] = hosting_deploy
+dependencies[] = text
+features[features_api][] = api:2
+features[field_base][] = field_composer_project_docroot
+features[field_base][] = field_composer_project_package
+features[field_base][] = field_composer_project_path
+features[field_base][] = field_composer_project_version
+features[field_instance][] = node-platform-field_composer_project_docroot
+features[field_instance][] = node-platform-field_composer_project_package
+features[field_instance][] = node-platform-field_composer_project_path
+features[field_instance][] = node-platform-field_composer_project_version
+files[] = includes/HostingPlatformComposerForm.inc
+files[] = includes/HostingPlatformComposerNode.inc
+
+; Information added by drush on 2019-04-01
+version = "7.x-3.2"
+project = "hosting_deploy"
+datestamp = "1554147843"

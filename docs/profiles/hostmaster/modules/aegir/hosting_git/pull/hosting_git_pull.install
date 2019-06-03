@@ -1,0 +1,49 @@
+<?php
+
+function hosting_git_pull_schema() {
+  $schema = array();
+
+  $schema['hosting_git_pull'] = array(
+    'description' => 'A mapping between platform node IDs and Git pull data',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The platform nid from the {node} table.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'pull_method' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Either DISABLED, QUEUE or CALLBACK',
+      ),
+      'last_pull' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'last_pull_status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'last_pull_ip' => array(
+        'type' => 'varchar',
+        'length' => 39,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary_key' => array('nid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Allow NULLs in 'db_name' column in 'hosting_site' table.
+ */
+function hosting_git_pull_update_7300() {
+  db_change_field('hosting_git_pull', 'last_pull_ip', 'last_pull_ip',
+    array('type' => 'varchar', 'length' => 39, 'not null' => FALSE)
+  );
+}

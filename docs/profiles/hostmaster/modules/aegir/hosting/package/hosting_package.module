@@ -1,0 +1,478 @@
+<?php
+/**
+ * @file
+ * Defines package node types
+ *
+ * Packages are somewhat analogous to Drupal.org projects. i.e.: components that
+ * can be installed onto Drupal sites.
+ */
+
+define('HOSTING_PACKAGE_INSTANCE_EXCLUDE', -1);
+
+require_once 'hosting_package.instance.inc';
+
+function _hosting_package_types() {
+  return array(
+    'profile' => t('Installation Profiles'),
+    'module' => t('Modules'),
+    'theme' => t('Themes'),
+  );
+}
+
+/**
+ * Implements hook_node_info().
+ */
+function hosting_package_node_info() {
+  #package management
+  $types["package"] =  array(
+    "type" => 'package',
+    "name" => t('Package'),
+    'base' => 'hosting_package',
+    "has_title" => FALSE,
+    "title_label" => '',
+    "description" => hosting_node_help("package"),
+    "has_body" => 0,
+    "body_label" => '',
+    "min_word_count" => 0,
+  );
+
+  return $types;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_package_permission() {
+  return array(
+    'create package' => array(
+      'title' => t('create package'),
+    ),
+    'view package' => array(
+      'title' => t('view package'),
+    ),
+    'edit package' => array(
+      'title' => t('edit package'),
+    ),
+    'delete package' => array(
+      'title' => t('delete package'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_access().
+ * @todo: check that we don't want to manage this through node_grants.
+ */
+function hosting_package_node_access($node, $op, $account) {
+  $type = is_string($node) ? $node : $node->type;
+  if ($type != 'platform' ) {
+    return NODE_ACCESS_IGNORE;
+  }
+
+  switch ($op) {
+    case 'create':
+      return user_access('create package', $account);
+      break;
+    case 'view':
+      return user_access('view package', $account);
+      break;
+    case 'update':
+      return user_access('edit package', $account);
+      break;
+    case 'delete':
+      return user_access('delete package', $account);
+      break;
+    default:
+      break;
+  }
+}
+
+/**
+ * Return a list of available install profiles.
+ *
+ * @param null $platform_nid
+ *   Only load install profiles available on this platform.
+ *
+ * @param string $field
+ *   The field to use for the value of the return array.
+ *
+ * @return array
+ *   The list of available install profiles, ready to use as #options in a form.
+ */
+function hosting_get_profiles($platform_nid = NULL, $field = 'title') {
+  $profiles = array();
+  if (!is_null($platform_nid)) {
+    $instances = hosting_package_instances_load(array(
+      'i.rid' => $platform_nid,
+      'p.package_type' => 'profile',
+      'n.status' => 1,
+    ));
+  }
+  else {
+    $instances = hosting_package_instances_load(array(
+      'p.package_type' => 'profile',
+      'n.status' => 1,
+      'r.type' => 'platform',
+    ));
+  }
+
+  // Prepare list of available profiles, preventing the use of blocked ones.
+  foreach ($instances as $iid => $instance) {
+    if (!in_array($instance->short_name, variable_get('hosting_blocked_profiles', array('hostslave', 'hostmaster')))) {
+      $profiles[$instance->package_id] = $instance->$field;
+    }
+  }
+  return $profiles;
+}
+
+/**
+ * @todo document this function
+ */
+function hosting_get_profile_platforms($profile, $check_old_short_name = FALSE) {
+  $defaults = array('default', 'standard', 'minimal', 'testing');
+
+  $platforms = array();
+  $instances = hosting_package_instances_load(array(
+    'i.package_id' => $profile,
+    'n.status' => 1,
+    'r.status' => 1,
+    'r.type' => 'platform',
+  ));
+
+  if ($check_old_short_name) {
+    $instances = array_merge($instances, hosting_package_instances_load(array(
+      'p.old_short_name' => $instances[key($instances)]->short_name,
+      'n.status' => 1,
+      'r.status' => 1,
+      'r.type' => 'platform',
+    )));
+  }
+  foreach ($instances as $iid => $instance) {
+    $platform = node_load($instance->rid);
+    // this is one of the default profiles
+    if (in_array($instance->short_name, $defaults) &&
+      sizeof(array_diff(array_values($platform->profiles), $defaults)) &&
+      variable_get('hosting_ignore_default_profiles', FALSE)) {
+      // there are other profiles available on this platform. skip this.
+      continue;
+    }
+    if ($platform->platform_status == HOSTING_PLATFORM_ENABLED) {
+      $platforms[$instance->rid] = $platform->title;
+    }
+  }
+
+  return $platforms;
+}
+
+/**
+ * @todo document this function
+ */
+function hosting_get_profile_languages($profile = NULL, $platform = NULL) {
+  $languages['en'] = _hosting_language_name('en');
+  if ($profile && $platform) {
+    $instance = hosting_package_instance_load(array(
+      'i.rid' => $platform,
+      'i.package_id' => $profile,
+    ));
+    $languages = array_merge($languages, $instance->languages);
+  }
+  else {
+    $result = db_query("SELECT DISTINCT language FROM {hosting_package_languages}");
+    while ($lang = $result->fetch()) {
+      $languages[$lang->language] = _hosting_language_name($lang->language);
+    }
+  }
+  return $languages;
+}
+
+/**
+ * A generic method for finding whichever packages you are looking for.
+ *
+ * This works similarly to node_load's implementation, but it will only look
+ * for fields related to packages.
+ *
+ * @param
+ *    An associated array containing the following properties
+ *    - name => A string containing the friendly name of the package
+ *    - short_name => The name of the drupal package in the system table
+ *    - old_short_name => The name that a package used to be called, for
+ *      migration purposes.
+ *    - package_type => The type of package. (theme|module|profile|engine)
+ *
+ * @return array|bool
+ */
+function _hosting_package_load($param) {
+  // Turn the conditions into a query.
+  foreach ($param as $key => $value) {
+    $cond[] = 'p.' . db_escape_table($key) . " = '%s'";
+    $arguments[] = $value;
+  }
+  $cond = implode(' AND ', $cond);
+  // TODO convert this statement to a DBTNG dynamic query.
+  $result = db_query('SELECT n.nid FROM {node} n left join {hosting_package} p on n.nid = p.nid WHERE ' . $cond, $arguments);
+  while ($nid = $result->fetch()) {
+    $return[$nid->nid] = node_load($nid->nid);
+  }
+  if (sizeof($return)) {
+    return $return;
+  }
+  return NULL;
+}
+
+/**
+ * @todo document this function
+ */
+function hosting_get_packages_by_type($type) {
+  $result = db_query("SELECT nid FROM {hosting_package} WHERE package_type = :package_type", array(':package_type' => $type));
+
+  if ($nid = $result->fetchField()) {
+    return node_load($nid);
+  }
+  return FALSE;
+}
+
+/**
+ * @todo document this function
+ */
+function hosting_get_default_profile($default = NULL) {
+  if ($p = hosting_get_package(variable_get('hosting_default_profile', 'standard'), 'profile')) {
+    return $p->nid;
+  }
+  elseif ($p = hosting_get_package('standard', 'profile')) {
+    return $p->nid;
+  }
+  elseif ($p = hosting_get_package('default', 'profile')) {
+    return $p->nid;
+  }
+  return $default;
+}
+
+/**
+ * @todo document this function
+ */
+function hosting_get_package($short_name, $type) {
+  $result = db_query("SELECT nid
+                      FROM {hosting_package}
+                      WHERE short_name = :short_name
+                      AND package_type = :type
+                     ", array(
+                       ':short_name' => $short_name,
+                       ':type' => $type,
+                      )
+                    );
+  if ($nid = $result->fetchField()) {
+    return node_load($nid);
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_insert().
+ */
+function hosting_package_insert($node) {
+  $id = db_insert('hosting_package')
+    ->fields(array(
+      'vid' => $node->vid,
+      'nid' => $node->nid,
+      'package_type' => $node->package_type,
+      'short_name' => $node->short_name,
+      'old_short_name' => $node->old_short_name,
+      'description ' => $node->description,
+    ))
+    ->execute();
+}
+
+
+/**
+ * Implements hook_update().
+ *
+ * As an existing node is being updated in the database, we need to do our own
+ * database updates.
+ */
+function hosting_package_update($node) {
+  // if this is a new node or we're adding a new revision,
+  if (!empty($node->revision)) {
+    hosting_package_insert($node);
+  }
+  else {
+    db_update('hosting_package')
+      ->fields(array(
+        'package_type' => $node->package_type,
+        'short_name' => $node->short_name,
+        'old_short_name' => $node->old_short_name,
+        'description' => $node->description,
+      ))
+      ->condition('nid', $node->nid)
+      ->execute();
+  }
+}
+
+/**
+ * @todo document this function
+ */
+function hosting_nodeapi_package_delete_revision(&$node) {
+  db_delete('hosting_package')
+    ->condition('vid', $node->vid)
+    ->execute();
+}
+
+/**
+ * Implements hook_delete().
+ */
+function hosting_package_delete($node) {
+  db_delete('hosting_package')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Implements hook_load().
+ */
+function hosting_package_load($nodes) {
+  foreach ($nodes as $nid => &$node) {
+    $additions = db_query('SELECT package_type, short_name, old_short_name, description FROM {hosting_package} WHERE vid = :vid', array(':vid' => $node->vid))->fetch();
+    foreach ($additions as $property => &$value) {
+      $node->$property = $value;
+    }
+  }
+}
+
+/**
+ * Implements hook_view().
+ */
+function hosting_package_view($node, $view_mode, $langcode = NULL) {
+  hosting_set_breadcrumb($node);
+  $node->content['info']['#prefix'] = '<div id="hosting-package-info">';
+  $node->content['info']['package_type'] = array(
+    '#type' => 'item',
+    '#title' => t('Package Type'),
+    '#markup' => filter_xss($node->package_type),
+  );
+  $node->content['info']['short_name'] = array(
+    '#type' => 'item',
+    '#title' => t('Project Name'),
+    '#markup' => filter_xss($node->short_name),
+  );
+
+  if (!empty($node->old_short_name)) {
+    $node->content['info']['old_short_name'] = array(
+      '#type' => 'item',
+      '#title' => t('Previous Project Name'),
+      '#markup' => filter_xss($node->old_short_name),
+    );
+  }
+  $node->content['info']['#suffix'] = '</div>';
+
+  return $node;
+}
+
+/**
+ * Implements hook_hosting_site_site_list_filters().
+ */
+function hosting_package_hosting_site_site_list_filters() {
+  return array('profile');
+}
+
+/**
+ * Return names of the languages available
+ */
+function _hosting_language_names($languages) {
+  foreach ($languages as $language) {
+    // Try to use verbose language name
+    $return[$language] = _hosting_language_name($language);
+  }
+  return $return;
+}
+
+/**
+ * Lookup a language name based on the iso language code.
+ */
+function _hosting_language_name($language) {
+  $name = $language;
+  include_once DRUPAL_ROOT . '/includes/iso.inc';
+  $locales = _locale_get_predefined_list();
+  if (isset($locales[$language])) {
+    $name = $locales[$language][0];
+    if (isset($locales[$language][1])) {
+      $name .= ' ' . t('(@language)', array('@language' => $locales[$language][1]));
+    }
+  }
+  return $name;
+}
+
+/**
+ * @todo document this function
+ */
+function _hosting_package_plural_map($key = NULL) {
+  static $plural_map = array(
+    'modules' => 'module',
+    'themes' => 'theme',
+    'profiles' => 'profile',
+    'engines' => 'engine',
+    'platforms' => 'platform',
+  );
+  if (is_null($key)) {
+    return $plural_map;
+  }
+  return (array_key_exists($key, $plural_map)) ? $plural_map[$key] : $key;
+}
+
+/**
+ * Sync the package and package release nodes with the information
+ * retrieved from the verify task
+ *
+ * @todo Make this prettier.
+ */
+function hosting_package_sync(&$data) {
+  foreach ($data as $plural => $packages) {
+    $type = _hosting_package_plural_map($plural);
+    foreach ($packages as $short_name => $file) {
+      $name = isset($file['info']['name']) ? $file['info']['name'] : $short_name;
+      if (!($package = hosting_get_package($short_name, $type))) {
+        // Create a new package.
+        $package = new stdClass();
+        $package->type = 'package';
+        $package->uid = 1;
+        $package->package_type = $type;
+        $package->short_name = $short_name;
+        $package->old_short_name = isset($file['info']['old_short_name']) ? $file['info']['old_short_name'] : '';
+        $package->status = 1;
+      }
+
+      // we only call node save when the title, description changes
+      // or when it's a new package.
+      if (!isset($package->nid) ||
+        (isset($package->title) && ($package->title != $name)) ||
+        (isset($file['info']['description']) && ($package->description != $file['info']['description'])) ||
+        (isset($file['info']['old_short_name']) && ($package->old_short_name != $file['info']['old_short_name']))) {
+
+        $package->title = $name;
+        $package->description = isset($file['info']['description']) ? $file['info']['description'] : '';
+        $package->old_short_name = isset($file['info']['old_short_name']) ? $file['info']['old_short_name'] : '';
+
+        node_save($package);
+      }
+      $data[$plural][$short_name]['package_id'] = $package->nid;
+    }
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function hosting_package_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'hosting_package') . '/includes/views',
+  );
+}
+
+/**
+ * Control block visibility.
+ */
+function hosting_package_block_visibility() {
+  $node = menu_get_object();
+  if (!empty($node)) {
+    return $node->type == 'package' && $node->package_type != 'profile';
+  }
+}

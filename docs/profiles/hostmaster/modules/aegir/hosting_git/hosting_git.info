@@ -1,0 +1,10 @@
+name = Git integration
+description = Allows Hostmaster managed sites and platforms to use Git.
+package = Aegir Git
+dependencies[] = hosting_site
+core = 7.x
+
+; Information added by drush on 2018-10-25
+version = "7.x-3.170"
+project = "hosting_git"
+datestamp = "1540450908"

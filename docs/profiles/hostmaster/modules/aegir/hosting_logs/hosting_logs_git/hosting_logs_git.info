@@ -1,0 +1,12 @@
+name = Hosting Logs Git
+description = Provides a site or platforms Git commit log to hostmaster front end.
+core = 7.x
+package = Hosting
+
+dependencies[] = hosting_site
+dependencies[] = hosting_logs
+
+; Information added by drush on 2017-10-27
+version = "7.x-3.170"
+project = "hosting_logs"
+datestamp = "1509130750"

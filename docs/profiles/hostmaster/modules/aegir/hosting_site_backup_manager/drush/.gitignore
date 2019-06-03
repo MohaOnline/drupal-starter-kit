@@ -1,0 +1,10 @@
+# Ignore paths from Eclipse
+.buildpath
+.externalToolBuilders/
+.project
+.settings/
+
+
+# OS X 
+.DS_Store
+

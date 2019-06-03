@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the hosting_backup_queue module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function hosting_backup_queue_schema() {
+  $schema = array();
+
+  $schema['hosting_backup_queue_sites'] = array(
+    'description' => 'A cache of the last backup times of all enabled sites.',
+    'fields' => array(
+      'site_id' => array(
+        'description' => 'The sites nid from the {node} table.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'last_backup' => array(
+        'description' => 'The timestamp of the last backup of this site.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('site_id'),
+    'indexes' => array(
+      'last_backup' => array('last_backup'),
+    ),
+  );
+
+
+  $schema['hosting_backup_queue_sites_settings'] = array(
+    'description' => 'Site specific settings for backup schedules.',
+    'fields' => array(
+      'site_id' => array(
+        'description' => 'The sites nid from the {node} table.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'description' => 'The status of this backup schedule.',
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+      ),
+      'schedule' => array(
+        'description' => 'The time between backups.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('site_id'),
+    'indexes' => array(
+      'last_backup' => array('status'),
+    ),
+  );
+
+
+
+  return $schema;
+}
+
+/**
+ * Schema update.
+ */
+function hosting_backup_queue_update_6100() {
+  $schema['hosting_backup_queue_sites_settings'] = array(
+    'description' => t('Site specific settings for backup schedules.'),
+    'fields' => array(
+      'site_id' => array(
+        'description' => t('The sites nid from the {node} table.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'description' => t('The status of this backup schedule.'),
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+      ),
+      'schedule' => array(
+        'description' => t('The time between backups.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('site_id'),
+    'indexes' => array(
+      'last_backup' => array('status'),
+    ),
+  );
+
+  foreach ($schema as $table => $spec) {
+    db_create_table($table, $spec);
+  }
+}

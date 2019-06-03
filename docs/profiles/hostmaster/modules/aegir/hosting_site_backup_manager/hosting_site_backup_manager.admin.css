@@ -1,0 +1,16 @@
+/**
+ * These are styles for the admin settings page.
+ *
+ * We have to do it like this, apologies to themers.
+ */
+.hosting-backup-gc-inline {
+  float: left;
+}
+
+.hosting-backup-gc-narrow-first {
+  width: 12em;
+}
+
+.hosting-backup-gc-narrow-second {
+  width: 10em;
+}

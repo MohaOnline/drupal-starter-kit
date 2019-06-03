@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * SelfSigned certificate generation service.
+ */
+
+/**
+ * Implements hook_hosting_service().
+ */
+function hosting_self_signed_hosting_service() {
+  return array('SelfSigned' => 'Certificate');
+}

@@ -1,0 +1,75 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the hosting_git module.
+ */
+
+
+/**
+ * Implements hook_schema().
+ */
+function hosting_git_schema() {
+  $schema = array();
+
+  $schema['hosting_git'] = array(
+    'description' => 'A mapping between platform or site node IDs and Git data',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The platform or site nid from the {node} table.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'repo_url' => array(
+        'description' => 'The URL given to the git repository',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'repo_path' => array(
+        'description' => 'The absolute path to clone the repository to.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+      'repo_docroot' => array(
+        'description' => 'The relative path within the git repository where sites will be hosted.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+      'git_ref' => array(
+        'description' => 'The current git branch or tag.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('nid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Add repo_path and repo_docroot fields.
+ */
+function hosting_git_update_7301 () {
+  db_add_field('hosting_git', 'repo_path', array(
+    'description' => 'The absolute path to clone the repository to.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => FALSE,
+    'default' => '',
+  ));
+  db_add_field('hosting_git', 'repo_docroot', array(
+    'description' => 'The (relative) path within a git repository where sites will be hosted.',
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => FALSE,
+    'default' => '',
+  ));
+}

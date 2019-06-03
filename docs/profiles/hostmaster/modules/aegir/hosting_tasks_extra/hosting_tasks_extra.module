@@ -1,0 +1,271 @@
+<?php
+
+/**
+ * Implements hook_hosting_tasks().
+ */
+function hosting_tasks_extra_hosting_tasks() {
+  $tasks = array();
+
+  $tasks['site']['flush_cache'] = array(
+    'title' => t('Flush all caches'),
+    'description' => t('Flushes all caches on this site.'),
+  );
+  $tasks['site']['rebuild_registry'] = array(
+    'title' => t('Rebuild registry'),
+    'description' => t('Rebuilds the registry and flushes all caches on this site.'),
+    'dialog' => TRUE,
+  );
+  $tasks['site']['run_cron'] = array(
+    'title' => t('Run cron'),
+    'description' => t('Runs cron on this site.'),
+  );
+  $tasks['site']['update'] = array(
+    'title' => t('Run db updates'),
+    'description' => t('Runs database updates on this site.'),
+    'dialog' => TRUE,
+  );
+  $tasks['site']['update_translations'] = array(
+    'title' => t('Update translations'),
+    'description' => t('Updates translations on this site.'),
+    'dialog' => TRUE,
+  );
+  $tasks['site']['features_revert_all'] = array(
+    'title' => t('Revert features'),
+    'description' => t('Revert all Features modules overrides on this site.'),
+    'dialog' => TRUE,
+  );
+  $tasks['site']['features_update_all'] = array(
+    'title' => t('Update features'),
+    'description' => t('Update all Features modules on this site: write overrides to files.'),
+    'dialog' => TRUE,
+  );
+  $tasks['server']['flush_drush_cache'] = array(
+    'title' => t('Flush Drush cache'),
+    'description' => t('Flushes the Drush cache on this (web) server.'),
+  );
+
+  return $tasks;
+}
+
+/**
+ * Callback for site action.
+ *
+ * @see: hosting_task_action_info().
+ */
+function hosting_site_flush_cache_action($node) {
+  hosting_add_task($node->nid, 'flush_cache');
+}
+
+/**
+ * Callback for site action.
+ *
+ * @see: hosting_task_action_info().
+ */
+function hosting_site_rebuild_registry_action($node) {
+  hosting_add_task($node->nid, 'rebuild_registry');
+}
+
+/**
+ * Callback for site action.
+ *
+ * @see: hosting_task_action_info().
+ */
+function hosting_site_run_cron_action($node) {
+  hosting_add_task($node->nid, 'run_cron');
+}
+
+/**
+ * Callback for site action.
+ *
+ * @see: hosting_task_action_info().
+ */
+function hosting_site_update_action($node) {
+  hosting_add_task($node->nid, 'update');
+}
+
+/**
+ * Callback for site action.
+ *
+ * @see: hosting_task_action_info().
+ */
+function hosting_site_update_translations_action($node) {
+  hosting_add_task($node->nid, 'update_translations');
+}
+
+/**
+ * Callback for server action.
+ *
+ * @see: hosting_task_action_info().
+ */
+function hosting_server_flush_drush_cache_action($node) {
+  hosting_add_task($node->nid, 'flush_drush_cache');
+}
+
+/**
+ * Callback for site action.
+ *
+ * @see: hosting_task_action_info().
+ */
+function hosting_site__action($node) {
+  hosting_add_task($node->nid, '');
+}
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_tasks_extra_permission() {
+  return array(
+    'create rebuild_registry task' => array(
+      'title' => t('create rebuild_registry task'),
+    ),
+    'create flush_cache task' => array(
+      'title' => t('create flush_cache task'),
+    ),
+    'create run_cron task' => array(
+      'title' => t('create run_cron task'),
+    ),
+    'create update task' => array(
+      'title' => t('create update task'),
+      'description' => t('Run pending database updates on a site.'),
+    ),
+    'create update_translations task' => array(
+      'title' => t('create update translations task'),
+    ),
+    'create flush_drush_cache task' => array(
+      'title' => t('create flush_drush_cache task'),
+    ),
+    'create features_revert_all task' => array(
+      'title' => t('create features_revert_all task'),
+    ),
+    'create features_update_all task' => array(
+      'title' => t('create features_update_all task'),
+    ),
+  );
+}
+
+/**
+ * Implements hosting_task_TASK_TYPE_form().
+ */
+function hosting_task_update_form($node) {
+  // Gather a list of operations to execute.
+  $all_ops = module_invoke_all('hosting_task_update_ops');
+  uasort($all_ops, 'element_sort');
+  $value = '<div>The following operations will be executed on <em>' . $node->title . '</em>:<br /><ul>';
+  foreach ($all_ops as $item) {
+    $value .= '<li>' . $item['#description'] . '</li>';
+  }
+  $value .= '</ul></div>';
+  $form['operations'] = array(
+    '#value' => $value,
+  );
+
+  $platform_node = node_load($node->platform);
+  $core_major_version = $platform_node->release->version[0];
+  if ($core_major_version >= 8) {
+    $form['entity_updates'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Run automatic entity schema updates at the end of any update hooks.'),
+    );
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_hosting_task_update_ops().
+ *
+ * @see: hosting_task_update_form().
+ */
+function hosting_tasks_extra_hosting_task_update_ops() {
+  return array(
+    'site update' => array(
+      '#description' => 'Run site updates (update.php).',
+      '#weight' => 0,
+    ),
+  );
+}
+
+function hosting_task_update_translations_form_validate($form, &$form_state) {
+  $site = node_load($form_state['values']['nid']);
+
+  // If the l10n_update module is not enabled, check if it is a Drupal 8 site.
+  if (!_hosting_package_site_has_module($site, 'l10n_update')) {
+    $platform_node = node_load($site->platform);
+    $core_major_version = $platform_node->release->version[0];
+    if ($core_major_version < 8) {
+      form_set_error('nid', t('You need to enable the module Localization update on this site and then clear the Drush cache before running this task.'));
+    }
+  }
+}
+
+/**
+ * Form for the Features Update task.
+ * @return mixed
+ */
+function hosting_task_features_update_all_form($node) {
+  $form['features'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Features to update'),
+    '#description' => '<p>' . t('Enter the names of the features modules you would like to update.  If left empty, all features will be updated.') . '</p>',
+  );
+  $form['revert'] = array(
+    '#title' => t('Revert Features after updating.'),
+    '#type' => 'checkbox',
+    '#default_value' => 0,
+    '#description' => t('Once the features have been updated, run <code>drush features-revert --force</code>. This can help to keep this environment in the desired state.'),
+  );
+  return $form;
+}
+
+/**
+ * Implements hosting_task_TASK_TYPE_form_validate().
+ */
+function hosting_task_features_update_all_form_validate($form, &$form_state) {
+  $site = node_load($form_state['values']['nid']);
+}
+
+
+/**
+ * Form for the Features Revert task.
+ * @return mixed
+ */
+function hosting_task_features_revert_all_form($node) {
+  $form['features'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Features to revert'),
+    '#description' => '<p>' . t('Enter the names of the features modules you would like to revert.  If left empty, all features will be reverted.') . '</p>',
+  );
+  $form['force_revert'] = array(
+    '#title' => t('Force reverting features even if current state matches defaults.'),
+    '#type' => 'checkbox',
+    '#default_value' => 0,
+    '#description' => t('Use the "--force" option in the <code>drush features-revert</code> command'),
+  );
+  return $form;
+}
+
+/**
+ * Implements hosting_task_TASK_TYPE_form_validate().
+ */
+function hosting_task_features_revert_all_form_validate($form, &$form_state) {
+  $site = node_load($form_state['values']['nid']);
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function hosting_tasks_extra_form_alter(&$form, &$form_state, $form_id)
+{
+  // Hosting Task Forms
+  if ($form_id == 'hosting_task_confirm_form') {
+    switch ($form['task']['#value']) {
+
+      case 'features_update_all':
+        drupal_set_title(t('Update Features'));
+        break;
+      case 'features_revert_all':
+        drupal_set_title(t('Revert Features'));
+        break;
+
+    }
+  }
+}

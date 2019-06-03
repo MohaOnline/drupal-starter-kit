@@ -1,0 +1,1013 @@
+<?php
+
+/**
+ * @file
+ * Hosting site backup manager module.
+ *
+ * Adds a backup tab to the site node.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function hosting_site_backup_manager_menu() {
+  $items = array();
+
+  $items['admin/hosting/backup_manager'] = array(
+    'title' => 'Backup manager',
+    'description' => 'Configure backup manager',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('hosting_site_backup_manager_settings'),
+    'access arguments' => array('administer hosting site backup manager'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['node/%node/backups'] = array(
+    'title' => 'Backups',
+    'description' => 'List of backups of this website',
+    'page callback' => 'hosting_site_backup_manager_page',
+    'page arguments' => array(1),
+    'access callback' => 'hosting_site_backup_manager_menu_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['node/%node/ajax/backups'] = array(
+    'title' => 'Backup list',
+    'description' => 'AJAX callback for refreshing backups list',
+    'page callback' => 'hosting_site_backup_manager_ajax_list',
+    'page arguments' => array(1),
+    'access callback' => 'node_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['node/%node/backup/download/%'] = array(
+    'title' => 'Download backup',
+    'description' => 'Download the selected backup',
+    'page callback' => 'hosting_site_backup_manager_download',
+    'page arguments' => array(1, 4),
+    'access callback' => 'node_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['node/%node/backup/delete/%'] = array(
+    'title' => 'Delete backup',
+    'description' => 'Delete the selected backup',
+    'page callback' => 'hosting_site_backup_manager_delete',
+    'page arguments' => array(1, 4),
+    'access callback' => 'node_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['node/%node/backup/restore/%'] = array(
+    'title' => 'Restore backup',
+    'description' => 'Restore the selected backup',
+    'page callback' => 'hosting_site_backup_manager_restore',
+    'page arguments' => array(1, 4),
+    'access callback' => 'node_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['node/%node/backup/export/%'] = array(
+    'title' => 'Export backup',
+    'description' => 'Export the selected backup',
+    'page callback' => 'hosting_site_backup_manager_export',
+    'page arguments' => array(1, 4),
+    'access callback' => 'node_access',
+    'access arguments' => array('view', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * The access callback for the Backups tab.
+ *
+ * Make sure this is a site node.
+ */
+function hosting_site_backup_manager_menu_access($node) {
+  // Only allow for site nodes.
+  if (is_object($node) && $node->type == 'site') {
+    return TRUE;
+  }
+}
+
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_site_backup_manager_permission() {
+  return array(
+    'administer hosting site backup manager' => array(
+      'title' => t('administer hosting site backup manager'),
+    ),
+  );
+}
+
+/**
+ * Placeholder function for additional delete checks.
+ *
+ * @param node $site
+ *   The site node object.
+ * @param int $bid
+ *   The backup id.
+ *
+ * @return string
+ *   A confirmation form or a error string.
+ */
+function hosting_site_backup_manager_delete($site, $bid) {
+  // Get the filename.
+  $source = db_query("SELECT filename FROM {hosting_site_backups} WHERE site = :site AND bid = :bid ORDER BY timestamp DESC", array(':site' => $site->nid, ':bid' => $bid))->fetchObject();
+
+  if ($source) {
+    // Return a confirmation form.
+    $output = drupal_get_form('hosting_site_backup_manager_confirm_delete', $source->filename, $site->nid, $bid);
+  }
+  else {
+    $output = t('A valid backup could not be found.');
+  }
+  return $output;
+}
+
+/**
+ * Function that renders a confirmation form for the selected deletetion.
+ *
+ * @param arrays $form_state
+ *   The form state array. Changes made to this variable will have no effect.
+ * @param string $filename
+ *   The backup filename to delete.
+ * @param int $sitenid
+ *   The selected site node id.
+ * @param int $bid
+ *   The backup id.
+ *
+ * @return string
+ *   A confirmation form.
+ */
+function hosting_site_backup_manager_confirm_delete($form, $form_state, $filename, $sitenid, $bid) {
+
+  // Add the hosting_task javascript,
+  // so we can use the confirm form functionality.
+  drupal_add_js(drupal_get_path('module', 'hosting_task') . '/hosting_task.js');
+
+  // Get the backup data.
+  $source = db_query("SELECT * FROM {hosting_site_backups} WHERE site = :site AND bid = :bid", array(':site' => $sitenid, ':bid' => $bid))->fetchObject();
+
+  // Build the form.
+  $form = array();
+  $form['#filename'] = $filename;
+  $form['#sitenid'] = $sitenid;
+  $form['#bid'] = $bid;
+
+  // Not the best formatted code, but suffices for now.
+  $form['explanation'] = array(
+    '#type' => 'markup',
+    '#value' => '<h2>' . t('Backup information') . '</h2>' . t('Backup description:<br /> %description', array('%description' => filter_xss($source->description))) . '<br />',
+    '#weight' => -10,
+  );
+
+  $form['date'] = array(
+    '#type' => 'markup',
+    '#value' => t('Backup was created on:<br /> %date', array('%date' => format_date($source->timestamp, 'short'))) . '<br /><br />',
+    '#weight' => -8,
+  );
+
+  // Build the confirmation form.
+  $form = confirm_form(
+  $form,
+  t('Are you sure you want to delete this backup?', array()),
+      'node/' . $sitenid . '/backup',
+  t('This action cannot be undone.'),
+  t('Delete'),
+  t('Cancel'),
+      'hosting_site_backup_manager_confirm_delete');
+
+  // Copied from hosting_task.module
+  // Add an extra class to the actions to allow us to disable
+  // the cancel link via javascript for the modal dialog.
+  $form['actions']['#prefix'] = '<div id="hosting-task-confirm-form-actions" class="container-inline">';
+
+  return $form;
+}
+
+/**
+ * The form submit function.
+ */
+function hosting_site_backup_manager_confirm_delete_submit($form, &$form_state) {
+
+  // The deletion has been confirmed, process the result.
+  $filename = $form['#filename'];
+  $sitenid = $form['#sitenid'];
+  $bid = $form['#bid'];
+
+  // Add the hosting task.
+  hosting_add_task($sitenid, 'backup-delete', array($bid => $filename));
+
+  $form_state['redirect'] = 'node/' . $sitenid . '/backup';
+  if (module_exists('overlay')) {
+    overlay_close_dialog();
+  }
+}
+
+/**
+ * Placeholder  function for additional restore checks.
+ *
+ * @param node $site
+ *   The site node object.
+ * @param int $bid
+ *   The backup id.
+ *
+ * @return string
+ *   A confirmation form.
+ */
+function hosting_site_backup_manager_restore($site, $bid) {
+  // @todo: Build in extra checks.
+  $output = drupal_get_form('hosting_site_backup_manager_confirm_restore', $site->nid, $bid);
+
+  return $output;
+}
+
+/**
+ * Function that renders a confirmation form for the selected deletetion.
+ *
+ * @param array $form_state
+ *   The form state array. Changes made to this variable will have no effect.
+ * @param int $sitenid
+ *   The selected site node id.
+ * @param int $bid
+ *   The backup id
+ *
+ * @return string
+ *   A confirmation form.
+ */
+function hosting_site_backup_manager_confirm_restore($form, $form_state, $sitenid, $bid) {
+  // Add the hosting_task javascript,
+  // so we can use the confirm form functionality.
+  drupal_add_js(drupal_get_path('module', 'hosting_task') . '/hosting_task.js');
+
+  // Build the form.
+  $form = array();
+  $form['#sitenid'] = $sitenid;
+  $form['#bid'] = $bid;
+
+  // Get the backup data.
+  $source = db_query("SELECT * FROM {hosting_site_backups} WHERE site = :site AND bid = :bid", array(':site' => $sitenid, ':bid' => $bid))->fetchObject();
+
+  // Not the best formatted code, but suffices for now.
+  $form['explanation'] = array(
+    '#type' => 'markup',
+    '#value' => '<h2>' . t('Backup information') . '</h2>' . t('Backup description:<br /> %description', array('%description' => filter_xss($source->description))) . '<br />',
+    '#weight' => -10,
+  );
+
+  $form['date'] = array(
+    '#type' => 'markup',
+    '#value' => t('Backup was created on:<br /> %date', array('%date' => format_date($source->timestamp, 'short'))) . '<br /><br />',
+    '#weight' => -8,
+  );
+
+  // Build the confirmation form.
+  $form = confirm_form(
+    $form,
+    t('Are you sure you want to restore this backup?', array()),
+    'node/' . $sitenid . '/backup',
+    t('This action cannot be undone.'),
+    t('Restore'),
+    t('Cancel'),
+    'hosting_site_backup_manager_confirm_restore'
+  );
+
+  // Copied from hosting_task.module
+  // add an extra class to the actions to allow us to
+  // disable the cancel link via javascript for the modal dialog.
+  $form['actions']['#prefix'] = '<div id="hosting-task-confirm-form-actions" class="container-inline">';
+  return $form;
+}
+
+/**
+ * The form submit function.
+ */
+function hosting_site_backup_manager_confirm_restore_submit($form, &$form_state) {
+  // The restoration has been confirmed, process the result.
+  $sitenid = $form['#sitenid'];
+  $bid = $form['#bid'];
+  hosting_add_task($sitenid, 'restore', array('bid' => $bid));
+  $form_state['redirect'] = 'node/' . $sitenid . '/backup';
+  if (module_exists('overlay')) {
+    overlay_close_dialog();
+  }
+}
+
+/**
+ * The form submit function.
+ */
+function hosting_site_backup_manager_export($site, $bid) {
+  // Get the filename.
+  $source = db_query("SELECT filename FROM {hosting_site_backups} WHERE site = :site AND bid = :bid ORDER BY timestamp DESC", array(':site' => $site->nid, ':bid' => $bid))->fetchObject();
+
+  // Start the task.
+  hosting_add_task($site->nid, 'export_backup', array('backup' => $source->filename));
+
+  // Redirect to the backups page.
+  drupal_goto('node/' . $site->nid . '/backups');
+}
+
+
+/**
+ * Function to download a backup file.
+ *
+ * @param node $site
+ *   The site node object.
+ * @param int $bid
+ *   The backup id.
+ *
+ * @return file
+ *   A file or a 404 page.
+ */
+function hosting_site_backup_manager_download($site, $bid) {
+  // @todo: check if the bid is not in a task.
+  $source = db_query("SELECT filename FROM {hosting_site_backups} WHERE site = :site AND bid = :bid ORDER BY timestamp DESC", array(':site' => $site->nid, ':bid' => $bid))->fetchObject();
+
+  if ($source) {
+    // Get the backup export root. See also the companion variable provision_backup_export_path.
+    $backup_root = variable_get('aegir_backup_export_path', '/var/aegir/backup-exports');
+    $symlink = $backup_root . '/' . basename($source->filename);
+
+    if ($fd = @fopen($symlink, 'rb')) {
+      // Construct filename.
+      $filename = basename($source->filename);
+
+      // Set headers.
+      header("Cache-Control: public");
+      header("Content-Description: File Transfer");
+      header("Content-Disposition: attachment; filename=\"$filename\"");
+      header("Content-Type: application/octet-stream");
+      header("Content-Transfer-Encoding: binary");
+
+      while (!feof($fd)) {
+        print fread($fd, 1024);
+        ob_flush();
+        flush();
+      }
+      fclose($fd);
+      // File downloaded so delete the file.
+      // Start the task.
+      hosting_add_task($site->nid, 'remove_export_backup', array('export' => $symlink));
+      exit();
+    }
+    else {
+      drupal_not_found();
+    }
+  }
+  else {
+    drupal_not_found();
+  }
+}
+
+/**
+ * Show a list of backups for a website.
+ *
+ * @param node $site
+ *   The site node.
+ *
+ * @return string
+ *   A theme table with a list of backups.
+ */
+function hosting_site_backup_manager_page($site) {
+  // Add the js.
+  drupal_add_js(drupal_get_path('module', 'hosting_site_backup_manager') . '/hosting_site_backup_manager.js');
+
+  $settings['hostingSiteBackupManager'] = array(
+    'nid' => $site->nid,
+  );
+  drupal_add_js($settings, array('type' => 'setting', 'scope' => JS_DEFAULT));
+
+  $output = '<div id="hosting-site-backup-manager-backupstable">';
+  $output .= hosting_site_backup_manager_backups_table($site);
+  $output .= '</div>';
+
+  return $output;
+}
+
+/**
+ * Page callback for backups table via AJAX.
+ */
+function hosting_site_backup_manager_ajax_list($site) {
+  $return['markup'] = hosting_site_backup_manager_backups_table($site);
+  drupal_json_output($return);
+  exit();
+}
+
+/**
+ * Prepare a table of available backups.
+ */
+function hosting_site_backup_manager_backups_table($site) {
+  global $user;
+
+  // Determine client name.
+  $client = hosting_get_client($site->client);
+
+  // Determine site's profile name.
+  $profile = node_load($site->profile);
+
+  $ishostmaster = ($profile->short_name == 'hostmaster');
+  $isdeleted = $site->site_status == HOSTING_SITE_DELETED;
+
+  if ($ishostmaster) {
+    $output = t("Feature not available for the Hostmaster site.");
+    return $output;
+  }
+
+  $headers[] = t('Backup');
+  $headers[] = array(
+    'data' => t('Actions'),
+    'class' => 'hosting-actions',
+  );
+
+  $rows = array();
+  $output = '';
+
+  // Only allow actions when there's no backup delete or
+  // restore task running for this node.
+  $buttonstatus = !(hosting_task_outstanding($site->nid, 'backup-delete') || hosting_task_outstanding($site->nid, 'restore') || hosting_task_outstanding($site->nid, 'export_backup') || hosting_task_outstanding($site->nid, 'remove_export_backup'));
+
+  // TODO Make the table reload automatically.
+  $result = db_query("SELECT bid, description, filename, size, timestamp FROM {hosting_site_backups} WHERE site = :site ORDER BY timestamp DESC", array(':site' => $site->nid));
+
+  if ($result->rowCount() == 0) {
+    $output = t("No backups available.");
+    $options = array(
+      'query' => array('token' => drupal_get_token($user->uid)),
+      'attributes' => array('class' => array('hosting-button-dialog')),
+    );
+
+    $output .= '&nbsp;' . l(t('Create backup'), 'hosting_confirm/' . $site->nid . '/site_backup', $options);
+    return $output;
+  }
+
+  while ($object = $result->fetchObject()) {
+    $row = array();
+    $row['description'] = filter_xss($object->description) . "<br />" . format_size($object->size) . " - " . format_date($object->timestamp, 'short');
+
+    $actions = array();
+    // @todo: Add check if the backup can be restored to current platform?
+    /* Add download button */
+    $downloadstatus = (_hosting_site_backup_manager_isfileavailable($site, $object->bid) && !hosting_task_outstanding($site->nid, 'remove_export_backup'));
+    $actions['download'] = _hosting_task_button(t('Get'), 'node/' . $site->nid . '/backup/download/' . $object->bid, t('Download the backup'), '', $downloadstatus, FALSE, FALSE);
+
+    /* Add export backup button */
+    $exportstatus = ($buttonstatus && !$downloadstatus);
+    $actions['export_backup'] = _hosting_task_button(t('Export'), 'node/' . $site->nid . '/backup/export/' . $object->bid, t('Make the backup exportable'), '', $exportstatus, FALSE, FALSE);
+
+    /* Add delete button */
+    $actions['delete'] = _hosting_task_button(t('Delete'), 'node/' . $site->nid . '/backup/delete/' . $object->bid, t('Delete the backup'), '', $buttonstatus, TRUE, FALSE);
+
+    /* Add restore button only for non-Hostmaster, non-deleted sites */
+    $restorestatus = ($buttonstatus && !$ishostmaster && !$isdeleted);
+    $actions['restore'] = _hosting_task_button(t('Restore'), 'node/' . $site->nid . '/backup/restore/' . $object->bid, t('Restore the backup'), '', $restorestatus, TRUE, FALSE);
+
+    $row['actions'] = array(
+      'data' => implode('', $actions),
+      'class' => 'hosting-actions',
+    );
+
+    $rows[] = array(
+      'data' => $row,
+      'class' => '',
+    );
+  }
+
+  $output .= theme('table', array('header' => $headers, 'rows' => $rows, 'attributes' => array('class' => array('hosting-table'))));
+
+  $options = array(
+    'query' => array('token' => drupal_get_token($user->uid)),
+    'attributes' => array('class' => array('hosting-button-dialog')),
+  );
+  $output .= '&nbsp;' . l(t('Create a new backup'), 'hosting_confirm/' . $site->nid . '/site_backup', $options);
+  return $output;
+}
+
+/**
+ * Implements hook_hosting_tasks().
+ */
+function hosting_site_backup_manager_hosting_tasks() {
+  $tasks = array();
+
+  $tasks['site']['export_backup'] = array(
+    'title' => t('Export Backup'),
+    'description' => t('Make a backup available for download.'),
+    'dialog' => TRUE,
+    'hidden' => TRUE,
+  );
+
+  $tasks['site']['remove_export_backup'] = array(
+    'title' => t('Remove Export Backup'),
+    'description' => t('Remove an exported backup, making it unavailable for download.'),
+    'dialog' => FALSE,
+    'hidden' => TRUE,
+  );
+
+  return $tasks;
+}
+
+/**
+ * Helper function to check if a backup file is available.
+ */
+function _hosting_site_backup_manager_isfileavailable($site, $bid) {
+  $result = FALSE;
+
+  // @todo: check if the bid is not in a task.
+  $source = db_query("SELECT filename FROM {hosting_site_backups} WHERE site = :site AND bid = :bid ORDER BY timestamp DESC", array(':site' => $site->nid, ':bid' => $bid))->fetchObject();
+
+  if ($source) {
+    // Get the backup export root. See also the companion variable provision_backup_export_path.
+    $root = variable_get('aegir_backup_export_path', '/var/aegir/backup-exports');
+    $file = $root . '/' . basename($source->filename);
+
+    if (file_exists($file)) {
+      return TRUE;
+    }
+  }
+
+  return $result;
+}
+
+/**
+ * Remove backup links if they persist beyond a timeout.
+ *
+ * They should normally be cleared directly after download.
+ *
+ * Implements hook_cron().
+ */
+function hosting_site_backup_manager_cron() {
+  // Get the backup export root. See also the companion variable provision_backup_export_path.
+  $backup_root = variable_get('aegir_backup_export_path', '/var/aegir/backup-exports');
+  $backup_export_expire_timeout = 60 * 10;
+  if (!is_dir($backup_root)) {
+    return;
+  }
+
+  try {
+    // Loop the client names that have a dir under the backup root.
+    $iterator = new DirectoryIterator($backup_root);
+    foreach ($iterator as $path) {
+      if ($path->isDot() || !$path->isDir()) {
+        continue;
+      }
+
+      // Loop all files in the client's backup dir.
+      $iterator2 = new DirectoryIterator($path->getPathname());
+      foreach ($iterator2 as $path2) {
+        if ($path2->isDot() || !$path2->isFile()) {
+          continue;
+        }
+
+        // Get the inode Change time, not to be confused with the modified time.
+        // When the inode changed, not the content.
+        // For example when the extra hardlink was added to the inode.
+        if ($path2->getCTime() < (REQUEST_TIME - $backup_export_expire_timeout)) {
+          echo "wanna unlink: " . $path2->getPathname();
+          watchdog('hosting_site_backup_manager',
+                  "Unlinking leftover exported backup: @pathname ",
+                  array('@pathname' => $path2->getPathname()));
+          unlink($path2->getPathname());
+        }
+
+        // Were now using hardlinks, but incase we ever want to switch:
+        // For symlinks, $path2->getCTime() returns that of the link target not the link itself.
+        // $link_stats = lstat($path2->getPathname());
+        // if ($link_stats['mtime'] < (time() - $backup_export_expire_timeout)) {
+      }
+    }
+  }
+  catch (UnexpectedValueException $e) {
+    // TODO: convert to watchdog_exception for D7
+    watchdog('hosting_site_backup_manager',
+            nl2br(check_plain($e->getMessage())),
+            NULL,
+            WATCHDOG_WARNING);
+  }
+}
+
+/**
+ * Configuration form for backup schedules.
+ */
+function hosting_site_backup_manager_settings($form, &$form_state) {
+
+  $form['garbage_collection'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Garbage colleciton'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['garbage_collection']['hosting_backup_gc_default_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable backup garbage collection'),
+    '#description' => t('Set the options below before enabling the garbage collection of old backups.'),
+    '#default_value' => variable_get('hosting_backup_gc_default_enabled', FALSE),
+  );
+
+  $form['garbage_collection']['hosting_backup_gc_intervals'] = array(
+    '#tree' => TRUE,
+    '#theme' => 'hosting_backup_gc_intervals_table',
+    '#element_validate' => array('hosting_backup_gc_intervals_element_validate'),
+  );
+
+  $form['garbage_collection']['hosting_backup_gc_intervals']['example'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Example'),
+    '#weight' => 5,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => _hosting_backup_gc_example(),
+  );
+  $intervals = array(
+    '' => t('n/a'),
+    strtotime('1 hour', 0) => t('Hours'),
+    strtotime('1 day',   0) => t('Days'),
+    strtotime('1 week', 0) => t('Weeks'),
+    strtotime('1 year', 0) => t('Years'),
+  );
+
+  $default_intervals = variable_get('hosting_backup_gc_intervals', array());
+  ksort($default_intervals);
+
+  // Add the empty row:
+  $default_intervals[] = array(
+    'older_than' => array(
+      'number' => 1,
+      'interval' => '',
+    ),
+    'keep_per' => array(
+      'number' => 1,
+      'interval' => '',
+    ),
+  );
+
+  $i = 0;
+
+  foreach ($default_intervals as $interval) {
+
+    $form['garbage_collection']['hosting_backup_gc_intervals'][$i]['older_than']['number'] = array(
+      '#type' => 'select',
+      '#options' => drupal_map_assoc(range(1, 365)),
+      '#default_value' => isset($interval['older_than']['number']) ? $interval['older_than']['number'] : 1,
+      '#attributes' => array(
+        'class' => array('hosting-backup-gc-inline'),
+      ),
+    );
+
+    $form['garbage_collection']['hosting_backup_gc_intervals'][$i]['older_than']['interval'] = array(
+      '#type' => 'select',
+      '#options' => $intervals,
+      '#default_value' => isset($interval['older_than']['interval']) ? $interval['older_than']['interval'] : '',
+      '#attributes' => array(
+        'class' => array('hosting-backup-gc-inline'),
+      ),
+    );
+
+    $form['garbage_collection']['hosting_backup_gc_intervals'][$i]['keep_per']['number'] = array(
+      '#type' => 'select',
+      '#options' => drupal_map_assoc(range(1, 365)),
+      '#default_value' => isset($interval['keep_per']['number']) ? $interval['keep_per']['number'] : 1,
+      '#attributes' => array(
+        'class' => array('hosting-backup-gc-inline'),
+      ),
+    );
+
+    $form['garbage_collection']['hosting_backup_gc_intervals'][$i]['keep_per']['interval'] = array(
+      '#type' => 'select',
+      '#options' => $intervals,
+      '#default_value' => isset($interval['keep_per']['interval']) ? $interval['keep_per']['interval'] : '',
+      '#attributes' => array(
+        'class' => array('hosting-backup-gc-inline'),
+      ),
+    );
+
+    $i++;
+  }
+
+  return system_settings_form($form);
+}
+
+/**
+ * Form validation function for the hosting_backup_gc_intervals element.
+ */
+function hosting_backup_gc_intervals_element_validate($element, &$form_state) {
+  $values = $form_state['values'][$element['#parents'][0]];
+
+  // Build an array of the non-empty ones.
+  $new_values = array();
+  foreach ($values as $val) {
+    if (!empty($val['older_than']['interval']) && !empty($val['keep_per']['interval'])) {
+      // Compute the key
+      $key = $val['older_than']['number'] * $val['older_than']['interval'];
+      $new_values[$key] = $val;
+    }
+  }
+  // Sort the new values.
+  asort($new_values);
+  // Set the new values.
+  form_set_value($element, $new_values, $form_state);
+}
+
+/**
+ * Implements hook_hosting_queues().
+ *
+ * Return a list of queues that this module needs to manage.
+ */
+function hosting_site_backup_manager_hosting_queues() {
+  $queue['backup_gc'] = array(
+    'name' => t('Backup GC'),
+    'description' => t('Process the garbage collection of backups.'),
+    'type' => 'batch', // Run queue sequentially. always with the same parameters.
+    'frequency' => strtotime("1 hour", 0),
+    'min_threads' => 6,
+    'max_threads' => 12,
+    'threshold' => 100,
+    'total_items' => hosting_site_count(),
+    'singular' => t('site'),
+    'plural' => t('sites'),
+  );
+  return $queue;
+}
+
+
+/**
+ * The main queue callback for the backup garbage collection.
+ */
+function hosting_backup_gc_queue($count) {
+  // Early exit if we are disabled.
+  if (!variable_get('hosting_backup_gc_default_enabled', FALSE)) {
+    return;
+  }
+
+  // Get the settings:
+  $intervals = variable_get('hosting_backup_gc_intervals', array());
+  ksort($intervals);
+  // Early exit if we've no work to do.
+  if (empty($intervals)) {
+    return;
+  }
+
+  // Otherwise loop over all the hosted sites.
+  $sites = hosting_backup_gc_get_sites($count);
+
+  foreach ($sites as $site) {
+    // Get a list of backups.
+    $backups = hosting_backup_gc_backup_list($site->nid);
+    $backups_to_remove = hosting_backup_gc_compute_backups_to_remove($intervals, $backups);
+
+    // Add the backup delete task for the backups to remove, if there's not an outstanding task already.
+    if (!empty($backups_to_remove) && !hosting_task_outstanding($site->nid, 'backup-delete')) {
+      hosting_add_task($site->nid, 'backup-delete', $backups_to_remove);
+    }
+
+    hosting_backup_gc_site_touch($site->nid);
+  }
+}
+
+/**
+ * Get sites that need to be checked for backup GC.
+ */
+function hosting_backup_gc_get_sites($limit = 5) {
+  $sites = array();
+
+  $sql = "SELECT n.nid FROM {node} n LEFT JOIN {hosting_site} s ON n.nid = s.nid LEFT JOIN {hosting_backup_gc_sites} gc ON n.nid = gc.site_id WHERE n.type = 'site' and s.status = :status ORDER BY gc.last_gc ASC, n.nid";
+
+  $result = db_query_range($sql, 0, $limit , array(":status" => HOSTING_SITE_ENABLED));
+
+  while ($nid = $result->fetchObject()) {
+    $sites[$nid->nid] = node_load($nid->nid);
+  }
+  return $sites;
+}
+
+/**
+ * Retrieve a list of backup generated for a site.
+ *
+ * @param string $site
+ *   The node if of the site backups are being retrieved for
+ *
+ * @return array
+ *   An associative array of backups existing for the site, indexed by bid and sorted reverse chronologically.
+ */
+function hosting_backup_gc_backup_list($site) {
+  $result = db_query("SELECT bid, filename, timestamp FROM {hosting_site_backups} WHERE site = :site ORDER BY timestamp DESC", array(':site' => $site));
+  $backups = array();
+  while ($object = $result->fetchObject()) {
+    $backups[$object->bid] = $object;
+  }
+  return $backups;
+}
+
+/**
+ * Compute which backups to remove.
+ */
+function hosting_backup_gc_compute_backups_to_remove($intervals, $backups) {
+  $to_remove = array();
+
+  foreach ($intervals as $interval) {
+    // Find the backups that are older than specified in the interval
+    $backups_to_consider = array();
+    // The $pockets array will store keep a record of which backups we have,
+    // two backups in a pocket means that the older one will have to go...
+    $pockets = array();
+    foreach ($backups as $backup) {
+      if ($backup->timestamp < (REQUEST_TIME - $interval['older_than']['number'] * $interval['older_than']['interval'])) {
+        $backups_to_consider[] = $backup;
+      }
+    }
+    foreach ($backups_to_consider as $backup) {
+      // Now compute which backups we should be removing.
+      $pocket = floor($backup->timestamp / ($interval['keep_per']['number'] * $interval['keep_per']['interval']));
+      // If there is not a backup in this pocket, mark it, otherwise add it to the list to delete.
+      if (empty($pockets[$pocket])) {
+        $pockets[$pocket] = TRUE;
+      }
+      else {
+        $to_remove[$backup->bid] = $backup->filename;
+      }
+    }
+  }
+
+  return $to_remove;
+}
+
+/**
+ * Mark a site as having its backups garbage collected.
+ */
+function hosting_backup_gc_site_touch($site_id, $timestamp = NULL) {
+  if (is_null($timestamp)) {
+    $timestamp = REQUEST_TIME;
+  }
+  $record = array(
+    'site_id' => $site_id,
+    'last_gc' => $timestamp,
+  );
+  if (db_query('SELECT count(site_id) FROM {hosting_backup_gc_sites} WHERE site_id = :site_id', array(':site_id' => $record['site_id']))->fetchField()) {
+    // Update.
+    drupal_write_record('hosting_backup_gc_sites', $record, 'site_id');
+  }
+  else {
+    // Insert.
+    drupal_write_record('hosting_backup_gc_sites', $record);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function hosting_site_backup_manager_theme() {
+  $handlers = array();
+
+  $handlers['hosting_backup_gc_intervals_table'] = array(
+    'render element' => 'form',
+  );
+
+  return $handlers;
+}
+
+/**
+ * Theme implementation of our form element of intervals.
+ */
+function theme_hosting_backup_gc_intervals_table($variables) {
+  $form = $variables['form'];
+  $output = '';
+  drupal_add_css(drupal_get_path('module', 'hosting_site_backup_manager') . '/hosting_site_backup_manager.admin.css');
+  $rows = array();
+
+  foreach (element_children($form) as $i) {
+    if (!empty($form[$i]['#type']) && $form[$i]['#type'] == 'fieldset') {
+      continue;
+    }
+    $row = array();
+    $row[] = array(
+      'data' => t('For backups older than'),
+      'class' => array('hosting-backup-gc-narrow-first'),
+    );
+    $row[] = drupal_render($form[$i]['older_than']);
+    $row[] = array(
+      'data' => t('Keep 1 backup per'),
+      'class' => array('hosting-backup-gc-narrow-second'),
+    );
+    $row[] = drupal_render($form[$i]['keep_per']);
+    $rows[] = $row;
+  }
+
+  $output .= theme('table', array('header' => NULL, 'rows' => $rows));
+  $output .= drupal_render_children($form);
+  return $output;
+}
+
+
+/**
+ * Generate example tekst for garbage collection intervals.
+ *
+ * @return string
+ *   HTML
+ */
+function _hosting_backup_gc_example() {
+  $now = REQUEST_TIME;
+
+  // Introduction text.
+  $output = '<p>' . t("This page provides an example of how the current backup garbage collection settings affect stored backups.") . '<br />';
+  $output .= t("The backups listed below are dummies (they don't represent real backups), but they show how many backups would be kept for a typical site over a given period.") . '</p>';
+
+  // Get current interval settings.
+  $intervals = variable_get('hosting_backup_gc_intervals', array());
+  ksort($intervals);
+  if (empty($intervals)) {
+    $output .= '<p>' . t('<strong>No garbage collection intervals found.</strong> Please configure some options first.') . '</p>';
+    return $output;
+  }
+
+  // Get history (how long ago to display backups for).
+  $interval_keys = array_keys($intervals);
+  rsort($interval_keys);
+  $id = $interval_keys[0];
+  $history = ($intervals[$id]['older_than']['number'] * $intervals[$id]['older_than']['interval']) + ($intervals[$id]['keep_per']['number'] * $intervals[$id]['keep_per']['interval'] * 5);
+
+  // Get backup queue configuration.
+  $default_backup_interval = variable_get('hosting_backup_queue_default_interval', strtotime('1 day', 0));
+  $period = array();
+  switch ($default_backup_interval) {
+    case '3600':
+      $period['value'] = -1;
+      $period['unit'] = 'hours';
+      break;
+
+    case '21600':
+      $period['value'] = -6;
+      $period['unit'] = 'hours';
+      break;
+
+    case '43200':
+      $period['value'] = -12;
+      $period['unit'] = 'hours';
+      break;
+
+    case '86400':
+      $period['value'] = -1;
+      $period['unit'] = 'days';
+      break;
+
+    case '604800':
+      $period['value'] = -1;
+      $period['unit'] = 'weeks';
+      break;
+
+    case '2419200':
+      $period['value'] = -4;
+      $period['unit'] = 'weeks';
+      break;
+
+    case '31536000':
+      $period['value'] = -1;
+      $period['unit'] = 'years';
+      break;
+  }
+
+  // Create a list of dummy backups (based on the default interval).
+  $number_backups = $history / $default_backup_interval;
+  $backups = array();
+  $i = 0;
+  while ($i < $number_backups) {
+    $backups[$i]['time'] = strtotime(($period['value'] * $i) . ' ' . $period['unit']);
+    $backups[$i]['date'] = date('Y-m-d H:i:s', $backups[$i]['time']);
+    $i++;
+  }
+
+  // Delete dummy backups based on configured intervals.
+  foreach ($intervals as $interval) {
+    $pockets = array();
+    foreach ($backups as $id => $backup) {
+      if ($backup['time'] < ($now - $interval['older_than']['number'] * $interval['older_than']['interval'])) {
+        $pocket = floor($backup['time'] / ($interval['keep_per']['number'] * $interval['keep_per']['interval']));
+        if (empty($pockets[$pocket])) {
+          $pockets[$pocket] = TRUE;
+        }
+        else {
+          unset($backups[$id]);
+        }
+      }
+    }
+  }
+
+  // Get list of backup dates.
+  $items = array();
+  foreach ($backups as $backup) {
+    $items[] = $backup['date'];
+  }
+  $items[] = '...';
+
+  // Display remaining backups.
+  $output .= theme('item_list', array('items' => $items, 'title' => t('Backups')));
+  return $output;
+}

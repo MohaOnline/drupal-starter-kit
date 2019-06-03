@@ -1,0 +1,40 @@
+<?php
+
+/**
+ *  Add (and remove) a field in the hosting_site table comparable to last_cron
+ */
+
+
+/**
+ * Implements hook_schema_alter().
+ */
+function hosting_civicrm_cron_schema_alter(&$schema) {
+  // Add field to existing schema.
+  $schema['hosting_site']['fields']['last_civicrm_cron'] = array(
+    'type' => 'int',
+    'not null' => FALSE,
+  );
+  $schema['hosting_site']['fields']['civicrm_cron_interval'] = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+}
+
+/**
+ * Implements hook_install().
+ */
+function hosting_civicrm_cron_install() {
+  $schema = drupal_get_schema('hosting_site');
+  db_add_field('hosting_site', 'last_civicrm_cron', $schema['fields']['last_civicrm_cron']);
+  db_add_field('hosting_site', 'civicrm_cron_interval', $schema['fields']['civicrm_cron_interval']);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function hosting_civicrm_cron_uninstall() {
+  db_drop_field('hosting_site', 'last_civicrm_cron');
+  db_drop_field('hosting_site', 'civicrm_cron_interval');
+  variable_del('hosting_civicrm_cron_default_interval');
+}

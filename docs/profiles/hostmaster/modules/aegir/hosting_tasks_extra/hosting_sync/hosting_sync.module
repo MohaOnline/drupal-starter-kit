@@ -1,0 +1,128 @@
+<?php
+
+/**
+ * @file hosting_sync.module
+ *
+ * Provides the front-end for syncing Aegir sites.
+ */
+
+require_once 'hosting_sync.tasks.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function hosting_sync_menu() {
+  $items = array();
+  $items['hosting/sync/compare'] = array(
+    'title' => 'Compare packages',
+    'page callback' => 'hosting_sync_comparison',
+    'access arguments' => array('create sync task'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function hosting_sync_theme() {
+  return array(
+    'hosting_sync_comparison' => array(
+      'variables' => array('packages' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Since we have a node type, "create project content permission is
+ * automatically added by Drupal
+ */
+function hosting_sync_permission() {
+  return array(
+    'create sync task' => array(
+      'title' => t('create sync task'),
+      'description' => t('TODO Add a description for \'create sync task\''),
+    ),
+  );
+}
+
+/**
+ * Compare package schema versions between the current and target platform in temp tables
+ */
+function hosting_sync_comparison($current, $target) {
+
+  $current_tbl = _hosting_package_temporary_table($current);
+  $target_tbl = _hosting_package_temporary_table($target);
+
+  $packages = array();
+
+  $result = db_query("SELECT c.nid, c.short_name,
+    c.version as current_version, t.version as target_version,
+    c.version_code as current_version_code, t.version_code as target_version_code,
+    c.schema_version as current_schema, t.schema_version as target_schema, c.status AS enabled
+    FROM $current_tbl c LEFT JOIN $target_tbl t ON c.nid = t.nid ORDER BY c.status DESC, short_name");
+
+  while ($obj = $result->fetch()) {
+    if (isset($obj->current_schema) && ((int) $obj->target_schema > 0) && ((int) $obj->current_schema > (int) $obj->target_schema)) {
+      $obj->status = 'downgrade';
+    }
+    elseif ( ($obj->current_version_code > $obj->target_version_code)
+      || is_null($obj->target_version_code)) {
+      $obj->status = 'missing';
+    }
+    elseif (($obj->current_version_code < $obj->target_version_code) || ($obj->current_schema < $obj->target_schema)) {
+      $obj->status = 'upgrade';
+    }
+    else {
+      $obj->status = 'same';
+    }
+    $packages[$obj->nid] = $obj;
+  }
+
+  return theme("hosting_sync_comparison", array('packages' => $packages));
+}
+
+function _hosting_sync_version_display($version, $schema = null, $status = null) {
+  $status = (!is_null($status)) ? $status : 'same';
+  if (is_null($version)) {
+    $display = 'missing';
+  }
+  else {
+    $display = ($version == 0) ? t('Unknown') : $version;
+  }
+  if ($schema) {
+    $display .= " (" . $schema . ")";
+  }
+
+  return array('class' => 'hosting-package-' . $status, 'data' => $display);
+}
+
+/**
+ * Render a list of compared packages for migration.
+ */
+function theme_hosting_sync_comparison($variables) {
+  $packages = $variables['packages'];
+  $rows = array();
+
+  $headers = array(t("Package"), t("Current"), t("Target"));
+  foreach ($packages as $key => $instance) {
+    $row = array();
+    $row[] = array(
+      'data' => $instance->short_name,
+      'class' => array('hosting-status'),
+    );
+    $target_schema = ((int) $instance->target_schema == 0) ? $instance->current_schema : $instance->target_schema;
+    $row[] = _hosting_sync_version_display($instance->current_version, $instance->current_schema);
+    $row[] = _hosting_sync_version_display($instance->target_version, $target_schema, $instance->status);
+    $rows[] = array(
+      'data' => $row,
+      'class' => ($instance->enabled) ? array('hosting-success') : array('hosting-info'),
+    );
+  }
+  $options['attributes']['class'] = 'hosting-sync-comparison-return';
+  $link = l(t('Go back'), 'node/' . arg(3) . '/site_sync', $options);
+  return "<div id='hosting-package-comparison'>" . $link . theme('table', array('header' => $headers, 'rows' => $rows)) . $link . "</div>";
+}
+

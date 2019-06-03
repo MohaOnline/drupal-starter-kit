@@ -1,0 +1,60 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the hosting_logs module.
+ *
+ */
+ 
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
+function hosting_logs_schema() {
+  $schema['hosting_logs'] = array(
+    'description' => 'Hosting logs table.',
+    'fields' => array(
+      'site_nid' => array(
+        'description' => 'The node ID for the site.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'logs_enabled' => array(
+        'description' => 'Boolean to indicate if logging is enabled.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'logs_available' => array(
+        'description' => 'Boolean to indicate if logs are available.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+      'logs_visible' => array(
+        'description' => 'Boolean to indicate if logs are output to the page.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('site_nid'),
+  );
+  return $schema;
+}
+
+/**
+ * Add logs_visible field.
+ */
+function hosting_logs_update_7000() {
+  db_add_field('hosting_logs', 'logs_visible', array(
+    'description' => 'Boolean to indicate if logs are output to the page.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 1,
+  ));
+}

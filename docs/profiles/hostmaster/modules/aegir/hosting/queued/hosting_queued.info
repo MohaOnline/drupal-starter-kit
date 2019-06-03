@@ -1,0 +1,11 @@
+name = Hosting queue daemon
+description = Allows the hosting queue to be run in a daemon.
+package = Hosting
+dependencies[] = hosting
+core = 7.x
+
+
+; Information added by drush on 2018-12-19
+version = "7.x-3.170"
+project = "hosting"
+datestamp = "1545234304"

@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * @file
+ *  Add (and remove) a field in the hosting_site table for CiviCRM version.
+ */
+
+/**
+ * Implements hook_schema_alter().
+ */
+function hosting_civicrm_schema_alter(&$schema) {
+  // Add civicrm sitekey field to existing schema.
+  $schema['hosting_site']['fields']['civicrm_sitekey'] = array(
+    'type' => 'varchar',
+    'length' => '128',
+    'not null' => FALSE,
+    'default' => NULL,
+  );
+}
+
+/**
+ * Implements hook_install().
+ */
+function hosting_civicrm_install() {
+  db_add_field('hosting_site', 'civicrm_sitekey', array(
+    'type' => 'varchar',
+    'length' => 128,
+    'not null' => FALSE,
+    'default' => NULL,
+  ));
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function hosting_civicrm_uninstall() {
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Remove the civicrm_version field from hosting_sites.
+ */
+function hosting_civicrm_update_7001() {
+  $ret = array();
+  if (db_field_exists('hosting_site', 'civicrm_version')) {
+    $ret[] = db_drop_field('hosting_site', 'civicrm_version');
+  } 
+  return $ret;
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Add the civicrm_sitekey field to hosting_sites.
+ */
+function hosting_civicrm_update_7002() {
+  $ret = array();
+  if (! db_field_exists('hosting_site', 'civicrm_sitekey')) {
+    $ret[] = db_add_field('hosting_site', 'civicrm_sitekey', array(
+      'type' => 'varchar',
+      'length' => 128,
+      'not null' => FALSE,
+      'default' => NULL,
+    ));
+  }
+  return $ret;
+}

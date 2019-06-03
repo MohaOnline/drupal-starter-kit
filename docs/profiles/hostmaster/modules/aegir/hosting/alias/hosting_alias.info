@@ -1,0 +1,11 @@
+name = Site aliases
+description = Maintain domain aliases for sites.
+package = Hosting
+dependencies[] = hosting_site
+
+core = 7.x
+
+; Information added by drush on 2018-12-19
+version = "7.x-3.170"
+project = "hosting"
+datestamp = "1545234304"

@@ -1,0 +1,181 @@
+<?php
+
+use GitWrapper\GitWrapper;
+use GitWrapper\GitWorkingCopy;
+use GitWrapper\GitException;
+
+/**
+ * Implements hook_hosting_tasks().
+ */
+function hosting_git_commit_hosting_tasks() {
+  $tasks = array();
+
+  $tasks['site']['git-commit'] = array(
+    'title' => t('Git commit'),
+    'description' => t('Runs a git commit on the current site.'),
+    'access callback' => 'hosting_git_commit_task_access',
+    'dialog' => TRUE,
+  );
+
+  $tasks['platform']['git-commit'] = array(
+    'title' => t('Git commit'),
+    'description' => t('Runs a git commit on the current platform.'),
+    'access callback' => 'hosting_git_commit_task_access',
+    'dialog' => TRUE,
+  );
+
+  return $tasks;
+}
+
+/**
+ * Implements hook_perm()
+ * @return array
+ */
+function hosting_git_commit_permission() {
+  return array(
+    'create site git-commit task' => array(
+      'title' => t('create site git-commit task'),
+      'description' => t('Create site "git-commit" task.'),
+    ),
+    'create platform git-commit task' => array(
+      'title' => t('create platform git-commit task'),
+      'description' => t('Create platform "git-commit" task.'),
+    ),
+  );
+}
+
+
+/**
+ * Access function for the pull task on sites.
+ */
+function hosting_git_commit_task_access($node) {
+  // Only consider doing this if we have a git repo.
+  if (empty($node->git['repo_url'])) {
+    return FALSE;
+  }
+
+  if (user_access("create {$node->type} git-commit task") && node_access('view', $node)) {
+    return TRUE;
+  }
+}
+
+/**
+ * @return mixed
+ */
+function hosting_task_git_commit_form($node) {
+
+  global $user;
+  $options = array();
+
+  if ($node->type == 'platform') {
+    $repo_path = $node->git['repo_path'];
+  } elseif ($node->type == 'site') {
+    $repo_path = $node->publish_path . '/sites/' . $node->title;
+  }
+
+  try {
+    $wrapper = new GitWrapper();
+    $git = $wrapper->workingCopy($repo_path);
+    $diff_stat = array_filter(explode(PHP_EOL,$wrapper->git('diff --numstat', $repo_path)));
+    $status = array_filter(explode(PHP_EOL, $git->getStatus()));
+
+    // Generate list of files
+    foreach ($status as &$line) {
+      $items = array_filter(explode(' ', trim($line)));
+      $file  = array_combine(array('status', 'path'), $items);
+
+      if ($file['status'] == 'A') {
+        $options[$file['path']] = '<span class="text-success">Added</span>';
+      }
+      elseif ($file['status'] == 'M') {
+        $options[$file['path']] = '<span class="text-info">Modified</span>';
+      }
+      elseif ($file['status'] == 'D') {
+        $options[$file['path']] = '<span class="text-danger">Deleted</span>';
+      }
+      elseif ($file['status'] == '??') {
+        $options[$file['path']] = '<span class="text-muted">New</span>';
+      }
+      $options[$file['path']] .= "<code class='text-muted'>{$file['path']}</code>";
+    }
+  }
+  catch (GitException $e) {
+    drupal_set_message("Cannot Commit Changes: Unable to load git repository at path '{$repo_path}'. Something is wrong: either the path in the database is wrong, or the files are missing from their intended location.", 'error');
+    drupal_set_message($e->getMessage(), 'error');
+  }
+  $form['git_info'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Git Status & Diff'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#weight' => 100,
+    '#prefix' => '<div class="alert alert-info">',
+    '#suffix' => t('It is recommended to read the git diff before you commit.') . '</div>',
+  );
+
+  // Limit status to 1000 lines
+  $output = shell_exec("cd $repo_path; git -c color.ui=always  status");
+  $lines = explode("\n", $output);
+  $count = count($lines);
+  if ($count > 100) {
+    $lines = array_slice($lines, 0, 100);
+    $lines[] = "# STATUS TRUNCATED. SHOWING 100 of $count LINES.";
+  }
+  $git_status  = implode("\n", $lines);
+
+  // Get git diff.
+  $git_diff = trim(shell_exec("cd $repo_path; git -c color.ui=always diff"));
+
+  $form['git_info']['status'] = array(
+    '#type' => 'markup',
+    '#markup' => theme('devshop_ascii', array(
+      'output' => $git_status
+    )),
+  );
+  $form['git_info']['diff'] = array(
+    '#type' => 'markup',
+    '#markup' => theme('devshop_ascii', array(
+      'output' => $git_diff
+    )),
+  );
+  $form['files'] = array(
+    '#description' => t('Check the boxes next to the files you wish to commit.  If you leave all boxes unchecked, all new and changed files will be committed.'),
+    '#type' => 'checkboxes',
+    '#options' => $options,
+    '#element_validate' => array('hosting_git_commit_validate_files'),
+  );
+  $form['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Git Commit Message'),
+    '#description' => t('Enter a message to use as the git commit message.'),
+    '#rows' => 2,
+  );
+  $form['push'] = array(
+    '#title' => t('Push to Remote'),
+    '#description' => t('After updating and committing, push the changes to the git remote.'),
+    '#type' => 'checkbox',
+    '#default_value' => 1,
+  );
+  $form['name'] = array(
+    '#type' => 'value',
+    '#value' => $user->name,
+  );
+  $form['mail'] = array(
+    '#type' => 'value',
+    '#value' => $user->mail,
+  );
+  return $form;
+}
+
+
+/**
+ * Converts list of files to json encode for hosting task arguments table.
+ * @param $element
+ * @param $form_state
+ */
+function hosting_git_commit_validate_files($element, &$form_state) {
+  if (!empty($element['#value'])) {
+    $values = json_encode(array_filter(array_values($element['#value'])));
+    form_set_value($element, $values, $form_state);
+  }
+}

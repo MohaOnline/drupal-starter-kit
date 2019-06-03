@@ -1,0 +1,202 @@
+<?php
+
+/**
+ * @file
+ *   Hosting CiviCRM API functions, and Drupal hooks.
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function hosting_civicrm_form_site_node_form_alter(&$form, &$form_state) {
+  if (! empty($form['#node']->nid)) {
+    if (isset($form['#node']->civicrm_version)) {
+      // Display the CiviCRM version
+      $form['info']['civicrm_version'] = array(
+        '#type' => 'item',
+        '#title' => t('CiviCRM version'),
+        '#markup' => $form['#node']->civicrm_version,
+        '#required' => FALSE,
+      );
+
+      // Allow editing the CiviCRM site key
+      $form['civicrm_sitekey'] = array(
+        '#type' => 'textfield',
+        '#title' => t('CiviCRM site key'),
+        '#description' => t('The site key enables access to the CiviCRM REST API, in combination with a user API key. Leave this empty to generate a new random API site key. For more information, refer to the <a href="!url">CiviCRM REST interface documentation</a>.', array('!url' => 'http://wiki.civicrm.org/confluence/display/CRMDOC/REST+interface')),
+        '#default_value' => $form['#node']->civicrm_sitekey,
+        '#required' => FALSE,
+        '#weight' => 11,
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_nodeapi_load().
+ */
+function hosting_civicrm_node_load($nodes, $types) {
+  if (! in_array('site', $types)) {
+    return;
+  }
+
+  foreach ($nodes as $node) {
+    if ($node->type != 'site') {
+      continue;
+    }
+
+    // Get the CiviCRM package version from the platform.
+    //
+    // The presence of the version is also a check used later to know
+    // if a site has CiviCRM installed (ex: whether to show the sitekey).
+    $query = 'SELECT version as civicrm_version
+                FROM hosting_package_instance hpi
+                LEFT JOIN hosting_package pkg ON (pkg.nid = hpi.package_id)
+               WHERE platform = :platform
+                 and short_name = :short_name
+                 and status = 1
+               ORDER BY iid DESC';
+
+    if ($result = db_query($query, array(':platform' => $node->platform, ':short_name' => 'civicrm'))->fetchField()) {
+      $node->civicrm_version = $result;
+
+      // Get the CiviCRM site key
+      $node->civicrm_sitekey = db_query('SELECT civicrm_sitekey FROM hosting_site WHERE nid = :nid', array(':nid' => $node->nid))->fetchField();
+    }
+  }
+}
+
+function hosting_civicrm_node_view($node, $view_mode, $langcode) {
+  if (isset($node->civicrm_version)) {
+    $node->content['info']['civicrm_version'] = array(
+      '#type' => 'item',
+      '#title' => t('CiviCRM version'),
+      '#markup' => $node->civicrm_version,
+    );
+  }
+
+  if (isset($node->civicrm_version) && isset($node->civicrm_sitekey)) {
+    $node->content['info']['civicrm_sitekey'] = array(
+      '#type' => 'item',
+      '#title' => t('CiviCRM site key'),
+      '#markup' => $node->civicrm_sitekey,
+    );
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function hosting_civicrm_node_update($node) {
+  hosting_civicrm_node_update_or_insert($node);
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function hosting_civicrm_node_insert($node) {
+  hosting_civicrm_node_update_or_insert($node);
+}
+
+function hosting_civicrm_node_update_or_insert($node) {
+  // Avoid creating a site key for Drupal-only site.
+  if (isset($node->civicrm_version)) {
+    $sitekey = $node->civicrm_sitekey;
+
+    if (empty($sitekey)) {
+      global $base_url;
+      // Adapted from civicrm/install/civicrm.php
+      $sitekey = md5(rand() . mt_rand() . rand() . uniqid('', TRUE) . $base_url);
+    }
+
+    db_query('UPDATE {hosting_site} SET civicrm_sitekey = :sitekey WHERE nid = :nid', array(':sitekey' => $sitekey, ':nid' => $node->nid));
+  }
+}
+
+/**
+ * Return the number of sites where CiviCRM is available
+ */
+function hosting_civicrm_site_count() {
+  $platforms = hosting_civicrm_get_platforms();
+
+  $count = 0;
+  foreach ($platforms as $key => $nid) {
+    $count += hosting_site_count($nid);
+  }
+
+  return $count;
+}
+
+/**
+ * Return an array of active platforms that contain CiviCRM.
+ */
+function hosting_civicrm_get_platforms() {
+  // Find the package ID for CiviCRM, which is unique accros all platforms.
+  $package_id = db_query('SELECT nid FROM {hosting_package} WHERE short_name = :short_name', array(':short_name' => 'civicrm'))->fetchField();
+
+  // Find active platforms that have the package_id.
+  $result = db_query('SELECT DISTINCT nid FROM {hosting_platform} pl
+                       INNER JOIN {hosting_package_instance} pkg ON (pl.nid = pkg.platform)
+                       WHERE pkg.package_id = :package_id
+                         AND pl.status = :status', array(
+    ':package_id' => $package_id,
+    ':status' => HOSTING_PLATFORM_ENABLED,
+  ));
+
+  $platforms = array();
+
+  foreach ($result as $record) {
+    $platforms[] = $record->nid;
+  }
+  return $platforms;
+}
+
+/**
+ * Return an array of enabled sites capable of running CiviCRM
+ *
+ * @param $order_by
+ *   Field to order the returned sites by.
+ */
+function hosting_civicrm_get_sites($order_by = null) {
+  $platforms = hosting_civicrm_get_platforms();
+  $sites = array();
+
+  foreach ($platforms as $platform) {
+    //get all the enabled sites on the platform
+    if (isset($order_by)) {
+      $result = db_query('SELECT n.nid FROM {node} n LEFT JOIN {hosting_site} s ON n.nid=s.nid WHERE n.type="site" and s.status = :status and s.platform = :platform ORDER BY :orderby ASC', array(
+        ':platform' => $platform,
+        ':status' => HOSTING_SITE_ENABLED,
+        ':orderby' => $order_by
+      ));
+    }
+    else {
+      $result = db_query('SELECT n.nid FROM {node} n LEFT JOIN {hosting_site} s ON n.nid=s.nid WHERE n.type="site" and s.status = %d and s.platform=%d', array(':platform' => $platform, ':status' => HOSTING_SITE_ENABLED));
+    }
+
+    foreach ($result as $record) {
+      $sites[] = $record->nid;
+    }
+  }
+
+  return $sites;
+}
+
+/**
+ * Helper function to determine whether a platform contains CiviCRM
+ */
+function _is_civicrm_platform($nid) {
+  return in_array($nid, hosting_civicrm_get_platforms());
+}
+
+/**
+ * Helper function to determine the version of CiviCRM available.
+ * DEPRECATED c.f. #2335909
+ * Remove after 2015-05-01.
+ */
+function hosting_civicrm_get_version() {
+  //TODO: confirm this is returning the proper version for our platform, etc.
+  // @see: hosting_civicrm_form_site_node_form_alter()
+  $package = hosting_package_instance_load(array('short_name' => 'civicrm'));
+  return $package->version;
+}

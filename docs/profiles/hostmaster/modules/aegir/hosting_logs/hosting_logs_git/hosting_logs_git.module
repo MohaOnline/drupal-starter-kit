@@ -1,0 +1,130 @@
+<?php
+
+/**
+ * @file
+ * Code to provides a site or platforms Git commit log to hostmaster front end.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function hosting_logs_git_permission() {
+  return array(
+    'access hosting logs git' => array(
+      'title' => t('access Git hosting commit logs'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function hosting_logs_git_menu() {
+
+  $items['node/%node/commits'] = array(
+    'title' => 'Git commits',
+    'description' => 'View git commit log for this site.',
+    'page callback' => 'hosting_logs_git_page',
+    'page arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'access callback' => 'hosting_logs_git_menu_access',
+    'access arguments' => array(1),
+  );
+  return $items;
+}
+
+/**
+ * The access callback for the Logs tab.
+ *
+ * Make sure user has perms to view and and also that the node we are
+ * viewing is a platform node.
+ */
+function hosting_logs_git_menu_access($node) {
+  if (!user_access('access hosting logs git')) {
+    return FALSE;
+  }
+
+  if (!$node
+    || ($node->type != 'site' && $node->type != 'platform')
+    || $node->verified == 0
+    || empty($node->git['repo_url'])) {
+    return FALSE;
+  }
+  else {
+    return TRUE;
+  }
+}
+
+/**
+ * Return output from "git log" for this site or platform.
+ */
+function hosting_logs_git_page($node) {
+
+  if ($node->type == 'site') {
+    $platform = node_load($node->platform);
+    $repo_path = $platform->publish_path . '/sites/' . $node->hosting_name;
+  }
+  else {
+    // For platforms.
+    $repo_path = $node->publish_path;
+  }
+
+  // Run "git log" and capture the output. We need to chdir to the repo
+  // directory before we fetch the log. Technically, I should be able to
+  // use git's --work-tree option and not have to chdir, but for some
+  // reason, it doesn't work. It works when I run the exact same command
+  // at the shell prompt, but doesn't work when I call git from PHP.
+  // Something to fix one day.
+
+  $log_count = variable_get('hosting_logs_git_logs_count', 10);
+  $log_count_opt = '';
+  if ($log_count > 0) {
+    $log_count_opt = "-$log_count";
+  }
+
+  $git_path = variable_get('aegir_git_path', 'git');
+
+  // Get our current working directory.
+  $cwd = getcwd();
+
+  // Switch to the repo directory.
+  chdir($repo_path);
+
+  // Fetch the log.
+  $output = shell_exec("$git_path log $log_count_opt 2>&1");
+
+  // Change back to our original work directory.
+  chdir($cwd);
+
+  // See if the command failed.
+  if ($output == NULL) {
+    return "Unable to execute 'git log'. " .
+      "Make sure the 'git' executable is in your path.";
+  }
+
+  // Add some minimal css to make it readable.
+  $output = '<div class="hosting-logs-git-commits" style="white-space: pre;">' . $output . '</div>';
+
+  // Return the output.
+  return $output;
+}
+
+
+/**
+ * General settings form.
+ */
+/* TODO?
+function hosting_logs_git_settings_form() {
+  $form['hosting_logs']['git_log_count'] = array(
+    '#type' => 'textfield',
+    '#maxlength' => 5,
+    '#title' => t('Max Git log entries to display'),
+    '#default_value' => variable_get('git_log_count', 10),
+    '#weight' => 1,
+    '#description' => t('Enter the maximum number of log entries to ' .
+        'display in the Git Commit Log View page. A ' .
+        'value of 0 will display all of the log entries.'),
+  );
+  return system_settings_form($form);
+}
+ */

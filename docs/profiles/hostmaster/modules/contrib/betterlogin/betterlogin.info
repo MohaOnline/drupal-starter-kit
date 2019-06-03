@@ -1,0 +1,12 @@
+name = Better Login
+description = Make the login screens better :)
+
+package = User interface
+
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2018-05-10
+version = "7.x-1.5"
+core = "7.x"
+project = "betterlogin"
+datestamp = "1525940286"
