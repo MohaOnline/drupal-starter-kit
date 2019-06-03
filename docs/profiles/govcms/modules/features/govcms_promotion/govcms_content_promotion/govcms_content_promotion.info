@@ -1,0 +1,18 @@
+name = Promotion Content
+description = Provides default content for promotion content type.
+core = 7.x
+package = govCMS content
+project = govcms_content_promotion
+dependencies[] = govcms_promotion
+dependencies[] = defaultcontent
+features[content][] = govcms_promotion_1
+features[content][] = govcms_promotion_2
+features[content][] = govcms_promotion_3
+features[features_api][] = api:2
+mtime = 1416890187
+
+; Information added by Drupal.org packaging script on 2019-05-20
+version = "7.x-3.6"
+core = "7.x"
+project = "govcms"
+datestamp = "1558393988"

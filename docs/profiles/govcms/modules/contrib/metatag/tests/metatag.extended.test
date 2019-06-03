@@ -1,0 +1,114 @@
+<?php
+/**
+ * @file
+ * Tests for the Metatag module to ensure extended metatags work.
+ */
+
+class MetatagCoreExtendedTest extends MetatagTestHelper {
+
+  /**
+   * Admin user.
+   *
+   * @var \StdClass
+   */
+  protected $adminUser;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Extended metatag tests',
+      'description' => 'Test extended meta tags functionality.',
+      'group' => 'Metatag',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  function setUp(array $modules = array()) {
+    $modules[] = 'metatag_dc';
+    parent::setUp($modules);
+  }
+
+  /**
+   * Tests extended metatag as used by DC.
+   */
+  public function testExtendedMetatag() {
+    $this->drupalCreateContentType(array(
+      'type' => 'metatag_test',
+      'name' => 'Test',
+    ));
+    $this->adminUser = $this->drupalCreateUser(array(
+      'administer meta tags',
+      'edit meta tags',
+      'create metatag_test content',
+      'delete any metatag_test content',
+      'edit any metatag_test content',
+    ));
+    $this->drupalLogin($this->adminUser);
+
+    $this->drupalGet('admin/config/search/metatags/config/add');
+    $this->drupalPost(NULL, array(
+      'instance' => 'node:metatag_test',
+    ), t('Add and configure'));
+    // Assert the default is sane.
+    $this->assertFieldByName('metatags[und][dcterms.title][item][value]', '[node:title]');
+    $this->drupalPost(NULL, array(
+      'metatags[und][dcterms.title][item][value]' => '[node:title]',
+      'metatags[und][dcterms.creator][item][value]' => '[node:author]',
+      'metatags[und][dcterms.date][item][value]' => '[node:created:custom:Y-m-d\TH:iP]',
+      'metatags[und][dcterms.format][item][value]' => 'text/html',
+      'metatags[und][dcterms.identifier][item][value]' => '[current-page:url:absolute]',
+      'metatags[und][dcterms.language][item][value]' => '[node:language]',
+    ), t('Save'));
+    // Assert field values saved correctly.
+    $this->drupalGet('admin/config/search/metatags/config/node:metatag_test');
+    $this->assertFieldByName('metatags[und][dcterms.title][item][value]', '[node:title]');
+    // Submit a node and check default filtering.
+    $this->drupalGet('node/add/metatag-test');
+    // Assert the default is sane.
+    $this->assertFieldByName('metatags[und][dcterms.title][item][value]', '[node:title]');
+    $this->drupalPost(NULL, array(
+      'metatags[und][dcterms.title][item][value]' => '[node:title] ponies',
+      'metatags[und][robots][value][index]' => '1',
+      'metatags[und][dcterms.title][item][dir]' => 'ltr',
+      'title' => 'Who likes magic',
+    ), t('Save'));
+    $this->assertText(t('Test Who likes magic has been created.'));
+    $matches = array();
+    if (preg_match('@node/(\d+)$@', $this->getUrl(), $matches)) {
+      $nid = end($matches);
+      $node = node_load($nid);
+      // Only the non-default values are stored.
+      $expected = array(
+        'und' => array(
+          'robots' => array(
+            'value' => array(
+              'index' => 'index',
+            ),
+          ),
+          'dcterms.title' => array(
+            'item' => array(
+              'value' => '[node:title] ponies',
+              'dir' => 'ltr',
+            ),
+          ),
+        ),
+      );
+      $this->assertEqual($expected, $node->metatags);
+    }
+    else {
+      $this->fail('Could not determine node ID for created node.');
+    }
+    $xpath = $this->xpath("//meta[@name='dcterms.title']");
+    $this->assertEqual(count($xpath), 1);
+    $this->assertEqual($xpath[0]['content'], 'Who likes magic ponies');
+    $this->assertEqual($xpath[0]['dir'], 'ltr');
+    $xpath = $this->xpath("//meta[@name='robots']");
+    $this->assertEqual(count($xpath), 1);
+    $this->assertEqual($xpath[0]['content'], 'index');
+  }
+
+}

@@ -1,0 +1,12 @@
+name = govCMS Dissemination Limiting Marker (DLM)
+core = 7.x
+package = govCMS
+description = "Add optional DLM to emails sent from drupal mail"
+configure = admin/config/system/dlm
+
+; Information added by Drupal.org packaging script on 2015-07-15
+version = "7.x-1.0"
+core = "7.x"
+project = "govcms_dlm"
+datestamp = "1436936376"
+

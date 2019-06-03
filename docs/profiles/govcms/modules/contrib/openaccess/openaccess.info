@@ -1,0 +1,12 @@
+name = OpenAccess
+description = PerformX OpenAccess plugin for CKEditor.
+package = User interface
+core = 7.x
+dependencies[] = wysiwyg
+
+; Information added by Drupal.org packaging script on 2015-07-20
+version = "7.x-1.0"
+core = "7.x"
+project = "openaccess"
+datestamp = "1437351240"
+

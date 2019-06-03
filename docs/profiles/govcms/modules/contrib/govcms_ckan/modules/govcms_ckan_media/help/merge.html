@@ -1,0 +1,203 @@
+<h2>Merge fields</h2>
+
+<p>Optionally merge more keys, so we convert a multiple dimensional table into a two dimensional table which can be visualised by x y graph.</p>
+
+<h3>Example 1</h3>
+
+<p>In this example dataset:</p>
+
+<table>
+  <tr>
+    <th>Size</th>
+    <th>Year</th>
+    <th>Green</th>
+    <th>Blue</th>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>2010</td>
+    <td>10</td>
+    <td>15</td>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>2015</td>
+    <td>12</td>
+    <td>17</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>2010</td>
+    <td>30</td>
+    <td>35</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>2015</td>
+    <td>32</td>
+    <td>37</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>2010</td>
+    <td>60</td>
+    <td>70</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>2015</td>
+    <td>62</td>
+    <td>72</td>
+  </tr>
+</table>
+
+<p>If you merge the <strong>Year</strong> field with keys(<strong>Green, Blue</strong>), you would get a table that looks like below. In this way it can be shown as a x y graph:</p>
+
+<table>
+  <tr>
+    <th>Size</th>
+    <th>2010 Green</th>
+    <th>2010 Blue</th>
+    <th>2015 Green</th>
+    <th>2015 Blue</th>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>10</td>
+    <td>15</td>
+    <td>12</td>
+    <td>17</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>30</td>
+    <td>35</td>
+    <td>32</td>
+    <td>37</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>60</td>
+    <td>70</td>
+    <td>62</td>
+    <td>72</td>
+  </tr>
+</table>
+
+<h3>Example 2</h3>
+
+<p>Another example dataset shows merge more fields:</p>
+
+<table>
+  <tr>
+    <th>Size</th>
+    <th>Gender</th>
+    <th>Year</th>
+    <th>Qty</th>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>Men</td>
+    <td>2010</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>Men</td>
+    <td>2015</td>
+    <td>3</td>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>Women</td>
+    <td>2010</td>
+    <td>4</td>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>Women</td>
+    <td>2015</td>
+    <td>3</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>Men</td>
+    <td>2010</td>
+    <td>4</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>Men</td>
+    <td>2015</td>
+    <td>5</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>Women</td>
+    <td>2010</td>
+    <td>7</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>Women</td>
+    <td>2015</td>
+    <td>6</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>Men</td>
+    <td>2010</td>
+    <td>7</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>Men</td>
+    <td>2015</td>
+    <td>3</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>Women</td>
+    <td>2010</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>Women</td>
+    <td>2015</td>
+    <td>9</td>
+  </tr>
+</table>
+
+<p>If you merge the <strong>Year</strong> field with keys(<strong>Green, Blue</strong>), you would get a table that looks like below. In this way it can be shown as a chart:</p>
+
+<table>
+  <tr>
+    <th>Size</th>
+    <th>Men 2010 Qty</th>
+    <th>Men 2015 Qty</th>
+    <th>Women 2010 Qty</th>
+    <th>Women 2015 Qty</th>
+  </tr>
+  <tr>
+    <th>Small</th>
+    <td>2</td>
+    <td>3</td>
+    <td>4</td>
+    <td>3</td>
+  </tr>
+  <tr>
+    <th>Medium</th>
+    <td>4</td>
+    <td>5</td>
+    <td>7</td>
+    <td>6</td>
+  </tr>
+  <tr>
+    <th>Large</th>
+    <td>7</td>
+    <td>3</td>
+    <td>0</td>
+    <td>9</td>
+  </tr>
+</table>

@@ -1,0 +1,439 @@
+<?php
+
+/**
+ * @file
+ * Code for the govCMS CKAN module.
+ */
+
+/**
+ * Base path to the configuration page.
+ */
+define('GOVCMS_CKAN_CONFIG_PATH', 'admin/config/services/govcms-ckan');
+
+/**
+ * Base path to the help pages.
+ */
+define('GOVCMS_CKAN_HELP_PATH', 'govcms-ckan/help');
+
+/**
+ * Limit of records retrieved via the API. CKAN default is 100.
+ *
+ * TODO: Move this to a configuration (somewhere). For now, we really want all
+ * records as we don't have any way to 'request more' results from the api.
+ */
+define('GOVCMS_CKAN_DATASET_RECORD_LIMIT', 10000);
+
+/**
+ * Default cache expiries, may be overriden via settings.
+ */
+define('GOVCMS_CKAN_CACHE_TTL', 2592000);
+define('GOVCMS_CKAN_CACHE_FAIL_TTL', 86400);
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function govcms_ckan_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'govcms_ckan' && in_array($plugin, array_keys(govcms_ckan_ctools_plugin_type()))) {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function govcms_ckan_menu() {
+
+  $items[GOVCMS_CKAN_CONFIG_PATH] = array(
+    'title' => 'govCMS CKAN',
+    'description' => 'Settings for govCMS CKAN',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('govcms_ckan_settings_form'),
+    'access arguments' => array('administer govcms ckan'),
+    'file' => 'govcms_ckan.admin.inc',
+  );
+
+  // Help functionality modeled on drupal.org/project/advanced_help which is
+  // currently not available in govCMS. If this changes in the future help files
+  // should be compatible and we just change the implementation slightly.
+  $items[GOVCMS_CKAN_HELP_PATH . '/%/%'] = array(
+    'title' => 'govCMS CKAN Help',
+    'page callback' => 'govcms_ckan_help_callback',
+    'page arguments' => array(2, 3),
+    'access arguments' => array('view govcms ckan help'),
+    'file' => 'govcms_ckan.help.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function govcms_ckan_theme($existing, $type, $theme, $path) {
+  return array(
+    'govcms_ckan_help_page' => array(
+      'variables' => array(
+        'page_content' => NULL,
+        'css' => $path . '/css/govcms-ckan.help.css',
+      ),
+      'template' => 'theme/templates/govcms-ckan-help-page',
+    ),
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function govcms_ckan_permission() {
+  return array(
+    'administer govcms ckan' => array(
+      'title' => t('Administer govCMS CKAN'),
+      'description' => t('Allows the user to access the govCMS CKAN admin page.'),
+    ),
+    'view govcms ckan help' => array(
+      'title' => t('View govCMS CKAN help'),
+      'description' => t('Allows the user to view govCMS CKAN help topics.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function govcms_ckan_ctools_plugin_type() {
+  return array(
+    'visualisation' => array(
+      'label' => 'Data visualisation',
+      'use hooks' => FALSE,
+      'process' => 'govcms_ckan_process_plugin',
+      'load themes' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Define callbacks for plugins.
+ *
+ * @param array $plugin
+ *   The current plugin.
+ * @param array $info
+ *   The fully processed result of hook_ctools_plugin_api_info().
+ */
+function govcms_ckan_process_plugin(&$plugin, $info) {
+  // Add a view function.
+  if (!isset($plugin['view'])) {
+    $plugin['view'] = $plugin['module'] . '_' . $plugin['name'] . '_view';
+  }
+  // Add a configuration form function.
+  if (!isset($plugin['configure'])) {
+    $plugin['configure'] = $plugin['module'] . '_' . $plugin['name'] . '_configure';
+  }
+  // Add a configuration validation function.
+  if (!isset($plugin['configure'])) {
+    $plugin['configure'] = $plugin['module'] . '_' . $plugin['name'] . '_configure_validate';
+  }
+}
+
+/**
+ * Helper function to retrieve all visualisation plugins.
+ *
+ * @return array
+ *   Array of all visualisations.
+ */
+function govcms_ckan_get_all_plugins() {
+  ctools_include('plugins');
+  return ctools_get_plugins('govcms_ckan', 'visualisation');
+}
+
+/**
+ * Helper function to return a specific visualisation plugin.
+ *
+ * @param string $name
+ *   The name of the visualisation plugin to return.
+ *
+ * @return array
+ *   A single visualisation plugin.
+ */
+function govcms_ckan_get_plugin($name) {
+  ctools_include('plugins');
+  return ctools_get_plugins('govcms_ckan', 'visualisation', $name);
+}
+
+/**
+ * Helper function to return a specific visualisation plugin config form.
+ *
+ * @param string $name
+ *   The name of the visualisation plugin to return.
+ * @param array $form
+ *   The form context that this will be loaded into.
+ * @param array $form_state
+ *   The form state for the form this will be loaded into.
+ * @param array $config
+ *   The current configuration values.
+ *
+ * @return array
+ *   A configuration form.
+ */
+function govcms_ckan_get_plugin_config_form($name, $form, &$form_state, $config) {
+  $plugin = govcms_ckan_get_plugin($name);
+  // Merge custom settings with defaults.
+  $config = !empty($config) && is_array($config) ? $config : array();
+  $config = array_merge($plugin['settings'], $config);
+  $config_form = array();
+  $function = $plugin['configure'];
+  if (function_exists($function)) {
+    $config_form = $function($plugin, $form, $form_state, $config);
+  }
+  return $config_form;
+}
+
+/**
+ * Helper function to return a specific visualisation plugin view.
+ *
+ * @param string $name
+ *   The name of the visualisation plugin to return.
+ * @param object $file
+ *   The file object.
+ * @param array $display
+ *   The current display information and config.
+ * @param string $config
+ *   The configuration for the visualisation.
+ *
+ * @return array
+ *   A renderable array for the visualisation.
+ */
+function govcms_ckan_get_plugin_view($name, $file, $display, $config) {
+  $plugin = govcms_ckan_get_plugin($name);
+  // Merge custom settings with defaults.
+  $config = !empty($config) && is_array($config) ? $config : array();
+  $config = array_merge($plugin['settings'], $config);
+  // Merge display settings but file config takes precedence.
+  $config = array_merge($display['settings'], $config);
+  // Invoke the view callback.
+  $content = array();
+  if (function_exists($plugin['view'])) {
+    $content = call_user_func($plugin['view'], $file, $display, $config);
+  }
+  return $content;
+}
+
+/**
+ * Helper to return a new instance of the CKAN Client.
+ */
+function govcms_ckan_client() {
+  module_load_include('inc', 'govcms_ckan', 'src/GovCmsCkanClient');
+  $base_url = variable_get('govcms_ckan_endpoint_url', '');
+  $api_key = variable_get('govcms_ckan_api_key', '');
+  $auth_header = variable_get('govcms_ckan_auth_header', 'Authorization');
+  $client = new GovCmsCkanClient($base_url, $api_key, $auth_header);
+  $client->setCacheTTL(variable_get('govcms_ckan_cache_ttl', GOVCMS_CKAN_CACHE_TTL), 'success');
+  $client->setCacheTTL(variable_get('govcms_ckan_cache_fail_ttl', GOVCMS_CKAN_CACHE_FAIL_TTL), 'fail');
+  return $client;
+}
+
+/**
+ * Helper to return records for a resource.
+ *
+ * @param string $resource_id
+ *   The resource_id to request.
+ * @param string $search
+ *   Optional search string.
+ * @param string $filters
+ *   Optional filters.
+ * @param string|int $cache_ttl
+ *   Override the cache expiry, set to 'global' to use defaults.
+ *
+ * @return object
+ *   A client response object.
+ */
+
+function govcms_ckan_client_request_records($resource_id = NULL, $search = NULL, $filters = NULL, $cache_ttl = 'global') {
+  $client = govcms_ckan_client();
+
+  if (empty($limit)) {
+    $limit = variable_get('govcms_ckan_dataset_record_limit', GOVCMS_CKAN_DATASET_RECORD_LIMIT);
+  }
+
+  $query = array('id' => $resource_id, 'limit' => $limit);
+
+  if (!empty($search)) {
+    $query += array('q' => $search);
+  }
+
+  if (!empty($filters)) {
+    $query += array('filters' => $filters);
+  }
+
+  if ($cache_ttl !== 'global') {
+    $client->setCacheTTL($cache_ttl);
+  }
+
+  return $client->get('action/datastore_search', $query);
+}
+
+/**
+ * Helper to return the metadata for a resource.
+ *
+ * @param string $resource_id
+ *   The resource_id to request.
+ *
+ * @return object
+ *   A client response object.
+ */
+function govcms_ckan_client_request_meta($resource_id = NULL) {
+  $client = govcms_ckan_client();
+  return $client->get('action/resource_show', array('id' => $resource_id));
+}
+
+/**
+ * Helper to return a new instance of the CKAN DataSet parser.
+ *
+ * @param object $result
+ *   Instantiate with result set, this can also be done later with setResult.
+ *
+ * @return object
+ *   An instance of the ckan dataset parser.
+ */
+function govcms_ckan_dataset_parser($result = NULL) {
+  module_load_include('inc', 'govcms_ckan', 'src/GovCmsCkanDatasetParser');
+  return new GovCmsCkanDatasetParser($result);
+}
+
+/**
+ * Turn a string of key value pairs separated by new lines and pipes into array.
+ *
+ * It is a shame drupal doesn't have a helper for this, the closest thing is
+ * list_extract_allowed_values() however it is very specific to the list module
+ * so this is a simplified version.
+ *
+ * @param string $string
+ *   The string input, generally user entered content int a textarea.
+ *
+ * @return array
+ *   A key value array, each new line in the string forms a new array item keyed
+ *   by the pipe prefix and value is the pipe suffix.
+ */
+function govcms_ckan_string_to_array($string) {
+  $values = array();
+  $list = explode("\n", $string);
+  $list = array_map('trim', $list);
+  foreach ($list as $row) {
+    if (!empty($row) && strpos($row, '|') !== FALSE) {
+      list($key, $value) = explode('|', $row, 2);
+      $values[filter_xss($key)] = filter_xss($value);
+    }
+  }
+  return $values;
+}
+
+/**
+ * A helper to abstract settings from a config array or object.
+ *
+ * This prevents the need for having issets everywhere when retrieving config
+ * values that potentially do not exist in a config array. Eg newly added keys
+ * that might not be in the database for existing content.
+ *
+ * @param mixed $config
+ *   A config array or object.
+ * @param string $key
+ *   The key to retrieve the settings from, you can use a slash to get nested
+ *   values. Eg 'label/overrides' would retrieve $config['label']['overrides'].
+ * @param mixed $default_value
+ *   A fallback if no setting found.
+ *
+ * @return mixed
+ *   The config value.
+ */
+function govcms_ckan_get_config_value($config, $key, $default_value = NULL) {
+  $config = is_object($config) ? (array) $config : $config;
+  $keys = explode('/', $key);
+  $value = $default_value;
+  foreach ($keys as $depth => $val) {
+    if (($depth + 1) == count($keys) && isset($config[$val])) {
+      $value = $config[$val];
+    }
+    else {
+      $config = isset($config[$val]) ? (array) $config[$val] : array();
+    }
+  }
+  return $value;
+}
+
+/**
+ * A wrapper to jsonencode complex structure into a string suitable for an attr.
+ *
+ * The purpose of this wrapper is in the case that if additional cleansing is
+ * required for the values, we have a single place to update rather than
+ * additional parsing in a visualisation plugin.
+ *
+ * @param mixed $values
+ *   An array or object to be encoded.
+ *
+ * @return null|string
+ *   A json encoded string ready to be added as a data attribute.
+ */
+function govcms_ckan_json_encode_attribute($values = NULL) {
+  if (!empty($values)) {
+    return json_encode($values);
+  }
+  return NULL;
+}
+
+/**
+ * A helper to reduce an array to only valid rows based on a not empty key.
+ *
+ * Eg. If every item in an array requires a non empty 'value' key value then
+ * this will reduce the rows to only those valid rows.
+ *
+ * @param array $rows
+ *   The rows from config. Passed by reference.
+ * @param string $not_empty_key
+ *   The key to check its value is not empty.
+ *
+ * @return array
+ *   The valid rows.
+ */
+function govcms_ckan_array_valid_rows($rows, $not_empty_key = 'value') {
+  $array = array();
+  foreach ($rows as $row) {
+    if (!empty($row[$not_empty_key])) {
+      $array[] = $row;
+    }
+  }
+  return $array;
+}
+
+/**
+ * Returns a link that opens a popup to the given help page.
+ *
+ * This mimics the way Views uses Advanced Help, using onclick instead of
+ * external js to reduce load when not in use.
+ *
+ * @param string $module
+ *   The module implementing the help.
+ * @param string $key
+ *   The key for the help file.
+ * @param string $title
+ *   The title to use for the link.
+ *
+ * @return string
+ *   A link ready to be rendered.
+ */
+function govcms_ckan_help_link($module, $key, $title = 'More help') {
+  if (!user_access('view govcms ckan help')) {
+    return NULL;
+  }
+  return l(
+    '<span>' . $title . '</span>',
+    GOVCMS_CKAN_HELP_PATH . '/' . $module . '/' . $key,
+    array(
+      'html' => TRUE,
+      'attributes' => array(
+        'onclick' => "var w=window.open(this.href, 'advanced_help_window', 'width=500,height=500,scrollbars,resizable'); w.focus(); return false;",
+        'title' => $title,
+        'class' => array('govcms-ckan-help-link'),
+      ),
+    )
+  );
+}

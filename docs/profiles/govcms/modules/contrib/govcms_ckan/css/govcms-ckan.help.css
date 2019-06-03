@@ -1,0 +1,43 @@
+body {
+    font: normal 12px "Lucida Grande", "Lucida Sans Unicode", sans-serif;
+    padding: 10px;
+    margin: 0;
+}
+
+h2, h3 {
+    border-bottom: 1px solid #ddd;
+    margin: 0.5em 0;
+    padding-bottom: 0.3em;
+}
+
+h3 {
+    border-bottom-style: dotted;
+}
+
+h4 {
+    border-left: 2px solid #ddd;
+    padding-left: 0.3em;
+}
+
+table {
+    width: 100%;
+    font-size: 12px;
+}
+
+th {
+    background: #eee;
+}
+
+td, th {
+    padding: 5px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+pre {
+    border: 1px solid #ccc;
+    background: #f6f6f6;
+    padding: 10px;
+    margin: 0.5em 0 1em;
+    border-radius: 3px;
+}

@@ -1,0 +1,105 @@
+<?php
+
+/**
+ * @file
+ * Tests for the Module Permissions module.
+ */
+
+/**
+ * Base class for all Module Permissions web test cases.
+ */
+class ModulePermissionsWebTestCase extends DrupalWebTestCase {
+  protected $profile = 'testing';
+  protected $privilegedUser;
+
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    // Enable Module Permissions module and any other modules.
+    $modules = func_get_args();
+    if (isset($modules[0]) && is_array($modules[0])) {
+      $modules = $modules[0];
+    }
+    $modules[] = 'module_permissions';
+    parent::setUp($modules);
+
+    // Disable client-side caching.
+    variable_set('admin_menu_cache_client', FALSE);
+    // Disable Clean URLs to ensure drupal.org testbot compatibility.
+    variable_set('clean_url', 0);
+  }
+
+}
+
+/**
+ * Tests menu links depending on user permissions.
+ */
+class ModulePermissionsTestCase extends ModulePermissionsWebTestCase {
+  /**
+   * Register test task info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Basic tests',
+      'description' => 'Test of Module Permissions basic features.',
+      'group' => 'Module Permissions',
+    );
+  }
+
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    parent::setUp();
+
+    // Create and log in a user.
+    $this->privilegedUser = $this->drupalCreateUser(array(
+      'administer managed modules',
+      'administer managed modules permissions',
+    ));
+    $this->drupalLogin($this->privilegedUser);
+  }
+
+  /**
+   * Test access to module config page.
+   */
+  public function testMenuAccess() {
+    // Include help module in managed modules for testing.
+    variable_set('module_permissions_managed_modules', array('help'));
+
+    // Check managed modules path.
+    $this->drupalGet('admin/modules');
+    $this->assertResponse('200', 'Access modules admin path.');
+  }
+
+  /**
+   * Test enable/disable module.
+   */
+  public function testEnableDisable() {
+    $modules = array(
+      'dblog',
+      'help',
+    );
+
+    // Include core modules for testing.
+    variable_set('module_permissions_managed_modules', $modules);
+
+    $edit = array();
+
+    // Test enable.
+    foreach ($modules as $name) {
+      $edit['modules[Core][' . $name . '][enable]'] = $name;
+    }
+    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
+    $this->assertText(t('The configuration options have been saved.'), 'Modules status has been updated.');
+
+    // Test disable.
+    foreach ($modules as $name) {
+      $edit['modules[Core][' . $name . '][enable]'] = FALSE;
+    }
+    $this->drupalPost('admin/modules', $edit, t('Save configuration'));
+    $this->assertText(t('The configuration options have been saved.'), 'Modules status has been updated.');
+  }
+
+}

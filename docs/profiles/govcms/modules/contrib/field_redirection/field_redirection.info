@@ -1,0 +1,12 @@
+core = "7.x"
+dependencies[] = "field"
+description = "Provide a field formatter to redirect the page to a referenced entity, file, node, taxonomy term, URL or user. Requires either the EntityReference, File, Link, Node Reference, Taxonomy, URL or User Reference modules."
+name = "Field Redirection"
+package = "Fields"
+
+; Information added by Drupal.org packaging script on 2014-10-31
+version = "7.x-2.6"
+core = "7.x"
+project = "field_redirection"
+datestamp = "1414779529"
+

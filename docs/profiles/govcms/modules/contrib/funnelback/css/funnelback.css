@@ -1,0 +1,33 @@
+ul#funnelback-results {
+  list-style: none;
+  padding-left: 0px;
+}
+
+.funnelback-result {
+  border-bottom: 1px solid black;
+}
+
+div#funnelback-results-page ul {
+  list-style : none;
+  margin-left : 0;
+}
+
+#funnelback-summary {
+  margin-bottom: 10px;
+}
+
+#funnelback-curator {
+  border: 1px solid black;
+  border-radius: 5px;
+  background: #eee;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.funnelback-exhibit {
+  margin-bottom: 10px;
+}
+
+.funnelback-pager li {
+  display: inline;
+}

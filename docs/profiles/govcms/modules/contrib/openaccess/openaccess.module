@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Integrates PerformX OpenAccess plugin with CKEditor through Wysiwyg module.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function openaccess_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#openaccess':
+      $output = '<p>' . t('The OpenAccess module registers a CKEditor plugin, 
+        PerformX OpenAccess, with the Wysiwyg module so that CKEditor users who 
+        may have access to the plugin.') . '</p>';
+      $plugin_path = module_exists('libraries') ? libraries_get_path('performx') : 'sites/all/libraries/performx';
+      if (!file_exists($plugin_path)) {
+        $output .= '<h2>' . t('Install the PerformX OpenAccess plugin') . '</h2>';
+        $output .= '<p>' . t('The PerformX OpenAccess plugin has not been 
+          installed. Please follow the instruction:') . '</p>';
+        $output .= '<p>' . t('Download the latest version of PerformX OpenAccess 
+          from <a href="@plugin_url">here</a>, and extract the zip file to 
+          <code>@library_path</code>. Make sure the plugin files are sitting 
+          under <code>@performx_path</code> (eg. the path of the file 
+          <code>@pluginjs</code> should be <code>@pluginjs_path</code>)',
+          array(
+            '@plugin_url' => url('http://ckeditor.com/addon/performx'),
+            '@library_path' => 'sites/all/libraries',
+            '@performx_path' => 'sites/all/libraries/performx',
+            '@pluginjs' => 'plugin.js',
+            '@pluginjs_path' => 'sites/all/libraries/performx/plugin.js',
+          )) . '</p>';
+        if (module_exists('libraries')) {
+          $profile_lib_path = 'profiles/' . drupal_get_profile() . '/libraries';
+          $site_lib_path = conf_path() . '/libraries';
+          $output .= '<p>' . t('The plugin can also be placed under 
+            <code>@profile_path</code> or <code>@site_path</code> as the 
+            Libraries module is enabled.',
+            array(
+              '@profile_path' => $profile_lib_path,
+              '@site_path' => $site_lib_path,
+            )) . '</p>';
+        }
+      }
+      $output .= '<h2>' . t('Add PerformX OpenAccess buttons to the CKEditor') . '</h2>';
+      $output .= '<p>' . t('Go to <a href="@wysiwyg">Wysiwyg configuration</a> 
+        and edit the relevant Wysiwyg profile. Under <em>Buttons and plugins</em> 
+        section, check <em>OpenAccess Template</em>, <em>OpenAccess Table</em> 
+        and <em>OpenAccess Accessibility Checker</em> and save the change.',
+        array('@wysiwyg' => url('admin/config/content/wysiwyg'))) . '</p>';
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_wysiwyg_plugin().
+ */
+function openaccess_wysiwyg_plugin($editor, $version) {
+  $plugin_path = module_exists('libraries') ? libraries_get_path('performx') : 'sites/all/libraries/performx';
+  if ($editor == 'ckeditor' && file_exists($plugin_path)) {
+    return array(
+      'performx' => array(
+        'url' => 'http://ckeditor.com/addon/performx',
+        'path' => $plugin_path,
+        'filename' => 'plugin.js',
+        'load' => TRUE,
+        'internal' => FALSE,
+        'buttons' => array(
+          'pxTemplate' => t('OpenAccess Template'),
+          'pxTable' => t('OpenAccess Table'),
+          'pxAccessibility' => t('OpenAccess Accessibility Checker'),
+        ),
+      ),
+    );
+  }
+}

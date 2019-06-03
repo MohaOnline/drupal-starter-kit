@@ -1,0 +1,81 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for govcms_ckan_media.
+ */
+
+/**
+ * Implements hook_field_schema().
+ */
+function govcms_ckan_media_field_schema($field) {
+  $schema = array();
+
+  switch ($field['type']) {
+    case 'govcms_ckan_media_config':
+      $schema['columns'] = array(
+        'config' => array(
+          'description' => "Serialised configuration options for display of visualisations and formatter for display.",
+          'type' => 'blob',
+          'not null' => FALSE,
+          'size' => 'big',
+          'serialize' => TRUE,
+        ),
+      );
+      break;
+  }
+
+  return $schema;
+}
+
+/**
+ * Implements hook_enable().
+ */
+function govcms_ckan_media_enable() {
+  // Create a config field. The field type that this creates requires the
+  // module to be enabled so it cannot be called in hook_install(). This is not
+  // ideal as we really only want it created when the module is installed.
+  // TODO: Find workaround.
+  field_info_cache_clear();
+  _govcms_ckan_media_create_config_field('file', 'ckan');
+}
+
+/**
+ * Creates the CKAN config field and attaches it to a bundle.
+ *
+ * @param string $entity_type
+ *   The entity type name.
+ * @param string $bundle
+ *   The bundle name.
+ */
+function _govcms_ckan_media_create_config_field($entity_type, $bundle) {
+  $field_name = 'ckan_visualisation';
+  $field_exists = (field_info_field($field_name) !== NULL);
+  $field_instance_exists = (field_info_instance($entity_type, $field_name, $bundle) !== NULL);
+
+  if (!$field_exists) {
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'govcms_ckan_media_config',
+      'module' => 'govcms_ckan_media',
+      'cardinality' => 1,
+      'entity_types' => array('file'),
+    );
+    $field = field_create_field($field);
+  }
+
+  if (!empty($field) && !$field_instance_exists) {
+    $instance = array(
+      'field_name' => $field_name,
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'description' => 'Visualisation configuration and display formatter.',
+      'label' => 'CKAN Visualisation',
+      'required' => 1,
+      'active' => 1,
+      'widget' => array(
+        'type' => 'govcms_ckan_media_config_widget',
+      ),
+    );
+    field_create_instance($instance);
+  }
+}

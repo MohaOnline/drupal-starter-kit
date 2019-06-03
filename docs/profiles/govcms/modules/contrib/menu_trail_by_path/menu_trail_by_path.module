@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * Expand menu items and set active-trail according to current path.
+ *
+ * By default, Drupal only sets the active-trail for parent menu items if the
+ * menu contains a link to the current page. This module sets the active-trail
+ * according to the path URL. It works for all pages, even if they are not in
+ * the menu.
+ *
+ * eg. if current page is 'foo/bar/zee',
+ * menu items 'foo' and 'foo/bar' will be set as active-trail and expanded.
+ */
+
+/**
+ * Implements hook_page_delivery_callback_alter().
+ * 
+ * This is the only hook that occurs after the page callback, but before
+ * hook_page_build (when blocks are added). We're using this hook for its
+ * timing, not its data.
+ */
+function menu_trail_by_path_page_delivery_callback_alter() {
+  global $language;
+
+  menu_trail_by_path_fix_cache_after_upgrade();
+
+  $urlHelper  = new MenutrailbypathUrlHelper();
+  $pathHelper = new MenutrailbypathPathHelper();
+  $menuHelper = new MenutrailbypathMenuHelper($language, $urlHelper);
+
+  // Set the active-trail for each menu containing one of the candidates.
+  if (menu_trail_by_path_is_active('menu_trail')) {
+    $activetrail = new MenutrailbypathActivetrail($pathHelper, $menuHelper, $urlHelper);
+    $activetrail->setActivetrails();
+  }
+
+  // Set the breadcrumbs according to path URL if it is enabled in the UI.
+  if (menu_trail_by_path_is_active('breadcrumb')) {
+    $breadcrumb = new MenutrailbypathBreadcrumb($pathHelper, $menuHelper);
+    $breadcrumb->setBreadcrumb();
+  }
+}
+
+/**
+ * Prevent fatal error after upgrade
+ * @see https://www.drupal.org/node/2793777
+ *
+ * @deprecated (to be removed in 7.x-4.x)
+ */
+function menu_trail_by_path_fix_cache_after_upgrade() {
+  if (!class_exists('MenutrailbypathUrlHelper') || !class_exists('MenutrailbypathPathHelper') || !class_exists('MenutrailbypathActivetrail') || !class_exists('MenutrailbypathUsortMenulinks')) {
+    watchdog('menu_trail_by_path', 'Fixing invalid cache, you probably forgot to clear the cache after menu_trail_by_path upgrade..', array(), WATCHDOG_ERROR);
+    drupal_flush_all_caches();
+  }
+}
+
+/**
+ * @param $type
+ * @return bool
+ */
+function menu_trail_by_path_is_active($type) {
+  switch ($type) {
+    case 'breadcrumb':
+      return (
+        (MenutrailbypathConfig::get('breadcrumb_handling'))
+        && (!path_is_admin(current_path()) || MenutrailbypathConfig::get('breadcrumb_active_on_admin_paths'))
+        && (!(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') || MenutrailbypathConfig::get('breadcrumb_active_on_ajax_requests'))
+      );
+      break;
+    default:
+      return (
+        (!path_is_admin(current_path()) || MenutrailbypathConfig::get('menu_trail_active_on_admin_paths'))
+        && (!(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') || MenutrailbypathConfig::get('menu_trail_active_on_ajax_requests'))
+      );
+      break;
+  }
+}
+
+/**
+ * Implements hook_menu()
+ */
+function menu_trail_by_path_menu() {
+  $items = array();
+  $items['admin/config/search/menu_trail_by_path'] = array(
+    'title' => 'Menu trail by path',
+    'description' => 'Configure menu trail by path module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('menu_trail_by_path_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'menu_trail_by_path.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}

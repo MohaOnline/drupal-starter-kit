@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * @file
+ * Tests for the Module Permissions UI module.
+ */
+
+/**
+ * UI tests..
+ */
+class ModulePermissionsUITestCase extends ModulePermissionsWebTestCase {
+  protected $profile = 'testing';
+  protected $privilegedUser;
+
+  /**
+   * Register test task info.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'UI tests',
+      'description' => 'Test of Module Permissions UI.',
+      'group' => 'Module Permissions',
+    );
+  }
+
+  /**
+   * Set up test.
+   */
+  public function setUp() {
+    // Enable UI module.
+    parent::setUp(array('module_permissions_ui'));
+
+    // Create and log in a user.
+    $this->privilegedUser = $this->drupalCreateUser(array(
+      'administer module permissions',
+      'administer site configuration',
+    ));
+    $this->drupalLogin($this->privilegedUser);
+
+    // Disable client-side caching.
+    variable_set('admin_menu_cache_client', FALSE);
+    // Disable Clean URLs to ensure drupal.org testbot compatibility.
+    variable_set('clean_url', 0);
+  }
+
+  /**
+   * Test access to module config page.
+   */
+  public function testMenuAccess() {
+    // Check managed modules path.
+    $this->drupalGet('admin/modules/managed');
+    $this->assertResponse('200', 'Access managed modules config path.');
+
+    // Check managed modules path.
+    $this->drupalGet('admin/config/system/managed-modules');
+    $this->assertResponse('200', 'Access managed modules config path.');
+
+    // Check protected modules path.
+    $this->drupalGet('admin/config/system/managed-modules/protected');
+    $this->assertResponse('200', 'Access protected modules config path.');
+
+    // Check managed modules path.
+    $this->drupalGet('admin/config/system/managed-modules/config');
+    $this->assertResponse('200', 'Access module configuration path.');
+  }
+
+}

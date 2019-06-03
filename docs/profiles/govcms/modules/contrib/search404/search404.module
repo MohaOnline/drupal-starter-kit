@@ -1,0 +1,98 @@
+<?php
+/**
+ * @file
+ * Handles all the searching when a 404 occurs.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function search404_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+    case 'admin/help#search404':
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Instead of showing a standard "Page not found"
+        error page, this module performs a search on the keywords in the URL
+        for every 404 result. The <a href="@link">Search 404 Settings Page</a>
+        let the administrator to handle each keywords and URLs in 404 with necessary ignores, aborts, redirects etc.',
+      array('@link' => url('admin/config/search/search404'))) . '</p>';
+      break;
+
+    case 'admin/config/search/search404':
+      $output .= '<p>' . t('This page provides all 404 configuration for the module.') . '</p>';
+      break;
+  }
+  return $output;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function search404_menu() {
+  $items = array();
+
+  $items['search404'] = array(
+    'title' => 'Page not found',
+    'access callback' => TRUE,
+    'page callback' => 'search404_page',
+    'file' => 'search404.page.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/config/search/search404'] = array(
+    'title' => 'Search 404 settings',
+    'description' => 'Configure searching for keywords from URLs that result in 404 errors.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('search404_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer search'),
+    'file' => 'search404.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_block_info().
+ *
+ * Provides:
+ *
+ * - Search Results block: same as the search404 page, but with only the results
+ */
+function search404_block_info() {
+  $blocks = array();
+  $blocks['search404_results'] = array(
+    'info' => t('Search Results'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function search404_block_view($delta = '') {
+  if ($delta == 'search404_results') {
+    $block = array();
+    module_load_include('inc', 'search404', 'search404.page');
+    $keys = search404_get_keys();
+    list($default_search, $type_search) = search404_get_default_search();
+    $block['content'] = drupal_render(search404_results($keys, $type_search));
+    return $block;
+  }
+}
+
+/**
+ * Return the default search information.
+ *
+ * @return array
+ *     Returns an array with two items:
+ *     the result of search_get_default_module_info()
+ *     and the default search module.
+ */
+function search404_get_default_search() {
+  $default_search = search_get_default_module_info();
+  $type_search = $default_search['module'];
+  return array($default_search, $type_search);
+}

@@ -1,0 +1,203 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update functions for Minisite.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function minisite_requirements($phase) {
+  $requirements = [];
+  $t = get_t();
+
+  $requirements['zip'] = [
+    'title' => $t('Minisite'),
+    'value' => $t('PHP Zip support required.'),
+  ];
+
+  // Ensure that the PHP Zip library is loaded.
+  if (!extension_loaded('zip')) {
+    $requirements['zip'] = [
+      'description' => $t('The Minisite module requires the PHP module \'Zip\', but it is missing or not enabled on your server. This module allows PHP to work with ZIP compressed archives.<br>For more information visit: <a href="http://php.net/manual/en/book.zip.php">http://php.net/manual/en/book.zip.php</a>'),
+      'severity' => REQUIREMENT_ERROR,
+    ];
+  }
+
+  if ($phase == 'runtime') {
+    $requirements['minisite_upload'] = [
+      'title' => $t('Minisite upload directory'),
+      'severity' => REQUIREMENT_OK,
+      'value' => $t('Exists'),
+    ];
+
+    $requirements['minisite_static'] = [
+      'title' => $t('Minisite static files directory'),
+      'severity' => REQUIREMENT_OK,
+      'value' => $t('Exists'),
+    ];
+
+    $path = 'public://minisite/upload';
+    if (!file_prepare_directory($path, FILE_CREATE_DIRECTORY)) {
+      $requirements['minisite_upload']['description'] = $t('The Minisite upload directory, %path could not be created due to a misconfigured files directory. Please ensure that the files directory is correctly configured and that the webserver has permission to create directories.', ['%path' => file_uri_target($path)]);
+      $requirements['minisite_upload']['severity'] = REQUIREMENT_ERROR;
+      $requirements['minisite_upload']['value'] = $t('Unable to create');
+    }
+
+    $path = 'public://minisite/static';
+    if (!file_prepare_directory($path, FILE_CREATE_DIRECTORY)) {
+      $requirements['minisite_static']['description'] = $t('The Minisite static files directory, %path could not be created due to a misconfigured files directory. Please ensure that the files directory is correctly configured and that the webserver has permission to create directories.', ['%path' => file_uri_target($path)]);
+      $requirements['minisite_static']['severity'] = REQUIREMENT_ERROR;
+      $requirements['minisite_static']['value'] = $t('Unable to create');
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_schema().
+ */
+function minisite_schema() {
+  $schema['minisite_asset'] = [
+    'description' => 'A list of asset information for minisite.',
+    'fields' => [
+      'mid' => [
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'The primary identifier for a minisite asset',
+      ],
+      'entity_type' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'bundle' => [
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'entity_id' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The entity id this data is attached to',
+      ],
+      'revision_id' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'description' => 'The entity revision id this data is attached to, or NULL if the entity type is not versioned',
+      ],
+      'minisite_field_name' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'minisite_fid' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The minisite fid this data is attached to',
+      ],
+      'language' => [
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The language for this data item.',
+      ],
+      'source' => [
+        'description' => 'The minisite file source path.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'alias' => [
+        'description' => 'The alias for this path; e.g. title-of-the-minisite.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ],
+      'alias_status' => [
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ],
+    ],
+    'primary key' => [
+      'mid',
+      'entity_type',
+      'entity_id',
+      'minisite_field_name',
+      'minisite_fid',
+      'language',
+      'source',
+    ],
+    'indexes' => [
+      'mid' => ['mid'],
+      'entity_type' => ['entity_type'],
+      'bundle' => ['bundle'],
+      'entity_id' => ['entity_id'],
+      'revision_id' => ['revision_id'],
+      'minisite_field_name' => ['minisite_field_name'],
+      'minisite_fid' => ['minisite_fid'],
+      'language' => ['language'],
+      'source' => ['source'],
+      'alias' => ['alias'],
+      'alias_status' => ['alias_status'],
+    ],
+    'foreign keys' => [
+      'minisite_fid' => [
+        'table' => 'file_managed',
+        'columns' => ['minisite_fid' => 'fid'],
+      ],
+    ],
+  ];
+
+  return $schema;
+}
+
+/**
+ * Implements hook_field_schema().
+ */
+function minisite_field_schema($field) {
+  return [
+    'columns' => [
+      'fid' => [
+        'description' => 'The {file_managed}.fid being referenced in minisite field.',
+        'type' => 'int',
+        'not null' => FALSE,
+        'unsigned' => TRUE,
+      ],
+      'site_path' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ],
+      'data' => [
+        'type' => 'text',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+        'description' => 'Used for storing additional information.',
+      ],
+    ],
+    'indexes' => [
+      'fid' => ['fid'],
+    ],
+    'foreign keys' => [
+      'fid' => [
+        'table' => 'file_managed',
+        'columns' => ['fid' => 'fid'],
+      ],
+    ],
+  ];
+}

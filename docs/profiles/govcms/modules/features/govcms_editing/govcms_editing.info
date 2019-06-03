@@ -1,0 +1,36 @@
+name = Editing
+core = 7.x
+package = govCMS core
+project = govcms_editing
+dependencies[] = ctools
+dependencies[] = defaultconfig
+dependencies[] = features
+dependencies[] = file_entity
+dependencies[] = filter
+dependencies[] = linkit
+dependencies[] = media
+dependencies[] = media_internet
+dependencies[] = media_wysiwyg
+dependencies[] = pathologic
+dependencies[] = spamspan
+dependencies[] = strongarm
+dependencies[] = toc_filter
+dependencies[] = video_filter
+dependencies[] = wysiwyg
+dependencies[] = wysiwyg_filter
+datestamp = 1384120168
+features[ctools][] = linkit:linkit_profiles:1
+features[ctools][] = strongarm:strongarm:1
+features[defaultconfig][] = strongarm:pathologic_local_paths
+features[defaultconfig][] = strongarm:pathologic_protocol_style
+features[features_api][] = api:2
+features[filter][] = rich_text
+features[linkit_profiles][] = wysiwyg
+features[variable][] = media__wysiwyg_browser_plugins
+features[wysiwyg][] = rich_text
+
+; Information added by Drupal.org packaging script on 2019-05-20
+version = "7.x-3.6"
+core = "7.x"
+project = "govcms"
+datestamp = "1558393988"

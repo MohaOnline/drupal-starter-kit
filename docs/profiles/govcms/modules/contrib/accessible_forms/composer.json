@@ -1,0 +1,61 @@
+{
+  "name": "previousnext/accessible_forms",
+  "type": "drupal-module",
+  "description" : "This is a simple Drupal 7 module for adding form attributes for improved accessibility.",
+  "license": "GPL-2.0+",
+  "authors": [
+    {
+      "name": "PreviousNext",
+      "email": "info@previousnext.com.au",
+      "homepage": "http://agov.com.au",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "info@previousnext.com.au",
+    "issues": "https://www.drupal.org/project/issues/accessible_forms",
+    "source": "https://github.com/previousnext/accessible_forms"
+  },
+  "repositories": [
+    {
+      "type": "package",
+      "package": {
+        "name": "drupal/coder",
+        "version": "master",
+        "source": {
+          "url": "git://drupalcode.org/project/coder.git",
+          "type": "git",
+          "reference": "7.x-2.2"
+        }
+      }
+    },
+    {
+      "type": "package",
+      "package": {
+        "name": "nickschuch/phpcs-security-audit",
+        "version": "master",
+        "source": {
+          "url": "https://github.com/nickschuch/phpcs-security-audit.git",
+          "type": "git",
+          "reference": "master"
+        }
+      }
+    }
+  ],
+  "require": {
+    "composer/installers": "~1.0"
+  },
+  "require-dev": {
+    "nickschuch/phpcs-security-audit": "dev-master",
+    "drupal/coder": "master"
+  },
+  "minimum-stability": "dev",
+  "config": {
+    "bin-dir": "bin/"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-7.x-1.x": "7.1.x-dev"
+    }
+  }
+}

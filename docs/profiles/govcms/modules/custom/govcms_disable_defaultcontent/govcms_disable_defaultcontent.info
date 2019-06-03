@@ -1,0 +1,9 @@
+name = Disable Defaultcontent
+description = Allows user to disable default content.
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2019-05-20
+version = "7.x-3.6"
+core = "7.x"
+project = "govcms"
+datestamp = "1558393988"

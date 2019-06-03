@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update functions for Module Permissions UI.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function module_permissions_ui_install() {
+  // Init module variables.
+  if (variable_get('module_permissions_ui_exclude_core') === NULL) {
+    variable_set('module_permissions_ui_exclude_core', 1);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function module_permissions_ui_uninstall() {
+  // Clean up the module variables from database after uninstall.
+  variable_del('module_permissions_ui_exclude_core');
+}

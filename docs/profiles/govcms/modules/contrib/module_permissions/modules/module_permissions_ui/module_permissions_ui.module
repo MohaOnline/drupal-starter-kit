@@ -1,0 +1,98 @@
+<?php
+
+/**
+ * @file
+ * The main Module Permissions UI module file.
+ *
+ * Administrative interface to Module Permissions module.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function module_permissions_ui_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#module_permissions_ui':
+      $output = '<p>' . t("Allow administrators to define a list of modules that can be managed by others.") . '</p>';
+
+      return $output;
+
+    case 'admin/modules/managed':
+      $output = '<p>' . t("Please select modules for users with permission 'Administer managed modules' to enable/disable.") . '</p>';
+
+      return $output;
+
+    case 'admin/config/system/managed-modules':
+      $output = '<p>' . t("Please select modules for users with permission 'Administer managed modules' to enable/disable.") . '</p>';
+
+      return $output;
+
+    case 'admin/config/system/managed-modules/protected':
+      $output = '<p>' . t("Please select modules that users cannot disable and uninstall.") . '</p>';
+
+      return $output;
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function module_permissions_ui_menu() {
+  // Managed modules list path.
+  $items['admin/modules/managed'] = array(
+    'title' => 'Managed modules',
+    'description' => 'Add/remove modules from the managed module list.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('module_permissions_ui_form_managed_modules'),
+    'access arguments' => array('administer module permissions'),
+    'file' => 'includes/module_permissions_ui.pages.inc',
+  );
+
+  // Managed modules config path.
+  $items['admin/config/system/managed-modules'] = array(
+    'title' => 'Module permissions',
+    'description' => 'Administer the list of modules that can be managed by others',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('module_permissions_ui_form_managed_modules'),
+    'access arguments' => array('administer module permissions'),
+    'file' => 'includes/module_permissions_ui.pages.inc',
+  );
+  $items['admin/config/system/managed-modules/managed'] = array(
+    'title' => 'Managed modules',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/system/managed-modules/protected'] = array(
+    'title' => 'Protected modules',
+    'description' => 'Administer settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('module_permissions_ui_form_protected_modules'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/module_permissions_ui.pages.inc',
+    'weight' => 10,
+  );
+  $items['admin/config/system/managed-modules/config'] = array(
+    'title' => 'Configuration',
+    'description' => 'Administer settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('module_permissions_ui_config'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'includes/module_permissions_ui.admin.inc',
+    'weight' => 20,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function module_permissions_ui_theme() {
+  return array(
+    'module_permissions_ui_managed_modules_list' => array(
+      'render element' => 'form',
+      'file' => 'includes/module_permissions_ui.theme.inc',
+    ),
+  );
+}

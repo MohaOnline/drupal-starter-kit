@@ -1,0 +1,1342 @@
+{
+  "question": {
+    "executionContext": "Public",
+    "query": "holden",
+    "originalQuery": "holden",
+    "collection": {
+      "id": "fb-bargain-store-meta",
+      "profiles": {
+        "_default_preview": {
+          "id": "_default_preview",
+          "facetedNavConfConfig": {
+            "facetDefinitions": [
+              {
+                "name": "Condition",
+                "categoryDefinitions": [
+                  {
+                    "facetName": "Condition",
+                    "data": "All",
+                    "label": null,
+                    "subCategories": [],
+                    "queryStringCategoryExtraPart": "AllDocumentsFill",
+                    "allQueryStringParamNames": [
+                      "f.Condition|AllDocumentsFill"
+                    ],
+                    "queryStringParamName": "f.Condition|AllDocumentsFill"
+                  },
+                  {
+                    "facetName": "Condition",
+                    "data": "condition",
+                    "label": null,
+                    "subCategories": [],
+                    "queryStringCategoryExtraPart": "condition",
+                    "metadataClass": "condition",
+                    "allQueryStringParamNames": [
+                      "f.Condition|condition"
+                    ],
+                    "queryStringParamName": "f.Condition|condition"
+                  }
+                ],
+                "selectionType": "SINGLE",
+                "constraintJoin": "AND",
+                "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+                "order": [
+                  "CATEGORY_DEFINITION_ORDER",
+                  "LABEL_ASCENDING"
+                ],
+                "allQueryStringParamNames": [
+                  "f.Condition|condition",
+                  "f.Condition|AllDocumentsFill"
+                ]
+              },
+              {
+                "name": "Extras",
+                "categoryDefinitions": [
+                  {
+                    "facetName": "Extras",
+                    "data": "extras",
+                    "label": null,
+                    "subCategories": [],
+                    "queryStringCategoryExtraPart": "extras",
+                    "metadataClass": "extras",
+                    "allQueryStringParamNames": [
+                      "f.Extras|extras"
+                    ],
+                    "queryStringParamName": "f.Extras|extras"
+                  }
+                ],
+                "selectionType": "MULTIPLE",
+                "constraintJoin": "AND",
+                "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+                "order": [
+                  "CATEGORY_DEFINITION_ORDER",
+                  "LABEL_ASCENDING"
+                ],
+                "allQueryStringParamNames": [
+                  "f.Extras|extras"
+                ]
+              },
+              {
+                "name": "price",
+                "categoryDefinitions": [
+                  {
+                    "facetName": "price",
+                    "data": "price",
+                    "label": null,
+                    "subCategories": [],
+                    "queryStringCategoryExtraPart": "price",
+                    "metadataClass": "price",
+                    "allQueryStringParamNames": [
+                      "f.price|price"
+                    ],
+                    "queryStringParamName": "f.price|price"
+                  }
+                ],
+                "selectionType": "MULTIPLE",
+                "constraintJoin": "OR",
+                "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+                "order": [
+                  "CATEGORY_DEFINITION_ORDER",
+                  "LABEL_ASCENDING"
+                ],
+                "allQueryStringParamNames": [
+                  "f.price|price"
+                ]
+              },
+              {
+                "name": "Type Tab",
+                "categoryDefinitions": [
+                  {
+                    "facetName": "Type Tab",
+                    "data": "All results",
+                    "label": null,
+                    "subCategories": [],
+                    "queryStringCategoryExtraPart": "AllDocumentsFill",
+                    "allQueryStringParamNames": [
+                      "f.Type Tab|AllDocumentsFill"
+                    ],
+                    "queryStringParamName": "f.Type Tab|AllDocumentsFill"
+                  },
+                  {
+                    "facetName": "Type Tab",
+                    "data": "Cars",
+                    "label": null,
+                    "subCategories": [],
+                    "collections": [
+                      "fb-cars-xml"
+                    ],
+                    "queryStringCategoryExtraPart": "fb-cars-xml",
+                    "allQueryStringParamNames": [
+                      "f.Type Tab|fb-cars-xml"
+                    ],
+                    "queryStringParamName": "f.Type Tab|fb-cars-xml"
+                  },
+                  {
+                    "facetName": "Type Tab",
+                    "data": "Laptops",
+                    "label": null,
+                    "subCategories": [],
+                    "collections": [
+                      "fb-laptops-xml"
+                    ],
+                    "queryStringCategoryExtraPart": "fb-laptops-xml",
+                    "allQueryStringParamNames": [
+                      "f.Type Tab|fb-laptops-xml"
+                    ],
+                    "queryStringParamName": "f.Type Tab|fb-laptops-xml"
+                  }
+                ],
+                "selectionType": "SINGLE_AND_UNSELECT_OTHER_FACETS",
+                "constraintJoin": "AND",
+                "facetValues": "FROM_UNSCOPED_ALL_QUERY",
+                "order": [
+                  "CATEGORY_DEFINITION_ORDER"
+                ],
+                "allQueryStringParamNames": [
+                  "f.Type Tab|AllDocumentsFill",
+                  "f.Type Tab|fb-laptops-xml",
+                  "f.Type Tab|fb-cars-xml"
+                ]
+              },
+              {
+                "name": "Colour",
+                "categoryDefinitions": [
+                  {
+                    "facetName": "Colour",
+                    "data": "colour",
+                    "label": null,
+                    "subCategories": [],
+                    "queryStringCategoryExtraPart": "colour",
+                    "metadataClass": "colour",
+                    "allQueryStringParamNames": [
+                      "f.Colour|colour"
+                    ],
+                    "queryStringParamName": "f.Colour|colour"
+                  }
+                ],
+                "selectionType": "MULTIPLE",
+                "constraintJoin": "OR",
+                "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+                "order": [
+                  "CATEGORY_DEFINITION_ORDER",
+                  "LABEL_ASCENDING"
+                ],
+                "allQueryStringParamNames": [
+                  "f.Colour|colour"
+                ]
+              }
+            ],
+            "metadataFieldsUsed": [
+              "condition",
+              "extras",
+              "price",
+              "colour"
+            ]
+          },
+          "padreOpts": null
+        }
+      },
+      "facetedNavigationConfConfig": null,
+      "facetedNavigationLiveConfig": null,
+      "metaComponents": [
+        "fb-cars-xml",
+        "fb-laptops-xml"
+      ],
+      "type": "meta"
+    },
+    "profile": "_default_preview",
+    "clive": null,
+    "form": "simple",
+    "cnClickedCluster": null,
+    "facetsQueryConstraints": [
+      "|condition:\"$++ demo $++\""
+    ],
+    "facetCollectionConstraints": {
+      "present": false
+    },
+    "facetsGScopeConstraints": null,
+    "impersonated": false,
+    "requestId": "139.130.182.153",
+    "questionType": "SEARCH",
+    "locale": "en_US",
+    "location": {
+      "areaCode": 0,
+      "city": "Hume",
+      "countryCode": "AU",
+      "countryName": "Australia",
+      "dmaCode": 0,
+      "latitude": -35.385498,
+      "longitude": 149.1658,
+      "metroCode": 0,
+      "postalCode": "2620",
+      "region": "01"
+    },
+    "hostname": null,
+    "funnelbackVersion": {
+      "major": 15,
+      "minor": 12,
+      "revision": 0
+    },
+    "padreTimeout": {
+      "present": false
+    },
+    "cnPreviousClusters": [],
+    "metaParameters": [],
+    "systemMetaParameters": [],
+    "additionalParameters": {
+      "HTTP_HOST": [
+        "search-demo-au.funnelback.com"
+      ],
+      "remote_ip": [
+        "10.20.1.1"
+      ],
+      "origin": [
+        "-35.385498,149.1658"
+      ],
+      "f.Condition|condition": [
+        "demo"
+      ],
+      "REMOTE_ADDR": [
+        "139.130.182.153"
+      ],
+      "REQUEST_URI": [
+        "/s/search.json"
+      ],
+      "REQUEST_URL": [
+        "http://search-demo-au.funnelback.com/s/search.json?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+      ]
+    },
+    "environmentVariables": {
+      "REMOTE_ADDR": "139.130.182.153",
+      "REQUEST_URI": "/s/search.json",
+      "HTTP_HOST": "search-demo-au.funnelback.com",
+      "REQUEST_URL": "http://search-demo-au.funnelback.com/s/search.json?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+    },
+    "dynamicQueryProcessorOptions": [
+      "-docsPerColl=true",
+      "-rmcf=[colour,condition,extras,price]",
+      "-qlog_file=/opt/funnelback/data/fb-bargain-store-meta/live/log/queries-ad01-pd07-cbr01-au.log"
+    ],
+    "userKeys": [],
+    "selectedFacets": [
+      "Condition"
+    ],
+    "selectedCategoryValues": {
+      "f.Condition|condition": [
+        "demo"
+      ]
+    },
+    "rawInputParameters": {
+      "HTTP_HOST": [
+        "search-demo-au.funnelback.com"
+      ],
+      "remote_ip": [
+        "10.20.1.1"
+      ],
+      "query": [
+        "holden"
+      ],
+      "profile": [
+        "_default_preview"
+      ],
+      "f.Condition|condition": [
+        "demo"
+      ],
+      "REMOTE_ADDR": [
+        "139.130.182.153"
+      ],
+      "REQUEST_URI": [
+        "/s/search.json"
+      ],
+      "collection": [
+        "fb-bargain-store-meta"
+      ],
+      "REQUEST_URL": [
+        "http://search-demo-au.funnelback.com/s/search.json?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+      ]
+    },
+    "inputParameterMap": {
+      "HTTP_HOST": "search-demo-au.funnelback.com",
+      "f.Condition|condition": "demo",
+      "query": "holden",
+      "profile": "_default_preview",
+      "REQUEST_URL": "http://search-demo-au.funnelback.com/s/search.json?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta",
+      "remote_ip": "10.20.1.1",
+      "collection": "fb-bargain-store-meta",
+      "REMOTE_ADDR": "139.130.182.153",
+      "REQUEST_URI": "/s/search.json"
+    },
+    "customData": {},
+    "queryStringMapCopy": {
+      "remote_ip": [
+        "10.20.1.1"
+      ],
+      "query": [
+        "holden"
+      ],
+      "profile": [
+        "_default_preview"
+      ],
+      "f.Condition|condition": [
+        "demo"
+      ],
+      "collection": [
+        "fb-bargain-store-meta"
+      ]
+    },
+    "extraSearch": false
+  },
+  "response": {
+    "resultPacket": {
+      "details": {
+        "padreVersion": "FUNNELBACK_PADRE_15.12.0.4 MDPLFS (Web/Ent) [64 bit]",
+        "collectionSize": "/opt/funnelback/data/fb-bargain-store-meta/live/idx/index: 0.0 MB, 44 docs",
+        "collectionUpdated": 1520918728000
+      },
+      "query": "holden",
+      "queryAsProcessed": "holden |condition:\"$++ demo $++\"",
+      "queryRaw": "holden",
+      "querySystemRaw": "|condition:\"$++ demo $++\"",
+      "queryCleaned": "holden",
+      "collection": "fb-bargain-store-meta",
+      "resultsSummary": {
+        "fullyMatching": 1,
+        "collapsed": 0,
+        "partiallyMatching": 0,
+        "totalMatching": 1,
+        "estimatedCounts": false,
+        "carriedOverFtd": null,
+        "totalDistinctMatchingUrls": null,
+        "numRanks": 50,
+        "currStart": 1,
+        "currEnd": 1,
+        "prevStart": null,
+        "nextStart": null,
+        "totalSecurityObscuredUrls": null,
+        "anyUrlsPromoted": false,
+        "resultDiversificationApplied": false
+      },
+      "spell": null,
+      "bestBets": [],
+      "results": [
+        {
+          "rank": 1,
+          "score": 1000,
+          "title": "https://sample.data.io/Holden/Demo/Blue/2",
+          "collection": "fb-cars-xml",
+          "component": 0,
+          "collapsed": null,
+          "liveUrl": "https://sample.data.io/Holden/Demo/Blue/2",
+          "summary": "",
+          "cacheUrl": "/s/cache?collection=fb-cars-xml&doc=funnelback-web-crawl.warc&off=408&len=353&url=https%3A%2F%2Fsample.data.io%2FHolden%2FDemo%2FBlue%2F2&profile=_default_preview",
+          "date": 1485781200000,
+          "fileSize": 0,
+          "fileType": "txt",
+          "tier": 1,
+          "docNum": 1,
+          "exploreLink": null,
+          "kmFromOrigin": null,
+          "quickLinks": null,
+          "displayUrl": "https://sample.data.io/Holden/Demo/Blue/2",
+          "clickTrackingUrl": "/s/redirect?collection=fb-bargain-store-meta&url=https%3A%2F%2Fsample.data.io%2FHolden%2FDemo%2FBlue%2F2&index_url=https%3A%2F%2Fsample.data.io%2FHolden%2FDemo%2FBlue%2F2&auth=wl9xKmia394N4Sl%2FmWQjhA&profile=_default_preview&rank=1&query=holden+%7Ccondition%3A%22%24%2B%2B+demo+%24%2B%2B%22",
+          "explain": null,
+          "indexUrl": "https://sample.data.io/Holden/Demo/Blue/2",
+          "gscopesSet": [
+            "10"
+          ],
+          "documentVisibleToUser": true,
+          "promoted": false,
+          "diversified": false,
+          "metaData": {
+            "condition": "Demo",
+            "colour": "Blue",
+            "d": "31 January 2017",
+            "price": "25000",
+            "extras": "Aircondition, Power Steering, Electric Windows, Cruise Control",
+            "make": "Holden",
+            "nodeId": 1
+          },
+          "tags": [],
+          "customData": {}
+        }
+      ],
+      "tierBars": [
+        {
+          "matched": 1,
+          "outOf": 1,
+          "firstRank": 0,
+          "lastRank": 1,
+          "eventDate": null
+        }
+      ],
+      "error": null,
+      "padreElapsedTime": 57,
+      "phlusterElapsedTime": 0.001,
+      "queryProcessorCodes": "S2x",
+      "contextualNavigation": {
+        "searchTerm": "holden",
+        "clusterNav": {
+          "level": 0,
+          "url": "f.Condition%7Ccondition=demo&remote_ip=10.20.1.1&collection=fb-bargain-store-meta&query=holden&profile=_default_preview",
+          "label": "holden"
+        },
+        "categories": [],
+        "customData": {}
+      },
+      "rmcs": {
+        "colour:blue": 1,
+        "extras:electric windows": 1,
+        "condition:demo": 1,
+        "extras:power steering": 1,
+        "extras:cruise control": 1,
+        "price:25000": 1,
+        "extras:aircondition": 1
+      },
+      "rmcItemResults": {},
+      "metadataRanges": {},
+      "boundingBoxes": {},
+      "urlCounts": {},
+      "dateCounts": {},
+      "queryHighlightRegex": "(?i)\\bholden\\b",
+      "origin": [],
+      "entityList": {},
+      "includeScopes": [],
+      "excludeScopes": [],
+      "coolerWeights": {},
+      "explainTypes": {},
+      "stopWords": [],
+      "stemmedEquivs": {
+        "empty": true
+      },
+      "coolerNames": {},
+      "svgs": {},
+      "uniqueCountsByGroups": [],
+      "sumByGroups": [],
+      "indexedTermCounts": [],
+      "documentsPerCollection": {
+        "fb-cars-xml": 1,
+        "fb-laptops-xml": 0
+      },
+      "metadataSums": {},
+      "gscopeCounts": {},
+      "resultsWithTierBars": [
+        {
+          "matched": 1,
+          "outOf": 1,
+          "firstRank": 0,
+          "lastRank": 1,
+          "eventDate": null
+        },
+        {
+          "rank": 1,
+          "score": 1000,
+          "title": "https://sample.data.io/Holden/Demo/Blue/2",
+          "collection": "fb-cars-xml",
+          "component": 0,
+          "collapsed": null,
+          "liveUrl": "https://sample.data.io/Holden/Demo/Blue/2",
+          "summary": "",
+          "cacheUrl": "/s/cache?collection=fb-cars-xml&doc=funnelback-web-crawl.warc&off=408&len=353&url=https%3A%2F%2Fsample.data.io%2FHolden%2FDemo%2FBlue%2F2&profile=_default_preview",
+          "date": 1485781200000,
+          "fileSize": 0,
+          "fileType": "txt",
+          "tier": 1,
+          "docNum": 1,
+          "exploreLink": null,
+          "kmFromOrigin": null,
+          "quickLinks": null,
+          "displayUrl": "https://sample.data.io/Holden/Demo/Blue/2",
+          "clickTrackingUrl": "/s/redirect?collection=fb-bargain-store-meta&url=https%3A%2F%2Fsample.data.io%2FHolden%2FDemo%2FBlue%2F2&index_url=https%3A%2F%2Fsample.data.io%2FHolden%2FDemo%2FBlue%2F2&auth=wl9xKmia394N4Sl%2FmWQjhA&profile=_default_preview&rank=1&query=holden+%7Ccondition%3A%22%24%2B%2B+demo+%24%2B%2B%22",
+          "explain": null,
+          "indexUrl": "https://sample.data.io/Holden/Demo/Blue/2",
+          "gscopesSet": [
+            "10"
+          ],
+          "documentVisibleToUser": true,
+          "promoted": false,
+          "diversified": false,
+          "metaData": {
+            "condition": "Demo",
+            "colour": "Blue",
+            "d": "31 January 2017",
+            "price": "25000",
+            "extras": "Aircondition, Power Steering, Electric Windows, Cruise Control",
+            "make": "Holden",
+            "nodeId": 1
+          },
+          "tags": [],
+          "customData": {}
+        }
+      ],
+      "qsups": []
+    },
+    "returnCode": 0,
+    "untruncatedPadreOutputSize": 5324,
+    "facets": [
+      {
+        "name": "Condition",
+        "unselectAllUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&collection=fb-bargain-store-meta",
+        "selectionType": "SINGLE",
+        "constraintJoin": "AND",
+        "order": [
+          "CATEGORY_DEFINITION_ORDER",
+          "LABEL_ASCENDING"
+        ],
+        "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+        "guessedDisplayType": "RADIO_BUTTON",
+        "categories": [
+          {
+            "label": null,
+            "queryStringParamName": "f.Condition|AllDocumentsFill",
+            "values": [
+              {
+                "data": "All",
+                "label": "All",
+                "count": 3,
+                "queryStringParam": "f.Condition%7CAllDocumentsFill=All",
+                "constraint": "AllDocumentsFill",
+                "selected": false,
+                "queryStringParamName": "f.Condition|AllDocumentsFill",
+                "queryStringParamValue": "All",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7CAllDocumentsFill=All&collection=fb-bargain-store-meta"
+              }
+            ],
+            "categories": []
+          },
+          {
+            "label": null,
+            "queryStringParamName": "f.Condition|condition",
+            "values": [
+              {
+                "data": "demo",
+                "label": "demo",
+                "count": 1,
+                "queryStringParam": "f.Condition%7Ccondition=demo",
+                "constraint": "condition",
+                "selected": true,
+                "queryStringParamName": "f.Condition|condition",
+                "queryStringParamValue": "demo",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&collection=fb-bargain-store-meta"
+              },
+              {
+                "data": "new",
+                "label": "new",
+                "count": 1,
+                "queryStringParam": "f.Condition%7Ccondition=new",
+                "constraint": "condition",
+                "selected": false,
+                "queryStringParamName": "f.Condition|condition",
+                "queryStringParamValue": "new",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=new&collection=fb-bargain-store-meta"
+              },
+              {
+                "data": "secondhand",
+                "label": "secondhand",
+                "count": 1,
+                "queryStringParam": "f.Condition%7Ccondition=secondhand",
+                "constraint": "condition",
+                "selected": false,
+                "queryStringParamName": "f.Condition|condition",
+                "queryStringParamValue": "secondhand",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=secondhand&collection=fb-bargain-store-meta"
+              }
+            ],
+            "categories": []
+          }
+        ],
+        "customData": {},
+        "selectedValues": [
+          {
+            "data": "demo",
+            "label": "demo",
+            "count": 1,
+            "queryStringParam": "f.Condition%7Ccondition=demo",
+            "constraint": "condition",
+            "selected": true,
+            "queryStringParamName": "f.Condition|condition",
+            "queryStringParamValue": "demo",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&collection=fb-bargain-store-meta"
+          }
+        ],
+        "allValues": [
+          {
+            "data": "All",
+            "label": "All",
+            "count": 3,
+            "queryStringParam": "f.Condition%7CAllDocumentsFill=All",
+            "constraint": "AllDocumentsFill",
+            "selected": false,
+            "queryStringParamName": "f.Condition|AllDocumentsFill",
+            "queryStringParamValue": "All",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7CAllDocumentsFill=All&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "demo",
+            "label": "demo",
+            "count": 1,
+            "queryStringParam": "f.Condition%7Ccondition=demo",
+            "constraint": "condition",
+            "selected": true,
+            "queryStringParamName": "f.Condition|condition",
+            "queryStringParamValue": "demo",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "new",
+            "label": "new",
+            "count": 1,
+            "queryStringParam": "f.Condition%7Ccondition=new",
+            "constraint": "condition",
+            "selected": false,
+            "queryStringParamName": "f.Condition|condition",
+            "queryStringParamValue": "new",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=new&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "secondhand",
+            "label": "secondhand",
+            "count": 1,
+            "queryStringParam": "f.Condition%7Ccondition=secondhand",
+            "constraint": "condition",
+            "selected": false,
+            "queryStringParamName": "f.Condition|condition",
+            "queryStringParamValue": "secondhand",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=secondhand&collection=fb-bargain-store-meta"
+          }
+        ],
+        "selected": true
+      },
+      {
+        "name": "Extras",
+        "unselectAllUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta",
+        "selectionType": "MULTIPLE",
+        "constraintJoin": "AND",
+        "order": [
+          "CATEGORY_DEFINITION_ORDER",
+          "LABEL_ASCENDING"
+        ],
+        "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+        "guessedDisplayType": "CHECKBOX",
+        "categories": [
+          {
+            "label": null,
+            "queryStringParamName": "f.Extras|extras",
+            "values": [
+              {
+                "data": "aircondition",
+                "label": "aircondition",
+                "count": 1,
+                "queryStringParam": "f.Extras%7Cextras=aircondition",
+                "constraint": "extras",
+                "selected": false,
+                "queryStringParamName": "f.Extras|extras",
+                "queryStringParamValue": "aircondition",
+                "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=aircondition&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+              },
+              {
+                "data": "cruise control",
+                "label": "cruise control",
+                "count": 1,
+                "queryStringParam": "f.Extras%7Cextras=cruise+control",
+                "constraint": "extras",
+                "selected": false,
+                "queryStringParamName": "f.Extras|extras",
+                "queryStringParamValue": "cruise control",
+                "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=cruise+control&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+              },
+              {
+                "data": "electric windows",
+                "label": "electric windows",
+                "count": 1,
+                "queryStringParam": "f.Extras%7Cextras=electric+windows",
+                "constraint": "extras",
+                "selected": false,
+                "queryStringParamName": "f.Extras|extras",
+                "queryStringParamValue": "electric windows",
+                "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=electric+windows&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+              },
+              {
+                "data": "power steering",
+                "label": "power steering",
+                "count": 1,
+                "queryStringParam": "f.Extras%7Cextras=power+steering",
+                "constraint": "extras",
+                "selected": false,
+                "queryStringParamName": "f.Extras|extras",
+                "queryStringParamValue": "power steering",
+                "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=power+steering&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+              }
+            ],
+            "categories": []
+          }
+        ],
+        "customData": {},
+        "selectedValues": [],
+        "allValues": [
+          {
+            "data": "aircondition",
+            "label": "aircondition",
+            "count": 1,
+            "queryStringParam": "f.Extras%7Cextras=aircondition",
+            "constraint": "extras",
+            "selected": false,
+            "queryStringParamName": "f.Extras|extras",
+            "queryStringParamValue": "aircondition",
+            "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=aircondition&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "cruise control",
+            "label": "cruise control",
+            "count": 1,
+            "queryStringParam": "f.Extras%7Cextras=cruise+control",
+            "constraint": "extras",
+            "selected": false,
+            "queryStringParamName": "f.Extras|extras",
+            "queryStringParamValue": "cruise control",
+            "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=cruise+control&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "electric windows",
+            "label": "electric windows",
+            "count": 1,
+            "queryStringParam": "f.Extras%7Cextras=electric+windows",
+            "constraint": "extras",
+            "selected": false,
+            "queryStringParamName": "f.Extras|extras",
+            "queryStringParamValue": "electric windows",
+            "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=electric+windows&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "power steering",
+            "label": "power steering",
+            "count": 1,
+            "queryStringParam": "f.Extras%7Cextras=power+steering",
+            "constraint": "extras",
+            "selected": false,
+            "queryStringParamName": "f.Extras|extras",
+            "queryStringParamValue": "power steering",
+            "toggleUrl": "?remote_ip=10.20.1.1&f.Extras%7Cextras=power+steering&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+          }
+        ],
+        "selected": false
+      },
+      {
+        "name": "price",
+        "unselectAllUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta",
+        "selectionType": "MULTIPLE",
+        "constraintJoin": "OR",
+        "order": [
+          "CATEGORY_DEFINITION_ORDER",
+          "LABEL_ASCENDING"
+        ],
+        "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+        "guessedDisplayType": "CHECKBOX",
+        "categories": [
+          {
+            "label": null,
+            "queryStringParamName": "f.price|price",
+            "values": [
+              {
+                "data": "25000",
+                "label": "25000",
+                "count": 1,
+                "queryStringParam": "f.price%7Cprice=25000",
+                "constraint": "price",
+                "selected": false,
+                "queryStringParamName": "f.price|price",
+                "queryStringParamValue": "25000",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&f.price%7Cprice=25000&collection=fb-bargain-store-meta"
+              }
+            ],
+            "categories": []
+          }
+        ],
+        "customData": {},
+        "selectedValues": [],
+        "allValues": [
+          {
+            "data": "25000",
+            "label": "25000",
+            "count": 1,
+            "queryStringParam": "f.price%7Cprice=25000",
+            "constraint": "price",
+            "selected": false,
+            "queryStringParamName": "f.price|price",
+            "queryStringParamValue": "25000",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&f.price%7Cprice=25000&collection=fb-bargain-store-meta"
+          }
+        ],
+        "selected": false
+      },
+      {
+        "name": "Type Tab",
+        "unselectAllUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta",
+        "selectionType": "SINGLE_AND_UNSELECT_OTHER_FACETS",
+        "constraintJoin": "AND",
+        "order": [
+          "CATEGORY_DEFINITION_ORDER"
+        ],
+        "facetValues": "FROM_UNSCOPED_ALL_QUERY",
+        "guessedDisplayType": "TAB",
+        "categories": [
+          {
+            "label": null,
+            "queryStringParamName": "f.Type Tab|AllDocumentsFill",
+            "values": [
+              {
+                "data": "All results",
+                "label": "All results",
+                "count": 3,
+                "queryStringParam": "f.Type+Tab%7CAllDocumentsFill=All+results",
+                "constraint": "AllDocumentsFill",
+                "selected": true,
+                "queryStringParamName": "f.Type Tab|AllDocumentsFill",
+                "queryStringParamValue": "All results",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+              }
+            ],
+            "categories": []
+          },
+          {
+            "label": null,
+            "queryStringParamName": "f.Type Tab|fb-cars-xml",
+            "values": [
+              {
+                "data": "fb-cars-xml",
+                "label": "Cars",
+                "count": 3,
+                "queryStringParam": "f.Type+Tab%7Cfb-cars-xml=Cars",
+                "constraint": "",
+                "selected": false,
+                "queryStringParamName": "f.Type Tab|fb-cars-xml",
+                "queryStringParamValue": "Cars",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Type+Tab%7Cfb-cars-xml=Cars&collection=fb-bargain-store-meta"
+              }
+            ],
+            "categories": []
+          },
+          {
+            "label": null,
+            "queryStringParamName": "f.Type Tab|fb-laptops-xml",
+            "values": [
+              {
+                "data": "fb-laptops-xml",
+                "label": "Laptops",
+                "count": 0,
+                "queryStringParam": "f.Type+Tab%7Cfb-laptops-xml=Laptops",
+                "constraint": "",
+                "selected": false,
+                "queryStringParamName": "f.Type Tab|fb-laptops-xml",
+                "queryStringParamValue": "Laptops",
+                "toggleUrl": "?remote_ip=10.20.1.1&f.Type+Tab%7Cfb-laptops-xml=Laptops&query=holden&profile=_default_preview&collection=fb-bargain-store-meta"
+              }
+            ],
+            "categories": []
+          }
+        ],
+        "customData": {},
+        "selectedValues": [
+          {
+            "data": "All results",
+            "label": "All results",
+            "count": 3,
+            "queryStringParam": "f.Type+Tab%7CAllDocumentsFill=All+results",
+            "constraint": "AllDocumentsFill",
+            "selected": true,
+            "queryStringParamName": "f.Type Tab|AllDocumentsFill",
+            "queryStringParamValue": "All results",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+          }
+        ],
+        "allValues": [
+          {
+            "data": "All results",
+            "label": "All results",
+            "count": 3,
+            "queryStringParam": "f.Type+Tab%7CAllDocumentsFill=All+results",
+            "constraint": "AllDocumentsFill",
+            "selected": true,
+            "queryStringParamName": "f.Type Tab|AllDocumentsFill",
+            "queryStringParamValue": "All results",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "fb-cars-xml",
+            "label": "Cars",
+            "count": 3,
+            "queryStringParam": "f.Type+Tab%7Cfb-cars-xml=Cars",
+            "constraint": "",
+            "selected": false,
+            "queryStringParamName": "f.Type Tab|fb-cars-xml",
+            "queryStringParamValue": "Cars",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Type+Tab%7Cfb-cars-xml=Cars&collection=fb-bargain-store-meta"
+          },
+          {
+            "data": "fb-laptops-xml",
+            "label": "Laptops",
+            "count": 0,
+            "queryStringParam": "f.Type+Tab%7Cfb-laptops-xml=Laptops",
+            "constraint": "",
+            "selected": false,
+            "queryStringParamName": "f.Type Tab|fb-laptops-xml",
+            "queryStringParamValue": "Laptops",
+            "toggleUrl": "?remote_ip=10.20.1.1&f.Type+Tab%7Cfb-laptops-xml=Laptops&query=holden&profile=_default_preview&collection=fb-bargain-store-meta"
+          }
+        ],
+        "selected": true
+      },
+      {
+        "name": "Colour",
+        "unselectAllUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta",
+        "selectionType": "MULTIPLE",
+        "constraintJoin": "OR",
+        "order": [
+          "CATEGORY_DEFINITION_ORDER",
+          "LABEL_ASCENDING"
+        ],
+        "facetValues": "FROM_SCOPED_QUERY_WITH_FACET_UNSELECTED",
+        "guessedDisplayType": "CHECKBOX",
+        "categories": [
+          {
+            "label": null,
+            "queryStringParamName": "f.Colour|colour",
+            "values": [
+              {
+                "data": "blue",
+                "label": "blue",
+                "count": 1,
+                "queryStringParam": "f.Colour%7Ccolour=blue",
+                "constraint": "colour",
+                "selected": false,
+                "queryStringParamName": "f.Colour|colour",
+                "queryStringParamValue": "blue",
+                "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta&f.Colour%7Ccolour=blue"
+              }
+            ],
+            "categories": []
+          }
+        ],
+        "customData": {},
+        "selectedValues": [],
+        "allValues": [
+          {
+            "data": "blue",
+            "label": "blue",
+            "count": 1,
+            "queryStringParam": "f.Colour%7Ccolour=blue",
+            "constraint": "colour",
+            "selected": false,
+            "queryStringParamName": "f.Colour|colour",
+            "queryStringParamValue": "blue",
+            "toggleUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta&f.Colour%7Ccolour=blue"
+          }
+        ],
+        "selected": false
+      }
+    ],
+    "facetExtras": {
+      "unselectAllFacetsUrl": "?remote_ip=10.20.1.1&query=holden&profile=_default_preview&collection=fb-bargain-store-meta",
+      "hasSelectedNonTabFacets": true,
+      "hasNonTabFacets": true
+    },
+    "customData": {},
+    "optimiserModel": null,
+    "curator": {
+      "exhibits": [
+        {
+          "titleHtml": "[Curator] Holden's Official Site",
+          "displayUrl": "https://www.holden.com.au/",
+          "linkUrl": "/s/redirect?collection=fb-bargain-store-meta&url=https%3A%2F%2Fwww.holden.com.au%2F&index_url=https%3A%2F%2Fwww.holden.com.au%2F&auth=abD3j2sFyEyUBfeBBLPcDw&profile=_default_preview&type=FP",
+          "descriptionHtml": "View the entire Holden range, access latest offers, find service information and locate your nearest dealer. Holden - take a journey, discover new possibilities.",
+          "additionalProperties": {},
+          "category": ""
+        }
+      ]
+    },
+    "performanceMetrics": {
+      "id": "",
+      "running": true,
+      "lastTaskInfo": {
+        "taskName": "output:GenericHookScriptRunner post_process",
+        "timeMillis": 0,
+        "timeSeconds": 0
+      },
+      "taskCount": 61,
+      "totalTimeMillis": 115,
+      "lastTaskTimeMillis": 0,
+      "lastTaskName": "output:GenericHookScriptRunner post_process",
+      "taskInfo": [
+        {
+          "taskName": "input:PassThroughParameters",
+          "timeMillis": 1,
+          "timeSeconds": 0.001
+        },
+        {
+          "taskName": "input:PassThroughEnvironmentVariables",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:RestrictToCurrentProfileConfig",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:IncreasePadreTimeOutForServiceUsers",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:LocaleOverride",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:ContentAuditor",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:Geolocation",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:GenericHookScriptRunner pre_process",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:AccessibilityAuditorOptionsForSpeed",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:SetQuery",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:SetQueryForCounts",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:SetQueryProcessorOptions",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:ConfigureFacets",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:Session",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:UserKeys",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:FacetScope",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:LegacyFacetedNavigation",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:FacetedNavigation",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:FacetedNavigationSetQueryProcessorOptions",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:MultiFacetedNavigation",
+          "timeMillis": 1,
+          "timeSeconds": 0.001
+        },
+        {
+          "taskName": "input:MetaParameters",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:MetadataAliases",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:MetaDates",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:Curator",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:CliveMapping",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:QuickLinks",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:ExploreQuery",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:Hostname",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:UserIdInQueryLogs",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:ReMapRMCFOptionInputProcessor",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:SetQueryProcessorOptionsForCounts",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:ExtraSearches",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:GenericHookScriptRunner extra_searches",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "input:ExtraSearchesExecutor",
+          "timeMillis": 4,
+          "timeSeconds": 0.004
+        },
+        {
+          "taskName": "datafetch:GenericHookScriptRunner pre_datafetch",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "datafetch:SetPriorityQueryProcessorOptions",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "datafetch:DefaultPadreForking",
+          "timeMillis": 103,
+          "timeSeconds": 0.103
+        },
+        {
+          "taskName": "datafetch:GenericHookScriptRunner post_datafetch",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:PadreReturnCode",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:ReMapRMCFOutputProcessor",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:FixMetaCollectionUpdateDate",
+          "timeMillis": 1,
+          "timeSeconds": 0.001
+        },
+        {
+          "taskName": "output:FixPseudoLiveLinks",
+          "timeMillis": 2,
+          "timeSeconds": 0.002
+        },
+        {
+          "taskName": "output:Curator",
+          "timeMillis": 1,
+          "timeSeconds": 0.001
+        },
+        {
+          "taskName": "output:FixCacheAndClickLinks",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:FixDisplayUrls",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:HTMLEncodeSummaries",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:ExtraSearchesExecutor",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:FacetedNavigation",
+          "timeMillis": 1,
+          "timeSeconds": 0.001
+        },
+        {
+          "taskName": "output:FacetedNavigationWhiteBlackList",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:PopulateFacetCategoryLabels",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:SortFacetValues",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:DateFacetSort",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:ContextualNavigation",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:QuickLinks",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:QueryCleanOutputProcessor",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:ContentOptimiser",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:GetTranslations",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:SearchHistory",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:RemoveFacetedNavigationExtraSearches",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        },
+        {
+          "taskName": "output:Metrics",
+          "timeMillis": 1,
+          "timeSeconds": 0.001
+        },
+        {
+          "taskName": "output:GenericHookScriptRunner post_process",
+          "timeMillis": 0,
+          "timeSeconds": 0
+        }
+      ],
+      "totalTimeSeconds": 0.115
+    }
+  },
+  "session": null,
+  "QueryString": "remote_ip=10.20.1.1&query=holden&profile=_default_preview&f.Condition%7Ccondition=demo&collection=fb-bargain-store-meta",
+  "anyExtraSearchesIncomplete": false,
+  "error": null
+}

@@ -1,0 +1,12 @@
+name = "Module Permissions"
+description = "Allow administrators to define a subset of modules to be managed by others"
+package = Administration
+core = 7.x
+files[] = tests/module_permissions.test
+files[] = tests/module_permissions_ui.test
+
+; Information added by Drupal.org packaging script on 2018-10-21
+version = "7.x-1.4"
+core = "7.x"
+project = "module_permissions"
+datestamp = "1540160888"

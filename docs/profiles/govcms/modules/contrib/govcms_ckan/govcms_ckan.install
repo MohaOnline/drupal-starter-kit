@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Code for the govCMS CKAN module install/uninstall/schema hooks.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function govcms_ckan_uninstall() {
+  variable_del('govcms_ckan_endpoint_url');
+  variable_del('govcms_ckan_api_key');
+}

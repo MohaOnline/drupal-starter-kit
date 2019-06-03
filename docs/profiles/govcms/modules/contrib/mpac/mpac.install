@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * @file
+ * Module install file.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function mpac_install() {
+  if (variable_get('mpac_max_items') === NULL) {
+    variable_set('mpac_max_items', 20);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mpac_uninstall() {
+  variable_del('mpac_max_items');
+}

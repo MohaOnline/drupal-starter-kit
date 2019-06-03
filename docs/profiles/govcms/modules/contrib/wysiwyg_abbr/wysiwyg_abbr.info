@@ -1,0 +1,14 @@
+name = WYSIWYG Abbreviation
+description = A plugin to easily manage abbreviations in CKEditor
+core = 7.x
+package = wysiwyg
+
+; Dependencies
+dependencies[] = wysiwyg
+
+; Information added by Drupal.org packaging script on 2014-08-15
+version = "7.x-1.0"
+core = "7.x"
+project = "wysiwyg_abbr"
+datestamp = "1408088929"
+

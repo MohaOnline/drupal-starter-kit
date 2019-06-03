@@ -1,0 +1,20 @@
+name = Image Styles
+core = 7.x
+package = govCMS core
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = field_sql_storage
+dependencies[] = file_entity
+dependencies[] = image
+dependencies[] = text
+features[ctools][] = file_entity:file_default_displays:1
+features[features_api][] = api:2
+features[file_display][] = image__default__file_image
+features[file_display][] = image__media_small__file_image
+features[image][] = article_page_620x349
+
+; Information added by Drupal.org packaging script on 2019-05-20
+version = "7.x-3.6"
+core = "7.x"
+project = "govcms"
+datestamp = "1558393988"

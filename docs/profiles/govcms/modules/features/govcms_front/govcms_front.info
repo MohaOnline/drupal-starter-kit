@@ -1,0 +1,21 @@
+name = Front
+description = Provides default front page panels layout configuration.
+core = 7.x
+package = govCMS
+project = govcms_front
+dependencies[] = govcms_beans
+dependencies[] = govcms_core
+dependencies[] = bean_panels
+dependencies[] = ctools
+dependencies[] = page_manager
+dependencies[] = panels_ipe
+features[ctools][] = page_manager:pages_default:1
+features[features_api][] = api:2
+features[page_manager_pages][] = front_page
+mtime = 1416882071
+
+; Information added by Drupal.org packaging script on 2019-05-20
+version = "7.x-3.6"
+core = "7.x"
+project = "govcms"
+datestamp = "1558393988"

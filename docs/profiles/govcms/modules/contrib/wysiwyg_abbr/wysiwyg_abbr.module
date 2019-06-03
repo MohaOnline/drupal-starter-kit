@@ -1,0 +1,41 @@
+<?php
+function wysiwyg_abbr_wysiwyg_plugin($editor, $version) {
+  switch ($editor) {
+    // Only do this for ckeditor
+    case 'ckeditor':
+      return array(
+        // This key (youtube) needs to be the same as the plugin name used in
+        // CKEDITOR.plugins.add() in plugin.js
+        'abbr' => array(
+          // A URL to the plugin's homepage.
+          'url' => '',
+          // The full path to the native editor plugin, no trailing slash.
+          // Ignored when 'internal' is set to TRUE below.
+          'path' => drupal_get_path('module', 'wysiwyg_abbr') . '/plugins/abbr',
+          // The name of the plugin's main JavaScript file.
+          // Ignored when 'internal' is set to TRUE below.
+          // Default value depends on which editor the plugin is for.
+          'filename' => 'plugin.js',
+          // A list of buttons provided by this native plugin. The key has to
+          // match the corresponding JavaScript implementation - when it's
+          // created using editor.ui.addButton(). The value is is displayed on
+          // the editor configuration form only.
+          'buttons' => array(
+            'Abbr' => t('Abbr'),
+          ),
+          // Boolean whether the editor needs to load this plugin. When TRUE,
+          // the editor will automatically load the plugin based on the 'path'
+          // variable provided. If FALSE, the plugin either does not need to
+          // be loaded or is already loaded by something else on the page.
+          // Most plugins should define TRUE here.
+          'load' => TRUE,
+          // Boolean whether this plugin is a native plugin, i.e. shipped with
+          // the editor. Definition must be ommitted for plugins provided by
+          // other modules. TRUE means 'path' and 'filename' above are ignored
+          // and the plugin is instead loaded from the editor's plugin folder.
+          'internal' => FALSE,
+        ),
+      );
+      break;
+  }
+}

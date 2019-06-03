@@ -1,0 +1,92 @@
+<project name="accessible_forms" default="build">
+
+  <includepath classpath="new/path/here" />
+
+  <property name="build.dir" value="${project.basedir}/../"/>
+  <property name="drupal.dir.name"
+            value="accessible_forms-build"/>
+  <property name="drupal.dir"
+            value="${build.dir}${drupal.dir.name}"/>
+  <property name="drupal.profile" value="standard"/>
+  <property name="drupal.url" value="http://127.0.0.1:8888"/>
+  <property name="drush.cmd" value="drush" />
+  <property name="db.name" value="drupal"/>
+  <property name="db.username" value="root"/>
+  <property name="db.password" value=""/>
+  <property name="db.host" value="localhost"/>
+
+  <!-- Allow build.properties to override -->
+  <property file="build.properties" override="true"/>
+
+  <fileset dir="." id="src">
+    <include name="**/*.php"/>
+    <include name="**/*.module"/>
+    <include name="**/*.inc"/>
+    <include name="**/*.install"/>
+    <include name="**/*.test"/>
+    <include name="**/*.profile"/>
+    <exclude name="vendor/**"/>
+  </fileset>
+
+  <target name="build">
+    <phingcall target="clean"/>
+    <phingcall target="prepare"/>
+    <phingcall target="validate"/>
+    <phingcall target="install"/>
+    <phingcall target="test"/>
+  </target>
+
+  <target name="clean" description="Clean up">
+    <delete dir="${drupal.dir}"/>
+  </target>
+
+  <target name="prepare" description="Prepare for build">
+    <phingcall target="dl-drupal"/>
+    <copy todir="${drupal.dir}/sites/all/modules/${phing.project.name}">
+      <fileset dir="."/>
+    </copy>
+  </target>
+
+  <target name="dl-drupal" description="Download a copy of Drupal core">
+    <exec
+        command="drush dl drupal-7 --drupal-project-rename=accessible_forms-build --destination=.. -y"
+        logoutput="true" passthru="true"/>
+  </target>
+
+  <target name="validate" description="Validates the code.">
+    <phingcall target="codesniffer"/>
+    <phingcall target="security-audit"/>
+  </target>
+
+  <target name="codesniffer"
+          description="Find coding standard violations using PHP_CodeSniffer creating a log file for the continuous integration server.">
+    <phpcodesniffer standard="vendor/drupal/coder/coder_sniffer/Drupal"
+                    format="full">
+      <fileset refid="src"/>
+    </phpcodesniffer>
+  </target>
+
+  <target name="security-audit"
+          description="phpcs-security-audit is a set of PHP_CodeSniffer rules that finds flaws or weaknesses related to security in PHP and its popular CMS or frameworks.">
+    <phpcodesniffer standard="vendor/nickschuch/phpcs-security-audit/Security"
+                    format="full">
+      <fileset refid="src"/>
+    </phpcodesniffer>
+  </target>
+
+  <target name="install" description="Install Drupal.">
+    <exec dir="${drupal.dir}"
+          command="${drush.cmd} site-install -y --site-name='Accessible Forms Test' --db-url=mysql://${db.username}:${db.password}@${db.host}/${db.name}"
+          logoutput="true" passthru="true"/>
+  </target>
+
+  <target name="test" description="Runs the test suite">
+    <exec dir="${drupal.dir}"
+          command="${drush.cmd} -l ${drupal.url} en simpletest -y"
+          logoutput="true" passthru="true"/>
+    <exec dir="${drupal.dir}"
+          command="php scripts/run-tests.sh --verbose --color --concurrency 4 --php `which php` --url ${drupal.url} 'Accessible Forms'"
+          logoutput="true" passthru="true" checkreturn="true"/>
+  </target>
+
+</project>

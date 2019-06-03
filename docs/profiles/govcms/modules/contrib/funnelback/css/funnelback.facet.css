@@ -1,0 +1,33 @@
+.facet li {
+  list-style-type: none;
+}
+
+.facets-applied li {
+  float: left;
+  margin: 5px;
+}
+
+.facet-name,
+.facet-clear-all {
+  display: inline-block;
+}
+
+#funnelback-facets-breadcrumb {
+  margin-bottom: 10px;
+}
+
+.facets-applied a {
+  display: inline-block;
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+a.clear-all-filters {
+  display: block;
+  clear: both;
+}
+
+.facets-applied a:hover {
+  background: #eee;
+}

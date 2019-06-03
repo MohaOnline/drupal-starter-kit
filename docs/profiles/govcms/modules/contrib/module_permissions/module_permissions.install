@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Contains install and update functions for Module Permissions.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function module_permissions_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break during installation.
+  $t = get_t();
+
+  // Only in the Runtime $phase environment.
+  if ($phase == 'runtime') {
+    // Module permissions perms.
+    $module_permissions_permissions = array(
+      'administer module permissions',
+      'administer managed modules',
+      'administer managed modules permissions',
+    );
+    // Init prevention roles array.
+    $module_permissions_prevention_roles = array();
+    // Check user roles.
+    foreach ($module_permissions_permissions as $perm) {
+      $module_permissions_prevention_roles += user_roles(FALSE, $perm);
+    }
+    if (isset($module_permissions_prevention_roles[1]) && $module_permissions_prevention_roles[1] == "anonymous user") {
+      $value = $t('WARNING! Anonymous users have permission to module permissions.');
+      $severity = REQUIREMENT_ERROR;
+    }
+    elseif (isset($module_permissions_prevention_roles[2]) && $module_permissions_prevention_roles[2] == "authenticated user") {
+      $value = $t('WARNING! authenticated users have permission to module permissions.');
+      $severity = REQUIREMENT_ERROR;
+    }
+    else {
+      $value = $t('Normal user do not have permission to module permissions.');
+    }
+
+    $requirements['module_permissions_via_permissions'] = array(
+      'title' => $t('Module permissions'),
+      'value' => $value,
+      'description' => $t('Granting normal users permission to 
+      module permissions poses a security risk. More information is
+      available in the module README or on the !url.', array(
+        '!url' => l($t('project page'), 'http://drupal.org/project/module_permissions'),
+      )),
+      'severity' => isset($severity) ? $severity : REQUIREMENT_OK,
+    );
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ */
+function module_permissions_install() {
+  // Init module variables.
+  if (variable_get('module_permissions_managed_modules') === NULL) {
+    variable_set('module_permissions_managed_modules', array());
+  }
+  if (variable_get('module_permissions_protected_modules') === NULL) {
+    variable_set('module_permissions_protected_modules', array());
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function module_permissions_uninstall() {
+  // Clean up the module variables from database after uninstall.
+  variable_del('module_permissions_managed_modules');
+  variable_del('module_permissions_protected_modules');
+}

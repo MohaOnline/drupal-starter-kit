@@ -1,0 +1,355 @@
+<?php
+/**
+ * @file
+ * Scheduler Workbench module
+ *
+ * Main functions and hook implementations of Scheduler Workbench Integration.
+ */
+
+/**
+ * Implements hook_form_node_type_form_alter().
+ *
+ * Alters node_type forms to add fields to scheduler.
+ */
+function scheduler_workbench_form_node_type_form_alter(&$form, $form_state) {
+  $states = array('' => t('--None--')) + workbench_moderation_state_labels();
+
+  if (TRUE === isset($form['scheduler']['unpublish'])) {
+    $form['scheduler']['unpublish']['scheduler_unpublish_moderation_state'] = array(
+      '#type' => 'select',
+      '#title' => t('Moderation State'),
+      '#options' => $states,
+      '#description' => t('Moderation state to be placed in after unpublishing'),
+      '#default_value' => variable_get('scheduler_unpublish_moderation_state_' . $form['#node_type']->type, workbench_moderation_state_none()),
+    );
+
+    $form['scheduler']['unpublish']['scheduler_unpublish_default_time'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Default Time'),
+      '#description' => t('An offset from the current time such as "+1 day" or "-2 hours -30 minutes"'),
+      '#default_value' => variable_get('scheduler_unpublish_default_time_' . $form['#node_type']->type, ''),
+    );
+  }
+
+  if (TRUE === isset($form['scheduler']['publish'])) {
+    $form['scheduler']['publish']['scheduler_publish_moderation_state'] = array(
+      '#type' => 'select',
+      '#title' => t('Moderation State'),
+      '#options' => $states,
+      '#description' => t('Moderation state to be placed in after publishing'),
+      '#default_value' => variable_get('scheduler_publish_moderation_state_' . $form['#node_type']->type, workbench_moderation_state_published()),
+    );
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function scheduler_workbench_permission() {
+  return array(
+    'override default scheduler time' => array(
+      'title' => t('Override default scheduler time'),
+      'description' => t('Allow users to override the default un-publish schedule time'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function scheduler_workbench_form_alter(&$form, $form_state, $form_id) {
+  // Make sure we have scheduler settings.
+  if (TRUE === isset($form['scheduler_settings'])) {
+    $node = $form['#node'];
+
+    // Add a field to publish revision in published nodes if relevant.
+    // Order matters, this should go first before the publish_on field is
+    // manipulated.
+    module_load_include("inc", "scheduler_workbench", "includes/scheduler_workbench.revision");
+    scheduler_workbench_add_revision_publish_on_field($form);
+
+    if (!empty($node->workbench_moderation['published'])) {
+
+      // Scheduler unpublishes nodes that are scheduled to be published.
+      // This causes workbench_moderation_node_history.published to become
+      // inconsistent. Do not let nodes with published revisions get a scheduled
+      // publish date.
+      $form['scheduler_settings']['publish_on']['#access'] = FALSE;
+      $form['scheduler_settings']['publish_on']['#default_value'] = '';
+      $form['scheduler_settings']['publish_on']['#description'] = t('A scheduled publish date may not be set because this content item already <a href="@url">has a published revision</a>.', array('@url' => url("node/$node->nid/moderation")));
+    }
+
+    // And we have unpublish settings.
+    if (TRUE === isset($form['scheduler_settings']['unpublish_on'])) {
+      $unpublish_time = variable_get('scheduler_unpublish_default_time_' . $node->type, '');
+
+      // Only proceed if a default time has been set.
+      if (FALSE === empty($unpublish_time)) {
+        // Only set the default value on node creation.
+        if (TRUE === empty($node->nid)) {
+          // Make sure that the strtotime call doesn't throw an error.
+          try {
+            // Add the default to the created date and set the unpublish date.
+            $default_unpublish = date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s') . ' ' . $unpublish_time));
+            $form['scheduler_settings']['unpublish_on']['#default_value'] = $default_unpublish;
+          } catch (Exception $e) {
+            // If we get an error log it.
+            watchdog('scheduler', $e->getMessage(), WATCHDOG_ERROR);
+          }
+        }
+      }
+
+      // If the user isn't allowed to override the default.
+      if (FALSE === user_access('override default scheduler time')) {
+        $unpublish_date = $form['scheduler_settings']['unpublish_on']['#default_value'];
+        if (TRUE === empty($unpublish_date)) {
+          $unpublish_date = t('Never');
+        }
+
+        // Hide the form element and show it as text only.
+        $form['scheduler_settings']['unpublish_on']['#access'] = FALSE;
+        $form['scheduler_settings']['unpublish_on']['#type'] = 'textfield';
+        $form['scheduler_settings']['unpublish_on_text'] = array(
+          '#markup' => t('<strong>Set to unpublish on:</strong> %date', array('%date' => $unpublish_date)),
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Form validate callback.
+ */
+function scheduler_workbench_scheduler_node_form_validate($form, &$form_state) {
+  $node = $form['#node'];
+  if (!empty($form_state['values']['revision_publish_on'])) {
+    $node->revision_publish_on = $form_state['values']['revision_publish_on'];
+  }
+  scheduler_workbench_node_validate($node, $form);
+}
+
+/**
+ * Form submit callback.
+ */
+function scheduler_workbench_scheduler_node_form_submit($form, $form_state) {
+  $node = $form['#node'];
+  scheduler_workbench_node_update($node);
+}
+
+/**
+ * Implements hook_node_validate().
+ */
+function scheduler_workbench_node_validate($node, $form) {
+  $date_format = variable_get('scheduler_date_format', SCHEDULER_DATE_FORMAT);
+
+  if (!empty($node->revision_publish_on) && !is_numeric($node->revision_publish_on)) {
+    $publishtime = _scheduler_strtotime($node->revision_publish_on);
+    if ($publishtime === FALSE) {
+      $formatted_date = format_date(REQUEST_TIME, 'custom', $date_format);
+      form_set_error('revision_publish_on', t("The 'revision publish on' value does not match the expected format of %time", array('%time' => $formatted_date)));
+    }
+    elseif ($publishtime && $publishtime < REQUEST_TIME) {
+      form_set_error('revision_publish_on', t("The 'revision publish on' date must be in the future"));
+    }
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function scheduler_workbench_node_update($node) {
+  // Only update database if we need to (un)publish this node at some date
+  // otherwise the user probably cleared out the (un)publish dates so we should
+  // remove the record.
+  if (!empty($node->revision_publish_on)) {
+    $publish_on = _scheduler_strtotime($node->revision_publish_on);
+    drupal_register_shutdown_function('_scheduler_workbench_save_scheduler_record', array(
+      'nid' => $node->nid,
+      'publish_on' => $publish_on,
+      'unpublish_on' => $node->unpublish_on,
+    ));
+    $date_format = variable_get('scheduler_date_format', SCHEDULER_DATE_FORMAT);
+    $replacements = array(
+      '@publish_time' => format_date($publish_on, 'custom', $date_format),
+    );
+    drupal_set_message(t('This revision is unpublished and will be published @publish_time.', $replacements), 'status', FALSE);
+  }
+}
+
+/**
+ * Saves (inserts or updates) a record in the "scheduler" table.
+ *
+ * @param array $record
+ *   An associative array representing a "scheduler" table row.
+ */
+function _scheduler_workbench_save_scheduler_record($record) {
+  db_merge('scheduler')
+    ->key(array('nid' => $record['nid']))
+    ->fields(array(
+      'publish_on' => $record['publish_on'],
+      'unpublish_on' => $record['unpublish_on'],
+    ))
+    ->execute();
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Moves form alter hooks to the end to make sure they are after scheduler.
+ */
+function scheduler_workbench_module_implements_alter(&$implementations, $hook) {
+  switch ($hook) {
+    case 'form_node_type_form_alter':
+    case 'form_alter':
+      $group = $implementations['scheduler_workbench'];
+      unset($implementations['scheduler_workbench']);
+      $implementations['scheduler_workbench'] = $group;
+      break;
+
+    case 'node_presave':
+      unset($implementations['scheduler']);
+      break;
+
+    case 'node_update':
+      // Should be executed after the workbench_moderation.
+      $group = $implementations['scheduler_workbench'];
+      unset($implementations['scheduler_workbench']);
+      $implementations['scheduler_workbench'] = $group;
+      break;
+  }
+}
+
+/**
+ * Implements hook_scheduler_api().
+ */
+function scheduler_workbench_scheduler_api(&$node, $action) {
+  if (!workbench_moderation_node_type_moderated($node->type)) {
+    return;
+  }
+
+  $func = "_scheduler_workbench_scheduler_{$action}";
+  if (function_exists($func)) {
+    $func($node);
+  }
+}
+
+/**
+ * Handles when scheduler unpublishes a node.
+ *
+ * @param object $node
+ *   Node being unpublished
+ */
+function _scheduler_workbench_scheduler_unpublish(&$node) {
+  if ($state = variable_get('scheduler_unpublish_moderation_state_' . $node->type, FALSE)) {
+    workbench_moderation_moderate($node, $state);
+  }
+}
+
+/**
+ * Handles when scheduler publishes a node.
+ *
+ * @param object $node
+ *   Node being published
+ */
+function _scheduler_workbench_scheduler_pre_publish(&$node) {
+  if ($state = variable_get('scheduler_publish_moderation_state_' . $node->type, FALSE)) {
+    if (!empty($node->workbench_moderation['my_revision']) &&
+      $node->workbench_moderation['my_revision']->state == $state
+    ) {
+      // There is already a published revision. We want to publish the current
+      // revision. Lets register a shutdown for that.
+      unset($node->publish_on);
+      // Handle revision in shutdown function.
+      unset($node->revision);
+      $current = workbench_moderation_node_current_load($node);
+      drupal_register_shutdown_function('scheduler_workbench_revision_publish', $current, $state);
+
+      // Set the current revision to transition to the unbpulished state.
+      $node->workbench_moderation_state_new = variable_get('scheduler_unpublish_moderation_state_' . $node->type, workbench_moderation_state_none());
+    }
+
+    $node->workbench_moderation_state_current = $node->workbench_moderation['my_revision']->state;
+    if (empty($node->workbench_moderation_state_new)) {
+      $node->workbench_moderation_state_new = $state;
+    }
+  }
+}
+
+/**
+ * Implements hook_node_presave().
+ */
+function scheduler_workbench_node_presave($node) {
+  // Store the original state.
+  $status = $node->status;
+  // Let schedule_node_presave() run.
+  scheduler_node_presave($node);
+  if (($state = variable_get('scheduler_publish_moderation_state_' . $node->type, FALSE)) &&
+    !empty($node->workbench_moderation['my_revision']) &&
+    $node->workbench_moderation['my_revision']->state == $state
+  ) {
+    // Set things back the way they were.
+    $node->status = $status;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function scheduler_workbench_form_workbench_moderation_moderate_form_alter(&$form, $form_state) {
+  if (!empty($form['node']['#value'])) {
+    $node = $form['node']['#value'];
+    if (($state = variable_get('scheduler_publish_moderation_state_' . $node->type, FALSE)) &&
+      !empty($node->workbench_moderation['published']) &&
+      !empty($node->publish_on)
+    ) {
+      $date_format = variable_get('scheduler_date_format', SCHEDULER_DATE_FORMAT);
+
+      $formatted_date = format_date($node->publish_on, 'custom', $date_format);
+      $message = t('This revision will be published @publish_time.', array('@publish_time' => $formatted_date));
+      $form['#suffix'] = "<div class='scheduler-workbench-notice'><strong>{$message}</strong></div>";
+    }
+  }
+}
+
+/**
+ * Shutdown function callback to publish revision.
+ * @param $current
+ * @param $state
+ */
+function scheduler_workbench_revision_publish($current, $state) {
+  workbench_moderation_moderate($current, $state);
+  $create_publishing_revision = variable_get('scheduler_publish_revision_' . $current->type, 0) == 1;
+  if ($create_publishing_revision) {
+    $current->revision = TRUE;
+    $current->log = t('Saved by Scheduler workbench on @now.', array(
+      '@now' => format_date(REQUEST_TIME, 'short'),
+    ));
+    $current->publish_on = NULL;
+
+    // Create a new revision after publish.
+    $current->workbench_moderation_state_new = variable_get('scheduler_unpublish_moderation_state_' . $current->type, workbench_moderation_state_none());
+
+    $actions = array('node_save_action');
+    $context['node'] = $current;
+    actions_do($actions, $current, $context, NULL, NULL);
+  }
+}
+
+/**
+ * Implements hook_scheduler_allow_publishing().
+ */
+function scheduler_workbench_scheduler_allow_publishing($node) {
+  $allowed = TRUE;
+  if (module_exists('workbench_moderation') && isset($node->workbench_moderation['current']->state)) {
+    $current_state = $node->workbench_moderation['current']->state;
+    $draft_owner = user_load($node->workbench_moderation['current']->uid);
+    $published_state = variable_get('scheduler_publish_moderation_state_' . $node->type, workbench_moderation_state_published());
+
+    // If this state is one that the current user can access, return TRUE.
+    if ($permitted_states = workbench_moderation_states_next($current_state, $draft_owner, $node)) {
+      $allowed = isset($permitted_states[$published_state]);
+    }
+  }
+
+  return $allowed;
+}

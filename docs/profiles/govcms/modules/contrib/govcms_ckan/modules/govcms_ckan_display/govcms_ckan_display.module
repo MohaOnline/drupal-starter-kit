@@ -1,0 +1,242 @@
+<?php
+/**
+ * @file
+ * Code for the govCMS CKAN Display module.
+ */
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function govcms_ckan_display_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'govcms_ckan' && in_array($plugin, array_keys(govcms_ckan_ctools_plugin_type()))) {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function govcms_ckan_display_theme($existing, $type, $theme, $path) {
+  return array(
+    'ckan_empty_visualisation' => array(
+      'variables' => array('empty_text' => NULL),
+      'file' => 'theme/govcms_ckan.theme.inc',
+      'template' => 'theme/templates/govcms-ckan-empty-visualisation',
+    ),
+    'ckan_display_table_wrapper' => array(
+      'variables' => array(
+        'tables' => array(),
+        'show_titles' => TRUE,
+        'content' => array(),
+        'classes_array' => array('ckan-display-table-wrapper'),
+      ),
+      'file' => 'theme/govcms_ckan.theme.inc',
+      'template' => 'theme/templates/govcms-ckan-display-table-wrapper',
+    ),
+  );
+}
+
+/**
+ * Implements hook_library().
+ */
+function govcms_ckan_display_library() {
+
+  // Module path.
+  $module_path = drupal_get_path('module', 'govcms_ckan_display');
+
+  // Include custom charts libraries.
+  $libraries['govcms_ckan_charts'] = array(
+    'title' => 'govCMS CKAN Charts',
+    'website' => 'http://www.govcms.gov.au',
+    'version' => '1.0',
+    'js' => array(
+      array(
+        'type' => 'file',
+        'data' => $module_path . '/js/jquery.chart_export.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'file',
+        'data' => $module_path . '/js/jquery.table_charts.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'file',
+        'data' => $module_path . '/js/table_charts.c3js.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'file',
+        'data' => $module_path . '/js/govcms_ckan_display.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'file',
+        'data' => $module_path . '/js/table_charts.bubbleChart.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+    ),
+    'css' => array(
+      'type' => 'file',
+      'data' => $module_path . '/css/govcms_ckan_display.css',
+      'group' => CSS_DEFAULT,
+      'preprocess' => FALSE,
+    ),
+  );
+
+  // External Libraries (c3js & filesaver).
+  // TODO: Ideally these should be stored locally but until the 'where to put
+  // it' issue has been solved, we will just use external via a cdn.
+  $libraries['c3js'] = array(
+    'title' => 'c3js libraries',
+    'website' => 'http://c3js.org',
+    'version' => '0.4.11',
+    'js' => array(
+      array(
+        'type' => 'external',
+        'data' => 'https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.13/d3.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'external',
+        'data' => 'https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.11/c3.min.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'external',
+        'data' => 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2014-11-29/FileSaver.min.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'external',
+        'data' => 'https://cdnjs.cloudflare.com/ajax/libs/javascript-canvas-to-blob/3.1.0/js/canvas-to-blob.min.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+    ),
+    'css' => array(
+      array(
+        'type' => 'external',
+        'data' => 'https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.css',
+        'group' => CSS_DEFAULT,
+        'preprocess' => FALSE,
+      ),
+    ),
+  );
+  $libraries['filesaver'] = array(
+    'title' => 'filesaver.js',
+    'website' => 'https://github.com/eligrey/FileSaver.js/',
+    'version' => '1.1.2',
+    'js' => array(
+      array(
+        'type' => 'external',
+        'data' => 'https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2014-11-29/FileSaver.min.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+      array(
+        'type' => 'external',
+        'data' => 'https://cdnjs.cloudflare.com/ajax/libs/javascript-canvas-to-blob/3.1.0/js/canvas-to-blob.min.js',
+        'group' => JS_LIBRARY,
+        'preprocess' => FALSE,
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * A helper to add charts to the provide selector.
+ *
+ * @param string $table_selector
+ *   (optional) The jQuery selector for the tables you want to add charts to. If
+ *   NULL then only the libraries will be added.
+ */
+function govcms_ckan_display_add_charts($table_selector = NULL) {
+  // Module path.
+  $module_path = drupal_get_path('module', 'govcms_ckan_display');
+  // Include c3js library.
+  drupal_add_library('govcms_ckan_display', 'c3js');
+  // Include filesaver library.
+  drupal_add_library('govcms_ckan_display', 'filesaver');
+  // Include custom chart libs.
+  drupal_add_library('govcms_ckan_display', 'govcms_ckan_charts');
+
+  if (!is_null($table_selector)) {
+    drupal_add_js(array(
+      'govcmsCkanDisplay' => array(
+        // Add the selector to drupal settings.
+        'tableChartSelectors' => array($table_selector),
+        // Add the path to the stylesheet that gets embedded in an export.
+        'exportStylesheets' => array(url($module_path . '/css/govcms_ckan_display.css')),
+      ),
+    ), 'setting');
+  }
+}
+
+/**
+ * A helper to attach charts to a renderable element via a selector.
+ *
+ * Same as govcms_ckan_display_add_charts() but will attach to a form or
+ * renderable array rather than drupal_add_js/library.
+ *
+ * @param array $element
+ *   The element to attach to.
+ * @param string $table_selector
+ *   (optional) The jQuery selector for the tables you want to add charts to. If
+ *   NULL then only the libraries will be added.
+ */
+function govcms_ckan_display_attach_charts(&$element, $table_selector = NULL) {
+  // Module path.
+  $module_path = drupal_get_path('module', 'govcms_ckan_display');
+  // Include c3js library.
+  $element['#attached']['library'][] = array('govcms_ckan_display', 'c3js');
+  // Include filesaver library.
+  $element['#attached']['library'][] = array('govcms_ckan_display', 'filesaver');
+  // Include custom chart libs.
+  $element['#attached']['library'][] = array('govcms_ckan_display', 'govcms_ckan_charts');
+
+  if (!is_null($table_selector)) {
+    $settings = array(
+      'govcmsCkanDisplay' => array(
+        // Add the selector to drupal settings.
+        'tableChartSelectors' => array($table_selector),
+        // Add the path to the stylesheet that gets embedded in an export.
+        'exportStylesheets' => array(url($module_path . '/css/govcms_ckan_display.css')),
+      ),
+    );
+    $element['#attached']['js'][] = array('data' => $settings, 'type' => 'setting');
+  }
+}
+
+/**
+ * This helper parses column override strings into data attributes for tds.
+ *
+ * @param array $column_overrides
+ *   An array keyed by the label with the value being a newline/pipe string.
+ *
+ * @return array
+ *   An array keyed by the label with the value being an array of data
+ *   attributes to add to a given table column.
+ */
+function govcms_ckan_display_parse_column_overrides($column_overrides = array()) {
+  $settings = array();
+  $columns = array_map('govcms_ckan_string_to_array', $column_overrides);
+  foreach ($columns as $label => $overrides) {
+    if (!empty($overrides) && is_array($overrides)) {
+      foreach ($overrides as $key => $value) {
+        $settings[$label]['data-' . $key] = $value;
+      }
+    }
+  }
+  return $settings;
+}

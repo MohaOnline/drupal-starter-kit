@@ -1,0 +1,61 @@
+<?php
+
+/**
+ * @file
+ * Adds template pre-processing functions for adding accessibility
+ * attributes to forms.
+ */
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function accessible_forms_theme_registry_alter(&$theme_registry) {
+  // Add our accessibility preprocess to several theme functions.
+  $field_types = array(
+    'textfield',
+    'password',
+    'file',
+    'textarea',
+    'checkbox',
+    'radio',
+    'select',
+    'emailfield',
+    'numberfield',
+    'rangefield',
+    'searchfield',
+    'telfield',
+    'urlfield',
+  );
+  drupal_alter('accessible_forms_field_types', $field_types);
+  foreach ($field_types as $hook) {
+    $theme_registry[$hook]['preprocess functions'][] = 'accessible_forms_preprocess_form_fields';
+  }
+
+  // Add our required marker theme template.
+  unset($theme_registry['form_required_marker']['function']);
+  $theme_registry['form_required_marker']['template'] = drupal_get_path('module', 'accessible_forms') . '/templates/form-required-marker';
+  $theme_registry['form_required_marker']['preprocess functions'][] = 'accessible_forms_preprocess_required_marker';
+}
+
+/**
+ * Pre-process function to add accessibility attributes to form elements.
+ */
+function accessible_forms_preprocess_form_fields(&$variables) {
+  if (!empty($variables['element']['#required'])) {
+    $variables['element']['#attributes']['required'] = 'true';
+  }
+  if (isset($variables['element']['#parents']) && form_get_error($variables['element']) !== NULL && !empty($variables['element']['#validated'])) {
+    $variables['element']['#attributes']['aria-invalid'] = 'true';
+  }
+}
+
+/**
+ * Pre-process function for form-required-marker template.
+ */
+function accessible_forms_preprocess_required_marker(&$variables) {
+  $attributes = array(
+    'class' => 'form-required',
+    'title' => t('This field is required.'),
+  );
+  $variables['attributes'] = $attributes;
+}

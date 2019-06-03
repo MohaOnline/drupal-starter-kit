@@ -1,0 +1,111 @@
+<?php
+/**
+ * @file
+ * Media integration for govCMS CKAN datasets.
+ */
+
+// Load all CKAN file formatters.
+require_once dirname(__FILE__) . '/includes/govcms_ckan_media.formatters.inc';
+require_once dirname(__FILE__) . '/includes/govcms_ckan_media.field_config.inc';
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function govcms_ckan_media_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'govcms_ckan' && in_array($plugin, array_keys(govcms_ckan_ctools_plugin_type()))) {
+    return 'plugins/' . $plugin;
+  }
+}
+
+/**
+ * Implements hook_media_internet_providers().
+ */
+function govcms_ckan_media_media_internet_providers() {
+  return array(
+    'MediaInternetGovCmsCkanHandler' => array(
+      'title' => t('CKAN Dataset'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_stream_wrappers().
+ */
+function govcms_ckan_media_stream_wrappers() {
+  return array(
+    'ckan' => array(
+      'name' => t('CKAN Dataset'),
+      'class' => 'MediaGovCmsCkanStreamWrapper',
+      'description' => t('A CKAN dataset package.'),
+      'type' => STREAM_WRAPPERS_READ_VISIBLE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_file_default_types_alter().
+ *
+ * As this is defining a new file type it would be preferable to use
+ * hook_file_default_types() but it does not seem to work so using alter.
+ *
+ * @todo Investigate why hook_file_default_types() doesn't work.
+ */
+function govcms_ckan_media_file_default_types_alter(&$types) {
+  $types['ckan'] = (object) array(
+    'api_version' => 1,
+    'type' => 'ckan',
+    'label' => t('CKAN Dataset'),
+    'description' => t("A <em>CKAN Dataset</em> is a dataset parsed and rendered as a table or graph."),
+    'mimetypes' => array(
+      'other/ckan',
+    ),
+  );
+}
+
+/**
+ * Implements hook_file_mimetype_mapping_alter().
+ */
+function govcms_ckan_media_file_mimetype_mapping_alter(&$mapping) {
+  $mapping['mimetypes'][] = 'other/ckan';
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function govcms_ckan_media_ctools_plugin_api($module, $api) {
+  if ($module == 'file_entity' && $api == 'file_default_displays') {
+    return array('version' => 1);
+  }
+}
+
+/**
+ * Implements hook_file_load().
+ */
+function govcms_ckan_media_file_load($files) {
+  // Load the resource_id and instance as properties of the file object.
+  foreach ($files as $i => $file) {
+    if ($file->type == 'ckan') {
+      $wrapper = file_stream_wrapper_get_instance_by_uri($file->uri);
+      $files[$i]->resource_id = $wrapper->parseIdFromUri('resource');
+      $files[$i]->package_id = $wrapper->parseIdFromUri('package');
+      $files[$i]->instance = $wrapper->parseIdFromUri('instance');
+    }
+  }
+}
+
+/**
+ * Helper function to add the table selector to the JS.
+ *
+ * @param string
+ *   The table class.
+ */
+function govcms_ckan_media_expose_table_selector($table_selector = NULL) {
+  if (!is_null($table_selector)) {
+    drupal_add_js(array(
+      'govcmsCkanDisplay' => array(
+        // Add the selector to drupal settings.
+        'tableChartSelectors' => array($table_selector),
+      ),
+    ), 'setting');
+  }
+}

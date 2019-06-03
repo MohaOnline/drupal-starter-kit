@@ -1,0 +1,14 @@
+
+name = Poll Enhancements
+core = 7.x
+package = Other
+description = Poll enhancements for anonymous users voting on core polls.
+dependencies[] = poll
+configure = admin/config/content/pollanon
+
+; Information added by Drupal.org packaging script on 2015-08-12
+version = "7.x-1.1"
+core = "7.x"
+project = "pollanon"
+datestamp = "1439412778"
+

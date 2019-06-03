@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the gss module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function gss_uninstall() {
+  variable_del('gss_api_key');
+  variable_del('gss_base_url');
+  variable_del('gss_default_language');
+  variable_del('gss_global');
+  variable_del('gss_info');
+  variable_del('gss_labels');
+  variable_del('gss_language');
+  variable_del('gss_number_of_results');
+  variable_del('gss_pager_size');
+  variable_del('gss_page_size');
+  variable_del('gss_results_tab');
+}

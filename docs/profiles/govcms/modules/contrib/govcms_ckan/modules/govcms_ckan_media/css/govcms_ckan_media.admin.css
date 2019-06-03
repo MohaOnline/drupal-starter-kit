@@ -1,0 +1,19 @@
+/* Admin form specific styles for govcms_ckan_media */
+
+/* Fix for ctools modal inline form-item overrides */
+.govcms-ckan-media--settings-form .container-inline .form-item label {
+  width: auto;
+  float: none;
+}
+.govcms-ckan-media--settings-form .container-inline .form-item {
+  display: inline-block;
+  margin: 0 0.5em 0.5em 0;
+  white-space: nowrap;
+}
+
+/* Section title readability improvement */
+.govcms-ckan-media--settings-title {
+  margin: 1.2em 0;
+  padding-bottom: 0.5em;
+  border-bottom: 2px solid rgba(0,0,0,0.1);
+}

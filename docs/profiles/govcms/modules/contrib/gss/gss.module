@@ -1,0 +1,304 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function gss_theme($existing, $type, $theme, $path) {
+  return array(
+    'gss_result' => array(
+      'variables' => array('result' => NULL, 'module' => NULL),
+      'file' => 'gss.theme.inc',
+      'template' => 'gss-result',
+    ),
+    'gss_results' => array(
+      'variables' => array('results' => NULL, 'module' => NULL),
+      'file' => 'gss.theme.inc',
+      'template' => 'gss-results',
+    ),
+  );
+}
+/**
+ * Implements hook_search_admin().
+ */
+function gss_search_admin() {
+  return gss_settings();
+}
+/**
+ * Module settings.
+ */
+function gss_settings() {
+  $form = array();
+
+  $form['gss'] = array(
+    '#title' => t('Google Site Search'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['gss']['main'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Main'),
+    '#weight' => -10,
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $form['gss']['main']['gss_global'] = array(
+    '#title' => t('Make Google Site Search global'),
+    '#type' => 'checkbox',
+    '#description' => t('Let Google Site Search take over all search functions on the site.'),
+    '#default_value' => variable_get('gss_global', FALSE),
+  );
+  $form['gss']['main']['gss_api_key'] = array(
+    '#title' => t('Search engine unique ID'),
+    '#type' => 'textfield',
+    '#description' => t('Your Search engine unique ID. If no ID is given, the module will not work and will be disabled.'),
+    '#default_value' => variable_get('gss_api_key', ''),
+  );
+  $form['gss']['main']['gss_base_url'] = array(
+    '#title' => t('Search engine base url'),
+    '#type' => 'textfield',
+    '#description' => t('The base URL to send the query to. Use this to override the default request to google, useful for proxying the request.'),
+    '#default_value' => variable_get('gss_base_url', ''),
+  );
+  $form['gss']['language'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Language'),
+    '#weight' => -9,
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $form['gss']['language']['gss_language'] = array(
+    '#title' => t('Language'),
+    '#type' => 'textfield',
+    '#description' => t('The language to search. Write the language code with two letters.<br />Ex: for "english", input "en"; for "Chinese (Simplified)", input "zh-CN".'),
+    '#default_value' => variable_get('gss_language', FALSE),
+    '#size' => 5,
+    '#max_length' => 5,
+  );
+  $form['gss']['language']['gss_default_language'] = array(
+    '#title' => t('Use current site language'),
+    '#type' => 'checkbox',
+    '#description' => t('This setting will override the custom language above.'),
+    '#default_value' => variable_get('gss_default_language', FALSE),
+  );
+  $form['gss']['miscellaneous'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Miscellaneous'),
+    '#weight' => -8,
+    '#collapsible' => FALSE,
+    '#collapsed' => FALSE,
+  );
+  $form['gss']['miscellaneous']['gss_results_tab'] = array(
+    '#title' => t('Search results tab name'),
+    '#type' => 'textfield',
+    '#maxlength' => 50,
+    '#size' => 60,
+    '#description' => t('Enter a custom name of the tab where search results are displayed (defaults to %google).', array('%google' => t('Google Search'))),
+    '#default_value' => variable_get('gss_results_tab', ''),
+  );
+  $form['gss']['miscellaneous']['gss_page_size'] = array(
+    '#title' => t('Page size'),
+    '#type' => 'textfield',
+    '#description' => t('Number of results to display per page.'),
+    '#default_value' => variable_get('gss_page_size', 20),
+    '#size' => 5,
+    '#max_length' => 5,
+  );
+  $form['gss']['miscellaneous']['gss_pager_size'] = array(
+    '#title' => t('Pager size'),
+    '#type' => 'textfield',
+    '#description' => t('Number of pages to show in the pager. Input ONLY odd numbers like 5, 7 or 9 and NOT 6, 8 or 10, for example.'),
+    '#default_value' => variable_get('gss_pager_size', 19),
+    '#size' => 5,
+    '#max_length' => 5,
+  );
+  $form['gss']['miscellaneous']['gss_labels'] = array(
+    '#title' => t('Show labels'),
+    '#type' => 'checkbox',
+    '#description' => t('Let the user filter the search result by labels. <a href="@link">Click here</a> to read more about search labels.', array('@link' => url('https://developers.google.com/custom-search/docs/ref_prebuiltlabels'))),
+    '#default_value' => variable_get('gss_labels', TRUE),
+  );
+  $form['gss']['miscellaneous']['gss_number_of_results'] = array(
+    '#title' => t('Show number of results'),
+    '#type' => 'checkbox',
+    '#description' => t('Show the line "Shows x to y of approximately x hits" in the top of the search result.'),
+    '#default_value' => variable_get('gss_number_of_results', TRUE),
+  );
+  $form['gss']['miscellaneous']['gss_info'] = array(
+    '#title' => t('Show extra information for each search result'),
+    '#type' => 'checkbox',
+    '#description' => t('Show extra information (content-type, author and date) below each search result.'),
+    '#default_value' => variable_get('gss_info', FALSE),
+  );
+
+  return $form;
+}
+/**
+* Search results page.
+*/
+function gss_search_results($query) {
+  global $language;
+  drupal_add_css(drupal_get_path('module', 'gss') . '/gss.css');
+  // Include dependencies.
+  module_load_include('inc', 'gss', 'includes/GoogleSiteSearch');
+  // Let other modules alter the $query variable.
+  drupal_alter('gss_search_key', $query);
+  // Let other modules add extra parameters.
+  $extra = NULL;
+  drupal_alter('gss_search_extraparams', $extra);
+  // Make query safe.
+  $query = htmlspecialchars($query, ENT_NOQUOTES, 'UTF-8');
+  // Init GoogleSiteSearch object.
+  $gss = new GoogleSiteSearch($query, variable_get('gss_api_key', ''), 20, $extra);
+  // Get current page.
+  $page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+  // Init results variable.
+  $results = NULL;
+  // Set the number of results per page.
+  $gss->SetPageSize(variable_get('gss_page_size', 20));
+  // Set the number of pages to show in the pager.
+  $gss->SetPagerSize(variable_get('gss_pager_size', 20));
+  // Set the search language.
+  $default_lang = variable_get('gss_default_language', FALSE);
+  if ($default_lang) {
+    $gss->SetLanguage($language->language);
+  }
+  else {
+    $gss->SetLanguage(variable_get('gss_language', ''));
+  }
+  // Perform search.
+  try {
+    $results = $gss->GetSearchResults($page);
+  }
+  catch(Exception $e) {
+    watchdog('gss', $e, NULL, WATCHDOG_ERROR);
+    drupal_set_message(t('Sorry, the search function is unavailable at this time.'));
+    drupal_exit();
+  }
+  // Get search summary.
+  $total_results = $gss->GetTotalResults();
+  $end_pos = $gss->GetCurrentPage() * $gss->GetPageSize();
+  $start_pos = $end_pos - $gss->GetPageSize() + 1;
+
+  if ($end_pos > $total_results) {
+    $end_pos = $total_results;
+  }
+  // Build output.
+  if (!empty($results)) {
+    $output = array();
+    // Loop results.
+    foreach ($results as $result) {
+      // Just to avoid warnings in the log if not set.
+      $result['thumbnail_url'] = isset($result['thumbnail_url']) ? $result['thumbnail_url'] : '';
+      $output[] = array(
+        'link' => urldecode($result['url']),
+        'title' => $result['title'],
+        'thumbnail_url' => $result['thumbnail_url'],
+        'snippet' => $result['description'],
+      );
+    }
+  }
+  else {
+    $output[] = array(
+      'link' => '',
+      'title' => '',
+      'snippet' => t('No results'),
+    );
+  }
+  // Get searrch head.
+  $output['head'] = $gss->GetSearchHead();
+  // Get pager.
+  $output['pager'] = $gss->GetPager();
+
+  return $output;
+}
+/**
+ * Adds custom submit handler for search form.
+ */
+function gss_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'search_form':
+    case 'search_block_form':
+    case 'search_theme_form':
+      $form['#submit'][] = 'gss_search_form_submit';
+      $form['#attributes']['class'][] = 'gss';
+      break;
+  }
+}
+/**
+ * Implements hook_search_execute().
+ */
+function gss_search_execute($keys = NULL, $conditions = NULL) {
+  return gss_search_results($keys);
+}
+/**
+ * Implements hook_search_info().
+ */
+function gss_search_info() {
+  return array(
+    'title' => gss_results_tab(),
+    'path' => 'gss',
+    'conditions_callback' => 'gss_conditions_callback',
+  );
+}
+/**
+ * Search conditions callback.
+ */
+function gss_conditions_callback($keys) {
+  $conditions = array();
+  return $conditions;
+}
+/**
+ * Return the Google Site Search tab title, either a setting or a translation.
+ */
+function gss_results_tab() {
+  return ($var = variable_get('gss_results_tab', '')) ? $var : t('Google Search');
+}
+/**
+ * Submit handler.
+ */
+function gss_search_form_submit($form, &$form_state) {
+  $check = _gss_check();
+  if ($check) {
+    $form_id = $form_state['values']['form_id'];
+    // Get the search keys, either from search_form or from search_block_form
+    $keys = (isset($form_state['values']['search_block_form'])) ? $form_state['values']['search_block_form'] : $form_state['values']['processed_keys'];
+    $form_state['redirect'] = array('search/gss/' . $keys);
+  }
+}
+/**
+ * Implements hook_search_page().
+ */
+function gss_search_page($results) {
+  $output['#theme'] = 'gss_results';
+  $output['#results'] = $results;
+  return $output;
+}
+/**
+ * Check if Google Site Search can run.
+ */
+function _gss_check() {
+  $gss_global = variable_get('gss_global', FALSE);
+  if (!$gss_global) {
+    return FALSE;
+  }
+  $gss_api_key = variable_get('gss_api_key', FALSE);
+  if (!$gss_api_key) {
+    $search_active_modules = variable_get('search_active_modules', array('node', 'user'));
+    // Disable Google Site Search if no Search engine unique ID is given.
+    unset($search_active_modules['gss']);
+    variable_set('search_active_modules', $search_active_modules);
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Implements hook_init().
+ */
+function gss_init() {
+  $settings['gss']['key'] = variable_get('gss_api_key', '');
+  drupal_add_js($settings, 'setting');
+  drupal_add_library('system', 'ui.autocomplete');
+}

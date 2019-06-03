@@ -1,0 +1,11 @@
+name = Maintenance Mode Permissions
+description = "Provide more fine grained access for the maintenance mode settings."
+
+core = 7.x
+
+; Information added by drupal.org packaging script on 2012-01-04
+version = "7.x-1.0"
+core = "7.x"
+project = "maintenance_mode_permissions"
+datestamp = "1325691050"
+

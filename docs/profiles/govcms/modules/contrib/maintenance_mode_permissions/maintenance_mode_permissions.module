@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * @file
+ * Provide more fine grained maintenance mode permissions.
+ *
+ * @copyright Copyright 2012 Hewlett-Packard Development Company, L.P.
+ */
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Alter the maintenance page access callback and arguments so we can provide
+ * more fine grained controls.
+ */
+function maintenance_mode_permissions_menu_alter(&$items) {
+  // Remove the access arguments. Our function has no arguments.
+  unset($items['admin/config/development/maintenance']['access arguments']);
+
+  // Add an access callback to use our function.
+  $items['admin/config/development/maintenance']['access callback'] = '_maintenance_mode_permissions_access';
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Adds a permission for administering maintenance mode.
+ */
+function maintenance_mode_permissions_permission() {
+  return array(
+    'administer maintenance mode' => array(
+      'title' => t('Administer Maintenance Mode'),
+      'description' => t("Be sure to pair this permission with the one for 'Use the site in maintenance mode'"),
+    ),
+  );
+}
+
+/**
+ * Access callback; check if a user has permission to view the maintenance mode
+ * callback.
+ */
+function _maintenance_mode_permissions_access() {
+  // Here we preserve the normal Drupal permission for maintenance mode. In addition to that we
+  // provide the additional permission.
+  if (user_access('administer site configuration') || user_access('administer maintenance mode')) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}

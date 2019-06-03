@@ -1,0 +1,317 @@
+<?php
+
+/**
+ * @file
+ * Code for the govCMS CKAN module.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function govcms_ckan_display_examples_permission() {
+  return array(
+    'access govcms ckan display examples' => array(
+      'title' => t('Access GOVCMS CKAN display chart examples'),
+      'description' => t('View the examples page for available charts.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function govcms_ckan_display_examples_menu() {
+  $items['govcms-ckan/examples'] = array(
+    'title' => 'Charts test',
+    'page callback' => 'govcms_ckan_display_examples_page',
+    'access arguments' => array('access govcms ckan display examples'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Page callback for examples page.
+ *
+ * Builds table markup and includes JS libs required.
+ */
+function govcms_ckan_display_examples_page() {
+
+  // Add the JS to the tables.
+  govcms_ckan_display_add_charts('.table-chart-examples');
+
+  // Return markup for each table.
+  $markup = array();
+  foreach (_govcms_ckan_display_examples_data() as $id => $example) {
+    // Header.
+    $header = array();
+    $rows = array();
+    foreach ($example['data'] as $col => $datas) {
+      // Build table headers with options.
+      $th = array('data' => $col);
+      // Add optional column colour.
+      if (!empty($datas['color'])) {
+        $th['data-color'] = $datas['color'];
+      }
+      // Add optional column style.
+      if (!empty($datas['style'])) {
+        $th['data-style'] = $datas['style'];
+      }
+      $header[] = $th;
+      // Rows.
+      foreach ($datas['data'] as $k => $data) {
+        $rows[$k][] = $data;
+      }
+    }
+
+    // Build a single table.
+    $markup[] = theme('html_tag', array(
+      'element' => array(
+        '#tag' => 'h2',
+        '#value' => $example['title'],
+      ),
+    ));
+    $markup[] = theme('html_tag', array(
+      'element' => array(
+        '#tag' => 'p',
+        '#value' => t('Graph type: @type', array('@type' => $example['type'])),
+      ),
+    ));
+    $markup[] = theme('table', array(
+      'header' => $header,
+      'rows' => $rows,
+      'sticky' => FALSE,
+      'attributes' => array(
+        'id' => drupal_html_id('chart-' . $id),
+        'data-rotated' => isset($example['rotated']) ? $example['rotated'] : 'false',
+        'data-type' => $example['type'],
+        'data-defaultView' => isset($example['defaultView']) ? $example['defaultView'] : 'chart',
+        'data-labels' => isset($example['labels']) ? $example['labels'] : 'false',
+        'data-grid' => isset($example['grid']) ? $example['grid'] : '',
+        'data-xLabel' => isset($example['xLabel']) ? $example['xLabel'] : '',
+        'data-yLabel' => isset($example['yLabel']) ? $example['yLabel'] : '',
+	'data-stacked' => isset($example['stacked']) ? $example['stacked'] : '',
+        'class' => array('table-chart-examples'),
+      ),
+    ));
+    $markup[] = theme('html_tag', array(
+      'element' => array(
+        '#tag' => 'hr',
+        '#value' => '',
+      ),
+    ));
+  }
+
+  // Return all tables joined together.
+  return implode('', $markup);
+}
+
+/**
+ * Example data for the tables on the examples page.
+ *
+ * @return array
+ *   An array of examples data.
+ */
+function _govcms_ckan_display_examples_data() {
+  return array(
+    'line' => array(
+      'title' => 'Line Chart with custom colours and line style (vertical)',
+      'type' => 'line',
+      'lib' => 'c3js',
+      'rotated' => 'false',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+          'color' => '#000000',
+          'style' => 'dashed',
+        ),
+        'data2' => array(
+          'data' => array(50, 20, 10, 40, 15, 25),
+          'color' => '#777777',
+          'style' => 'solid',
+        ),
+      ),
+    ),
+    'line_horizontal' => array(
+      'title' => 'Line Chart with XY Grid (horizontal)',
+      'type' => 'line',
+      'lib' => 'c3js',
+      'rotated' => 'true',
+      'grid' => 'xy',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(50, 20, 10, 40, 15, 25),
+        ),
+      ),
+    ),
+    'spline' => array(
+      'title' => 'Spline Chart - with data labels (vertical)',
+      'type' => 'spline',
+      'lib' => 'c3js',
+      'rotated' => 'false',
+      'labels' => 'true',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(50, 20, 10, 40, 15, 25),
+        ),
+      ),
+    ),
+    'spline_horizontal' => array(
+      'title' => 'Spline Chart with axis labels (horizontal)',
+      'type' => 'spline',
+      'lib' => 'c3js',
+      'rotated' => 'true',
+      'xLabel' => 'Age (yr)',
+      'yLabel' => 'Depth (mm)',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(50, 20, 10, 40, 15, 25),
+        ),
+      ),
+    ),
+    'spline_area' => array(
+      'title' => 'Spline Area Chart with Y Grid (vertical)',
+      'type' => 'area-spline',
+      'lib' => 'c3js',
+      'rotated' => 'false',
+      'grid' => 'y',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(50, 20, 10, 40, 15, 25),
+        ),
+      ),
+    ),
+    'spline_area_horizontal' => array(
+      'title' => 'Spline Area Chart (horizontal)',
+      'type' => 'area-spline',
+      'lib' => 'c3js',
+      'rotated' => 'true',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(50, 20, 10, 40, 15, 25),
+        ),
+      ),
+    ),
+    'spline_area_stacked' => array(
+      'title' => 'Spline Area Chart Stacked (vertical)',
+      'type' => 'area-spline',
+      'lib' => 'c3js',
+      'rotated' => 'false',
+      'grid' => 'y',
+      'stacked' => 'true',
+      'data' => array(
+	'data1' => array(
+	  'data' => array(30, 200, 100, 400, 150, 250),
+	),
+	'data2' => array(
+	  'data' => array(50, 20, 10, 40, 15, 25),
+	),
+      ),
+    ),
+    'area' => array(
+      'title' => 'Area Chart (vertical)',
+      'type' => 'area',
+      'lib' => 'c3js',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(130, 100, 140, 200, 150, 50),
+        ),
+        'data3' => array(
+          'data' => array(50, 80, 180, 90, 95, 30),
+        ),
+      ),
+    ),
+    'area_horizontal' => array(
+      'title' => 'Area Chart (horizontal)',
+      'type' => 'area',
+      'lib' => 'c3js',
+      'rotated' => 'true',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(130, 100, 140, 200, 150, 50),
+        ),
+      ),
+    ),
+    'bar' => array(
+      'title' => 'Bar Chart with X grid (vertical)',
+      'type' => 'bar',
+      'lib' => 'c3js',
+      'rotated' => 'false',
+      'grid' => 'x',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(130, 100, 140, 200, 150, 50),
+        ),
+      ),
+    ),
+    'bar_horizontal' => array(
+      'title' => 'Bar Chart (horizontal)',
+      'type' => 'bar',
+      'lib' => 'c3js',
+      'rotated' => 'true',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(130, 100, 140, 200, 150, 50),
+        ),
+      ),
+    ),
+    'bar_stacked' => array(
+      'title' => 'Bar Chart Stacked - Table default view (vertical)',
+      'type' => 'bar',
+      'lib' => 'c3js',
+      'rotated' => 'false',
+      'defaultView' => 'table',
+      'stacked' => 'true',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(130, 100, 140, 200, 150, 50),
+        ),
+      ),
+    ),
+    'bar_stacked_horizontal' => array(
+      'title' => 'Bar Chart Stacked (horizontal)',
+      'type' => 'bar',
+      'lib' => 'c3js',
+      'rotated' => 'true',
+      'stacked' => 'true',
+      'data' => array(
+        'data1' => array(
+          'data' => array(30, 200, 100, 400, 150, 250),
+        ),
+        'data2' => array(
+          'data' => array(130, 100, 140, 200, 150, 50),
+        ),
+      ),
+    ),
+  );
+}

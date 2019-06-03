@@ -1,0 +1,45 @@
+Funnelback
+
+7.x-4.0-alpha1
+-------------
+- Updated module to work with Funnelback version 15.12
+- Restructured module to add unit tests
+- Added facet support
+- Added selected filter breadcrumb
+- Added basic autocomplete function
+- Added view mode support
+- Removed XML support
+
+7.x-1.0-beta3
+-------------
+- Issue #2019389 by Sonna: Fixed Funnelback result pager not displaying 'Prev" 
+  link.
+- Issue #2021921 by Sonna: Added Patch to reinforce default styling to search     
+  results.
+- Removed some old installation instructions.
+
+7.x-1.0-beta2
+-------------
+- Fix an issue where search result links could be incorrect due to bad slash
+  replacement.
+- Menu name changed slightly.
+
+7.x-1.0-beta1
+-------------
+- Issue #2012214 by xtfer: Fixed Search block doesn't work on the search page.
+- Additional secure validation on the submitted search string.
+- Remove the missing Powered by… indicator
+
+7.x-1.0-alpha2
+-------------
+- Issue #1983038 by xtfer: Fixed Notice on results page.
+- Issue #1983006 by rcaracaus: Add some default styling to search results.
+
+7.x-1.0-alpha1
+-------------
+- Fixed Issue #1947352 by torpy: Added support for 'profile' query parameter.
+- Fixed Issue #1716416 by torpy | cafuego: Added Pre-coded search result blocks.
+- Better support for both Classic and Modern UI versions
+- Automatic path selection for API endpoint
+- Debugging support.
+- Coding standards cleanup

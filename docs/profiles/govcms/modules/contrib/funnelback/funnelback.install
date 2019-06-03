@@ -1,0 +1,26 @@
+<?php
+/**
+ * @file
+ * Install and upgrade routines for Funnelback.
+ */
+
+/**
+ * Implements hook_update_N().
+ *
+ * Rename the XML Path setting to API Path.
+ */
+function funnelback_update_7001() {
+  $xml_path = variable_get('funnelback_xml_path', 'xml.cgi');
+  variable_set('funnelback_api_path', $xml_path);
+  variable_del('funnelback_xml_path');
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Remove unused ui version variable.
+ */
+function funnelback_update_7002() {
+  variable_del('funnelback_ui_version');
+  variable_del('funnelback_api_path');
+}

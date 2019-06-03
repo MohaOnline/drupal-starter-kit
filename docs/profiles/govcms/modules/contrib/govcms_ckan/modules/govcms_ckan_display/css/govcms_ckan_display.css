@@ -1,0 +1,17 @@
+/* Styles that relate to custom functionality for display_charts and c3js */
+
+/* Styles that need to be embedded in a chart export */
+svg.chart-export{font:10px sans-serif}.chart-export line,.chart-export path{fill:none;stroke:#999}.chart-export .c3-bar{stroke:none!important}.chart-export .c3-chart-lines path {stroke: none}
+
+/* Area opacity */
+.tc-area-opacity-10 .c3-area {opacity: 0.10;}.tc-area-opacity-20 .c3-area {opacity: 0.20;}.tc-area-opacity-30 .c3-area {opacity: 0.30;}.tc-area-opacity-40 .c3-area {opacity: 0.40;}.tc-area-opacity-50 .c3-area {opacity: 0.50;}.tc-area-opacity-60 .c3-area {opacity: 0.60;}.tc-area-opacity-70 .c3-area {opacity: 0.70;}.tc-area-opacity-80 .c3-area {opacity: 0.80;}.tc-area-opacity-90 .c3-area {opacity: 0.90;}.tc-area-opacity-100 .c3-area {opacity: 1;}
+
+/* Column override helper classes */
+.c3-target-hide-points .c3-circles {display: none;}
+
+/* Tick visibility */
+.tc-tick-visibility-hide-x .c3-axis-x .tick line {opacity: 0} .tc-tick-visibility-hide-y .c3-axis-y .tick line {opacity: 0} .tc-tick-visibility-hide-xy .c3-axis-x .tick line {opacity: 0} .tc-tick-visibility-hide-xy .c3-axis-y .tick line {opacity: 0}
+
+/* Bubble visibility */
+.bubble-chart .expanded, .table-chart--chart--bubble .expanded {opacity: 0.2;}
+.bubble-chart .link, .table-chart--chart--bubble .link {stroke: #BBBBBB;}

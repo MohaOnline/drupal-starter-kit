@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ * Tests for the accessible forms module.
+ */
+
+class AccessibleFormsTest extends DrupalWebTestCase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Form attributes',
+      'description' => 'Tests form attributes are added correctly.',
+      'group' => 'Accessible Forms',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp() {
+    $modules = array('accessible_forms');
+
+    parent::setUp($modules);
+  }
+
+  /**
+   * Tests form attributes are set.
+   */
+  public function testFormAttributes() {
+    $this->drupalGet('user');
+
+    $this->assertText('(mandatory)');
+    $this->assertRaw('required="true"');
+
+    $edit = array('name' => $this->randomName());
+    $this->drupalPost('user', $edit, 'Log in');
+
+    $this->assertRaw('aria-invalid="true"');
+  }
+
+}

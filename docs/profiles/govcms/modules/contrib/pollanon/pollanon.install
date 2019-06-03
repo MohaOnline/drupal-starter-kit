@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function pollanon_install() {
+  variable_set('pollanon_use_cookie_method', TRUE); // By default use cookies instead of IP address to restrict voting on polls!
+  variable_set('pollanon_use_ajah', FALSE);         // Use AJAH whenever possible!
+  variable_set('pollanon_threshold_time', 600);
+  variable_set('pollanon_threshold_count', 10);
+
+  // db_query("UPDATE {poll_votes} SET hostname = CONCAT(hostname,'#pollanon-installed') WHERE uid = 0 AND hostname NOT LIKE '%pollanon-installed' AND hostname NOT LIKE '%#%'");.
+  db_update('poll_vote')
+    ->expression('hostname', 'CONCAT(hostname, :n)', array(':n' => '#pollanon-installed'))
+    ->condition('uid', 0)
+    ->condition('hostname', '%pollanon-installed', 'NOT LIKE')
+    ->condition('hostname', '%#%', 'NOT LIKE')
+    ->execute();
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function pollanon_uninstall() {
+  variable_del('pollanon_use_cookie_method');
+  variable_del('pollanon_use_ajah');
+  variable_del('pollanon_threshold_time');
+  variable_del('pollanon_threshold_count');
+
+  // db_query("UPDATE {poll_votes} SET hostname = REPLACE(hostname,'#pollanon-installed', '') WHERE uid = 0");.
+  db_update('poll_vote')
+    ->expression('hostname', "REPLACE(hostname, :n, '')", array(':n' => '#pollanon-installed'))
+    ->condition('uid', 0)
+    ->execute();
+  drupal_uninstall_schema('pollanon');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function pollanon_schema() {
+  $schema['pollanon_votes'] = array(
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'hostname' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'indexes' => array(
+      'pollanon_x_nid_hostname' => array('nid', 'hostname'),
+    ),
+  );
+  return $schema;
+}

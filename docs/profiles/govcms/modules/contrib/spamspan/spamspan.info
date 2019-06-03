@@ -1,0 +1,19 @@
+name = SpamSpan
+description = "The SpamSpan module obfuscates email addresses to help prevent spambots from collecting them. It implements the technique at http://www.spamspan.com."
+package = "Input filters"
+dependencies[] = filter
+core = 7.x
+configure = admin/config/content/formats
+
+dependencies[] = filter
+
+files[] = spamspan_admin.php
+files[] = spamspan_admin_page.php
+files[] = spamspan.test
+
+; load javascript on every page
+scripts[] = spamspan.js
+; Information added by drush on 2015-04-27
+version = "7.x-1.2+14-dev"
+project = "spamspan"
+datestamp = "1430115579"

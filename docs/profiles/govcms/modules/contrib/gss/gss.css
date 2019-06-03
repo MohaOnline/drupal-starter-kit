@@ -1,0 +1,38 @@
+.content .searchhead {
+  clear: both;
+  font-weight: bold;
+  margin: 10px 0;
+}
+.google-search-results,
+.google-search-results .gss-result,
+.google-search-results .gss-result .gss-title,
+.google-search-results .gss-result .gss-search-snippet-info p,
+div.item-list,
+div.item-list ul.pager {
+  margin: 0;
+}
+.google-search-results {
+  padding: 0;
+}
+
+.google-search-results li {
+  list-style: none;
+  padding: 15px 0;
+}
+.google-search-results .gss-result .gss-title {
+  font-weight: normal;
+}
+.google-search-results .gss-result .gss-search-snippet-info .gss-search-url,
+.google-search-results .gss-result .gss-search-snippet-info .gss-info {
+  margin: 0;
+}
+.google-search-results .gss-result .gss-search-snippet-info .gss-search-snippet {
+  margin: 10px 0;
+}
+.google-search-results .gss-result .gss-search-snippet-info .gss-search-url {
+  font-style: italic;
+}
+div.item-list ul.pager li {
+  margin-left: 0;
+  padding: 4px 10px 4px 10px;
+}
