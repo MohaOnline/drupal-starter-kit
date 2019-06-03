@@ -1,0 +1,126 @@
+<?php
+
+/**
+ * @file
+ * This is the module to enable the bartik theme only for developer friendly.
+ * Enable the Bartik theme as an administration theme in the superadmin user.
+ */
+
+/**
+ * Default super admin user uid.
+ */
+define('SUPER_ADMIN_UID', 1);
+
+/**
+ * Implementation of hook_menu()
+ */
+function bartik_admin_menu() {
+  $items['user/%user/bartik-admin'] = array(    
+    'title'           => 'Theme',
+    'description'     => 'Settings for superadmin as bartik.',
+    'page callback'   => 'drupal_get_form',
+    'page arguments'  => array('bartik_admin_settings'),
+    'access callback' => 'user_theme_access',
+    'access arguments' => array(SUPER_ADMIN_UID),
+    'weight'          => 99,
+    'type'            => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/*
+ * Restrict user menu access.
+ */
+function user_theme_access($account) {
+  if ($account) {
+    if ($account->uid == $GLOBALS['user']->uid) { // superadmin user
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_custom_theme()
+ * Switch theme for the admin - If the current user has a super administer 
+ * assigned to display all pages of the site using the 'Bartik' theme.
+ * @return string The theme to use
+ */
+function bartik_admin_custom_theme() {
+
+  if ($GLOBALS['user']->uid == SUPER_ADMIN_UID) { // Check if only the superadmin user
+    $themes_available = list_themes(); // get the available themes
+    $current_path = current_path();
+    $path_is_admin = path_is_admin($current_path);
+    $admin_access = user_access('administer');
+    $active = variable_get('bartik_admin_active', 0);
+
+    if($active) {
+      // Check if administer access & admin pages
+      if(($admin_access && $path_is_admin) || ($current_path == "user/SUPER_ADMIN_UID/bartik-admin")) {
+        $theme = variable_get('bartik_admin_theme', 'seven');
+      } else {
+        $theme = variable_get('bartik_admin_page', 'bartik');
+      }
+      
+      if(array_key_exists($theme, $themes_available)) {
+        return $theme;
+      }
+    }
+  }
+
+}
+
+/**
+ * Implements hook_module_implements_alter()
+ * Tell the Drupal to execute your hook implementation for 
+ * to move an item to the end of the array, we remove and then add it.
+ * @return string The theme to use
+ */
+function bartik_admin_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'custom_theme') {
+    $group = $implementations['bartik_admin'];
+    unset($implementations['bartik_admin']);
+    $implementations['bartik_admin'] = $group;
+  }
+}
+
+/**
+ * Implementation of hook_settings()
+ * An option provided to override the other enabled themes.
+ */
+function bartik_admin_settings() {
+  $roles = user_roles();
+  $themes = list_themes(); // Get all themes
+
+  foreach ($themes AS $theme_name => $theme) {
+    if (drupal_theme_access($theme)) {
+      $themes_list[] = $theme_name;
+    }
+  }
+
+  $form['bartik_admin_active'] = array(
+    '#type' =>'checkbox',
+    '#title' => t('Activate the admin theme.'),
+    '#default_value' => variable_get('bartik_admin_active', 0),
+    '#prefix' => "<p><i>Note: It's applicable only on superadmin user pages( uid as '". SUPER_ADMIN_UID ."').</i></p>",
+  );
+
+  $form['bartik_admin_page'] = array(
+    '#type'          => 'select',
+    '#title'         => 'Page theme',
+    '#options'       => drupal_map_assoc($themes_list),
+    '#default_value' => variable_get('bartik_admin_page', 'bartik'),
+    '#description'   => 'It will be override the all pages theme. Only enabled themes are shown. '
+  ); 
+
+  $form['bartik_admin_theme'] = array(
+    '#type'          => 'select',
+    '#title'         => 'Administration theme',
+    '#options'       => drupal_map_assoc($themes_list),
+    '#default_value' => variable_get('bartik_admin_theme', 'seven'),
+    '#description'   => 'Use the administration theme when editing or creating content.'
+  );
+
+  return system_settings_form($form);
+}

@@ -1,0 +1,13 @@
+name = Bartik Admin
+description = Customize the Super Admin theme.
+
+; Information added by Drupal.org packaging script on 2019-04-28
+version = "7.x-1.3"
+core = "7.x"
+project = "bartik_admin"
+datestamp = "1556478486"
+; Information added by Drupal.org packaging script on 2019-05-01
+version = "7.x-1.4"
+core = "7.x"
+project = "bartik_admin"
+datestamp = "1556739788"
