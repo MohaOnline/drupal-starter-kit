@@ -1,0 +1,1454 @@
+<?php
+
+/**
+ * @file
+ * Handles all things concerning commerce funds.
+ */
+
+require_once drupal_dirname(__FILE__) . '/commerce_funds.rules.inc';
+require_once drupal_dirname(__FILE__) . '/commerce_funds.pages.inc';
+require_once drupal_dirname(__FILE__) . '/commerce_funds.tokens.inc';
+
+/**
+ * Implements hook_help().
+ */
+function commerce_funds_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#commerce_funds':
+
+      return t('<p>Commerce Funds implements a Site Funds Management System using Drupal Commerce. It allows users to Deposit Funds in their account, Withdraw Funds, Transfer Funds and make Escrow Payment to other users.</p>');
+  }
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function commerce_funds_entity_info() {
+  return array(
+    'commerce_funds_transaction' => array(
+      'label' => t('Commerce Funds transaction'),
+      'base table' => 'commerce_funds_transactions',
+      'entity keys' => array(
+        'id' => 'transaction_id',
+      ),
+    ),
+    'commerce_funds_withdrawal_request' => array(
+      'label' => t('Commerce Funds Withdrawal request'),
+      'base table' => 'commerce_funds_withdrawal_requests',
+      'entity keys' => array(
+        'id' => 'request_id',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function commerce_funds_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'commerce_funds') . '/views',
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function commerce_funds_permission() {
+  return array(
+    'view own transactions' => array(
+      'title' => t('View Own Transactions'),
+      'description' => t('Allow users to view their transactions'),
+    ),
+    'deposit funds' => array(
+      'title' => t('Deposit Funds'),
+      'description' => t('Allow users to deposit funds'),
+    ),
+    'create escrow payment' => array(
+      'title' => t('Create Escrow Payment'),
+      'description' => t('Allow users to create escrow payment'),
+    ),
+    'transfer funds' => array(
+      'title' => t('Transfer Funds'),
+      'description' => t('Allow users to transfer funds'),
+    ),
+    'withdraw funds' => array(
+      'title' => t('Withdraw Funds'),
+      'description' => t('Allow users to withdraw funds'),
+    ),
+    'administer withdraw requests' => array(
+      'title' => t('Administer Withdraw Requests'),
+      'description' => t('Allow users to approve/reject withdraw requests'),
+      'restrict access' => TRUE,
+    ),
+    'administer transactions' => array(
+      'title' => t('Administer All Transactions'),
+      'description' => t('Allow users to view all transactions, access user balances and access the site balance'),
+      'restrict access' => TRUE,
+    ),
+    'administer funds' => array(
+      'title' => t('Administer Funds'),
+      'description' => t('Gives users permission to administer all funds operations'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function commerce_funds_menu() {
+
+  $items['admin/commerce/funds'] = array(
+    'title' => 'Funds Management',
+    'description' => 'Administer Store Funds',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('access administration pages'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'weight' => -15,
+  );
+
+  $items['admin/commerce/funds/view-withdraw-requests'] = array(
+    'tab_parent' => 'admin/commerce/funds',
+    'access arguments' => array('Administer Withdraw Requests'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/commerce/funds/withdrawals/approve/%'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_approve_withdrawal_request', 5),
+    'access arguments' => array('Administer Withdraw Requests'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/commerce/funds/withdrawals/decline/%'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_decline_withdrawal_request', 5),
+    'access arguments' => array('Administer Withdraw Requests'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['admin/commerce/funds/configure'] = array(
+    'title' => 'Configuration',
+    'description' => 'Configure Store Settings',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer funds'),
+    'file path' => drupal_get_path('module', 'system'),
+    'file' => 'system.admin.inc',
+    'weight' => -15,
+  );
+
+  $items['admin/commerce/funds/configure/fees'] = array(
+    'title' => 'Fees',
+    'page callback' => '_commerce_funds_configure_fees',
+    'access arguments' => array('administer funds'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/commerce/funds/configure/withdraw-methods'] = array(
+    'title' => 'Withdrawal Methods',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_configure_withdraw_methods'),
+    'access arguments' => array('administer funds'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['admin/commerce/funds/view-transactions'] = array(
+    'tab_parent' => 'admin/commerce/funds',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['user/funds/escrow-payments'] = array(
+    'title' => 'Escrow Payments',
+    'page callback' => '_commerce_funds_get_user_escrow_payments',
+    'access arguments' => array('create escrow payment'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/deposit'] = array(
+    'title' => 'Deposit Funds',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_deposit_funds'),
+    'access arguments' => array('deposit funds'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/withdraw'] = array(
+    'title' => 'Submit a Withdrawal Request',
+    'page callback' => array('_commerce_funds_withdraw_funds'),
+    'access arguments' => array('withdraw funds'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/manage/withdrawal-methods'] = array(
+    'title' => 'Configure Withdrawal Methods',
+    'page callback' => '_commerce_funds_manage_withdrawal_methods',
+    'access arguments' => array('withdraw funds'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/manage/withdrawal-methods/paypal'] = array(
+    'title' => 'Configure Paypal',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_manage_withdrawal_method_paypal'),
+    'access arguments' => array('withdraw funds'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/manage/withdrawal-methods/skrill'] = array(
+    'title' => 'Configure Skrill',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_manage_withdrawal_method_skrill'),
+    'access arguments' => array('withdraw funds'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/manage/withdrawal-methods/bank_account'] = array(
+    'title' => 'Configure Bank Account',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_manage_withdrawal_method_bank_account'),
+    'access arguments' => array('withdraw funds'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/manage/withdrawal-methods/check'] = array(
+    'title' => 'Configure Check',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_manage_withdrawal_method_check'),
+    'access arguments' => array('withdraw funds'),
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['user/funds/escrow-payments/create-escrow'] = array(
+    'title' => 'Create Escrow Payment',
+    'page callback' => '_commerce_funds_escrow_payment',
+    'access arguments' => array('create escrow payment'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/escrow-payments/release/%'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_release_escrow_payment', 4),
+    'access arguments' => array('create escrow payment'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/escrow-payments/cancel/%'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('commerce_funds_cancel_escrow_payment', 4),
+    'access arguments' => array('create escrow payment'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['user/funds/transfer'] = array(
+    'title' => 'Transfer Funds',
+    'page callback' => '_commerce_funds_transfer_funds',
+    'access arguments' => array('transfer funds'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_commerce_product_type_info().
+ */
+function commerce_funds_commerce_product_type_info() {
+
+  return array(
+    'deposit' => array(
+      'type' => 'deposit',
+      'name' => 'Funds Deposit',
+      'description' => 'Stores a Funds Deposit Operation',
+      'help' => '',
+      'revision' => 1,
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function commerce_funds_block_info() {
+  $blocks['admin_site_balance'] = array(
+    'info' => t('Site Balance'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  $blocks['admin_user_balances'] = array(
+    'info' => t('User Balances'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  $blocks['account_balance'] = array(
+    'info' => t('Account Balance'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  $blocks['funds_operations'] = array(
+    'info' => t('Account Funds Operations'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function commerce_funds_block_view($delta = '') {
+
+  $block = array();
+
+  switch ($delta) {
+    case 'admin_site_balance':
+      if (user_access('administer transactions')) {
+        $block['subject'] = t('Site balance');
+        $block['content'] = _commerce_funds_get_site_balance();
+      }
+      break;
+
+    case 'admin_user_balances':
+      if (user_access('administer transactions')) {
+        $block['subject'] = t('User balance');
+        $block['content'] = _commerce_funds_admin_get_user_balances();
+      }
+      break;
+
+    case 'account_balance':
+      if (user_access('deposit funds')) {
+        $block['subject'] = t('Balance');
+        $block['content'] = _commerce_funds_get_user_balance();
+      }
+      break;
+
+    case 'funds_operations':
+      if (user_access('deposit funds')) {
+        $block['subject'] = t('Operations');
+        $block['content'] = _commerce_funds_get_user_operations();
+      }
+      break;
+  }
+
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function commerce_funds_theme() {
+  return array(
+    'site_balance' => array(
+      'variables' => array('uid' => NULL, 'balance' => NULL),
+      'template' => 'theme/commerce-funds-site-balance',
+    ),
+    'account_balance' => array(
+      'variables' => array('uid' => NULL, 'balance' => NULL),
+      'template' => 'theme/commerce-funds-account-balance',
+    ),
+    'account_operations' => array(
+      'variables' => array('uid' => NULL),
+      'template' => 'theme/commerce-funds-account-operations',
+    ),
+  );
+}
+
+/**
+ * Admin block which display the global site balance.
+ */
+function _commerce_funds_get_site_balance() {
+  $uid = 1;
+  $query = "SELECT balance FROM commerce_funds_user_funds WHERE uid = :uid";
+  $args = array(':uid' => $uid);
+  $balance = db_query($query, $args)->fetchAssoc();
+
+  return theme('account_balance', array(
+    'uid' => $uid,
+    'balance' => $balance['balance'],
+  ));
+}
+
+/**
+ * Admin block to display account balande on user profiles.
+ */
+function _commerce_funds_admin_get_user_balances() {
+  if (arg(0) == 'user' && is_numeric(arg(1))) {
+    $user_uid = arg(1);
+    $query = "SELECT balance FROM commerce_funds_user_funds WHERE uid = :uid";
+    $args = array(':uid' => $user_uid);
+    $user_balance = db_query($query, $args)->fetchAssoc();
+
+    return theme('account_balance', array(
+      'uid' => $user_uid,
+      'balance' => $user_balance['balance'],
+    ));
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * User block which display user balance on user profiles.
+ */
+function _commerce_funds_get_user_balance() {
+  global $user;
+  $uid = $user->uid;
+
+  $query = "SELECT balance FROM commerce_funds_user_funds WHERE uid = :uid";
+  $args = array(':uid' => $uid);
+  $balance = db_query($query, $args)->fetchAssoc();
+
+  return theme('account_balance', array(
+    'uid' => $uid,
+    'balance' => $balance['balance'],
+  ));
+}
+
+/**
+ * User block with a list of link of possibles operations.
+ */
+function _commerce_funds_get_user_operations() {
+  $enabled_methods = _commerce_funds_get_enabled_withdrawal_methods();
+
+  return theme('account_operations', array(
+    'enabled_methods' => $enabled_methods,
+  ));
+}
+
+/**
+ * Configure fees form.
+ *
+ * Callback for hook_menu().
+ */
+function _commerce_funds_configure_fees() {
+
+  $payment_methods = commerce_payment_methods();
+
+  $enabled_methods = array();
+
+  foreach ($payment_methods as $payment_method) {
+    if ($payment_method['checkout']) {
+      $enabled_methods[] = $payment_method;
+    }
+  }
+
+  return drupal_get_form('commerce_funds_configure_fees', $enabled_methods);
+}
+
+/**
+ * Pass the enabled methods to the withdraw funds form.
+ *
+ * Callback for hook_menu().
+ */
+function _commerce_funds_withdraw_funds() {
+  $methods = _commerce_funds_get_enabled_withdrawal_methods();
+
+  if ($methods) {
+    $commissions = variable_get('commerce_funds_commissions', array());
+    foreach ($methods as $type => $method) {
+      // We just need to test one method as if one exist the other come.
+      if (array_key_exists($type . '_rate', $commissions)) {
+        if ($commissions[$type . '_rate'] && !$commissions[$type . '_fixed']) {
+          $methods[$type] = $method;
+          $methods[$type] .= ' (' . $commissions[$type . '_rate'] / 100;
+          $methods[$type] .= '% Fee)';
+        }
+        if (!$commissions[$type . '_rate'] && $commissions[$type . '_fixed']) {
+          $methods[$type] = $method;
+          $methods[$type] .= ' (' . commerce_currency_format($commissions[$type . '_fixed'], commerce_default_currency());
+          $methods[$type] .= ' fee)';
+        }
+        if ($commissions[$type . '_rate'] && $commissions[$type . '_fixed']) {
+          $methods[$type] = $method;
+          $methods[$type] .= ' (' . $commissions[$type . '_rate'] / 100;
+          $methods[$type] .= '% Fee or ' . commerce_currency_format($commissions[$type . '_fixed'], commerce_default_currency()) . ')';
+        }
+      }
+      else {
+        $methods[$type] = $method;
+      }
+    }
+    return drupal_get_form('commerce_funds_withdraw_funds', $methods);
+  }
+  else {
+    drupal_not_found();
+    drupal_drupal_exit();
+  }
+}
+
+/**
+ * Pass description to the transfer funds form.
+ *
+ * Callback for hook_menu().
+ */
+function _commerce_funds_transfer_funds() {
+  // Get transfer commissions.
+  $commissions = variable_get('commerce_funds_commissions', array());
+  $commission_rate = array_key_exists('transfer_rate', $commissions) ? $commissions['transfer_rate'] / 100 : 0;
+  $commission_fixed = array_key_exists('transfer_fixed', $commissions) ? $commissions['transfer_fixed'] : 0;
+
+  if ($commission_rate && !$commission_fixed) {
+    $commission_description = t('Please enter the amount you wish to transfer in @currency.
+    <br> A commission of %commission_rate% will be a extra collected.',
+     array(
+       '@currency' => commerce_default_currency(),
+       '%commission_rate' => $commission_rate,
+     ));
+  }
+  elseif (!$commission_rate && $commission_fixed) {
+    $commission_description = t('Please enter the amount you wish to transfer in @currency.
+    <br> A commission of %commission_fixed will be a extra collected.',
+     array(
+       '@currency' => commerce_default_currency(),
+       '%commission_fixed' => commerce_currency_format($commission_fixed, commerce_default_currency()),
+     ));
+  }
+  elseif ($commission_rate && $commission_fixed) {
+    $commission_description = t('Please enter the amount you wish to transfer in @currency.
+    <br> A commission of %commission_rate% will be a extra collected with a minimum of %commission_fixed.',
+     array(
+       '@currency' => commerce_default_currency(),
+       '%commission_rate' => $commission_rate,
+       '%commission_fixed' => commerce_currency_format($commission_fixed, commerce_default_currency()),
+     ));
+  }
+  else {
+    $commission_description = t('Please enter the amount you wish to transfer in @currency.',
+     array(
+       '@currency' => commerce_default_currency(),
+     ));
+  }
+
+  // Return the form.
+  return drupal_get_form('commerce_funds_transfer_funds', $commission_description);
+}
+
+/**
+ * Pass description to the escrow payment form.
+ *
+ * Callback for hook_menu().
+ */
+function _commerce_funds_escrow_payment() {
+  // Get escrow commissions.
+  $commissions = variable_get('commerce_funds_commissions', array());
+  $commission_rate = array_key_exists('escrow_rate', $commissions) ? $commissions['escrow_rate'] / 100 : 0;
+  $commission_fixed = array_key_exists('escrow_fixed', $commissions) ? $commissions['escrow_fixed'] : 0;
+
+  if ($commission_rate && !$commission_fixed) {
+    $commission_description = t('Please enter the amount you wish to assign as an escrow payment in @currency.
+    <br> A commission of %commission_rate% will be a extra collected.',
+     array(
+       '@currency' => commerce_default_currency(),
+       '%commission_rate' => $commission_rate,
+     ));
+  }
+  elseif (!$commission_rate && $commission_fixed) {
+    $commission_description = t('Please enter the amount you wish to assign as an escrow payment in @currency.
+    <br> A commission of %commission_fixed will be a extra collected.',
+     array(
+       '@currency' => commerce_default_currency(),
+       '%commission_fixed' => commerce_currency_format($commission_fixed, commerce_default_currency()),
+     ));
+  }
+  elseif ($commission_rate && $commission_fixed) {
+    $commission_description = t('Please enter the amount you wish to assign as an escrow payment in @currency.
+    <br> A commission of %commission_rate% will be a extra collected with a minimum of %commission_fixed.',
+     array(
+       '@currency' => commerce_default_currency(),
+       '%commission_rate' => $commission_rate,
+       '%commission_fixed' => commerce_currency_format($commission_fixed, commerce_default_currency()),
+     ));
+  }
+  else {
+    $commission_description = t('Please enter the amount you wish to assign as an escrow payment in @currency.',
+     array(
+       '@currency' => commerce_default_currency(),
+     ));
+  }
+
+  return drupal_get_form('commerce_funds_escrow_payment', $commission_description);
+}
+
+/**
+ * Form validation handler for commerce_funds_configure_fees() form.
+ *
+ * @see commerce_funds_configure_fees_submit()
+ */
+function commerce_funds_configure_fees_validate($form, &$form_state) {
+
+  $enabled_methods = $form['#enabledmethods'];
+
+  foreach ($enabled_methods as $method) {
+    if (!is_numeric($form_state['values'][$method['method_id'] . '_rate'])) {
+      form_set_error('amount', t('Value must be numeric'));
+    }
+    elseif (!is_numeric($form_state['values'][$method['method_id'] . '_fixed'])) {
+      form_set_error('amount', t('Value must be numeric'));
+    }
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_configure_fees() form.
+ *
+ * @see commerce_funds_configure_fees_validate()
+ */
+function commerce_funds_configure_fees_submit($form, &$form_state) {
+
+  $commissions = array();
+
+  $commissions['transfer_rate'] = $form_state['values']['transfer_rate'] * 100;
+  $commissions['transfer_fixed'] = $form_state['values']['transfer_fixed'] * 100;
+  $commissions['escrow_rate'] = $form_state['values']['escrow_rate'] * 100;
+  $commissions['escrow_fixed'] = $form_state['values']['escrow_fixed'] * 100;
+
+  // Define commission for Deposit.
+  $enabled_methods = $form['#enabledmethods'];
+
+  if ($enabled_methods) {
+    foreach ($enabled_methods as $method) {
+      $method_id = $method['method_id'];
+      $commissions[$method_id . '_rate'] = $form_state['values'][$method_id . '_rate'] * 100;
+      $commissions[$method_id . '_fixed'] = $form_state['values'][$method_id . '_fixed'] * 100;
+    }
+  }
+
+  // Define commission for Withdrawals.
+  $enabled_methods = _commerce_funds_get_enabled_withdrawal_methods();
+
+  if ($enabled_methods) {
+    foreach ($enabled_methods as $key => $method) {
+      $method_id = $key;
+      $commissions[$method_id . '_rate'] = $form_state['values'][$method_id . '_rate'] * 100;
+      $commissions[$method_id . '_fixed'] = $form_state['values'][$method_id . '_fixed'] * 100;
+    }
+  }
+
+  variable_set('commerce_funds_commissions', $commissions);
+
+  drupal_set_message(t('Fees have been updated successfully.'), 'status');
+
+}
+
+/**
+ * Commissions calculation.
+ *
+ * @return array
+ *   An associative array with commission * 100
+ *   and transaction_after_commission * 100.
+ */
+function _commerce_funds_commissions_calculation($transaction_type, $amount) {
+  $commissions = variable_get('commerce_funds_commissions', array());
+
+  $commission_rate = array_key_exists($transaction_type . '_rate', $commissions) ? $commissions[$transaction_type . '_rate'] : 0;
+  $commission_fixed = array_key_exists($transaction_type . '_fixed', $commissions) ? $commissions[$transaction_type . '_fixed'] : 0;
+
+  $transaction_amount = $amount;
+  $transaction_after_commission_rate = $transaction_amount * (1 + $commission_rate / 10000);
+  $transaction_after_commission_fixed = $transaction_amount + $commission_fixed;
+  $transaction_after_commission = max(array($transaction_after_commission_rate, $transaction_after_commission_fixed));
+
+  if (!$commission_rate && !$commission_fixed) {
+    $transaction_after_commission = $transaction_amount;
+    $commission = 0;
+  }
+  else {
+    $commission = $transaction_after_commission - $transaction_amount;
+  }
+
+  $calculation_result = array(
+    'transaction_after_commission' => $transaction_after_commission,
+    'commission' => $commission,
+  );
+
+  return $calculation_result;
+}
+
+/**
+ * Form validation handler for commerce_funds_deposit_funds().
+ *
+ * @see commerce_funds_deposit_funds_submit()
+ */
+function commerce_funds_deposit_funds_validate($form, &$form_state) {
+
+  if (!is_numeric($form_state['values']['amount'])) {
+    form_set_error('amount', t('Value must be Numeric.'));
+  }
+
+  if (is_numeric($form_state['values']['amount']) && !(floatval($form_state['values']['amount']) > 0)) {
+    form_set_error('amount', t('Value must be greater than 0.'));
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_deposit_funds().
+ *
+ * @see commerce_funds_deposit_funds_validate()
+ */
+function commerce_funds_deposit_funds_submit($form, &$form_state) {
+
+  global $user;
+
+  $amount = $form_state['values']['amount'] * 100;
+  $sku = 'deposit_' . $amount / 100;
+
+  $product_exist = db_query('SELECT * FROM commerce_product WHERE sku = :sku', array(':sku' => $sku))->fetchObject();
+
+  if ($product_exist) {
+    $deposit = commerce_product_load($product_exist->product_id);
+  }
+  else {
+    $deposit = commerce_product_new('deposit');
+    $deposit->uid = 1;
+    $deposit->sku = 'deposit_' . $amount / 100;
+    $deposit->commerce_price['und'][0]['amount'] = $amount;
+    $deposit->commerce_price['und'][0]['currency_code'] = commerce_default_currency();
+    $deposit->title = 'Deposit ' . commerce_currency_format($amount, commerce_default_currency());
+    $deposit->language = 'und';
+    // Save product with initialised default fields.
+    commerce_product_save($deposit);
+    // Load product.
+    $product_exist = db_query('SELECT * FROM commerce_product ORDER BY product_id DESC LIMIT 1')->fetchObject();
+    $deposit = commerce_product_load($product_exist->product_id);
+  }
+
+  // Create an order.
+  $order = (!empty($user->uid)) ? commerce_order_new($user->uid, 'checkout_checkout') : commerce_cart_order_new();
+  // Save the order to get its ID.
+  commerce_order_save($order);
+
+  // Create new line item:
+  $line_item = commerce_product_line_item_new($deposit, 1, $order->order_id);
+  // Save the line item to get its ID.
+  commerce_line_item_save($line_item);
+
+  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+  $order_wrapper->commerce_line_items[] = $line_item;
+  $order_wrapper->save();
+
+  // Save the order again to update its line item reference field.
+  commerce_order_save($order);
+
+  // Set the redirection after submission.
+  $form_state['redirect'] = 'checkout/' . $order->order_id;
+
+  // Display fees for each payment methods.
+  $fees_applied = _commerce_funds_cart_checkout_form_display_commissions();
+  foreach ($fees_applied as $msg) {
+    drupal_set_message($msg, 'warning');
+  }
+
+}
+
+/**
+ * Helper function for displaying the fees applied.
+ *
+ * @return string
+ *   Description of commissions applied for each payment method.
+ *
+ * @see commerce_funds_deposit_funds_submit()
+ */
+function _commerce_funds_cart_checkout_form_display_commissions() {
+
+  $commissions = variable_get('commerce_funds_commissions', array());
+
+  // Get activated payment method from commerce.
+  $payment_methods = commerce_payment_methods();
+  foreach ($payment_methods as $payment_method_name => $payment_method) {
+    if ($payment_method['checkout']) {
+      $payment_method_actives[$payment_method_name] = $payment_method;
+    }
+  }
+
+  // Generate the relevant message for the fees.
+  $msgs = array();
+  foreach ($commissions as $method_fees => $commission) {
+    $method_rate = NULL;
+    $method_fixed = NULL;
+
+    if (strpos($method_fees, '_rate')) {
+      $method = str_replace('_rate', '', $method_fees, $method_rate);
+    }
+    elseif (strpos($method_fees, '_fixed')) {
+      $method = str_replace('_fixed', '', $method_fees, $method_fixed);
+    }
+
+    $fees = $commission;
+
+    if (in_array($method, array_keys($payment_method_actives))) {
+      $payment_method_name = $payment_method_actives[$method]['title'];
+      if ($method_rate && !$method_fixed) {
+        $msgs[$method] = t('Using @method, @fees% fees will be applied to your deposit.',
+        array('@method' => $payment_method_name, '@fees' => $fees / 100));
+      }
+      elseif (!$method_rate && $method_fixed && empty($msgs[$method])) {
+        $msgs[$method] = t('Using @method, a fixed charge of @fees will be applied.',
+        array(
+          '@method' => $payment_method_name,
+          '@fees' => commerce_currency_format($fees, commerce_default_currency()),
+        ));
+      }
+      elseif (!empty($msgs[$method])) {
+        $msgs[$method] = drupal_substr($msgs[$method], 0, -1);
+        $msgs[$method] .= ' ' . t('with a minimum of @fees.',
+        array('@fees' => commerce_currency_format($fees, commerce_default_currency())));
+      }
+    }
+  }
+  return $msgs;
+}
+
+/**
+ * Submit handler for commerce_funds_configure_withdraw_methods().
+ */
+function commerce_funds_configure_withdraw_methods_submit($form, &$form_state) {
+  variable_set('commerce_funds_withdrawal_methods', $form_state['values']['methods']);
+  drupal_set_message(t('Payment methods successfully updated.'), 'status');
+}
+
+/**
+ * Pass enabled withdrawal methods to manage withdrawal methods form.
+ *
+ * Callback for hook_menu().
+ */
+function _commerce_funds_manage_withdrawal_methods() {
+
+  $methods = _commerce_funds_get_enabled_withdrawal_methods();
+
+  if ($methods) {
+    foreach ($methods as $key => $value) {
+      $methods[$key] = l($methods[$key], 'user/funds/manage/withdrawal-methods/' . $key);
+    }
+    return theme('item_list', array('items' => $methods, 'type' => 'ul'));
+  }
+  else {
+    drupal_not_found();
+    drupal_exit();
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_manage_withdrawal_method_paypal().
+ */
+function commerce_funds_manage_withdrawal_method_paypal_submit($form, &$form_state) {
+
+  global $user;
+
+  $paypal_email = $form_state['values']['paypal_email'];
+
+  user_save($user, array('data' => array('paypal' => $form_state['values'])));
+
+  drupal_set_message(t('Your paypal address has been updated with : @mail', array('@mail' => $paypal_email)), 'status');
+}
+
+/**
+ * Submit handler for commerce_funds_manage_withdrawal_method_skrill().
+ */
+function commerce_funds_manage_withdrawal_method_skrill_submit($form, &$form_state) {
+
+  global $user;
+
+  $skrill_email = $form_state['values']['skrill_email'];
+
+  user_save($user, array('data' => array('skrill' => $form_state['values'])));
+
+  drupal_set_message(t('Your skrill address has been updated with : @mail', array('@mail' => $skrill_email)), 'status');
+}
+
+/**
+ * Submit handler for commerce_funds_manage_withdrawal_method_bank_account().
+ */
+function commerce_funds_manage_withdrawal_method_bank_account_submit($form, &$form_state) {
+
+  global $user;
+
+  user_save($user, array('data' => array('bank_account' => $form_state['values'])));
+
+  drupal_set_message(t('Your Bank account datas have been updated.'), 'status');
+}
+
+/**
+ * Submit handler for commerce_funds_manage_withdrawal_method_check().
+ */
+function commerce_funds_manage_withdrawal_method_check_submit($form, &$form_state) {
+
+  global $user;
+
+  user_save($user, array('data' => array('check' => $form_state['values'])));
+
+  drupal_set_message(t('Your Check informations have been updated.'), 'status');
+}
+
+/**
+ * Helper function to get enabled withdrawal methods.
+ *
+ * @see _commerce_funds_get_user_operations()
+ * @see _commerce_funds_withdraw_funds()
+ * @see commerce_funds_configure_fees_submit()
+ * @see _commerce_funds_manage_withdrawal_methods()
+ */
+function _commerce_funds_get_enabled_withdrawal_methods() {
+
+  $methods = array(
+    'paypal' => 'Paypal',
+    'skrill' => 'Skrill',
+    'bank_account' => 'Bank Account',
+    'check' => 'Check',
+  );
+
+  $enabled_methods = variable_get('commerce_funds_withdrawal_methods', array());
+
+  if ($enabled_methods) {
+    foreach ($enabled_methods as $key => $value) {
+      if (!$value) {
+        unset($methods[$key]);
+      }
+    }
+    return $methods;
+  }
+}
+
+/**
+ * Form validation handler for commerce_funds_withdraw_funds().
+ *
+ * @see commerce_funds_withdraw_funds_submit()
+ */
+function commerce_funds_withdraw_funds_validate($form, &$form_state) {
+
+  global $user;
+
+  $method = $form_state['values']['methods'];
+
+  $withdraw_amount = intval($form_state['values']['amount'] * 100);
+  $commission_calculation = _commerce_funds_commissions_calculation($method, $withdraw_amount);
+  $commission = $commission_calculation['commission'];
+  $withdraw_after_commission = $commission_calculation['transaction_after_commission'];
+  $withdraw_amount = $withdraw_amount;
+
+  $user_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $user->uid))->fetchAssoc();
+
+  if (!is_numeric($withdraw_amount) || !(floatval($withdraw_amount / 100) > 0)) {
+    form_set_error('amount', t('The value must be a positive integer.'));
+  }
+
+  if ($withdraw_amount > $user_balance['balance']) {
+    form_set_error('amount', t('Your available balance is %balance.',
+      array('%balance' => commerce_currency_format($user_balance['balance'], commerce_default_currency()))
+    ));
+  }
+
+  if (!$user->data || !array_key_exists($method, $user->data)) {
+    form_set_error('methods', t('Please <a href="@enter_details_link">enter details</a> for this withdrawal method first.',
+    array('@enter_details_link' => '/user/funds/manage/withdrawal-methods/' . $method)));
+  }
+
+  $amount_plus_fees = ($withdraw_amount + $commission);
+
+  if ($amount_plus_fees > $user_balance['balance']) {
+    form_set_error('amount', t('You cannot withdraw %amount using this payment method. Commission is %commission.',
+    array(
+      '%amount' => $withdraw_amount,
+      '%commission' => commerce_currency_format($commission, commerce_default_currency()),
+    )));
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_withdraw_funds().
+ *
+ * @see commerce_funds_withdraw_funds_validate()
+ */
+function commerce_funds_withdraw_funds_submit($form, &$form_state) {
+
+  // Set the redirection after submission.
+  $form_state['redirect'] = 'user';
+
+  global $user;
+
+  $method = $form_state['values']['methods'];
+
+  $withdrawal_request_amount = intval($form_state['values']['amount'] * 100);
+  $commission_calculation = _commerce_funds_commissions_calculation($method, $withdrawal_request_amount);
+  $commission = $commission_calculation['commission'];
+  $withdraw_after_commission = $commission_calculation['transaction_after_commission'];
+
+  $request = new stdClass();
+  $request->issuer = $user->uid;
+  $request->created = time();
+  $request->method = $method;
+  $request->brut_amount = $withdrawal_request_amount;
+  $request->net_amount = $withdraw_after_commission;
+  $request->commission = $commission;
+  $request->status = 'Pending approval';
+
+  drupal_write_record('commerce_funds_withdrawal_requests', $request);
+
+  drupal_set_message(t('Your Withdrawal Request has been sent and will be processed in due order'), 'status');
+  if ($commission) {
+    drupal_set_message(t('A commission of @commission will be apllied to your withraw.',
+    array('@commission' => commerce_currency_format($commission, commerce_default_currency()))), 'status');
+  }
+
+}
+
+/**
+ * Submit handler for commerce_funds_approve_withdrawal_request().
+ */
+function commerce_funds_approve_withdrawal_request_submit($form, &$form_state) {
+
+  // Set the redirection after submission.
+  $form_state['redirect'] = 'admin/commerce/funds/view-withdraw-requests';
+
+  $request_id = $form['#request_id'];
+
+  $commissions = variable_get('commerce_funds_commissions', array());
+
+  $request = entity_load_single('commerce_funds_withdrawal_request', $request_id);
+
+  $request->status = t('Approved');
+
+  // Update account balance.
+  $query = "SELECT * FROM commerce_funds_user_funds WHERE uid = :uid";
+  $args = array(':uid' => $request->issuer);
+  $user_balance = db_query($query, $args)->fetchAssoc();
+  $user_balance['balance'] -= $request->net_amount;
+  drupal_write_record('commerce_funds_user_funds', $user_balance, 'uid');
+
+  // Update site balance.
+  $query = "SELECT * FROM commerce_funds_user_funds WHERE uid = :uid";
+  $args = array(':uid' => 1);
+  $site_balance = db_query($query, $args)->fetchAssoc();
+  $site_balance['balance'] += $request->commission;
+  drupal_write_record('commerce_funds_user_funds', $site_balance, 'uid');
+
+  drupal_write_record('commerce_funds_withdrawal_requests', $request, 'request_id');
+
+  // Send email to issuer and recipient.
+  $issuer = $request->issuer;
+  rules_invoke_event('commerce_funds_withrawal_request_validated', $issuer, $request);
+
+}
+
+/**
+ * Submit handler for commerce_funds_decline_withdrawal_request().
+ */
+function commerce_funds_decline_withdrawal_request_submit($form, &$form_state) {
+
+  // Set the redirection after submission.
+  $form_state['redirect'] = 'admin/commerce/funds/view-withdraw-requests';
+
+  $request_id = $form['#request_id'];
+
+  $request = entity_load_single('commerce_funds_withdrawal_request', $request_id);
+
+  $request->status = t('Declined');
+  $request->reason = $form_state['values']['reason'];
+
+  drupal_write_record('commerce_funds_withdrawal_requests', $request, 'request_id');
+
+  // Send email to issuer and recipient.
+  $issuer = $request->issuer;
+  rules_invoke_event('commerce_funds_withrawal_request_declined', $issuer, $request);
+
+}
+
+/**
+ * Form validation handler for commerce_funds_transfer_funds().
+ *
+ * @see commerce_funds_transfer_funds_submit()
+ */
+function commerce_funds_transfer_funds_validate($form, &$form_state) {
+
+  global $user;
+
+  $transfer_amount = intval($form_state['values']['amount'] * 100);
+  $commission_calculation = _commerce_funds_commissions_calculation('transfer', $transfer_amount);
+  $commission = $commission_calculation['commission'];
+  $transfer_after_commission = $commission_calculation['transaction_after_commission'];
+  $transfer_amount = $transfer_amount;
+
+  if (!is_numeric($transfer_amount) || !(floatval($transfer_amount / 100) > 0)) {
+    form_set_error('amount', t('The value must be a positive integer.'));
+  }
+
+  $user_exist = db_query("SELECT * FROM users WHERE name = :name", array(':name' => $form_state['values']['username']))->fetchObject();
+
+  if (!$user_exist) {
+    form_set_error('username', t('We have no record of user with the username : @username.',
+    array('@username' => $form_state['values']['username'])));
+    return;
+  }
+
+  if ($user->name == $user_exist->name) {
+    form_set_error('username', t('You cannot transfer money to yourself.'));
+  }
+
+  $user_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $user->uid))->fetchAssoc();
+
+  if ($user_balance['balance'] < intval($transfer_after_commission)) {
+    form_set_error('amount', t("You don't have enough funds to cover this transfer. Commission is %commission.",
+    array(
+      '%commission' => commerce_currency_format($commission, commerce_default_currency()),
+    )));
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_transfer_funds().
+ *
+ * @see commerce_funds_transfer_funds_validate()
+ */
+function commerce_funds_transfer_funds_submit($form, &$form_state) {
+
+  global $user;
+
+  $issuer = $user;
+  $recipient = db_query("SELECT * FROM users WHERE name = :name", array(':name' => $form_state['values']['username']))->fetchObject();
+
+  $transfer_amount = intval($form_state['values']['amount'] * 100);
+  $commission_calculation = _commerce_funds_commissions_calculation('transfer', $transfer_amount);
+  $commission = $commission_calculation['commission'];
+  $transfer_after_commission = $commission_calculation['transaction_after_commission'];
+
+  $transaction = new stdClass();
+  $transaction->issuer = $issuer->uid;
+  $transaction->type = 'Transfer';
+  $transaction->recipient = $recipient->uid;
+  $transaction->created = time();
+  $transaction->brut_amount = $transfer_amount;
+  $transaction->net_amount = $transfer_after_commission;
+  $transaction->commission = $commission;
+  $transaction->status = 'Completed';
+  $transaction->notes = $form_state['values']['notes'];
+
+  // Update issuer, recipient balances and transaction.
+  $issuer_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $issuer->uid))->fetchAssoc();
+  $issuer_balance['balance'] -= $transfer_after_commission;
+
+  $recipient_balance_exist = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $recipient->uid))->fetchAssoc();
+
+  if (!$recipient_balance_exist) {
+    $recipient_balance = new stdClass();
+    $recipient_balance->uid = $recipient->uid;
+    $recipient_balance->balance = $transfer_amount;
+    drupal_write_record('commerce_funds_user_funds', $recipient_balance);
+  }
+  else {
+    $recipient_balance_exist['balance'] += $transfer_amount;
+    drupal_write_record('commerce_funds_user_funds', $recipient_balance_exist, 'uid');
+  }
+
+  drupal_write_record('commerce_funds_user_funds', $issuer_balance, 'uid');
+  drupal_write_record('commerce_funds_transactions', $transaction);
+
+  // Update site balance.
+  $site_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => 1))->fetchAssoc();
+  $site_balance['balance'] += $commission;
+  drupal_write_record('commerce_funds_user_funds', $site_balance, 'uid');
+
+  // Send email to the recipient.
+  rules_invoke_event('commerce_funds_funds_transfered', $issuer, $recipient, $transaction);
+
+  if (!$commission) {
+    drupal_set_message(t('You have transfered %amount to @user', array(
+      '%amount' => commerce_currency_format($transfer_amount, commerce_default_currency()),
+      '@user' => $recipient->name,
+    )), 'status');
+  }
+  if ($commission) {
+    drupal_set_message(t('You have transfered %amount to @user with a commission of %commission',
+    array(
+      '%amount' => commerce_currency_format($transfer_amount, commerce_default_currency()),
+      '@user' => $recipient->name,
+      '%commission' => commerce_currency_format($commission, commerce_default_currency()),
+    )), 'status');
+  }
+}
+
+/**
+ * Form validation handler for commerce_funds_escrow_payment().
+ *
+ * @see commerce_funds_escrow_payment_submit()
+ */
+function commerce_funds_escrow_payment_validate($form, &$form_state) {
+
+  global $user;
+
+  $escrow_amount = intval($form_state['values']['amount'] * 100);
+  $commission_calculation = _commerce_funds_commissions_calculation('escrow', $escrow_amount);
+  $commission = $commission_calculation['commission'];
+  $escrow_after_commission = $commission_calculation['transaction_after_commission'];
+  $escrow_amount = $escrow_amount;
+
+  if (!is_numeric($escrow_amount) || !(floatval($escrow_amount / 100) > 0)) {
+    form_set_error('amount', t('The value must be a positive integer.'));
+  }
+
+  $user_exist = db_query("SELECT * FROM users WHERE name = :name", array(':name' => $form_state['values']['username']))->fetchObject();
+
+  if (!$user_exist) {
+    form_set_error('username', t('We have no record of user with the username : @username.',
+    array('@username' => $form_state['values']['username'])));
+    return;
+  }
+
+  if ($user->name == $user_exist->name) {
+    form_set_error('username', t('You cannot make an escrow payment to yourself.'));
+  }
+
+  $user_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $user->uid))->fetchAssoc();
+
+  if ($user_balance['balance'] < intval($escrow_after_commission)) {
+    form_set_error('amount', t("You don't have enough funds to cover this transfer. Commission is %commission.",
+    array(
+      '%commission' => commerce_currency_format($commission, commerce_default_currency()),
+    )));
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_escrow_payment().
+ *
+ * @see commerce_funds_escrow_payment_validate()
+ */
+function commerce_funds_escrow_payment_submit($form, &$form_state) {
+
+  global $user;
+
+  $issuer = $user;
+  $recipient = db_query("SELECT * FROM users WHERE name = :name", array(':name' => $form_state['values']['username']))->fetchObject();
+
+  $escrow_amount = intval($form_state['values']['amount'] * 100);
+  $commission_calculation = _commerce_funds_commissions_calculation('escrow', $escrow_amount);
+  $commission = $commission_calculation['commission'];
+  $escrow_after_commission = $commission_calculation['transaction_after_commission'];
+
+  $transaction = new stdClass();
+  $transaction->issuer = $issuer->uid;
+  $transaction->type = 'Escrow Payment';
+  $transaction->recipient = $recipient->uid;
+  $transaction->created = time();
+  $transaction->brut_amount = $escrow_amount;
+  $transaction->commission = $commission;
+  $transaction->net_amount = $escrow_after_commission;
+  $transaction->status = 'Pending';
+  $transaction->notes = $form_state['values']['notes'];
+
+  // Update issuer balance to provision the funds.
+  $issuer_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $issuer->uid))->fetchAssoc();
+  $issuer_balance['balance'] -= $escrow_after_commission;
+  drupal_write_record('commerce_funds_user_funds', $issuer_balance, 'uid');
+
+  // Write transaction to db.
+  drupal_write_record('commerce_funds_transactions', $transaction);
+
+  // Send email to issuer and recipient.
+  rules_invoke_event('commerce_funds_escrow_created', $issuer, $recipient, $transaction);
+
+  // Display message.
+  if (!$commission) {
+    drupal_set_message(t('Escrow payment of %amount successfully created to @user. You will receive a confirmation email.', array(
+      '%amount' => commerce_currency_format($escrow_amount, commerce_default_currency()),
+      '@user' => $recipient->name,
+    )), 'status');
+  }
+  if ($commission) {
+    drupal_set_message(t('Escrow payment of %amount successfully created to @user with a commission of %commission. You will receive a confirmation email.',
+    array(
+      '%amount' => commerce_currency_format($escrow_amount, commerce_default_currency()),
+      '@user' => $recipient->name,
+      '%commission' => commerce_currency_format($commission, commerce_default_currency()),
+    )), 'status');
+  }
+}
+
+/**
+ * Validate if user is allowed to cancel an escrow payment.
+ *
+ * @see commerce_funds_cancel_escrow_payment_submit()
+ *
+ * Callback for hook_menu().
+ */
+function commerce_funds_cancel_escrow_payment($form, &$form_state, $transaction_id) {
+
+  global $user;
+  $is_allowed = _commerce_funds_is_allowed($transaction_id, 'cancel');
+
+  if ($is_allowed) {
+    // Set transaction ID to the form.
+    $form['#transaction_id'] = $transaction_id;
+    // Load transaction.
+    $transaction = entity_load_single('commerce_funds_transaction', $transaction_id);
+    // Load issuer.
+    $issuer = user_load($transaction->issuer);
+
+    if ($user->uid !== $issuer->uid) {
+      // If the escrow is cancelled by the recipient.
+      return confirm_form($form, t('Cancel Escrow Payment?'), 'user/funds/escrow-payments', t('Are you sure you want to cancel this payment and return the funds to @name ?', array('@name' => $issuer->name)), t('Yes'));
+    }
+    elseif ($user->uid == $issuer->uid) {
+      // If the escrow is cancelled by the issuer.
+      return confirm_form($form, t('Cancel Escrow Payment?'), 'user/funds/escrow-payments', t('Are you sure you want to cancel this payment and return the funds to your balance ?'), t('Yes'));
+    }
+  }
+  else {
+    drupal_access_denied();
+    drupal_exit();
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_cancel_escrow_payment() confirm form.
+ */
+function commerce_funds_cancel_escrow_payment_submit($form, &$form_state) {
+  // Set the redirection after submission.
+  $form_state['redirect'] = 'user/funds/escrow-payments';
+  // Load transaction.
+  $transaction_id = $form['#transaction_id'];
+  $transaction = entity_load_single('commerce_funds_transaction', $transaction_id);
+
+  // Update issuer balance.
+  $issuer_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $transaction->issuer))->fetchAssoc();
+  $issuer_balance['balance'] += $transaction->net_amount;
+  drupal_write_record('commerce_funds_user_funds', $issuer_balance, 'uid');
+
+  // Update transaction.
+  $transaction->status = 'Cancelled';
+  drupal_write_record('commerce_funds_transactions', $transaction, 'transaction_id');
+
+  // Get transaction users and send them an email.
+  $issuer = user_load($transaction->issuer);
+  $recipient = user_load($transaction->recipient);
+  rules_invoke_event('commerce_funds_escrow_cancelled', $issuer, $recipient, $transaction);
+
+  drupal_set_message(t('Escrow payment cancelled successfully. Both users have received an email.'), 'status');
+}
+
+/**
+ * Validate if user is allowed to release an escrow payment.
+ *
+ * @see commerce_funds_release_escrow_payment_submit()
+ *
+ * Callback for hook_menu().
+ */
+function commerce_funds_release_escrow_payment($form, &$form_state, $transaction_id) {
+
+  $is_allowed = _commerce_funds_is_allowed($transaction_id, 'release');
+
+  if ($is_allowed) {
+    // Set transaction ID to the form.
+    $form['#transaction_id'] = $transaction_id;
+    // Load transaction.
+    $transaction = entity_load_single('commerce_funds_transaction', $transaction_id);
+    // Load user.
+    $user = user_load($transaction->recipient);
+
+    return confirm_form($form, t('Release Escrow Payment?'), 'user/funds/escrow-payments', t('Are you sure you want to release this payment and send the funds to @name ?', array('@name' => $user->name)), t('Yes'));
+  }
+  else {
+    drupal_access_denied();
+    drupal_exit();
+  }
+}
+
+/**
+ * Submit handler for commerce_funds_release_escrow_payment() confirm form.
+ */
+function commerce_funds_release_escrow_payment_submit($form, &$form_state) {
+
+  // Set the redirection after submission.
+  $form_state['redirect'] = 'user/funds/escrow-payments';
+
+  // Load transaction.
+  $transaction_id = $form['#transaction_id'];
+  $transaction = entity_load_single('commerce_funds_transaction', $transaction_id);
+  $commission = $transaction->commission;
+
+  // Get transaction users.
+  $issuer = user_load($transaction->issuer);
+  $recipient = user_load($transaction->recipient);
+
+  // Update recipient balance.
+  $recipient_balance_exist = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => $transaction->recipient))->fetchAssoc();
+
+  if (!$recipient_balance_exist) {
+    $recipient_balance = new stdClass();
+    $recipient_balance->uid = $transaction->recipient;
+    $recipient_balance->balance = $transaction->brut_amount;
+    drupal_write_record('commerce_funds_user_funds', $recipient_balance);
+  }
+  else {
+    $recipient_balance_exist['balance'] += $transaction->brut_amount;
+    drupal_write_record('commerce_funds_user_funds', $recipient_balance_exist, 'uid');
+  }
+
+  if ($commission) {
+    // Update site balance.
+    $site_balance = db_query("SELECT * FROM commerce_funds_user_funds WHERE uid = :uid", array(':uid' => 1))->fetchAssoc();
+    $site_balance['balance'] += $commission;
+    drupal_write_record('commerce_funds_user_funds', $site_balance, 'uid');
+  }
+
+  // Display succefull message.
+  if ($commission) {
+    drupal_set_message(t('Escrow payment of %amount released to @user with a commission of %commission.',
+    array(
+      '%amount' => commerce_currency_format($transaction->brut_amount, commerce_default_currency()),
+      '@user' => $recipient->name,
+      '%commission' => commerce_currency_format($commission, commerce_default_currency()),
+    )), 'status');
+  }
+  if (!$commission) {
+    drupal_set_message(t('Escrow payment of %amount released to @user.', array(
+      '%amount' => commerce_currency_format($transaction->brut_amount, commerce_default_currency()),
+      '@user' => $recipient->name,
+    )), 'status');
+  }
+
+  // Complete the transaction and write it in db.
+  $transaction->status = 'Completed';
+  drupal_write_record('commerce_funds_transactions', $transaction, 'transaction_id');
+
+  // Send email to issuer and recipient.
+  rules_invoke_event('commerce_funds_escrow_released', $issuer, $recipient, $transaction);
+
+}
+
+/**
+ * Check if the user is allowed to perform an operation.
+ *
+ * This helper method works for any transaction type.
+ *
+ * @param int $transaction_id
+ *   The transaction id to check permissions on.
+ * @param string $type
+ *   The transaction type to check the permissions on.
+ *
+ * @return bool
+ *   User is allowed or not ?
+ */
+function _commerce_funds_is_allowed($transaction_id, $type) {
+  global $user;
+  $uid = $user->uid;
+
+  $transaction = entity_load_single('commerce_funds_transaction', $transaction_id);
+
+  $issuer = $transaction->issuer;
+  $recipient = $transaction->recipient;
+
+  if ($transaction->status !== "Completed") {
+    if ($type == "cancel") {
+      if ($uid == $issuer || $uid == $recipient) {
+        return TRUE;
+      }
+    }
+    if ($type == "release" && $uid == $issuer) {
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}

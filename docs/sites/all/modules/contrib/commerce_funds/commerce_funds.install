@@ -1,0 +1,196 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the commerce_funds module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function commerce_funds_schema() {
+  $schema = array();
+
+  $schema['commerce_funds_user_funds'] = array(
+    'description' => 'User Funds',
+    'fields' => array(
+      'uid' => array(
+        'description' => 'The user id.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'balance' => array(
+        'description' => 'The balance of the user.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array(
+      'uid',
+    ),
+  );
+
+  $schema['commerce_funds_transactions'] = array(
+    'description' => 'Transactions',
+    'fields' => array(
+      'transaction_id' => array(
+        'description' => 'The id of the transaction.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'issuer' => array(
+        'description' => 'The user id of the issuer of the transaction.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'recipient' => array(
+        'description' => 'The user id of the recipient of the transaction.',
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'When the transaction has been initiated.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'brut_amount' => array(
+        'description' => 'The amount of the transaction before applying the fees.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'net_amount' => array(
+        'description' => 'The total amount of the transaction.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'commission' => array(
+        'description' => 'Commission applied to the transaction.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => 'The type of the transaction.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'description' => 'The status of the transaction',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => 'Pending',
+      ),
+      'notes' => array(
+        'description' => 'Notes of the issuer of the transaction.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array(
+      'transaction_id',
+    ),
+  );
+
+  $schema['commerce_funds_withdrawal_requests'] = array(
+    'description' => 'Withdrawal Requests',
+    'fields' => array(
+      'request_id' => array(
+        'description' => 'The id of the withdrawal request.',
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'issuer' => array(
+        'description' => 'The id of the user who issued the request.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'created' => array(
+        'description' => 'When the request has been issued.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'method' => array(
+        'description' => 'The payement method requested.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+      'brut_amount' => array(
+        'description' => 'The amount of the withdrawal request before applying the fees.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'net_amount' => array(
+        'description' => 'The amount the user wants to withdraw.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'commission' => array(
+        'description' => 'Commission applied to the withdrawal.',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'description' => 'The status of the request.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+      ),
+      'reason' => array(
+        'description' => 'Reason why the request has been declined.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array(
+      'request_id',
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_enable().
+ */
+function commerce_funds_enable() {
+  drupal_static_reset();
+  commerce_product_configure_product_types();
+}
+
+/**
+ * Implements hook_install().
+ */
+function commerce_funds_install() {
+  // Write admin balance.
+  $site_balance = new stdClass();
+  $site_balance->uid = '1';
+  $site_balance->balance = 0;
+  drupal_write_record('commerce_funds_user_funds', $site_balance);
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function commerce_funds_uninstall() {
+  $variables = array(
+    'commerce_funds_commissions',
+    'commerce_funds_withdrawal_methods',
+  );
+  // Delete set variables.
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
+}
