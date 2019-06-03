@@ -1,0 +1,19 @@
+name = Sign for acknowledgement
+description = A module to get track of the users who have read your documents
+core = 7.x
+package = Other
+
+dependencies[] = date
+dependencies[] = markup
+files[] = sign_for_acknowledgement_user_views_handler_field.inc
+files[] = sign_for_acknowledgement_user_views_handler_argument.inc
+files[] = sign_for_acknowledgement_user_views_handler_filter.inc
+files[] = sign_for_acknowledgement_date_views_handler_filter.inc
+
+configure = admin/config/people/acknowledge
+
+; Information added by Drupal.org packaging script on 2019-05-09
+version = "7.x-2.22"
+core = "7.x"
+project = "acknowledgements"
+datestamp = "1557438186"

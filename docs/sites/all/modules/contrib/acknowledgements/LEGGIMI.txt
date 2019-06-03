@@ -1,0 +1,61 @@
+Presa visione 2.17
+------------------------
+Data: 03/05/2016
+Autore: P. Bozzo
+
+Questo modulo è utile se si vuole controllare che gli utenti abbiano letto
+i documenti Drupal. Per configurare questo modulo è necessario effettuare il
+login come amministratore e fare clic sul link "Configura" relativo al
+modulo stesso. Qui è possibile:
+- selezionare i tipi di nodo che saranno gestiti dal modulo;
+- personalizzare i messaggi più frequenti utilizzati dal modulo;
+- stabilire le caratteristiche della tabella che verrà utilizzata
+  per sapere chi ha firmato e quando (numero righe, campi da mostrare, etc.);
+- stabilire i ruoli degli utenti che dovranno firmare per presa visione;
+- scegliere se nella configurazione del documento (nodo) verranno utilizzati
+  solo i ruoli appena selezionati.
+- stabilire le caratterische del form di presa visione ("peso" del form,
+  impedire o no la presa visione quando il periodo entro cui firmare è
+  scaduto, mostrare o no il bottone "invia", etc.);
+- determinare le risposte predefinite nel caso si voglia utilizzare il 'form
+  alternativo' (utile se, oltre alla presa visione, si vuole che l'utente
+  dia indicazioni di altro genere).
+- impostare il testo della email di avviso da inviare a coloro che dovranno
+  firmare il documento.
+Oltre a questo l'amministratore può agire sui permessi del programma. I
+permessi si applicano sia alla configurazione generale (consigliabile lasciare
+il valore predefinito, cioè solo amministratore) sia all'accesso alla tabella
+dei risultati (consigliabile dare i permessi non solo all'amministratore ma
+anche agli operatori, per es. personale di segreteria).
+Chi accede per creare un contenuto vede, oltre ai campi standard di Drupal,
+i campi del modulo che permettono di:
+- stabilire una eventuale data entro cui firmare per presa visione;
+- decidere se usare il form alternativo e, volendo, stabilire le possibili
+  risposte;
+- personalizzare i ruoli a cui è destinato il documento;
+- permettere, se si vuole, all'utente di aggiungere una nota alla sua presa
+  visione;
+- solo in caso di modifica, apparirà anche una casella che, se spuntata,
+  comporterà la cancellazione di tutte le prese visioni precedentemente
+  salvate; ciò è utile nel caso ci siano importanti modifiche al testo del
+  documento, tali da non ritenere più valida la presa visione attuata sul
+  testo precedente.
+
+Integrazione con Viste. A partire dalla versione 2.12 sono stati gradualmente
+inseriti campi e filtri per interagire con le svariate possibilità offerte
+dal modulo Viste.
+
+WEB: per informazioni più dettagliate circa le caratteristiche aggiunte nelle
+diverse versioni consultare la pagina 
+https://www.drupal.org/project/acknowledgements
+
+Ringraziamenti
+--------------
+Un ringraziamento particolare a Nadia Caprotti per la grande competenza
+con cui ha seguito il lavoro e ha reso possibile la sua evoluzione. 
+Tanti ringraziamenti anche a Giuseppe Castelli per l'idea e per i
+suggerimenti; a Roberto Bisceglia per i consigli sulla lingua inglese;
+a Gioacchino De Lucia per la segnalazione di bug; ad Adam Clear per il
+supporto.
+Importanti anche le due comunità di Porte Aperte e di Drupal che hanno
+permesso al modulo di nascere e crescere.

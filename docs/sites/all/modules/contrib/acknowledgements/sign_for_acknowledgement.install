@@ -1,0 +1,401 @@
+<?php
+/**
+ * @file
+ * Module installation.
+ */
+/**
+ * Implements hook_update_N().
+ */
+function sign_for_acknowledgement_update_7200() {
+  if (!module_exists('date')) {
+    throw new Exception('Date module not found, please install and activate it!');
+  }
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_expirations();
+}
+/**
+ * Implements hook_update_N().
+ */
+function sign_for_acknowledgement_update_7201() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_alternate_form();
+  $table = 'sign_for_acknowledgement';
+  $fieldname = 'alternate';
+  if (!db_field_exists($table, $fieldname)) {
+    $field = array(
+      'type' => 'varchar',
+      'length' => 256,
+      'not null' => TRUE,
+      'default' => '',
+      'description' => 'User selection in alternate form.',
+    );
+    db_add_field($table, $fieldname, $field);
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function sign_for_acknowledgement_update_7204() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_roles();
+}
+/**
+ * Implements hook_update_N().
+ */
+function sign_for_acknowledgement_update_7205() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_annotation_field();
+  $table = 'sign_for_acknowledgement';
+  $fieldname = 'annotation';
+  if (!db_field_exists($table, $fieldname)) {
+    $field = array(
+      'type' => 'text',
+      'size' => 'medium',
+      'not null' => FALSE,
+      'description' => 'User annotation any form.',
+    );
+    db_add_field($table, $fieldname, $field);
+  }
+}
+/**
+ * Implements hook_update_N().
+ */
+function sign_for_acknowledgement_update_7206() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_users();
+}
+/**
+ * Implements hook_update_N().
+ */
+function sign_for_acknowledgement_update_7207() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_annotation_field();
+}
+/**
+ * Implements hook_update_N().
+ */
+function sign_for_acknowledgement_update_7208() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_views();
+}
+/**
+ * field_data_enable_users conversion.
+ */
+function sign_for_acknowledgement_update_7209() {
+  if (!module_exists('markup')) {
+    throw new Exception('Markup module not found, please install and activate it!');
+  }
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_users();
+  $query = 'SELECT entity_id, enable_users_value FROM {field_data_enable_users}';
+  $result = db_query($query);
+  $transfers = array();
+  foreach($result as $node) {
+    $array = unserialize($node->enable_users_value);
+    $transfers[] = array('nid' => $node->entity_id, 'data' => $array);
+  }
+  field_delete_field('enable_users');
+  field_purge_batch(6);
+  _sign_for_acknowledgement_reset_users_2();
+  foreach($transfers as $transfer) {
+  	$node = node_load($transfer['nid']);
+    $i = 0;
+  	foreach ($transfer['data'] as $value) {
+  	  if ($myuser = user_load_by_name($value)) {
+		    $node->enable_users[LANGUAGE_NONE][$i++]['value'] = $myuser->uid;
+	    }
+	  }
+	  field_attach_update('node', $node);
+  }
+}
+/**
+ * default email body.
+ */
+function sign_for_acknowledgement_update_7210() {
+  $email_body = 
+'On [node:created:short], a new [node:type] titled "[node:title]" was published.
+Please, remember to sign for acknowledgement before [node:expire-date:long].
+Page is available here [site:url]node/[node:nid]
+
+Best regards,
+[site:name]
+';
+  variable_set('sign_for_acknowledgement_email_body', $email_body);
+}
+/**
+ * email sql table creation.
+ */
+function sign_for_acknowledgement_update_7211() {
+  db_create_table('sign_for_acknowledgement_email', drupal_get_schema_unprocessed('sign_for_acknowledgement', 'sign_for_acknowledgement_email'));
+}
+/**
+ * email fields creation.
+ */
+function sign_for_acknowledgement_update_7212() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_emails();
+}
+/**
+ * views table name conversion.
+ */
+function sign_for_acknowledgement_update_7213() {
+  if (!function_exists('views_get_all_views')) {
+    if (module_exists('views')) {
+      module_load_include('module', 'views');
+    }
+    else {
+      return;
+    }
+  }
+  $allviews = views_get_all_views();
+  foreach($allviews as $view) {
+    $do_save = FALSE;
+    if ($view->base_table != 'node' || $view->base_field != 'nid') {
+      continue;
+    }
+    if (!(property_exists($view, 'display'))) {
+      continue;
+    }
+    foreach($view->display as $display) {
+      if (!(property_exists($display, 'display_options'))) {
+        continue;
+      }
+      if (isset($display->display_options['fields'])) {
+        foreach($display->display_options['fields'] as &$field) {
+          if (isset($field['table']) && $field['table'] == 'sign_for_acknowledgement') {
+            $field['table'] = 'sfa';
+            $do_save = TRUE;
+          }
+        }
+      }
+      if (isset($display->display_options['arguments'])) {
+        foreach($display->display_options['arguments'] as &$argument) {
+          if (isset($argument['table']) && $argument['table'] == 'sign_for_acknowledgement') {
+            $argument['table'] = 'sfa';
+            $do_save = TRUE;
+          }
+        }
+      }
+      if (isset($display->display_options['sorts'])) {
+        foreach($display->display_options['sorts'] as &$sort) {
+          if (isset($sort['table']) && $sort['table'] == 'sign_for_acknowledgement') {
+            $sort['table'] = 'sfa';
+            $do_save = TRUE;
+          }
+        }
+      }
+      if (isset($display->display_options['filters'])) {
+        foreach($display->display_options['filters'] as &$filter) {
+          if (isset($filter['table']) && $filter['table'] == 'sign_for_acknowledgement') {
+            $filter['table'] = 'sfa';
+            $do_save = TRUE;
+          }
+        }
+      }
+    }
+    if ($do_save) {
+      $view->save();
+    }
+  }
+}
+
+/**
+ * Change alternate field type.
+ */
+function sign_for_acknowledgement_update_7214() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_alternate_form();
+  _sign_for_acknowledgement_reset_roles();
+  $table = 'sign_for_acknowledgement';
+  $field = 'alternate';
+  $tableSchema = drupal_get_schema_unprocessed('sign_for_acknowledgement', $table);
+  db_change_field($table, $field, $field, $tableSchema['fields'][$field]);
+  if (!db_index_exists($table, 'nid_uid')) {
+    db_add_index($table, 'nid_uid', array('node_id', 'user_id'));
+  }
+  if (!db_index_exists($table, 'mydate')) {
+    db_add_index($table, 'mydate', array('mydate'));
+  }
+  $table = 'sign_for_acknowledgement_email';
+  if (!db_index_exists($table, 'nid_uid')) {
+    db_add_index($table, 'nid_uid', array('node_id', 'user_id'));
+  }
+  if (!db_index_exists($table, 'mydate')) {
+    db_add_index($table, 'mydate', array('mydate'));
+  }
+}
+
+/**
+ * Force deselect nosign roles list.
+ */
+function sign_for_acknowledgement_update_7215() {
+  module_load_include('module', 'sign_for_acknowledgement');
+  _sign_for_acknowledgement_reset_roles(NULL, TRUE);
+}
+
+/**
+ * Implements hook_enable().
+ */
+function sign_for_acknowledgement_enable() {
+  _sign_for_acknowledgement_reset_views();
+  _sign_for_acknowledgement_reset_expirations();
+  _sign_for_acknowledgement_reset_alternate_form();
+  _sign_for_acknowledgement_reset_roles();
+  _sign_for_acknowledgement_reset_users_2();
+  _sign_for_acknowledgement_reset_annotation_field();
+  _sign_for_acknowledgement_reset_emails();
+}
+
+/**
+ * Implements hook_install().
+ */
+function sign_for_acknowledgement_install() {
+  $t = get_t();
+  drupal_set_message($t('"Sign for acknowledgement" settings are available under !link',
+    array('!link' => l($t('Administer > Site configuration > People'), 'admin/config/people/acknowledge')))
+  );
+}
+/**
+ * Implements hook_schema().
+ */
+function sign_for_acknowledgement_schema() {
+  $schema['sign_for_acknowledgement'] = array(
+    'description' => 'Having read table.',
+    'fields' => array(
+      'hid'  => array(
+        'description' => 'autoincremental index',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'node_id'  => array(
+        'description' => 'node id',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'user_id' => array(
+        'description' => 'user id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'mydate' => array(
+        'description' => 'datestamp of the signature',
+        'type' => 'int',
+        'not null' => FALSE,
+      ),
+      'alternate' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => FALSE,
+        'description' => 'User selection in alternate form.',
+      ),
+      'annotation' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => FALSE,
+        'description' => 'User annotation any form.',
+      ),
+    ),
+    'primary key' => array('hid'),
+    'indexes' => array(
+      'nid_uid' => array('node_id', 'user_id'),
+      'mydate' => array('mydate'),
+    ),
+  );
+  $schema['sign_for_acknowledgement_email'] = array(
+    'description' => 'Emails sent table.',
+    'fields' => array(
+      'eid'  => array(
+        'description' => 'autoincremental index',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'node_id'  => array(
+        'description' => 'node id',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'user_id' => array(
+        'description' => 'user id.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'mydate' => array(
+        'description' => 'datestamp of the email',
+        'type' => 'int',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('eid'),
+    'indexes' => array(
+      'nid_uid' => array('node_id', 'user_id'),
+      'mydate' => array('mydate'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function sign_for_acknowledgement_uninstall() {
+  @field_delete_field('field_sfa_status');
+  @field_delete_field('expire_date');
+  @field_delete_field('alternate_form');
+  @field_delete_field('alternate_form_multiselect');
+  @field_delete_field('alternate_form_text');
+  @field_delete_field('enable_roles');
+  @field_delete_field('enable_users');
+  @field_delete_field('email_roles');
+  @field_delete_field('email_users');
+  @field_delete_field('field_sfa_checkbox');
+  @field_delete_field('annotation_field');
+  @field_delete_field('annotation_field_required');
+  variable_del('sign_for_acknowledgement_node_types');
+  variable_del('sign_for_acknowledgement_firstname');
+  variable_del('sign_for_acknowledgement_lastname');
+  variable_del('sign_for_acknowledgement_limit');
+  variable_del('sign_for_acknowledgement_weight');
+  variable_del('sign_for_acknowledgement_do_sign');
+  variable_del('sign_for_acknowledgement_is_signed');
+  variable_del('sign_for_acknowledgement_is_expired');
+  variable_del('sign_for_acknowledgement_marked');
+  variable_del('sign_for_acknowledgement_warning');
+  variable_del('sign_for_acknowledgement_data_sent');
+  variable_del('sign_for_acknowledgement_show_submit');
+  variable_del('sign_for_acknowledgement_block_expired');
+  variable_del('sign_for_acknowledgement_alternate_request');
+  variable_del('sign_for_acknowledgement_fields');
+  variable_del('sign_for_acknowledgement_roles');
+  variable_del('sign_for_acknowledgement_show_roles');
+  variable_del('sign_for_acknowledgement_use_default_roles');
+  variable_del('sign_for_acknowledgement_use_single_user');
+  variable_del('sign_for_acknowledgement_checkbox_in_views');
+  variable_del('sign_for_acknowledgement_email_to_roles');
+  variable_del('sign_for_acknowledgement_email_to_users');
+  variable_del('sign_for_acknowledgement_email_subject');
+  variable_del('sign_for_acknowledgement_email_body');
+  // delete all views variables
+  if (module_exists('views')) {
+    $views = views_get_all_views();
+    foreach ($views as $view) {
+      if ($view->base_table == 'node') {
+        foreach($view->display as $key => $value) {
+          @variable_del('sfa_' . $view->name . '_' . $key);
+          @variable_del('nosfa_' . $view->name . '_' . $key);
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1927 @@
+<?php
+/**
+ * @file
+ * This module shows to the Drupal administrators a list of users specifying if 
+ * they have read the current document (node). Each reader can sign for 
+ * acknowledgement by clicking a checkbox.
+ */
+
+// STRING CONSTANTS
+define('SIGNED_OK', t('signed ok...'));
+define('TO_BE_SIGNED', t('still to be signed...'));
+define('OUT_OF_TERMS', t('signed out of terms...'));
+define('TERMS_EXPIRED', t('terms have expired...'));
+
+// stylesheet on all pages
+drupal_add_css(drupal_get_path('module', 'sign_for_acknowledgement') . '/' . 'stylesheet.css');
+
+/**
+ * Implements hook_views_api().
+ */
+function sign_for_acknowledgement_views_api()
+{
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'sign_for_acknowledgement'),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function sign_for_acknowledgement_theme($existing, $type, $theme, $path) {
+  return array(
+    'sign_for_acknowledgement_views' => array(
+      'variables' => array(
+        'content' => NULL,
+        'assoc' => array(),
+      ),
+      'file' => 'sign_for_acknowledgement.theme.inc',
+      'template' => 'sign-for-acknowledgement-views',
+    ),
+    'sign_for_acknowledgement_checkbox' => array(
+      'variables' => array(
+        'content' => NULL,
+        'user' => NULL,
+        'date' => NULL,
+        'expire' => NULL,
+        'assoc' => array(),
+      ),
+      'file' => 'sign_for_acknowledgement.theme.inc',
+      'template' => 'sign-for-acknowledgement-checkbox',
+    ),
+    'sign_for_acknowledgement_checkbox_signed' => array(
+      'variables' => array(
+        'content' => NULL,
+        'user' => NULL,
+        'date' => NULL,
+        'expire' => NULL,
+        'agreement' => NULL,
+        'annotation' => NULL,
+        'assoc' => array(),
+      ),
+      'file' => 'sign_for_acknowledgement.theme.inc',
+      'template' => 'sign-for-acknowledgement-checkbox-signed',
+    ),
+    'sign_for_acknowledgement_checkbox_expired' => array(
+      'variables' => array(
+        'content' => NULL,
+        'user' => NULL,
+        'date' => NULL,
+        'expire' => NULL,
+      ),
+      'file' => 'sign_for_acknowledgement.theme.inc',
+      'template' => 'sign-for-acknowledgement-checkbox-expired',
+    ),
+    'sign_for_acknowledgement_pre_table' => array(
+      'variables' => array(
+        'node' => NULL,
+        'expire' => NULL,
+      ),
+      'template' => 'sign-for-acknowledgement-pre-table',
+    ),
+    'sign_for_acknowledgement_pre_csv' => array(
+      'variables' => array(
+        'node' => NULL,
+      ),
+      'template' => 'sign-for-acknowledgement-pre-csv',
+    ),
+  );
+}
+
+/**
+ * Implements hook_help().
+ */
+function sign_for_acknowledgement_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#sign_for_acknowledgement':
+      // Return a line-break version of the module README.txt
+      return check_markup(file_get_contents(dirname(__FILE__) . "/README.txt"));
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function sign_for_acknowledgement_permission() {
+  return array(
+    'administer acknowledgements' => array(
+      'title' => t('Administer module'),
+      'description' => t('Perform administration tasks for acknowledgements.'),
+    ),
+    'view acknowledgements table' => array(
+      'title' => t('View users table for current node'),
+      'description' => t('User views a users list with all signatures.'),
+    ),
+    'delete acknowledgements' => array(
+      'title' => t('Add/remove acknowledgements'),
+      'description' => t('User can add or remove ackowledgements of other users.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_admin_paths
+ */
+function sign_for_acknowledgement_admin_paths() {
+  $paths = array(
+    'node/*/acknowledgement' => TRUE,
+    'admin/structure/views/view/*/*/acknowledgements' => TRUE,
+  );
+  return $paths;
+}
+ 
+/**
+ * Implements hook_menu().
+ */
+function sign_for_acknowledgement_menu() {
+  $items = array();
+
+  $items['admin/config/people/acknowledge'] = array(
+    'title' => 'Acknowledgement',
+    'description' => 'Module to get track of which users have viewed your documents',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sign_for_acknowledgement_admin_settings_form'),
+    'access arguments' => array('administer acknowledgements'),
+    'file' => 'sign_for_acknowledgement.admin.inc',
+  );
+
+  $items['node/%node/acknowledgement'] = array(
+    'title' => 'Acknowledgements',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sign_for_acknowledgement_list_form'),
+    'access callback' => '_sign_for_acknowledgement_check_node_type',
+    'weight' => 2,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'sign_for_acknowledgement.admin.inc',
+  );
+
+  $items['admin/config/people/accounts/ack_delete'] = array(
+    'title' => 'Acknowledgements deletion',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sign_for_acknowledgement_delete_form'),
+    'access arguments' => array('delete acknowledgements'),
+    'weight' => 5,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'sign_for_acknowledgement.admin.inc',
+  );
+
+  $items['acknowledgements/autocomplete'] = array(
+    'page callback' => '_sign_for_acknowledgement_autocomplete',
+    'access arguments' => array('delete acknowledgements'),
+    'type' => MENU_CALLBACK,
+    'file' => 'sign_for_acknowledgement.admin.inc',
+  );
+
+  $items['admin/structure/views/view/%/%/acknowledgements'] = array(
+    'title' => 'Acknowledgements on Views',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sign_for_acknowledgement_view_form', 4, 5),
+    'access arguments' => array('view acknowledgements table'),
+    'weight' => 2,
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_form().
+ */
+function sign_for_acknowledgement_view_form($form, &$form_state, $view_name, $display_id)
+{
+  $form['sign_for_acknowledgement_views'] = array(
+    '#type' => 'fieldset', 
+    '#title' => sprintf(t("Hide message '%s'"), filter_xss(variable_get('sign_for_acknowledgement_marked', t('The documents marked with *** are to be signed.')))),
+    '#weight' => 0, 
+    '#collapsible' => FALSE, 
+  );
+  $form_state['view'] = views_get_view($view_name);
+  foreach ($form_state['view']->display as $key => $value) {
+    $form['sign_for_acknowledgement_views'][$key] = array (
+      '#type' => 'checkbox',
+      '#title' => $value->display_title,
+    );
+    $varname = 'sfa_' . $view_name . '_' . $key;
+    if (variable_get($varname, FALSE)) {
+        $form['sign_for_acknowledgement_views'][$key]['#attributes'] = array('checked' => 'checked');
+    }
+  }
+  
+  $form['sign_for_acknowledgement_views_filter'] = array(
+    '#type' => 'fieldset', 
+    '#title' => t("Don't hide nodes that aren't to be signed by filtered user"),
+    '#weight' => 0, 
+    '#collapsible' => FALSE, 
+  );
+  foreach ($form_state['view']->display as $key => $value) {
+    $form['sign_for_acknowledgement_views_filter'][$key.'_node'] = array (
+      '#type' => 'checkbox',
+      '#title' => $value->display_title,
+    );
+    $varname = 'nosfa_' . $view_name . '_' . $key;
+    if (variable_get($varname, FALSE)) {
+        $form['sign_for_acknowledgement_views_filter'][$key.'_node']['#attributes'] = array('checked' => 'checked');
+    }
+  }
+  
+  if (!function_exists('views_ui_standard_form_buttons')) {
+    require_once('sites/all/modules/views/includes/admin.inc');
+  }
+
+  views_ui_standard_form_buttons($form, $form_state, 'sign_for_acknowledgement_view_form');
+  return $form;
+}
+
+/**
+ * Implements hook_submit().
+ */
+function sign_for_acknowledgement_view_form_submit($form, &$form_state) {
+  foreach ($form_state['view']->display as $key => $value) {
+    $varname = 'sfa_' . $form_state['view']->name . '_' . $key;
+    if (isset($form_state['values'][$key])) {
+      variable_set($varname, $form_state['values'][$key]);
+    }
+    $varname = 'nosfa_' . $form_state['view']->name . '_' . $key;
+    if (isset($form_state['values'][$key.'_node'])) {
+      variable_set($varname, $form_state['values'][$key.'_node']);
+    }
+  }
+  ctools_object_cache_clear_all('view', $form_state['view']->name);
+  $form_state['redirect'] = 'admin/structure/views/view/' . $form_state['view']->name . '/edit';
+}
+
+/**
+ * Checks the node type.
+ * @return boolean (TRUE if compliant) 
+ */ 
+function _sign_for_acknowledgement_check_node_type() {
+  if (!(user_access('view acknowledgements table'))) {
+    return FALSE;
+  }
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $nodeid = arg(1);
+    return _sign_for_acknowledgement_applies_to_bundle(node_load($nodeid)->type);
+  }
+  return FALSE;
+}
+/**
+ * check if $form_id is this module compliant
+ *
+ * @param string $form_id
+ * @return boolean (TRUE if compliant)
+ */
+function _sign_for_acknowledgement_check_formid($form_id) {
+  $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+
+  foreach ($apply_to as $key => $value) {
+    if ($key === $value && $key . '_node_form' === $form_id) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}  
+/**
+ * @return array, drupal roles list (excluding anonymous and authenthicated users).
+ */  
+function _sign_for_acknowledgement_get_roles($all = TRUE) {
+  $roles = array_map('check_plain', user_roles(TRUE));
+  $my_roles = array();
+  foreach($roles as $key => $role) {
+    $my_roles[$role] = ($role == 'administrator' || $all)? $role : '';
+  }
+  return $my_roles;
+}
+/**
+ * Add "single user enable" form while creating/editing a node
+ */ 
+function _sign_for_acknowledgement_users () {
+  // thanks to pvasener for patch
+  $users = db_query('SELECT uid, name FROM {users} WHERE uid > 0 AND status = 1 ORDER BY name ASC')->fetchAllKeyed(0, 1);    
+  return $users;
+}
+/**
+ * Handles "enable users" form in node editing form.
+ */ 
+function _sign_for_acknowledgement_users_after_build($form, &$form_state) {
+  $user_list = unserialize($form['enable_users'][LANGUAGE_NONE]['0']['value']['#value']);
+  if (empty($user_list)) {
+    $user_list = array();
+  }
+
+  if (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] == $form['enable_roles']['users']['delete_button']['#value']) {
+    $deletions = $form['enable_roles']['users']['deletions']['#value'];
+    foreach ($deletions as $uid) {
+      unset($user_list[$uid]);
+      unset($form['enable_roles']['users']['deletions']['#value'][$uid]);
+    }
+  }
+  elseif (isset($form_state['triggering_element']) && $form_state['triggering_element']['#value'] == $form['enable_roles']['users']['add_button']['#value'] && !empty($form['enable_roles']['users']['add']['#value'])) {
+    $user = db_query("SELECT uid, name FROM {users} WHERE name = :name", array(
+      'name' => $form['enable_roles']['users']['add']['#value'],
+    ))->fetchObject();
+    if (!$user || !$user->uid) {
+      form_error($form['enable_roles']['users']['add'], t("Invalid user specified."));
+    }
+    else {
+      $user_list[$user->uid] = $user->name;
+      $form['enable_roles']['users']['add']['#value'] = NULL;
+    }
+  }
+  
+  if (count($user_list) != 0) {
+    $form['enable_roles']['users']['deletions']['#type'] = 'checkboxes';
+    $form['enable_roles']['users']['deletions']['#title'] = t("Enabled users");
+    $form['enable_roles']['users']['deletions']['#options'] = $user_list;
+    $form['enable_roles']['users']['deletions']['#value'] = array(); // don't carry value through.
+    $form['enable_roles']['users']['deletions'] = form_builder($form['form_id'], $form['enable_roles']['users']['deletions'], $form_state);
+  }
+  else {
+    $form['enable_roles']['users']['delete_button']['#attributes'] = array(
+      'style' => 'display:none',
+    );
+  }
+  $serialized = serialize($user_list); 
+  $form_state['enable_users'][LANGUAGE_NONE]['0']['value']['#default_value'] = 
+  $form['enable_users'][LANGUAGE_NONE]['0']['value']['#value'] = 
+  $serialized;
+  $form_state['values']['field_user_selection'][LANGUAGE_NONE] = array ( '0' => array ('value' => $serialized) );
+  return $form;
+}
+/**
+ * Display users selection list.  
+ */
+function _sign_for_acknowledgement_users_selection(&$form) {
+  $form['enable_users'][LANGUAGE_NONE]['#options'] = _sign_for_acknowledgement_users();
+  $form['enable_users'][LANGUAGE_NONE]['#size'] = 10;
+  if  (variable_get('sign_for_acknowledgement_email_to_users', TRUE) == FALSE) {
+    $form['email_users']['#access'] = 0;
+    return;
+  }
+}
+/**
+ * populate array with users' ids (users).
+ * 
+ */
+function _sign_for_acknowledgement_email_from_users(&$emails, $enable_users, $nid) {
+  if (!(isset($enable_users[LANGUAGE_NONE]))) {
+    return;
+  }
+  foreach($enable_users[LANGUAGE_NONE] as $my_user) {
+    $uid = $my_user['value'];
+    if (in_array($uid, $emails)) {
+      continue;
+    }
+    if (_sign_for_acknowledgement_email_already_sent($uid, $nid)) {
+      continue;
+    }
+    $emails[] = $uid;
+  }
+}
+/**
+ * populate array with users' ids (roles).
+ * 
+ */
+function _sign_for_acknowledgement_email_from_roles(&$emails, $enable_roles, $nid) {
+  if (!(isset($enable_roles[LANGUAGE_NONE]))) {
+    return;
+  }
+  foreach($enable_roles[LANGUAGE_NONE] as $array) {
+    foreach($array as $value) {
+      if (!(isset($value))) {
+        continue;
+      }
+      $rolename = $value == t('authenticated user') ? 'authenticated user' : $value;
+      $role = user_role_load_by_name($rolename);
+      if (!$role) {
+        continue;
+      }
+      $query = 'SELECT ur.uid FROM {users_roles} AS ur WHERE ur.rid = :rid';
+      $result = db_query($query, array(':rid' => $role->rid));
+      $uids = $result->fetchCol();
+      foreach ($uids as $uid) {
+        if (in_array($uid, $emails)) {
+          continue;
+        }
+        if (_sign_for_acknowledgement_email_already_sent($uid, $nid)) {
+          continue;
+        }
+        $emails[] = $uid;
+      }
+    }
+  }
+}
+/**
+ * build to string with users emails
+ */
+function _sign_for_acknowledgement_build_receivers($uids) {
+  $users = user_load_multiple($uids);
+  $result = '';
+  foreach ($users as $user) {
+    if ($user->status == 0) {
+      continue;
+    }
+    if (!empty($result)) {
+      $result .= ', ';
+    }
+    $result .= $user->mail;
+  }
+  return $result;
+}
+/**
+ * keep track of sent emails
+ */
+function _sign_for_acknowledgement_save_email_sent($uids, $nid) {
+  foreach ($uids as $uid) {
+    db_insert('sign_for_acknowledgement_email')
+    ->fields(array(
+      'node_id' => $nid,
+      'user_id' => $uid,
+      'mydate' => time(),
+      ))
+    ->execute();
+  }
+}
+function _sign_for_acknowledgement_email_already_sent($userid, $nodeid) {
+  $result = db_query('SELECT * FROM {sign_for_acknowledgement_email} WHERE node_id = :nid AND user_id = :uid',
+  array(':nid' => $nodeid, ':uid' => $userid));
+  return ($result->rowCount() > 0);
+}
+/**
+ * check users and send notification email
+ */
+function _sign_for_acknowledgement_node_email($node) {
+  static $count = 1;
+  if ($count++ > 1) {
+    return;
+  }
+  $no_signature = FALSE;
+  if (isset($node->delete_acknowledgements) && $node->delete_acknowledgements === 1) {
+    db_delete('sign_for_acknowledgement_email')
+    ->condition('node_id', $node->nid)
+    ->execute();
+  }
+
+  $emails = array();
+  if (property_exists($node, 'email_roles') && $node->email_roles['und'][0]['value']) {
+    _sign_for_acknowledgement_email_from_roles($emails, $node->enable_roles, $node->nid);
+  }
+  if (property_exists($node, 'email_users') && $node->email_users['und'][0]['value']) {
+    _sign_for_acknowledgement_email_from_users($emails, $node->enable_users, $node->nid);
+  }
+  if (empty($emails)) {
+    _sign_for_acknowledgement_email_from_roles($emails, $node->enable_roles_nosign, $node->nid);
+    $no_signature = TRUE;
+  }
+
+  if (empty($emails)) {
+    return; // no user found, return
+  }
+  // send_email...
+  $params = array();
+  $params['subject'] = html_entity_decode(token_replace(variable_get($no_signature? 'sign_for_acknowledgement_email_subject_nosign': 'sign_for_acknowledgement_email_subject', 'Notification from [site:name]'), array('node' => $node)));
+  $body_sign = 
+'On [node:created:short], a new [node:type] titled "[node:title]" was published.
+Please, remember to sign for acknowledgement before [node:expire-date:long].
+Page is available here [site:url]node/[node:nid]
+
+Best regards,
+[site:name]
+';
+  $body_nosign = 
+'On [node:created:short], a new [node:type] titled "[node:title]" was published.
+Please, remember to read it.
+Page is available here [site:url]node/[node:nid]
+
+Best regards,
+[site:name]
+';
+  $params['body'] = html_entity_decode(token_replace(variable_get($no_signature? 'sign_for_acknowledgement_email_body_nosign': 'sign_for_acknowledgement_email_body', $no_signature? $body_nosign : $body_sign), array('node' => $node)));
+  $params['headers'] = array('Bcc' => _sign_for_acknowledgement_build_receivers($emails),);
+
+  $to = variable_get('sign_for_acknowledgement_email_to', 0) == 1 ? variable_get('site_mail', 'generic@nowhere.com') : 'undisclosed-recipients:;';
+  drupal_mail('sign_for_acknowledgement', 'notify', $to, language_default(), $params);
+  drupal_set_message(t('Selected users have been notified via e-mail'));
+  _sign_for_acknowledgement_save_email_sent($emails, $node->nid);
+}
+/**
+ * Implements hook_node_insert().  
+ */
+function sign_for_acknowledgement_node_insert($node) {
+  if (!(_sign_for_acknowledgement_applies_to_bundle($node->type))) {
+    return;
+  }
+  _sign_for_acknowledgement_node_email($node);
+}
+/**
+ * Implements hook_mail().  
+ */
+function sign_for_acknowledgement_mail($key, &$message, $params) {
+  switch($key) {
+    case 'notify':
+      $message['subject'] = $params['subject'];
+      $message['body'][] = $params['body'];
+      $message['headers'] += $params['headers'];
+      break;
+  }
+}
+/**
+ * Implements hook_form_alter().  
+ */
+function sign_for_acknowledgement_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['field_sfa_status'])) {
+    $form['field_sfa_status']['#access'] = 0;
+  }
+  if (!_sign_for_acknowledgement_check_formid($form_id)) {
+    if (arg(0) != 'node') {
+      return;
+    }
+    if (isset($form['enable_roles'])) {
+      $form['enable_roles']['#access'] = 0;
+    }
+    if (isset($form['enable_users'])) {
+      $form['enable_users']['#access'] = 0;
+    }
+    if (isset($form['email_roles'])) {
+      $form['email_roles']['#access'] = 0;
+    }
+    if (isset($form['email_users'])) {
+      $form['email_users']['#access'] = 0;
+    }
+    if (isset($form['expire_date'])) {
+      $form['expire_date']['#access'] = 0;
+    }
+    if (isset($form['alternate_form'])) {
+      $form['alternate_form']['#access'] = 0;
+    }
+    if (isset($form['alternate_form_multiselect'])) {
+      $form['alternate_form_multiselect']['#access'] = 0;
+    }
+    if (isset($form['alternate_form_text'])) {
+      $form['alternate_form_text']['#access'] = 0;
+    }
+    if (isset($form['annotation_field'])) {
+      $form['annotation_field']['#access'] = 0;
+    }
+    if (isset($form['annotation_field_required'])) {
+      $form['annotation_field_required']['#access'] = 0;
+    }
+    return;
+  }
+  if (!(isset($form['enable_roles']))) {
+    return;
+  }
+//  dsm($form);dsm($form_state); 
+  $my_roles = variable_get('sign_for_acknowledgement_roles',_sign_for_acknowledgement_get_roles(FALSE));
+  $my_roles_filtered = array();
+  if (variable_get('sign_for_acknowledgement_use_default_roles', FALSE)) {
+    foreach ($my_roles as $key => $value) {
+      if ($key === $value) {
+        $my_roles_filtered[$key] = $value;
+      }
+    }
+    $form['enable_roles'][LANGUAGE_NONE]['#options'] = $my_roles_filtered;
+    if (isset($form['enable_roles_nosign'])) {
+      $form['enable_roles_nosign'][LANGUAGE_NONE]['#options'] = $my_roles_filtered;
+    }
+  }
+  if (variable_get('sign_for_acknowledgement_email_to_roles', TRUE) == FALSE) { // check if email to roles is not activated
+    $form['email_roles']['#access'] = 0;
+  }
+  if (arg(0) == 'node' && arg(1) == 'add') {
+    // blank all checkboxes if "only default roles" is set...
+    $form['enable_roles'][LANGUAGE_NONE]['#default_value'] = variable_get('sign_for_acknowledgement_use_default_roles', FALSE) ? array() : $my_roles;
+    if (variable_get('sign_for_acknowledgement_use_single_user', TRUE) == FALSE) {
+      $form['enable_users']['#access'] = 0;
+      $form['email_users']['#access'] = 0;
+    }
+    else {
+      _sign_for_acknowledgement_users_selection($form);
+    }
+    return;
+  }
+  if (arg(2) != 'edit') {
+    return;
+  }
+  $form['sign_for_acknowledgement_content'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Delete exsisting acknowledgements?'),
+    '#description' => t('If you modify this node in such a way that all affected users need to re-acknowledge, please check this checkbox.'),
+  );
+  $form['sign_for_acknowledgement_content']['delete_acknowledgements'] = array (
+    '#type' => 'checkbox',
+    '#title' => t('delete acknowledgements'),
+    //'#attributes' => array('checked' => 'checked'),
+  );
+  if (variable_get('sign_for_acknowledgement_use_single_user', TRUE) == FALSE) {
+    $form['enable_users']['#access'] = 0;
+  }
+  else {
+    _sign_for_acknowledgement_users_selection($form);
+  }
+}
+/**
+ * Implements hook_forms().
+ *
+ * standard parameters.
+ * returns: array of forms
+ */
+function sign_for_acknowledgement_forms($form_id, $args) {
+  $forms = array();
+  if (!empty($args) && !empty($form_id) && strpos($form_id, 'sign_for_acknowledgement_form_') === 0) {
+    $forms[$form_id] = array ('callback' => 'sign_for_acknowledgement_form');
+  }
+  return $forms;
+}
+/**
+ * Implements hook_form().
+ *
+ * Parameter $node refers to the current node.
+ * Parameter $already_signed TRUE if node is already signed.
+ * Parameter $show_submit TRUE if "show submit button" is checked
+ */
+function sign_for_acknowledgement_form($form, &$form_state, $node, $already_signed, $show_submit) {
+  $user = $GLOBALS['user'];
+
+  $submit = !$already_signed && $show_submit;
+  $annotation = FALSE;
+  $required = FALSE;
+  if (count($node->annotation_field) && $node->annotation_field[LANGUAGE_NONE][0]['value'] && !$already_signed) {
+    $annotation = $submit = TRUE;
+  }
+  if (count($node->annotation_field_required) && $node->annotation_field_required[LANGUAGE_NONE][0]['value'] && !$already_signed) {
+    $annotation = $submit = $required = TRUE;
+  }
+
+  $form['user'] = array(
+    '#type' => 'value',
+    '#name' => 'user',
+    '#value' => $user->uid,
+  );
+  $form['node'] = array(
+    '#type' => 'hidden',
+    '#name' => 'node',
+    '#value' => $node->nid,
+  );
+  $form['signature'] = array(
+    '#type' => 'checkbox',
+    '#attributes' => $submit ? NULL : array(
+      'onclick' => 'this.form.submit()',
+    ),
+    // Get message with sanitization.
+    '#title' => filter_xss(variable_get('sign_for_acknowledgement_do_sign', t('Click here to confirm you have read the document'))),
+  );
+  if ($annotation) {
+    $form['annotation'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Annotation'),
+      '#rows' => 4,
+      '#cols' => 54,
+      '#default_value' => '',
+      '#resizable' => FALSE,
+      '#required' => $required,
+      '#attributes' => array('style' => 'width: 512px'),
+    );
+  } 
+
+  $form['signature_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+    '#attributes' => $submit ? NULL :  array(
+      'style' => 'display:none',
+    ),
+  );
+  return $form;
+}
+
+/**
+ * @param array $options array of strings
+ * 
+ */
+function _sign_for_acknowledgement_clear_options(&$options) {
+  for ($i = 0; $i < count($options); $i++) {
+    $options[$i] = trim($options[$i]);
+    if ($options[$i] == '') {
+      unset($options[$i]);
+    }
+  }
+}
+
+function _sign_for_acknowledgement_alternate_options($node) {
+  $options = explode( "\n", filter_xss($node->alternate_form_text ? $node->alternate_form_text['und'][0]['value'] : ''));
+  _sign_for_acknowledgement_clear_options($options);
+  return $options;
+}
+
+/**
+ * Implements hook_form().
+ *
+ * Parameter $node refers to the current node.
+ * Parameter $already_signed TRUE if node is already signed.
+ * Parameter $show_submit TRUE if "show submit button" is checked
+ */
+function sign_for_acknowledgement_alternate_form($form, &$form_state, $node, $already_signed, $show_submit, $multiselect = FALSE) {
+  $user = $GLOBALS['user'];
+
+  $form['user'] = array(
+    '#type' => 'value',
+    '#name' => 'user',
+    '#value' => $user->uid,
+  );
+  $form['node'] = array(
+    '#type' => 'value',
+    '#name' => 'node',
+    '#value' => $node->nid,
+  );
+
+  $options = _sign_for_acknowledgement_alternate_options($node);
+
+  $form['selection'] = array(
+    '#type' =>  $multiselect? 'checkboxes' : 'radios',
+    '#title' => $multiselect? t('Agreement (multi-select)') : t('Agreement'),
+    '#options' => $multiselect? drupal_map_assoc($options) : $options,
+    '#default_value' => $multiselect? array() : NULL,
+    '#required' => TRUE,
+  );
+
+  $required = (count($node->annotation_field_required) && $node->annotation_field_required[LANGUAGE_NONE][0]['value']);
+  if (count($node->annotation_field) && $node->annotation_field[LANGUAGE_NONE][0]['value']) {
+    $form['annotation'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Annotation'),
+      '#rows' => 4,
+      '#cols' => 54,
+      '#default_value' => '',
+      '#resizable' => FALSE,
+      '#required' => $required,
+      '#attributes' => array('style' => 'width: 512px'),
+    );
+  } 
+
+  $form['signature_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+  return $form;
+}
+/**
+ * Implements hook_form_submit().
+ */
+function sign_for_acknowledgement_form_submit($form, $form_state) {
+  $userid = $form_state['values']['user'];
+  $nodeid = $form_state['values']['node'];
+  $checked = $form_state['values']['signature'];
+  $annotation = isset($form_state['values']['annotation']) ? $form_state['values']['annotation'] : '';
+  if (!$checked) {
+    drupal_set_message(t('Data not saved, please select the checkbox first.'),'warning');
+    return;
+  }
+  $timestamp = 0;
+  $alternate = '';
+  $note = '';
+  if (_sign_for_acknowledgement_already_signed($userid, $nodeid, $timestamp, $alternate, $note)) {
+    return;
+  }
+  _sign_for_acknowledgement_sign_document($userid, $nodeid, $annotation);
+  $msg = filter_xss(variable_get('sign_for_acknowledgement_data_sent', t('Document has been signed.')));
+  drupal_set_message($msg);
+}
+/**
+ * Implements hook_form_submit().
+ */
+function sign_for_acknowledgement_alternate_form_submit($form, $form_state) {
+  $userid = $form_state['values']['user'];
+  $nodeid = $form_state['values']['node'];
+  $annotation = isset($form_state['values']['annotation']) ? $form_state['values']['annotation'] : '';
+  $select_val = $form_state['values']['selection'];
+
+  if (is_array($select_val)) { // multiselect
+    $selection = '';
+    foreach($select_val as $k => $val) {
+      if ($k !== $val) {
+        continue;
+      }
+      if (strlen($selection)) {
+        $selection .= '|';
+      }
+      $selection .= $form_state['complete form']['selection']['#options'][$val];
+    }
+  }
+  else { // single select
+    $selection = $form_state['complete form']['selection']['#options'][$select_val];
+  }
+  $timestamp = 0;
+  $alternate = '';
+  $note = '';
+  if (_sign_for_acknowledgement_already_signed($userid, $nodeid, $timestamp, $alternate, $note) || !$selection) {
+    return;
+  }
+  _sign_for_acknowledgement_alternate_sign_document($userid, $nodeid, $selection, $annotation);
+  $msg = filter_xss(variable_get('sign_for_acknowledgement_data_sent', t('Document has been signed.')));
+  drupal_set_message($msg);
+}
+/**
+ * Checking if module must be applied to the node type (bundle).
+ *
+ * @param string $nodetype
+ *   the node type
+ * @param array $apply_to
+ *   array of node types supported by the module  
+ *
+ * @return bool
+ *   TRUE if module applies to the node type      
+ */
+function _sign_for_acknowledgement_applies_to_bundle($nodetype, $apply_to = NULL) {
+  if (!$apply_to) {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+
+  // Check if key exists.
+  if (!(in_array($nodetype, array_keys($apply_to)))) {
+    return FALSE;
+  }
+
+  // Check if current node type is checked.
+  return ($apply_to[$nodetype] === $nodetype);
+}
+/**
+ * Checking if module must be applied to the current document.
+ *
+ * @param object $node
+ *   the current node
+ *
+ * @return bool
+ *   TRUE if module applies to this node      
+ */
+function _sign_for_acknowledgement_applies_to($node, $_user = NULL) {
+  global $user;
+  if ($_user == NULL) {
+    $_user = $user;
+  }
+  if (!(_sign_for_acknowledgement_applies_to_bundle($node->type))) {
+    return FALSE;
+  }
+  $single_user_enabled = FALSE;
+  // Check if current user is ok.
+  if (isset($node->enable_users[LANGUAGE_NONE][0]['value'])) {
+    $single_user_enabled = TRUE;
+    $my_users = $node->enable_users[LANGUAGE_NONE]; //unserialize($node->enable_users[LANGUAGE_NONE][0]['value']);
+    if (!count($my_users)) {
+      $single_user_enabled = FALSE;
+    }
+    foreach($my_users as $my_user) {
+      if ($my_user['value'] == $_user->uid) {
+        return TRUE;
+      }
+    }
+  }
+  // Check if current user role is ok.
+  if ((isset($node->enable_roles) == FALSE || count($node->enable_roles) == 0) && !$single_user_enabled) {
+    if (drupal_is_front_page() == FALSE && variable_get('sign_for_acknowledgement_show_nobody', FALSE) && arg(0) == 'node' && node_access('update', $node, $user)) {
+      drupal_set_message(t('Nobody can sign this content for acknowledgement.<br />If this is unwanted, please modify the content and set up users roles.'), 'warning', FALSE);
+    }
+    return FALSE;
+  }
+
+  if (isset($node->enable_roles) && (count($node->enable_roles) && count($node->enable_roles[LANGUAGE_NONE]))) {
+    $my_roles = $node->enable_roles[LANGUAGE_NONE];
+    foreach($my_roles as $array) {
+      foreach($array as $value) {
+        if (!(isset($value))) {
+          continue;
+        }
+        $rolename = $value == t('authenticated user') ? 'authenticated user' : $value;
+        if (in_array($rolename, $_user->roles)) {
+          return TRUE;
+        }
+      }
+    }
+  }
+  return FALSE;
+}
+/**
+ * Create or delete acknowledgement.
+ * 
+ * @param array $form_state
+ *   form data
+ * @param bool $create
+ *   create (or delete) acknowledgement   
+ */
+function _sign_for_acknowledgement_table_manual($form_state, $create) {
+  $items = $form_state['values']['myselector'];
+  $nodeid = $form_state['values']['node'];
+  $userid = 0;
+  foreach ($items as $key => $value) {
+    $userid = $key;
+    if (!$value) {
+      continue;
+    }
+    if ($create) {
+      _sign_for_acknowledgement_sign_document($userid, $nodeid);
+    }
+    else {
+      _sign_for_acknowledgement_unsign_document($userid, $nodeid);
+    }
+  }
+  /*
+  if ($userid && function_exists('_tracker_add')) {
+    _tracker_add($nodeid, $GLOBALS['user']->uid, time());
+  }
+  */
+}
+/**
+ * Implements hook_form_submit().
+ */
+function sign_for_acknowledgement_table_form_submit($form, $form_state) {
+  _sign_for_acknowledgement_table_manual($form_state, FALSE);
+}
+/**
+ * Implements hook_form_submit().
+ */
+function sign_for_acknowledgement_table_sign_form_submit($form, $form_state) {
+  _sign_for_acknowledgement_table_manual($form_state, TRUE);
+}
+/**
+ * @param boolean $expired
+ * @param boolean $signed
+ * @return string describing the status of the signature.  
+ */    
+function _sign_for_acknowledgement_partial($expired, $signed)
+{
+  if ($signed) {
+    return '<div class="signed">' . t('document has been signed by you') . '</div>';
+  }
+  else {
+    if (!$expired) {
+      return '<div class="unsigned">' . t('document to be signed by you') . '</div>';
+    }
+    else {
+      return '<div class="expired">' . t('your signature period has expired') . '</div>';
+    }
+  }
+}
+/**
+ * Implements hook_node_view().
+ */
+function sign_for_acknowledgement_node_view($node, $view_mode, $langcode) {
+  $userid = $GLOBALS['user']->uid;
+
+  //$allviews = views_get_all_views();dsm($allviews);
+
+  // remove expiration date field
+  if (isset($node->content['expire_date'])) {
+    $node->content['expire_date'] = NULL;
+  }
+  // remove alternate form field
+  if (isset($node->content['alternate_form'])) {
+    $node->content['alternate_form'] = NULL;
+  }
+  // remove alternate form multiselect field
+  if (isset($node->content['alternate_form_multiselect'])) {
+    $node->content['alternate_form_multiselect'] = NULL;
+  }
+  // remove alternate form field text
+  if (isset($node->content['alternate_form_text'])) {
+    $node->content['alternate_form_text'] = NULL;
+  }
+  // remove enable roles field text
+  if (isset($node->content['enable_roles'])) {
+    $node->content['enable_roles'] = NULL;
+  }
+  // remove enable users field text
+  if (isset($node->content['enable_users'])) {
+    $node->content['enable_users'] = NULL;
+  }
+  // remove email roles field text
+  if (isset($node->content['email_roles'])) {
+    $node->content['email_roles'] = NULL;
+  }
+  // remove email users field text
+  if (isset($node->content['email_users'])) {
+    $node->content['email_users'] = NULL;
+  }
+  // remove annotation field text
+  if (isset($node->content['annotation_field'])) {
+    $node->content['annotation_field'] = NULL;
+  }
+  // remove annotation field text
+  if (isset($node->content['annotation_field_required'])) {
+    $node->content['annotation_field_required'] = NULL;
+  }
+  // No user logged in?
+  if ($userid == 0) {
+    return;
+  }
+  // No node?
+  if (arg(0) != 'node') {
+    return;
+  }
+  // Right content type?
+  if (!(_sign_for_acknowledgement_applies_to($node))) {
+    return;
+  }
+
+  $signature_timestamp = -1;
+  $alternate = '';
+  $annotation = '';
+  $already_signed = _sign_for_acknowledgement_already_signed($userid, $node->nid, $signature_timestamp, $alternate, $annotation);
+  $timestamp = _sign_for_acknowledgement_get_expiration_date(TRUE, $node->nid, $node);
+  $is_expired = ($timestamp && variable_get('sign_for_acknowledgement_block_expired', FALSE) && time() > $timestamp);
+
+  // No full viewing?
+  if ($view_mode != 'full') {
+    $node->content['partial'] = array('#markup' => _sign_for_acknowledgement_partial($is_expired, $already_signed));
+    $node->content['partial']['#weight'] = -1;
+    return;
+  }
+
+  // Get position.
+  $weight = variable_get('sign_for_acknowledgement_weight', 1);
+  if (!is_numeric($weight)) {
+    return;
+  }
+
+  $show_submit = variable_get('sign_for_acknowledgement_show_submit', FALSE);
+
+  $ass_array = array();
+  $do_alt = isset($node->alternate_form['und'])? $node->alternate_form['und'][0]['value'] : FALSE;
+  $do_alt_multi = isset($node->alternate_form_multiselect['und'])? $node->alternate_form_multiselect['und'][0]['value'] : FALSE;
+  $myform = $node->alternate_form && ($do_alt || $do_alt_multi) && !$already_signed? 'sign_for_acknowledgement_alternate_form' : 'sign_for_acknowledgement_form';
+  $ass_array['my_checkbox'] = drupal_get_form($myform, $node, $already_signed, $show_submit, $do_alt_multi); 
+
+  $my_template = 'sign_for_acknowledgement_checkbox'; 
+
+  if ($already_signed) {
+    // template
+    $my_template = 'sign_for_acknowledgement_checkbox_signed';
+  }
+  else if ($is_expired) {
+    // template
+    $my_template = 'sign_for_acknowledgement_checkbox_expired';
+  }
+  else {
+    // warning
+    $msg = filter_xss(variable_get('sign_for_acknowledgement_warning', t('<strong>Please, remember to sign for acknowledgement.</strong>')));
+    drupal_set_message($msg, 'warning', FALSE);
+  }
+
+  $mydate = '';
+  if ($signature_timestamp != -1) {
+    $dateo = new DateObject($signature_timestamp);
+    $mydate = date_format_date($dateo, 'long');
+  }
+
+  $node->content['checkbox'] = array('#markup' => theme($my_template, array ('content' => '', 'user' => NULL, 'date' => $mydate, 'agreement' => filter_xss($alternate), 'annotation' => filter_xss($annotation), 'expire' => '' , 'assoc' => $ass_array)));
+  $node->content['checkbox']['#weight'] = $weight;
+
+}
+/**
+ * Check if we use first/last name.
+ *
+ * @param string $t1
+ *   name of the first table
+ * @param string $t2
+ *   name of the second table
+ *      
+ * @return bool
+ *   TRUE if we use real names 
+ */
+function _sign_for_acknowledgement_use_full_name($t1, $t2) {
+  if ($t1 == NULL || $t1 == '' || $t2 == NULL || $t2 == '') {
+    return FALSE;
+  }
+
+  return (db_table_exists($t1) && db_table_exists($t2));
+}
+/**
+ * Gets the table fullname.
+ *
+ * @param string $t
+ *   variable part of table name
+ *
+ * @return string
+ *   real table name      
+ */
+function _sign_for_acknowledgement_table_name($t) {
+  return ($t == NULL || $t == '') ? NULL : '{field_data_' . $t . '}';
+}
+/**
+ * Test if document is already signed.
+ *
+ * @param int $userid
+ *   id of the current user
+ * @param int $nodeid
+ *   id of the current node
+ * @param int $signature timestamp
+ *   timestamp of the signature
+ *
+ * @return bool
+ *   TRUE if current document is signed by the current user      
+ */
+function _sign_for_acknowledgement_already_signed($userid, $nodeid, &$signature_timestamp, &$alternate, &$annotation) {
+  $result = db_query('SELECT * FROM {sign_for_acknowledgement} WHERE node_id = :nid AND user_id = :uid',
+  array(':nid' => $nodeid, ':uid' => $userid));
+  $rc = ($result->rowCount() > 0);
+  if ($rc == TRUE && $signature_timestamp == -1) {
+    foreach($result as $item) {
+      $signature_timestamp = $item->mydate;
+      $alternate = $item->alternate;
+      $annotation = $item->annotation;
+      break;
+    }
+  }
+  return $rc;
+}
+/**
+ * Create an 'having read' record.
+ *
+ * @param int $userid
+ *   id of the current user
+ * @param int $nodeid
+ *   id of the current node
+ */
+function _sign_for_acknowledgement_sign_document($userid, $nodeid, $annotation = '') {
+  $timestamp = 0;
+  $alternate = '';
+  $note = '';
+  if (_sign_for_acknowledgement_already_signed($userid, $nodeid, $timestamp, $alternate, $note)) {
+    return;
+  }
+  $sign_id = db_insert('sign_for_acknowledgement')
+  ->fields(array(
+    'node_id' => $nodeid,
+    'user_id' => $userid,
+    'mydate' => time(),
+    'annotation' => $annotation,
+    ))
+  ->execute();
+}
+/**
+ * Create an alternate 'having read' record.
+ *
+ * @param int $userid
+ *   id of the current user
+ * @param int $nodeid
+ *   id of the current node
+ * @param string agreement
+ *   user agreement text  
+ */
+function _sign_for_acknowledgement_alternate_sign_document($userid, $nodeid, $agreement, $annotation) {
+  $timestamp = 0;
+  $alternate = '';
+  $note = '';
+  if (_sign_for_acknowledgement_already_signed($userid, $nodeid, $timestamp, $alternate, $note)) {
+    return;
+  }
+  $sign_id = db_insert('sign_for_acknowledgement')
+  ->fields(array(
+    'node_id' => $nodeid,
+    'user_id' => $userid,
+    'mydate' => time(),
+    'alternate' => $agreement,
+    'annotation' => $annotation,
+    ))
+  ->execute();
+}
+/**
+ * Delete an 'having read' record.
+ *
+ * @param int $userid
+ *   id of the current user
+ * @param int $nodeid
+ *   id of the current node
+ */
+function _sign_for_acknowledgement_unsign_document($userid, $nodeid) {
+  // Delete all acknowledgements to this node/user
+  db_delete('sign_for_acknowledgement')
+    ->condition('node_id', $nodeid)
+    ->condition('user_id', $userid)
+    ->execute();
+}
+/**
+ * Implements hook_node_update().
+ */
+function sign_for_acknowledgement_node_update($node) {
+  // Right content type?
+  if (!(_sign_for_acknowledgement_applies_to_bundle($node->type))) {
+    return;
+  }
+  if (isset($node->delete_acknowledgements) && $node->delete_acknowledgements === 1) {
+    // Delete all acknowledgements (and email flags) to this node.
+    db_delete('sign_for_acknowledgement')
+      ->condition('node_id', $node->nid)
+      ->execute();
+  }
+  _sign_for_acknowledgement_node_email($node);
+}
+/**
+ * Get field date for input node.
+ */ 
+function _sign_for_acknowledgement_get_field_date($node, $field, $type)
+{
+  if (!isset($node->$field)) {
+    return NULL;
+  }
+  $datefield = $node->$field;
+  if ($datefield == NULL || !count($datefield) || !isset($datefield['und'][0])) {
+    return NULL;
+  }
+  $rawdate = $datefield['und'][0]['value'];
+  $timezone = $datefield['und'][0]['timezone_db'];
+  if ($rawdate == 'b') {
+    return NULL;
+  }
+  $date = new DateObject(strtotime($rawdate . $timezone));
+  return date_format_date($date, $type);
+}
+/**
+ * Get expiration custom field for current node.
+ *
+ * @param boolean $timestamp (if TRUE return timestamp)
+ * @param int $nodeid (if 0 get the value from url arguments)
+ * @return timestamp OR string (expiration date)
+ */
+function _sign_for_acknowledgement_get_expiration_date($timestamp = FALSE, $nodeid = 0, $node = NULL)
+{
+  if ($node != NULL || $nodeid != 0 || (arg(0) == 'node' && is_numeric(arg(1)))) {
+    if ($nodeid == 0) {
+      $nodeid = arg(1);
+    }
+    if ($node == NULL) {
+      $node = node_load($nodeid);
+    }
+    if ($node == NULL) {
+      return;
+    }
+    if (!count($node->expire_date) || !isset($node->expire_date['und'][0])) {
+      return NULL;
+    }
+    $rawdate = $node->expire_date['und'][0]['value'];
+    $timezone = $node->expire_date['und'][0]['timezone_db'];
+    if ($rawdate == 'b') {
+      return NULL;
+    }
+    if ($timestamp) {
+      return strtotime($rawdate . $timezone);
+    }
+    $date = new DateObject(strtotime($rawdate . $timezone));
+    return date_format_date($date, 'long');
+  }
+  else {
+    return NULL;
+  }
+}
+/**
+ * Reset expiration custom fields.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_expirations($form = NULL) {
+  // Check if our field is not already created.
+  if (!field_info_field('expire_date')) {
+    $field = array(
+      'field_name' => 'expire_date', 
+      'type' => 'date', 
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  //node_types_rebuild();
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    // Create the instances on the bundle.
+    if (!field_info_instance('node', 'expire_date', $bundle)) {
+      $instance = array(
+        'field_name' => 'expire_date', 
+        'entity_type' => 'node', 
+        'label' => t('Sign within this date'), 
+        'bundle' => $bundle, 
+        'default_value' => '',
+        'settings' => array(
+          'default_value' => '',
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+/**
+ * Reset alternate form custom fields.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_alternate_form($form = NULL) {
+  // Check if our field is not already created.
+  if (!field_info_field('alternate_form')) {
+    $field = array(
+      'field_name' => 'alternate_form', 
+      'type' => 'list_boolean', 
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(0 => 0, 1 => 1), //add the default values for the checkbox
+      ),
+    );
+    field_create_field($field);
+  }
+  if (!field_info_field('alternate_form_multiselect')) {
+    $field = array(
+      'field_name' => 'alternate_form_multiselect', 
+      'type' => 'list_boolean', 
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(0 => 0, 1 => 1), //add the default values for the checkbox
+      ),
+    );
+    field_create_field($field);
+  }
+  if (!field_info_field('alternate_form_text')) {
+    $field = array(
+      'field_name' => 'alternate_form_text', 
+      'type' => 'text_long', 
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    // Create the instances on the bundle.
+    if (!field_info_instance('node', 'alternate_form', $bundle)) {
+      $instance = array(
+        'field_name' => 'alternate_form', 
+        'entity_type' => 'node', 
+        'label' => t('Use acknowledgement alternate form'),
+        'type' => 'list_boolean', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'options_onoff',
+          'settings' => array('display_label' => 1),
+        ),
+        'default_value' => '0',
+        'settings' => array(
+          'default_value' => '0',
+        )
+      );
+      field_create_instance($instance);
+    }
+    if (!field_info_instance('node', 'alternate_form_multiselect', $bundle)) {
+      $instance = array(
+        'field_name' => 'alternate_form_multiselect', 
+        'entity_type' => 'node', 
+        'label' => t('Use acknowledgement alternate form (multiselect)'),
+        'type' => 'list_boolean', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'options_onoff',
+          'settings' => array('display_label' => 1),
+        ),
+        'default_value' => '0',
+        'settings' => array(
+          'default_value' => '0',
+        )
+      );
+      field_create_instance($instance);
+    }
+    if (!field_info_instance('node', 'alternate_form_text', $bundle)) {
+      $instance = array(
+        'field_name' => 'alternate_form_text', 
+        'entity_type' => 'node', 
+        'label' => t('Radio buttons strings'),
+        'description' => t('Alternate form radio buttons strings, one per line; leave it void if you want to use global configuration values.'),
+        'type' => 'text_long', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'text_textarea',
+        ),
+        'default_value' => '',
+        'settings' => array(
+          'default_value' => '',
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+/**
+ * Reset annotation custom field.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_annotation_field($form = NULL) {
+  // Check if our field is not already created.
+  if (!field_info_field('annotation_field')) {
+    $field = array(
+      'field_name' => 'annotation_field', 
+      'type' => 'list_boolean', 
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(0 => 0, 1 => 1), //add the default values for the checkbox
+      ),
+    );
+    field_create_field($field);
+  }
+  // Check if our field is not already created.
+  if (!field_info_field('annotation_field_required')) {
+    $field = array(
+      'field_name' => 'annotation_field_required', 
+      'type' => 'list_boolean', 
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(0 => 0, 1 => 1), //add the default values for the checkbox
+      ),
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    // Create the instances on the bundle.
+    if (!field_info_instance('node', 'annotation_field', $bundle)) {
+      $instance = array(
+        'field_name' => 'annotation_field', 
+        'entity_type' => 'node', 
+        'label' => t('Use annotation field'),
+        'type' => 'list_boolean', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'options_onoff',
+          'settings' => array('display_label' => 1),
+        ),
+        'default_value' => '0',
+        'settings' => array(
+          'default_value' => '0',
+        )
+      );
+      field_create_instance($instance);
+    }
+    // Create the instances on the bundle.
+    if (!field_info_instance('node', 'annotation_field_required', $bundle)) {
+      $instance = array(
+        'field_name' => 'annotation_field_required', 
+        'entity_type' => 'node', 
+        'label' => t('Require annotation field'),
+        'type' => 'list_boolean', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'options_onoff',
+          'settings' => array('display_label' => 1),
+        ),
+        'default_value' => '0',
+        'settings' => array(
+          'default_value' => '0',
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+/**
+ * Reset enable roles fields.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_roles($form = NULL, $force_nosign = FALSE) {
+  // Check if our field is not already created.
+  if (!field_info_field('enable_roles')) {
+    $field = array(
+      'field_name' => 'enable_roles', 
+      'type' => 'list_text',
+      'cardinality' => -1, 
+      'settings' => array('allowed_values_function' => '_sign_for_acknowledgement_get_roles'),
+    );
+    field_create_field($field);
+  }
+  if (!field_info_field('enable_roles_nosign')) {
+    $field = array(
+      'field_name' => 'enable_roles_nosign', 
+      'type' => 'list_text',
+      'cardinality' => -1, 
+      'settings' => array('allowed_values_function' => '_sign_for_acknowledgement_get_roles'),
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  //node_types_rebuild();
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    // Create the instances on the bundle.
+    if (!field_info_instance('node', 'enable_roles', $bundle)) {
+      $instance = array(
+        'field_name' => 'enable_roles', 
+        'entity_type' => 'node', 
+        'label' => t('Select the roles that are required to sign'), 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'options_buttons',
+        ),
+      );
+      field_create_instance($instance);
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', $bundle);
+      $results = $query->execute();
+      if (!empty($results)) {
+        $nodes = node_load_multiple(array_keys($results['node']));
+        foreach($nodes as $node) {
+          $node->enable_roles[LANGUAGE_NONE] = _sign_for_acknowledgement_roles_to_field();
+          if (empty($node->original)) {
+            $node->original = entity_load_unchanged('node', $node->nid);
+          }
+          field_attach_update('node', $node); // node_save($node);
+        }
+      }
+    } // create instance
+    $existing_instance = field_info_instance('node', 'enable_roles_nosign', $bundle);
+    if (!$existing_instance || $force_nosign) {
+      if (!$existing_instance) {
+        $instance = array(
+          'field_name' => 'enable_roles_nosign', 
+          'entity_type' => 'node', 
+          'label' => t('Select the roles to which send email (no signature).'), 
+          'bundle' => $bundle, 
+          'widget' => array(
+            'type' => 'options_buttons',
+          ),
+        );
+        field_create_instance($instance);
+      }
+      $query = new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', $bundle);
+      $results = $query->execute();
+      if (!empty($results)) {
+        $nodes = node_load_multiple(array_keys($results['node']));
+        foreach($nodes as $node) {
+          $roles_list = _sign_for_acknowledgement_roles_to_field();
+          if ($force_nosign) {
+            $roles_list = array();
+          }
+          $node->enable_roles_nosign[LANGUAGE_NONE] = $roles_list;
+          if (empty($node->original)) {
+            $node->original = entity_load_unchanged('node', $node->nid);
+          }
+          field_attach_update('node', $node); // node_save($node);
+        }
+      }
+    } // create instance
+  }
+}
+/**
+ * Reset users custom field.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_users($form = NULL) {
+  // Check if our field is not already created.
+  if (!field_info_field('enable_users')) {
+    $field = array(
+      'field_name' => 'enable_users', 
+      'type' => 'text_long', 
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    if (!field_info_instance('node', 'enable_users', $bundle)) {
+      $instance = array(
+        'field_name' => 'enable_users', 
+        'entity_type' => 'node', 
+        'label' => t('Users to enable'),
+        'description' => t('Serialized list of all users enabled to sign for acknowledgement.'),
+        'type' => 'text_long', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'text_textarea',
+        ),
+        'default_value' => '',
+        'settings' => array(
+          'default_value' => '',
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+/**
+ * Reset users custom field. *new version*.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_users_2($form = NULL) {
+  // Check if our field is not already created.
+  if (!field_info_field('enable_users')) {
+    $field = array(
+      'field_name' => 'enable_users', 
+      'type' => 'list_text', 
+      'cardinality' => -1, 
+        'settings' => array(
+          'allowed_values_function' => '_sign_for_acknowledgement_users',
+        )
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    if (!field_info_instance('node', 'enable_users', $bundle)) {
+      $widget = module_exists('multiple_selects') ? 'multiple_selects' : 'options_select';
+      $instance = array(
+        'field_name' => 'enable_users', 
+        'entity_type' => 'node', 
+        'label' => t('Users to enable'),
+        'description' => t('List of all users enabled to sign for acknowledgement.'),
+        'type' => 'list_text', 
+        'cardinality' => -1, 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => $widget,
+        ),
+        'default_value' => '',
+        'settings' => array(
+          'default_value' => '',
+          'allowed_values_function' => '_sign_for_acknowledgement_users',
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+/**
+ * Reset emails custom fields.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_emails($form = NULL) {
+  // Check if our field is not already created.
+  if (!field_info_field('email_roles')) {
+    $field = array(
+      'field_name' => 'email_roles', 
+      'type' => 'list_boolean', 
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(0 => 0, 1 => 1), //add the default values for the checkbox
+      ),
+    );
+    field_create_field($field);
+  }
+  if (!field_info_field('email_users')) {
+    $field = array(
+      'field_name' => 'email_users', 
+      'type' => 'list_boolean', 
+      'cardinality' => 1,
+      'settings' => array(
+        'allowed_values' => array(0 => 0, 1 => 1), //add the default values for the checkbox
+      ),
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    // Create the instances on the bundle.
+    if (!field_info_instance('node', 'email_roles', $bundle)) {
+      $instance = array(
+        'field_name' => 'email_roles', 
+        'entity_type' => 'node', 
+        'label' => t('Send e-mail to notify users of selected roles'),
+        'type' => 'list_boolean', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'options_onoff',
+          'settings' => array('display_label' => 1),
+        ),
+        'default_value' => '0',
+        'settings' => array(
+          'default_value' => '0',
+        )
+      );
+      field_create_instance($instance);
+    }
+    if (!field_info_instance('node', 'email_users', $bundle)) {
+      $instance = array(
+        'field_name' => 'email_users', 
+        'entity_type' => 'node', 
+        'label' => t('Send e-mail to notify selected users'),
+        'type' => 'list_boolean', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'options_onoff',
+          'settings' => array('display_label' => 1),
+        ),
+        'default_value' => '0',
+        'settings' => array(
+          'default_value' => '0',
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+/**
+ * Reset sfa_status custom field.
+ *
+ * @param array $form
+ *   configuration form array
+ *   if NULL get data from module variable 
+ */
+function _sign_for_acknowledgement_reset_views($form = NULL) {
+  // Check if our field is not already created.
+  if (!field_info_field('field_sfa_status')) {
+    $field = array(
+      'field_name' => 'field_sfa_status', 
+      'type' => 'markup', 
+      'settings' => array(
+        'default_value' => '',
+        'markup' => array (
+          'value' => t('Status in Views lists enabled'),
+          'format' => 'full_html',
+        )
+      )
+    );
+    field_create_field($field);
+  }
+  if ($form) {
+    $apply_to = $form['sign_for_acknowledgement_content1']['sign_for_acknowledgement_node_types']['#value'];
+  }
+  else {
+    $apply_to = variable_get('sign_for_acknowledgement_node_types', array('article' => 'article'));
+  }
+  $node_types = node_type_get_types();
+  foreach ($node_types as $node_type) {
+    $bundle = $node_type->type;
+    if (!_sign_for_acknowledgement_applies_to_bundle($bundle, $apply_to)) {
+      continue;
+    }
+    if (!field_info_instance('node', 'field_sfa_status', $bundle)) {
+      $instance = array(
+        'field_name' => 'field_sfa_status', 
+        'entity_type' => 'node', 
+        'label' => t('sfa_status'),
+        'description' => t('Field to handle signatures in views lists.'),
+        'type' => 'markup', 
+        'bundle' => $bundle, 
+        'widget' => array(
+          'type' => 'markup',
+        ),
+        'default_value' => '',
+        'settings' => array(
+          'default_value' => '',
+          'markup' => array (
+             'value' => t('Status in Views lists enabled'),
+             'format' => 'full_html',
+          )
+        )
+      );
+      field_create_instance($instance);
+    }
+  }
+}
+function _sign_for_acknowledgement_roles_to_field()
+{
+  $rc = array();
+  $vars = variable_get('sign_for_acknowledgement_roles',_sign_for_acknowledgement_get_roles(FALSE));
+  foreach($vars as $key => $value) {
+    if ($key != $value) {
+      continue;
+    }
+    $rc[] = array('value' => $value);
+  }
+  return $rc;
+}
+/**
+ * Reset all node fields
+ * @param array $form: form data 
+ */ 
+function _sign_for_acknowledgement_reset_node_fields($form) {
+  _sign_for_acknowledgement_reset_views($form);
+  _sign_for_acknowledgement_reset_alternate_form($form);
+  _sign_for_acknowledgement_reset_expirations($form);
+  _sign_for_acknowledgement_reset_roles($form);
+  _sign_for_acknowledgement_reset_users_2($form);
+  _sign_for_acknowledgement_reset_annotation_field($form);
+  _sign_for_acknowledgement_reset_emails($form);
+}
+/**
+ * List user administration filters that can be applied.
+ */
+function _sign_for_acknowledgement_filters($node) {
+  $filters = array();
+
+  $options = array();
+  $options['any'] = t('any');
+  $options[SIGNED_OK] = SIGNED_OK;
+  $options[TO_BE_SIGNED] = TO_BE_SIGNED;
+  if (count($node->expire_date)) {
+    $options[TERMS_EXPIRED] = TERMS_EXPIRED;
+    $options[OUT_OF_TERMS] = OUT_OF_TERMS;
+  }
+  $filters['status'] = array(
+    'title' => t('status'),
+    'options' => $options,
+  );
+  if (count($node->alternate_form) && $node->alternate_form[LANGUAGE_NONE][0]['value']) {
+    $first_key = -1;
+    $array = _sign_for_acknowledgement_alternate_options($node, $first_key);
+    $options = array('any' => t('any'));
+    foreach($array as $item) {
+      $options[$item] = $item;
+    }
+    $filters['agreement'] = array(
+      'title' => t('agreement'),
+      'options' => $options,
+    );
+  }
+  $custom_fields = _sign_for_acknowledgement_fields(variable_get('sign_for_acknowledgement_fields', array()));
+  foreach ($custom_fields as $key => $value) {
+    $array = field_info_field($key);
+    if ($array['type'] != 'list_text') {
+      continue;
+    }
+    if ($array && count($array)) {
+      $array = array_map('check_plain', $array['settings']['allowed_values']);
+    }
+    $options = array('any' => t('any')) + $array;
+    $filters[$key] = array(
+      'title' => $value,
+      'options' => $options,
+    );
+  }
+  return $filters;
+}
+

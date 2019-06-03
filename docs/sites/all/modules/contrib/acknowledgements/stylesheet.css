@@ -1,0 +1,21 @@
+/* CSS Document */
+#sign_for_acknowledgement_checkbox {
+  background-color: #ff8;
+  color: #00f;
+}
+.sign_for_acknowledgement_sfa_status label, .sign_for_acknowledgement_sfa_status span {
+  background-color: #023D77;
+  color: #fff;
+}
+.signed {
+  background-color: #fff;
+  color: #0f0;
+  font-style: italic;
+  font-weight: bold;
+}
+.unsigned, .expired {
+  background-color: #fff;
+  color: #f00;
+  font-style: italic;
+  font-weight: bold;
+}
