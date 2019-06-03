@@ -1,0 +1,21 @@
+<?php
+
+/**
+ * @file
+ * Add support for email to be used with web service fields.
+ */
+
+/**
+ * Implements hook_wsfields_FIELD_TYPE_data_alter().
+ */
+function ws_email_wsfields_email_data_alter($data, $field) {
+  $field_data = array();
+
+  $language_keys = array_keys($data);
+  $language = $language_keys[0];
+  foreach ($data[$language] as $index => $value) {
+    $field_data[$language][$index]['email'] = $value;
+  }
+
+  return $field_data;
+}

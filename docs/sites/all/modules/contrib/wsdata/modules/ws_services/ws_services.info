@@ -1,0 +1,17 @@
+name = Web Service Data Services Intergration
+description = Provides the default WsConnector classes for integrating with the services module.
+core = 7.x
+package = Web Service Data
+
+dependencies[] = wsdata
+dependencies[] = wsconfig
+
+files[] = includes/WsDataNode.inc
+files[] = includes/WsDataUser.inc
+files[] = includes/WsDataFile.inc
+
+; Information added by Drupal.org packaging script on 2018-09-07
+version = "7.x-1.4"
+core = "7.x"
+project = "wsdata"
+datestamp = "1536330184"
