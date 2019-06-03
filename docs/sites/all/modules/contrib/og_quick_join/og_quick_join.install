@@ -1,0 +1,79 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Organic Groups Quick Join module.
+ */
+
+
+/**
+ * Implements hook_install().
+ */
+function og_quick_join_install() {
+  $t = get_t();
+  // Insert some default CAPTCHA points.
+  $form_ids = array(
+    'og_quick_join_block',
+  );
+  if (db_table_exists('captcha_points') ) {//If the captcha table exists.
+    foreach ($form_ids as $form_id) {
+      $query = db_select('captcha_points', 'cp')
+        ->fields('cp', array('form_id'));
+      $result = $query
+        ->condition('cp.form_id', $form_id)
+        ->execute()->fetchField();
+      if ($result != $form_id ) {// Ensure that the record for this form doesn't exist.
+        db_insert('captcha_points')
+          ->fields(array(
+            'form_id' => $form_id,
+            'module' => NULL,
+            'captcha_type' => NULL,
+        ))
+        ->execute();
+      }
+    }
+  }
+
+  // Be friendly to your users: what to do after install?
+  drupal_set_message($t('You can now <a href="!og_quick_join_admin">configure the OG Quick Join block</a> for your site.',
+    array('!og_quick_join_admin' => url('admin/structure/block/manage/og_quick_join/join_group/configure'))), 'status');
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function og_quick_join_uninstall() {
+
+  db_query("DELETE FROM {captcha_points} WHERE form_id = 'og_quick_join_block'");
+
+  // now delete all the records in the variables table.
+
+  variable_del('og_quick_join_header_text');
+  variable_del('og_quick_join_header_email_description');
+  variable_del('og_quick_join_ask_username');
+  variable_del('og_quick_join_ask_password');
+  $fields = field_info_instances('user', 'user');
+  unset($fields['og_user_node']);
+  if (count($fields)) {// If this Drupal installation has any user profile fields
+    variable_del('og_quick_join_profile_fields');
+  }
+  variable_del('og_quick_join_groups_to_join_header');
+  $groups = og_get_all_group();
+  foreach ($groups AS $order => $nid) {
+    variable_del('og_quick_join_' . $nid . '_group');
+    variable_del('og_quick_join_' . $nid . '_group_label');
+  }
+
+  variable_del('og_quick_join_roles_to_join_header');
+  $roles = user_roles(TRUE);
+  unset($roles[DRUPAL_AUTHENTICATED_RID]);
+  foreach ($roles AS $rid => $role) {
+    if (substr(strtolower($role), 0, 5) == 'admin' ||  substr(strtolower($role), 0, 4) == 'root')
+      continue;  // don't allow an admin or root role even enter the picture
+    variable_del('og_quick_join_' . $rid . '_role');
+  }
+  variable_del('og_quick_join_button_text');
+  variable_del('og_quick_join_confirmation_message');
+
+}

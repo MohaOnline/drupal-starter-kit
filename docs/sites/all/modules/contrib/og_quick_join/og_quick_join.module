@@ -1,0 +1,646 @@
+<?php
+
+/**
+ * @file
+ * A block that allows for joining the site and Organic Groups, quickly.
+ * When used with OG Mailinglist, allows a Drupal site to work like
+ * MailChimp, iContact, SendGrid, ConstantContact, etc.
+ */
+
+/**
+ * Implements hook_views_api().
+ */
+function og_quick_join_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'og_quick_join') . '/includes',
+  );
+}
+
+/**
+ * Implements hook_block_info().
+ *
+ * Add a custom OG Quick Join block.
+ */
+function og_quick_join_block_info() {
+  $blocks['join_group'] = array(
+    'info' => t('OG Quick Join'),
+    'cache' => DRUPAL_NO_CACHE,
+    // DRUPAL_CACHE_PER_ROLE will be assumed if not set.
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function og_quick_join_theme() {
+  $module_path = drupal_get_path('module', 'og_quick_join');
+
+  $base = array(
+    'file' => 'theme.inc',
+    'path' => "$module_path/theme",
+   );
+
+  return array(
+    'og_quick_join_group' => $base + array(
+      'render element' => 'element',
+      'template' => 'og-quick-join-group',
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ * Add a OG quick join block.
+ */
+function og_quick_join_block_view($delta = '') {
+
+  $block = array();
+
+  switch ($delta) {
+    case 'join_group':
+      $block['subject'] = t('Subject');
+      $block['content'] = drupal_get_form('og_quick_join_block');
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Add a OG quick join block.
+ */
+function og_quick_join_block($form, $form_state) {
+
+  // Account information.
+  $form['#action'] = url(current_path(), array('query' => drupal_get_destination(), 'external' => FALSE));
+  $form['#id'] = 'og-quick-join-form';
+  $form['#validate'][] = 'og_quick_join_validate';
+  $form['#submit'][] = 'og_quick_join_submit';
+
+  $form['account'] = array(
+    '#type'   => 'container',
+    '#weight' => -10,
+  );
+  // Only show name field on registration form or user can change own username.
+
+  $form['markup'] = array(
+    '#markup' => variable_get('og_quick_join_header_text'),
+    '#weight' => -20,
+  );
+  $form['mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email'),
+    '#size' => 30,
+    '#maxlength' => EMAIL_MAX_LENGTH,
+    '#description' => t(variable_get('og_quick_join_email_description', '')),
+    '#required' => TRUE,
+    '#default_value' => '',
+    '#weight' => -15,
+  );
+  if (variable_get('og_quick_join_ask_username')) {
+    $form['name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Username'),
+      '#size' => 30,
+      '#maxlength' => USERNAME_MAX_LENGTH,
+      '#description' => t('Spaces are allowed; punctuation is not allowed except for periods, hyphens, apostrophes, and underscores.'),
+      '#required' => TRUE,
+      '#attributes' => array('class' => array('username')),
+      '#default_value' => '',
+      '#weight' => -10,
+    );
+  } // else auto generate username
+
+  // Display password field only for existing users or when user is allowed to
+  // assign a password during registration.
+  if (variable_get('og_quick_join_ask_password')) {
+    $form['pass'] = array('#type' => 'password',
+      '#title' => t('Password'),
+      '#size' => 30,
+      '#required' => TRUE,
+      '#weight' => -30,
+    );
+    $form['pass_confirm'] = array(
+      '#type' => 'password_confirm',
+      '#size' => 30,
+      '#required' => TRUE,
+      '#weight' => -31,
+    );
+  }
+
+  $form['#user'] = drupal_anonymous_user();
+  $form['#user_category'] = 'register';
+  $form['#attached']['library'][] = array('system', 'jquery.cookie');
+  $form['#attributes']['class'][] = 'user-info-from-cookie';
+
+  // Attach field widgets, and hide the ones where the 'user_register_form'
+  // setting is not on.
+  $profile_fields_to_collect = variable_get('og_quick_join_profile_fields', array());
+  $langcode = entity_language('user', $form['#user']);
+  field_attach_form('user', $form['#user'], $form, $form_state, $langcode);
+  $form['og_user_node']['#access'] = FALSE;
+  foreach (field_info_instances('user', 'user') as $field_name => $instance) {
+    if ($field_name == 'og_user_node') {
+      continue;
+    }
+    if (in_array($field_name, $profile_fields_to_collect) &&
+      ($profile_fields_to_collect[$field_name] === $field_name)) {
+      $form[$field_name]['#access'] = TRUE;
+    }
+    else {
+      $form[$field_name]['#access'] = FALSE;
+    }
+  }
+  $groups = og_get_all_group();
+
+  $group_options = array();
+  foreach ($groups as $order => $nid) {
+    $node = node_load($nid);
+    if (variable_get('og_quick_join_' . $nid . '_group') == 1) { // Ask if user wants to join group
+      $group_options[$nid] = variable_get('og_quick_join_' . $nid . '_group_label', $node->title);
+    } // done if this is one to ask about
+  } // done foreach
+
+  if (count($group_options) >= 1) {
+    $form['groups']
+      = array(
+        '#type' => 'checkboxes',
+        '#title' => t(variable_get('og_quick_join_groups_to_join_header', 'Groups to join:')),
+        '#default_value' => array(),
+        '#options' => $group_options,
+        '#description' => '',
+        '#weight' => 40,
+     );
+  }
+
+  // ok now show role join options
+  $roles = user_roles(TRUE);
+  unset($roles[DRUPAL_AUTHENTICATED_RID]);
+
+  foreach ($roles AS $rid => $role) {
+    if (substr(strtolower($role), 0, 5) == 'admin' ||  substr(strtolower($role), 0, 4) == 'root') {
+      continue;  // don't allow an admin or root role even enter the picture
+    }
+    if (variable_get('og_quick_join_' . $rid . '_role') == 1) { // Ask if this user wants to join this role
+      $role_options[$rid] = $role;
+    } // done if this is one to ask about
+  } // done foreach
+
+  if (isset($role_options) && count($role_options) > 1) {
+    $form['roles'] =
+      array('#type' => 'checkboxes',
+       '#title' => t(variable_get('og_quick_join_roles_to_join_header', 'Roles to join:')),
+       '#default_value' => array(),
+       '#options' => $role_options,
+       '#description' => '',
+       '#weight' => 50,
+    );
+  }
+  elseif (isset($role_options) && count($role_options) == 1) {
+    $form['roles'] =
+      array('#type' => 'checkbox',
+        '#title' => strlen(variable_get('og_quick_join_roles_to_join_header')) ? t(variable_get('og_quick_join_roles_to_join_header', 'Join ' . $role)) : t('Join ' . $role),
+        '#default_value' => '',
+        '#description' => '',
+        '#weight' => 50,
+      );
+   }
+
+  $form['actions'] = array('#type' => 'actions');
+  $form['actions']['submit'] = array('#type' => 'submit',  '#value' => t(variable_get('og_quick_join_button_text', 'Subscribe')),
+  );
+  return $form;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function og_quick_join_block_configure($delta = '') {
+  global $user;
+
+  $group_options = array(0 => 'Hide Group', 1 => 'Allow Subscriber to Select Group', 2 => 'Automatically Subscribe to Group');
+  $role_options  = array(0 => 'Hide Role',  1 => 'Allow Subscriber to Select Role',  2 => 'Automatically Assign Subscriber to Role');
+
+  switch ($delta) {
+    default:
+    case 'join_group':
+      $form['og_quick_join_header_text'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Header text:'),
+        '#default_value' => variable_get('og_quick_join_header_text', ''),
+        '#size' => 128,
+        '#maxlength' => 128,
+        '#required' => FALSE,
+      );
+      $form['og_quick_join_email_description'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Description for Email field:'),
+        '#default_value' => variable_get('og_quick_join_email_description_text', ''),
+        '#size' => 128,
+        '#maxlength' => 128,
+        '#required' => FALSE,
+      );
+      $form['og_quick_join_groups_to_join_header'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Header above list of groups to join:'),
+        '#default_value' => variable_get('og_quick_join_groups_to_join_header', 'Select Groups to Join:'),
+        '#size' => 30,
+        '#maxlength' => 60,
+        '#required' => FALSE,
+        '#description' => 'This is only required if there are optional groups to join.',
+      );
+      $form['groups_markup'] = array(
+        '#markup' => t('<strong>Select how each Organic Group will be handled in the OG Quick Join Block:</strong>'),
+      );
+      $groups = og_get_all_group();
+      foreach ($groups AS $order => $nid) {
+        $node = node_load($nid);
+        $groups_title[$nid] = $node->title;
+        $form['og_quick_join_' . $nid . '_group_label']
+          = array(
+            '#type'          => 'textfield',
+            '#title'         => t($node->title . '<i> group label:</i>'),
+            '#default_value' => variable_get('og_quick_join_' . $nid . '_group_label', $node->title),
+            '#size'          => 50,
+            '#maxlength'     => 255,
+            '#required'      => FALSE,
+            '#description'   => t('Enter the label to show to the user for this group if the user is allowed to chose to subscribe to it.'));
+        $form['og_quick_join_' . $nid . '_group']
+          = array('#type'          => 'radios',
+            '#title'         => t($node->title . '<i> group options:</i>'),
+            '#default_value' => variable_get('og_quick_join_' . $nid . '_group', 0),
+            '#options'       => $group_options,
+            '#description'   => '');
+      }
+
+      $fields = field_info_instances('user', 'user');
+
+      foreach ($fields as $field) {
+        $machine_name = $field['field_name'];
+        $label = $field['label'];
+        if ($label == 'Group membership')
+          continue;  // don't collect group membership, we're doing that already
+          $profile_fields[$machine_name] = $label;
+      }
+      if (isset($profile_fields)) {    // if this Drupal installation has any user profile fields
+        $form['og_quick_join_profile_fields'] =
+          array(
+            '#type' => 'checkboxes',
+            '#title' => t('Profile fields to collect:'),
+            '#default_value' => variable_get('og_quick_join_profile_fields', array()),
+            '#options' => $profile_fields,
+            '#description' => t('Select the profile fields above that you want to collect as a part of the subscription.'));
+      }
+      $form['og_quick_join_ask_username'] =
+        array('#type'          => 'checkbox',
+              '#title'         => t('Ask the subscriber for a username.'),
+              '#default_value' => variable_get('og_quick_join_ask_username', ''),
+              '#description'   => t("If you want the subscriber to select a username, check the box above. Otherwise, the username will default to the text before the '@' sign in the user's Email address."));
+
+      $form['og_quick_join_ask_password'] =
+       array('#type'          => 'checkbox',
+             '#title'         => t('Ask the subscriber for a password.'),
+             '#default_value' => variable_get('og_quick_join_ask_password', ''),
+             '#description'   => t('If you want the subscriber to select a password, check the box above. Otherwise, a random password will be generated.'));
+
+      $form['og_quick_join_roles_to_join_header'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Header above list of roles to join'),
+              '#default_value' => variable_get('og_quick_join_roles_to_join_header', 'Select Roles to Join:'),
+              '#size' => 30,
+              '#maxlength' => 60,
+              '#required' => FALSE,
+              '#description' => t('This is only required if there are two or more optional roles to join.'),
+        '#weight' => '70');
+
+      // We can disregard the authenticated user role since it is assigned to each
+      // user by Drupal.
+      $roles = user_roles(TRUE);
+      unset($roles[DRUPAL_AUTHENTICATED_RID]);
+      $form['roles_markup'] = array(
+        '#markup' => t('<strong>Select how each Drupal Role will be handled in the OG Quick Join Block:</strong>'),
+      );
+
+      foreach ($roles AS $rid => $role) {
+        if (substr(strtolower($role), 0, 5) == 'admin' ||  substr(strtolower($role), 0, 4) == 'root')
+          continue;  // don't allow an admin or root role even enter the picture
+        $form['og_quick_join_' . $rid . '_role'] =
+        array('#type'          => 'radios',
+             '#title'         => t($role . '<i> role:</i>'),
+             '#default_value' => variable_get('og_quick_join_' . $rid . '_role', 0),
+             '#options'       => $role_options,
+             '#description'   => '',
+             '#weight'        => 80,
+        );
+      }
+      $form['og_quick_join_confirmation_message'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Confirmation Message'),
+        '#default_value' => variable_get('og_quick_join_confirmation_message', ''),
+        '#size' => 128,
+        '#maxlength' => 128,
+        '#required' => FALSE,
+        '#weight' => 90,
+      );
+      $form['og_quick_join_button_text'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Button Text'),
+        '#default_value' => variable_get('og_quick_join_button_text', 'Subscribe'),
+        '#size' => 30,
+        '#maxlength' => 60,
+        '#required' => TRUE,
+        '#weight' => 100,
+      );
+    break;
+
+  }
+  return $form;
+}
+
+
+/**
+ * Implements hook_block_save().
+ */
+function og_quick_join_block_save($delta = '', $edit = array()) {
+  global $user;
+
+  switch ($delta) {
+    case 'join_group':  // note, if you change any variables here, please update og_quick_join_uninstall() in og_quick_join.install
+      og_quick_join_var_set('og_quick_join_header_text',                $edit['og_quick_join_header_text']);
+      og_quick_join_var_set('og_quick_join_header_email_description',   $edit['og_quick_join_email_description']);
+      og_quick_join_var_set('og_quick_join_ask_username',               $edit['og_quick_join_ask_username']);
+      og_quick_join_var_set('og_quick_join_ask_password',               $edit['og_quick_join_ask_password']);
+      $fields = field_info_instances('user', 'user');
+      unset($fields['og_user_node']);
+      if (count($fields)) {    // if this Drupal installation has any user profile fields
+        og_quick_join_var_set('og_quick_join_profile_fields',           $edit['og_quick_join_profile_fields']);
+      }
+      og_quick_join_var_set('og_quick_join_groups_to_join_header',      $edit['og_quick_join_groups_to_join_header']);
+      $groups = og_get_all_group();
+      foreach ($groups AS $order => $nid) {
+        og_quick_join_var_set('og_quick_join_' . $nid . '_group',       $edit['og_quick_join_' . $nid . '_group']);
+        og_quick_join_var_set('og_quick_join_' . $nid . '_group_label', $edit['og_quick_join_' . $nid . '_group_label']);
+      }
+
+      og_quick_join_var_set('og_quick_join_roles_to_join_header',       $edit['og_quick_join_roles_to_join_header']);
+      $roles = user_roles(TRUE);
+      unset($roles[DRUPAL_AUTHENTICATED_RID]);
+      foreach ($roles AS $rid => $role) {
+        if (substr(strtolower($role), 0, 5) == 'admin' ||  substr(strtolower($role), 0, 4) == 'root')
+          continue;  // don't allow an admin or root role even enter the picture
+        og_quick_join_var_set('og_quick_join_' . $rid . '_role',        $edit['og_quick_join_' . $rid . '_role']);
+      }
+      og_quick_join_var_set('og_quick_join_button_text',                $edit['og_quick_join_button_text']);
+      og_quick_join_var_set('og_quick_join_confirmation_message',       $edit['og_quick_join_confirmation_message']);
+      break;
+   }
+}
+
+
+function og_quick_join_var_set($variable, $value) {
+
+   return  variable_set($variable, isset($value) ? $value : '');
+}
+
+/**
+ * Creates the Group create content links.
+ */
+function og_quick_join_node_links() {
+  $group = og_context();
+
+  $types = array();
+  foreach (node_type_get_types() as $type) {
+    if (og_is_group_content_type('node', $type->type)) {
+      $types[$type->type] = $type->type;
+    }
+  }
+
+  $content = og_node_create_links($group['group_type'], $group['gid'], OG_AUDIENCE_FIELD, NULL, $types);
+
+  return drupal_render($content);
+}
+
+
+/*
+ *
+ */
+function og_quick_join_validate(&$form, &$form_state) {
+
+  if (variable_get('og_quick_join_ask_username', TRUE)) {
+
+    // Trim whitespace from name, to prevent confusing 'username not valid'
+    // warnings often caused by cutting and pasting.
+    $name = trim($form_state['values']['name']);
+    form_set_value($form['name'], $name, $form_state);
+
+    if (isset($form_state['values']['name'])) {
+      if ($error = user_validate_name($form_state['values']['name'])) {
+        form_set_error('name', $error);
+      }
+      elseif ((bool) db_select('users')->fields('users', array('uid'))->condition('name', db_like($form_state['values']['name']), 'LIKE')->range(0, 1)->execute()->fetchField()) {
+        form_set_error('name', t('The name %name is already taken.', array('%name' => $form_state['values']['name'])));
+      }
+    }
+  }
+
+    // Trim whitespace from mail, to prevent confusing 'e-mail not valid'
+    // warnings often caused by cutting and pasting.
+    $mail = trim($form_state['values']['mail']);
+    form_set_value($form['mail'], $mail, $form_state);
+
+    // Validate the e-mail address, and check if it is taken by an existing user.
+    if ($error = user_validate_mail($form_state['values']['mail'])) {
+      form_set_error('mail', $error);
+    }
+   // elseif ((bool) db_select('users')->fields('users', array('uid'))->condition('uid', $account->uid, '<>')->condition('mail', db_like($form_state['values']['mail']), 'LIKE')->range(0, 1)->execute()->fetchField()) {
+      // Format error message dependent on whether the user is logged in or not.
+      // the email address is already registered, but that is ok in this case.
+      /*
+      if ($GLOBALS['user']->uid) {
+        form_set_error('mail', t('The e-mail address %email is already taken.', array('%email' => $form_state['values']['mail'])));
+      }
+      else {
+        form_set_error('mail', t('The e-mail address %email is already registered. <a href="@password">Have you forgotten your password?</a>', array('%email' => $form_state['values']['mail'], '@password' => url('user/password'))));
+      }  */
+
+    // }
+
+}
+
+
+/*
+ * Copied from user_register_submit()
+ */
+function og_quick_join_submit($form, &$form_state) {
+  //$admin = $form_state['values']['administer_users'];
+
+  // first see if this e-mail already exists
+  $uid = db_select('users')->fields('users', array('uid'))->condition('mail', db_like($form_state['values']['mail']), 'LIKE')->range(0, 1)->execute()->fetchField();
+
+  if ($uid) {
+    // this user already exists, get the rest of the account information
+    $account = user_load($uid);
+  }
+  else {  // create the user
+    // Format error
+    if (variable_get('og_quick_join_ask_username', FALSE)) {
+      $username = $form_state['values']['name'];
+    }
+    else {
+      $username = og_quick_join_generate_username($form_state['values']['mail']);
+    }
+
+    if (variable_get('og_quick_join_ask_password', FALSE)) {
+      $pass = $form_state['values']['pass'];
+    }
+    else {
+      $pass = user_password();
+    }
+    $notify = !empty($form_state['values']['notify']);
+
+    $roles = user_roles(TRUE);
+
+    unset($roles[DRUPAL_AUTHENTICATED_RID]);
+    $roles_to_add = array(2 => 1);   // add the authenticated role
+
+    foreach ($roles AS $rid => $role) {
+      if (substr(strtolower($role), 0, 5) == 'admin' ||  substr(strtolower($role), 0, 4) == 'root')
+        continue;  // don't allow an admin or root role even enter the picture
+      if (variable_get('og_quick_join_' . $rid . '_role') == 1) {// Check to see if user wants to be in this role.
+        if ($form_state['values']['roles'][$rid]) {
+          $roles_to_add[$rid] = $rid;
+        }
+      }
+      if (variable_get('og_quick_join_' . $rid . '_role') == 2) {// Direct add this user to the role.
+        $roles_to_add[$rid] = $rid;
+      }
+    }
+
+    // Remove unneeded values.
+    //  form_state_values_clean($form_state);
+
+    //    $account = new stdClass();
+    // $account->is_new = TRUE;
+    $account = $form['#user'];
+
+    entity_form_submit_build_entity('user', $account, $form, $form_state);
+
+    // Populate $edit with the properties of $account, which have been edited on
+    // this form by taking over all values, which appear in the form values too.
+    $edit = array_intersect_key((array) $account, $form_state['values']);
+
+    $edit['mail'] = $form_state['values']['mail'];
+    $edit['name'] = $username;
+    $edit['pass'] = $pass;
+    $edit['init'] = $form_state['values']['mail'];
+
+    if (module_exists('user_verify')) {
+      if (variable_get('user_verify_lock')) {
+        $status = 0;
+      }
+      else {
+        $status = 1;
+      }
+    }
+    else {
+      $status = 1;
+    }
+    $edit['status'] = $status;
+    $edit['roles'] = $roles_to_add;
+
+    $account = user_save($account, $edit);
+
+    // Terminate if an error occurred during user_save().
+    if (!$account) {
+      drupal_set_message(t("Error saving user account."), 'error');
+      $form_state['redirect'] = '';
+      return;
+    }
+    $form_state['user'] = $account;
+    $form_state['values']['uid'] = $account->uid;
+
+    watchdog('user', 'New user: %name (%email).', array('%name' => $username, '%email' => $form_state['values']['mail']), WATCHDOG_NOTICE, l(t('edit'), 'user/' . $account->uid . '/edit'));
+
+    // Add plain text password into user account to generate mail tokens.
+    $account->password = $pass;
+
+    // New administrative account without notification.
+    $uri = entity_uri('user', $account);
+    // No e-mail verification required; log in user immediately.
+    $notify = FALSE;
+    $op = $notify ? 'register_admin_created' : 'register_no_approval_required';
+    if (module_exists('user_verify')) {
+      $udata = new stdClass();
+      $udata->uid = $account->uid;
+      drupal_write_record('user_verify', $udata);
+      if (
+        (int)variable_get_value('user_verify_delay') == 0
+          ) {
+        _user_verify_send_code($udata);
+      }
+    }
+    else {
+      drupal_set_message(t('A welcome message with further instructions has been sent to your e-mail address.'));
+      _user_mail_notify($op, $account);
+    }
+    // No administrator approval required.
+    $form_state['redirect'] = '';
+  } // done creating an account
+
+  if (strlen(variable_get('og_quick_join_confirmation_message'))) {
+    drupal_set_message(t(variable_get('og_quick_join_confirmation_message')));
+  }
+  drupal_set_message(l(t(' Edit your subscriptions '), 'user/' . $account->uid . '/mailinglist'));
+
+  // ok now subscribe user to groups
+  $groups = og_get_all_group();
+  foreach ($groups AS $order => $nid) {
+    $node = node_load($nid);
+
+    if (variable_get('og_quick_join_' . $nid . '_group') == 1) {  //Check to see if this user wants to be in this group.
+      if ($form_state['values']['groups'][$nid] == $nid) {
+        og_group('node',
+          $nid,
+          array('entity type' => 'user', 'entity' => $account)
+        );
+      }
+    }
+    if (variable_get('og_quick_join_' . $nid . '_group') == 2) {  //Direct add this user to the group.
+      og_group('node',
+        $nid,
+        array('entity type' => 'user', 'entity' => $account)
+      );
+    }
+  }  // Done foreach () groups.
+  // Ok now lets save values for the profile.
+
+  $profile_fields_to_collect = variable_get('og_quick_join_profile_fields', array());
+
+  $langcode = entity_language('user', $form['#user']);
+  foreach (field_info_instances('user', 'user') as $field_name => $instance) {
+    if ($field_name == 'og_user_node' || !in_array($field_name, $profile_fields_to_collect) ||
+      $profile_fields_to_collect[$field_name] != $field_name) {
+      continue;
+    }
+    // not sure what is supposed to happen here.
+  }
+}
+
+function og_quick_join_generate_username($mail) {
+
+  $splitemail = explode('@', $mail);
+  $idx = 0;
+  $username_call = $splitemail[0];
+
+  $username = $username_call;  // initial try
+
+  while(db_query("SELECT count(*) FROM {users} WHERE name = :name", array(':name' => $username))->fetchField()) {
+    // drupal_set_message('Username ' . $username . ' already exists, looking for another.');
+    $username = $username_call . $idx;
+    $idx++;
+  }
+
+  return $username;
+}
