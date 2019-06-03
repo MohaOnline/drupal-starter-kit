@@ -1,0 +1,23 @@
+; @copyright (c) Copyright 2018-19 Palantir.net
+
+name = Search API Federated Solr
+description = Allows indexing multiple Drupal sites into a single Solr search index.
+package = Search
+core = 7.x
+
+dependencies[] = search_api_solr
+dependencies[] = token
+
+files[] = search-api_federated_solr.module
+files[] = src/SearchApiFederatedSolrCanonicalUrl.php
+files[] = src/SearchApiFederatedSolrField.php
+files[] = src/SearchApiFederatedSolrTerms.php
+files[] = src/SearchApiFederatedSolrRemap.php
+files[] = src/SearchApiFederatedSolrSiteName.php
+files[] = src/SearchApiFederatedSolrUrls.php
+
+; Information added by Drupal.org packaging script on 2019-05-30
+version = "7.x-2.1"
+core = "7.x"
+project = "search_api_federated_solr"
+datestamp = "1559231890"
