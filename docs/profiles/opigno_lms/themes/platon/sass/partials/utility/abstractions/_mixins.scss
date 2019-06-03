@@ -1,0 +1,98 @@
+
+@import "compass/css3";
+
+/* ==========================================================================
+   Browsers hacks
+   ========================================================================== */
+
+@mixin firefox {
+  @-moz-document url-prefix() {
+    @content;
+  }
+}
+
+@mixin webkit {
+  @media screen and (-webkit-min-device-pixel-ratio:0) {
+    @content;
+  }
+}
+
+@mixin safari {
+  html:lang(en) > body {
+    @content;
+  }
+}
+
+@mixin chrome {
+  body:nth-of-type(1) {
+    @content;
+  }
+}
+
+/* ==========================================================================
+   Clearfix
+   ========================================================================== */
+
+%clearfix {
+  
+  &:before,
+  &:after {
+    content: " ";
+    display: table;
+  }
+
+  &:after {
+    clear: both;
+  }
+}
+
+/* ==========================================================================
+   Vertical align
+   ========================================================================== */
+
+@mixin vertical-align($value) {
+  position: relative;
+  top: $value;
+  @include translateY(-$value);
+}
+
+/* ==========================================================================
+   Placeholder
+   ========================================================================== */
+
+@mixin placeholder($default: #000, $hover: transparent, $transition: .1s) {
+
+  &::-webkit-input-placeholder {
+    color: $default;
+    @include transition($transition);
+  }
+  &:focus::-webkit-input-placeholder {
+    color: $hover;
+  }
+
+  &:-moz-placeholder {
+    color: $default;
+    @include transition($transition);
+  }
+  &:focus:-moz-placeholder {
+    color: $hover;
+    opacity:  1;
+  }
+
+  &::-moz-placeholder {
+    color: $default;
+    @include transition($transition);
+  }
+  &:focus::-moz-placeholder {
+    color: $hover;
+    opacity:  1;
+  }
+
+  &:-ms-input-placeholder {
+    color: $default;
+    @include transition($transition);
+  }
+  &:focus:-ms-input-placeholder {
+    color: $hover;
+  }
+}

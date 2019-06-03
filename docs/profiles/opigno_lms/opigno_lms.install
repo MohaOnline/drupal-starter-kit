@@ -1,0 +1,1164 @@
+<?php
+/**
+ * @file
+ * Install, update and uninstall functions for the Opigno LMS installation profile.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function opigno_lms_install() {
+  // Set the default theme.
+  theme_enable(array('platon'));
+  variable_set('theme_default', 'platon');
+
+  // Set the default settings for the theme.
+  $default_theme_settings = variable_get('theme_platon_settings', array());
+  $default_theme_settings['platon_menu_source'] = 'main-menu';
+  $default_theme_settings['platon_use_home_page_markup'] = 1;
+
+  $default_theme_settings[1]['platon_home_page_markup'] = array(
+    'format' => 'html',
+    'value' => st("<h1>Welcome to your new Opigno platform</h1><p>You may change this front page by logging in and going to <a href='?q=user&amp;destination=admin/appearance/settings/platon'>Administration &gt; Appearance &gt; Manage site display</a>.</p>"),
+    'background' => '../../../profiles/opigno_lms/themes/platon/img/homepage-background-1.jpg',
+  );
+  $default_theme_settings[2]['platon_home_page_markup'] = array(
+    'format' => 'html',
+    'value' => st("<h1>Welcome to your new Opigno platform</h1><p>You may change this front page by logging in and going to <a href='?q=user&amp;destination=admin/appearance/settings/platon'>Administration &gt; Appearance &gt; Manage site display</a>.</p>"),
+    'background' => '../../../profiles/opigno_lms/themes/platon/img/homepage-background-2.jpg',
+  );
+  $default_theme_settings[3]['platon_home_page_markup'] = array(
+    'format' => 'html',
+    'value' => st("<h1>Welcome to your new Opigno platform</h1><p>You may change this front page by logging in and going to <a href='?q=user&amp;destination=admin/appearance/settings/platon'>Administration &gt; Appearance &gt; Manage site display</a>.</p>"),
+    'background' => '../../../profiles/opigno_lms/themes/platon/img/homepage-background-3.jpg',
+  );
+
+  $default_theme_settings['platon_menu_show_for_anonymous'] = 1;
+  variable_set('theme_platon_settings', $default_theme_settings);
+
+  // Deactivate error display.
+  variable_set('error_level', ERROR_REPORTING_HIDE);
+
+  // Set the DOMPDF library for the certificates.
+  variable_set('print_pdf_pdf_tool', 'print_pdf_dompdf|profiles/opigno_lms/libraries/dompdf/dompdf_config.inc.php');
+
+  // Set login redirect.
+  variable_set('login_redirect_status', 1);
+  variable_get('login_redirect_parameter_name', 'dashboard');
+
+  // Make class certifiable by default.
+  variable_set('certificate_certifiable_class', 1);
+
+  // Set front page.
+  variable_set('site_frontpage', 'dashboard');
+
+  // Use the jQuery Count Down library for Quiz.
+  variable_set('quiz_has_timer', 1);
+
+  // Enhance module filter.
+  variable_set('module_filter_dynamic_save_position', 1);
+
+  // Set 404 redirect
+  variable_set('site_404','r4032login');
+
+  // Make sure the Opigno Simple UI cleans the Quiz module.
+  module_load_include('inc', 'opigno_simple_ui', 'includes/opigno_simple_ui.quiz');
+  if (function_exists('opigno_simple_ui_update_quiz_labels')) {
+    opigno_simple_ui_update_quiz_labels();
+  }
+
+  // Enable blocks.
+  _opigno_lms_install_enable_blocks();
+
+  // Set default user settings.
+  _opigno_lms_install_user_settings();
+
+  // Set default OG settings.
+  _opigno_lms_install_og_settings();
+
+  // Create default entries in the menu.
+  _opigno_lms_install_menu();
+
+  // Enable specific content type permissions for anonymous_users
+  _opigno_lms_install_specific_content_access();
+
+  // Enable image styles
+  _opigno_lms_install_enable_image_styles();
+
+  // Rebuild permissions. Don't use the batch process, we're already in one.
+  node_access_rebuild(FALSE);
+}
+
+/**
+ * Helper function to enable Image styles.
+ */
+function _opigno_lms_install_enable_image_styles() {
+  // Add image style for user thumbnail
+  $style = image_style_save(array('name' => 'user_thumbnail'));
+  $effect = array(
+    'name' => 'image_scale_and_crop',
+    'data' => array(
+      'width' => 255,
+      'height' => 255,
+    ),
+    'isid' => $style['isid'],
+  );
+  image_effect_save($effect);
+}
+
+/**
+ * Helper function to enable default blocks.
+ */
+function _opigno_lms_install_enable_blocks() {
+  $default_theme = variable_get('theme_default', 'platon');
+
+  $blocks = array(
+    array(
+      'module' => 'system',
+      'delta' => 'main',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'content',
+      'visibility' => 0,
+      'pages' => '',
+      'cache' => DRUPAL_NO_CACHE,
+    ),
+    array(
+      'module' => 'user',
+      'delta' => 'login',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'header_login',
+      'visibility' => 0,
+      'pages' => '',
+      'cache' => DRUPAL_NO_CACHE,
+    ),
+    array(
+      'module' => 'views',
+      'delta' => 'views_opigno_polls-block_2',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'sidebar_first',
+      'visibility' => 1,
+      'pages' => "node/*",
+      'cache' => DRUPAL_NO_CACHE,
+    ),
+    array(
+      'module' => 'opigno_lms',
+      'delta' => 'version',
+      'theme' => $default_theme,
+      'status' => 1,
+      'weight' => 0,
+      'region' => 'footer',
+      'visibility' => 0,
+      'pages' => '',
+      'cache' => DRUPAL_CACHE_GLOBAL,
+    ),
+  );
+  $query = db_insert('block')->fields(array('module', 'delta', 'theme', 'status', 'weight', 'region', 'visibility', 'pages', 'cache'));
+  foreach ($blocks as $block) {
+    $query->values($block);
+  }
+  $query->execute();
+}
+
+/**
+ * Helper function to set default user settings and roles.
+ */
+function _opigno_lms_install_user_settings() {
+  // Enable user picture support and set the default to a square thumbnail option.
+  variable_set('user_pictures', '1');
+  variable_set('user_picture_dimensions', '1024x1024');
+  variable_set('user_picture_file_size', '800');
+  variable_set('user_picture_style', 'thumbnail');
+  variable_set('user_picture_default', base_path() . 'profiles/opigno_lms/img/anonymous.png');
+
+  // Allow visitor account creation with administrative approval.
+  variable_set('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL);
+
+  // Enable default permissions for system roles. These are somehow never set with
+  // the feature.
+  user_role_grant_permissions(DRUPAL_AUTHENTICATED_RID, array('access content', 'use text format html'));
+}
+
+/**
+ * Helper function to enable default menu entries.
+ */
+function _opigno_lms_install_menu() {
+  // Create a Home link in the main menu.
+  $item = array(
+    'link_title' => st('Home'),
+    'link_path' => '<front>',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-home'),
+    ),
+    'weight' => -50,
+  );
+  menu_link_save($item);
+
+  // Create links for the apps.
+  $item = array(
+    'link_title' => st('My trainings'),
+    'link_path' => 'my-trainings',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-my-courses'),
+    ),
+    'weight' => -45,
+  );
+  menu_link_save($item);
+
+  $item = array(
+    'link_title' => st('Training catalogue'),
+    'link_path' => 'training-catalogue',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-training-catalogue'),
+    ),
+    'weight' => -40,
+  );
+  menu_link_save($item);
+
+  $item = array(
+    'link_title' => st('Forum'),
+    'link_path' => 'forum',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-forum'),
+    ),
+    'weight' => -35,
+  );
+  menu_link_save($item);
+
+  $item = array(
+    'link_title' => st('Calendar'),
+    'link_path' => 'opigno-calendar',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-calendar'),
+    ),
+    'weight' => -30,
+  );
+  menu_link_save($item);
+
+  $item = array(
+    'link_title' => st('Messages'),
+    'link_path' => 'messages',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-messages'),
+    ),
+    'weight' => -20,
+  );
+  menu_link_save($item);
+
+  $item = array(
+    'link_title' => st('My achievements'),
+    'link_path' => 'my-achievements',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-my-achievements'),
+    ),
+    'weight' => -10,
+  );
+  menu_link_save($item);
+
+  // Create a statistic link in the main menu.
+  $item = array(
+    'link_title' => st('Statistics'),
+    'link_path' => 'admin/opigno-statistics',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-statistics'),
+    ),
+    'weight' => 48,
+  );
+  menu_link_save($item);
+
+  // Create an administration link in the main menu.
+  $item = array(
+    'link_title' => st('Administration'),
+    'link_path' => 'admin/opigno',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-administration'),
+    ),
+    'weight' => 50,
+  );
+  menu_link_save($item);
+
+  // Update the menu router information.
+  menu_rebuild();
+}
+
+/**
+ * Helper function to set default OG settings.
+ */
+function _opigno_lms_install_og_settings() {
+  // Set OG context handling.
+  variable_set('og_context_negotiation_group_context', array(
+    'opigno_tool' => array(),
+    'opigno_entity_reference' => array(),
+    'opigno_quiz_app_question_add' => array(),
+    'tft' => array(),
+    'url' => array(),
+    'node' => array(),
+    'og_forum' => array(),
+  ));
+  variable_set('og_context_providers_weight_group_context', array(
+    'opigno_tool' => -10,
+    'opigno_entity_reference' => -5,
+    'opigno_quiz_app_question_add' => -3,
+    'tft' => -1,
+    'url' => 0,
+    'node' => 5,
+    'user-view' => 10,
+    'comment' => 15,
+    'og_forum' => 20,
+    'user-edit' => 25,
+  ));
+
+  // Don't give full permissions to OG group manager.
+  variable_set('og_group_manager_full_access', 0);
+
+  // Remove roles that are enabled by default.
+  foreach (array(
+    'course' => array('forum administrator', 'administrator member'),
+    'class'  => array('forum administrator', 'administrator member'),
+  ) as $type => $roles) {
+    foreach ($roles as $role_name) {
+      $rid = _opigno_lms_install_get_role_by_name($role_name, $type);
+      if ($rid) {
+        og_role_delete($rid);
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to enable several other modules if locale is enabled (which means
+ * Opigno LMS got installed in another language).
+ */
+function _opigno_lms_install_i18n() {
+  // Make sure the source language is english !
+  variable_set('i18n_string_source_language', 'en');
+
+  if (module_exists('locale')) {
+    // We want to activate the field translations as well.
+    module_enable(array('i18n_field'), TRUE);
+    module_enable(array('l10n_update'), TRUE);
+  }
+}
+
+/**
+ * Helper function to fetch an OG role by name.
+ *
+ * @param  string $role_mame
+ * @param  string $bundle
+ *
+ * @return int
+ */
+function _opigno_lms_install_get_role_by_name($role_name, $bundle) {
+  $rid  = db_select('og_role', 'r')
+              ->fields('r', array('rid'))
+              ->condition('r.name', $role_name)
+              ->condition('group_bundle', $bundle)
+              ->execute()
+              ->fetchField();
+  return !empty($rid) ? $rid : 0;
+}
+
+/**
+ * Switch the hard-coded tile menu to using the Drupal Main Menu.
+ * Add correct IDs for the CSS to be applied to this instead.
+ */
+function opigno_lms_update_7102(&$sandbox) {
+  foreach (array(
+    '<front>' => array('id' => 'main-navigation-item-home'),
+    'my-courses' => array('id' => 'main-navigation-item-my-courses'),
+    'course-catalogue' => array('id' => 'main-navigation-item-training-catalogue'),
+    'forum' => array('id' => 'main-navigation-item-forum'),
+    'opigno-calendar' => array('id' => 'main-navigation-item-calendar'),
+    'messages' => array('id' => 'main-navigation-item-messages'),
+    'my-achievements' => array('id' => 'main-navigation-item-my-achievements'),
+    'admin/opigno' => array('id' => 'main-navigation-item-administration'),
+  ) as $path => $attributes) {
+    $mlid = db_select('menu_links', 'ml')
+              ->fields('ml', array('mlid'))
+              ->condition('link_path', $path)
+              ->condition('menu_name', 'main-menu')
+              ->execute()
+              ->fetchField();
+
+    if (!empty($mlid)) {
+      $item = menu_link_load($mlid);
+      $item['options']['attributes'] = $attributes;
+      menu_link_save($item);
+    }
+  }
+
+  $default_theme_settings = variable_get('theme_platon_settings', array());
+  $default_theme_settings['platon_menu_source'] = 'main-menu';
+  variable_set('theme_platon_settings', $default_theme_settings);
+}
+
+/**
+ * Enable new fixes in Quiz Helper.
+ *
+ * Enable new Opigno Breadcrumbs module.
+ */
+function opigno_lms_update_7103(&$sandbox) {
+  module_load_install('opigno_quiz_helper');
+  opigno_quiz_helper_install();
+
+  // Enable our new breadcrumbs module.
+  module_enable(array('opigno_breadcrumbs'));
+
+  // Refresh translations.
+  opigno_lms_refresh_strings_and_import(array('rules', 'field', 'commerce'));
+
+  // Set OG context handling.
+  variable_set('og_context_negotiation_group_context', array(
+    'opigno_tool' => array(),
+    'opigno_entity_reference' => array(),
+    'opigno_quiz_app_question_add' => array(),
+    'tft' => array(),
+    'url' => array(),
+    'node' => array(),
+    'og_forum' => array(),
+  ));
+  variable_set('og_context_providers_weight_group_context', array(
+    'opigno_tool' => -10,
+    'opigno_entity_reference' => -5,
+    'opigno_quiz_app_question_add' => -3,
+    'tft' => -1,
+    'url' => 0,
+    'node' => 5,
+    'user-view' => 10,
+    'comment' => 15,
+    'og_forum' => 20,
+    'user-edit' => 25,
+  ));
+}
+
+/**
+ * Disable OG access.
+ *
+ * Enable our own, new access control
+ */
+function opigno_lms_update_7104(&$sandbox) {
+  // Keep data.
+  db_rename_table('field_data_group_access', 'field_data_group_access_migr');
+  db_rename_table('field_revision_group_access', 'field_revision_group_access_migr');
+
+  db_create_table('field_data_group_access', array(
+    'description' => 'Fake table, just for deletion.',
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'bundle' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'deleted' => array(
+        'type' => 'int',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+      ),
+      'revision_id' => array(
+        'type' => 'int',
+      ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'delta' => array(
+        'type' => 'int',
+      ),
+      'group_access_value' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      )
+    ),
+    'primary key' => array('entity_type', 'bundle', 'entity_id', 'revision_id', 'delta'),
+  ));
+  db_create_table('field_revision_group_access', array(
+    'description' => 'Fake table, just for deletion.',
+    'fields' => array(
+      'entity_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'bundle' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'deleted' => array(
+        'type' => 'int',
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+      ),
+      'revision_id' => array(
+        'type' => 'int',
+      ),
+      'language' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+      'delta' => array(
+        'type' => 'int',
+      ),
+      'group_access_value' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      )
+    ),
+    'primary key' => array('entity_type', 'bundle', 'entity_id', 'revision_id', 'delta'),
+  ));
+
+  // Disable OG Access.
+  module_disable(array('og_access'), FALSE);
+  field_delete_field('group_access');
+  field_delete_field('group_content_access');
+
+  //db_drop_table('field_data_group_access');
+  //db_drop_table('field_revision_group_access');
+
+  // Enable Opigno OG Access.
+  module_enable(array('opigno_og_access'));
+
+  // Copy data over.
+  $result = db_select('field_data_group_access_migr', 'data')->fields('data', array())->execute();
+  while ($row = $result->fetchAssoc()) {
+    db_insert('field_data_group_access')->fields($row)->execute();
+  }
+
+  $result = db_select('field_revision_group_access_migr', 'data')->fields('data', array())->execute();
+  while ($row = $result->fetchAssoc()) {
+    db_insert('field_revision_group_access')->fields($row)->execute();
+  }
+
+  // Add the new fields to the Course settings group.
+  $result = db_select('field_group', 'g')
+              ->fields('g', array('data'))
+              ->condition('group_name', 'group_course_settings')
+              ->condition('bundle', 'course')
+              ->condition('entity_type', 'node')
+              ->execute()
+              ->fetchField();
+
+  // Someone changed the content type. Add the new fields
+  // to the group.
+  if ($result) {
+    $data = unserialize($result);
+    $data['children'][] = 'requires_validation';
+    $data['children'][] = 'anomymous_visibility';
+    $data['children'][] = 'catalogue_visibility';
+
+    db_update('field_group')
+      ->fields(array('data' => serialize($data)))
+      ->condition('group_name', 'group_course_settings')
+      ->condition('bundle', 'course')
+      ->condition('entity_type', 'node')
+      ->execute();
+  }
+  // The content type has never changed and the field group definition
+  // is still in code.
+  // Insert a new line.
+  else {
+    $fields = array(
+      'identifier' => 'group_course_settings|node|course|form',
+      'group_name' => 'group_course_settings',
+      'entity_type' => 'node',
+      'bundle' => 'course',
+      'mode' => 'form',
+      'parent_name' => '',
+      'data' => serialize(array(
+        'label' => 'Course settings',
+        'weight' => 5,
+        'children' => array(
+          'group_access',
+          'requires_validation',
+          'anomymous_visibility',
+          'catalogue_visibility',
+          'opigno_course_tools',
+          'opigno_course_categories',
+          'course_required_quiz_ref',
+          'course_required_course_ref',
+          'certificate',
+        ),
+        'format_type' => 'tab',
+        'format_settings' => array(
+          'formatter' => 'closed',
+          'instance_settings' => array(
+            'description' => '',
+            'classes' => 'group-course-settings field-group-tab',
+            'required_fields' => 1,
+          ),
+        ),
+      )),
+    );
+    db_insert('field_group')
+      ->fields($fields)
+      ->execute();
+      
+    $instance = field_info_instance('node', 'opigno_course_tools', 'course');
+    if (!empty($instance)) {
+      $instance['widget']['weight'] = 3;
+      field_update_instance($instance);
+    }
+  }
+
+  // Refresh translations.
+  opigno_lms_refresh_strings_and_import(array('rules', 'field', 'commerce'));
+}
+
+/**
+ * Enable new version block.
+ *
+ * Enable new question types.
+ *
+ * Set i18n string source to English, always.
+ */
+function opigno_lms_update_7105(&$sandbox) {
+  $default_theme = variable_get('theme_default', 'platon');
+
+  $block = array(
+    'module' => 'opigno_lms',
+    'delta' => 'version',
+    'theme' => $default_theme,
+    'status' => 1,
+    'weight' => 0,
+    'region' => 'footer',
+    'visibility' => 0,
+    'pages' => '',
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $query = db_merge('block')
+            ->key(array('theme' => $default_theme, 'module' => 'opigno_lms', 'delta' => 'version'))
+            ->fields($block);
+  $query->execute();
+
+  if (!module_exists('cloze')) {
+    module_enable(array('cloze'));
+  }
+
+  if (!module_exists('quiz_drag_drop')) {
+    module_enable(array('quiz_drag_drop'));
+  }
+
+  variable_set('i18n_string_source_language', 'en');
+}
+
+/**
+ * Changes default permissions
+ *
+ */
+function opigno_lms_update_7106(&$sandbox) {
+  $roles = user_roles(FALSE, NULL);
+  foreach ($roles as $rid => $rolename) {
+    if ($rolename == "authenticated user") {
+      user_role_grant_permissions($rid, array('access quiz'));
+    }
+    if ($rolename == "student manager") {
+      user_role_grant_permissions($rid, array('score any quiz'));
+    }
+  }
+}
+
+/**
+ * Changes default permissions
+ *
+ */
+function opigno_lms_update_7107(&$sandbox) {
+  $roles = user_roles(FALSE, NULL);
+  foreach ($roles as $rid => $rolename) {
+    if ($rolename == "student manager") {
+      user_role_grant_permissions($rid, array('administer certificates'));
+      user_role_grant_permissions($rid, array('tft reorder terms'));
+      user_role_grant_permissions($rid, array('tft add child terms'));
+    }
+  }
+  module_enable(array('r4032login','better_exposed_filters'),TRUE);
+}
+
+/**
+ * Enable opigno_slide_pdf
+ */
+function opigno_lms_update_7108(&$sandbox) {
+  module_enable(array('opigno_pdf_viewer'),TRUE);
+}
+
+/**
+ * Install the updated h5p libraries
+ */
+function opigno_lms_update_7109(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p"))
+  {
+  $path = file_get_contents(drupal_get_path("profile","opigno_lms")."/h5plib/libraries.h5p");
+  $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+  $prepare=file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+  $temporary_file_name=$temporary_file_path."/libraries.h5p";
+  $file=file_save_data($path,$temporary_file_name,FILE_EXISTS_REPLACE);
+  $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+  $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+  $validator = _h5p_get_instance('validator');
+  $isvalid=$validator->isValidPackage(TRUE, FALSE);
+  $h5p_core = _h5p_get_instance('storage');
+  $save_package=$h5p_core->savePackage(NULL, NULL, TRUE);
+  unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+  /////////////////////////////////////////////////////////////////////
+  variable_set('site_404','r4032login');
+
+  $settings = variable_get('theme_platon_settings');
+  if (!empty($settings['platon_home_page_markup'])) {
+    $value = $settings['platon_home_page_markup']['value'];
+    $format = $settings['platon_home_page_markup']['format'];
+  }
+  $background = $settings['platon_home_page_image_path'];
+
+  // default datas for new homepage slide
+  $path = drupal_get_path('theme', 'platon');
+  $default_theme_settings = variable_get('theme_platon_settings', array());
+  $default_theme_settings[1]['platon_home_page_markup'] = array(
+    'format' => (isset($format)) ? $format : 'html',
+    'value' => (isset($value)) ? $value : st("<h1>Welcome to your new Opigno platform</h1><p>You may change this front page by logging in and going to <a href='?q=user&amp;destination=admin/appearance/settings/platon'>Administration &gt; Appearance &gt; Manage site display</a>.</p>"),
+    'background' => (!empty($background)) ? $background : '../../../profiles/opigno_lms/themes/platon/img/homepage-background-1.jpg',
+  );
+  $default_theme_settings[2]['platon_home_page_markup'] = array(
+    'format' => 'html',
+    'value' => st("<h1>Welcome to your new Opigno platform</h1><p>You may change this front page by logging in and going to <a href='?q=user&amp;destination=admin/appearance/settings/platon'>Administration &gt; Appearance &gt; Manage site display</a>.</p>"),
+    'background' => '../../../profiles/opigno_lms/themes/platon/img/homepage-background-2.jpg',
+  );
+  $default_theme_settings[3]['platon_home_page_markup'] = array(
+    'format' => 'html',
+    'value' => st("<h1>Welcome to your new Opigno platform</h1><p>You may change this front page by logging in and going to <a href='?q=user&amp;destination=admin/appearance/settings/platon'>Administration &gt; Appearance &gt; Manage site display</a>.</p>"),
+    'background' => '../../../profiles/opigno_lms/themes/platon/img/homepage-background-3.jpg',
+  );
+  variable_set('theme_platon_settings', $default_theme_settings);
+
+  // move login block
+  $default_theme = variable_get('theme_default', 'platon');
+  db_update('block')
+    ->fields(array('region' => 'header_login'))
+    ->condition('module', 'user', '=')
+    ->condition('delta', 'login', '=')
+    ->condition('theme', $default_theme)
+    ->execute();
+  ////////////////////////////
+  opigno_lms_refresh_strings_and_import(array('field'));
+  drupal_flush_all_caches();
+}
+
+/**
+ * Install the updated h5p libraries
+ */
+function opigno_lms_update_7110(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p"))
+  {
+    $path = file_get_contents(drupal_get_path("profile","opigno_lms")."/h5plib/libraries.h5p");
+    $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+    $prepare=file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    $temporary_file_name=$temporary_file_path."/libraries.h5p";
+    $file=file_save_data($path,$temporary_file_name,FILE_EXISTS_REPLACE);
+    $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+    $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+    $validator = _h5p_get_instance('validator');
+    $isvalid=$validator->isValidPackage(TRUE, FALSE);
+    $h5p_core = _h5p_get_instance('storage');
+    $save_package=$h5p_core->savePackage(NULL, NULL, TRUE);
+    unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+  /////////////////////////////////////////////////////////////////////
+  $roles = user_roles(FALSE, NULL);
+  foreach ($roles as $rid => $rolename) {
+    if (($rolename == "student manager")||($rolename == "administrator")||($rolename == "forum administrator")) {
+      user_role_grant_permissions($rid, array('access opigno statistics pages'));
+    }
+  }
+  // Create a statistic link in the main menu.
+  $item = array(
+    'link_title' => st('Statistics'),
+    'link_path' => 'admin/opigno-statistics',
+    'menu_name' => 'main-menu',
+    'options' => array(
+      'attributes' => array('id' => 'main-navigation-item-statistics'),
+    ),
+    'hidden' => 1,
+    'weight' => 49,
+  );
+  menu_link_save($item);
+  opigno_lms_refresh_strings_and_import(array('field'));
+  drupal_flush_all_caches();
+}
+
+/**
+ * Add the new menu entry
+ */
+function opigno_lms_update_7111(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p"))
+  {
+    $path = file_get_contents(drupal_get_path("profile","opigno_lms")."/h5plib/libraries.h5p");
+    $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+    $prepare=file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    $temporary_file_name=$temporary_file_path."/libraries.h5p";
+    $file=file_save_data($path,$temporary_file_name,FILE_EXISTS_REPLACE);
+    $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+    $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+    $validator = _h5p_get_instance('validator');
+    $isvalid=$validator->isValidPackage(TRUE, FALSE);
+    $h5p_core = _h5p_get_instance('storage');
+    $save_package=$h5p_core->savePackage(NULL, NULL, TRUE);
+    unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+  /////////////////////////////////////////////////////////////////////
+  module_enable(array('opigno_statistics_app'),TRUE);
+  module_enable(array('opigno_moxtra_app'),TRUE);
+  $menu = menu_load_links("main-menu");
+  foreach ($menu as $menu_link) {
+    if ($menu_link['link_path'] == "admin/opigno-statistics") {
+      $menu_link['hidden'] = 0;
+      menu_link_save($menu_link);
+    }
+  }
+  opigno_lms_refresh_strings_and_import(array('field'));
+  drupal_flush_all_caches();
+}
+
+/**
+ * Change the modules used for discussing with the LRS (learning locker -> opigno tincan api)
+ */
+function opigno_lms_update_7112(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p"))
+  {
+    drupal_flush_all_caches();
+    
+    $path = file_get_contents(drupal_get_path("profile","opigno_lms")."/h5plib/libraries.h5p");
+    $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+    $prepare=file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    $temporary_file_name=$temporary_file_path."/libraries.h5p";
+    $file=file_save_data($path,$temporary_file_name,FILE_EXISTS_REPLACE);
+    $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+    $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+    $validator = _h5p_get_instance('validator');
+    $isvalid=$validator->isValidPackage(TRUE, FALSE);
+    $h5p_core = _h5p_get_instance('storage');
+    $save_package=$h5p_core->savePackage(NULL, NULL, TRUE);
+    unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+  /////////////////////////////////////////////////////////////////////
+
+  // Update the modules that are about the LRS
+  $modules_to_enable = array();
+  $modules_to_disable = array();
+
+  if (module_exists('opigno_learning_locker_stats_app_in_house_training')) {
+    $modules_to_disable[] = 'opigno_learning_locker_stats_app_in_house_training';
+    $modules_to_enable[] = 'opigno_tincan_api_in_house_training_statements';
+  }
+
+  if (module_exists('opigno_learning_locker_stats_app_openbadges')) {
+    $modules_to_disable[] = 'opigno_learning_locker_stats_app_openbadges';
+    $modules_to_enable[] = 'opigno_tincan_api_openbadges_statements';
+  }
+
+  if (module_exists('opigno_learning_locker_stats_app')) {
+    $modules_to_disable[] = 'opigno_learning_locker_stats_app';
+    $modules_to_enable[] = 'opigno_tincan_api_stats';
+    $modules_to_enable[] = 'opigno_tincan_api_opigno_statements';
+  }
+
+  if (module_exists('tincanapi_quiz')) {
+    // Verify the dependencies before disabling
+    if (_opigno_lms_install_module_has_dependent('tincanapi_quiz', $modules_to_disable) === false) {
+      $modules_to_disable[] = 'tincanapi_quiz';
+    }
+
+    $modules_to_enable[] = 'opigno_tincan_api_quizfileupload_statements';
+    $modules_to_enable[] = 'opigno_tincan_api_quiz_drag_drop_statements';
+    $modules_to_enable[] = 'opigno_tincan_api_opigno_scorm_statements';
+    $modules_to_enable[] = 'opigno_tincan_api_cloze_statements';
+    $modules_to_enable[] = 'opigno_tincan_api_quiz_statements';
+  }
+
+  if (module_exists('tincanapi_content_types')) {
+    if (_opigno_lms_install_module_has_dependent('tincanapi_content_types', $modules_to_disable)) {
+      $modules_to_disable[] = 'tincanapi_content_types';
+    }
+
+    $modules_to_enable[] = 'opigno_tincan_api_node_views_statements';
+  }
+
+  if (module_exists('h5p_tincan_bridge')) {
+    // Verify the dependencies before disabling
+    if (_opigno_lms_install_module_has_dependent('h5p_tincan_bridge', $modules_to_disable)) {
+      $modules_to_disable[] = 'h5p_tincan_bridge';
+    }
+
+    $modules_to_enable[] = 'opigno_tincan_api_h5p_statements';
+  }
+
+  if (module_exists('tincanapi')) {
+    // Verify the dependencies before disabling
+    if (_opigno_lms_install_module_has_dependent('tincanapi', $modules_to_disable)) {
+      $modules_to_disable[] = 'tincanapi';
+    }
+
+  }
+
+  $modules_to_enable[] = 'opigno_tincan_api';
+
+  module_disable($modules_to_disable);
+  module_enable(array_reverse($modules_to_enable));
+
+  opigno_lms_refresh_strings_and_import(array('field'));
+  drupal_flush_all_caches();
+}
+
+/**
+ * Update the H5P libraries
+ */
+function opigno_lms_update_7113(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p")) {
+    drupal_flush_all_caches();
+
+    $path = file_get_contents(drupal_get_path("profile", "opigno_lms") . "/h5plib/libraries.h5p");
+    $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+    $prepare = file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    $temporary_file_name = $temporary_file_path . "/libraries.h5p";
+    $file = file_save_data($path, $temporary_file_name, FILE_EXISTS_REPLACE);
+    $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+    $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+    $validator = _h5p_get_instance('validator');
+    $isvalid = $validator->isValidPackage(TRUE, FALSE);
+    $h5p_core = _h5p_get_instance('storage');
+    $save_package = $h5p_core->savePackage(NULL, NULL, TRUE);
+    unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+}
+
+/**
+ * Update the H5P libraries
+ * Update the permissions to access the dashboard page
+ * Update the group permissions to access the quiz
+ * Update the default theme for the new version of CKEditor
+ */
+function opigno_lms_update_7114(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p")) {
+    drupal_flush_all_caches();
+
+    $path = file_get_contents(drupal_get_path("profile", "opigno_lms") . "/h5plib/libraries.h5p");
+    $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+    $prepare = file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    $temporary_file_name = $temporary_file_path . "/libraries.h5p";
+    $file = file_save_data($path, $temporary_file_name, FILE_EXISTS_REPLACE);
+    $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+    $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+    $validator = _h5p_get_instance('validator');
+    $isvalid = $validator->isValidPackage(TRUE, FALSE);
+    $h5p_core = _h5p_get_instance('storage');
+    $save_package = $h5p_core->savePackage(NULL, NULL, TRUE);
+    unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+
+  // Install the tincan question type module
+  if (!module_exists('opigno_tincan_question_type')) {
+    module_enable(array('opigno_tincan_question_type'));
+  }
+
+  // Install the DOMPDF module (required for the new version of Print)
+  module_enable(array('print_pdf_dompdf'));
+
+  // Change the role to access the homepage dashboard
+  $dashboard_page = homebox_get_page('dashboard');
+  if (!empty($dashboard_page->settings['roles'][0]) && $dashboard_page->settings['roles'][0] == 'authenticated user') {
+    $dashboard_page->settings['roles'][0] = 'anonymous user';
+    $dashboard_page->settings['roles'][1] = 'authenticated user';
+    homebox_save_page($dashboard_page);
+  }
+  menu_rebuild(); // Menu rebuild needed for the new access settings.
+
+  // Changes the og permissions ads access quiz to class
+  /* Default permission */
+  og_invalidate_cache();
+  $roles = og_roles('node', 'class', $gid = 0, $force_group = FALSE, $include_all = TRUE);
+  foreach ($roles as $index => $role) {
+    if ($role=='member')
+    {
+      og_role_grant_permissions($index, array(
+        'access quiz',
+      ));
+    }
+  }
+  /* Existing group permissions */
+  $existing_classes = node_load_multiple(array(), array('type' => "class"));
+  foreach ($existing_classes as $classid => $class) {
+    $roles = og_roles("node", "class", $classid, $force_group = FALSE, $include_all = TRUE);
+    foreach ($roles as $index => $role) {
+      if ($role == 'member') {
+        og_role_grant_permissions($index, array(
+          'access quiz',
+        ));
+      }
+    }
+  }
+
+  // Update the default theme for CKEditor (no more KAMA, now it's MOONO-LISA)
+  /* Get the settings for the ckeditor */
+  $profile = db_select('wysiwyg', 'w')
+    ->condition('format', 'html')
+    ->condition('editor', 'ckeditor')
+    ->fields('w')
+    ->execute()->fetchAllAssoc('format');
+
+  if (!empty($profile['html']->settings)) {
+    $settings = unserialize($profile['html']->settings);
+
+    /* Change the default theme if it's the good version of wysiwyg and if the theme is the old default one */
+    if ($settings['theme'] == 'advanced' && $settings['_profile_preferences']['version'] == '4.6.1.580bcaf') {
+      $settings['theme'] = 'moono-lisa';
+    }
+
+    db_update('wysiwyg')
+      ->condition('format', 'html')
+      ->condition('editor', 'ckeditor')
+      ->fields(array(
+        'settings' => serialize($settings)
+      ))
+      ->execute();
+  }
+
+  drupal_flush_all_caches();
+}
+
+/**
+ * Remove old database entries linked to removed modules.
+ */
+function opigno_lms_update_7115(&$sandbox) {
+  // Remove the old modules from the database.
+  $modules = array(
+    'guideme',
+    'opigno_lms_tour',
+  );
+  db_delete('system')
+    ->condition('name', $modules, 'IN')
+    ->condition('type', 'module')
+    ->execute();
+}
+
+/**
+ * Update the H5P libraries
+ */
+function opigno_lms_update_7116(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p")) {
+    drupal_flush_all_caches();
+
+    $path = file_get_contents(drupal_get_path("profile", "opigno_lms") . "/h5plib/libraries.h5p");
+    $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+    $prepare = file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    $temporary_file_name = $temporary_file_path . "/libraries.h5p";
+    $file = file_save_data($path, $temporary_file_name, FILE_EXISTS_REPLACE);
+    $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+    $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+    $validator = _h5p_get_instance('validator');
+    $isvalid = $validator->isValidPackage(TRUE, FALSE);
+    $h5p_core = _h5p_get_instance('storage');
+    $save_package = $h5p_core->savePackage(NULL, NULL, TRUE);
+    unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+}
+
+/**
+ * Update the H5P libraries
+ */
+function opigno_lms_update_7117(&$sandbox) {
+  // Installs latest H5P Libraries
+  if (module_exists("h5p")) {
+    drupal_flush_all_caches();
+
+    $path = file_get_contents(drupal_get_path("profile", "opigno_lms") . "/h5plib/libraries.h5p");
+    $temporary_file_path = 'public://' . variable_get('h5p_default_path', 'h5p') . '/temp/' . uniqid('h5p-');
+    $prepare = file_prepare_directory($temporary_file_path, FILE_CREATE_DIRECTORY);
+    $temporary_file_name = $temporary_file_path . "/libraries.h5p";
+    $file = file_save_data($path, $temporary_file_name, FILE_EXISTS_REPLACE);
+    $_SESSION['h5p_upload'] = drupal_realpath($file->uri);
+    $_SESSION['h5p_upload_folder'] = drupal_realpath($temporary_file_path);
+    $validator = _h5p_get_instance('validator');
+    $isvalid = $validator->isValidPackage(TRUE, FALSE);
+    $h5p_core = _h5p_get_instance('storage');
+    $save_package = $h5p_core->savePackage(NULL, NULL, TRUE);
+    unset($_SESSION['h5p_upload'], $_SESSION['h5p_upload_folder']);
+  }
+}
+
+function opigno_lms_update_dependencies() {
+  $dependencies = array();
+  if (module_exists('h5p')) {
+    $dependencies['opigno_lms'][7112] = array(
+      'h5p' => 7110,
+    );
+  }
+  return $dependencies;
+}
+
+/*
+ * Removes anonymous permissions to view content for forums calendar_event and notification content types
+ */
+function _opigno_lms_install_specific_content_access() {
+  $types = array('forum', 'calendar_event', 'notification');
+  foreach ($types as $type) {
+    $defaults = array();
+    foreach (_content_access_get_operations($type) as $op => $label) {
+      $defaults[$op] = content_access_get_settings($op, $type);
+    }
+    if ($defaults['view'][0] == 1) {
+      unset($defaults['view'][0]);
+    }
+    content_access_set_settings($defaults, $type);
+  }
+}
+
+/**
+ * Check if a module has some dependencies
+ */
+function _opigno_lms_install_module_has_dependent($module_name, $modules_excluded, $rebuild_modules_list = false) {
+  // Get all the modules
+  $modules_data = &drupal_static(__FUNCTION__);
+  if (!isset($modules_data) || $rebuild_modules_list) {
+    $modules_data = system_rebuild_module_data();
+  }
+
+  if (isset($modules_data[$module_name]->required_by)) {
+    $dependent_modules = array_keys($modules_data[$module_name]->required_by);
+    foreach ($dependent_modules as $dependent_module) {
+
+      if (!in_array($dependent_module, $modules_excluded) && module_exists($dependent_module)) {
+        return true;
+      }
+
+    }
+  }
+
+  return false;
+}
+
+function _opigno_lms_install_translations() {
+  // Translations for og_create_perms
+  t("You are not permitted to post content in a group you're not a member of.");
+}

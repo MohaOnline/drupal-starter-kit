@@ -1,0 +1,70 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_activity_definition_types');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_verbs');
+
+/**
+ * Implements hook_opigno_openbadge_assertion_created().
+ */
+function opigno_tincan_api_openbadges_statements_opigno_openbadge_assertion_created($nid, $badgeClassFileURI, $assertFileURI) {
+  /**
+   * Actor: user
+   * Verb: openbadges/earned
+   * Object: activitystrea.ms/badge
+   * Result: extension
+   * Context: None // TODO: add the og_group_ref as grouping context ?
+   */
+
+  if (_opigno_tincan_api_tincanphp_is_installed() === false) {
+    return;
+  }
+
+  // First, get the data back from the badge.
+  $badge_data = json_decode(file_get_contents(drupal_realpath($badgeClassFileURI)));
+
+  // Init the statement.
+  $statement = new TinCan\Statement();
+
+  // Add the actor, the verb and the timestamp (and uuid) to the statement.
+  _opigno_tincan_api_set_actor($statement);
+  _opigno_tincan_api_set_verb($statement, OpignoTincanApiTinCanVerbs::$earned);
+  $statement->stamp();
+
+  // Add an extension in the result.
+  $statement->setResult(array(
+    'extensions' => array(
+      'http://specification.openbadges.org/xapi/extensions/badgeassertion' => array(
+        '@id' => file_create_url($assertFileURI)
+      )
+    )
+  ));
+
+  // Add the object. This object contains an extension of the definition,
+  //  a name, a description and a badge type.
+  $uri_class_file = file_create_url($badgeClassFileURI);
+  $statement->setObject(array(
+    'id' => $uri_class_file,
+    'objectType' => 'Activity',
+    'definition' => array(
+      'extensions' => array(
+        'http://specification.openbadges.org/xapi/extensions/badgeclass' => array(
+          '@id' => $uri_class_file,
+          'image' => $badge_data->image,
+          'criteria' => $badge_data->criteria,
+          'issuer' => $badge_data->issuer
+        )
+      ),
+      'name' => array(
+        'en-US' => $badge_data->name
+      ),
+      'description' => array(
+        'en-US' => $badge_data->description
+      ),
+      'type' => OpignoTincanApiTinCanActivityDefinitionTypes::$badge
+    ),
+  ));
+
+  // Finally, send the statement
+  _opigno_tincan_api_send_statement($statement);
+}

@@ -1,0 +1,75 @@
+msgid "Installation of Opigno TinCan API module success."
+msgstr "Das Opigno TinCan API Modul wurde erfolgreich installiert."
+
+
+msgid "Go to !url to set the LRS connection."
+msgstr "Bitte begeben Sie sich zu dieser !url um die LRS Verbindungsparameter zu definieren."
+
+msgid "the settings page"
+msgstr "Das Verwaltungsinterface"
+
+
+msgid "Administer the Opigno TinCan API module"
+msgstr "Verwalten des Opigno TinCan API Modules"
+
+
+msgid "Change the settings for the Opigno TinCan API module, like the LRS settings."
+msgstr "Ändern der Opigno TinCan Api Modulparameter, wie die LRS Konfiguration"
+
+
+msgid "Installed"
+msgstr "Installiert"
+
+
+msgid "Configured"
+msgstr "Konfiguriert"
+
+
+msgid "Please configure the LRS connection in the !setting_page."
+msgstr "Bitte die LRS Verbindung zum Verwaltungsinterface konfigurieren"
+
+msgid "settings page"
+msgstr "Verwaltungsinterface"
+
+
+msgid "Not set"
+msgstr "Nicht festgelegt"
+
+
+msgid "Not Installed"
+msgstr "Nicht installiert"
+
+
+msgid "Please install the !tincanphp_library in the sites/all/library/TinCanPHP folder."
+msgstr "Bitte !tincanphp_library im Directory sites/all/library/TinCanPHP installieren"
+
+msgid "TinCanPHP library"
+msgstr "TinCanPhP Library"
+
+msgid "LRS settings saved successfully"
+msgstr "Die LRS Parameter wurden gespeichert"
+
+
+msgid "Access LRS statistics"
+msgstr "Auf die LRS Statistiken zugreiffen"
+
+
+msgid "Be able to view Learning Record Store (LRS) statistic pages."
+msgstr "Die Statistikseite vom Learning Record Store anschauen."
+
+
+msgid "Learning Record Store"
+msgstr "Learning Record Store"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+
+msgid "LRS quizzes statistics"
+msgstr "Statistiken der abgerufenen LRS Quiz"
+
+msgid "LRS stats"
+msgstr "LRS Statistiken"
+
+msgid "LRS course content statistics"
+msgstr "Kurs-Statistiken"

@@ -1,0 +1,19 @@
+name = Opigno Tincan API
+description = Send Tincan statements to an LRS
+package = Opigno
+core = 7.x
+
+dependencies[] = libraries
+
+files[] = includes/opigno_tincan_api.settings_form.inc
+files[] = includes/opigno_tincan_api.statements_func.inc
+files[] = includes/opigno_tincan_api.tincan_activity_definition_types.inc
+files[] = includes/opigno_tincan_api.tincan_interaction_types.inc
+files[] = includes/opigno_tincan_api.tincan_verbs.inc
+
+; Information added by Drupal.org packaging script on 2018-02-09
+version = "7.x-1.3"
+core = "7.x"
+project = "opigno_tincan_api"
+datestamp = "1518184278"
+

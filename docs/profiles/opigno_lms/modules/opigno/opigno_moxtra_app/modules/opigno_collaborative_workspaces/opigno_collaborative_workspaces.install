@@ -1,0 +1,273 @@
+<?php
+
+function opigno_collaborative_workspaces_install()
+{
+  $type = node_type_load("collaborative_workspace");
+  if (empty($type)) {
+    $type = node_type_set_defaults(array(
+      'type' => 'collaborative_workspace',
+      'name' => st('Collaborative Workspace'),
+      'base' => 'node_content',
+      'description' => st('A collaborative workspace, like a chat room where you can share files and to-do lists'),
+      'has_title' => '1',
+      'title_label' => st('Title'),
+      'help' => '',
+    ));
+    node_type_save($type);
+  }
+
+
+  if (module_exists('comment')) {
+    variable_set('comment_collaborative_workspace', COMMENT_NODE_CLOSED);
+  }
+
+
+  ////////////////////////
+  /// CREATE FIELDS
+  /////////////////////////////////////////
+
+  $field = field_info_field('field_collaborative_workspace_id');
+  if (empty($field)) {
+    field_create_field(array(
+      'active' => 1,
+      'cardinality' => 1,
+      'deleted' => 0,
+      'entity_types' => array(),
+      'field_name' => 'field_collaborative_workspace_id',
+      'indexes' => array(
+        'format' => array(
+          0 => 'format',
+        ),
+      ),
+      'locked' => 0,
+      'module' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+      'translatable' => 0,
+      'type' => 'text',
+    ));
+  }
+
+  $field = field_info_field('field_users_invited');
+  if (empty($field)) {
+    field_create_field(array(
+      'active' => 1,
+      'cardinality' => -1,
+      'deleted' => 0,
+      'entity_types' => array(),
+      'field_name' => 'field_users_invited',
+      'indexes' => array(
+        'target_id' => array(
+          0 => 'target_id',
+        ),
+      ),
+      'locked' => 0,
+      'module' => 'entityreference',
+      'settings' => array(
+        'handler' => 'base',
+        'handler_settings' => array(
+          'behaviors' => array(
+            'views-select-list' => array(
+              'status' => 0,
+            ),
+          ),
+          'sort' => array(
+            'type' => 'none',
+          ),
+          'target_bundles' => array(),
+        ),
+        'target_type' => 'user',
+      ),
+      'translatable' => 0,
+      'type' => 'entityreference',
+    ));
+  }
+
+
+
+  ///////////////////
+  /// CREATE INSTANCES
+  ////////////////////////////////////////////
+
+  $instance = field_info_instance('node', 'field_collaborative_workspace_id', 'collaborative_workspace');
+  if (empty($instance)) {
+    field_create_instance(array(
+      'bundle' => 'collaborative_workspace',
+      'default_value' => NULL,
+      'deleted' => 0,
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'text',
+          'settings' => array(),
+          'type' => 'text_default',
+          'weight' => 4,
+        ),
+        'question' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'entity_type' => 'node',
+      'field_name' => 'field_collaborative_workspace_id',
+      'label' => 'Collaborative workspace id',
+      'required' => 0,
+      'settings' => array(
+        'text_processing' => 0,
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'text',
+        'settings' => array(
+          'size' => 60,
+        ),
+        'type' => 'text_textfield',
+        'weight' => 36,
+      ),
+    ));
+  }
+
+  $instance = field_info_instance('node', 'field_users_invited', 'collaborative_workspace');
+  if (empty($instance)) {
+    field_create_instance(array(
+      'bundle' => 'collaborative_workspace',
+      'default_value' => NULL,
+      'default_value_function' => '',
+      'deleted' => 0,
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'entityreference',
+          'settings' => array(
+            'link' => FALSE,
+          ),
+          'type' => 'entityreference_label',
+          'weight' => 3,
+        ),
+        'question' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'entity_type' => 'node',
+      'field_name' => 'field_users_invited',
+      'label' => 'Filter by',
+      'required' => 0,
+      'settings' => array(
+        'behaviors' => array(
+          'prepopulate' => array(
+            'status' => 0,
+          ),
+        ),
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'options',
+        'settings' => array(),
+        'type' => 'options_buttons',
+        'weight' => 35,
+      ),
+    ));
+  }
+
+  opigno_collaborative_workspaces_install_default_permissions();
+  
+  /*if (function_exists('opigno_lms_refresh_strings_and_import')) {
+    opigno_lms_refresh_strings_and_import(array('default', 'field'));
+  }*/
+  variable_set("print_display_comment_collaborative_workspace", 0);
+  variable_set("print_display_collaborative_workspace", 0);
+  variable_set("print_display_urllist_collaborative_workspace", 0);
+  variable_set("print_pdf_display_comment_collaborative_workspace", 0);
+  variable_set("print_pdf_display_collaborative_workspace", 0);
+  variable_set("print_pdf_display_urllist_collaborative_workspace", 0);
+
+
+  $is_already_created = false;
+  $links = menu_load_links('main-menu');
+  foreach ($links as $link) {
+    if ($link['link_path'] == 'collaborative-workspaces') {
+      $is_already_created = true;
+    }
+  }
+
+  if ($is_already_created == false) {
+    menu_rebuild();
+    $item = array(
+      'link_path' => 'collaborative-workspaces',
+      'link_title' => st('Collaborative Workspaces'),
+      'options' => array(
+        'attributes' => array('id' => 'main-navigation-item-collaborative-workspaces'),
+      ),
+      'menu_name' => 'main-menu',
+      'weight' => 49,
+      'customized' => 1
+    );
+    menu_link_save($item);
+  }
+}
+
+
+function opigno_collaborative_workspaces_install_default_permissions()
+{
+  $administrator = user_role_load_by_name('administrator');
+  $administrator_permissions = array(
+    'create collaborative_workspace content',
+    'delete any collaborative_workspace content',
+    'edit any collaborative_workspace content',
+    'view participants collaborative_workspace',
+    'view all collaborative_workspace',
+    'invite all users to collaborative_workspace',
+  );
+  user_role_grant_permissions($administrator->rid, $administrator_permissions);
+
+  $student_manager = user_role_load_by_name('student manager');
+  $student_manager_permissions = array(
+    'create collaborative_workspace content',
+    'delete own collaborative_workspace content',
+    'edit own collaborative_workspace content',
+    'view participants collaborative_workspace',
+  );
+  user_role_grant_permissions($student_manager->rid, $student_manager_permissions);
+
+  $authenticated_user = user_role_load_by_name('authenticated user');
+  $authenticated_user_permissions = array(
+    'create collaborative_workspace content',
+    'edit own collaborative_workspace content',
+    'delete own collaborative_workspace content',
+    'view participants collaborative_workspace',
+  );
+  user_role_grant_permissions($authenticated_user->rid, $authenticated_user_permissions);
+}
+
+/**
+ * Put in this function all the strings that are not in a t() or st() function.
+ */
+function opigno_collaborative_workspaces_install_translations() {
+  //
+  // --- FIELDS
+  // opigno_collaborative_workspace.install
+  t('Collaborative workspace id');
+  t('Filter by');
+}

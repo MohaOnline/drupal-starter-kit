@@ -1,0 +1,24 @@
+name = Opigno Forum App
+description = Opigno Forum functionality and default displays.
+core = 7.x
+package = Opigno Apps
+
+dependencies[] = forum
+dependencies[] = advanced_forum
+dependencies[] = rules
+dependencies[] = og
+dependencies[] = og_forum
+dependencies[] = rules
+dependencies[] = rules_conditional
+files[] = opigno_forum_app.test
+
+
+
+
+
+; Information added by Drupal.org packaging script on 2017-01-27
+version = "7.x-1.1"
+core = "7.x"
+project = "opigno_forum_app"
+datestamp = "1485549493"
+

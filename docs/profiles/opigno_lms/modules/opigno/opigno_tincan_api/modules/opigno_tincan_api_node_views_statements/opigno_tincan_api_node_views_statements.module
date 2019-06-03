@@ -1,0 +1,37 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_activity_definition_types');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_verbs');
+
+/**
+ * Implements hook_node_view().
+ * This implementation will track every node that are viewed to the LRS
+ */
+function opigno_tincan_api_node_views_statements_node_view($node, $view_mode, $langcode) {
+  /**
+   * Actor: user
+   * Verb: tincanapi/viewed
+   * Object: activitystrea.ms/page
+   * Result: None
+   * Context: None // TODO: add the og_group_ref as grouping context ?
+   */
+
+  $statement = _opigno_tincan_api_statement_base_creation(
+    OpignoTincanApiTinCanVerbs::$viewed,
+    OpignoTincanApiTinCanActivityDefinitionTypes::$page,
+    $node
+  );
+
+  if ($statement === false) {
+    return;
+  }
+
+  if ($node->type == 'course') {
+    $context = new TinCan\Context();
+    _opigno_tincan_api_context_set_grouping($context, array($node->nid), OpignoTincanApiTinCanActivityDefinitionTypes::$course);
+    $statement->setContext($context);
+  }
+
+  _opigno_tincan_api_send_statement($statement);
+}

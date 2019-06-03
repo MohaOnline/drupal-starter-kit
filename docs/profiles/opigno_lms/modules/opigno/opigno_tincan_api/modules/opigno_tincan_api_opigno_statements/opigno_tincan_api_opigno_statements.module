@@ -1,0 +1,122 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_activity_definition_types');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_verbs');
+
+function opigno_tincan_api_opigno_statements_opigno_course_passed($course_nid, $uid)
+{
+  /*
+   * - When user passed a course
+   * Actor: user
+   * Verb: xAPI/passed
+   * Object: xAPI/course
+   * Context: Class if there is one.
+   *
+   * - When user get a certificate
+   * Actor: user
+   * Verb: activitystrea.ms/received
+   * Object: Opigno/Certificate
+   * Result: None
+   * Context: Class or Course
+   */
+
+
+  // When the user pass the course, send a statement
+  $course = node_load($course_nid);
+
+  //////
+  // Create the statement
+  $statement = _opigno_tincan_api_statement_base_creation(
+    OpignoTincanApiTinCanVerbs::$passed,
+    OpignoTincanApiTinCanActivityDefinitionTypes::$course,
+    $course
+  );
+
+  if ($statement === false) {
+    return;
+  }
+
+
+  //////
+  // Get the parents and add them to the context
+  $classes = _opigno_tincan_api_get_classes_from_course($course_nid);
+
+  $context = new TinCan\Context();
+  _opigno_tincan_api_context_set_parents($context, $classes);
+  _opigno_tincan_api_context_set_language($context, $course->language);
+  $statement->setContext($context);
+
+
+  //////
+  // Set the result
+  $result = opigno_quiz_app_get_course_data_result($uid, $course_nid);
+
+  $total_score = isset($result['total_score']) ? $result['total_score'] : null;
+  $total_time = isset($result['total_time']) ? $result['total_time'] : null;
+
+  _opigno_tincan_api_set_result($statement, $total_score, 100, true, null, $total_time);
+
+
+  //////
+  // Send the statement
+  _opigno_tincan_api_send_statement($statement);
+
+
+  // If there was a certificate with this course, send a statement with the certificate
+  if (isset($course->certificate['node_settings']['manual']['manual'])
+    && $course->certificate['node_settings']['manual']['manual'] !== "-1"
+  ) {
+    $cert_url = url('node/' . $course_nid . '/certificate', array('absolute' => true));
+    if ($cert_url != '') {
+      //////
+      // Create the statement and populate it with the certificate information
+      $statement = new TinCan\Statement();
+
+      _opigno_tincan_api_set_actor($statement);
+      _opigno_tincan_api_set_verb($statement, OpignoTincanApiTinCanVerbs::$received);
+      $statement->setObject(array(
+        'id' => $cert_url,
+        'definition' => array(
+          'name' => array(
+            'en-US' => 'Certificate for: ' . $course->title
+          ),
+          'type' => OpignoTincanApiTinCanActivityDefinitionTypes::$certificate
+        )
+      ));
+
+      // Add the course in the certificate context
+      $statement->setContext(array(
+        'contextActivities' => array(
+          'grouping' => array(
+            array(
+              'id' => url('node/' . $course_nid, array('absolute' => true))
+            )
+          )
+        )
+      ));
+
+      // Finally, send the statement
+      _opigno_tincan_api_send_statement($statement);
+    }
+  }
+
+}
+
+
+function _opigno_tincan_api_get_classes_from_course($course_nid)
+{
+  $query = db_select('field_data_opigno_class_courses', 't')
+    ->condition(
+      db_and()
+        ->condition('opigno_class_courses_target_id', $course_nid, '=')
+        ->condition('bundle', 'class', '='))
+    ->fields('t', array('entity_id'))
+    ->execute();
+
+  $classes_ids = array();
+  while ($row = $query->fetchAssoc())
+    $classes_ids[$row['entity_id']] = $row['entity_id'];
+
+  return $classes_ids;
+}

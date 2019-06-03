@@ -1,0 +1,14 @@
+name = Opigno Course Categories App
+description = Add categories to courses
+core = 7.x
+package = Opigno Apps
+
+dependencies[] = opigno
+dependencies[] = taxonomy
+
+; Information added by Drupal.org packaging script on 2017-01-25
+version = "7.x-1.2"
+core = "7.x"
+project = "opigno_course_categories_app"
+datestamp = "1485338287"
+

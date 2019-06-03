@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * @file
+ * Add in house training statements
+ */
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_activity_definition_types');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_verbs');
+
+/**
+ * Implements hook_opigno_in_house_training_finished().
+ */
+function opigno_tincan_api_in_house_training_statements_opigno_in_house_training_finished($taker, $iht, $score)
+{
+   /*
+   * - When user finished an in house training
+   * Actor: user
+   * Verb: xAPI/attended
+   * Object: xAPI/meeting
+   * Context: Course.
+    */
+
+  //////
+  // Statement creation
+  $statement = _opigno_tincan_api_statement_base_creation(
+    OpignoTincanApiTinCanVerbs::$attended,
+    OpignoTincanApiTinCanActivityDefinitionTypes::$meeting,
+    $iht
+  );
+
+  if ($statement === false) {
+    return;
+  }
+
+
+  //////
+  // Context creation
+  $context = new TinCan\Context();// If there is a parent, set it.
+
+  if (isset($iht->og_group_ref[LANGUAGE_NONE])) {
+    $parent_courses_nids = array_map(function ($e) {
+      return $e['target_id'];
+    }, $iht->og_group_ref[LANGUAGE_NONE]);
+
+    _opigno_tincan_api_context_set_parents($context, $parent_courses_nids, OpignoTincanApiTinCanActivityDefinitionTypes::$course);
+  }
+
+  _opigno_tincan_api_context_set_language($context, $iht->language);
+
+  $results = opigno_in_house_training_score_form_get_default_value($iht->nid, $taker->uid);
+  if (isset($results['status']) && $results['status']) {
+    $attended = true;
+  }
+  else {
+    $attended = false;
+  }
+  _opigno_tincan_api_set_result($statement, $score, null, $attended, null, null);
+
+  $statement->setContext($context);
+
+
+  //////
+  // Sending statement
+  _opigno_tincan_api_send_statement($statement);
+}

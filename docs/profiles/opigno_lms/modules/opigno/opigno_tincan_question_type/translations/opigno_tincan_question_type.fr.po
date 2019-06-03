@@ -1,0 +1,95 @@
+msgid "TinCan Package"
+msgstr "Paquet TinCan"
+
+msgid "Question type allowing to integrate a TinCan package inside a lesson."
+msgstr "Type de question permettant d'intégrer des paquets TinCan au sein d'une leçon"
+
+msgid "About"
+msgstr "A propos"
+
+msgid "The Opigno TinCan Question Type module adds a new question type to the quiz module. With this new question type, you will be able to upload a TinCan Package and use it as a question inside a lesson. More information can be found on the !module_page."
+msgstr "Le module Opigno TinCan Question Type permet d'ajouter un nouveau type de question au module quiz. Ce nouveau type de question permettra de charger des paquets TinCan au sein de leçons. Plus d'informations sur trouvent sur la !module_pag"
+
+msgid "module page"
+msgstr "page du module"
+
+msgid "Uses"
+msgstr "Cas d'emploi"
+
+msgid "Create a new question"
+msgstr "Créer une nouvelle question"
+
+msgid "When you create a new question, you will be able to choose the TinCan Package type of question. Then, you will be asked to choose a title and to upload a TinCan Package. You can find some on the !tincan_packages_site."
+msgstr "Lorsque vous créerez une nouvelle question, vous aurez la possibilit de choisir le type Paquet TinCan. Vous devrez ensuite choisir un titre et charger un paquet TinCan. Vous pouvez en trouver quelques uns sur le !tincan_packages_site."
+
+msgid "TinCan Website"
+msgstr "Site internet TinCan"
+
+msgid "Answer a TinCan Question"
+msgstr "Répondre à un type de question TinCan"
+
+msgid "To answer a TinCan Question, you just have to start the lesson that contains the question previously created. The TinCan Package will appear in an iFrame."
+msgstr "Pour répondre à une question TinCan, il suffit de débuter la leçon contenant la question précédemment créée. Le paquet TinCan apparaitra au sein d'une iframe."
+
+msgid "Get the score"
+msgstr "Obtenir le score"
+
+msgid "The score is taken directly from the LRS. The TinCan Package must provide the score in the way described in the README.md file or on the !module_page to the LRS. Then, this module will get the score back from the LRS and register it to this Opigno LMS instance."
+msgstr "Le score est directement récupéré depuis le LRS. Le paquet TinCan doit fournir le score au LRS de la manière décrite dans le fichier README.md ou sur la !module_page. Puis, ce module va récupérer le score du LRS et l'enregistrer localement sur l'instance Opigno LMS."
+
+msgid "TinCan Package specifications"
+msgstr "Spécifications du paquet TinCan"
+
+msgid "The TinCan Package must follow, at least, the specifications written in the README.md file or on the !module_page. A good TinCan Package should follow the specifications written on the official !github_page."
+msgstr "Le paquet TinCan doit au moins respecter les spécifications décrites dans le fichier README.md ou sur la !module_page. Un paquet TinCan correctement configuré devrait suivre les spécifications écrites sur la !github_page."
+
+msgid "Error while uploading the file."
+msgstr "Erreur lors du chargement du fichier."
+
+msgid "Error while opening the file."
+msgstr "Erreur lors de l'ouverture du fichier."
+
+msgid "The package does not contain an activity ID or a launch file"
+msgstr "Le paquet ne contient pas une ID d'activité ou un fichier de démarrage"
+
+msgid "The package does not contain the activity ID or the launch file"
+msgstr "Le paquet ne contient pas l'ID d'activité ou le fichier de démarrage"
+
+msgid "Unable to open the archive"
+msgstr "Impossible d'ouvrir l'archive"
+
+msgid "Tincan package description"
+msgstr "Description du paquet TinCan"
+
+msgid "The module Opigno TinCan API is not configured. Go to !url"
+msgstr "Le module Opigno TinCan API n'est pas configuré. Veuillez visiter !url"
+
+msgid "the settings page."
+msgstr "la page de configuration."
+
+msgid "Connection to the LRS failed"
+msgstr "La connexion au LRS a échoué"
+
+msgid "There was an error while answering the question, please go back and try again."
+msgstr "Une erreur a été rencontrée lors de la réponse à la question, veuillez revenir en arrière et réessayer."
+
+msgid "Error while obtaining the activity ID. Maybe a malformed TinCan package."
+msgstr "Erreur lors de la récupération de l'ID d'activité. Le paquet TinCan est peut-être configuré de façon incorrecte."
+
+msgid "Please configure first the Opigno TinCan API module."
+msgstr "Veuillez d'abord configurer le module Opigno TinCan API."
+
+msgid "Go to !url"
+msgstr "Veuillez visiter !url"
+
+msgid "Please install the !tincanphp_library in the sites/all/library/TinCanPHP folder."
+msgstr "Veuillez installer la !tincanphp_library dans le répertoire sites/all/library/TinCanPHP."
+
+msgid "TinCanPHP library"
+msgstr "Librairie TinCanPHP"
+
+msgid "You will not be able to save this question."
+msgstr "Vous ne pourrez pas sauvegarder cette question."
+
+msgid "Impossible to create a new TinCan Package question type."
+msgstr "Impossible de créer un nouveau type de question Paquet TinCan."

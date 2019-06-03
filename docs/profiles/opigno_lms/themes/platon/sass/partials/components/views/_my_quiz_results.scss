@@ -1,0 +1,44 @@
+.view-opigno-quiz-student-views,
+body.page-user-myresults {
+  table {
+    tbody {
+      tr {
+        > td {
+          text-align: right;
+
+          &:first-child {
+            text-align: left;
+          }
+        }
+        td.views-field-score {
+          position: relative;
+
+          > div {
+            position: relative;
+            &.passed,
+            &.failed {
+              position: absolute;
+              top: 0;
+              bottom: 0;
+              left: 0;
+              right: 0;
+
+              & ~ div {
+                color: #fff;
+              }
+            }
+
+            &.passed {
+              background-color: #95c11f;
+              color: #fff;
+            }
+            &.failed {
+              background-color: #e30613;
+              color: #fff;
+            }
+          }
+        }
+      }
+    }
+  }
+}

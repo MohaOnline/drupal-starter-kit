@@ -1,0 +1,427 @@
+/**
+ * @file
+ * Contains styles for the Drupal collaborative workspace module.
+ */
+%new-select {
+  display: inline-block;
+  border-top: 1px solid $medium-gray;
+  border-bottom: 1px solid $medium-gray;
+  border-radius: 0;
+  position: relative;
+  // overflow: hidden;
+  margin: 50px auto;
+  text-align: center;
+
+  &:after {
+    content: '';
+    width: 23px;
+    height: 12px;
+    display: block;
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    margin-top: -6px;
+    pointer-events: none;
+    background-image: url('../img/select-arrow.png');
+  }
+
+   > *:not(label),
+  & {
+    cursor: pointer;
+  }
+
+  label {
+    display: none;
+  }
+
+  select {
+    @include box-sizing(content-box);
+    background: transparent;
+    border: 0;
+    outline: 0;
+    text-shadow: 1px 1px rgba(255, 255, 255, 0.7);
+    padding: 6px 65px 6px 30px;
+    font-size: 16px;
+    height: 50px;
+    @include user-select(none);
+    @include appearance(none);
+  }
+
+  .description {
+    position: absolute;
+    width: 300px;
+    margin-left: -75px;
+    margin-top: 10px;
+  }
+}
+
+%new-action-links {
+  text-align: center;
+
+  li {
+    float: none;
+
+    a {
+      background-color: transparent;
+      background-position: 1.2em center;
+      color: #231f20!important;
+      border-top: 1px solid $medium-gray;
+      border-bottom: 1px solid $medium-gray;
+      padding: 1em 2em;
+      color: white;
+      text-decoration: none;
+      margin-bottom: 5px;
+      background-image: url('../img/add-element-icon2.png');
+      padding-left: 3em;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+      &:hover {
+        background-color: #8cc657;
+        border-color: #8cc657;
+        color: white!important;
+        background-image: url('../img/add-element-icon2-active.png');
+      }
+    }
+  }
+}
+
+%start-action-links {
+  background-color: transparent;
+  background-position: 1.2em center;
+  color: #231f20!important;
+  border-top: 1px solid $medium-gray;
+  border-bottom: 1px solid $medium-gray;
+  padding: 1em 2em;
+  color: white;
+  text-decoration: none;
+  margin-bottom: 5px;
+  background-image: url('../img/start-element-icon2.png');
+  background-repeat: no-repeat;
+  background-position: 19.2px 50%;
+  padding-left: 3em;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: #8cc657;
+    border-color: #8cc657;
+    color: white!important;
+    background-image: url('../img/start-element-icon2-active.png');
+  }
+}
+
+%form-submit {
+  background-color: transparent;
+  color: #231f20!important;
+  display: inline-block;
+  border-top: 1px solid $medium-gray;
+  border-bottom: 1px solid $medium-gray;
+  padding: 9px 80px;
+  margin-right: 15px;
+  height: auto;
+}
+
+%form-submit-save {
+  @extend %form-submit;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: #8cc657;
+    border-color: #8cc657;
+    color: white!important;
+  }
+}
+
+%form-submit-delete {
+  @extend %form-submit;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+  &:hover {
+    background-color: #ee162d;
+    border-color: #ee162d;
+    color: white!important;
+  }
+}
+
+#ui-datepicker-div {
+  background-color: #33abde;
+  border: 0;
+  border-radius: 0;
+
+  .ui-state-default,
+  .ui-widget-content .ui-state-default,
+  .ui-widget-header .ui-state-default {
+    background: none;
+    border: 1px solid transparent;
+    color: #FFF;
+  }
+
+  .ui-state-active,
+  .ui-widget-content .ui-state-active,
+  .ui-widget-header .ui-state-active {
+    border: 1px solid transparent;
+    background-color: #FFF;
+    color: #212121;
+  }
+
+  .ui-widget-header {
+    background: rgba(0, 0, 0, 0);
+    border: 0;
+  }
+}
+
+body.node-type-collaborative-workspace,
+body.page-collaborative-workspaces,
+body.page-node-add-collaborative-workspace {
+  .action-links {
+    @extend %new-action-links;
+  }
+
+  .form-actions {
+    text-align: left;
+    max-width: 900px;
+    margin: 0 auto 50px;
+
+    .form-submit {
+      @extend %form-submit-save;
+    }
+
+    #edit-delete {
+      @extend %form-submit-delete;
+    }
+  }
+
+  .view-collaborative-workspaces {
+    table {
+      max-width: 900px;
+      margin: 0 auto 50px;
+
+      thead {
+        tr {
+          th {
+            background-color: transparent;
+            color: #414142;
+            font-size: 30px;
+            text-transform: uppercase;
+            font-weight: 600;
+            padding-left: 0;
+            border-bottom: 4px solid #33abde;
+          }
+        }
+      }
+
+      tbody {
+        tr {
+          td {
+            background-color: transparent;
+            vertical-align: top;
+            padding-left: 0;
+            padding-top: 46px;
+            padding-bottom: 50px;
+            border-bottom: 1px solid $medium-gray;
+
+            &.take-button-cell {
+              border-bottom: 0;
+              width: 250px;
+              @media screen and (max-width: $mobile-breakpoint) {
+                width: auto;
+              }
+            }
+
+            &:nth-child(1):before,
+            &:nth-child(2):before {
+              content: '';
+              display: block;
+              height: 1px;
+              background-color: $medium-gray;
+              margin: 0 35px 12px 0;
+            }
+          }
+        }
+      }
+    }
+
+    .take-button-cell {
+      a.read-more {
+        background: transparent;
+        color: #231f20;
+        border-top: 1px solid $medium-gray;
+        border-bottom: 1px solid $medium-gray;
+        padding: 12px 1em;
+        background-image: url('../img/sort-element-icon2.png');
+        background-position: 0.8em center;
+        background-repeat: no-repeat;
+        padding-left: 3em;
+        padding-right: 1em;
+        margin-bottom: 7px;
+        width: 250px;
+        transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+        &:hover {
+          background-color: #24abdd;
+          border-color: #24abdd;
+          color: white!important;
+          background-image: url('../img/sort-element-icon2-active.png');
+        }
+        @media screen and (max-width: $mobile-breakpoint) {
+          width: 50px;
+          font-size: 0;
+          background-position: center;
+        }
+      }
+
+      a.edit {
+        background: transparent;
+        color: #231f20;
+        border-top: 1px solid $medium-gray;
+        border-bottom: 1px solid $medium-gray;
+        padding: 12px 1em;
+        background-position: 1em center;
+        background-repeat: no-repeat;
+        background-image: url('../img/edit-element-icon2.png');
+        padding-left: 3em;
+        padding-right: 0.9em;
+        margin-bottom: 7px;
+        width: 250px;
+        transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+        &:hover {
+          background-color: #8cc657;
+          border-color: #8cc657;
+          color: white!important;
+          background-image: url('../img/edit-element-icon2-active.png');
+        }
+        @media screen and (max-width: $mobile-breakpoint) {
+          width: 50px;
+          font-size: 0;
+          background-position: center;
+        }
+      }
+    }
+  }
+
+  #collaborative-workspace-node-form {
+    text-align: center;
+
+    .form-item-field-classes-courses {
+      @extend %new-select;
+    }
+  }
+
+  #multiselect_labels_field_users_invited_multiselect {
+    width: auto;
+
+    &::after {
+      content: '';
+      display: table;
+      clear: both;
+    }
+  }
+
+  #collaborative_workspaces_wrapper {
+    margin-left: 30px;
+    margin-bottom: 50px;
+    margin-top: 50px;
+    @media screen and (max-width: $mobile-breakpoint) {
+      margin-left: 0;
+    }
+
+    #collaborative_workspaces_list {
+      width: 334px;
+      margin-right: 50px;
+      @media screen and (max-width: $mobile-breakpoint) {
+        display: none;
+      }
+    }
+
+    table {
+      background-color: #f6f6f6;
+      border: 35px solid #f6f6f6;
+      border-top-width: 20px;
+      border-bottom-width: 20px;
+      @include box-sizing(border-box);
+      margin-bottom: 8px;
+
+      thead {
+        tr {
+          th {
+            background-color: transparent;
+            color: #414142;
+            font-size: 16px;
+            text-transform: uppercase;
+            font-weight: 600;
+            padding-left: 0;
+            border-bottom: 3px solid #33abde;
+          }
+        }
+      }
+
+      tbody {
+        tr {
+          td {
+            background-color: transparent;
+          }
+        }
+      }
+    }
+
+    .take-button-cell {
+      padding: 18px 0 0;
+      border: 0;
+
+      a.read-more {
+        background: transparent;
+        color: #231f20;
+        border-top: 1px solid $dark-gray;
+        border-bottom: 1px solid $dark-gray;
+        padding: 12px 1em;
+        background-image: url('../img/sort-element-icon2.png');
+        background-position: 0.5em center;
+        background-repeat: no-repeat;
+        padding-left: 3em;
+        padding-right: 1em;
+        margin-bottom: 7px;
+        margin-right: 15px;
+        transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+        &:hover {
+          background-color: #24abdd;
+          border-color: #24abdd;
+          color: white!important;
+          background-image: url('../img/sort-element-icon2-active.png');
+        }
+      }
+
+      a.edit {
+        background: transparent;
+        color: #231f20;
+        border-top: 1px solid $dark-gray;
+        border-bottom: 1px solid $dark-gray;
+        padding: 12px 1em;
+        background-position: 0.5em center;
+        background-repeat: no-repeat;
+        background-image: url('../img/edit-element-icon2.png');
+        padding-left: 3em;
+        padding-right: 1em;
+        margin-bottom: 7px;
+        transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+
+        &:hover {
+          background-color: #8cc657;
+          border-color: #8cc657;
+          color: white!important;
+          background-image: url('../img/edit-element-icon2-active.png');
+        }
+      }
+    }
+  }
+
+  div#collaborative_workspace_container > div {
+    margin: 0 !important;
+  }
+}
+
+body.node-type-collaborative-workspace {
+  div#tabs {
+    display: none;
+  }
+}

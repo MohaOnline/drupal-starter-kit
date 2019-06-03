@@ -1,0 +1,890 @@
+@import "compass";
+@import "grid/grid";
+@import "grid/gridpak";
+@import "utility/abstractions/mixins";
+/**
+ * @file
+ * Defines the site layout and structure.
+ * Defines the styles for the structure elements. For more specific styles, though,
+ * look into partials/base or partials/components.
+ *
+ * - Header
+ *   - Account information
+ *   - Search
+ * - Content
+ *   - Front page
+ *   - First sidebar
+ *   - Second sidebar
+ * - Footer
+ */
+html {
+  min-height: 100%;
+  display: flex;
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    width: 100%;
+  }
+}
+
+div.vertical-tabs {
+  overflow: visible;
+  margin: 16px auto;
+  text-align: left;
+  @include box-sizing(border-box);
+  text-align: left;
+
+  ul.vertical-tabs-list {
+    margin: -1px 0;
+
+    li {
+      border-left: 0;
+    }
+  }
+  @media screen and (max-width: $mobile-breakpoint) {
+    display: none;
+  }
+
+  .vertical-tabs-pane {
+    background: white;
+  }
+}
+/**
+ * Header
+ */
+#site-header {
+  background: url('../img/header-background.jpg') left top $deep-blue;
+  padding: 10px 0;
+  color: white;
+
+  > .row {
+    max-width: none;
+  }
+  @media screen and (max-width: $mobile-breakpoint) {
+    position: fixed;
+    width: 100%;
+    z-index: 200;
+    box-shadow: 0 0 10px black;
+    top: 0;
+
+    .center-pc {
+      text-align: left;
+    }
+  }
+
+  a {
+    color: white;
+    text-decoration: none;
+    max-height: 75px;
+
+    img {
+      max-height: 55px;
+      vertical-align: middle;
+    }
+  }
+
+  .mobile-link-icon {
+    float: right;
+    padding-top: 0.75em;
+    display: none;
+    margin-right: 1em;
+    height: 30px;
+    @include vertical-align(50%);
+    @media screen and (max-width: $mobile-breakpoint) {
+      display: block;
+    }
+  }
+
+  .mobile-link-icon:first-of-type {
+    margin-right: 0;
+  }
+}
+
+#logo {
+  @include vertical-align(50%);
+  @include translate(-50%, -50%);
+  position: absolute;
+  display: block;
+  left: 50%;
+
+  img {
+    @media screen and (max-width: $mobile-breakpoint) {
+      max-height: 40px;
+    }
+  }
+  @media screen and (max-width: 1200px) {
+    left: 2.5%;
+    margin-left: 0;
+    @include translateY(-50%);
+  }
+}
+
+body.platon-use-slider {
+  #logo {
+    max-height: 134px;
+
+    img {
+      max-height: 110px;
+      vertical-align: middle;
+      @media screen and (max-width: 800px) {
+        max-height: 50px;
+      }
+    }
+  }
+}
+
+.header-user-tools {
+  padding-right: 0;
+  @media screen and (max-width: $mobile-breakpoint) {
+    padding-right: 2.5%;
+  }
+
+  #user-account-information {
+    float: right;
+    @include vertical-align(50%);
+    margin-right: 20px;
+
+    #user-links a {
+      vertical-align: middle;
+      display: inline-block;
+
+      img {
+        display: block;
+        position: relative;
+        top: 50%;
+      }
+    }
+
+    .welcome {
+      display: inline-block;
+      vertical-align: top;
+      margin-left: 8px;
+      max-width: 150px;
+      line-height: 1.4em;
+      vertical-align: middle;
+    }
+
+    #user-account-information-name,
+    #user-account-information-picture {
+      float: left;
+      margin-right: 1em;
+    }
+
+    #user-account-information-name {
+      @media screen and (max-width: $mobile-breakpoint) {
+        display: none;
+      }
+    }
+
+    #user-account-information-picture {
+      padding-top: 0.55em;
+    }
+  }
+
+  .search-form input[type="text"] {
+    color: #000000;
+  }
+
+  #header-login {
+    float: right;
+    background-color: white;
+    color: black;
+    height: inherit;
+    min-width: 112px;
+    position: relative;
+
+    a {
+      color: inherit;
+      cursor: pointer;
+      padding: 5px;
+    }
+
+    .link-block-user-login {
+      @include vertical-align(50%);
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .region-header-login {
+      position: absolute;
+      right: 0;
+      top: 134px;
+      width: 215px;
+      z-index: 2000;
+      background-color: white;
+      color: #656668;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      display: none;
+
+      a {
+        color: #656668;
+      }
+
+      fieldset {
+        background: inherit;
+
+        > legend {
+          display: none;
+        }
+
+        .fieldset-wrapper {
+          padding: 1em 20px 1em 1em;
+
+          input[type="password"],
+          input[type="text"],
+          select,
+          textarea {
+            border: 0;
+            width: 100%;
+            padding-left: 0;
+            padding-right: 9px;
+            background-color: transparent!important;
+            border-bottom: 1px solid black;
+            @include placeholder(#656668);
+            box-sizing: border-box;
+          }
+
+          input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 1000px white inset;
+          }
+
+          input[type="submit"] {
+            width: 100%;
+            text-transform: uppercase;
+            padding: 7px;
+            margin-top: 15px;
+            @include transition(.2s);
+
+            &:hover {
+              background-color: lighten($leaf-green, 5);
+            }
+          }
+
+          ul {
+            margin: 0;
+
+            li {
+              list-style: none;
+              margin: 0;
+              text-align: center;
+              background-position: center;
+              @include background-size(cover);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  #header-search {
+    float: right;
+    width: 40px;
+    height: 30px;
+    margin: 0;
+    overflow: hidden;
+    @include vertical-align(50%);
+    margin-right: 20px;
+    @media screen and (max-width: $mobile-breakpoint) {
+      display: none;
+    }
+
+    form {
+      position: absolute;
+      right: 0;
+      white-space: nowrap;
+      width: 170px;
+
+      .container-inline {
+        padding: 0;
+      }
+    }
+
+    h2,
+    label {
+      display: none;
+    }
+
+    .form-text {
+      float: left;
+      padding: 5px;
+      border: 0;
+      outline: 0;
+      margin-right: 10px;
+      width: 120px;
+      @media screen and (max-width: $mobile-breakpoint) {
+        width: auto;
+      }
+    }
+
+    .form-submit {
+      border: 0;
+      outline: 0;
+      background: url('../img/search-submit.png') center center no-repeat;
+      float: left;
+      text-indent: -9999px;
+      cursor: pointer;
+      width: 30px;
+      height: 30px;
+    }
+  }
+}
+/**
+ * Front page with slider
+ */
+body.platon-use-slider {
+  #first-sidebar-toggle {
+    display: none;
+  }
+
+  #title-wrapper {
+    display: none;
+  }
+
+  #site-content {
+    > .row {
+      width: 100%;
+      max-width: none;
+    }
+  }
+
+  #first-sidebar {
+    z-index: 2000;
+    padding: 0;
+    width: 160px;
+    top: 80px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-left: -20%;
+    @media screen and (max-width: 1330px) {
+      margin-left: -275px;
+    }
+    @media screen and (max-width: 900px) {
+      margin-left: 0;
+      transform: none;
+      left: 15px;
+    }
+
+    #main-navigation-wrapper {
+      background-color: white;
+      width: 160px;
+
+      .title {
+        text-align: center;
+        text-transform: lowercase;
+        line-height: 50px;
+
+        .close-menu {
+          float: right;
+          margin-right: 12px;
+          line-height: 1em;
+          margin-top: 14px;
+
+          a {
+            @include transition(.6s);
+            display: block;
+
+            &:not(.open) {
+              @include rotate(135deg);
+            }
+          }
+        }
+      }
+
+      .main-navigation-row {
+        padding: 30px 18px 10px;
+        background-color: #3c3c3b;
+
+        + .main-navigation-row {
+          margin-top: -7px;
+          padding-top: 0;
+        }
+
+        > .main-navigation-item {
+          text-align: center;
+          padding: 0;
+
+          a {
+            margin: 0 auto;
+            display: block;
+            float: none;
+
+            span.text {
+              margin-left: 52px;
+              padding: 0;
+              font-size: 12px;
+              width: 72px;
+              text-align: left;
+              color: #FFF;
+              vertical-align: middle;
+              display: table-cell;
+              height: 40px;
+              padding-left: 52px;
+            }
+            @media screen and (max-width: 800px) {
+              width: 40px;
+              height: 40px;
+              margin: 0 10px;
+            }
+          }
+          @media screen and (max-width: 800px) {
+            &#main-navigation-item-home a,
+            &#main-navigation-item-training-catalogue a {
+              margin: 0;
+            }
+
+            &#main-navigation-item-training-catalogue {
+              margin-bottom: 0;
+            }
+          }
+        }
+      }
+    }
+    @media screen and (max-width: 800px) {
+      left: 0;
+      top: 0;
+      margin-left: 0;
+      width: 100%;
+
+      #main-navigation-wrapper {
+        width: auto;
+
+        .title {
+          display: none;
+        }
+
+        .main-navigation-row {
+          padding: 15px;
+        }
+      }
+    }
+  }
+
+  #second-sidebar {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+
+    ul.homepage-slider {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+
+      li.slick-slide {
+        list-style: none;
+        left: 0!important;
+        position: absolute!important;
+        min-height: 700px;
+        overflow-y: scroll;
+        @include background-size(cover);
+        background-repeat: no-repeat;
+        background-position: center;
+        padding-right: 20px;
+        width: 100%!important;
+
+        &::-webkit-scrollbar {
+          display: none;
+        }
+
+        .content {
+          top: 80px;
+          position: absolute;
+          color: white;
+          padding-bottom: 220px;
+          width: 40%;
+          min-width: 860px;
+          left: 50%;
+          width: 40%;
+          min-width: 540px;
+          transform: translateX(-50%);
+          margin-left: 90px;
+
+          ul {
+            padding-left: 20px;
+
+            li {
+              list-style: disc;
+            }
+          }
+          @media screen and (max-width: 1330px) {
+            margin-left: 75px;
+          }
+
+          .inner-content {
+            background-color: rgba(0,0,0,.7);
+            padding: 15px 30px;
+          }
+          @media screen and (max-width: 900px) {
+            margin-left: 0;
+            position: absolute;
+            left: 190px;
+            transform: none;
+            right: 35px;
+            width: auto;
+          }
+          @media screen and (max-width: 800px) {
+            right: 20px;
+            left: 0;
+            min-width: 0;
+          }
+          @media screen and (max-width: $mobile-breakpoint) {
+            padding-left: 15px;
+            padding-right: 15px;
+          }
+
+          a {
+            color: white;
+          }
+        }
+      }
+    }
+
+    .slider-footer {
+      position: absolute;
+      bottom: 0;
+      height: 180px;
+      width: 100%;
+      background-color: rgba(0, 0, 0, .5);
+      z-index: 2000;
+      text-align: center;
+
+      .slider-counter {
+        display: inline-block;
+        color: white;
+        font-size: 38px;
+        font-weight: 900;
+        @include vertical-align(50%);
+
+        .top {
+          border-bottom: 2px solid white;
+        }
+
+        .bottom {}
+      }
+    }
+  }
+}
+
+body.platon-use-slider.platon-hide-anonymous-menu {
+  @media screen and (min-width: 901px) {
+    #second-sidebar ul li.slick-slide .content {
+      padding: 0;
+      width: 40%;
+      min-width: 700px;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-left: -10px;
+    }
+  }
+  @media screen and (max-width: 900px) {
+    #second-sidebar ul li.slick-slide .content {
+      padding: 0 35px 0 15px;
+      width: 100%;
+      box-sizing: border-box;
+      left: 0;
+      transform: none;
+    }
+  }
+}
+/**
+ * Content
+ */
+#site-content {
+  background: url('../img/body-background.png') center top repeat-y;
+  flex: 1 0 auto;
+  display: flex;
+
+  > .row {
+    background-color: #3c3c3b;
+    max-width: none;
+    width: 100%;
+    display: flex;
+  }
+  @media screen and (max-width: $mobile-breakpoint) {
+    margin-top: 65px;
+    background: $light-gray;
+  }
+}
+
+#first-sidebar {
+  position: relative;
+  float: left;
+
+  .trigger {
+    background: transparent;
+    width: 70px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    overflow: hidden;
+    text-indent: 100%;
+    color: transparent;
+    white-space: nowrap;
+    cursor: pointer;
+    outline: none;
+    position: relative;
+    margin-left: 9px;
+    @media screen and (max-width: 800px) {
+      display: none;
+    }
+
+    body.platon-use-slider & {
+      display: none;
+    }
+
+    span {
+      &,
+      &::after,
+      &::before {
+        position: absolute;
+        width: 22px;
+        height: 1px;
+        border-radius: 1px;
+        background: white;
+      }
+      top: calc(50% - 2px);
+      left: calc(50% - 16px);
+      transition: all 0.3s ease;
+
+      &::after,
+      &::before {
+        content: '';
+        left: 0;
+        transition: all 0.3s ease;
+      }
+
+      &::before {
+        bottom: 7px;
+      }
+
+      &::after {
+        top: 7px;
+      }
+    }
+
+    &:hover span {
+      transform: rotate(180deg);
+
+      &::before {
+        transform: translateX(-1px) translateY(2px) rotate(-45deg);
+        width: 60%;
+      }
+
+      &::after {
+        transform: translateX(-1px) translateY(-2px) rotate(45deg);
+        width: 60%;
+      }
+    }
+
+    &.open:hover span {
+      transform: rotate(180deg);
+
+      &::before {
+        transform: translateX(10px) translateY(2px) rotate(45deg);
+        width: 60%;
+      }
+
+      &::after {
+        transform: translateX(10px) translateY(-2px) rotate(-45deg);
+        width: 60%;
+      }
+    }
+  }
+
+  #main-navigation-wrapper {
+    padding: 80px 20px 0;
+    overflow: hidden;
+    @media screen and (max-width: 800px) {
+      padding-top: 22px;
+
+      body:not(.platon-use-slider) & {
+        padding-right: 215px !important;
+        display: none!important;
+
+        &.menuOpen {
+          display: block!important;
+        }
+      }
+    }
+
+    body.platon-use-slider & {
+      padding: 0 !important;
+    }
+
+    .main-navigation-row {
+      overflow: visible;
+    }
+  }
+  @media screen and (max-width: $mobile-breakpoint) {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  #first-sidebar-toggle {
+    position: absolute;
+    right: 5px;
+    width: 13px;
+    height: 22px;
+    background: url('../img/collapse-menu-icon.png') center bottom no-repeat;
+    top: 48%;
+    cursor: pointer;
+    @media screen and (max-width: $mobile-breakpoint) {
+      display: none;
+    }
+  }
+}
+
+#first-sidebar.collapsed {
+  width: 0;
+  overflow: hidden;
+
+  .region {
+    display: none;
+  }
+
+  #first-sidebar-toggle {
+    background-position: center top;
+    @media screen and (max-width: $mobile-breakpoint) {
+      display: none;
+    }
+  }
+}
+
+#second-sidebar {
+  background-color: #fff;
+  padding: 1.5em 20px 1em;
+  flex: 1;
+  @media screen and (max-width: $mobile-breakpoint) {
+    margin: 0;
+    width: 100%;
+    @include box-sizing(border-box);
+
+    &.menuOpen {
+      margin: 0;
+    }
+  }
+}
+@media screen and (max-width: $mobile-breakpoint) {
+  body:not(.platon-use-slider) {
+    #first-sidebar.collapsed,
+    #first-sidebar.collapsed + #second-sidebar {
+      width: 100% - (2 * 1.5%);
+
+      .region {
+        display: block !important;
+      }
+    }
+  }
+}
+@media screen and (min-width: $mobile-breakpoint) {
+  body:not(.platon-use-slider) {
+    #first-sidebar.collapsed + #second-sidebar {
+      width: 100% - (2 * 1.5%);
+    }
+  }
+}
+@media screen and (min-width: $pc-breakpoint) {
+  body:not(.platon-use-slider) {
+    #first-sidebar.collapsed + #second-sidebar {
+      width: 100% - (2 * 1.5%);
+    }
+  }
+}
+
+#title-wrapper {
+  padding: 0.5em 0;
+  margin-bottom: 2em;
+  overflow: hidden;
+  border-bottom: 6px solid $heading-border-color;
+
+  h1 {
+    margin: 0;
+    float: left;
+    font-size: 40px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: $heading-text-color;
+
+    em {
+      font-style: normal;
+    }
+  }
+
+  #og-context-navigation {
+    float: right;
+  }
+}
+/**
+ * Footer
+ */
+#site-footer {
+  background-color: $deep-blue;
+  padding: 10px 0;
+  color: white;
+  font-size: 0.7em;
+
+  a {
+    color: white;
+  }
+}
+/**
+ * Front page
+ */
+body.platon-use-slider {
+  #site-header {
+    padding: 0;
+    height: 134px;
+    @media screen and (max-width: $mobile-breakpoint) {
+      height: 65px;
+      z-index: 2001;
+    }
+
+    > .row {
+      height: inherit;
+      overflow: visible;
+
+      > .col {
+        height: inherit;
+      }
+    }
+  }
+}
+/**
+ * Not front page
+ */
+body:not(.platon-use-slider) {
+  #site-header {
+    padding: 0;
+    height: 77px;
+
+    .header-user-tools {
+      #header-login {
+        .region-header-login {
+          top: 77px;
+        }
+      }
+    }
+    @media screen and (max-width: $mobile-breakpoint) {
+      height: 65px;
+    }
+
+    > .row {
+      height: inherit;
+      overflow: visible;
+
+      > .col {
+        height: inherit;
+      }
+    }
+  }
+}
+/**
+ * Hide link on page node/%/group
+ */
+#views-form-og-members-admin-default td.views-field.views-field-edit-membership > a[href*=delete-membership] {
+  display: none;
+}

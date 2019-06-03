@@ -1,0 +1,114 @@
+<?php
+
+/**
+ * @file
+ * Implements statistic pages hooks
+ */
+require_once(__DIR__ . '/includes/constants.inc');
+require_once(__DIR__ . '/includes/model/model.inc');
+
+/**
+ * Implements hook_permission().
+ */
+function opigno_tincan_api_stats_permission() {
+  return array(
+    'access lrs stats' => array(
+      'title' => t('Access LRS statistics'),
+      'description' => t('Be able to view Learning Record Store (LRS) statistic pages.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+//function opigno_tincan_api_stats_menu_alter(&$items) {
+//  if (isset($items['admin/config/services/tincanapi'])) $items['admin/opigno/system/tincanapi']=$items['admin/config/services/tincanapi'];
+//}
+// TODO: Verify that this menu alter is useless
+
+/**
+ * Implements hook_menu().
+ */
+function opigno_tincan_api_stats_menu() {
+  $items['admin/opigno-statistics/lrs-statistics'] = array(
+    'title' => 'LRS stats',
+    'description' => t('Learning Record Store'),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('admin/opigno-statistics/lrs-statistics/dashboard'),
+    'access arguments' => array('access lrs stats'),
+  );
+
+  $items['admin/opigno-statistics/lrs-statistics/dashboard'] = array(
+    'title' => 'Dashboard',
+    'description' => t('Dashboard'),
+    'page callback' => 'opigno_lrs_stats_dashboard_page',
+    'access arguments' => array('access lrs stats'),
+    'file' => 'includes/dashboard/dashboard.pages.inc',
+  );
+
+  $items['admin/opigno-statistics/lrs-statistics/dashboard/total-number-of-page-view.json'] = array(
+    'page callback' => 'opigno_lrs_stats_dashboard_total_number_of_page_view_json_page',
+    'access arguments' => array('access lrs stats'),
+    'file' => 'includes/dashboard/dashboard.pages.inc'
+  );
+
+  $items['admin/opigno-statistics/lrs-statistics/course-content'] = array(
+    'title' => 'Course content',
+    'description' => t('LRS course content statistics'),
+    'page callback' => 'opigno_lrs_stats_course_content_page',
+    'access arguments' => array('access lrs stats'),
+    'file' => 'includes/course_content/course_content.pages.inc'
+  );
+
+  $items['admin/opigno-statistics/lrs-statistics/quizzes'] = array(
+    'title' => 'Quizzes',
+    'description' => t('LRS quizzes statistics'),
+    'page callback' => 'opigno_lrs_stats_quizzes_page',
+    'access arguments' => array('access lrs stats'),
+    'file' => 'includes/quizzes/quizzes.pages.inc'
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function opigno_tincan_api_stats_theme($existing, $type, $theme, $path) {
+  return array(
+    'opigno_lrs_stats_dashboard' => array('template' => 'templates/dashboard/dashboard'),
+
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view' => array('template' => 'templates/dashboard/widgets/total_number_of_page_view/total_number_of_page_view'),
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view_current_week_aggregate_day_json' => array(),
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view_current_month_aggregate_day_json' => array(),
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view_current_year_aggregate_day_json' => array(),
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view_current_year_aggregate_month_json' => array(),
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view_forever_aggregate_day_json' => array(),
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view_forever_aggregate_month_json' => array(),
+    'opigno_lrs_stats_dashboard_widget_total_number_of_page_view_forever_aggregate_year_json' => array(),
+
+    'opigno_lrs_stats_dashboard_widget_top_10_viewed_pages' => array('template' => 'templates/dashboard/widgets/top_10_viewed_pages/top_10_viewed_pages'),
+    'opigno_lrs_stats_dashboard_widget_top_10_viewed_pages_list' => array('template' => 'templates/dashboard/widgets/top_10_viewed_pages/partials/list'),
+    'opigno_lrs_stats_dashboard_widget_top_10_viewed_pages_list_item' => array('template' => 'templates/dashboard/widgets/top_10_viewed_pages/partials/list_item'),
+
+    'opigno_lrs_stats_dashboard_widget_most_active_users' => array('template' => 'templates/dashboard/widgets/most_active_users/most_active_users'),
+    'opigno_lrs_stats_dashboard_widget_most_active_users_list' => array('template' => 'templates/dashboard/widgets/most_active_users/partials/list'),
+    'opigno_lrs_stats_dashboard_widget_most_active_users_list_item' => array('template' => 'templates/dashboard/widgets/most_active_users/partials/list_item'),
+
+    'opigno_lrs_stats_dashboard_widget_last_statements' => array('template' => 'templates/dashboard/widgets/last_statements/last_statements'),
+
+    'opigno_lrs_stats_course_content' => array('template' => 'templates/course_content/course_content'),
+    'opigno_lrs_stats_course_content_general_statistics' => array('template' => 'templates/course_content/widgets/general_statistics/general_statistics'),
+    'opigno_lrs_stats_course_content_course_contexts_statistics' => array('template' => 'templates/course_content/widgets/course_contexts_statistics/course_contexts_statistics'),
+    'opigno_lrs_stats_course_content_widget_course_contexts_statistics_list' => array('template' => 'templates/course_content/widgets/course_contexts_statistics/partials/list'),
+    'opigno_lrs_stats_course_content_widget_course_contexts_statistics_list_item' => array('template' => 'templates/course_content/widgets/course_contexts_statistics/partials/list_item'),
+
+    'opigno_lrs_stats_quizzes' => array('template' => 'templates/quizzes/quizzes'),
+    'opigno_lrs_stats_quizzes_list' => array('template' => 'templates/quizzes/partials/list'),
+    'opigno_lrs_stats_quizzes_list_item' => array('template' => 'templates/quizzes/partials/list_item'),
+
+    'opigno_lrs_stats_statements_list' => array('template' => 'templates/partials/statements/list'),
+    'opigno_lrs_stats_statements_list_item' => array('template' => 'templates/partials/statements/list_item')
+  );
+}

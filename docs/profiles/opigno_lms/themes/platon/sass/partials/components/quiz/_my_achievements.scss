@@ -1,0 +1,150 @@
+body.page-my-achievements,
+body.page-user-achievements {
+  td.percent-bar {
+    position: relative;
+    font-size: 39px;
+    font-weight: 600;
+
+    div {
+      position: relative;
+    }
+
+    .bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      background-color: #dadada;
+    }
+  }
+
+  td.global-time {
+    font-size: 29px;
+    font-weight: 600;
+  }
+
+  thead + tbody tr:nth-child(odd) td:not([class*='ui-datepicker']),
+  tr.even,
+  tr.odd {
+    background-color: transparent;
+  }
+
+  .opigno-quiz-app-download-certificate {
+    color: #a5a5a5;
+    &::before {
+      content: '';
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 1rem;
+      width: 50px;
+      height: 50px;
+      border-top: 1px solid #c1c1c1;
+      border-bottom: 1px solid #c1c1c1;
+      background-image: url('/profiles/opigno_lms/modules/opigno/opigno_quiz_app/img/certificate.png');
+      background-size: auto 25px;
+      background-repeat: no-repeat;
+      background-position: center;
+      opacity: .5;
+    }
+
+    &.opigno-certificate-app-download-certificate-link {
+      color: inherit;
+      &::before {
+        opacity: 1;
+      }
+    }
+  }
+
+  table.opigno-quiz-app-results-table {
+    margin-bottom: 0;
+
+    th {
+      text-transform: none;
+    }
+
+    tr {
+      td {
+        padding: 5px 8px;
+        width: 16.6667%;
+        background-color: inherit;
+
+        &:nth-child(1) {
+          width: 50%;
+        }
+      }
+    }
+
+    tr.header-row {
+      background-color: #eee;
+
+      > td:first-child {
+        padding-left: 30px;
+        padding-top: 15px;
+        padding-bottom: 15px;
+      }
+    }
+
+    tr:nth-child(2n+0) {
+      background-color: #eee;
+    }
+
+    &.opigno-quiz-app-results-collapsible-table {
+      thead {
+        tr {
+          th {
+            position: relative;
+
+            &::after {
+              content: '';
+              background-image: url('/profiles/opigno_lms/modules/opigno/opigno_quiz_app/img/table-close.png');
+              background-size: contain;
+              background-position: center;
+              display: inline-block;
+              width: 11px;
+              height: 11px;
+              position: absolute;
+              right: 22px;
+              top: 50%;
+              transform: translateY(-50%);
+            }
+          }
+        }
+      }
+
+      &.closed {
+        thead {
+          tr {
+            th {
+              &::after {
+                background-image: url('/profiles/opigno_lms/modules/opigno/opigno_quiz_app/img/table-open.png');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    table {
+      margin-bottom: 2em;
+
+      th {
+        background-color: transparent;
+        color: inherit;
+        font-weight: 600;
+        padding-left: 0;
+        padding-right: 0;
+        border-top: 1px solid;
+        padding-top: 15px;
+
+        a {
+          color: inherit;
+        }
+      }
+
+      tr {
+        cursor: auto!important;
+      }
+    }
+  }
+}

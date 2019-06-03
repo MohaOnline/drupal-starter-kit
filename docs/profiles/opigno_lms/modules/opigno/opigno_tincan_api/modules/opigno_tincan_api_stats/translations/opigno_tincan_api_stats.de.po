@@ -1,0 +1,273 @@
+# $Id$
+#
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  opigno_lrs_stats.module: n/a
+#  opigno_lrs_stats.info: n/a
+#  includes/course_content/general_statistics_form.inc: n/a
+#  includes/dashboard/total_number_of_page_view_form.inc: n/a
+#  includes/dashboard/theme.inc: n/a
+#  templates/course_content/widgets/course_contexts_statistics/course_contexts_statistics.tpl.php: n/a
+#  templates/course_content/widgets/course_contexts_statistics/partials/list.tpl.php: n/a
+#  templates/dashboard/widgets/top_10_viewed_pages/partials/list.tpl.php: n/a
+#  templates/quizzes/partials/list.tpl.php: n/a
+#  templates/course_content/widgets/general_statistics/general_statistics.tpl.php: n/a
+#  templates/dashboard/widgets/last_statements/last_statements.tpl.php: n/a
+#  templates/dashboard/widgets/most_active_users/most_active_users.tpl.php: n/a
+#  templates/dashboard/widgets/most_active_users/partials/list.tpl.php: n/a
+#  templates/dashboard/widgets/top_10_viewed_pages/top_10_viewed_pages.tpl.php: n/a
+#  templates/dashboard/widgets/total_number_of_page_view/total_number_of_page_view.tpl.php: n/a
+#  templates/partials/statements/list.tpl.php: n/a
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2015-08-18 13:16+0200\n"
+"PO-Revision-Date: 2015-08-18 13:22+0200\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n>1);\n"
+"Language: fr\n"
+"X-Generator: Poedit 1.8.4\n"
+
+#: opigno_lrs_stats.module:18
+msgid "Access Learning Record Store statistics"
+msgstr "Zu den Statistik-Daten des LRS gelangen."
+
+#: opigno_lrs_stats.module:19
+msgid "Be able to view Learning Record Store statistics pages."
+msgstr "Fähig sein die Statistik-Seite des LRS anzuschauen."
+
+#: opigno_lrs_stats.module:30
+msgid "Learning Record Store stats"
+msgstr "Statistik-Daten des Learning Record Store"
+
+#: opigno_lrs_stats.module:31;40
+msgid "Learning Record Store dashboard"
+msgstr "Cockpit des Learning Record Store"
+
+#: opigno_lrs_stats.module:39
+msgid "Dashboard"
+msgstr "Cockpit"
+
+#: opigno_lrs_stats.module:55
+msgid "Course content"
+msgstr "Kursinhalt"
+
+#: opigno_lrs_stats.module:56
+msgid "Learning Record Store course content statistics"
+msgstr "Statistik-Daten des LRS zu den Kursinhalten"
+
+#: opigno_lrs_stats.module:64
+msgid "Quizzes"
+msgstr "Quiz"
+
+#: opigno_lrs_stats.module:65
+msgid "Learning Record Store quizzes statistics"
+msgstr "Quiz-Statistik des LRS"
+
+#: includes/course_content/general_statistics_form.inc:11
+#: includes/dashboard/total_number_of_page_view_form.inc:11
+msgid "Current week"
+msgstr "Aktuelle Woche"
+
+#: includes/course_content/general_statistics_form.inc:12
+#: includes/dashboard/total_number_of_page_view_form.inc:12
+msgid "Current month"
+msgstr "Aktueller Monat"
+
+#: includes/course_content/general_statistics_form.inc:13
+#: includes/dashboard/total_number_of_page_view_form.inc:13;14
+msgid "Current year"
+msgstr "Aktuelles Jahr"
+
+#: includes/course_content/general_statistics_form.inc:14
+#: includes/dashboard/total_number_of_page_view_form.inc:15;16;17
+msgid "Forever"
+msgstr "Immer"
+
+#: includes/dashboard/theme.inc:18;31;44;70
+msgid "Number of view per day"
+msgstr "Anzahl der Anzeigen pro Tag"
+
+#: includes/dashboard/theme.inc:57;83
+msgid "Number of view per month"
+msgstr "Anzahl der Anzeigen pro Monat"
+
+#: includes/dashboard/theme.inc:96
+msgid "Number of view per year"
+msgstr "Anzahl der Anzeigen pro Jahr"
+
+#: includes/dashboard/total_number_of_page_view_form.inc:11;12;13;15
+msgid "day"
+msgstr "Tag"
+
+#: includes/dashboard/total_number_of_page_view_form.inc:14;16
+msgid "month"
+msgstr "Monat"
+
+#: includes/dashboard/total_number_of_page_view_form.inc:17
+msgid "year"
+msgstr "Jahr"
+
+#: templates/course_content/widgets/course_contexts_statistics/course_contexts_statistics.tpl.php:10
+msgid "Course context statistics"
+msgstr "Statistik vom Kurskontext"
+
+#: templates/course_content/widgets/course_contexts_statistics/partials/list.tpl.php:11
+msgid "Course"
+msgstr "Kurs"
+
+#: templates/course_content/widgets/course_contexts_statistics/partials/list.tpl.php:12
+#: templates/dashboard/widgets/top_10_viewed_pages/partials/list.tpl.php:13
+msgid "Number of visits"
+msgstr "Besucheranzahl"
+
+#: templates/course_content/widgets/course_contexts_statistics/partials/list.tpl.php:13
+#: templates/dashboard/widgets/top_10_viewed_pages/partials/list.tpl.php:14
+#: templates/quizzes/partials/list.tpl.php:6
+msgid "Number of users"
+msgstr "Anzahl der Benutzer"
+
+#: templates/course_content/widgets/course_contexts_statistics/partials/list.tpl.php:14
+msgid "Percentage of users"
+msgstr "Prozent der Benutzer"
+
+#: templates/course_content/widgets/general_statistics/general_statistics.tpl.php:13
+msgid "General statistics"
+msgstr "Generelle Statistik"
+
+#: templates/course_content/widgets/general_statistics/general_statistics.tpl.php:19
+msgid "Total number of page views"
+msgstr "Gesamtanzahl der besichtigten Seiten"
+
+#: templates/course_content/widgets/general_statistics/general_statistics.tpl.php:20
+msgid "Total number of active users"
+msgstr "Gesamtanzahl der aktiven Benutzer"
+
+#: templates/course_content/widgets/general_statistics/general_statistics.tpl.php:21
+msgid "Total number of activities"
+msgstr "Gesamtanzahl der Tätigkeitsbereiche"
+
+#: templates/course_content/widgets/general_statistics/general_statistics.tpl.php:22
+msgid "Avg score"
+msgstr "Durchschnittswert"
+
+#: templates/dashboard/widgets/last_statements/last_statements.tpl.php:10
+msgid "Last statements"
+msgstr "Letzte Deklaration"
+
+#: templates/dashboard/widgets/most_active_users/most_active_users.tpl.php:10
+msgid "Most active users"
+msgstr "Aktivsten Benutzer"
+
+#: templates/dashboard/widgets/most_active_users/partials/list.tpl.php:11
+#: templates/dashboard/widgets/top_10_viewed_pages/partials/list.tpl.php:11
+msgid "#"
+msgstr "#"
+
+#: templates/dashboard/widgets/most_active_users/partials/list.tpl.php:12
+msgid "Username"
+msgstr "Benutzername"
+
+#: templates/dashboard/widgets/most_active_users/partials/list.tpl.php:13
+msgid "Number of statements"
+msgstr "Anzahl der Deklarationen"
+
+#: templates/dashboard/widgets/top_10_viewed_pages/top_10_viewed_pages.tpl.php:10
+msgid "Top 10 most viewed pages"
+msgstr "Top 10 der besuchten Seiten"
+
+#: templates/dashboard/widgets/top_10_viewed_pages/partials/list.tpl.php:12
+msgid "Page"
+msgstr "Seite"
+
+#: templates/dashboard/widgets/total_number_of_page_view/total_number_of_page_view.tpl.php:9
+msgid "Number of page views"
+msgstr "Anzahl der besichtigten Seiten"
+
+#: templates/partials/statements/list.tpl.php:3
+msgid "Actor"
+msgstr "Akteur"
+
+#: templates/partials/statements/list.tpl.php:4
+msgid "Verb"
+msgstr "Action"
+
+#: templates/partials/statements/list.tpl.php:5
+msgid "Object"
+msgstr "Objekt"
+
+#: templates/partials/statements/list.tpl.php:6
+msgid "Date"
+msgstr "Datum"
+
+#: templates/quizzes/partials/list.tpl.php:4
+msgid "Names"
+msgstr "Namen"
+
+#: templates/quizzes/partials/list.tpl.php:5
+msgid "Number of views"
+msgstr "Anzahl der Besichtigungen"
+
+#: templates/quizzes/partials/list.tpl.php:7
+msgid "Number of attempts"
+msgstr "Anzahl der Versuche"
+
+#: templates/quizzes/partials/list.tpl.php:8
+msgid "Average scores"
+msgstr "Durchschnittswert"
+
+
+msgid "Configure the TinCan API settings."
+msgstr "Parameter des API TinCan konfigurieren"
+
+msgid "Statement Settings"
+msgstr "Deklarationsparameter"
+
+msgid "Statement Actor"
+msgstr "Verfasser der Deklarationen"
+
+msgid "Track content type views"
+msgstr "Den Anzeigen nach Inhaltstyp nachgehen"
+
+msgid "Track the selected content types in the following view modes."
+msgstr "Den obenstehenden Inhaltstyp für folgende Anzeigemodi nachgehen"
+
+msgid "Link Settings"
+msgstr "Hyperlinkparameter"
+
+msgid "Track external links."
+msgstr "Dem externe Hyperlink nachgehen."
+
+msgid "Track file extensions"
+msgstr "Dem Dateityp nachgehen"
+
+msgid "Comma separated list of extensions. Example: pdf,docx,xlsx"
+msgstr "Liste der Dateityp durch ein Komma getrennt. Zum Beispiel : pdf, docx, xlsx"
+
+msgid "API Settings."
+msgstr "Parameter des API TinCan"
+
+msgid "The server endpoint. Do not include a trailing slash."
+msgstr "URL von Ihrem LRS Server. Kein slash hinzufügen."
+
+msgid "Endpoint"
+msgstr "LRS Server"
+
+msgid "The basic authenication user."
+msgstr "Benutzername für die Authentifizierung"
+
+msgid "The basic authenication password."
+msgstr "Passwort für die Authentifizierung"
+
+msgid "Track anonymous users."
+msgstr "Den anonymen Benutzer nachgehen"
+
+msgid "Log server response."
+msgstr "Serverantworten loggen"
+
+msgid "Simplify statements IDs (convert https urls to http)"
+msgstr "Die Ids der Deklarationen vereinfachen (Die urls https in http konvertieren)"

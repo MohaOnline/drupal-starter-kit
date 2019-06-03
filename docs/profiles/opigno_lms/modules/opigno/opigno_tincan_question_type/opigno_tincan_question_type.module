@@ -1,0 +1,114 @@
+<?php
+
+/**
+ * @file
+ * The main module file which contains the main drupal hooks.
+ */
+
+/**
+ * Implements hook_quiz_question_info().
+ */
+function opigno_tincan_question_type_quiz_question_info() {
+  return array(
+    'opigno_tincan_question_type' => array(
+      'name' => t('TinCan Package'),
+      'description' => t('Question type allowing to integrate a TinCan package inside a lesson.'),
+      'question provider' => 'OpignoTincanQuestionTypeQuestion',
+      'response provider' => 'OpignoTincanQuestionTypeResponse',
+      'module' => 'quiz_question',
+    ),
+  );
+}
+
+/**
+ * Implements hook_file_delete().
+ */
+function opigno_tincan_question_type_file_delete($file) {
+  // Delete the extracted files that are in the extracted folder.
+  $len = strlen(OpignoTincanQuestionTypeQuestion::PATH_PUBLIC_PACKAGE_FOLDER);
+  if (substr($file->uri, 0, $len) === OpignoTincanQuestionTypeQuestion::PATH_PUBLIC_PACKAGE_FOLDER) {
+    file_unmanaged_delete_recursive(OpignoTincanQuestionTypeQuestion::getExtractPath($file));
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function opigno_tincan_question_type_form_opigno_tincan_question_type_node_form_alter(&$form, &$form_state, $form_id) {
+  // Check if the TinCanPHP library is installed.
+  // If it is not installed, the user cannot access and an error message is given
+  $libraries = libraries_get_libraries();
+  if (!isset($libraries['TinCanPHP'])) {
+    drupal_set_message(t('You will not be able to save this question.'), 'error');
+    drupal_set_message(t(
+      'Please install the !tincanphp_library in the <em>sites/all/library/TinCanPHP</em> folder.',
+      array('!tincanphp_library' => l(t('TinCanPHP library'), 'https://github.com/RusticiSoftware/TinCanPHP/releases'))
+    ), 'error');
+  }
+
+  $form['#validate'][] = 'opigno_tincan_question_type_form_opigno_tincan_question_type_node_form_validate';
+}
+
+/**
+ * Function called when a form for type opigno_tincan_question_type is raised
+ */
+function opigno_tincan_question_type_form_opigno_tincan_question_type_node_form_validate(&$form, &$form_state) {
+  // Check if the TinCanPHP library is installed
+  $libraries = libraries_get_libraries();
+  if (!isset($libraries['TinCanPHP'])) {
+    form_set_error('', t('Impossible to create a new TinCan Package question type.'));
+    drupal_set_message(t(
+      'Please install the !tincanphp_library in the <em>sites/all/library/TinCanPHP</em> folder.',
+      array('!tincanphp_library' => l(t('TinCanPHP library'), 'https://github.com/RusticiSoftware/TinCanPHP/releases'))
+    ), 'error');
+  }
+}
+
+/**
+ * Implements hook_help().
+ */
+function opigno_tincan_question_type_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#opigno_tincan_question_type':
+
+      // --- The ABOUT section.
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Opigno TinCan Question Type module adds a new question type to the quiz module. With this new question type, you will be able to upload a TinCan Package and use it as a question inside a lesson. More information can be found on the !module_page.',
+          array(
+            '!module_page' => l(t('module page'), 'https://www.drupal.org/sandbox/amermod/2705191'),
+          )
+        ) . '</p>';
+
+      // --- The USES section.
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+
+      $output .= '<dt>' . t('Create a new question') . '</dt>';
+      $output .= '<dd>' . t('When you create a new question, you will be able to choose the TinCan Package type of question. Then, you will be asked to choose a title and to upload a TinCan Package. You can find some on the !tincan_packages_site.',
+          array(
+            '!tincan_packages_site' => l(t('TinCan Website'), 'https://tincanapi.com/download-prototypes/'),
+          )
+        ) . '</dd>';
+
+      $output .= '<dt>' . t('Answer a TinCan Question') . '</dt>';
+      $output .= '<dd>' . t('To answer a TinCan Question, you just have to start the lesson that contains the question previously created. The TinCan Package will appear in an iFrame.');
+
+      $output .= '<dt>' . t('Get the score') . '</dt>';
+      $output .= '<dd>' . t('The score is taken directly from the LRS. The TinCan Package must provide the score in the way described in the README.md file or on the !module_page to the LRS. Then, this module will get the score back from the LRS and register it to this Opigno LMS instance.',
+          array(
+            '!module_page' => l(t('module page'), 'https://www.drupal.org/sandbox/amermod/2705191'),
+          )
+        ) . '</dd>';
+
+      $output .= '<dt>' . t('TinCan Package specifications') . '</dt>';
+      $output .= '<dd>' . t('The TinCan Package must follow, at least, the specifications written in the README.md file or on the !module_page. A good TinCan Package should follow the specifications written on the official !github_page.',
+          array(
+            '!module_page' => l(t('module page'), 'https://www.drupal.org/sandbox/amermod/2705191'),
+            '!github_page' => l(t('Github page'), 'https://github.com/RusticiSoftware/launch/blob/master/lms_lrs.md'),
+          )
+        ) . '</dd>';
+      $output .= '</dl>';
+
+      return $output;
+  }
+}

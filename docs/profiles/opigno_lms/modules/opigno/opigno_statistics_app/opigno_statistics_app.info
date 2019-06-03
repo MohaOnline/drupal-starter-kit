@@ -1,0 +1,14 @@
+name = Opigno Statistics App
+description = Statistics for Opigno
+core = 7.x
+package = Opigno Apps
+
+dependencies[] = opigno
+dependencies[] = login_history
+dependencies[] = statistics
+
+; Information added by Drupal.org packaging script on 2018-10-05
+version = "7.x-1.5"
+core = "7.x"
+project = "opigno_statistics_app"
+datestamp = "1538743386"

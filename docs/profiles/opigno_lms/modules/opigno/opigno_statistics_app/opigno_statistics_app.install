@@ -1,0 +1,593 @@
+<?php
+
+/**
+ * @file
+ * Contains install instructions and logic
+ */
+
+/**
+ * Implements hook_install()
+ */
+function opigno_statistics_app_install() {
+  /*
+   * Configure core statistic module
+   *  - Enable
+   *  - Keep accesslog record for 3 month
+  */
+  variable_set('statistics_enable_access_log', TRUE);
+  variable_set('statistics_flush_accesslog_timer', 9676800);
+  opigno_statistics_app_migrate_data();
+  opigno_statistics_app_install_permissions();
+}
+
+
+/**
+ * Migrate opigno data to opigno statistics
+ */
+function opigno_statistics_app_migrate_data() {
+  $users = entity_load('user');
+  $courses = entity_load('node', FALSE, array('type' => 'course'));
+  $classes = entity_load('node', FALSE, array('type' => 'class'));
+
+  $month_year_now = mktime(0, 0, 0, date('m', time()), 1);
+  variable_set('opigno_statistics_module_installation_date_timestamp', $month_year_now);
+
+  foreach($courses as $course) {
+    db_insert('opigno_statistics_group')
+      ->fields(array(
+          'group_nid' => $course->nid,
+          'month_year' => $month_year_now,
+          'category_taxonomy_term_name' => 'NONE',
+          'group_title' => $course->title,
+          'group_type' => 'course'
+      ))
+      ->execute();
+  }
+
+  foreach ($users as $user) {
+    if ($user->uid == 0) {
+      continue;
+    }
+    foreach ($classes as $class) {
+      $result = db_query('SELECT 1 FROM {og_membership} ogm
+              INNER JOIN {node} n
+              ON ogm.gid = n.nid
+              WHERE etid = :uid
+              AND gid = :class_nid
+              AND entity_type = :user_type
+              AND n.type = :node_type', array(
+        ':class_nid' => $class->nid,
+        ':uid' => $user->uid,
+        ':user_type' => 'user',
+        ':node_type' => 'class'
+      ))->fetchCol();
+      $is_part_of_class = !empty($result);
+      if ($is_part_of_class) {
+        db_insert('opigno_statistics_user_group')
+          ->fields(array(
+            'uid' => $user->uid,
+            'group_nid' => $class->nid,
+            'nid' => $class->nid
+          ))
+          ->execute();
+      }
+    }
+
+    foreach ($courses as $course) {
+      $quiz_nids = opigno_quiz_app_course_lessons($course->nid);
+      $quiz_nids=array_keys($quiz_nids[$course->nid]);
+      $user_quiz_scores = quiz_get_score_data($quiz_nids, $user->uid);
+
+      //check if user is part of course
+      $result = db_query('SELECT 1 FROM {og_membership} ogm
+              INNER JOIN {node} n
+              ON ogm.gid = n.nid
+              WHERE etid = :uid
+              AND gid = :course_nid
+              AND entity_type = :user_type
+              AND n.type = :node_type', array(
+        ':course_nid' => $course->nid,
+        ':uid' => $user->uid,
+        ':user_type' => 'user',
+        ':node_type' => 'course'
+      ))->fetchCol();
+
+      $is_part_of_course = !empty($result);
+
+      if ($is_part_of_course) {
+        //Fill opigno_statistics_user_group table
+        db_insert('opigno_statistics_user_group')
+          ->fields(array(
+            'uid' => $user->uid,
+            'group_nid' => $course->nid,
+            'nid' => $course->nid
+          ))
+          ->execute();
+
+
+        if (count($user_quiz_scores) > 0) {
+
+          //Fill opigno_statistics_user_course table
+          $passed = (int) opigno_og_prereq_user_passed_course($user->uid, $course);
+
+          $user_course_nid = db_insert('opigno_statistics_user_course')
+            ->fields(array(
+              'uid' => $user->uid,
+              'course_nid' => $course->nid,
+              'status' => $passed,
+              'course_name' => $course->title,
+              'score' => 0, //Will be updated after course_details is filled
+              'username' => $user->name
+            ))
+            ->execute();
+
+          if ($passed) {
+            db_merge('opigno_statistics_group')
+              ->key(array(
+                'group_nid' => $course->nid,
+                'month_year' => $month_year_now,
+                'category_taxonomy_term_name' => 'NONE',
+                'group_title' => $course->title,
+                'group_type' => 'course'
+              ))
+              ->fields(array())
+              ->expression('number_passed', 'number_passed + 1')
+              ->execute();
+          }
+
+          foreach ($user_quiz_scores as $user_quiz_score) {
+            if (isset($user_quiz_score->percent_score)) {
+              $quiz = node_load($user_quiz_score->nid);
+              if ($quiz) { //quiz not deleted
+                db_insert('opigno_statistics_user_course_details')
+                  ->fields(array(
+                    'opigno_statistics_user_course_fk' => $user_course_nid,
+                    'type' => $quiz->type,
+                    'entity_id' => $quiz->nid,
+                    'entity_name' => $quiz->title,
+                    'score' => (int) $user_quiz_score->percent_score,
+                    'timestamp' => time(),
+                    //cannot retrieve when user finished the quiz because it wasn't not stored in the database until now
+                    'status' => (int) ((int) $user_quiz_score->percent_score >= (int) $user_quiz_score->percent_pass),
+                    'required' => opigno_statistics_app_is_lesson_required_in_course($quiz, $course)
+                  ))
+                  ->execute();
+              }
+            }
+          }
+          opigno_statistics_app_query_user_course_update_score($user_course_nid);
+        }
+      }
+    }
+  }
+}
+
+
+/**
+ * Implements hook_schema().
+ */
+function opigno_statistics_app_schema() {
+  $schema['opigno_statistics_login_history'] = array(
+    'fields' => array(
+      'opigno_statistics_login_history_pk' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'uid of user.',
+      ),
+      'user_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => "The user's name at the time",
+      ),
+      'user_email' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => "The user's email at the time",
+      ),
+      'last_login_count' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "Timestamp last login",
+      ),
+      'login_count' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "Number of logins",
+        'default' => '1',
+      ),
+    ),
+    'indexes' => array(
+      'opigno_statistics_login_history_pk_index' => array('opigno_statistics_login_history_pk'),
+      'opigno_statistics_login_history_uid_index' => array('uid'),
+    ),
+    'primary key' => array('opigno_statistics_login_history_pk', 'uid'),
+  );
+
+  $schema['opigno_statistics_user_group'] = array(
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'uid of user.',
+      ),
+      'group_nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "the group nid",
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "the nid",
+      ),
+      'page_views' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "Number of pages viewed",
+        'default' => '1',
+      ),
+    ),
+    'indexes' => array(
+      'opigno_statistics_user_group_uid' => array('uid'),
+      'opigno_statistics_user_group_group_nid' => array('group_nid'),
+      'opigno_statistics_user_group_nid' => array('nid'),
+    ),
+    'primary key' => array('uid', 'group_nid', 'nid'),
+  );
+
+  $schema['opigno_statistics_user'] = array(
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'uid of user.',
+      ),
+      'month_year' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "Timestamp (should be only month/year)",
+      ),
+      'page_views' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "Number of pages viewed",
+        'default' => '1'
+      ),
+    ),
+    'indexes' => array(
+      'opigno_statistics_user_uid' => array('uid'),
+      'opigno_statistics_user_month_year' => array('month_year'),
+    ),
+    'primary key' => array('uid', 'month_year'),
+  );
+
+  $schema['opigno_statistics_group'] = array(
+    'fields' => array(
+      'group_nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'The group nid',
+      ),
+      'month_year' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "Timestamp (should be only month/year)",
+      ),
+      'category_taxonomy_term_id' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => "The category taxonomy term id",
+      ),
+      'category_taxonomy_term_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "The category name at the time",
+      ),
+      'group_title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => "The group title at the time",
+      ),
+      'group_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => "The group type at the time",
+      ),
+      'page_views' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "Number of pages viewed",
+        'default' => '1',
+      ),
+      'number_passed' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Number of quizzes passed',
+        'default' => '0'
+      )
+    ),
+    'indexes' => array(
+      'opigno_statistics_group_group_nid' => array('group_nid'),
+      'opigno_statistics_group_month_year' => array('month_year'),
+      'opigno_statistics_group_category_taxonomy_term_id' => array('category_taxonomy_term_id'),
+    ),
+    'primary key' => array('group_nid', 'month_year', 'category_taxonomy_term_id'),
+  );
+
+  $schema['opigno_statistics_user_course'] = array(
+    'fields' => array(
+      'opigno_statistics_user_course_pk' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "The user id",
+      ),
+      'username' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "The username",
+      ),
+      'course_nid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "The course nid",
+      ),
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+        'description' => "If the user has passed the course(1) or not(0)",
+      ),
+      'course_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+        'description' => "The course name",
+      ),
+      'score' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+        'description' => "The score",
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "The timestamp",
+        'default' => '1',
+      ),
+    ),
+    'indexes' => array(
+      'opigno_statistics_user_course_pk' => array('opigno_statistics_user_course_pk'),
+      'opigno_statistics_user_course_uid' => array('uid'),
+      'opigno_statistics_user_course_course_nid' => array('course_nid'),
+    ),
+    'primary key' => array('opigno_statistics_user_course_pk', 'uid', 'course_nid'),
+  );
+
+  $schema['opigno_statistics_user_course_details'] = array(
+    'fields' => array(
+      'opigno_statistics_user_course_details_pk' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE
+      ),
+      'opigno_statistics_user_course_fk' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "The statisitcs user course fk",
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => "The type (quiz,webex,iht)",
+      ),
+      'entity_id' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "The entity id",
+      ),
+      'entity_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => "The entity name",
+      ),
+      'score' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+        'description' => "The score",
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => "The timestamp",
+        'default' => '1',
+      ),
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+        'description' => "If the user has passed it(1) or not(0)",
+      ),
+      'required' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => '0',
+        'description' => "If it is required(1) or not(0)",
+      ),
+    ),
+    'indexes' => array(
+      'opigno_statistics_user_course_details_pk' => array('opigno_statistics_user_course_details_pk'),
+      'opigno_statistics_user_course_fk' => array('opigno_statistics_user_course_fk'),
+    ),
+    'primary key' => array('opigno_statistics_user_course_details_pk', 'opigno_statistics_user_course_fk'),
+  );
+  return $schema;
+}
+
+/**
+ * Set default permissions and og permissions
+ */
+function opigno_statistics_app_install_permissions()
+{
+  $administrator = user_role_load_by_name('administrator');
+  $administrator_permissions = array(
+      'view opigno global statistics',
+      'view own opigno user statistics',
+      'view all opigno user statistics',
+      'view own courses classes statistics'
+  );
+  if (isset($administrator->rid)) {
+    user_role_grant_permissions($administrator->rid, $administrator_permissions);
+  }
+
+  $student_manager = user_role_load_by_name('student manager');
+  $student_manager_permissions = array(
+    'view opigno global statistics',
+    'view own opigno user statistics',
+    'view all opigno user statistics',
+    'view own courses classes statistics'
+  );
+
+  if (isset($student_manager->rid)) {
+    user_role_grant_permissions($student_manager->rid, $student_manager_permissions);
+  }
+
+  $authenticated=user_role_load_by_name('authenticated user');
+  $authenticated_permissions = array(
+    'view own opigno user statistics',
+  );
+
+  if (isset($authenticated->rid)) {
+    user_role_grant_permissions($authenticated->rid, $authenticated_permissions);
+  }
+
+  /* Default and existing group permissions */
+  $existing_courses_classes = opigno_statistics_app_get_all_courses_classes();
+  $existing_courses_classes[0] = 'default permissions';
+  foreach ($existing_courses_classes as $nid => $type) {
+    // If default permissions, take the courses and classes roles
+    if ($nid === 0) {
+      $roles = og_roles('node', 'course', $nid, $force_group = FALSE, $include_all = TRUE);
+      $roles += og_roles('node', 'class', $nid, $force_group = FALSE, $include_all = TRUE);
+    }
+    else {
+      $roles = og_roles('node', $type, $nid, $force_group = FALSE, $include_all = TRUE);
+    }
+
+    foreach ($roles as $index => $role) {
+      switch ($role) {
+
+        case 'coach':
+          og_role_grant_permissions($index, array(
+            'view group statistics',
+          ));
+          break;
+        case 'manager':
+          og_role_grant_permissions($index, array(
+            'view group statistics',
+          ));
+          break;
+        case 'teacher':
+          og_role_grant_permissions($index, array(
+              'view group statistics',
+          ));
+          break;
+
+      }
+    }
+  }
+
+}
+
+/**
+ * Fix an issue with MySQL 5.7 at the installation
+ */
+function opigno_statistics_app_update_7000() {
+  $spec = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+    'description' => "The category taxonomy term id",
+  );
+  db_change_field('opigno_statistics_group', 'category_taxonomy_term_id', 'category_taxonomy_term_id', $spec);
+}
+
+/**
+ * Updates default permissions
+ */
+function opigno_statistics_app_update_7100() {
+  $authenticated=user_role_load_by_name('authenticated user');
+  $authenticated_permissions = array(
+    'view own opigno user statistics',
+  );
+
+  if (isset($authenticated->rid)) {
+    user_role_grant_permissions($authenticated->rid, $authenticated_permissions);
+  }
+}
+
+/**
+ * Create custom image style
+ */
+function opigno_statistics_app_update_7101() {
+  $style = image_style_save(array('name' => 'user_thumbnail'));
+  $effect = array(
+    'name' => 'image_scale_and_crop',
+    'data' => array(
+      'width' => 255,
+      'height' => 255,
+    ),
+    'isid' => $style['isid'],
+  );
+  image_effect_save($effect);
+}
+
+/*
+ *
+ * Node_load_multiple is to heavy
+ *
+ */
+function opigno_statistics_app_get_all_courses_classes() {
+  $courses = array();
+  $query = db_select('node', 'n');
+  $query->fields('n', array('nid', 'type'));
+  $query->condition('n.type', array('course', 'class'));
+  $result = $query->execute();
+  while (
+  $record = $result->fetchAssoc()) {
+    $courses[$record['nid']] = $record['type'];
+  }
+  return $courses;
+}
+
+
+// TODO: Dans les stats d'un cours, montrer les lessons du course meme si il n'y a pas de donnees pour eux

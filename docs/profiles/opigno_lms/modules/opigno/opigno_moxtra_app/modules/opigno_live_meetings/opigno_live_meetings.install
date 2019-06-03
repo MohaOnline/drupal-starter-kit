@@ -1,0 +1,722 @@
+<?php
+
+/**
+ * @file
+ * Contains install instructions and logic
+ */
+
+/**
+ * Implements hook_install()
+ */
+function opigno_live_meetings_install() {
+
+  $type = node_type_load("live_meeting");
+  if (empty($type)) {
+    $type = node_type_set_defaults(array(
+      'type' => 'live_meeting',
+      'name' => st('Live Meeting'),
+      'base' => 'node_content',
+      'description' => st('A Live Meeting. You can do video and audio conferences.'),
+      'has_title' => '1',
+      'title_label' => st('Title'),
+      'help' => '',
+    ));
+    node_type_save($type);
+  }
+
+  if (module_exists('opigno_calendar_app')) {
+    $instance = field_info_instance('node', 'opigno_calendar_date', 'live_meeting');
+    if (empty($instance)) {
+      field_create_instance(array(
+        'label' => 'Meeting date',
+        'widget' => array(
+          'weight' => '-1',
+          'type' => 'date_popup',
+          'module' => 'date',
+          'active' => 1,
+          'settings' => array(
+            'input_format' => 'm/d/Y - H:i:s',
+            'input_format_custom' => '',
+            'year_range' => '-3:+3',
+            'increment' => '15',
+            'label_position' => 'above',
+            'text_parts' => array(),
+          ),
+        ),
+        'settings' => array(
+          'default_value' => 'now',
+          'default_value_code' => '',
+          'default_value2' => 'same',
+          'default_value_code2' => '',
+          'user_register_form' => FALSE,
+        ),
+        'display' => array(
+          'default' => array(
+            'label' => 'above',
+            'type' => 'date_default',
+            'settings' => array(
+              'format_type' => 'long',
+              'multiple_number' => '',
+              'multiple_from' => '',
+              'multiple_to' => '',
+              'fromto' => 'both',
+            ),
+            'module' => 'date',
+            'weight' => 3,
+          ),
+          'teaser' => array(
+            'type' => 'hidden',
+            'label' => 'above',
+            'settings' => array(),
+            'weight' => 0,
+          ),
+        ),
+        'required' => 0,
+        'description' => '',
+        'field_name' => 'opigno_calendar_date',
+        'entity_type' => 'node',
+        'bundle' => 'live_meeting',
+        'deleted' => '0',
+      ));
+    }
+  }
+
+  if (module_exists('comment')) {
+    variable_set('comment_live_meeting', COMMENT_NODE_CLOSED);
+  }
+
+  if (function_exists('og_ui_node_type_save')) {
+    variable_set("og_group_content_type_live_meeting", TRUE);
+    og_ui_node_type_save('live_meeting');
+  }
+
+  opigno_live_meetings_update_og_group_ref();
+
+  if (module_exists('og_access')) {
+    og_create_field(OG_CONTENT_ACCESS_FIELD, 'node', 'live_meeting');
+  }
+
+
+  $field = field_info_field('schedule_binder_id');
+  if (empty($field)) {
+    field_create_field(array(
+      'translatable' => '1',
+      'entity_types' => array(),
+      'settings' => array(
+        'max_length' => '255',
+      ),
+      'storage' => array(
+        'type' => 'field_sql_storage',
+        'settings' => array(),
+        'module' => 'field_sql_storage',
+        'active' => '1',
+        'details' => array(
+          'sql' => array(
+            'FIELD_LOAD_CURRENT' => array(
+              'field_data_schedule_binder_id' => array(
+                'value' => 'schedule_binder_id_value',
+                'format' => 'schedule_binder_id_format',
+              ),
+            ),
+            'FIELD_LOAD_REVISION' => array(
+              'field_revision_schedule_binder_id' => array(
+                'value' => 'schedule_binder_id_value',
+                'format' => 'schedule_binder_id_format',
+              ),
+            ),
+          ),
+        ),
+      ),
+      'foreign keys' => array(
+        'format' => array(
+          'table' => 'filter_format',
+          'columns' => array(
+            'format' => 'format',
+          ),
+        ),
+      ),
+      'indexes' => array(
+        'format' => array(
+          'format',
+        ),
+      ),
+      'field_name' => 'schedule_binder_id',
+      'type' => 'text',
+      'module' => 'text',
+      'active' => '1',
+      'locked' => '0',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'columns' => array(
+        'value' => array(
+          'type' => 'varchar',
+          'length' => '255',
+          'not null' => FALSE,
+        ),
+        'format' => array(
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ),
+      ),
+      'bundles' => array(
+        'node' => array(
+          'live_meeting',
+        ),
+      ),
+    ));
+  }
+
+  $instance = field_info_instance('node', 'schedule_binder_id', 'live_meeting');
+  if (empty($instance)) {
+    field_create_instance(array(
+      'label' => 'Schedule binder ID',
+      'widget' => array(
+        'weight' => '-2',
+        'type' => 'text_textfield',
+        'module' => 'text',
+        'active' => 1,
+        'settings' => array(
+          'size' => '60',
+        ),
+      ),
+      'settings' => array(
+        'text_processing' => '0',
+        'user_register_form' => FALSE,
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'hidden',
+          'label' => 'above',
+          'settings' => array(),
+          'weight' => 0,
+        ),
+        'teaser' => array(
+          'type' => 'hidden',
+          'label' => 'above',
+          'settings' => array(),
+          'weight' => 0,
+        ),
+      ),
+      'description' => '',
+      'default_value' => NULL,
+      'field_name' => 'schedule_binder_id',
+      'entity_type' => 'node',
+      'bundle' => 'live_meeting',
+      'deleted' => '0',
+    ));
+  }
+
+
+  $field = field_info_field('field_class_ref');
+  if (empty($field)) {
+    field_create_field(array(
+      'active' => 1,
+      'cardinality' => 1,
+      'deleted' => 0,
+      'entity_types' => array(),
+      'field_name' => 'field_class_ref',
+      'indexes' => array(
+        'target_id' => array(
+          0 => 'target_id',
+        ),
+      ),
+      'locked' => 0,
+      'module' => 'entityreference',
+      'settings' => array(
+        'handler' => 'og',
+        'handler_settings' => array(
+          'behaviors' => array(
+            'og_behavior' => array(
+              'status' => TRUE,
+            ),
+            'views-select-list' => array(
+              'status' => 0,
+            ),
+          ),
+          'membership_type' => 'og_membership_type_default',
+          'sort' => array(
+            'type' => 'none',
+          ),
+          'target_bundles' => array(
+            'class' => 'class',
+          ),
+        ),
+        'target_type' => 'node',
+      ),
+      'translatable' => 0,
+      'type' => 'entityreference'
+    ));
+  }
+
+  $instance = field_info_instance('node', 'field_class_ref', 'live_meeting');
+  if (empty($instance)) {
+    field_create_instance(array(
+      'bundle' => 'live_meeting',
+      'default_value' => NULL,
+      'default_value_function' => '',
+      'deleted' => 0,
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'entityreference',
+          'settings' => array(
+            'link' => FALSE,
+          ),
+          'type' => 'entityreference_label',
+          'weight' => 9,
+        ),
+        'question' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'entity_type' => 'node',
+      'field_name' => 'field_class_ref',
+      'label' => 'Class restriction',
+      'required' => 0,
+      'settings' => array(
+        'behaviors' => array(
+          'og_widget' => array(
+            'access_override' => 0,
+            'admin' => array(
+              'widget_type' => 'entityreference_autocomplete',
+            ),
+            'default' => array(
+              'widget_type' => 'options_select',
+            ),
+            'status' => TRUE,
+          ),
+          'prepopulate' => array(
+            'status' => 0,
+          ),
+        ),
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 0,
+        'module' => 'og',
+        'settings' => array(),
+        'type' => 'og_complex',
+        'weight' => 33,
+      )
+    ));
+  }
+
+
+
+  $field = field_info_field('session_key');
+  if (empty($field)) {
+    field_create_field(array(
+      'translatable' => '1',
+      'entity_types' => array(),
+      'settings' => array(
+        'max_length' => '255',
+      ),
+      'storage' => array(
+        'type' => 'field_sql_storage',
+        'settings' => array(),
+        'module' => 'field_sql_storage',
+        'active' => '1',
+        'details' => array(
+          'sql' => array(
+            'FIELD_LOAD_CURRENT' => array(
+              'field_data_session_key' => array(
+                'value' => 'session_key_value',
+                'format' => 'session_key_format',
+              ),
+            ),
+            'FIELD_LOAD_REVISION' => array(
+              'field_revision_session_key' => array(
+                'value' => 'session_key_value',
+                'format' => 'session_key_format',
+              ),
+            ),
+          ),
+        ),
+      ),
+      'foreign keys' => array(
+        'format' => array(
+          'table' => 'filter_format',
+          'columns' => array(
+            'format' => 'format',
+          ),
+        ),
+      ),
+      'indexes' => array(
+        'format' => array(
+          'format',
+        ),
+      ),
+      'field_name' => 'session_key',
+      'type' => 'text',
+      'module' => 'text',
+      'active' => '1',
+      'locked' => '0',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'columns' => array(
+        'value' => array(
+          'type' => 'varchar',
+          'length' => '255',
+          'not null' => FALSE,
+        ),
+        'format' => array(
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ),
+      ),
+      'bundles' => array(
+        'node' => array(
+          'live_meeting',
+        ),
+      ),
+    ));
+  }
+
+  $instance = field_info_instance('node', 'session_key', 'live_meeting');
+  if (empty($instance)) {
+    field_create_instance(array(
+      'label' => 'Session_key',
+      'widget' => array(
+        'weight' => '-2',
+        'type' => 'text_textfield',
+        'module' => 'text',
+        'active' => 1,
+        'settings' => array(
+          'size' => '60',
+        ),
+      ),
+      'settings' => array(
+        'text_processing' => '0',
+        'user_register_form' => FALSE,
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'hidden',
+          'label' => 'above',
+          'settings' => array(),
+          'weight' => 0,
+        ),
+        'teaser' => array(
+          'type' => 'hidden',
+          'label' => 'above',
+          'settings' => array(),
+          'weight' => 0,
+        ),
+      ),
+      'description' => '',
+      'default_value' => NULL,
+      'field_name' => 'session_key',
+      'entity_type' => 'node',
+      'bundle' => 'live_meeting',
+      'deleted' => '0',
+    ));
+  }
+
+
+  $field = field_info_field('meeting_dates');
+  if (empty($field)) {
+    field_create_field(array(
+      'active' => 1,
+      'cardinality' => -1,
+      'deleted' => 0,
+      'entity_types' => array(),
+      'field_name' => 'meeting_dates',
+      'indexes' => array(),
+      'locked' => 0,
+      'module' => 'date',
+      'settings' => array(
+        'cache_count' => 4,
+        'cache_enabled' => 0,
+        'granularity' => array(
+          'day' => 'day',
+          'hour' => 'hour',
+          'minute' => 'minute',
+          'month' => 'month',
+          'second' => 0,
+          'year' => 'year',
+        ),
+        'repeat' => 1,
+        'timezone_db' => '',
+        'todate' => 'required',
+        'tz_handling' => 'none',
+      ),
+      'translatable' => 0,
+      'type' => 'datetime',
+    ));
+  }
+
+  $instance = field_info_instance('node', 'meeting_dates', 'live_meeting');
+  if (empty($instance)) {
+    field_create_instance(array(
+      'bundle' => 'live_meeting',
+      'deleted' => 0,
+      'description' => '',
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'date',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 8,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 0,
+        ),
+      ),
+      'entity_type' => 'node',
+      'field_name' => 'meeting_dates',
+      'label' => 'Live meeting dates',
+      'required' => 1,
+      'settings' => array(
+        'default_value' => 'now',
+        'default_value2' => 'same',
+        'default_value_code' => '',
+        'default_value_code2' => '',
+        'user_register_form' => FALSE,
+      ),
+      'widget' => array(
+        'active' => 1,
+        'module' => 'date',
+        'settings' => array(
+          'increment' => 15,
+          'input_format' => 'm/d/Y - H:i:s',
+          'input_format_custom' => '',
+          'label_position' => 'above',
+          'repeat_collapsed' => 1,
+          'text_parts' => array(),
+          'year_range' => '-3:+3',
+        ),
+        'type' => 'date_popup',
+        'weight' => 32,
+      ),
+    ));
+  }
+
+  opigno_live_meetings_install_default_permissions();
+
+  /*if (function_exists('opigno_lms_refresh_strings_and_import')) {
+    opigno_lms_refresh_strings_and_import(array('default', 'field'));
+  }*/
+
+  variable_set("print_display_comment_live_meeting", 0);
+  variable_set("print_display_live_meeting", 0);
+  variable_set("print_display_urllist_live_meeting", 0);
+  variable_set("print_pdf_display_comment_live_meeting", 0);
+  variable_set("print_pdf_display_live_meeting", 0);
+}
+
+function opigno_live_meetings_update_og_group_ref() {
+  if (module_exists("entityreference_prepopulate")) {
+    $instance = field_info_instance('node', 'og_group_ref', 'live_meeting');
+    if (!empty($instance)) {
+      $instance['default_value_function'] = 'entityreference_prepopulate_field_default_value';
+      $instance['settings']['behaviors']['prepopulate'] = array(
+        'action' => 'hide',
+        'action_on_edit' => 1,
+        'fallback' => 'redirect',
+        'providers' => array(
+          'og_context' => 0,
+          'url' => 1,
+        ),
+        'skip_perm' => 0,
+        'status' => 1,
+      );
+      field_update_instance($instance);
+    }
+  }
+}
+
+/**
+ * Implements hook_schema().
+ */
+function opigno_live_meetings_schema() {
+  return array(
+    'opigno_live_meetings_results' => array(
+      'fields' => array(
+        'live_meeting_nid' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE
+        ),
+        'score' => array(
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => '0',
+        ),
+        'status' => array(
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => '0',
+        ),
+        'uid' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        )
+      ),
+      'indexes' => array(
+        'live_meeting_id' => array('live_meeting_nid'),
+        'user_id' => array('uid')
+      )
+    ),
+    'opigno_live_meetings_users_can_start_meetings' => array(
+      'fields' => array(
+        'user_id' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE
+        )
+      ),
+      'indexes' => array(
+        'user_uid' => array('user_id')
+      )
+    )
+  );
+}
+
+function opigno_live_meetings_install_default_permissions() {
+  $administrator = user_role_load_by_name('administrator');
+  $administrator_permissions = array(
+    'create live_meeting content',
+    'edit own live_meeting content',
+    'edit any live_meeting content',
+    'delete own live_meeting content',
+    'delete any live_meeting content',
+    'register live_meeting attendance',
+  );
+  user_role_grant_permissions($administrator->rid, $administrator_permissions);
+
+  $student_manager = user_role_load_by_name('student manager');
+  $student_manager_permissions = array(
+    'create live_meeting content',
+    'edit own live_meeting content',
+    'delete own live_meeting content',
+    'register live_meeting attendance',
+  );
+  user_role_grant_permissions($student_manager->rid, $student_manager_permissions);
+
+  og_invalidate_cache();
+  $courses_ids = opigno_get_courses();
+  $courses_ids[] = 0; // Add the index 0 in the array. (index 0 = defaults permissions)
+  foreach ($courses_ids as $course_id) {
+    $roles = og_roles("node", "course", $course_id, $force_group = FALSE, $include_all = TRUE);
+    foreach ($roles as $index => $role) {
+      switch ($role) {
+        case 'student':
+          og_role_grant_permissions($index, array(
+            'attend live_meeting',
+          ));
+          break;
+        case 'coach':
+          og_role_grant_permissions($index, array(
+            'start live_meeting',
+          ));
+          og_role_grant_permissions($index, array(
+            'attend live_meeting',
+          ));
+          og_role_grant_permissions($index, array(
+            'register live_meeting attendance',
+          ));
+          og_role_grant_permissions($index, array(
+            'create live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'update own live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'delete own live_meeting content',
+          ));
+          break;
+        case "teacher":
+          og_role_grant_permissions($index, array(
+            'start live_meeting',
+          ));
+          og_role_grant_permissions($index, array(
+            'attend live_meeting',
+          ));
+          og_role_grant_permissions($index, array(
+            'register live_meeting attendance',
+          ));
+          og_role_grant_permissions($index, array(
+            'create live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'update own live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'delete own live_meeting content',
+          ));
+          break;
+        case "forum moderator":
+          og_role_grant_permissions($index, array(
+            'attend live_meeting',
+          ));
+          break;
+        case "manager":
+          og_role_grant_permissions($index, array(
+            'start live_meeting',
+          ));
+          og_role_grant_permissions($index, array(
+            'attend live_meeting',
+          ));
+          og_role_grant_permissions($index, array(
+            'register live_meeting attendance',
+          ));
+          og_role_grant_permissions($index, array(
+            'create live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'update own live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'delete own live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'update any live_meeting content',
+          ));
+          og_role_grant_permissions($index, array(
+            'delete any live_meeting content',
+          ));
+          break;
+      }
+    }
+  }
+}
+
+function opigno_live_meetings_update_7000(&$sandbox)
+{
+  // Change the timezone management to none for the date field for the live meeting content type
+  $field = field_info_field('meeting_dates');
+  $field['settings']['timezone_db'] = '';
+  $field['settings']['tz_handling'] = 'none';
+  field_update_field($field);
+}
+
+/**
+ * Put in this function all the strings that are not in a t() or st() function.
+ */
+function opigno_live_meetings_install_translations() {
+  //
+  // --- FIELDS
+  // opigno_live_meetings.install
+  t('Schedule binder ID');
+  t('Class restriction');
+  t('Session_key');
+  t('Live meeting dates');
+  t('Meeting date');
+}

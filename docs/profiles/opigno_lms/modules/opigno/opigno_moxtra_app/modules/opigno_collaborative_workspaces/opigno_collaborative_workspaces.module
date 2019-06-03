@@ -1,0 +1,140 @@
+<?php
+
+module_load_include('inc', 'opigno_collaborative_workspaces', 'includes/opigno_collaborative_workspaces.api');
+module_load_include('inc', 'opigno_collaborative_workspaces', 'includes/opigno_collaborative_workspaces.node_form');
+module_load_include('inc', 'opigno_collaborative_workspaces', 'includes/opigno_collaborative_workspaces.db_queries');
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function opigno_collaborative_workspaces_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  if ($root_path == 'collaborative-workspaces' && user_access('create collaborative_workspace content')) {
+    $item = menu_get_item('node/add/collaborative-workspace');
+    $item['title'] = t("Create collaborative workspace");
+    $data['actions']['output'][] = array(
+      '#theme' => 'menu_local_action',
+      '#link' => $item,
+    );
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function opigno_collaborative_workspaces_views_api() {
+  return array(
+    'api' => '3.0',
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function opigno_collaborative_workspaces_theme($existing, $type, $theme, $path)
+{
+  return array(
+    'node__collaborative_workspace' => array(
+      'render element' => 'content',
+      'base hook' => 'node',
+      'template' => 'node__collaborative_workspace',
+      'path' => drupal_get_path('module', 'opigno_collaborative_workspaces') . '/templates'
+    ),
+    'collaborative_workspace_full' => array(
+      'template' => 'templates/collaborative_workspace_full'
+    ),
+    'collaborative_workspace_teaser' => array(
+      'template' => 'templates/collaborative_workspace_teaser'
+    ),
+    'collaborative_workspace_teaser_small' => array(
+      'template' => 'templates/collaborative_workspace_teaser_small'
+    ),
+  );
+}
+
+/**
+ * Implements hook_node_access().
+ */
+function opigno_collaborative_workspaces_node_access($node, $op, $account)
+{
+  $type = is_string($node) ? $node : $node->type;
+
+  if ($type == 'collaborative_workspace')
+  {
+    // If the user is trying to create a new workspace, allow him through.
+    if ($op == 'create') {
+      return NODE_ACCESS_IGNORE;
+    }
+
+    // If he has the right "view all collaborative_workspace", let him go.
+    if (user_access('view all collaborative_workspace', $account))
+      return NODE_ACCESS_IGNORE;
+
+    // If he does not have the right to view his own coll workspace, deny access.
+    if (!is_object($node) || empty($node->field_users_invited[LANGUAGE_NONE]) || !user_access('view participants collaborative_workspace'))
+      return NODE_ACCESS_DENY;
+
+    // Finally, check if he is a participant. Grant access if he is.
+    $is_participant = false;
+
+    foreach ($node->field_users_invited[LANGUAGE_NONE] as $user_invited) {
+      if ($user_invited['target_id'] == $account->uid) {
+        if ($op == 'view') {
+          return NODE_ACCESS_ALLOW;
+        }
+        else {
+          if ($account->uid == $node->uid) {
+            return NODE_ACCESS_ALLOW;
+          }
+        }
+      }
+    }
+
+    if ($is_participant == false)
+      return NODE_ACCESS_DENY;
+  }
+
+  return NODE_ACCESS_IGNORE;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function opigno_collaborative_workspaces_permission() {
+  return array(
+    'view all collaborative_workspace' => array(
+      'title' => t('View all Collaborative Workspaces'),
+      'description' => t('Allows the user to access all the Collaborative Workspaces')
+    ),
+    'view participants collaborative_workspace' => array(
+      'title' => t('View the participant\'s Collaborative Workspaces'),
+      'description' => t('Allows the user to access the Collaborative Workspaces where he is participant')
+    ),
+    'invite all users to collaborative_workspace' => array(
+      'title' => t('Invite all users to the collaborative workspace'),
+      'description' => t('Allows the user to be able to invite all users to the collaborative workspace')
+    )
+  );
+}
+
+function opigno_collaborative_workspaces_views_query_alter(&$view, views_plugin_query_default &$query)
+{
+  global $user;
+
+  // Is it's the good view, that the user is not admin and he's not in the "view all collaborative_workspace" group, filter
+  //   the collaborative workspaces list in order to show only the ones that he's participant.
+  if ($view->name == 'collaborative_workspaces' && $user->uid != 1 && user_access('view all collaborative_workspace') == false) {
+    $t_users_invited_alias = $query->add_table('field_data_field_users_invited');
+    $query->add_where(0, db_or()
+      ->condition($t_users_invited_alias . '.field_users_invited_target_id', array($user->uid), 'in')
+    );
+  }
+}
+
+function opigno_collaborative_workspaces_node_delete($node)
+{
+  if ($node->type == 'collaborative_workspace')
+    opigno_collaborative_workspaces_delete_collaborative_workspace($node->uid, $node->field_collaborative_workspace_id[LANGUAGE_NONE][0]['value']);
+}
+
+
+// TODO: Add a field in the user form to activate / block the user on Moxtra servers (so this user would not be counted in the subscription)

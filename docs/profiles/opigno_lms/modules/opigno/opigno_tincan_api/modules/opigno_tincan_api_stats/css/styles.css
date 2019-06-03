@@ -1,0 +1,48 @@
+.lrs-stats-widget table, #number-page-view-chart {
+    border-collapse: separate;
+    border: solid #ccc 1px;
+    border-radius: 10px;
+    background: #fff;
+    padding-bottom: 20px;
+    overflow: hidden;
+}
+
+.lrs-stats-widget th {
+    background: none;
+    color: #333;
+    border-right: 1px solid #ccc !important;
+    border-bottom: 1px solid #ccc !important;
+}
+
+.lrs-stats-widget td {
+    background: none;
+    border: none;
+}
+
+#lrs-stats-widget-dashboard-number-page-view {
+    padding: 0 1.5%;
+}
+
+.lrs-stats-widget select {
+    max-width: initial;
+}
+
+#lrs-stats-widget-course-content-general-statistics td{
+    font-size: 3em;
+}
+
+.lrs-stats-widget .tablesorter-header {
+    background-image: url(data:image/gif;base64,R0lGODlhFQAJAIAAACMtMP///yH5BAEAAAEALAAAAAAVAAkAAAIXjI+AywnaYnhUMoqt3gZXPmVg94yJVQAAOw==);
+    background-repeat: no-repeat;
+    background-position: center right;
+}
+
+.lrs-stats-widget .tablesorter-headerAsc {
+    background-image: url(data:image/gif;base64,R0lGODlhFQAEAIAAACMtMP///yH5BAEAAAEALAAAAAAVAAQAAAINjI8Bya2wnINUMopZAQA7);
+    background-color: #eee;
+}
+
+.lrs-stats-widget .tablesorter-headerDesc {
+    background-image: url(data:image/gif;base64,R0lGODlhFQAEAIAAACMtMP///yH5BAEAAAEALAAAAAAVAAQAAAINjB+gC+jP2ptn0WskLQA7);
+    background-color: #eee;
+}

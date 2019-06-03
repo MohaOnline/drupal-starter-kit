@@ -1,0 +1,239 @@
+# German translation
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2014-07-30 16:17+0200\n"
+"PO-Revision-Date: 2014-07-30 16:17+0200\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n!=1);\n"
+
+#: opigno_statistics_app.module:23 includes/group/group.pages.inc:12
+msgid "Statistics"
+msgstr "Statistiken"
+
+#: opigno_statistics_app.module:24;34
+msgid "Displays Opigno statistics"
+msgstr "Opigno-Statistiken anzeigen"
+
+#: opigno_statistics_app.module:33
+msgid "Opigno Statistics"
+msgstr "Opigno-Statistiken"
+
+#: opigno_statistics_app.module:43;44
+msgid "Dashboard"
+msgstr "Cockpit"
+
+#: opigno_statistics_app.module:53
+msgid "Group statistics"
+msgstr "Gruppenstatistiken"
+
+#: opigno_statistics_app.module:56
+msgid "Displays the group statistics"
+msgstr "Die Gruppenstatistiken anzeigen"
+
+#: opigno_statistics_app.module:69
+msgid "Displays the user statistics"
+msgstr "Die Statistiken eines Benutzers anzeigen"
+
+#: opigno_statistics_app.module:164
+msgid "View Opigno global statistics"
+msgstr "Die generellen Opigno-Statistiken anzeigen"
+
+#: opigno_statistics_app.module:165
+msgid "Allows the user to view Opigno global statistics"
+msgstr "Einem Benutzer erlauben die generellen Opigno-Statistiken anzuzeigen"
+
+#: opigno_statistics_app.module:168
+msgid "View Opigno user statistics"
+msgstr "Die Opigno-Benutzerstatistiken anzeigen"
+
+#: opigno_statistics_app.module:169
+msgid "Allows the user to view their own Opigno statistics"
+msgstr "Einem Benutzer erlauben seine eigenen Opigno-Statisktiken anzuzeigen"
+
+#: opigno_statistics_app.module:172
+msgid "View all Opigno user statistics"
+msgstr "Alle Opigno-Benutzerstatistiken anzeigen"
+
+#: opigno_statistics_app.module:173
+msgid "Allows the user to view all user Opigno statistics"
+msgstr "Dem Benutzer erlauben alle Opigno-Benutzerstatistiken anzuzeigen"
+
+#: opigno_statistics_app.module:184
+msgid "View group statistics"
+msgstr "Die Gruppenstatistiken anzeigen"
+
+#: opigno_statistics_app.module:185
+msgid "Allows the user to view group statistics"
+msgstr "Dem Benutzer erlauben die Gruppenstatistiken anzuzeigen"
+
+#: opigno_statistics_app.module:197
+msgid "Opigno group statistics"
+msgstr "Opigno Gruppenstatistiken"
+
+#: opigno_statistics_app.module:199
+msgid "Allows users to view group statistics"
+msgstr "Dem Benutzer erlauben die Gruppenstatistiken anzuzeigen"
+
+#: includes/dashboard/filter_form.inc:11 includes/group/filter_form.inc:10 includes/user/filter_form.inc:10
+msgid "Year"
+msgstr "Jahr"
+
+#: includes/dashboard/filter_form.inc:24 includes/group/filter_form.inc:23 includes/user/filter_form.inc:23
+msgid "Month"
+msgstr "Monat"
+
+#: includes/dashboard/filter_form.inc:39
+msgid "Category"
+msgstr "Kategorie"
+
+#: includes/dashboard/presenters.inc:45 includes/group/class/presenters.inc:47 includes/group/course/presenters.inc:46 includes/user/presenters.inc:69
+msgid "Number of view per day"
+msgstr "Anzahl der gesehenen Weiter pro Tag"
+
+#: templates/dashboard/widgets/active_users_last_week/active_users_last_week.tpl.php:11
+msgid "Active users last week"
+msgstr "Aktive Benutzer der letzen Woche"
+
+#: templates/dashboard/widgets/general_statistics/general_statistics.tpl.php:12 templates/group/class/widgets/general_statistics/general_statistics.tpl.php:12 templates/group/course/widgets/general_statistics/general_statistics.tpl.php:12
+msgid "General statistics"
+msgstr "Globale Statistik"
+
+#: templates/dashboard/widgets/general_statistics/general_statistics.tpl.php:14 templates/group/class/widgets/general_statistics/general_statistics.tpl.php:14 templates/group/course/widgets/general_statistics/general_statistics.tpl.php:14
+msgid "Course progress"
+msgstr "Kursfortschritt"
+
+#: templates/dashboard/widgets/general_statistics/general_statistics.tpl.php:18 templates/group/class/widgets/general_statistics/general_statistics.tpl.php:18 templates/group/course/widgets/general_statistics/general_statistics.tpl.php:18
+msgid "Quizzes completed"
+msgstr "Abgeschlossene Quiz"
+
+#: templates/dashboard/widgets/most_active_users/most_active_users.tpl.php:10
+msgid "Most active users"
+msgstr "Die aktivsten Benutzer"
+
+#: templates/dashboard/widgets/most_active_users/partials/list_item.tpl.php:20
+msgid "Last visit"
+msgstr "Der letzte Besuch"
+
+#: templates/dashboard/widgets/top_10_courses/top_10_courses.tpl.php:10
+msgid "Top 10 courses according to nb of interactions"
+msgstr "Top 10 Kurse bewertet nach den Interaktionen"
+
+msgid "Top 10 classes according to nb of interactions"
+msgstr "Top 10 Klassen bewertet nach den Interaktionen"
+
+#: templates/dashboard/widgets/top_10_courses/partials/list.tpl.php:11
+msgid "#"
+msgstr "N°"
+
+#: templates/dashboard/widgets/top_10_courses/partials/list.tpl.php:12 templates/user/widgets/courses_results/partials/list.tpl.php:11
+msgid "Courses"
+msgstr "Kurse"
+
+#: templates/dashboard/widgets/top_10_courses/partials/list.tpl.php:13
+msgid "Number of visits"
+msgstr "Anzahl der Besuche"
+
+#: templates/dashboard/widgets/top_10_courses/partials/list.tpl.php:14
+msgid "Number of users"
+msgstr "Benutzeranzahl"
+
+#: templates/dashboard/widgets/top_10_courses/partials/list.tpl.php:15
+msgid "Number passed"
+msgstr "Erfolgsanzahl"
+
+#: templates/dashboard/widgets/top_10_courses/partials/list.tpl.php:16 templates/group/class/widgets/students_results/partials/list.tpl.php:16 templates/group/course/widgets/students_results/partials/list.tpl.php:17
+msgid "Action"
+msgstr "Aktion"
+
+#: templates/dashboard/widgets/top_10_courses/partials/list_item.tpl.php:21 templates/group/class/widgets/students_results/partials/list_item.tpl.php:21 templates/group/course/widgets/students_results/partials/list_item.tpl.php:23
+msgid "View statistics"
+msgstr "Statistiken anzeigen"
+
+#: templates/dashboard/widgets/total_number_of_page_view/total_number_of_page_view.tpl.php:12 templates/group/class/widgets/total_number_of_page_view/total_number_of_page_view.tpl.php:12 templates/group/course/widgets/total_number_of_page_view/total_number_of_page_view.tpl.php:12 templates/user/widgets/total_number_of_page_view/total_number_of_page_view.tpl.php:12
+msgid "Total number of page views"
+msgstr "Anzahl der besichtigten Seiten"
+
+#: templates/group/class/widgets/number_of_interactions/number_of_interactions.tpl.php:11;19 templates/group/course/widgets/number_of_interactions/number_of_interactions.tpl.php:11;19
+msgid "Number of interactions"
+msgstr "Anzahl der Interaktionen"
+
+#: templates/group/class/widgets/number_of_interactions/number_of_interactions.tpl.php:11;20 templates/group/course/widgets/course_lessons/partials/list.tpl.php:14 templates/group/course/widgets/number_of_interactions/number_of_interactions.tpl.php:11;20 templates/group/course/widgets/students_results/partials/list.tpl.php:14 templates/user/widgets/courses_results/partials/list.tpl.php:14
+msgid "Score"
+msgstr "Ergebnis"
+
+#: templates/group/class/widgets/students_results/students_results.tpl.php:10 templates/group/course/widgets/students_results/students_results.tpl.php:10
+msgid "Students results"
+msgstr "Das Ergebnis der Studierenden"
+
+#: templates/group/class/widgets/students_results/partials/list.tpl.php:11 templates/group/course/widgets/students_results/partials/list.tpl.php:11
+msgid "Students"
+msgstr "Studierende"
+
+#: templates/group/class/widgets/students_results/partials/list.tpl.php:12 templates/group/course/widgets/course_lessons/partials/list.tpl.php:12 templates/group/course/widgets/students_results/partials/list.tpl.php:12 templates/user/widgets/courses_results/partials/list.tpl.php:12
+msgid "Interactions"
+msgstr "Interaktionen"
+
+#: templates/group/class/widgets/students_results/partials/list.tpl.php:13 templates/group/course/widgets/course_lessons/partials/list.tpl.php:13 templates/group/course/widgets/students_results/partials/list.tpl.php:13 templates/user/widgets/courses_results/partials/list.tpl.php:13
+msgid "Avg interactions"
+msgstr "Durchschnittliche Anzahl der Interaktionen"
+
+#: templates/group/class/widgets/students_results/partials/list.tpl.php:14 templates/group/course/widgets/course_lessons/partials/list.tpl.php:15 templates/group/course/widgets/students_results/partials/list.tpl.php:15 templates/user/widgets/courses_results/partials/list.tpl.php:15
+msgid "Avg score"
+msgstr "Durchschnittliches Ergebnis"
+
+#: templates/group/class/widgets/students_results/partials/list.tpl.php:15
+msgid "General avg score"
+msgstr "Generelles durchschnittliches Ergebnis"
+
+#: templates/group/course/widgets/course_lessons/course_lessons.tpl.php:10
+msgid "Course lessons"
+msgstr "Kurslektionen"
+
+#: templates/group/course/widgets/course_lessons/partials/list.tpl.php:11
+msgid "Lesson"
+msgstr "Lektion"
+
+#: templates/group/course/widgets/students_results/partials/list.tpl.php:16 templates/user/widgets/courses_results/partials/list.tpl.php:16
+msgid "Passed"
+msgstr "Bestanden"
+
+#: templates/group/course/widgets/students_results/partials/list_item.tpl.php:22 templates/user/widgets/courses_results/partials/list_item.tpl.php:24
+msgid "Yes"
+msgstr "Ja"
+
+#: templates/group/course/widgets/students_results/partials/list_item.tpl.php:22 templates/user/widgets/courses_results/partials/list_item.tpl.php:24
+msgid "No"
+msgstr "Nein"
+
+#: templates/user/widgets/badges_earned/badges_earned.tpl.php:11
+msgid "Badges earned"
+msgstr "Verdiente Abzeichen"
+
+#: templates/user/widgets/badges_earned/badges_earned.tpl.php:15
+msgid "No badge earned"
+msgstr "Kein verdientes Abzeichen"
+
+#: templates/user/widgets/courses_results/courses_results.tpl.php:10
+msgid "Courses results"
+msgstr "Kursergebnis"
+
+#: templates/user/widgets/general_informations/general_informations.tpl.php:20
+msgid "Name"
+msgstr "Name"
+
+#: templates/user/widgets/general_informations/general_informations.tpl.php:23
+msgid "Email"
+msgstr "E-mail"
+
+#: templates/user/widgets/general_informations/general_informations.tpl.php:28
+msgid "Date joined"
+msgstr "Anmeldungsdatum"
+
+#: templates/user/widgets/general_informations/general_informations.tpl.php:31
+msgid "Last access"
+msgstr "Letzte Verbindung"

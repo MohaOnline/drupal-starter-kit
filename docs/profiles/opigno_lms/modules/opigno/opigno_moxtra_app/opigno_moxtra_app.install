@@ -1,0 +1,58 @@
+<?php
+
+/**
+ * @file
+ * Contains install instructions and logic
+ */
+
+/**
+ * Implements hook_install()
+ */
+function opigno_moxtra_app_install()
+{
+  opigno_moxtra_app_install_default_permissions();
+
+  /*if (function_exists('opigno_lms_refresh_strings_and_import')) {
+    opigno_lms_refresh_strings_and_import(array('default', 'field'));
+  }*/
+
+  // Update the org information if the organization is already registered in the opigno.org platform
+  if (variable_get('opigno_moxtra_app_org_id', '') != '' && variable_get('opigno_moxtra_app_client_id', '') != '') {
+    $response = opigno_moxtra_app_api_opigno_update_organization(
+      variable_get('site_name', 'Undefined name'),
+      variable_get('site_mail', 'Undefined email')
+    );
+    if ($response->http_code != 200)
+      drupal_set_message(t('Error while updating your site name on Opigno servers. Please try again in your site administration'));
+  }
+}
+
+/**
+ * Install the default permissions for this module
+ */
+function opigno_moxtra_app_install_default_permissions() {
+  $administrator = user_role_load_by_name('administrator');
+  $administrator_permissions = array(
+    'configure moxtra'
+  );
+  if ($administrator) {
+    user_role_grant_permissions($administrator->rid, $administrator_permissions);
+  }
+}
+
+/**
+ * Check/set the status of the moxtra plan
+ */
+function opigno_moxtra_app_update_7101() {
+  $organization = variable_get('opigno_moxtra_app_org_id', NULL);
+  if ((!empty($organization))) {
+    $info = opigno_moxtra_app_api_opigno_get_organization_info();
+    if (!isset($info->opigno_error_message)) {
+      if ($info->active) {
+        variable_set('opigno_moxtra_app_status', 1);
+        return;
+      }
+    }
+  }
+  variable_set('opigno_moxtra_app_status', 0);
+}

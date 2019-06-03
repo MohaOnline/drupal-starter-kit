@@ -1,0 +1,120 @@
+/**
+ * @file
+ * Defines the styles for the calendar views.
+ */
+.view-calendar {
+  background-color: $medium-gray;
+  padding: 2em 0;
+}
+
+.view-header {
+  position: relative;
+
+  .date-heading {
+    h3 {}
+  }
+
+  .pager {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+
+    li {
+      position: absolute;
+      width: 14px !important;
+      height: 21px;
+      padding: 0;
+      margin: 0;
+      background-color: transparent !important;
+      background-position: left top !important;
+      background-repeat: no-repeat !important;
+      overflow: hidden;
+
+      a {
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding-left: 100px;
+        margin: 0 !important;
+      }
+    }
+
+    .date-prev {
+      right: auto;
+      left: 20px;
+      background-image: url('../img/pager-prev-icon.png');
+
+      body.front & {
+        left: 0;
+      }
+    }
+
+    .date-next {
+      right: 20px;
+      background-image: url('../img/pager-next-icon.png');
+
+      body.front & {
+        right: 0;
+      }
+    }
+  }
+}
+
+.calendar-calendar {
+  tr {
+    background-color: transparent;
+  }
+
+  th,
+  th.days {
+    text-transform: lowercase;
+    background: $medium-gray;
+    padding-bottom: 0.2em;
+  }
+
+  td,
+  th {
+    border: 0 !important;
+  }
+
+  td.today:not(.single-day) {
+    position: relative;
+
+    &::before,
+    &::after {
+      content: '';
+      border-top: 2px solid $dark-blue!important;
+      display: block;
+      left: 1rem;
+      position: absolute;
+      right: 1rem;
+    }
+
+    &::before {
+      top: 0;
+    }
+
+    &::after {
+      bottom: -1px;
+    }
+  }
+
+  td {
+    color: $dark-gray;
+    text-align: center;
+  }
+
+  div.day {
+    float: none;
+    margin: 0 auto 1em;
+    width: 20px;
+    height: 20px;
+    padding: 2px 3px 4px;
+  }
+
+  td.empty {
+    color: inherit;
+  }
+}

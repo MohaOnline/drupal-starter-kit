@@ -1,0 +1,39 @@
+<?php
+/**
+ * @file
+ * opigno_tincan_api_stats.install
+ */
+
+/**
+ * Implements hook_install().
+ */
+function opigno_tincan_api_stats_install() {
+  // Enable menu ////////////////////////////////
+  $menu = menu_load_links("main-menu");
+  foreach ($menu as $menu_link) {
+    if ($menu_link['link_path'] == "admin/opigno-statistics") {
+      $menu_link['hidden'] = 0;
+      menu_link_save($menu_link);
+    }
+  }
+
+
+  // Grant default permissions
+  $administrator = user_role_load_by_name('administrator');
+  if (isset($administrator)) {
+    $administrator_permissions = array('access lrs stats');
+    user_role_grant_permissions($administrator->rid, $administrator_permissions);
+  }
+
+  $forum_admin = user_role_load_by_name('forum administrator');
+  if (isset($forum_admin)) {
+    $forum_admin_permissions = array('access lrs stats');
+    user_role_grant_permissions($forum_admin->rid, $forum_admin_permissions);
+  }
+
+  $student_manager = user_role_load_by_name('student manager');
+  if (isset($student_manager)) {
+    $student_manager_permissions = array('access lrs stats');
+    user_role_grant_permissions($student_manager->rid, $student_manager_permissions);
+  }
+}

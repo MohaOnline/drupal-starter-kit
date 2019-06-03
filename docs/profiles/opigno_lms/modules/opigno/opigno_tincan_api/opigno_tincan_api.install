@@ -1,0 +1,84 @@
+<?php
+
+/**
+ * Implements hook_install().
+ */
+function opigno_tincan_api_install()
+{
+  // If these variables exists, take the information from here
+  $endpoint = variable_get('tincanapi_endpoint', null);
+  $user = variable_get('tincanapi_auth_user', null);
+  $password = variable_get('tincanapi_auth_password', null);
+
+  if ($endpoint !== null) {
+    variable_set('opigno_tincan_api_endpoint', $endpoint);
+  }
+
+  if ($user !== null) {
+    variable_set('opigno_tincan_api_username', $user);
+  }
+
+  if ($password !== null) {
+    variable_set('opigno_tincan_api_password', $password);
+  }
+
+  // Message at the end of installation
+  drupal_set_message(t('Installation of Opigno TinCan API module success.'));
+  if (drupal_valid_path('admin/opigno/system/tincan')) {
+    drupal_set_message(t(
+      'Go to !url to set the LRS connection.',
+      array('!url' => l(t('the settings page'), 'admin/opigno/system/tincan'))
+    ));
+  }
+
+  //////////
+  // Activate the submodules if dependencies are okay.
+  if (module_exists('quiz')) {
+    module_enable(array('opigno_tincan_api_quiz_statements'));
+
+    if (module_exists('cloze')) {
+      module_enable(array('opigno_tincan_api_cloze_statements'));
+    }
+
+    if (module_exists('quiz_drag_drop')) {
+      module_enable(array('opigno_tincan_api_quiz_drag_drop_statements'));
+    }
+
+    if (module_exists('quizfileupload')) {
+      module_enable(array('opigno_tincan_api_quizfileupload_statements'));
+    }
+
+    if (module_exists('opigno_scorm')) {
+      module_enable(array('opigno_tincan_api_opigno_scorm_statements'));
+    }
+  }
+
+  if (module_exists('h5p')) {
+    module_enable(array('opigno_tincan_api_h5p_statements'));
+  }
+
+  if (module_exists('opigno_in_house_training_app')) {
+    module_enable(array('opigno_tincan_api_in_house_training_statements'));
+  }
+
+  if (module_exists('node')) {
+    module_enable(array('opigno_tincan_api_node_views_statements'));
+  }
+
+  if (module_exists('opigno_mozilla_openbadges_app')) {
+    module_enable(array('opigno_tincan_api_openbadges_statements'));
+  }
+
+  if (module_exists('opigno_quiz_app')) {
+    module_enable(array('opigno_tincan_api_opigno_statements'));
+  }
+
+
+  $new_endpoint = variable_get('opigno_tincan_api_endpoint', null);
+  $new_user = variable_get('opigno_tincan_api_username', null);
+  $new_password = variable_get('opigno_tincan_api_password', null);
+
+  if (!empty($new_endpoint) && !empty($new_user) && !empty($new_password)) {
+    module_enable(array('opigno_tincan_api_stats'));
+  }
+}

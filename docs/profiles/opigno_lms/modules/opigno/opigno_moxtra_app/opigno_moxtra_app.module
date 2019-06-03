@@ -1,0 +1,184 @@
+<?php
+
+/**
+ * @file
+ * Module file. Defines module hooks.
+ */
+module_load_include('inc', 'opigno_moxtra_app', 'includes/opigno_moxtra_app.constants');
+module_load_include('inc', 'opigno_moxtra_app', 'includes/opigno_moxtra_app.http_client');
+module_load_include('inc', 'opigno_moxtra_app', 'includes/opigno_moxtra_app.api');
+module_load_include('inc', 'opigno_moxtra_app', 'includes/opigno_moxtra_app.api_opigno');
+module_load_include('inc', 'opigno_moxtra_app', 'includes/opigno_moxtra_app.cron');
+
+/**
+ * Implements hook_menu().
+ */
+function opigno_moxtra_app_menu() {
+  $items = array();
+
+  $items['admin/opigno/system/moxtra'] = array(
+    'title' => 'Collaborative workspaces and Live meetings configuration',
+    'description' => 'The configuration for the collaborative workspace and live meeting integrations',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('opigno_moxtra_app_moxtra_configuration_form'),
+    'access arguments' => array('configure moxtra'),
+    'file' => 'includes/opigno_moxtra_app.config_form.inc',
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements hook_permission().
+ */
+function opigno_moxtra_app_permission() {
+  return array(
+    'configure moxtra' => array(
+      'title' => t('Configure Moxtra'),
+      'description' => t('Allows the user to configure the Moxtra App')
+    )
+  );
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function opigno_moxtra_app_views_api() {
+  return array(
+    'api' => '3.0',
+  );
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function opigno_moxtra_app_theme($existing, $type, $theme, $path) {
+  return array(
+    'moxtra_app_js_init' => array(
+      'template' => 'templates/moxtra_app_js_init'
+    )
+  );
+}
+
+
+/**
+ * Implements hook_user_insert()
+ */
+function opigno_moxtra_app_user_insert(&$edit, $account, $category) {
+  $organization = variable_get('opigno_moxtra_app_org_id', NULL);
+  if ((!empty($organization)) && (opigno_moxtra_app_organization_is_active())) {
+    if ($account->status == 1) {
+      $response = opigno_moxtra_app_api_opigno_create_users(array(
+        array('uid' => $account->uid, 'name' => $account->name, 'timezone' => $account->timezone)
+      ));
+
+      if (isset($response->opigno_error_message)) {
+        drupal_set_message($response->opigno_error_message, 'error');
+        drupal_set_message(t('The user will be blocked. Try again by unblocking this user.'), 'warning');
+        db_update('users')->condition('uid', $account->uid, '=')->fields(array('status' => 0))->execute();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_user_update()
+ */
+function opigno_moxtra_app_user_update(&$edit, $account, $category) {
+  $organization = variable_get('opigno_moxtra_app_org_id', NULL);
+  if ((!empty($organization)) && (opigno_moxtra_app_organization_is_active())) {
+    if ($account->status == 1) {
+      $response = opigno_moxtra_app_api_opigno_update_user(
+        array('uid' => $account->uid, 'name' => $account->name, 'timezone' => $account->timezone)
+      );
+
+      if (isset($response->opigno_error_message)) {
+        drupal_set_message($response->opigno_error_message, 'error');
+        drupal_set_message(t('The user will be blocked. Try again by unblocking this user.'), 'warning');
+        // Blocking the user like this will not pass by the module_invoke (module_invoke pass by here again and make an infinite loop...)
+        db_update('users')->condition('uid', $account->uid, '=')->fields(array('status' => 0))->execute();
+        return;
+      }
+    }
+
+
+    if ($edit['original']->status != $account->status) {
+      if ($account->status != 1) {
+        $response = opigno_moxtra_app_api_opigno_delete_user($account->uid);
+
+        if (isset($response->opigno_error_message)) {
+          drupal_set_message($response->opigno_error_message, 'error');
+          db_update('users')->condition('uid', $account->uid, '=')->fields(array('status' => 1))->execute();
+        }
+      }
+      else {
+        $user = array(
+          'uid' => $account->uid,
+          'name' => $account->name,
+          'timezone' => $account->timezone,
+        );
+
+        $response = opigno_moxtra_app_api_opigno_create_users(array($user));
+
+        if (isset($response->opigno_error_message)) {
+          drupal_set_message($response->opigno_error_message, 'error');
+        }
+
+        $response = opigno_moxtra_app_api_opigno_enable_user($user);
+
+        if (isset($response->opigno_error_message)) {
+          drupal_set_message($response->opigno_error_message, 'error');
+          drupal_set_message(t('The user will be blocked. Try again by unblocking this user.'), 'warning');
+          // Blocking the user like this will not pass by the module_invoke (module_invoke pass by here again and make an infinite loop...)
+          db_update('users')->condition('uid', $account->uid, '=')->fields(array('status' => 0))->execute();
+          return;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_user_delete()
+ */
+function opigno_moxtra_app_user_delete($account) {
+  $organization = variable_get('opigno_moxtra_app_org_id', NULL);
+  if ((!empty($organization)) && (opigno_moxtra_app_organization_is_active())) {
+    $response = opigno_moxtra_app_api_opigno_delete_user($account->uid);
+
+    if (isset($response->opigno_error_message)) {
+      drupal_set_message($response->opigno_error_message);
+      Throw new Exception($response->opigno_error_message);
+    }
+  }
+}
+
+/**
+ * Update the site name and admin mail address on moxtra servers
+ */
+function opigno_moxtra_app_form_system_site_information_settings_alter(&$form, &$form_state, $form_id) {
+  // Last validation. So
+  $organization = variable_get('opigno_moxtra_app_org_id', NULL);
+  if ((!empty($organization)) && (opigno_moxtra_app_organization_is_active())) {
+    array_push($form['#validate'], 'opigno_moxtra_app_form_system_site_information_settings_validate');
+  }
+}
+
+function opigno_moxtra_app_form_system_site_information_settings_validate($form, &$form_state) {
+  // Do the modification only if there was no errors
+  $errors = form_get_errors();
+  if (empty($errors)) {
+    $response = opigno_moxtra_app_api_opigno_update_organization($form_state['values']['site_name'], $form_state['values']['site_mail']);
+    if (isset($response->opigno_error_message))
+      form_set_error('', $response->opigno_error_message);
+  }
+}
+
+/**
+ * Check if the organization is active
+ */
+function opigno_moxtra_app_organization_is_active() {
+  return variable_get('opigno_moxtra_app_status', 0);
+}

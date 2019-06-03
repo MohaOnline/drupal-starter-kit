@@ -1,0 +1,157 @@
+<?php
+
+/**
+ * @file
+ * The main file for quiz_h5p.
+ */
+
+/**
+ * Implements hook_menu_alter().
+ * When in a quiz context access cannot be checked by node_access
+ * because users may not be able to view the question outside the quiz
+ */
+function quiz_h5p_menu_alter(&$items) {
+  if (isset($items['h5p-ajax/setFinished']['access callback'])) {
+    $items['h5p-ajax/setFinished']['access callback'] = 'quiz_h5p_access_set_finished';
+  }
+
+  if (isset($items['h5p-ajax/set-finished.json']['access callback'])) {
+    $items['h5p-ajax/set-finished.json']['access callback'] = 'quiz_h5p_access_set_finished';
+  }
+
+  if (isset($items['h5p-ajax/content-user-data/%/%/%']['access callback'])) {
+    $items['h5p-ajax/content-user-data/%/%/%']['access callback'] = 'quiz_h5p_content_user_data_access';
+  }
+}
+
+/**
+ * Access callback for the setFinished feature
+ */
+function quiz_h5p_access_set_finished() {
+  $id = filter_input(INPUT_POST, 'contentId', FILTER_VALIDATE_INT);
+  return $id ? quiz_h5p_content_access($id) : FALSE;
+}
+
+/**
+ * Check current user's access to content user data.
+ *
+ * @param {int} $id
+ * @return {boolean}
+ */
+function quiz_h5p_content_user_data_access($id) {
+  global $user;
+
+  // Only logged in users can have user data
+  return ($user->uid ? quiz_h5p_content_access($id) : FALSE);
+}
+
+/**
+ * Determine user access to h5p content.
+ *
+ * @param {int} $id h5p content identifier
+ * @param {string} [$op='view'] node operation
+ * @return {boolean}
+ */
+function quiz_h5p_content_access($id, $op = 'view') {
+  if ($id === '0') {
+    // No content. Check if access to H5P content type.
+    return node_access('create', 'h5p_content');
+  }
+  if (variable_get('h5p_revisioning', 1)) {
+    // We got vid, but we need nid. Let's ask DB
+    $id = (int) db_query('SELECT nid FROM {node_revision} WHERE vid = :vid', array(':vid' => $id))->fetchField();
+  }
+  if ($op == 'view') {
+    $quizzes = db_query('SELECT parent_nid FROM {quiz_node_relationship} WHERE child_nid = :nid', array(':nid' => $id))->fetchAllKeyed(0, 0);
+    foreach ($quizzes as $quiz) {
+      if (node_access('view', node_load($quiz))) {
+        return TRUE;
+      }
+    }
+  }
+  return node_access($op, node_load($id));
+}
+
+/**
+ * Implements hook_quiz_question_info().
+ */
+function quiz_h5p_quiz_question_info() {
+  return array(
+    'h5p_content' => array(
+      'name' => t('H5P question'),
+      'description' => t('Quiz questions using H5P. NOTE: It is possible for computer savvy users to cheat and submit a full score for a test without actually doing the test.'),
+      'question provider' => 'QuizQuestionH5P',
+      'response provider' => 'QuizQuestionH5PResponse',
+      'node' => FALSE,
+      'module' => 'quiz_question',
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function quiz_h5p_theme($existing, $type, $theme, $path) {
+  $path = drupal_get_path('module', 'quiz_h5p') . '/theme';
+  return array(
+    'quiz_h5p_response' => array(
+      'variables' => array(
+        'data' => array(),
+      ),
+      'path' => $path,
+      'file' => 'quiz_h5p.theme.inc',
+    )
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter
+ * Fixes scoring issue for h5p in quiz context
+ */
+function quiz_h5p_form_quiz_questions_form_alter(&$form, &$form_state, $form_id) {
+  $form['submit']['#submit'][] = 'quiz_h5p_quiz_questions_form_submit';
+}
+
+/**
+ * Additional submit callback to quiz_questions_form().
+ */
+function quiz_h5p_quiz_questions_form_submit($form, &$form_state) {
+  if (!empty($form_state['values']['max_scores'])) {
+    foreach ($form_state['values']['max_scores'] as $key => $max_score) {
+      list($nid, $vid) = explode('-', $key);
+      $question = node_load($nid);
+      if ($question->type == 'h5p_content') {
+        // If H5P question.
+        $query = db_select('quiz_question_properties', 'qqp')
+          ->fields('qqp', array('max_score'))
+          ->condition('vid', $vid)
+          ->condition('nid', $nid);
+        $result = $query->execute()->fetchField();
+
+        // Check if exists in table.
+        if (isset($result)) {
+          // If exists.
+          db_update('quiz_question_properties')
+            ->fields(array(
+              'max_score' => $max_score,
+            ))
+            ->condition('vid', $vid)
+            ->condition('nid', $nid)
+            ->execute();
+        }
+        else {
+          // If new.
+          db_insert('quiz_question_properties')
+            ->fields(array(
+              'vid' => $vid,
+              'nid' => $nid,
+              'max_score' => $max_score,
+            ))
+            ->execute();
+        }
+      }
+    }
+  }
+}
+

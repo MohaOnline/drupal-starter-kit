@@ -1,0 +1,53 @@
+body.page-node-add,
+body.page-node-edit {
+
+  .form-item-print-pdf-orientation,
+  .form-item-print-pdf-size {
+    display: none;
+  }
+
+  .multiselect_btns + .form-type-select {
+    border: 1px solid #ececeb !important;
+    &::after {
+      display: none;
+    }
+  }
+
+  select.form-multiselect {
+    border-color: #ececeb;
+  }
+
+  div#content {
+    iframe.h5p-editor-iframe {
+      html {
+        margin: 0 auto;
+        text-align: center;
+      }
+    }
+
+    #quiz-ddlines-toolpane {
+      position: absolute;
+    }
+
+    #quiz-ddlines-feedback-pane > #feedback-disabled,
+    label#settings-for {
+      background-color: rgba(0, 0, 0, 0);
+    }
+
+    #quiz-ddlines-toolpane > #quiz-ddlines-buttonpane {
+      position: relative;
+      right: 0;
+      top: 0;
+      margin-top: 0.5em;
+      @extend .clearfix;
+    }
+
+    #quiz-ddlines-buttonpane > input {
+      width: 30%;
+      clear: none;
+      float: none;
+      padding: 0;
+      height: auto;
+    }
+  }
+}

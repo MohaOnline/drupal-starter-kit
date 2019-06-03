@@ -1,0 +1,15 @@
+name = Opigno TinCan API / Quizfileupload addon
+description = Add Quizfileupload statements
+package = Opigno
+core = 7.x
+
+dependencies[] = opigno_tincan_api
+dependencies[] = opigno_tincan_api_quiz_statements
+dependencies[] = quizfileupload
+
+; Information added by Drupal.org packaging script on 2018-02-09
+version = "7.x-1.3"
+core = "7.x"
+project = "opigno_tincan_api"
+datestamp = "1518184278"
+

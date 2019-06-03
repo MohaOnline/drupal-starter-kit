@@ -1,0 +1,46 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_interaction_types');
+
+function opigno_tincan_api_quizfileupload_statements_tincan_question_statement_quizfileupload_alter(TinCan\Statement &$statement, $question, $answers) {
+  /******
+   ** Set the result
+   ***/
+
+  $user_score = _opigno_tincan_api_get_quizfileupload_user_score($question->nid, $question->vid, $answers[0]['result_id']);
+  if (empty($user_score))
+    $user_score = null;
+
+  _opigno_tincan_api_set_result(
+    $statement,
+    $user_score,
+    $question->max_score,
+    $question->correct
+  );
+
+
+  /******
+   ** Set the interaction type properties
+   ***/
+
+  $objectDefinition = _opigno_tincan_api_get_object_definition($statement);
+  $objectDefinition->setInteractionType(OpignoTincanApiTinCanInteractionTypes::$other);
+}
+
+function _opigno_tincan_api_get_quizfileupload_user_score($question_nid, $question_vid, $rid)
+{
+  $scores = db_query('
+    SELECT score
+    FROM {quiz_fileupload_user_answers} qua
+    WHERE result_id = :rid
+    AND question_nid = :qnid
+    AND question_vid = :qvid
+  ', array(
+    ':rid' => $rid,
+    ':qnid' => $question_nid,
+    ':qvid' => $question_vid
+  ))->fetchCol();
+
+  return (empty($scores) ? null : $scores[0]);
+}

@@ -1,0 +1,19 @@
+name = Opigno Messaging App
+description = Opigno Private Messaging form alteration
+core = 7.x
+package = Opigno Apps
+
+dependencies[] = multiselect
+dependencies[] = privatemsg
+dependencies[] = privatemsg_filter
+dependencies[] = privatemsg_rules
+dependencies[] = rules_i18n
+dependencies[] = og
+
+
+; Information added by Drupal.org packaging script on 2018-02-09
+version = "7.x-1.1"
+core = "7.x"
+project = "opigno_messaging_app"
+datestamp = "1518183484"
+

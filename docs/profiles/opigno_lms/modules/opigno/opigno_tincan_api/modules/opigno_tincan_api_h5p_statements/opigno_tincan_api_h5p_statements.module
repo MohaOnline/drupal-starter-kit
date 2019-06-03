@@ -1,0 +1,71 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+
+define('OPIGNO_TINCAN_API_H5P_STATEMENT_RELAY', 'ajax/opigno-tincan-api/relay');
+
+/**
+ * Implements hook_init().
+ */
+function opigno_tincan_api_h5p_statements_init() {
+  drupal_add_js(array('h5pTincanRelay' => array('token' => drupal_get_token(), 'relayUrl' => base_path() . OPIGNO_TINCAN_API_H5P_STATEMENT_RELAY)), 'setting');
+  drupal_add_js(drupal_get_path('module', 'opigno_tincan_api_h5p_statements') . '/opigno_tincan_api_h5p_statements.js');
+}
+
+/**
+ * Implements hook_menu().
+ */
+function opigno_tincan_api_h5p_statements_menu() {
+  return array(
+    OPIGNO_TINCAN_API_H5P_STATEMENT_RELAY => array(
+      'title' => 'H5P TinCan Relay',
+      'description' => 'AJAX callback to track H5P TinCan API events.',
+      'type' => MENU_CALLBACK,
+      'page callback' => 'opigno_tincan_api_h5p_statements_page',
+      'access arguments' => array('access content'),
+    )
+  );
+}
+
+/**
+ * Menu callback for JavaScript event relay.
+ */
+function opigno_tincan_api_h5p_statements_page() {
+  if (isset($_POST['token']) && drupal_get_token() == $_POST['token'] && isset($_POST['statement'])) {
+    if (!_opigno_tincan_api_tincanphp_is_installed()) {
+      drupal_exit();
+      return;
+    }
+    global $base_url;
+
+    $data = json_decode($_POST['statement'], TRUE);
+    $nid = $data['object']['definition']['extensions']['http://h5p.org/x-api/h5p-local-content-id'];
+
+    //Regularize object id with node syntax
+    $data['object']['id'] = $base_url . '/node/' . $nid;
+
+    // TODO: Add og context
+
+    // Try to create and send the statement
+    if (class_exists('TinCan\Statement')) {
+      try {
+        $statement = new TinCan\Statement($data);
+      } catch (Exception $e) {
+        watchdog(WATCHDOG_WARNING, 'The following statement could not be created: <br />' .
+          '<pre>' . print_r($data, TRUE) .
+          '</pre><br />' .
+          'This exception was raised: ' .
+          $e->getMessage());
+        drupal_exit();
+        return;
+      }
+
+      $statement->stamp();
+      _opigno_tincan_api_send_statement($statement);
+    }
+
+  }
+
+  drupal_exit();
+  return;
+}

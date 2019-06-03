@@ -1,0 +1,24 @@
+name = Opigno Class app
+description = Opigno Class App
+core = 7.x
+package = Opigno Apps
+
+files[] = views/opigno_class_app_filter_courses_from_classes.inc
+
+dependencies[] = date
+dependencies[] = date_popup
+dependencies[] = og
+dependencies[] = og_ui
+dependencies[] = entityreference
+dependencies[] = list
+dependencies[] = opigno
+dependencies[] = rules
+dependencies[] = rules_conditional
+dependencies[] = rules_i18n
+
+; Information added by Drupal.org packaging script on 2017-07-14
+version = "7.x-1.6"
+core = "7.x"
+project = "opigno_class_app"
+datestamp = "1500027545"
+

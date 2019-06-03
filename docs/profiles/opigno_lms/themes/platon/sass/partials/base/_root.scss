@@ -1,0 +1,49 @@
+
+@import "../grid/gridpak";
+
+
+@media screen and (min-width: 0px) {
+
+  .center {
+    text-align: center;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .text-left {
+    text-align: left;
+  }
+}
+
+@media screen and (min-width: $mobile-breakpoint) {
+
+  .center-mobile {
+    text-align: center;
+  }
+
+  .right-mobile {
+    text-align: right;
+  }
+
+  .left-mobile {
+    text-align: left;
+  }
+}
+
+@media screen and (min-width: $pc-breakpoint) {
+
+  .center-pc {
+    text-align: center;
+  }
+
+  .right-pc {
+    text-align: right;
+  }
+
+  .left-pc {
+    text-align: left;
+  }
+}
+

@@ -1,0 +1,13 @@
+name = Opigno Moxtra App
+description = Integrates Moxtra with opigno. It is the core app for the "Live meetings" and the "Collaborative workspaces"<br />This will install the "Opigno Collaborative Workspace" module automatically.
+core = 7.x
+package = Opigno Apps
+
+dependencies[] = opigno
+dependencies[] = user
+
+; Information added by Drupal.org packaging script on 2018-10-05
+version = "7.x-1.5"
+core = "7.x"
+project = "opigno_moxtra_app"
+datestamp = "1538743697"

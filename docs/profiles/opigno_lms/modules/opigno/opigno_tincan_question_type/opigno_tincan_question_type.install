@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * @file
+ * This install file contains all the hooks called at the module installation.
+ */
+
+module_load_include('inc', 'opigno_tincan_question_type', 'includes/opigno_tincan_question_type.databases');
+
+/**
+ * Implements hook_install().
+ */
+function opigno_tincan_question_type_install() {
+  // Add a body to the question type.
+  quiz_question_add_body_field('opigno_tincan_question_type');
+  variable_set('node_options_opigno_tincan_question_type', array('status'));
+  cache_clear_all('autoload:', 'cache');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function opigno_tincan_question_type_schema() {
+  return array(
+    OpignoTincanQuestionTypePropertiesDatabase::NAME => array(
+      'fields' => OpignoTincanQuestionTypePropertiesDatabase::$fields,
+      'indexes' => OpignoTincanQuestionTypePropertiesDatabase::$indexes,
+    ),
+    OpignoTincanQuestionTypeAnswersDatabase::NAME => array(
+      'fields' => OpignoTincanQuestionTypeAnswersDatabase::$fields,
+      'indexes' => OpignoTincanQuestionTypeAnswersDatabase::$indexes,
+    ),
+  );
+}

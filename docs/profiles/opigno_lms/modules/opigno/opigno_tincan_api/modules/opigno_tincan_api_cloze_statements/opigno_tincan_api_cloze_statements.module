@@ -1,0 +1,31 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_interaction_types');
+
+function opigno_tincan_api_cloze_statements_tincan_question_statement_cloze_alter(TinCan\Statement &$statement, $question, $answers)
+{
+  /******
+   ** Set the result
+   ***/
+
+  $question_body = $question->body[LANGUAGE_NONE][0]['value'];
+  _opigno_tincan_api_set_result(
+    $statement,
+    $answers[0]['score'],
+    $question->max_score,
+    $question->correct,
+    strip_tags(_cloze_get_user_answer($question_body, $answers[0]['answer']))
+  );
+
+
+  /******
+   ** Set the interaction type properties
+   ***/
+
+  $objectDefinition = _opigno_tincan_api_get_object_definition($statement);
+  $objectDefinition->setInteractionType(OpignoTincanApiTinCanInteractionTypes::$fill_in);
+
+  $correct_answer_pattern = implode('[,]', _cloze_get_correct_answer_chunks($question_body));
+  $objectDefinition->setCorrectResponsesPattern(array($correct_answer_pattern));
+}

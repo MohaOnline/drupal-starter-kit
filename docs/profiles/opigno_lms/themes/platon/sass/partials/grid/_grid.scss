@@ -1,0 +1,118 @@
+@import "gridpak";
+
+.row {
+  overflow: hidden;
+  position: relative;
+}
+
+.col {
+  min-height: 1px;
+}
+
+@media screen and (min-width: 0px) {
+  $max_columns: 2;
+  $padding: 0 2.5%;
+  $gutter_px: 0;
+  $gutter_pc: 0%;
+
+  .col-0-out-of-2 {
+    display: none;
+  }
+  .col-1-out-of-2 {
+    display: block;
+    @include span(1, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-2-out-of-2 {
+    display: block;
+    @include span_first;
+    width:100%;
+  }
+}
+
+@media screen and (max-width: 800px) { 
+
+  .hidden-mobile {
+    display: none!important;
+  }
+}
+
+@media screen and (min-width: $mobile-breakpoint) {
+  $max_columns: 4;
+  $padding: 0 1.5%;
+  $gutter_px: 0;
+  $gutter_pc: 0%;
+
+  .col-0-out-of-4 {
+    display: none;
+  }
+  .col-1-out-of-4 {
+    display: block;
+    @include span(1, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-2-out-of-4 {
+    display: block;
+    @include span(2, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-3-out-of-4 {
+    display: block;
+    @include span(3, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-4-out-of-4 {
+    display: block;
+    @include span_first;
+    width:100%;
+  }
+}
+
+@media screen and (min-width: 801px) and (max-width: $pc-breakpoint - 1) { 
+
+  .hidden-tablet {
+    display: none!important;
+  }
+}
+
+@media screen and (min-width: $pc-breakpoint) {
+  $max_columns: 6;
+  $padding: 0 1.5%;
+  $gutter_px: 0;
+  $gutter_pc: 0%;
+
+  .col-0-out-of-6 {
+    display: none;
+  }
+  .col-1-out-of-6 {
+    display: block;
+    @include span(1, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-2-out-of-6 {
+    display: block;
+    @include span(2, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-3-out-of-6 {
+    display: block;
+    @include span(3, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-4-out-of-6 {
+    display: block;
+    @include span(4, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-5-out-of-6 {
+    display: block;
+    @include span(5, $gutter_pc, $gutter_px, $padding, $max_columns);
+  }
+  .col-6-out-of-6 {
+    display: block;
+    @include span_first;
+    width:100%;
+  }
+
+  .row {
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hidden-pc {
+    display: none;
+  }
+}

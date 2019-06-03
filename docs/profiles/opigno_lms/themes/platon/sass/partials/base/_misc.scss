@@ -1,0 +1,484 @@
+/**
+ * @file
+ * Defines all miscellaneous styles.
+ */
+div.messages {
+  position: relative;
+  padding: 1em 1em 1em 3em;
+  border: 0;
+  background-position: 16px center;
+  z-index: 950;
+
+  .messages-dismiss {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    cursor: pointer;
+  }
+}
+
+body.platon-use-custom-background {
+  @include background-size(cover);
+
+  #site-content {
+    background: transparent;
+  }
+
+  #first-sidebar {
+    background: $medium-gray;
+  }
+
+  #second-sidebar {
+    background: transparent;
+  }
+}
+
+.admin {
+  .left {
+    margin-left: 0;
+  }
+
+  .right {
+    margin-right: 0;
+  }
+
+  .left,
+  .right {
+    @media screen and (max-width: 800px) {
+      float: none!important;
+      width: auto!important;
+      margin-right: 0 !important;
+      margin-left: 0 !important;
+    }
+
+    .admin-panel {
+      .body {
+        padding: 0;
+      }
+
+      h3 {
+        padding: 0.5em;
+        margin-top: 0;
+        color: white;
+        background: $light-blue;
+      }
+
+      dt {
+        padding: 0.5em;
+        background: $medium-gray;
+
+        a {
+          text-decoration: none;
+        }
+      }
+
+      dd {
+        background: $medium-gray;
+        padding: 0.5em 0.5em 0.5em 1.25em;
+        margin: 0 0 0.5em;
+      }
+
+      dd.js-processed,
+      dt.js-processed {
+        cursor: pointer;
+      }
+
+      dd.hover,
+      dt.hover {
+        background: $light-gray;
+      }
+    }
+  }
+}
+
+.views-exposed-form .views-exposed-widget .form-submit {
+  margin-top: 2.4em;
+}
+
+#messages-num-unread {
+  top: 12px;
+  color: #222;
+  font-size: 1.4em;
+  position: absolute;
+  width: 40px;
+  z-index: 1;
+}
+
+a.active #messages-num-unread,
+a:hover #messages-num-unread {
+  color: #222;
+}
+
+.catalogue-class-group {
+  background: #5aa449;
+  display: inline;
+  float: right;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+/* to refactor axel */
+.page-node-videos .views-field.views-field-edit-node,
+.page-node-videos .views-field.views-field-title {
+  display: inline;
+}
+
+.edit-small-pictogram {
+  background: url('../img/edit-element-green-icon.png') no-repeat scroll right center rgba(0, 0, 0, 0);
+}
+
+.edit-small-pictogram a,
+.edit-small-pictogram a:hover,
+a.edit-small-pictogram,
+a.edit-small-pictogram:hover {
+  color: transparent;
+}
+
+#opigno-group-progress {
+  .opigno-group-certificate,
+  .opigno-group-status {
+    max-width: 100%;
+    min-width: 100%;
+    width: 100%;
+    background-color: #f6f6f6;
+    padding: 20px 22px;
+    box-sizing: border-box;
+    margin-bottom: 9px;
+    display: flex;
+
+    .pictogram {
+      padding-right: 1rem;
+      display: flex;
+      align-items: center;
+
+      .item {
+        width: 50px;
+        height: 50px;
+        border-top: 1px solid $dark-gray;
+        border-bottom: 1px solid $dark-gray;
+        text-align: center;
+        font-size: 0;
+        padding: 0 5px;
+        box-sizing: border-box;
+        vertical-align: top;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        float: right;
+        background-size: 25px 25px;
+        background-repeat: no-repeat;
+        background-position: center;
+        box-sizing: content-box;
+      }
+    }
+
+    .text {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+
+      .label {
+        font-weight: 700;
+        display: inline-block;
+      }
+    }
+  }
+
+  .opigno-group-status {
+    .pictogram {
+      .item {
+        &.ok {
+          background-color: $leaf-green;
+          border-color: $leaf-green;
+          background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iQ2FscXVlXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMTcuMyAxMS45IiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCAxNy4zIDExLjkiIHhtbDpzcGFjZT0icHJlc2VydmUiPjxwYXRoIGZpbGw9IiNGRkZGRkYiIGQ9Ik0xNy4xLDAuMmMtMC4yLTAuMi0wLjYtMC4yLTAuOCwwTDUuOSwxMC42bC01LTVjLTAuMi0wLjItMC42LTAuMi0wLjgsMGMtMC4yLDAuMi0wLjIsMC42LDAsMC44bDUuNCw1LjRjMC4xLDAuMSwwLjIsMC4yLDAuNCwwLjJjMC4xLDAsMC4zLTAuMSwwLjQtMC4yTDE3LjEsMC45QzE3LjMsMC43LDE3LjMsMC40LDE3LjEsMC4yeiIvPjwvc3ZnPg==');
+        }
+
+        &.nok {
+          background-color: $dark-gray;
+          background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iQ2FscXVlXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMTkuOCAxNy40IiBlbmFibGUtYmFja2dyb3VuZD0ibmV3IDAgMCAxOS44IDE3LjQiIHhtbDpzcGFjZT0icHJlc2VydmUiPjxnPjxwYXRoIGZpbGw9IiNGRkZGRkYiIGQ9Ik0xOS44LDEzLjdMMTgsMTAuM2MwLDAsMCwwLDAsMGMwLDAtMC4xLTAuMS0wLjEtMC4xYzAsMC0wLjEtMC4xLTAuMS0wLjFjMCwwLTAuMSwwLTAuMS0wLjFjLTAuMSwwLTAuMS0wLjEtMC4yLTAuMWMwLDAsMCwwLDAsMGMwLDAsMCwwLTAuMSwwYy0wLjEsMC0wLjEsMC0wLjIsMGMwLDAtMC4xLDAtMC4xLDBjMCwwLDAsMC0wLjEsMGwtMy40LDEuM2MtMC40LDAuMS0wLjYsMC42LTAuNCwxYzAuMSwwLjQsMC42LDAuNiwxLDAuNGwxLjktMC43Yy0xLjIsMi40LTMuNiwzLjktNi4zLDMuOWMtMy4yLDAtNi0yLjItNi44LTUuNEMyLjksMTAuMSwyLjUsOS45LDIuMSwxMGMtMC40LDAuMS0wLjcsMC41LTAuNSwwLjljMSwzLjgsNC40LDYuNSw4LjMsNi41YzMuMywwLDYuMi0xLjksNy43LTQuOWwxLDEuOWMwLjEsMC4zLDAuNCwwLjQsMC43LDAuNGMwLjEsMCwwLjIsMCwwLjMtMC4xQzE5LjgsMTQuNSwyMCwxNC4xLDE5LjgsMTMuN3oiLz48cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMS43LDYuN0MxLjcsNi43LDEuNyw2LjcsMS43LDYuN2MwLjEsMC4xLDAuMSwwLjIsMC4yLDAuMmMwLDAsMCwwLDAuMSwwQzIsNywyLjEsNy4xLDIuMSw3LjFjMCwwLDAsMCwwLDBjMCwwLDAsMCwwLDBjMC4xLDAsMC4xLDAsMC4yLDBjMC4xLDAsMC4xLDAsMC4yLDBsMy41LTFDNi41LDYsNi43LDUuNiw2LjYsNS4yQzYuNSw0LjgsNiw0LjUsNS42LDQuN2wtMiwwLjVDNC45LDMsNy4yLDEuNSw5LjgsMS41YzMuMSwwLDUuOCwyLDYuNyw1YzAuMSwwLjQsMC41LDAuNiwxLDAuNWMwLjQtMC4xLDAuNi0wLjYsMC41LTFDMTYuOCwyLjUsMTMuNiwwLDkuOCwwYy0zLjIsMC02LDEuOC03LjUsNC41TDEuNSwyLjdjLTAuMi0wLjQtMC42LTAuNS0xLTAuNGMtMC40LDAuMi0wLjUsMC42LTAuNCwxTDEuNyw2LjdDMS43LDYuNywxLjcsNi43LDEuNyw2Ljd6Ii8+PC9nPjwvc3ZnPg==');
+        }
+      }
+    }
+  }
+
+  .opigno-group-certificate {
+    .pictogram {
+      .item {
+        background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iQ2FscXVlXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSI0MTMuOSAyODQuMSAxOC4yIDI3LjEiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgNDEzLjkgMjg0LjEgMTguMiAyNy4xIiB4bWw6c3BhY2U9InByZXNlcnZlIj48ZyBpZD0iY2VydGlmaWNhdGVfNV8iPjxnPjxwb2x5Z29uIGZpbGw9IiMzNUI0NTkiIHBvaW50cz0iNDI3LjgsMzAxLjUgNDI2LjEsMzA0LjYgNDIzLDMwMi43IDQyMCwzMDQuNiA0MTguNywzMDEuNSA0MTgsMzAxLjUgNDE4LDMxMS4yIDQyMy41LDMwNS43IDQyOSwzMTEuMiA0MjksMzAxLjUgIi8+PHBhdGggZmlsbD0iIzM1QjQ1OSIgZD0iTTQzMC43LDI5My4ybDEuNS0yLjRsLTIuNS0xLjRsMC0yLjhsLTIuOCwwbC0xLjQtMi41bC0yLjQsMS41bC0yLjQtMS41bC0xLjQsMi41bC0yLjgsMGwwLDIuOGwtMi41LDEuNGwxLjUsMi40bC0xLjUsMi40bDIuNSwxLjRsMCwyLjhsMi44LDBsMS40LDIuNWwyLjQtMS41bDIuNCwxLjVsMS40LTIuNWwyLjgsMGwwLTIuOGwyLjUtMS40TDQzMC43LDI5My4yeiBNNDIyLjksMjg5LjVsLTEuMS0wLjdsLTAuNiwxLjJsLTEuNCwwbDAsMS40bC0xLjIsMC43bDAuNywxbC0yLjYsMC43bDAuNS0wLjdsLTEuMS0xLjdsMS45LTFsMC0yLjFsMi4xLDBsMS0xLjlsMS43LDEuMWwwLjctMC41TDQyMi45LDI4OS41eiIvPjwvZz48cGF0aCBvcGFjaXR5PSIwLjUiIGZpbGw9IiMzNUI0NTkiIGQ9Ik00MTYuOCwyOTMuN2wwLjUtMC43bC0xLjEtMS43bDEuOS0xbDAtMi4xbDIuMSwwbDEtMS45bDEuNywxLjFsMC43LTAuNWwtMC43LDIuNmwtMS4xLTAuN2wtMC42LDEuMmwtMS40LDBsMCwxLjRsLTEuMiwwLjdsMC43LDFMNDE2LjgsMjkzLjd6Ii8+PC9nPjwvc3ZnPg==');
+      }
+
+      &.inactive .item {
+        background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iQ2FscXVlXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSI0MTMuOSAyODQuMSAxOC4yIDI3LjEiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgNDEzLjkgMjg0LjEgMTguMiAyNy4xIiB4bWw6c3BhY2U9InByZXNlcnZlIj48ZyBpZD0iY2VydGlmaWNhdGVfNV8iPjxnPjxwb2x5Z29uIGZpbGw9IiNCQkJEQkYiIHBvaW50cz0iNDI3LjgsMzAxLjUgNDI2LjEsMzA0LjYgNDIzLDMwMi43IDQyMCwzMDQuNiA0MTguNywzMDEuNSA0MTgsMzAxLjUgNDE4LDMxMS4yIDQyMy41LDMwNS43IDQyOSwzMTEuMiA0MjksMzAxLjUgIi8+PHBhdGggZmlsbD0iI0JCQkRCRiIgZD0iTTQzMC43LDI5My4ybDEuNS0yLjRsLTIuNS0xLjRsMC0yLjhsLTIuOCwwbC0xLjQtMi41bC0yLjQsMS41bC0yLjQtMS41bC0xLjQsMi41bC0yLjgsMGwwLDIuOGwtMi41LDEuNGwxLjUsMi40bC0xLjUsMi40bDIuNSwxLjRsMCwyLjhsMi44LDBsMS40LDIuNWwyLjQtMS41bDIuNCwxLjVsMS40LTIuNWwyLjgsMGwwLTIuOGwyLjUtMS40TDQzMC43LDI5My4yeiBNNDIyLjksMjg5LjVsLTEuMS0wLjdsLTAuNiwxLjJsLTEuNCwwbDAsMS40bC0xLjIsMC43bDAuNywxbC0yLjYsMC43bDAuNS0wLjdsLTEuMS0xLjdsMS45LTFsMC0yLjFsMi4xLDBsMS0xLjlsMS43LDEuMWwwLjctMC41TDQyMi45LDI4OS41eiIvPjwvZz48cGF0aCBvcGFjaXR5PSIwLjUiIGZpbGw9IiNCQkJEQkYiIGQ9Ik00MTYuOCwyOTMuN2wwLjUtMC43bC0xLjEtMS43bDEuOS0xbDAtMi4xbDIuMSwwbDEtMS45bDEuNywxLjFsMC43LTAuNWwtMC43LDIuNmwtMS4xLTAuN2wtMC42LDEuMmwtMS40LDBsMCwxLjRsLTEuMiwwLjdsMC43LDFMNDE2LjgsMjkzLjd6Ii8+PC9nPjwvc3ZnPg==');
+      }
+    }
+  }
+}
+
+div#tabs.has-group-progress {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-wrapper {
+  display: flex;
+  padding-left: 0;
+  @media screen and (max-width: 1200px) {
+    display: block;
+  }
+
+  div#content {
+    width: 100%;
+    flex: 1;
+    order: 2;
+  }
+
+  div#opigno-group-progress {
+    margin-right: 1.5rem;
+    order: 1;
+    max-width: 350px;
+    @media screen and (max-width: 1200px) {
+      margin-right: 0;
+      margin-top: 1.5rem;
+      max-width: 100%;
+    }
+  }
+
+  ul.action-links {
+    order: 3;
+  }
+}
+
+#opigno-group-progress th {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+#opigno-group-progress td {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+#opigno-group-progress .opigno-group-progress-course {
+  max-width: 100%;
+  min-width: 100%;
+  width: 100%;
+  background-color: #f6f6f6;
+  padding: 20px 22px 1px;
+  box-sizing: border-box;
+
+  & + .opigno-group-progress-course {
+    margin-top: 9px;
+  }
+
+  > a {
+    font-size: 20px;
+    font-weight: 700;
+    color: #231f20;
+    text-decoration: none;
+    display: block;
+    border-bottom: 2px solid $dark-gray;
+    padding-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  [class^="opigno-group-progress"] {
+    margin: 0 -22px;
+    padding: 15px 22px 0;
+
+    table {
+      margin-bottom: 1em;
+
+      thead {
+        tr {
+          th {
+            background: none;
+            color: inherit;
+            border: 0;
+            font-weight: 600;
+            text-transform: uppercase;
+
+            &:first-child {
+              padding-left: 0;
+            }
+
+            &:last-child {
+              padding-right: 0;
+            }
+          }
+        }
+      }
+
+      tbody {
+        tr {
+          background: none;
+          border: 0;
+
+          td {
+            background: none;
+            border: 0;
+
+            &:first-child {
+              padding-left: 0;
+            }
+
+            &:last-child {
+              padding-right: 0;
+            }
+
+            a {
+              text-decoration: none;
+            }
+          }
+        }
+      }
+    }
+  }
+  // .opigno-group-progress-course-quiz {
+  //
+  //   table {
+  //     thead {
+  //       tr {
+  //         th {
+  //         }
+  //       }
+  //     }
+  //
+  //     tbody {
+  //       tr {
+  //         td {
+  //           background: none;
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+}
+
+#opigno-group-progress .opigno-group-progress-course-quiz {
+  max-width: 100%;
+  min-width: 100%;
+  width: 100%;
+}
+
+#opigno-group-progress .opigno-group-progress-course-quiz table {
+  max-width: 100%;
+  min-width: 100%;
+  width: 100%;
+}
+
+#opigno-group-progress .opigno-group-progress-course-in-house-training {
+  max-width: 100%;
+  min-width: 100%;
+  width: 100%;
+}
+
+#opigno-group-progress .opigno-group-progress-course-in-house-training table {
+  max-width: 100%;
+  min-width: 100%;
+  width: 100%;
+}
+// .has-group-progress {
+//   width: 70%;
+//   float: right;
+//   padding-left: 2%;
+// }
+
+body.page-node-take.opigno-quiz-app-fullscreen #content {
+  width: 100%;
+}
+
+.opigno-quiz-app-course-name {
+  min-width: 150px;
+}
+
+body.page-node-take.opigno-quiz-app-fullscreen #second-sidebar {
+  margin-left: 0;
+  width: auto;
+}
+
+.has-group-progress .node-course .opigno-tools {
+  display: none;
+}
+
+body.page-node-take.opigno-quiz-app-fullscreen #opigno-group-progress {
+  display: none;
+}
+
+.opigno-quiz-app-group-status-quiz-result-passed {
+  color: green;
+}
+
+.opigno-quiz-app-group-status-quiz-result-failed {
+  color: red;
+}
+
+user-login-form .item-list ul li {
+  display: inline;
+}
+
+.training-stats-table tbody tr {
+  height: 37px;
+}
+
+#opigno-in-house-training-score-form .fieldset-wrapper {
+  display: none;
+}
+
+#opigno-in-house-training-score-form .form-submits {
+  float: right;
+}
+
+#opigno-webex-attendance-form .fieldset-wrapper {
+  display: none;
+}
+
+#opigno-webex-attendance-form .form-submits {
+  float: right;
+}
+
+.iht-view-2 {
+  width: 40%;
+}
+
+.iht-view-4 {
+  width: 18%;
+}
+
+.form-item.form-type-managed-file.form-item-slide-pdf-und-0 {
+  background-image: url('/modules/file/icons/application-pdf.png');
+  background-repeat: no-repeat;
+  background-position: 0 5px;
+  padding-left: 25px;
+}
+
+.form-item.form-type-managed-file.form-item-slide-pdf-und-0 label[for=edit-slide-pdf-und-0] {
+  margin-left: 20px;
+}
+
+div#edit-display-settings-top,
+div#views-display-top {
+  overflow: visible!important;
+}
+
+.views-displays .secondary .action-list {
+  top: 26px;
+}
+
+ul#views-display-menu-tabs li.add ul.action-list li {
+  display: block;
+  float: none;
+
+  input {
+    color: #777;
+    font-size: 13px;
+  }
+}
+
+div#edit-display-settings-top {
+  button,
+  input[type="button"],
+  input[type="submit"] {
+    color: #777;
+  }
+}

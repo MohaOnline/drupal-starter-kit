@@ -1,0 +1,19 @@
+name = Opigno Tincan Question Type
+description = Add the Tincan Question type for quiz. Teachers would be able to upload tincan packages to create questions,
+package = Opigno
+core = 7.x
+
+dependencies[] = opigno_tincan_api
+dependencies[] = quiz
+dependencies[] = quiz_question
+
+files[] = includes/opigno_tincan_question_type.databases.inc
+files[] = includes/opigno_tincan_question_type.question.inc
+files[] = includes/opigno_tincan_question_type.response.inc
+
+; Information added by Drupal.org packaging script on 2018-02-09
+version = "7.x-1.2"
+core = "7.x"
+project = "opigno_tincan_question_type"
+datestamp = "1518184384"
+

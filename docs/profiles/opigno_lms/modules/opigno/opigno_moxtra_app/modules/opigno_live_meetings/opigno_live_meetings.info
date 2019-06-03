@@ -1,0 +1,15 @@
+name = Opigno Live Meetings
+description = Integrates the "Live Meetings" feature to Opigno
+core = 7.x
+package = Opigno Apps
+
+dependencies[] = opigno_moxtra_app
+dependencies[] = opigno_collaborative_workspaces
+dependencies[] = opigno_calendar_app
+dependencies[] = date_repeat_field
+
+; Information added by Drupal.org packaging script on 2018-10-05
+version = "7.x-1.5"
+core = "7.x"
+project = "opigno_moxtra_app"
+datestamp = "1538743697"

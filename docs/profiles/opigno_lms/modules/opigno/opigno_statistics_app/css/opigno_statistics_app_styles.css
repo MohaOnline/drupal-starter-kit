@@ -1,0 +1,29 @@
+#opigno-statistics-app-dashboard-filter-form .form-item, #opigno-statistics-app-group-filter-form .form-item, #opigno-statistics-app-user-filter-form .form-item {
+    float:left;
+    margin-right: 15px;
+}
+
+#opigno-statistics-app-dashboard-filter-form select, #opigno-statistics-app-group-filter-form select, #opigno-statistics-app-user-filter-form select {
+    max-width: 100%;
+}
+
+#opigno-statistics-app-dashboard-widget-most-active-users img {
+    max-width: inherit;
+}
+
+#opigno-statistics-app-dashboard-widget-most-active-users a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.opigno-statistics-app-dashboard-widget-most-active-users-list-item {
+    padding: 5px;
+}
+
+a:hover .opigno-statistics-app-dashboard-widget-most-active-users-list-item {
+    background: #fff;
+}
+
+.opigno-statistics-app-dashboard-widget-most-active-users-list-item p {
+    margin: 0;
+}

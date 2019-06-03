@@ -1,0 +1,164 @@
+<?php
+
+if (libraries_get_path('TinCanPHP') != false) {
+  require libraries_get_path('TinCanPHP') . '/autoload.php';
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function opigno_tincan_api_menu()
+{
+  return array(
+    'admin/opigno/system/tincan' => array(
+      'title' => 'TinCan LRS',
+      'description' => 'Configure the LRS connection settings',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('opigno_tincan_api_settings_form'),
+      'access arguments' => array('edit opigno tincan api settings'),
+      'file' => 'includes/opigno_tincan_api.settings_form.inc'
+    )
+  );
+}
+
+/**
+ * Implements hook_permission().
+ */
+function opigno_tincan_api_permission() {
+  return array(
+    'edit opigno tincan api settings' => array(
+      'title' => t('Administer the Opigno TinCan API module'),
+      'description' => t('Change the settings for the Opigno TinCan API module, like the LRS settings.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function opigno_tincan_api_requirements($phase) {
+  $requirements = array();
+
+  // Ensure translations do not break
+  $t = get_t();
+
+  // Check if the TinCanPHP library is installed
+  $libraries = libraries_get_libraries();
+  if (isset($libraries['TinCanPHP'])) {
+    $library_is_installed = true;
+  }
+  else {
+    $library_is_installed = false;
+  }
+
+  // Check if the module parameters are set.
+  $endpoint = variable_get('opigno_tincan_api_endpoint', '');
+  $username = variable_get('opigno_tincan_api_username', '');
+  $password = variable_get('opigno_tincan_api_password', '');
+
+  $requirements['opigno_tincan_api']['title'] = 'Opigno TinCan API';
+
+  if (empty($endpoint) || empty($username) || empty($password)) {
+    $is_configured = false;
+  }
+  else {
+    $is_configured = true;
+  }
+
+  // If the site is in runtime, put in status page these information
+  if ($phase == 'runtime') {
+    // Check if the TinCanPHP library is installed.
+    $requirements['TinCanPHP']['title'] = 'TinCanPHP';
+
+    if ($library_is_installed) {
+      $requirements['TinCanPHP']['value'] = $t('Installed');
+      $requirements['TinCanPHP']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['TinCanPHP']['value'] = $t('Not Installed');
+      $requirements['TinCanPHP']['severity'] = REQUIREMENT_ERROR;
+      $requirements['TinCanPHP']['description'] = $t('Please install the !tincanphp_library in the <em>sites/all/library/TinCanPHP</em> folder.', array('!tincanphp_library' => l($t('TinCanPHP library'), 'https://github.com/RusticiSoftware/TinCanPHP/releases')));
+    }
+
+    // Check if the module parameters are set.
+    if ($is_configured) {
+      $requirements['opigno_tincan_api']['value'] = $t('Configured');
+      $requirements['opigno_tincan_api']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['opigno_tincan_api']['value'] = $t('Not set');
+      $requirements['opigno_tincan_api']['severity'] = REQUIREMENT_WARNING;
+      $requirements['opigno_tincan_api']['description'] = $t('Please configure the LRS connection in the !setting_page.', array('!setting_page' => l('settings page', 'admin/opigno/system/tincan')));
+    }
+  }
+
+  // If during install or update, put the information in drupal message
+  if ($phase == 'install' || $phase == 'update') {
+    if (!$library_is_installed) {
+      drupal_set_message(
+        $t('Please install the !tincanphp_library in the <em>sites/all/library/TinCanPHP</em> folder.', array('!tincanphp_library' => l($t('TinCanPHP library'), 'https://github.com/RusticiSoftware/TinCanPHP/releases'))),
+        'warning',
+        false
+      );
+    }
+
+    if (!$is_configured) {
+      drupal_set_message(
+        $t('Please configure the LRS connection in the !setting_page.', array('!setting_page' => l('settings page', 'admin/opigno/system/tincan'))),
+        'warning',
+        false
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Check if the library TinCanPHP is installed
+ */
+function _opigno_tincan_api_tincanphp_is_installed() {
+  return class_exists('TinCan\Statement');
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function opigno_tincan_api_modules_enabled($modules) {
+  if (in_array('quiz', $modules)) {
+    module_enable(array('opigno_tincan_api_quiz_statements'));
+  }
+
+  if (in_array('cloze', $modules)) {
+    module_enable(array('opigno_tincan_api_cloze_statements'));
+  }
+
+  if (in_array('quiz_drag_drop', $modules)) {
+    module_enable(array('opigno_tincan_api_quiz_drag_drop_statements'));
+  }
+
+  if (in_array('quizfileupload', $modules)) {
+    module_enable(array('opigno_tincan_api_quizfileupload_statements'));
+  }
+
+  if (in_array('opigno_scorm', $modules)) {
+    module_enable(array('opigno_tincan_api_opigno_scorm_statements'));
+  }
+
+  if (in_array('h5p', $modules)) {
+    module_enable(array('opigno_tincan_api_h5p_statements'));
+  }
+
+  if (in_array('opigno_in_house_training_app', $modules)) {
+    module_enable(array('opigno_tincan_api_in_house_training_statements'));
+  }
+
+  if (in_array('opigno_mozilla_openbadges_app', $modules)) {
+    module_enable(array('opigno_tincan_api_openbadges_statements'));
+  }
+
+  if (in_array('opigno_quiz_app', $modules)) {
+    module_enable(array('opigno_tincan_api_opigno_statements'));
+  }
+}

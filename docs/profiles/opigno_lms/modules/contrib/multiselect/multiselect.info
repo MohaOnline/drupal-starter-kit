@@ -1,0 +1,13 @@
+name = Multiselect
+description = Defines a multiple selection field widget, to allow easier multi-selection for users.
+package = Fields
+core = "7.x"
+version = VERSION
+
+files[] = multiselect.module
+; Information added by Drupal.org packaging script on 2017-12-07
+version = "7.x-1.13"
+core = "7.x"
+project = "multiselect"
+datestamp = "1512663211"
+

@@ -1,0 +1,206 @@
+<?php
+
+/**
+ * The installer file for quizfileupload.
+ * @file
+ */
+
+
+/**
+ * Implements hook_install().
+ */
+function quizfileupload_install() {
+  // Add body field to quizfileupload node
+  quiz_question_add_body_field('quizfileupload');
+
+  cache_clear_all('autoload:', 'cache');
+  variable_set('node_options_quizfileupload', array('status'));
+}
+
+/**
+ * Implements hook_schema().
+ */
+function quizfileupload_schema() {
+  // Stores the users answers to a question.
+  $schema['quiz_fileupload_user_answers'] = array(
+    'fields' => array(
+      'answer_id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'is_evaluated' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'result_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'question_nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'question_vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'score' => array(
+        'type' => 'float',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'fid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'answer_feedback' => array(
+        'type' => 'text'
+      ),
+      'answer_feedback_format' => array(
+        'type' => 'varchar',
+        'length' => 255,
+      ),
+    ),
+    'primary key' => array('answer_id'),
+    'indexes' => array(
+      'answer_id' => array('result_id', 'question_nid', 'question_vid'),
+    ),
+  );
+  // store node properties
+  $schema['quiz_fileupload_node_properties'] = array(
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'filetypes' => array(
+        'type' => 'text',
+      ),
+      'correct_answer_evaluation' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array(
+      'nid', 'vid'
+    ),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function quizfileupload_uninstall() {
+  cache_clear_all('variables', 'cache');
+  drupal_set_message(t('The quiz file upload module has been uninstalled. Quiz file upload nodes may still exist, but they will not function properly.'));
+}
+
+
+/**
+ * Fixes the data structure for users with the original #2092275 patch
+ */
+function quizfileupload_update_7001() {
+  $instance = field_info_instance('node', 'quizfileupload_scoring', 'quizfileupload');
+  if ($instance) {
+    field_delete_instance($instance, TRUE);
+  }
+
+  if (db_field_exists('quiz_fileupload_user_answers', 'is_evaluated')) {
+    $spec = array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'default' => 0,
+    );
+    db_change_field('quiz_fileupload_user_answers', 'is_evaluated', 'is_evaluated', $spec);
+  }
+
+  if (db_field_exists('quiz_fileupload_node_properties', 'type')) {
+    $spec = array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'default' => 0,
+    );
+    db_change_field('quiz_fileupload_node_properties', 'type', 'correct_answer_evaluation', $spec);
+  }
+}
+
+
+/**
+ * Add the option to manually score the question.
+ */
+function quizfileupload_update_7002() {
+  // Add the required fields to the database.
+  if (!db_field_exists('quiz_fileupload_node_properties', 'correct_answer_evaluation')) {
+    $spec = array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'default' => 0,
+    );
+    db_add_field('quiz_fileupload_node_properties', 'correct_answer_evaluation', $spec);
+  }
+
+  if (!db_field_exists('quiz_fileupload_user_answers', 'is_evaluated')) {
+    $spec = array(
+      'type' => 'int',
+      'unsigned' => TRUE,
+      'size' => 'tiny',
+      'not null' => TRUE,
+      'default' => 0,
+    );
+    db_add_field('quiz_fileupload_user_answers', 'is_evaluated', $spec);
+  }
+
+  if (!db_field_exists('quiz_fileupload_user_answers', 'answer_feedback')) {
+    $spec = array(
+      'type' => 'text'
+    );
+    db_add_field('quiz_fileupload_user_answers', 'answer_feedback', $spec);
+  }
+
+  if (!db_field_exists('quiz_fileupload_user_answers', 'answer_feedback_format')) {
+    $spec = array(
+      'type' => 'varchar',
+      'length' => 255,
+    );
+    db_add_field('quiz_fileupload_user_answers', 'answer_feedback_format', $spec);
+  }
+}
+
+
+/**
+ * #2709835 Change db field score to float
+ */
+function quizfileupload_update_7003() {
+  $spec = array(
+    'type' => 'float',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  db_change_field('quiz_fileupload_user_answers', 'score', 'score', $spec);
+}

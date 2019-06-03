@@ -1,0 +1,213 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_activity_definition_types');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_interaction_types');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_verbs');
+
+module_load_include('inc', 'opigno_tincan_api_quiz_statements', 'opigno_tincan_api_quiz_statements.questions_alter');
+
+function opigno_tincan_api_quiz_begin($quiz, $rid)
+{
+  /**
+   * - When user start a quiz
+   * Actor: user
+   * Verb: xAPI/launched
+   * Object: xAPI/lesson
+   * Result:
+   * Context: Course
+   */
+
+  /////
+  // Statement creation
+  $statement = _opigno_tincan_api_statement_base_creation(
+    OpignoTincanApiTinCanVerbs::$launched,
+    OpignoTincanApiTinCanActivityDefinitionTypes::$lesson,
+    $quiz
+  );
+
+  if ($statement === false) {
+    return;
+  }
+
+
+  /////
+  // Context creation
+  $context = new TinCan\Context();
+
+  // If there is a parent, set it
+  if (isset($quiz->og_group_ref[LANGUAGE_NONE])) {
+    $parent_courses_nids = array_map(function ($e) {
+      return $e['target_id'];
+    }, $quiz->og_group_ref[LANGUAGE_NONE]);
+
+    _opigno_tincan_api_context_set_parents($context, $parent_courses_nids);
+  }
+
+  _opigno_tincan_api_context_set_language($context, $quiz->language);
+
+  $statement->setContext($context);
+
+
+  /////
+  // Sending statement
+  _opigno_tincan_api_send_statement($statement);
+}
+
+
+function opigno_tincan_api_quiz_finished($quiz, $score, $session_data)
+{
+  if ($score['is_evaluated'] && !empty($session_data['result_id']))
+    _opigno_tincan_api_send_quiz_results($quiz, $score, $session_data['result_id']);
+}
+
+
+function opigno_tincan_api_quiz_scored($quiz, $score, $rid)
+{
+  if ($score['is_evaluated'])
+    _opigno_tincan_api_send_quiz_results($quiz, $score, $rid);
+}
+
+
+function _opigno_tincan_api_send_quiz_results($quiz, $score, $rid)
+{
+  /**
+   * - When user finish a quiz
+   * Actor: user
+   * Verb: xAPI/passed || xAPI/failed
+   * Object: xAPI/lesson
+   * Result: Get final quiz result
+   * Context: Course
+   */
+
+  // Know if the user has passed or failed this quiz
+  $passed = $score['percentage_score'] >= $quiz->pass_rate;
+
+
+  //////
+  // Statement creation
+  $statement = _opigno_tincan_api_statement_base_creation(
+    ($passed ? OpignoTincanApiTinCanVerbs::$passed : OpignoTincanApiTinCanVerbs::$failed),
+    OpignoTincanApiTinCanActivityDefinitionTypes::$lesson,
+    $quiz
+  );
+
+  if ($statement === false) {
+    return;
+  }
+
+
+  //////
+  // Context creation
+  $context = new TinCan\Context();
+
+  // If there is a parent, set it.
+  if (isset($quiz->og_group_ref[LANGUAGE_NONE])) {
+    $parent_courses_nids = array_map(function ($e) {
+      return $e['target_id'];
+    }, $quiz->og_group_ref[LANGUAGE_NONE]);
+
+    _opigno_tincan_api_context_set_parents($context, $parent_courses_nids, OpignoTincanApiTinCanActivityDefinitionTypes::$course);
+  }
+
+  _opigno_tincan_api_context_set_language($context, $quiz->language);
+
+
+  $result = _opigno_tincan_api_get_result_data($rid);
+  if (!empty($result)) {
+    $duration = $result->time_end - $result->time_start;
+    _opigno_tincan_api_set_result(
+      $statement, $score['numeric_score'], $score['possible_score'], $passed, null, $duration
+    );
+  }
+
+  _opigno_tincan_api_send_questions_results($quiz, $rid);
+
+  $statement->setContext($context);
+
+
+  //////
+  // Sending statement
+  _opigno_tincan_api_send_statement($statement);
+}
+
+
+function _opigno_tincan_api_send_questions_results($quiz, $rid)
+{
+  /**
+   * - When user answered a question
+   * Actor: user
+   * Verb: xAPI/answered
+   * Object: xAPI/question
+   * Result: Get this question result
+   * Context: Quiz
+   */
+
+  // Take all the questions
+  $questions = _quiz_get_answers($quiz, $rid);
+
+  // Create the statement for each questions
+  foreach ($questions as $question) {
+    //////
+    // Statement creation
+    $statement = _opigno_tincan_api_statement_base_creation(
+      OpignoTincanApiTinCanVerbs::$answered,
+      OpignoTincanApiTinCanActivityDefinitionTypes::$question,
+      $question
+    );
+
+    if ($statement === false) {
+      return;
+    }
+
+
+    //////
+    // Context creation
+    $context = new TinCan\Context();
+
+    // Get course nids
+    $courses_nids = array();
+    if (!empty($quiz->og_group_ref[LANGUAGE_NONE]) && !empty($quiz->og_group_ref[LANGUAGE_NONE][0]['target_id']))
+      foreach ($quiz->og_group_ref[LANGUAGE_NONE] as $raw_course_nid)
+        $courses_nids[] = $raw_course_nid['target_id'];
+
+    _opigno_tincan_api_context_set_language($context, $question->language);
+    _opigno_tincan_api_context_set_parents($context, _opigno_tincan_api_get_parent_quiz($question));
+    _opigno_tincan_api_context_set_grouping($context, $courses_nids, OpignoTincanApiTinCanActivityDefinitionTypes::$course);
+
+    $statement->setContext($context);
+
+
+    //////
+    // Alter statement by question type
+    // Hook will looks like hook_tincan_question_statement_cloze_alter()
+    $hook = 'tincan_question_statement_' . $question->type;
+    drupal_alter($hook, $statement, $question, $question->answers);
+
+
+    //////
+    // Sending statement
+    _opigno_tincan_api_send_statement($statement);
+  }
+}
+
+
+function _opigno_tincan_api_get_result_data($rid)
+{
+  return db_query('SELECT *
+    FROM {quiz_node_results} qnrs
+    WHERE qnrs.result_id = :rid', array(':rid' => $rid))->fetch();
+}
+
+
+function _opigno_tincan_api_get_parent_quiz($question)
+{
+  return db_query('
+    SELECT DISTINCT parent_nid
+    FROM {quiz_node_relationship} qnr
+    WHERE child_nid = :nid
+    AND child_vid = :vid', array(
+    ':nid' => $question->nid,
+    ':vid' => $question->vid
+  ))->fetchCol();
+}

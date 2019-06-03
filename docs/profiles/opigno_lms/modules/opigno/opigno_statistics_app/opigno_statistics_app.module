@@ -1,0 +1,665 @@
+<?php
+
+//TODO not forget og_context does not set the group context in session for anonymous user, create patch for that
+
+require_once(__DIR__ . '/includes/opigno_statistics_app.queries.inc');
+
+define('OPIGNO_STATISTICS_APP_STATUS_NOT_PASSED', 0);
+define('OPIGNO_STATISTICS_APP_STATUS_PASSED', 1);
+define('OPIGNO_STATISTICS_APP_STATUS_NOT_REQUIRED', 0);
+define('OPIGNO_STATISTICS_APP_STATUS_REQUIRED', 1);
+
+/**
+ * @file
+ * Module file. Defines module hooks.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function opigno_statistics_app_menu() {
+  //Main menu item
+  $items['admin/opigno-statistics'] = array(
+    'title' => t('Statistics'),
+    'description' => t('Displays Opigno statistics'),
+    'page callback' => 'opigno_statistics_app_statistics_page',
+    'page arguments' => array(1),
+    'access callback' => 'user_access',
+    'access arguments' => array('view opigno global statistics'),
+    'type' => MENU_CALLBACK
+  );
+
+  $items['admin/opigno-statistics/opigno-statistics-app'] = array(
+    'title' => t('Opigno Statistics'),
+    'description' => t('Displays Opigno statistics'),
+    'page callback' => 'drupal_goto',
+    'page arguments' => array('admin/opigno/statistics/opigno-statistics-app/dashboard'),
+    'access callback' => 'user_access',
+    'access arguments' => array('view opigno global statistics'),
+  );
+
+  $items['admin/opigno-statistics/opigno-statistics-app/dashboard'] = array(
+    'title' => t('Dashboard'),
+    'description' => t('Dashboard'),
+    'page callback' => 'opigno_statistics_app_dashboard_page',
+    'access callback' => 'user_access',
+    'access arguments' => array('view opigno global statistics'),
+    'file' => 'includes/dashboard/dashboard.pages.inc',
+  );
+
+  $items['node/%/opigno-statistics'] = array(
+      'title' => t('Group statistics'),
+      'title callback' => 'opigno_statistics_app_group_statistics_page_title_callback',
+      'title arguments' => array(1),
+      'description' => t('Displays the group statistics'),
+      'page callback' => 'opigno_statistics_app_group_statistics_page',
+      'page arguments' => array(1),
+      'access callback' => 'og_user_access',
+      'access arguments' => array('node', 1, 'view group statistics'),
+      'file' => 'includes/group/group.pages.inc',
+      'type' => MENU_NORMAL_ITEM
+  );
+
+  $items['opigno-statistics/%/group'] = array(
+      'access callback' => 'user_access',
+      'access arguments' => array('view opigno global statistics'),
+  ) + $items['node/%/opigno-statistics'];
+
+  $items['user/%user/opigno-statistics'] = array(
+    'title' => t('Statistics'),
+    'title arguments' => array(1),
+    'description' => t('Displays the user statistics'),
+    'page callback' => 'opigno_statistics_app_user_statistics_page',
+    'access callback' => 'opigno_statistics_app_user_statistics_page_access_callback',
+    'access arguments' => array(1,'user_page' => false),
+    'page arguments' => array(1,'user_page' => false),
+    'file' => 'includes/user/user.pages.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function opigno_statistics_app_menu_alter(&$items) {
+  $items['user/%user']['access callback'] = 'opigno_statistics_app_user_statistics_page_access_callback';
+  $items['user/%user']['access arguments']['user_page'] = TRUE;
+  $items['user/%user']['page arguments']['user_page'] = TRUE;
+  $items['user/%user']['page callback'] = $items['user/%user/opigno-statistics']['page callback'];
+  $items['user/%user']['file'] = 'includes/user/user.pages.inc';
+  $items['user/%user']['module'] = 'opigno_statistics_app';
+}
+
+/*
+ * Implements access callback for menu entry user/%user/opigno-statistics
+ * @see opigno_statistics_app_menu
+ */
+function opigno_statistics_app_user_statistics_page_access_callback($account, $user_page) {
+  global $user;
+  $is_own_page = $user->uid == $account->uid;
+  $access = user_access('view all opigno user statistics') || ($is_own_page && user_access('view own opigno user statistics'));
+  if ($user_page) {
+    $access = user_view_access($account);
+  }
+  return $access;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function opigno_statistics_app_theme($existing, $type, $theme, $path) {
+  //Root page
+  $items['opigno_statistics_app_statistics'] =  array('template' => 'templates/statistics');
+
+  //Dashboard
+  $items['opigno_statistics_app_dashboard'] =  array('template' => 'templates/dashboard/dashboard');
+
+  $items['opigno_statistics_app_dashboard_widget_general_statistics'] = array('template' => 'templates/dashboard/widgets/general_statistics/general_statistics');
+
+  $items['opigno_statistics_app_dashboard_widget_total_number_of_page_view'] =  array('template' => 'templates/dashboard/widgets/total_number_of_page_view/total_number_of_page_view');
+
+  $items['opigno_statistics_app_dashboard_widget_top_10_courses'] =  array('template' => 'templates/dashboard/widgets/top_10_courses/top_10_courses');
+  $items['opigno_statistics_app_dashboard_widget_top_10_courses_list'] =  array('template' => 'templates/dashboard/widgets/top_10_courses/partials/list');
+  $items['opigno_statistics_app_dashboard_widget_top_10_courses_list_item'] =  array('template' => 'templates/dashboard/widgets/top_10_courses/partials/list_item');
+
+  $items['opigno_statistics_app_dashboard_widget_top_10_classes'] =  array('template' => 'templates/dashboard/widgets/top_10_classes/top_10_classes');
+  $items['opigno_statistics_app_dashboard_widget_top_10_classes_list'] =  array('template' => 'templates/dashboard/widgets/top_10_classes/partials/list');
+  $items['opigno_statistics_app_dashboard_widget_top_10_classes_list_item'] =  array('template' => 'templates/dashboard/widgets/top_10_classes/partials/list_item');
+
+  $items['opigno_statistics_app_dashboard_widget_active_users_last_week'] = array('template' => 'templates/dashboard/widgets/active_users_last_week/active_users_last_week');
+
+  $items['opigno_statistics_app_dashboard_widget_most_active_users'] = array('template' => 'templates/dashboard/widgets/most_active_users/most_active_users');
+  $items['opigno_statistics_app_dashboard_widget_most_active_users_list'] = array('template' => 'templates/dashboard/widgets/most_active_users/partials/list');
+  $items['opigno_statistics_app_dashboard_widget_most_active_users_list_item'] = array('template' => 'templates/dashboard/widgets/most_active_users/partials/list_item');
+
+  //Class
+  $items['opigno_statistics_app_class'] =  array('template' => 'templates/group/class/class');
+  $items['opigno_statistics_app_class_widget_general_statistics'] = array('template' => 'templates/group/class/widgets/general_statistics/general_statistics');
+  $items['opigno_statistics_app_class_widget_total_number_of_page_view'] = array('template' => 'templates/group/class/widgets/total_number_of_page_view/total_number_of_page_view');
+  $items['opigno_statistics_app_class_widget_number_of_interactions'] = array('template' => 'templates/group/class/widgets/number_of_interactions/number_of_interactions');
+  $items['opigno_statistics_app_class_widget_students_results'] = array('template' => 'templates/group/class/widgets/students_results/students_results');
+  $items['opigno_statistics_app_class_widget_students_results_list'] = array('template' => 'templates/group/class/widgets/students_results/partials/list');
+  $items['opigno_statistics_app_class_widget_students_results_list_item'] = array('template' => 'templates/group/class/widgets/students_results/partials/list_item');
+
+  //Course
+  $items['opigno_statistics_app_course'] =  array('template' => 'templates/group/course/course');
+
+  $items['opigno_statistics_app_course_widget_general_statistics'] = array('template' => 'templates/group/course/widgets/general_statistics/general_statistics');
+
+  $items['opigno_statistics_app_course_widget_total_number_of_page_view'] = array('template' => 'templates/group/course/widgets/total_number_of_page_view/total_number_of_page_view');
+
+  $items['opigno_statistics_app_course_widget_number_of_interactions'] = array('template' => 'templates/group/course/widgets/number_of_interactions/number_of_interactions');
+
+  $items['opigno_statistics_app_course_widget_course_lessons'] = array('template' => 'templates/group/course/widgets/course_lessons/course_lessons');
+  $items['opigno_statistics_app_course_widget_course_lessons_list'] = array('template' => 'templates/group/course/widgets/course_lessons/partials/list');
+  $items['opigno_statistics_app_course_widget_course_lessons_list_item'] = array('template' => 'templates/group/course/widgets/course_lessons/partials/list_item');
+
+  $items['opigno_statistics_app_course_widget_students_results'] = array('template' => 'templates/group/course/widgets/students_results/students_results');
+  $items['opigno_statistics_app_course_widget_students_results_list'] = array('template' => 'templates/group/course/widgets/students_results/partials/list');
+  $items['opigno_statistics_app_course_widget_students_results_list_item'] = array('template' => 'templates/group/course/widgets/students_results/partials/list_item');
+
+  //User
+  $items['opigno_statistics_app_user'] = array('template' => 'templates/user/user');
+  $items['opigno_statistics_app_user_widget_general_informations'] = array('template' => 'templates/user/widgets/general_informations/general_informations');
+
+  $items['opigno_statistics_app_user_widget_badges_earned'] = array('template' => 'templates/user/widgets/badges_earned/badges_earned');
+  $items['opigno_statistics_app_user_widget_badges_earned_list'] = array('template' => 'templates/user/widgets/badges_earned/partials/list');
+  $items['opigno_statistics_app_user_widget_badges_earned_list_item'] = array('template' => 'templates/user/widgets/badges_earned/partials/list_item');
+
+  $items['opigno_statistics_app_user_widget_total_number_of_page_view'] = array('template' => 'templates/user/widgets/total_number_of_page_view/total_number_of_page_view');
+
+  $items['opigno_statistics_app_user_widget_courses_results'] = array('template' => 'templates/user/widgets/courses_results/courses_results');
+  $items['opigno_statistics_app_user_widget_courses_results_list'] = array('template' => 'templates/user/widgets/courses_results/partials/list');
+  $items['opigno_statistics_app_user_widget_courses_results_list_item'] = array('template' => 'templates/user/widgets/courses_results/partials/list_item');
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function opigno_statistics_app_permission() {
+  return array(
+    'view opigno global statistics' => array(
+      'title' => t('View Opigno global statistics'),
+      'description' => t('Allows the user to view Opigno global statistics'),
+    ),
+    'view own courses classes statistics' => array(
+      'title' => t('View own courses and classes statistics'),
+      'description' => t('Allows the user to access the statistics for his courses and classes'),
+    ),
+    'view own opigno user statistics' => array(
+      'title' => t('View Opigno user statistics'),
+      'description' => t('Allows the user to view their own Opigno statistics'),
+    ),
+    'view all opigno user statistics' => array(
+      'title' => t('View all Opigno user statistics'),
+      'description' => t('Allows the user to view all user Opigno statistics'),
+    )
+  );
+}
+
+/**
+ * Implements hook_og_permission().
+ */
+function opigno_statistics_app_og_permission() {
+  return array(
+    'view group statistics' => array(
+      'title' => t('View group statistics'),
+      'description' => t('Allows the user to view group statistics'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_cron().
+ */
+function opigno_statistics_app_cron() {
+  module_load_include('inc', 'opigno_statistics_app', 'includes/opigno_statistics_app.login_history');
+  _opigno_statistics_app_login_history_clear_old_records();
+}
+
+/**
+ * Implements hook_user_login().
+ */
+function opigno_statistics_app_user_login(&$edit, $account) {
+  module_load_include('inc', 'opigno_statistics_app', 'includes/opigno_statistics_app.login_history');
+  _opigno_statistics_app_login_history_insert($account);
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function opigno_statistics_app_node_view($node, $view_mode) {
+}
+
+// Could not have duplicated code, but duplicated code is better than loosing performance in this case (its done on every single page)
+/**
+ * Implements hook_exit().
+ *
+ * Gathers statistics for group content viewed
+ */
+function opigno_statistics_app_exit() {
+  global $user;
+  drupal_bootstrap(DRUPAL_BOOTSTRAP_VARIABLES);
+  if ($user->uid) {
+    $month_year = mktime(0, 0, 0, date('m', time()), 1);
+    if (arg(0) == 'node' && is_numeric(arg(1))) {
+
+      //Handle group context statistics
+      if ((isset($_SESSION['og_context']['gid'])) && ((opigno_statistics_app_node_id_og_group_content($_SESSION['og_context']['gid'], arg(1))) || ($_SESSION['og_context']['gid'] == arg(1)))) {
+        db_merge('opigno_statistics_user_group')
+          ->key(array('nid' => arg(1), 'group_nid' => $_SESSION['og_context']['gid'], 'uid' => $user->uid))
+          ->fields(array())
+          ->expression('page_views', 'page_views + 1')
+          ->execute();
+        opigno_statistics_group_insert($_SESSION['og_context']['gid'], arg(1), $month_year);
+      }
+
+    }
+
+    //User statistics
+    $month_year = mktime(0, 0, 0, date('m', time()), 1);
+    db_merge('opigno_statistics_user')
+      ->key(array('uid' => $user->uid, 'month_year' => $month_year))
+      ->fields(array())
+      ->expression('page_views', 'page_views + 1')
+      ->execute();
+
+    //User classes statistics
+    $query = db_query('SELECT gid FROM {og_membership} ogm
+              INNER JOIN {node} n
+              ON ogm.gid = n.nid
+              WHERE etid = :uid
+              AND entity_type = :user_type
+              AND n.type = :node_type' , array(
+      ':uid' => $user->uid,
+      ':user_type' => 'user',
+      ':node_type' => 'class'
+    ));
+
+    foreach($query as $record){
+      db_update('opigno_statistics_group')
+        ->expression('page_views', 'page_views + 1')
+        ->condition('group_nid', $record->gid)
+        ->condition('month_year', $month_year)
+        ->execute();
+    }
+  }
+  else {
+    drupal_bootstrap(DRUPAL_BOOTSTRAP_SESSION);
+    include_once DRUPAL_ROOT . '/includes/unicode.inc';
+    $month_year = mktime(0, 0, 0, date('m', time()), 1);
+    if ((isset($_SESSION['og_context']['gid'])) && ((opigno_statistics_app_node_id_og_group_content($_SESSION['og_context']['gid'], arg(1))) || ($_SESSION['og_context']['gid'] == arg(1)))) {
+      opigno_statistics_group_insert($_SESSION['og_context']['gid'], arg(1), $month_year);
+    }
+  }
+}
+
+
+// These queries are done because this has to be done as efficiently possible (they are done on all page loads)
+/**
+ * @param $gid (the group id)
+ * @param $nid (the node id)
+ * @return mixed (The id of the membership (int), or FALSE if the node is not part of the group the current has in context)
+ */
+function opigno_statistics_app_node_id_og_group_content($gid, $nid) {
+  $og_membership = db_query('SELECT id FROM {og_membership} WHERE etid = :etid and gid = :gid and state = :state and entity_type = :entity_type', array(
+    ':etid' => $nid,
+    ':gid' => $gid,
+    ':state' => 1,
+    ':entity_type' => "node"
+  ))->fetchField();
+  return $og_membership;
+}
+
+function opigno_statistics_group_insert($gid, $nid, $month_year) {
+  $group_category = array();
+  if (db_table_exists("field_data_opigno_course_categories")) {
+    $group_categories = db_query('SELECT opigno_course_categories_tid FROM {field_data_opigno_course_categories} WHERE entity_id = :entity_id and entity_type = :entity_type and deleted = :deleted ', array(
+      ':entity_id' => $gid,
+      ':entity_type' => "node",
+      ':deleted' => 0,
+    ));
+    foreach ($group_categories as $group_category_term) {
+      $group_category_name = db_query('SELECT name FROM {taxonomy_term_data} WHERE tid = :tid', array(
+        ':tid' => $group_category_term->opigno_course_categories_tid,
+      ))->fetchField();
+      if ($group_category_name) {
+        $group_category[$group_category_term->opigno_course_categories_tid] = $group_category_name;
+      }
+    }
+  }
+  if (empty($group_category)) {
+    $group_category[0] = "NONE";
+  }
+
+  $group_node = node_load($gid);
+  if ($group_node != false)
+    foreach ($group_category as $category_id => $category_name) {
+      db_merge('opigno_statistics_group')
+        ->key(array('group_nid' => $gid, 'month_year' => $month_year, 'category_taxonomy_term_id' => $category_id))
+        ->fields(array(
+          'category_taxonomy_term_name' => $category_name,
+          'group_title' => $group_node->title,
+          'group_type' => $group_node->type
+        ))
+        ->expression('page_views', 'page_views + :inc', array(':inc' => 1))
+        ->execute();
+    }
+
+  global $user;
+  $user_with_og = user_load($user->uid);
+
+  //Increment page_view for all classes of user
+  foreach($user_with_og->og_user_node[LANGUAGE_NONE] as $og_user_node) {
+    $target_node = node_load($og_user_node['target_id']);
+    if($target_node != false && $target_node->type === 'class'){
+      db_merge('opigno_statistics_group')
+        ->key(array('group_nid' => $target_node->nid, 'month_year' => $month_year, 'category_taxonomy_term_id' => 0))
+        ->fields(array(
+          'category_taxonomy_term_name' => 'NONE',
+          'group_title' => $target_node->title,
+          'group_type' => $target_node->type
+        ))
+        ->expression('page_views', 'page_views + :inc', array(':inc' => 1))
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Implements hook_quiz_finished().
+ */
+function opigno_statistics_app_quiz_finished($quiz, $score, $session_data) {
+  if($score['is_evaluated']) opigno_statistics_app_handle_new_quiz_score($quiz, $score);
+}
+
+/**
+ * Implements hook_quiz_scored().
+ */
+function opigno_statistics_app_quiz_scored($quiz, $score, $rid) {
+  opigno_statistics_app_handle_new_quiz_score($quiz, $score);
+}
+
+/**
+ * Handle new quiz score coming from quiz hooks
+ *
+ * @param $quiz
+ * @param $score
+ */
+function opigno_statistics_app_handle_new_quiz_score($quiz, $score) {
+  global $user;
+
+  $user_groups = og_get_groups_by_user($user, 'node');
+
+  foreach($quiz->og_group_ref[LANGUAGE_NONE] as $course_nid_array)
+  {
+    $course_nid = $course_nid_array['target_id'];
+    // If the user is not part of the course, don't save his stats for this course
+    if (!in_array($course_nid, $user_groups))
+      break;
+    $course = node_load($course_nid);
+    $passed = ($score['percentage_score'] >= $quiz->pass_rate)? OPIGNO_STATISTICS_APP_STATUS_PASSED : OPIGNO_STATISTICS_APP_STATUS_NOT_PASSED;
+    $required = opigno_statistics_app_is_lesson_required_in_course($quiz, $course);
+    opigno_statistics_app_insert_user_course_if_not_exist($course_nid);
+    $user_course_id = opigno_statistics_app_query_user_course_find_id_by_uid_and_course_nid($user->uid, $course_nid);
+    opigno_statistics_app_query_user_course_details_insert_or_update_best_score($user_course_id, $quiz->type, $quiz->nid, $quiz->title, $score['percentage_score'], $passed, $required);
+    opigno_statistics_app_query_user_course_update_score($user_course_id);
+  }
+}
+
+/**
+ * Create user course if it doesn't exist
+ *
+ * @param $course_id
+ */
+function opigno_statistics_app_insert_user_course_if_not_exist($course_nid){
+  global $user;
+  $user_course_id = opigno_statistics_app_query_user_course_find_id_by_uid_and_course_nid($user->uid, $course_nid);
+  if(!$user_course_id) $user_course_id = opigno_statistics_app_query_user_course_insert($user->uid, $user->name, $course_nid, OPIGNO_STATISTICS_APP_STATUS_NOT_PASSED, node_load($course_nid)->title, 0);
+}
+
+/**
+ * Implements hook_opigno_course_passed().
+ *
+ * @param int $course_nid
+ * @param int $uid
+ */
+function opigno_statistics_app_opigno_course_passed($course_nid, $uid) {
+  $user_course_id = opigno_statistics_app_query_user_course_find_id_by_uid_and_course_nid($uid, $course_nid);
+  if($user_course_id) {
+    $old_status = db_query('SELECT status FROM {opigno_statistics_user_course} WHERE opigno_statistics_user_course_pk = :opigno_statistics_user_course_pk', array(
+      ':opigno_statistics_user_course_pk' => $user_course_id
+    ))->fetchCol();
+
+    if($old_status[0] == OPIGNO_STATISTICS_APP_STATUS_NOT_PASSED) {
+      //First time passed the course
+      $month_year = mktime(0, 0, 0, date('m', time()), 1);
+      db_update('opigno_statistics_group')
+        ->expression('number_passed', 'number_passed + 1')
+        ->condition('group_nid', $course_nid)
+        ->condition('month_year', $month_year)
+        ->execute();
+    }
+
+    db_update('opigno_statistics_user_course')
+      ->fields(array('status' => OPIGNO_STATISTICS_APP_STATUS_PASSED))
+      ->condition('opigno_statistics_user_course_pk', $user_course_id)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ *
+ * Update node related data on statistic tables
+ *
+ * @param StdClass $node
+ */
+function opigno_statistics_app_node_update($node) {
+  if($node->type === 'course'){
+    $course = $node;
+    db_update('opigno_statistics_user_course')
+      ->fields(array(
+        'course_name' => $course->title
+      ))
+      ->condition('course_nid', $course->nid)
+      ->execute();
+
+    //Update required on lessons on the course
+    $course_lessons=opigno_quiz_app_course_lessons($course->nid);
+    if (!empty($course_lessons)) {
+      $course_lesson_ids = array_keys($course_lessons[$course->nid]);
+      foreach ($course_lesson_ids as $course_lesson_id) {
+        $course_lesson = node_load($course_lesson_id);
+        $required = opigno_statistics_app_is_lesson_required_in_course($course_lesson, $course);
+        db_update('opigno_statistics_user_course_details')
+          ->fields(array(
+            'required' => $required
+          ))
+          ->where('opigno_statistics_user_course_fk IN (SELECT opigno_statistics_user_course_pk FROM {opigno_statistics_user_course} WHERE course_nid = :course_nid)', array(
+            ':course_nid' => $course->nid
+          ), 'IN')
+          ->condition('entity_id', $course_lesson_id)
+          ->execute();
+      }
+    }
+  }
+  elseif(opigno_statistics_app_node_is_a_lesson($node))
+  {
+    db_update('opigno_statistics_user_course_details')
+      ->fields(array(
+        'entity_name' => $node->title
+      ))
+      ->condition('entity_id', $node->nid)
+      ->condition('type', $node->type)
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_user_update().
+ *
+ * Update opigno_statistics_user_course.username
+ *
+ * @param array $edit         The array of form values submitted by the user.
+ * @param StdClass $account   The user object on which the operation is performed.
+ * @param StdClass $category  The active category of user information being edited.
+ */
+function opigno_statistics_app_user_update(&$edit, $account, $category) {
+  db_update('opigno_statistics_user_course')
+    ->fields(array(
+      'username' => $account->name
+    ))
+    ->condition('uid', $account->uid)
+    ->execute();
+}
+
+/**
+ * Check if node is a lesson
+ *
+ * @param StdClass $node
+ *
+ * @return boolean
+ */
+function opigno_statistics_app_node_is_a_lesson($node) {
+  if (!isset($node->og_group_ref[LANGUAGE_NONE]))
+    return false;
+
+  $current=current($node->og_group_ref[LANGUAGE_NONE]);
+  return isset($current['target_id']) && node_load($current['target_id'])->type === 'course';
+}
+
+/**
+ * Check if lesson is required in course
+ *
+ * @param StdClass $quiz
+ * @param StdClass $course
+ *
+ * @return int (OPIGNO_STATISTICS_APP_STATUS_NOT_REQUIRED or OPIGNO_STATISTICS_APP_STATUS_REQUIRED)
+ */
+function opigno_statistics_app_is_lesson_required_in_course($lesson, $course) {
+  if(empty($course->course_required_quiz_ref)) return OPIGNO_STATISTICS_APP_STATUS_NOT_REQUIRED; //No required quiz for course
+  return (in_array($lesson->nid, array_map('opigno_statistics_app_map_target_ids', $course->course_required_quiz_ref[LANGUAGE_NONE])))? OPIGNO_STATISTICS_APP_STATUS_REQUIRED : OPIGNO_STATISTICS_APP_STATUS_NOT_REQUIRED;
+}
+
+/**
+ * Map all target ids
+ *
+ * @param array $item
+ *
+ * @return array
+ */
+function opigno_statistics_app_map_target_ids($item) {
+  return $item['target_id'];
+}
+
+/**
+ * Retrieve module installation year
+ *
+ * @return int
+ */
+function opigno_statistics_app_install_year(){
+  $module_install_date = variable_get('opigno_statistics_module_installation_date_timestamp');
+
+  $date = new DateTime();
+  $date->setTimestamp($module_install_date);
+
+  return (int)$date->format('Y');
+}
+
+/**
+ * Retrieve current year
+ *
+ * @return int
+ */
+function opigno_statistics_app_current_year() {
+  return (int)date("Y");
+}
+
+/**
+ * Render statistic root page
+ */
+function opigno_statistics_app_statistics_page() {
+//  if(!module_exists('opigno_learning_locker_stats_app')) {
+//    drupal_goto('admin/opigno-statistics/opigno-statistics-app/dashboard');
+//    exit();
+//  } else {
+    return theme('opigno_statistics_app_statistics');
+//  }
+}
+
+function _opigno_statistics_app_get_courses_classes_block() {
+  $blocks = array();
+
+  if (user_access('view own courses classes statistics')) {
+    global $user;
+
+    // Get all the courses and classes where the user can access statistics
+    // First, need to get all the nodes where the user is member.
+    $member_nodes = db_select('og_membership', 'om')
+      ->fields('om', array('gid'))
+      ->condition('entity_type', 'user')
+      ->condition('group_type', 'node')
+      ->condition('etid', $user->uid)
+      ->execute()->fetchAllAssoc('gid');
+    $nids = array_keys($member_nodes);
+    $member_nodes = node_load_multiple($nids);
+
+    // Now, for each nodes, check the type and the access permissions before
+    //   adding the node to the options list.
+    $options_html = '';
+    foreach ($member_nodes as $node) {
+      // If the node is not a course or a class, leave the loop.
+      if (!in_array($node->type, array('course', 'class'))) {
+        continue;
+      }
+
+      // If the user has no access to the stats page, leave the loop.
+      if (!og_user_access('node', $node->nid, 'view group statistics')) {
+        continue;
+      }
+
+      $options_html .= '<option value="'.$node->nid.'">'.$node->title.'</option>';
+    }
+
+    // Creates the block.
+    $blocks['50001 Select list -1'] = array(
+      'position' => '',
+      'title' => t('Courses / Classes'),
+      'content' => '
+        <dl class="admin-list">
+          <dt>'.t('Select your course or class').'</dt>
+          <dd><select id="course_stats">
+            <option value="" selected="selected">-'.t('None').'-</option>'
+            .$options_html.
+          '</select></dd>
+        </dl>',
+      'show' => true,
+    );
+
+    // Add the javascript that redirect when the user change the selection.
+    drupal_add_js('
+      jQuery(function() {
+        var $ = jQuery;
+        $("#course_stats").bind("change", function() {
+          var node_id = $(this).find(":selected").val();
+          if (node_id) {
+            window.location = Drupal.settings.basePath +"node/"+ node_id +"/opigno-statistics";
+          }
+          return false;
+        });
+      });
+    ', 'inline');
+  }
+
+  return $blocks;
+}
+
+
+// TODO: Check if the node still exists before showing the url to the statistics page. If the node doesn't exists, redirect to an url like "old/node/%id/stats".
+// TODO: Do the same for the users
+
+// TODO: Check the class incrementation (seem to increment event on the global stats page)
+// TODO: Maybe let the total page views on the year (leave the accesslog table). Can resolve problems

@@ -1,0 +1,25 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_interaction_types');
+
+function opigno_tincan_api_opigno_scorm_statements_tincan_question_statement_opigno_scorm_quiz_question_alter(TinCan\Statement &$statement, $question, $answers) {
+  /******
+   ** Set the result
+   ***/
+
+  _opigno_tincan_api_set_result(
+    $statement,
+    $answers[0]['score'],
+    $question->max_score,
+    $answers[0]['is_correct']
+  );
+
+
+  /******
+   ** Set the interaction type properties
+   ***/
+
+  $objectDefinition = _opigno_tincan_api_get_object_definition($statement);
+  $objectDefinition->setInteractionType(OpignoTincanApiTinCanInteractionTypes::$other);
+}

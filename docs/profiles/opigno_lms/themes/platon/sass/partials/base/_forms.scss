@@ -1,0 +1,441 @@
+/**
+ * @file
+ * Defines form styles and generic mixins.
+ */
+@mixin action-element {
+  border: 0;
+  background: $leaf-green;
+  color: white;
+  display: inline-block;
+  padding: 0.25em 1em;
+  background-position: 0.5em center;
+  background-repeat: no-repeat;
+}
+
+.action-element {
+  @include action-element;
+}
+@mixin action-select-element {
+   @include action-element;
+}
+@mixin action-add-element {
+   @include action-element;
+  padding-left: 2em;
+  background-image: url('../img/add-element-icon.png');
+}
+
+.action-add-element {
+  @include action-add-element;
+  height: 24px;
+}
+@mixin action-sort-element {
+   @include action-element;
+  padding-left: 2em;
+  background-image: url('../img/sort-element-icon.png');
+}
+
+.action-sort-element {
+  @include action-sort-element;
+  height: 24px;
+}
+@mixin action-start-element {
+   @include action-element;
+  padding-left: 2em;
+  background-image: url('../img/start-element-icon.png');
+}
+
+.action-start-element {
+  @include action-start-element;
+  height: 65px;
+}
+@mixin action-next-element {
+   @include action-element;
+  padding-right: 3em;
+  background-image: url('../img/next-element-icon.png');
+  background-position: right center;
+}
+
+.action-next-element {
+  height: 24px;
+  @include action-next-element;
+}
+@mixin action-prev-element {
+   @include action-element;
+  padding-left: 3em;
+  background-image: url('../img/prev-element-icon.png');
+}
+
+.action-prev-element {
+  height: 24px;
+  @include action-prev-element;
+}
+
+.action-question-element {
+  border: 0;
+  background: #5aa449;
+  color: white;
+  display: inline-block;
+  padding: 0.25em 1em;
+  background-position: 0.5em center;
+  background-repeat: no-repeat;
+  padding-left: 2em;
+  background-image: url('../img/question-element-icon.png');
+  /* Ajout d'une taille pour l'élement afin de centrer la border */
+  height: 24px;
+}
+/* Nouvelle classe pour les resultats */
+.action-results-element {
+  border: 0;
+  background: #5aa449;
+  color: white;
+  display: inline-block;
+  padding: 0.25em 1em;
+  background-position: 0.5em center;
+  background-repeat: no-repeat;
+  padding-left: 2em;
+  background-image: url('../img/results-element-icon.png');
+  /* Ajout d'une taille pour l'élement afin de centrer la border */
+  height: 27px;
+}
+/* Nouvelle classe edition des leçons */
+.action-edit-element {
+  border: 0;
+  background: #5aa449;
+  color: white;
+  display: inline-block;
+  padding: 0.25em 1em;
+  background-position: 0.5em center;
+  background-repeat: no-repeat;
+  padding-left: 2em;
+  background-image: url('../img/edit-element-icon.png');
+  /* Ajout d'une taille pour l'élement afin de centrer la border */
+  height: 24px;
+}
+@mixin danger-element {
+   @include action-element;
+  background: $blood-red;
+}
+
+.danger-element {
+  @include danger-element;
+}
+
+.form-submit,
+button,
+input[type="button"],
+input[type="submit"] {
+  @include action-element;
+}
+
+button + a,
+button + button,
+button + input[type="button"],
+button + input[type="submit"],
+input[type="button"] + a,
+input[type="button"] + button,
+input[type="button"] + input[type="button"],
+input[type="button"] + input[type="submit"],
+input[type="submit"] + a,
+input[type="submit"] + button,
+input[type="submit"] + input[type="button"],
+input[type="submit"] + input[type="submit"] {
+  margin-left: 0.5em;
+}
+
+#edit-delete {
+  @include danger-element;
+}
+
+.form-item-title {
+  text-align: center;
+  padding-bottom: 80px;
+  border-bottom: 3px solid;
+
+  label {
+    display: none;
+  }
+
+  input {
+    border: none;
+    background-color: rgba(0, 0, 0, 0);
+    border-bottom: 1px solid $medium-gray;
+    font-size: 30px;
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    width: 500px;
+  }
+}
+
+label {
+  margin-bottom: 0.5em;
+  // text-align: center;
+  // text-transform: uppercase;
+  span.field-edit-link {
+    display: block;
+    text-transform: none;
+    font-size: 0.875em;
+  }
+}
+
+input[type="password"],
+input[type="text"],
+select,
+textarea {
+  border: 2px solid $medium-gray;
+  outline: 0;
+  padding: 0.5em;
+  max-width: 95%;
+}
+
+input.form-autocomplete {
+  padding: 0; // @todo - replace throbber.gif
+}
+
+fieldset {
+  input[type="password"],
+  input[type="text"],
+  select,
+  textarea {
+    border-color: darken($medium-gray, 10%);
+  }
+}
+
+html.js fieldset.collapsed {
+  height: auto;
+}
+
+.form-item {
+  .description {
+    color: $dark-gray;
+  }
+}
+
+form .field-multiple-table th.field-label {
+  padding-left: 1em;
+}
+// In editor context.
+
+body.cke_show_borders {
+  background: $light-gray;
+  padding: 1em;
+}
+
+.cke_skin_kama {
+  border: 0;
+}
+
+.fieldset-wrapper {
+  padding: 1em;
+
+  > .form-item:first-child {
+    margin-top: 0;
+  }
+}
+
+fieldset.collapsible {
+  legend {
+    a {
+      color: white;
+      text-decoration: none;
+    }
+  }
+}
+
+html.js fieldset.collapsible .fieldset-legend {
+  background: url('../img/fieldset-collapsible-icon.png') left bottom no-repeat;
+  padding-left: 1.3em;
+}
+
+html.js fieldset.collapsed .fieldset-legend {
+  background-position: left top;
+}
+
+.filter-wrapper {
+  .form-type-select {
+    margin-top: 0;
+  }
+
+  .filter-guidelines {
+    display: none;
+  }
+}
+
+#opigno-quiz-app-filter-by-status-form {
+  overflow: hidden;
+
+  .form-item {
+    float: left;
+    margin-right: 1em;
+  }
+
+  .form-submit {
+    float: left;
+    margin-top: 3.1em;
+  }
+}
+
+.draggable {
+  input {
+    padding: 2px !important;
+  }
+}
+
+#platon-css-editor {
+  min-height: 400px;
+}
+
+.color-form {
+  max-width: none;
+
+  #palette {
+    clear: both;
+
+    .form-item {
+      min-height: 130px;
+      float: left;
+      width: 250px;
+
+      .hook,
+      .lock {
+        display: none;
+      }
+    }
+
+    .description {
+      clear: both;
+    }
+  }
+}
+
+.exposed-filters .form-item {
+  margin: 0 0 0.5em;
+}
+
+#autocomplete {
+  background-color: #fff;
+}
+
+.description {
+  font-size: 0.85em;
+  color: #58585a;
+}
+
+.form-type-multiselect {
+  max-width: 100%;
+  margin: 40px auto 50px;
+  padding: 0;
+  @include box-sizing(border-box);
+  @media screen and (max-width: 900px) {
+    padding: 35px 0 0;
+  }
+
+  &:after {
+    content: '';
+    display: table;
+    clear: both;
+  }
+
+  .form-type-select,
+  .multiselect_available {
+    width: 40%;
+    margin: 0;
+    box-sizing: border-box;
+    @media screen and (max-width: 800px) {
+      width: 100%;
+    }
+
+    select {
+      width: 100%;
+      max-width: 100%;
+      height: 215px;
+      padding: 3px !important;
+      box-sizing: border-box !important;
+    }
+  }
+
+  .form-type-select {
+    float: left;
+    margin: 0 !important;
+  }
+
+  .multiselect_btns {
+    float: left;
+    width: 20%;
+    margin: 0;
+    @media screen and (max-width: 800px) {
+       @include rotate(90deg);
+      left: 50%;
+      position: relative;
+      margin-left: -40px;
+      top: -15px;
+    }
+
+    li.multiselect_add,
+    li.multiselect_remove {
+      width: 38px;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+
+      a {
+        background-color: #747471;
+        background-repeat: no-repeat;
+        background-position: center;
+        height: 38px;
+        border-radius: 19px;
+        transition: background-color 0.15s;
+      }
+    }
+
+    li.multiselect_add a {
+      background-image: url('../img/add.png');
+
+      &:hover {
+        background-color: #35b459;
+      }
+    }
+
+    li.multiselect_remove a {
+      background-image: url('../img/remove.png');
+      background-position-x: 44%;
+
+      &:hover {
+        background-color: #ee162d;
+      }
+    }
+  }
+
+  .multiselect_labels {
+    width: 100%;
+    .label_unselected {
+      float: left;
+      width: 50%;
+      text-align: left;
+      padding-left: 0;
+      text-transform: uppercase;
+      color: #000;
+      padding-bottom: 5px;
+      @include box-sizing(border-box);
+    }
+
+    .label_selected {
+      float: left;
+      width: 50%;
+      padding-left: 10%;
+      margin-right: 0;
+      position: relative;
+      text-transform: uppercase;
+      color: #000;
+      padding-bottom: 5px;
+      text-align: left;
+      @include box-sizing(border-box);
+      @media screen and (max-width: 800px) {
+        left: 20px;
+        position: absolute;
+        margin-top: 305px;
+        padding-left: 0;
+      }
+    }
+  }
+}

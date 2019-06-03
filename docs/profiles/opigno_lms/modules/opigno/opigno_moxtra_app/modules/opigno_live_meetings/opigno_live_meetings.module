@@ -1,0 +1,310 @@
+<?php
+
+module_load_include('inc', 'opigno_live_meetings', 'includes/opigno_live_meetings.api');
+module_load_include('inc', 'opigno_live_meetings', 'includes/opigno_live_meetings.form');
+module_load_include('inc', 'opigno_live_meetings', 'includes/opigno_live_meetings.score_form');
+module_load_include('inc', 'opigno_live_meetings', 'includes/opigno_live_meetings.db_queries');
+module_load_include('inc', 'opigno_live_meetings', 'includes/opigno_live_meetings.admin_form');
+
+
+function opigno_live_meetings_menu() {
+  return array(
+    'node/%node/live-meeting-score' => array(
+      'title' => 'Score live meeting',
+      'description' => 'Score live meeting',
+      'page callback' => 'opigno_live_meetings_score_page',
+      'page arguments' => array(1),
+      'access callback' => "opigno_live_meetings_access_score",
+      'access arguments' => array(1),
+      'type' => MENU_LOCAL_TASK
+    )
+  );
+}
+
+/**
+ * Access callback:
+ *
+ * @param  stdClass $node
+ * @param  stdClass $account = NULL
+ *
+ * @return bool
+ */
+function opigno_live_meetings_access_score($node, $account = NULL) {
+  if (!($node->type=="live_meeting"))
+  {
+    return false;
+  }
+  if (!isset($account)) {
+    global $user;
+    $account = clone $user;
+  }
+  if (module_exists('og_context')) {
+    $group = og_context('node');
+    if (!empty($group)) {
+      return og_user_access('node', $group['gid'], 'register live_meeting attendance', $account);
+    }
+    else {
+      return user_access('register live_meeting attendance', $account);
+    }
+  }
+}
+
+function opigno_live_meetings_node_access($node, $op, $account)
+{
+  // If the meet has a class restriction, check if the user is in the class. If he's not, deny the access
+  //   By doing that, the node will be hidden to the list (opigno_live_meetings_views_post_execute() do that)
+  if ($node->type == 'live_meeting' && !empty($node->field_class_ref))
+  {
+    $is_member = false;
+    foreach($node->field_class_ref[LANGUAGE_NONE] as $class_target)
+      if(og_is_member('node', $class_target['target_id']))
+        $is_member = true;
+
+    if ($is_member == false)
+      return NODE_ACCESS_DENY;
+  }
+
+  return NODE_ACCESS_IGNORE;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function opigno_live_meetings_permission() {
+  return array(
+    'register live_meeting attendance' => array(
+      'title' => t('Register live meeting attendance'),
+      'description' => t('Register the live meetings users attendances'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_og_permission().
+ */
+function opigno_live_meetings_og_permission() {
+  return array(
+    'start live_meeting' => array(
+      'title' => t('Start live meetings'),
+      'description' => t('Allows the user to start live meetings'),
+    ),
+    'attend live_meeting' => array(
+      'title' => t('Attend live meetings'),
+      'description' => t('Allows the user to attend live meetings'),
+    ),
+    'register live_meeting attendance' => array(
+      'title' => t('Register live meetings attendance'),
+      'description' => t('Register the live meetings users attendances'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_opigno_tool().
+ * @see opigno_hook_info()
+ */
+function opigno_live_meetings_opigno_tool($node = NULL) {
+  return array(
+    'live_meetings' => array(
+      'name' => t("Live Meetings (Web conferencing)"),
+      'path' => isset($node) ? 'node/'. $node->nid .'/live-meetings' : '',
+      'description' => t("Allows users to create and attend live meetings")
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function opigno_live_meetings_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  if ($root_path == 'node/%/live-meetings') {
+    $gid = arg(1);
+    if (og_user_access('node', $gid, 'create live_meeting content')) {
+      $item = menu_get_item('node/add/live-meeting');
+      $item['title'] = t("Create meeting");
+      $item['options']['query']['og_group_ref'] = $item['localized_options']['query']['og_group_ref'] = $gid;
+      $item['options']['attributes']['class'][] = $item['localized_options']['attributes']['class'][] = 'opigno-live-meeting-add';
+      $data['actions']['output'][] = array(
+        '#theme' => 'menu_local_action',
+        '#link' => $item,
+      );
+    }
+  }
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function opigno_live_meetings_views_api() {
+  return array(
+    'api' => '3.0',
+  );
+}
+
+/**
+ * Theme callback: display course quizes and results.
+ */
+function theme_opigno_live_meetings_course_lessons($gid) {
+  global $user;
+
+  $elements = array(
+    'header' => array(t('Live meeting'), t('Start datetime'), t('Status')),
+    'attributes' => array()
+  );
+
+  $live_meetings_nids = opigno_live_meetings_db_get_live_meetings_nids_from_group($gid);
+  foreach ($live_meetings_nids as $live_meeting_nid)
+  {
+    $live_meeting = node_load($live_meeting_nid);
+    $live_meeting_info = opigno_live_meetings_api_get_live_meeting_info($live_meeting->uid, $live_meeting->session_key[LANGUAGE_NONE][0]['value']);
+
+    $defaultValues = opigno_live_meetings_score_get_default_value(
+      $live_meeting->nid,
+      array($user),
+      opigno_live_meetings_get_participants_uid_from_meeting_info($live_meeting_info)
+    );
+
+    $participantDefaultStatusLiteral = ($defaultValues[$user->uid]['status'] == 1 ? t('Attended') : t('Absent'));
+
+    if ($live_meeting_info->data->status == 'SESSION_SCHEDULED') {
+      $startTime = format_date(strtotime($live_meeting_info->data->scheduled_starts), 'short');
+
+      $literalStatus = t('Scheduled');
+      $participantStatus = '-';
+    }
+    else {
+      $startTime = format_date(strtotime($live_meeting_info->data->starts), 'short');
+
+      if ($live_meeting_info->data->status == 'SESSION_STARTED')
+      {
+        $literalStatus = t('Started');
+        $participantStatus = '-';
+      }
+      else {
+        $literalStatus = t('Ended');
+        $participantStatus = $participantDefaultStatusLiteral;
+      }
+    }
+
+    $title = l($live_meeting_info->data->topic .' ('. $literalStatus .')', 'node/'. $live_meeting->nid);
+
+    $elements['rows'][] = array($title, $startTime, $participantStatus);
+  }
+
+  if (count($live_meetings_nids) > 0)
+    return theme("table",$elements);
+  else
+    return '';
+}
+
+function opigno_live_meetings_preprocess_page(&$vars) {
+  $group = og_context('node');
+
+  if (!empty($group['gid'])) {
+    $node = node_load($group['gid']);
+    if ($node->type == "course") {
+      $vars['group_state']['course'][$node->nid]['live-meetings'] = theme_opigno_live_meetings_course_lessons($group['gid']);
+    }
+    if ($node->type == "class") {
+      if (isset($node->opigno_class_courses[LANGUAGE_NONE])) {
+        foreach ($node->opigno_class_courses[LANGUAGE_NONE] as $cindex => $course) {
+          $vars['group_state']['course'][$course['target_id']]['live-meetings'] = theme_opigno_live_meetings_course_lessons($course['target_id']);
+        }
+      }
+    }
+  }
+}
+
+function opigno_live_meetings_views_query_alter(&$view, views_plugin_query_default &$query) {
+  if (($view->name == 'opigno_quizzes') && ($view->current_display == 'entityreference_1')) {
+    foreach ($query->where as &$conditions) {
+      if (is_array($conditions)) {
+        foreach ($conditions['conditions'] as &$condition) {
+          if (is_string($condition['field'])&&($condition['field']=='node.type')) {
+            $condition['value'][count($condition['value'])] = 'live_meeting';
+          }
+        }
+      }
+    }
+  }
+}
+
+function opigno_live_meetings_views_post_execute(&$view)
+{
+  if ($view->name == 'live_meetings')
+  {
+    foreach($view->result as $result_index => $result) {
+      if (!node_access('view', node_load($result->nid)))
+        unset($view->result[$result_index]);
+    }
+  }
+}
+
+function opigno_live_meetings_get_all_required_meetings($node) {
+  $quizzes = &drupal_static(__FUNCTION__);
+
+  if (!isset($quizzes[$node->nid])) {
+    $quizzes[$node->nid] = array();
+    if (isset($node->course_required_quiz_ref[LANGUAGE_NONE])) {
+      foreach ($node->course_required_quiz_ref[LANGUAGE_NONE] as $item) {
+        $nody=node_load($item['target_id']);
+        if ($nody->type=="live_meeting")
+          $quizzes[$node->nid][$item['target_id']] = node_load($item['target_id']);
+      }
+    }
+  }
+
+  return $quizzes[$node->nid];
+}
+
+/**
+ * Implements hook_theme().
+ */
+function opigno_live_meetings_theme($existing, $type, $theme, $path) {
+  return array(
+    'node__live_meeting' => array(
+      'render element' => 'content',
+      'base hook' => 'node',
+      'template' => 'node__live_meeting',
+      'path' => drupal_get_path('module', 'opigno_live_meetings') .'/templates',
+    ),
+    'live_meeting_full_ended' => array(
+      'template' => 'templates/live_meeting_full_ended'
+    ),
+    'live_meeting_full_scheduled' => array(
+      'template' => 'templates/live_meeting_full_scheduled'
+    ),
+    'live_meeting_full_started' => array(
+      'template' => 'templates/live_meeting_full_started'
+    ),
+    'live_meeting_teaser' => array(
+      'template' => 'templates/live_meeting_teaser'
+    )
+  );
+}
+
+function opigno_live_meetings_form_alter(&$form, &$form_state, $form_id)
+{
+  // https://www.drupal.org/node/1788748 bug}
+  if ($form_id=="live_meeting_node_form")
+  {
+    if ((isset($form['field_class_ref']))&&(!isset($form['field_class_ref'][LANGUAGE_NONE]['add_more'])))
+    {
+      $form['field_class_ref'][LANGUAGE_NONE]['#title']=t('Class restriction');
+      $form['field_class_ref'][LANGUAGE_NONE][0]['default']['#title']=t('Your groups');
+      $form['field_class_ref'][LANGUAGE_NONE][0]['default']['#description']=t('Associate this content with groups you belong to.');
+      $form['field_class_ref'][LANGUAGE_NONE][0]['admin']['#title']=t('Other groups');
+      $form['field_class_ref'][LANGUAGE_NONE][0]['admin'][0]['target_id']['#title']=t('Other groups');
+      $form['field_class_ref'][LANGUAGE_NONE][0]['admin']['#description']=t('As groups administrator, associate this content with groups you do <em>not</em> belong to.');
+      $form['field_class_ref'][LANGUAGE_NONE][0]['admin'][0]['target_id']['#description']=t('As groups administrator, associate this content with groups you do <em>not</em> belong to.');
+    }
+  }
+}
+
+// TODO: The host should not be able to edit the meeting while it's started (and maybe after it's finished too..)
+// TODO: Restrict the access to the node view page (full). The anonymous should not be able to see the content.
+// TODO: Implement the video recording
+// TODO: In order to accelerate the course page render, store the finished meetings in DB or cache.
+// TODO: If the client uninstall the module after having a user assigned to create meetings, when he reinstall the module, the count of users assigned is still one
+
+// TODO: Only the creator of the meeting can start the meeting. Implement correctly this (an other user has right to start but will fall in an error)

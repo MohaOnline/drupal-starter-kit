@@ -1,0 +1,28 @@
+<?php
+
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.statements_func');
+module_load_include('inc', 'opigno_tincan_api', 'includes/opigno_tincan_api.tincan_interaction_types');
+
+function opigno_tincan_api_quiz_drag_drop_statements_tincan_question_statement_quiz_drag_drop_alter(TinCan\Statement &$statement, $question, $answers)
+{
+  /******
+   ** Set the result
+   ***/
+
+  _opigno_tincan_api_set_result(
+    $statement,
+    $answers[0]['score'],
+    $question->max_score,
+    $question->correct
+  );
+
+
+  /******
+   ** Set the interaction type properties
+   ***/
+
+  $objectDefinition = _opigno_tincan_api_get_object_definition($statement);
+  $objectDefinition->setInteractionType(OpignoTincanApiTinCanInteractionTypes::$other);
+
+  // TODO: Improve this by adding the user answers, the correctResponsePattern and InteractionType = matching
+}

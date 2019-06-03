@@ -1,0 +1,378 @@
+/**
+ * @file
+ * Contains styles for the Drupal live meeting workspace module.
+ * New extends are in collaborative.scss
+ */
+
+body.page-node-live-meetings,
+body.page-node-add-live-meeting,
+body.node-type-live-meeting {
+  .action-links {
+    @extend %new-action-links;
+  }
+  button#start-meeting {
+    @extend %start-action-links;
+  }
+  .form-actions {
+    text-align: left;
+    margin: 0 auto 50px;
+    .form-submit {
+      @extend %form-submit-save;
+    }
+    #edit-delete {
+      @extend %form-submit-delete;
+    }
+  }
+  ul.action-links {
+    text-align: left;
+    margin-bottom: 35px;
+  }
+  table {
+    thead {
+      tr {
+        th {
+          border: 0;
+          background-color: transparent;
+          color: $dark-gray;
+          text-transform: uppercase;
+          font-weight: 600;
+        }
+      }
+    }
+    tbody {
+      tr {
+        background-color: transparent;
+        border: 0;
+        td {
+          background-color: transparent;
+          border: 0;
+          color: $dark-gray;
+          a {
+            text-decoration: none;
+          }
+        }
+      }
+    }
+  }
+  #live-meeting-node-form {
+    text-align: center;
+    .form-item-title {
+      text-align: center;
+      padding-bottom: 80px;
+      border-bottom: 3px solid;
+      label {
+        display: none;
+      }
+      input {
+        border: none;
+        background-color: rgba(0, 0, 0, 0);
+        border-bottom: 1px solid $medium-gray;
+        font-size: 30px;
+        font-weight: 600;
+        text-transform: uppercase;
+        text-align: center;
+        width: 500px;
+      }
+    }
+    .form-item-field-classes-courses {
+      @extend %new-select;
+    }
+    .field-type-datetime {
+      fieldset {
+        background: transparent;
+        legend {
+          background: transparent;
+          color: inherit;
+          font-weight: 600;
+          text-transform: uppercase;
+          margin-bottom: 85px;
+          span {
+            padding-bottom: 10px;
+            border-bottom: 1px solid $medium-gray;
+          }
+        }
+      }
+      .fieldset-wrapper {
+        background-color: #f6f6f6;
+        // text-align: left;
+        .date-float {
+          float: none;
+          .form-item {
+            padding-right: 0;
+          }
+        }
+        .container-inline-date {
+          width: auto;
+        }
+      }
+      .container-inline-date .date-padding {
+        padding: 0;
+        .form-item {}
+      }
+    }
+    .date-clear,
+    div#repeat-settings-fieldset {
+      text-align: center;
+    }
+    #repeat-settings-fieldset,
+    .date-clear {
+      label {
+        padding-bottom: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 30px;
+      }
+    }
+    .form-checkbox + label {
+      font-weight: normal!important;
+      text-transform: none!important;
+      margin-bottom: 0!important;
+    }
+    #repeat-settings-fieldset {
+      .date-clear {
+        border-bottom: 0;
+        margin-top: 35px;
+      }
+    }
+    .date-repeat-input {
+      float: none;
+    }
+    .weekly .form-type-checkboxes .form-type-checkbox {
+      float: none;
+    }
+    .field-name-field-class-ref {
+      fieldset {
+        background: transparent;
+        legend {
+          background: transparent;
+          color: inherit;
+          font-weight: 600;
+          text-transform: uppercase;
+          padding-top: 30px;
+          span {
+            padding-bottom: 10px;
+            border-bottom: 1px solid $medium-gray;
+          }
+        }
+      }
+    }
+    .form-item-field-class-ref-und-0-admin-0-target-id {
+      label {
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+    }
+    .form-text {
+      border: 0;
+      border-bottom: 1px solid $medium-gray;
+    }
+    .form-type-textfield .description {
+      margin-top: 10px;
+    }
+    div.form-type-select[class*="form-item-field-class-ref"] {
+      @extend %new-select;
+    }
+  }
+  .view-live-meetings,
+  #live-meeting-teaser,
+  #block-system-main > .content {
+    table {
+      thead {
+        tr {
+          th {
+            background-color: transparent;
+            color: #414142;
+            font-size: 30px;
+            text-transform: uppercase;
+            font-weight: 600;
+            padding-left: 0;
+            border-bottom: 4px solid #33abde;
+          }
+        }
+      }
+      tbody {
+        tr {
+          td {
+            background-color: transparent;
+            vertical-align: top;
+            padding-left: 0;
+            padding-bottom: 12px;
+            position: relative;
+            &.take-button-cell {
+              border-bottom: 0;
+              width: 250px;
+              @media screen and (max-width: $mobile-breakpoint) {
+                width: auto;
+              }
+            }
+            &:nth-child(2)::before,
+            &:nth-child(1)::before {
+              content: '';
+              display: block;
+              height: 1px;
+              background-color: $medium-gray;
+              margin: 0 -20px 12px 0;
+              @media screen and (max-width: $mobile-breakpoint) {
+                margin: 0 0 12px 0;
+              }
+            }
+            &.take-button-cell {
+              padding-left: 20px;
+            }
+          }
+          &:first-child {
+            td {
+              padding-top: 46px;
+            }
+          }
+          &:last-child {
+            td {
+              &:nth-child(2),
+              &:nth-child(1), {
+                padding-bottom: 12px;
+                &::after {
+                  content: '';
+                  display: block;
+                  height: 1px;
+                  background-color: $medium-gray;
+                  margin: -20px 0 0;
+                  position: absolute;
+                  bottom: 0;
+                  width: 100%;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  #live-meeting-container {
+    > div {
+      box-shadow: none!important;
+      margin-top: 0!important;
+    }
+  }
+  .take-button-cell {
+    a.read-more {
+      background: transparent;
+      color: #231f20;
+      border-top: 1px solid $medium-gray;
+      border-bottom: 1px solid $medium-gray;
+      padding: 12px 1em;
+      background-image: url(../img/sort-element-icon2.png);
+      background-position: .8em center;
+      background-repeat: no-repeat;
+      padding-left: 3em;
+      padding-right: 1em;
+      margin-bottom: 7px;
+      width: 250px;
+      transition: background-color .15s, border-color .15s, color .15s;
+      &:hover {
+        background-color: #24abdd;
+        border-color: #24abdd;
+        color: white!important;
+        background-image: url(../img/sort-element-icon2-active.png);
+      }
+      @media screen and (max-width: $mobile-breakpoint) {
+        width: 50px;
+        font-size: 0;
+        background-position: center;
+      }
+    }
+    a.edit {
+      background: transparent;
+      color: #231f20;
+      border-top: 1px solid $medium-gray;
+      border-bottom: 1px solid $medium-gray;
+      padding: 12px 1em;
+      background-position: 1em center;
+      background-repeat: no-repeat;
+      background-image: url(../img/edit-element-icon2.png);
+      padding-left: 3em;
+      padding-right: .9em;
+      margin-bottom: 7px;
+      width: 250px;
+      transition: background-color .15s, border-color .15s, color .15s;
+      &:hover {
+        background-color: #8cc657;
+        border-color: #8cc657;
+        color: white!important;
+        background-image: url(../img/edit-element-icon2-active.png);
+      }
+      @media screen and (max-width: $mobile-breakpoint) {
+        width: 50px;
+        font-size: 0;
+        background-position: center;
+      }
+    }
+  }
+  a.results {
+    background: transparent;
+    color: #231f20;
+    border-top: 1px solid $medium-gray;
+    border-bottom: 1px solid $medium-gray;
+    padding: 12px 1em;
+    background-position: 1em center;
+    background-repeat: no-repeat;
+    background-image: url(../img/results-element-icon2.png);
+    padding-left: 3em;
+    padding-right: .9em;
+    margin-bottom: 7px;
+    width: 250px;
+    transition: background-color .15s, border-color .15s, color .15s;
+    &:hover {
+      background-color: #8cc657;
+      border-color: #8cc657;
+      color: white!important;
+      background-image: url(../img/results-element-icon2-active.png);
+    }
+    @media screen and (max-width: $mobile-breakpoint) {
+      width: 50px;
+      font-size: 0;
+      background-position: center;
+    }
+  }
+  form#opigno-live-meetings-score-form {
+    fieldset {
+      background: transparent;
+      color: inherit;
+      legend {
+        background: transparent;
+        color: #414142;
+        font-size: 30px;
+        text-transform: uppercase;
+        font-weight: 600;
+        padding-left: 0;
+        border-bottom: 4px solid #33abde;
+      }
+    }
+    input[id*="edit-score"] {
+      border: 0;
+      border-bottom: 1px solid #ececeb;
+    }
+    input[type="submit"] {
+      @extend %form-submit-save;
+    }
+    table {
+      thead {
+        tr {
+          th {
+
+          }
+        }
+      }
+      tbody {
+        tr {
+          border-top: 1px solid #ececeb;
+          td {
+
+          }
+          &:last-child {
+            border-bottom: 1px solid #ececeb;
+          }
+        }
+      }
+    }
+  }
+}
