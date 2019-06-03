@@ -1,0 +1,203 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ * Responed to url handling for lr_sso_menu module.
+ *
+ * @return array An array of menu items
+ */
+
+module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.functions');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Utility/Functions');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/LoginRadiusException');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/IHttpClient');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/DefaultHttpClient');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/CustomerRegistration/Authentication/UserAPI');
+
+
+use \LoginRadiusSDK\Utility\Functions;
+use \LoginRadiusSDK\LoginRadiusException;
+use \LoginRadiusSDK\Clients\IHttpClient;
+use \LoginRadiusSDK\Clients\DefaultHttpClient;
+use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+
+module_load_include('php', 'lr_ciam', 'customhttpclient');
+global $apiClient_class;
+$apiClient_class = 'CustomHttpClient';
+
+function lr_sso_menu() {
+  $file_path = drupal_get_path('module', 'lr_sso');
+  $items['admin/config/people/ciam/sso'] = array(
+    'title' => 'SSO',
+    'description' => 'Single Sign On',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('lr_sso_settings_form'),
+    'access arguments' => array('administer sso'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 7,
+    'file path' => $file_path,
+    'file' => 'includes/lr_sso.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Responed to Define user permissions.
+ *
+ * @return array An array of permission settings
+ */
+function lr_sso_permission() {
+  return array(
+    'administer sso' => array(
+      'title' => t('Administer SSO settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Add required sso js files to page.
+ *
+ * @param $vars
+ * @param $hook
+ */
+function lr_sso_preprocess_page(&$vars, $hook) {
+  global $user;
+  $site_name = variable_get('lr_ciam_site_name');
+  if (variable_get('lr_sso_enable') == 1 && !empty($site_name)) {
+    if (drupal_is_front_page()) {
+      $GLOBALS['conf']['cache'] = FALSE;
+    }
+  
+    if (variable_get('lr_user_logout') == 1) {
+      variable_del('lr_user_logout');
+      drupal_add_js('
+        jQuery(document).ready(function () {   
+           var options= {};
+            options.onSuccess = function() {
+            // On Success
+            };
+           var logoutInterval = setInterval(function () {
+             if(typeof LRObject !== "undefined")
+             {
+              clearInterval(logoutInterval);
+              LRObject.init("logout", options);
+        }
+        }, 1);
+    });', array('type' => 'inline', 'scope' => 'header', 'weight' => 5));
+    }
+    else {
+      if (!user_is_logged_in()) {
+
+          $destination = drupal_get_destination();
+          $callback = $destination['destination'];
+          $query[] = array('destination' => $callback);
+          drupal_add_js('
+        jQuery(document).ready(function () {   
+          if( jQuery(".interfacecontainerdiv").length )     {    
+            var options= {};
+            options.onSuccess = function(response) {
+            var form = document.createElement("form");
+            form.action = "' . urldecode(lr_ciam_get_callback_url()) . '";
+            form.method = "POST";
+
+            var hidden = document.createElement("input");
+            hidden.type = "hidden";
+            hidden.name = "token";
+            hidden.value = response;
+
+            form.appendChild(hidden);
+            document.body.appendChild(form);
+            form.submit();
+          };
+            var ssoInterval = setInterval(function () {
+             if(typeof LRObject !== "undefined")
+             {
+              clearInterval(ssoInterval);
+            LRObject.init("ssoLogin", options);
+            }
+            }, 1);
+        }});
+        jQuery("#lr-loading").hide();
+        ', array('type' => 'inline', 'scope' => 'header', 'weight' => 5));
+
+      }
+      if (user_is_logged_in()) {
+        $logout = urldecode(url('user/logout'));
+        $logout = (strpos($logout, '?') == TRUE ? ($logout . '&notlogged=1') : ($logout . '?notlogged=1'));
+        if (!(is_array($user->roles) && in_array('administrator', $user->roles))) {
+         drupal_add_js('
+    jQuery(document).ready(function () {
+        var check_options= {};
+        check_options.onError = function() {
+        window.location = "'.$logout.'";
+        };
+        var ssologoutInterval = setInterval(function () {
+             if(typeof LRObject !== "undefined")
+             {
+              clearInterval(ssologoutInterval);
+        LRObject.init("ssoNotLoginThenLogout", check_options);
+        }
+        }, 1);
+        });', array('type' => 'inline', 'scope' => 'header', 'weight' => 5));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * @return array An associative array of theme hook information
+ */
+function lr_sso_theme() {
+  $path = drupal_get_path('module', 'lr_sso') . '/theme';
+  $theme = array(
+    'sso_login' => array(
+      'template' => 'sso_login',
+      'render element' => 'form',
+      'path' => $path,
+    ),
+
+  );
+  return $theme;
+}
+
+/**
+ * When user logout the set variable.
+ *
+ * @param $account
+ */
+function lr_sso_user_logout($account) {
+  $site_name = variable_get('lr_ciam_site_name');
+  if (variable_get('lr_sso_enable') == 1 && !isset($_REQUEST['notlogged']) && !empty($site_name)) {
+    variable_set('lr_user_logout', 1);
+  }
+}
+
+/**
+ * Check valid token retrieved to perform sso.
+ *
+ * @param $token
+ * @return string
+ */
+function lr_sso_check_lrtoken_valid($token) {
+  if (!empty($token)) {  
+
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    $userObject = new UserAPI($apiKey, $secret, array('output_format' => 'json'));
+    try {
+        $userprofile = $userObject->getProfile($token);        
+    }
+    catch (LoginRadiusException $e) {
+         variable_set('lr_user_logout', 1);
+    }    
+//    if (!empty($userprofile)) {
+//      return $token;
+//    }    
+  }
+}

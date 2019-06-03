@@ -1,0 +1,2193 @@
+<?php
+
+module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.functions');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Utility/Functions');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/LoginRadiusException');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/IHttpClient');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Clients/DefaultHttpClient');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Utility/SOTT');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/CustomerRegistration/Social/SocialLoginAPI');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/CustomerRegistration/Authentication/UserAPI');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/CustomerRegistration/Management/AccountAPI');
+module_load_include('php', 'lr_ciam', 'LoginRadiusSDK/Advance/CloudAPI');
+
+use \LoginRadiusSDK\Utility\Functions;
+use \LoginRadiusSDK\LoginRadiusException;
+use \LoginRadiusSDK\Clients\IHttpClient;
+use \LoginRadiusSDK\Clients\DefaultHttpClient;
+use \LoginRadiusSDK\Utility\SOTT;
+use \LoginRadiusSDK\CustomerRegistration\Social\SocialLoginAPI;
+use \LoginRadiusSDK\CustomerRegistration\Authentication\UserAPI;
+use \LoginRadiusSDK\CustomerRegistration\Management\AccountAPI;
+use \LoginRadiusSDK\Advance\CloudAPI;
+
+module_load_include('php', 'lr_ciam', 'customhttpclient');
+global $apiClient_class;
+$apiClient_class = 'CustomHttpClient';
+
+/**
+ * Implements hook_menu().
+ *
+ * Responed to url handling for lr_ciam module.
+ *
+ * @return array An array of menu items
+ */
+function lr_ciam_menu() {   
+    $items['user/%user/password'] = array(
+      'title' => 'Password',
+      'page callback' => 'lr_ciam_change_password',
+      'page arguments' => array(1),
+      'access callback' => 'user_edit_access',
+      'access arguments' => array('user'),
+      'access callback' => 'change_password_custom_access',
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 18,
+      'position' => 'right',
+    );
+    $items['user/%user/lr_ciam/delete'] = array(
+      'title' => 'Delete Ciam',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('lr_ciam_user_delete_form', 1),
+      'access callback' => 'user_edit_access',
+      'access arguments' => array(1),
+      'file' => 'includes/lr_ciam.functions.inc',
+    );
+    $items['admin/config/people/ciam'] = array(
+      'title' => 'CIAM Loginradius',
+      'description' => 'Configure setting for LoginRadius User Registration and Management',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('lr_ciam_admin_settings'),
+      'access arguments' => array('administer ciam'),
+      'weight' => -4,
+      'file' => 'includes/lr_ciam.admin.inc',
+    );
+    $items['admin/config/people/ciam/settings'] = array(
+      'title' => 'Activation',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('lr_ciam_admin_settings'),
+      'access arguments' => array('administer ciam'),
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -10,
+      'file' => 'includes/lr_ciam.admin.inc',
+    );
+    $items['admin/config/people/ciam/advancesettings'] = array(
+      'title' => 'Ciam Settings',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('lr_ciam_lr_advance_settings'),
+      'access arguments' => array('administer ciam'),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 1,
+      'file' => 'includes/lr_ciam.admin.inc',
+    );
+    $items['lr_ciam/token_handler'] = array(
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('lr_ciam_user_register_validate'),
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK,
+    );
+    return $items;
+}
+
+
+/**
+ * Set session from user profile data.
+ */
+function lr_ciam_add_loginradius_userdata($userprofile, $token) {
+    if (!user_is_logged_in()) {
+        $_SESSION['emailVerified'] = false;
+        if (isset($userprofile->EmailVerified)) {
+            $_SESSION['emailVerified'] = $userprofile->EmailVerified;
+        }
+        if (isset($userprofile->Provider)) {
+            $_SESSION['provider'] = $userprofile->Provider;
+        }
+    }
+}
+
+/**
+ * Only authenticated user can access change password page.
+ */
+function change_password_custom_access() {
+    $access_granted = in_array('administrator', $GLOBALS['user']->roles);
+    if ($access_granted) {
+        return FALSE;
+    }
+        if ($_SESSION['provider'] == 'Email' || $_SESSION['emailVerified']) {
+            return TRUE;
+        }
+        else {
+            return FALSE;
+        }
+    
+    return TRUE;
+}
+
+/**
+ * Update User Registration Custom Fields.
+ *
+ * @return array
+ */
+function getUpdatedCiamCustomFields() {
+    $params = array();
+    $field_map = variable_get('lr_ciam_user_fields', array());
+    $instances = field_info_instances('user', 'user');
+
+    foreach ($instances as $field_name => $instance) {
+        if (isset($_POST[$field_name])) {
+            if (isset($_POST[$field_name][LANGUAGE_NONE][0]['value'])) {
+                if (isset($field_map[$field_name])) {
+                    $temp_parts = explode('|', $field_map[$field_name]);
+                    $value = $_POST[$field_name][LANGUAGE_NONE][0]['value'];
+                    if (isset($temp_parts[0]) && $temp_parts[0] == 'ciam' && isset($temp_parts[1])) {
+                        $params['CustomFields'][$temp_parts[1]] = $value;
+                    }
+                    else {
+                        $key = $field_map[$field_name];
+                        $params[$key] = $value;
+                    }
+                }
+            }
+        }
+    }
+    return $params;
+}
+
+/**
+ * Get profile 2 fields when user do update
+ * @param $profile
+ */
+function lr_ciam_profile2_presave($profile) {
+    $profile_field_map = variable_get('lr_ciam_profile_fields', array());
+    $params = array();
+    foreach (field_info_instances('profile2') as $field_name => $instances) {
+        foreach ($instances as $instance => $array) {
+            if (isset($_POST['profile_' . $field_name][$array['field_name']])) {
+                if (isset($_POST['profile_' . $field_name][$array['field_name']][LANGUAGE_NONE][0]['value'])) {
+                    $profile_temp_parts = explode('|', $profile_field_map[$field_name][$array['field_name']]);
+                    $value = $_POST['profile_' . $field_name][$array['field_name']][LANGUAGE_NONE][0]['value'];
+                    if (isset($profile_temp_parts[0]) && $profile_temp_parts[0] == 'ciam' && isset($profile_temp_parts[1])) {
+                        $params['CustomFields'][$profile_temp_parts[1]] = $value;
+                    }
+                    else {
+                        $key = $profile_field_map[$field_name][$array['field_name']];
+                        $params[$key] = $value;
+                    }
+                }
+            }
+        }
+    }
+    if (count($params) > 0) {
+        $apiKey = trim(variable_get('lr_ciam_apikey'));
+        $secret = trim(variable_get('lr_ciam_apisecret'));
+
+        $accountObj = new AccountAPI($apiKey, $secret, array('output_format' => 'json'));
+        $provider_user_id = lr_ciam_get_ciam_uid($profile->uid);
+        try {
+            $accountObj->update($provider_user_id, $params);
+        }
+        catch (LoginRadiusException $e) {
+              watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+    }
+}
+
+/**
+ * Implements hook_mail_alter().
+ */
+function lr_ciam_mail_alter(&$message) {
+    if ($message['key'] == 'register_admin_created') {
+        $message['send'] = FALSE;
+    }
+}
+
+
+/**
+ * Implements hook_user_presave() A user account is about to be created or updated.
+ * @param array $edit The array of form values submitted by the user
+ * @param object $account The user object on which the operation is being performed
+ * @param string $category The active category of user information being edited
+ */
+function lr_ciam_user_presave(&$edit, $account, $category)
+{
+    if (isset($_POST['op']) && $_POST['op'] == 'Create new account') {
+     
+     if (user_access('administer site configuration')) {
+      $apiKey = trim(variable_get('lr_ciam_apikey'));
+      $secret = trim(variable_get('lr_ciam_apisecret'));
+      $accountObject = new AccountAPI ($apiKey, $secret, array('output_format' => 'json'));
+      $params = array(
+                    'FirstName' => $edit['name'],
+                    'UserName' => $edit['name'],
+                    'LastName' => '',
+                    'Email' => array(
+                         0 => 
+                          array (
+                        'Type' => 'Primary',
+                        'Value' => $edit['mail']
+                    ),
+                   ),
+                    'Password' => $_POST['pass']['pass1'],
+                    'EmailVerified' => true
+                );
+       $params = array_merge($params, getUpdatedCiamCustomFields());
+                $params = json_encode($params);
+       try{
+       $response = $accountObject->create($params);
+       $_SESSION['response'] = $response;
+      }
+      catch (LoginRadiusException $e){
+         $msg = isset($e->getErrorResponse()->description) ? $e->getErrorResponse()->description : 'error';
+         drupal_set_message(t($msg), 'error');
+         
+        drupal_goto('admin/people/create');
+        exit();  
+       }
+       if(isset($response) && $response != '') {
+     
+           if(isset($edit['notify']) && $edit['notify']) {
+              
+            try {
+                $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
+                $homeDomain = $_SERVER['HTTP_HOST'].$GLOBALS['base_path'];
+                $domainName = $protocol.$homeDomain;
+                $userObject = new UserAPI($apiKey, $secret, array('output_format' => 'json'));
+                $result = $userObject->forgotPassword(trim($edit['mail']), $domainName.'user');       
+        }
+        catch (LoginRadiusException $e) {         
+         $msg = isset($e->getErrorResponse()->description) ? $e->getErrorResponse()->description : 'error';
+         drupal_set_message(t($msg), 'error');
+         
+        drupal_goto('admin/people/create');
+        exit();  
+       }
+       }       
+    }
+      
+     }
+    }else if (isset($_POST['op']) && $_POST['op'] == 'Save') {
+      if(isset($_POST['form_id']) && $_POST['form_id'] == 'user_profile_form'){
+        $ciam_uid = lr_ciam_get_ciam_uid($account->uid);
+        $ciam_email = lr_ciam_get_ciam_email($account->uid);   
+        $ciam_uname = lr_ciam_get_ciam_username($account->uid);   
+        $apiKey=  trim(variable_get('lr_ciam_apikey'));   
+        $apiSecret = trim(variable_get('lr_ciam_apisecret'));
+        $params = array();
+        
+        if($ciam_email != $edit['mail']) {
+       $addEmail = array(
+           'Email' => array(
+               0 => 
+                          array (
+                        'Type' => 'Primary',
+                        'Value' => $edit['mail']
+                    ),
+           ) 
+        ); 
+       $addEmail = json_encode($addEmail);
+    try {   
+      $accountObj = new AccountAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+      $result = $accountObj->updateOrInsertEmailByUid($ciam_uid, $addEmail); 
+      try {
+        $removeEmail = array(
+        'Email'=> $ciam_email 
+        );   
+        $removeEmail = json_encode($removeEmail);
+            $response = $accountObj->removeEmailByUidAndEmail($ciam_uid, $removeEmail);    
+               
+            } catch (LoginRadiusException $e) {              
+                    $msg = isset($e->getErrorResponse()->Description) ? $e->getErrorResponse()->Description : 'Password is not set';
+                    drupal_set_message(t($msg), 'error');
+            }
+    }
+      catch (LoginRadiusException $e) { 
+          if (isset($e->getErrorResponse()->Description) && $e->getErrorResponse()->Description) {      
+              drupal_set_message(t($e->getErrorResponse()->Description), 'error');
+        drupal_goto('user/' . $account->uid . '/edit');
+        exit();           
+           }            
+        }    
+     }
+    if($ciam_uname != $edit['name']) { 
+          
+        $params = array(      
+        'UserName' => $_POST['name'],      
+        'FirstName' => $_POST['name']
+      );
+    }
+        $params = array_merge($params, getUpdatedCiamCustomFields());
+    if (count($params) > 0) { 
+        $params = json_encode($params);
+       try{
+        $accObject = new AccountAPI ($apiKey, $apiSecret, array('output_format' => 'json'));   
+       $test = $accObject->update($ciam_uid, $params);
+      }
+      catch (LoginRadiusException $e){
+         $msg = isset($e->getErrorResponse()->Description) ? $e->getErrorResponse()->Description : 'error';
+         drupal_set_message(t($msg), 'error');
+         drupal_goto('user/' . $account->uid . '/edit');
+        exit();           
+           }
+          }
+        
+       
+      }
+    }
+}
+
+/**
+ * Implements hook_user_insert() The module should save its custom additions to the user object into the database
+ * Insert user data when New user register via traditional social login.
+ *
+ * @param array $edit The array of form values submitted by the user
+ * @param object $account The user object on which the operation is being performed
+ * @param string $category The active category of user information being edited
+ */
+function lr_ciam_user_insert(&$edit, $account, $category) {
+    if (isset($_SESSION['response']->Uid) && !empty($_SESSION['response']->Uid)) {
+        lr_ciam_update_user_table($_SESSION['response']->Uid, $account->uid);
+        lr_ciam_insert_into_mapping_table($_SESSION['response']->ID, $_SESSION['response']->Provider, $account->uid);
+        try {
+            db_update('users')
+                ->fields(array(
+                  'login' => REQUEST_TIME,
+                ))
+                ->condition('uid', $account->uid)
+                ->execute();
+        }
+        catch (Exception $e) {
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+
+        if (isset($_POST['status']) && $_POST['status'] == "0") {
+            lr_ciam_block_user($_SESSION['response']->Uid);
+        }
+    }
+
+    if (isset($_SESSION['social_lrdata'])) {
+        $userprofile = $_SESSION['social_lrdata'];
+        unset($_SESSION['social_lrdata']);
+
+        if (variable_get('user_pictures') == 1 && !empty($userprofile->ImageUrl)) {
+            lr_ciam_insert_picture($userprofile->ImageUrl, $account);
+        }
+
+        lr_ciam_insert_into_mapping_table($userprofile->ID, $userprofile->Provider, $account->uid);
+    }
+}
+
+/**
+ * Implements hook_user_update().
+ * Block/unblock user, Set/Update password and create new user.
+ *
+ *
+ * @param $edit
+ * @param $account user account object
+ * @param $category
+ */
+function lr_ciam_user_update(&$edit, $account, $category) {
+    $ciam_uid = lr_ciam_get_ciam_uid($account->uid);
+
+    if (isset($_POST['op']) && $_POST['op'] == 'Update') {
+        if (isset($_POST['operation'])) {
+            if ($_POST['operation'] == 'block' && isset($ciam_uid) && !empty($ciam_uid)) {
+                lr_ciam_block_user($ciam_uid);
+            }
+            elseif ($_POST['operation'] == 'unblock' && isset($ciam_uid) && !empty($ciam_uid)) {
+                lr_ciam_unblock_user($ciam_uid);
+            }
+        }
+    }
+}
+
+/**
+ * Block user at Ciam
+ *
+ * @param $uid user id
+ * @return mixed
+ */
+function lr_ciam_block_user($uid) {
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    if ($apiKey != '' && $secret != '') {
+        $accountObj = new AccountAPI($apiKey, $secret, array('output_format' => 'json'));
+        try {
+            $data = array(
+              'IsActive' => false
+            );
+
+            return $accountObj->update($uid, $data);
+        }
+        catch (LoginRadiusException $e) {
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+    }
+}
+
+/**
+ * Unblock user at ciam.
+ *
+ * @param $uid user id
+ * @return mixed
+ */
+function lr_ciam_unblock_user($uid) {
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    if ($apiKey != '' && $secret != '') {
+        $accountObj = new AccountAPI($apiKey, $secret, array('output_format' => 'json'));
+        try {
+            $data = array(
+              'IsActive' => true
+            );
+            return $accountObj->update($uid, $data);
+        }
+        catch (LoginRadiusException $e) {
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+    }
+}
+
+/**
+ * Get Ciam uid.
+ * @param $user_id user id
+ * @return mixed
+ */
+function lr_ciam_get_ciam_uid($user_id) {
+    try {
+        return db_query('SELECT lr_ciam_uid FROM {users} WHERE uid = :id', array('id' => $user_id))->fetchField();
+    }
+    catch (Exception $e) {
+        watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+    }
+}
+/**
+ * Get ciam mail.
+ * @param $user_id user id
+ * @return mixed
+ */
+function lr_ciam_get_ciam_email($user_id) {
+    try{
+  return db_query('SELECT mail FROM {users} WHERE uid = :id', array('id' => $user_id))->fetchField();
+}
+catch (Exception $e) {
+    watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+}
+}
+/**
+ * Get ciam username.
+ * @param $user_id user id
+ * @return mixed
+ */
+function lr_ciam_get_ciam_username($user_id) {
+    try{
+  return db_query('SELECT name FROM {users} WHERE uid = :id', array('id' => $user_id))->fetchField();
+}
+catch (Exception $e) {    
+    watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+}
+}
+
+
+/**
+ * Get provider id of ciam account
+ *
+ * @param $account_id user id
+ * @return mixed
+ */
+function lr_ciam_get_ciam_user_id($account_id) {
+    try {
+        $value = db_query('SELECT provider_id FROM {loginradius_mapusers} WHERE user_id = :id and provider = :name', array(
+          'id' => $account_id,
+          'name' => 'Email',
+            ))->fetchField();
+    }
+    catch (Exception $e) {
+        watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+    }
+    if (empty($value)) {
+        $value = isset($_SESSION['current_social_provider']) ? $_SESSION['current_social_provider'] : '';
+    }
+    return $value;
+}
+
+/**
+ * Change password.
+ *
+ * @param $account user object
+ * @return mixed
+ */
+function lr_ciam_change_password($account) {
+    $post_value = $_POST;
+    $ciam_uid = lr_ciam_get_ciam_uid($account->uid);
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    $accountObj = new AccountAPI($apiKey, $secret, array('output_format' => 'json'));
+    drupal_add_js('
+  if(sessionStorage.getItem("lr-user-uid") == null){
+  sessionStorage.setItem("lr-user-uid", "' . $ciam_uid . '");}', array('type' => 'inline', 'scope' => 'header'));
+
+    drupal_add_js('
+  if(localStorage.getItem("lr-user-uid") == null){
+  localStorage.setItem("lr-user-uid", "' . $ciam_uid . '");}', array('type' => 'inline', 'scope' => 'header'));
+    
+    if (isset($post_value['setpasswordsubmit']) && $post_value['setpasswordsubmit'] == 'submit') {
+            
+            if (isset($post_value['setnewpassword']) && !empty($post_value['setnewpassword']) && isset($post_value['setconfirmpassword']) && !empty($post_value['setconfirmpassword'])) {
+              
+                if ($post_value['setnewpassword'] == $post_value['setconfirmpassword']) {
+                    
+                    try {
+                        $result = $accountObj->setPassword($ciam_uid, $post_value['setnewpassword']);
+                        if (isset($result) && $result) {
+                            drupal_set_message(t('Password set successfully.'));
+                        }
+                    }
+                    catch (LoginRadiusException $e) {
+                        watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+                        drupal_set_message($e->getMessage(), 'error');                        
+                    }
+                }
+                else {                    
+                    drupal_set_message('The Confirm Password field does not match the Password field.', 'error');
+                }
+            }
+            else {                
+                drupal_set_message('The password and confirm password fields are required.', 'error');
+            }
+        }
+        try{
+            $userprofile = $accountObj->getProfileByUid($ciam_uid);
+        } catch (LoginRadiusException $e) {
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+    if(isset($userprofile->Password) && $userprofile->Password != '')
+    {
+        drupal_set_title(check_plain('Change Password'));
+        $sociallinks['loginradiuscustomsso_iframe'] = array(
+          'title' => '<br/>' . theme('change_password'),
+          'html' => theme('change_password'),
+          'attributes' => array('class' => array('loginradiuscustomsso-idlinks')),
+        );
+        $build['loginradiuscustomsso_iframe'] = array(
+          '#theme' => 'links',
+          '#links' => $sociallinks,
+          '#attributes' => array('class' => array('loginradiuscustomsso-idlinks')),
+        );
+    }
+    else {
+        drupal_set_title(check_plain('Set Password'));
+        $sociallinks['loginradiuscustomsso_iframe'] = array(
+          'title' => '<br/>'.theme('set_password'),
+          'html' => theme('set_password'),
+          'attributes' => array('class' => array('loginradiuscustomsso-idlinks')),
+        );
+        $build['loginradiuscustomsso_iframe'] = array(
+          '#theme' => 'links',
+          '#links' => $sociallinks,
+          '#attributes' => array('class' => array('loginradiuscustomsso-idlinks')),
+        );
+    }
+    return $build;
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Responed to Define user permissions.
+ *
+ * @return array An array of permission settings
+ */
+function lr_ciam_permission() {
+ 
+    return array(
+      'administer ciam' => array(
+        'title' => t('Administer Ciam settings'),
+        'restrict access' => TRUE,
+      ),
+    );
+}
+
+/**
+ * Implements hook_theme().
+ *
+ * @return array An associative array of theme hook information
+ */
+function lr_ciam_theme() {
+    $path = drupal_get_path('module', 'lr_ciam') . '/theme';
+    $theme = array(
+      'lr_ciam_popup' => array(
+        'template' => 'lr_ciam_popup',
+        'variables' => array(
+          'popup_params' => NULL,
+        ),
+        'path' => $path,
+      ),
+        'set_password' => array(
+        'template' => 'set_password',
+        'path' => $path,
+      ),
+//       'set_password' => array(
+//        'render element' => 'form',
+//        'template' => 'set_password',
+//        'path' => $path,
+//      ),
+      'change_password' => array(
+        'variables' => array(
+          'params' => NULL,
+        ),
+        'template' => 'change_password',
+        'path' => $path,
+      ),
+      'lr_add_email' => array(
+        'variables' => array(
+          'popup_params' => NULL,
+        ),
+        'template' => 'lr_add_email',
+        'path' => $path,
+      ),
+      'lr_remove_email' => array(
+        'variables' => array(
+          'popup_params' => NULL,
+        ),
+        'template' => 'lr_remove_email',
+        'path' => $path,
+      ),
+      'lr_2fa_container' => array(
+        'render element' => 'form',
+        'template' => 'lr_2fa_container',
+        'path' => $path,
+      ),
+      'lr_update_phone' => array(
+        'render element' => 'form',
+        'template' => 'lr_update_phone',
+        'path' => $path,
+      ),
+      'lr_backup_codes' => array(
+        'render element' => 'form',
+        'template' => 'lr_backup_codes',
+        'path' => $path,
+      ),
+      'user_login' => array(
+        'template' => 'user_login',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+      'user_pass' => array(
+        'template' => 'user_pass',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+      'user_login_block' => array(
+        'template' => 'user_login_block',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+        'lr_user_register' => array(
+        'template' => 'lr_user_register',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+         'lr_user_forgot' => array(
+        'template' => 'lr_user_forgot',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+        'lr_user_login' => array(
+        'template' => 'lr_user_login',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+      'ciam_social_widget_container' => array(
+        'variables' => array(
+          'params' => NULL,
+        ),
+        'template' => 'ciam_social_widget_container',
+        'path' => $path,
+      ),
+      'lr_ciam_linked' => array(
+        'variables' => array(
+          'params' => NULL,
+        ),
+        'template' => 'lr_ciam_linked',
+        'path' => $path,
+      ),
+      'lr_admin_login' => array(
+        'template' => 'lr_admin_login',
+        'render element' => 'form',
+        'path' => $path,
+      ),
+      'lr_loading' => array(
+        'template' => 'lr_loading',
+        'variables' => array(
+          'params' => NULL,
+        ),
+        'path' => $path,
+      ),
+      'lr_message' => array(
+        'template' => 'lr_message',
+        'variables' => array(
+          'params' => NULL,
+        ),
+        'path' => $path,
+      ),
+    );
+
+    $theme['user_register_form'] = array(
+      'template' => 'user_register',
+      'render element' => 'form',
+      'path' => $path,
+    );
+
+    return $theme;
+}
+
+
+/**
+ * Implements hook_form_FORM_ID_form_alter().
+ * Show Social Account Linking interface at user profile page.
+ *
+ * @param array $form Nested array of form elements that comprise the form.
+ * @param array $form_state A keyed array containing the current state of the form
+ * @param string $form_id A unique string identifying the form
+ * @return array A renderable html form
+ */
+function lr_ciam_form_user_profile_form_alter(&$form, &$form_state, $form_id) {
+    global $user;
+    $ciam_uid = lr_ciam_get_ciam_uid($user->uid);
+    if (!empty($ciam_uid)) {
+
+        drupal_add_js('
+  sessionStorage.setItem("lr-user-uid", "' . $ciam_uid . '");', array('type' => 'inline', 'scope' => 'header'));
+
+        drupal_add_js('
+  localStorage.setItem("lr-user-uid", "' . $ciam_uid . '");', array('type' => 'inline', 'scope' => 'header'));
+    }
+
+    if (!user_access('administer site configuration')) {
+        unset($form['#validate'][1]);
+        unset($form['account']['pass']);
+        unset($form['account']['current_pass']);
+        $form['lr_message'] = array(
+          '#type' => 'item',
+          '#theme' => 'lr_message',
+          '#attributes' => array('class' => array('lr-message-container')),
+          '#weight' => -30,
+          '#open' => TRUE,
+        );
+
+        $apiKey = trim(variable_get('lr_ciam_apikey'));
+        $apiSecret = trim(variable_get('lr_ciam_apisecret'));
+        $userObject = new UserAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+        try {
+            $userprofile = $userObject->getProfile($_SESSION['access_token']);
+            if(isset($userprofile->ErrorCode) && $userprofile->ErrorCode == '906'){
+               
+                drupal_goto('user/logout');
+            }
+            if (isset($userprofile->EmailVerified)) {
+                $_SESSION['emailVerified'] = $userprofile->EmailVerified;
+            }
+        }
+        catch (LoginRadiusException $e) {
+            
+             watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+             drupal_goto('user/logout');
+        }
+
+        $defaultEmail = isset($userprofile->Email) ? $userprofile->Email[0]->Value : '';
+        $phone_id = isset($userprofile->PhoneId) && $userprofile->PhoneId != '' ? $userprofile->PhoneId : '--';
+        $socialAPI = new SocialLoginAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+        try{
+        $social_profile = $socialAPI->getUserProfiledata($_SESSION['access_token']);
+        }
+        catch (LoginRadiusException $e) {
+            
+             watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+             drupal_goto('user/logout');
+        }
+        $lr_array = array();
+        if(!empty($userprofile->Email))
+        {
+            foreach ($userprofile->Email as $key => $value) {
+                            $lr_array[$key] = $value->Value;
+                        }
+            if (!in_array($user->mail, $lr_array)) {
+                   try {
+                       db_update('users')
+                            ->fields(array(
+                            'mail' => $defaultEmail,
+                           ))
+                            ->condition('mail', $user->mail)
+                            ->execute();
+                       }
+                       catch (Exception $e) {
+                           watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+                       }
+               }
+    }
+
+        $form['account']['mail']['#disabled'] = TRUE;
+               
+                if (count(module_implements('phone_update_container')) > 0) {
+                    // Call all modules that implement the hook, and let them make changes to $variables.
+                    $result = module_invoke_all('phone_update_container',$phone_id);
+                    $phoneContainer = end($result);
+                    if (!empty($phoneContainer)) {
+                        $phoneContainerWidget = $phoneContainer;
+                    }
+                }
+               
+                $form['lr_update_phone'] = array(
+                  '#type' => 'item',
+                  '#markup' => $phoneContainerWidget,
+                  '#attributes' => array('class' => array('lr_update_phone')),
+                  '#weight' => -15,
+                );            
+        
+        
+            $emailCount = isset($userprofile->Email) ? count($userprofile->Email) : '0';
+                       
+            $form['account']['emailSetting'] = array(
+              '#type' => 'fieldset',
+              '#title' => t('Email Settings'),
+              '#collapsible' => TRUE,
+              '#collapsed' => FALSE,
+            );
+
+            $header = array(
+              'email' => array('data' => 'Email'),
+              'action' => array('data' => 'Action')
+            );
+
+            $form['account']['emailSetting']['add'] = array(
+              '#type' => 'item',
+              '#markup' => '<div class="addEmail" id="addEmail" onclick="showAddEmailPopup()">Add Email</div>',
+            );
+
+            if ($emailCount > 0) {
+                for ($i = 0; $i < $emailCount; $i++) {
+                    $email[$i] = array(
+                      '#type' => 'textfield',
+                      '#attributes' => array('readonly' => 'readonly'),
+                      '#default_value' => isset($userprofile->Email[$i]->Value) ? $userprofile->Email[$i]->Value : ""
+                    );
+
+                    $action[$i] = array(
+                      '#type' => 'item',
+                      '#markup' => '<div class="removeEmail" id="removeEmail_' . $i . '">Remove</div>',
+                    );
+
+                    $rows['customize_field_' . $i] = array(
+                      'data' => array(
+                        'field' => array('data' => &$email[$i]),
+                        'label' => array('data' => &$action[$i])
+                      )
+                    );
+
+                    $data_to_send['customize_field_' . $i] = array(
+                      'field' => &$email[$i],
+                      'label' => &$action[$i]
+                    );
+                }
+
+                $form['account']['emailSetting']['table'] = array(
+                  '#tree' => TRUE,
+                  '#theme' => 'table',
+                  '#header' => $header,
+                  'values' => $data_to_send,
+                  '#rows' => &$rows,
+                );
+            }
+            $form['add_email'] = array(
+              '#type' => 'item',
+              '#theme' => 'add_email',
+              '#attributes' => array('class' => array('add-email')),
+              '#weight' => 30,
+              '#open' => TRUE,
+            );
+
+            $form['remove_email'] = array(
+              '#type' => 'item',
+              '#theme' => 'remove_email',
+              '#attributes' => array('class' => array('remove-email')),
+              '#weight' => 30,
+              '#open' => TRUE,
+            );
+
+            if (count(module_implements('add_email_widget')) > 0) {
+                // Call all modules that implement the hook, and let them make changes to $variables.
+                $result = module_invoke_all('add_email_widget');
+                $addEmail = end($result);
+                if (!empty($addEmail)) {
+                    $addEmailWidget = $addEmail;
+                }
+            }
+            if (count(module_implements('remove_email_widget')) > 0) {
+                // Call all modules that implement the hook, and let them make changes to $variables.
+                $result = module_invoke_all('remove_email_widget');
+                $removeEmail = end($result);
+                if (!empty($removeEmail)) {
+                    $removeEmailWidget = $removeEmail;
+                }
+            }
+
+            $form['lr_add_email'] = array(
+              '#type' => 'item',
+              '#title' => '',
+              '#markup' => $addEmailWidget,
+              '#attributes' => array('class' => array('lr_add_email')),
+              '#weight' => 30,
+            );
+            $form['lr_remove_email'] = array(
+              '#type' => 'item',
+              '#title' => '',
+              '#markup' => $removeEmailWidget,
+              '#attributes' => array('class' => array('lr_remove_email')),
+              '#weight' => 30,
+            );
+        
+
+        if (isset($social_profile) && $social_profile->Provider == 'RAAS') {
+            if (count(module_implements('2fa_container_widget')) > 0) {
+                // Call all modules that implement the hook, and let them make changes to $variables.
+                $result = module_invoke_all('2fa_container_widget');
+                $twofa = end($result);
+                if (!empty($twofa)) {
+                    $twofaWidget = $twofa;
+                }
+            }
+
+            $form['lr_2fa_container'] = array(
+              '#type' => 'item',
+              '#markup' => $twofaWidget,
+              '#attributes' => array('class' => array('lr_2fa_container')),
+              '#weight' => -25,
+            );
+
+            try {
+                $isEnabled = $userObject->configureTwoFAByToken($_SESSION['access_token']);
+            }
+            catch (LoginRadiusException $e) {
+                watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+            }
+
+            if ((isset($isEnabled->IsGoogleAuthenticatorVerified) && $isEnabled->IsGoogleAuthenticatorVerified) || (isset($isEnabled->IsOTPAuthenticatorVerified) && $isEnabled->IsOTPAuthenticatorVerified)) {
+                if (count(module_implements('2fa_backup_codes')) > 0) {
+                    // Call all modules that implement the hook, and let them make changes to $variables.
+                    $result = module_invoke_all('2fa_backup_codes');
+                    $twofaBackup = end($result);
+                    if (!empty($twofaBackup)) {
+                        $twofaBackupWidget = $twofaBackup;
+                    }
+                }
+                $backup_title = 'Backup Codes List';
+                $form['lr_2fa_backup'] = array(
+                  '#type' => 'item',
+                  '#markup' => $twofaBackupWidget,
+                  '#attributes' => array('class' => array('lr_2fa_backup')),
+                  '#prefix' => '<fieldset class="form-wrapper" id="edit-accountcodes"><legend><span class="fieldset-legend">' . t($backup_title) . '</span></legend>',
+                  '#suffix' => '</fieldset>',
+                  '#weight' => -22,
+                );
+            }
+        }
+        $cloudObject = new CloudAPI($apiKey, $apiSecret, array('output_format' => 'json'));
+        try{
+            $cloudObject = $cloudObject->getConfigurationList();
+        } catch (LoginRadiusException $e) {
+                watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+        if(isset($cloudObject->EmailVerificationFlow) && $cloudObject->EmailVerificationFlow != 'disabled'){
+         $value = theme('lr_ciam_linked');
+        // Advanced module LR Code Hook Start.
+        if (count(module_implements('add_social_linking_widget')) > 0) {
+            // Call all modules that implement the hook, and let them make changes to $variables.
+            $result = module_invoke_all('add_social_linking_widget');
+            $linked = end($result);
+            if (!empty($linked)) {
+                $value = $linked;
+            }
+        }
+        // Advanced module LR Code Hook End.
+        $my_settings = lr_ciam_interface_settings();
+        $form['lr_ciam_linked'] = array(
+          '#type' => 'item',
+          '#markup' => $value,
+          '#attributes' => array('class' => array('lr_ciam_linked')),
+          '#prefix' => '<fieldset class="form-wrapper" id="edit-social-linked"><legend></legend>',
+          '#suffix' => '</fieldset>',
+          '#weight' => -20,
+          '#attached' => array(
+            'js' => array(
+              array(
+                'data' => array('lrsociallogin' => $my_settings),
+                'type' => 'setting'
+              )
+            )
+          ),
+        );
+        }
+    }else if (user_access('administer site configuration')) {
+        $form['account']['name']['#disabled'] = FALSE;                 
+        $form['account']['mail']['#disabled'] = FALSE;   
+        $form['account']['pass']['#disabled'] = TRUE; 
+    }
+    return $form;
+}
+
+/**
+ * Added backup codes widget.
+ *
+ */
+function lr_ciam_2fa_backup_codes() {
+    return theme('lr_backup_codes');
+}
+
+/**
+ * Added Linking interface widget.
+ *
+ */
+function lr_ciam_add_social_linking_widget() {
+    return theme('lr_ciam_linked');
+}
+
+/**
+ * Add email interface widget.
+ *
+ */
+function lr_ciam_add_email_widget() {
+    return theme('lr_add_email');
+}
+
+/**
+ * Remove email interface widget.
+ *
+ */
+function lr_ciam_remove_email_widget() {
+    return theme('lr_remove_email');
+}
+
+/**
+ * Two factor authenticator widget.
+ *
+ */
+function lr_ciam_2fa_container_widget() {
+    return theme('lr_2fa_container');
+}
+
+/**
+ * phone update container.
+ *
+ */
+function lr_ciam_phone_update_container($phone_id) {
+    $arr['phone_id'] = $phone_id;
+    return theme('lr_update_phone',$arr);
+}
+
+/**
+ * Add variabled that used in user login form.
+ *
+ * @param $variables Contain variables of form
+ */
+function lr_ciam_preprocess_user_login(&$variables) {
+    $variables['intro_text'] = '';
+    $variables['rendered'] = drupal_render_children($variables['form']);
+    $variables['my_settings'] = lr_ciam_interface_settings();
+}
+
+/**
+ * Add variable that used in Ciam account linking widget form.
+ *
+ * @param $variables Contain variables of form
+ */
+function lr_ciam_preprocess_lr_ciam_linked(&$variables) {
+    $variables['my_settings'] = lr_ciam_interface_settings();
+}
+
+/**
+ * Add variable that used in Ciam account linking widget form.
+ *
+ * @param $variables Contain variables of form
+ */
+function lr_ciam_preprocess_ciam_social_widget_container(&$variables) {
+    $variables['my_settings'] = lr_ciam_interface_settings();
+}
+
+/**
+ *  Add variabled that used in user login block form.
+ * @param $variables Contain variables of form
+ */
+function lr_ciam_preprocess_user_login_block(&$variables) {
+
+    unset($variables['form']['lr_ciam_links']);
+    $variables['my_settings'] = lr_ciam_interface_settings();
+    $variables['intro_text'] = '';
+    $variables['rendered'] = drupal_render_children($variables['form']);
+    $form = drupal_get_form('user_login_block');
+    $variables['links'] = isset($form['links']['#markup']) ? $form['links']['#markup'] : '';
+}
+
+/**
+ *  Add variabled that used in user login admin form.
+ * @param $variables Contain variables of form
+ */
+function lr_ciam_preprocess_lr_admin_login(&$variables) {
+    $form = drupal_get_form('user_login_block');
+    $variables['bulid_id'] = $form["#build_id"];
+    $variables['action'] = $form["#action"];
+}
+
+/**
+ *  Add variabled that used in user register form.
+ * @param $variables Contain variables of form
+ */
+function lr_ciam_preprocess_lr_user_register(&$variables)
+{
+    global $user;
+    $variables['my_settings'] = lr_ciam_interface_settings();
+    $variables['intro_text'] = '';
+    $variables['admin_access'] = FALSE;
+    if ((is_array($user->roles) && in_array('administrator', $user->roles))) {
+        $variables['admin_access'] = TRUE;
+    }
+    if(variable_get('custom_login_link', '') != '')
+    {
+        $variables['login_link'] = variable_get('custom_login_link');
+    }
+    if(variable_get('custom_forgot_link', '') != '')
+    {
+        $variables['forgot_link'] = variable_get('custom_forgot_link');
+    }
+}
+
+function lr_ciam_preprocess_lr_user_forgot(&$variables)
+{
+    if(variable_get('custom_login_link', '') != '')
+    {
+        $variables['login_link'] = variable_get('custom_login_link');
+    }
+    if(variable_get('custom_register_link', '') != '')
+    {
+        $variables['register_link'] = variable_get('custom_register_link');
+    }
+}
+
+function lr_ciam_preprocess_lr_user_login(&$variables)
+{
+    global $user;
+    $variables['my_settings'] = lr_ciam_interface_settings();
+    $variables['intro_text'] = '';
+    $variables['admin_access'] = FALSE;
+    if ((is_array($user->roles) && in_array('administrator', $user->roles))) {
+        $variables['admin_access'] = TRUE;
+    }
+    if(variable_get('custom_register_link', '') != '')
+    {
+        $variables['register_link'] = variable_get('custom_register_link');
+    }
+    if(variable_get('custom_forgot_link', '') != '')
+    {
+        $variables['forgot_link'] = variable_get('custom_forgot_link');
+    }
+}
+
+/**
+ *  Add variabled that used in user registration form.
+ * @param $variables Contain variables of form
+ */
+function lr_ciam_preprocess_user_register_form(&$variables) {
+    global $user;
+    $variables['my_settings'] = lr_ciam_interface_settings();
+    $variables['intro_text'] = '';
+    $variables['admin_access'] = FALSE;
+    if ((is_array($user->roles) && in_array('administrator', $user->roles))) {
+        $variables['admin_access'] = TRUE;
+    }
+    $variables['rendered'] = drupal_render_children($variables['form']);
+}
+
+/**
+ * Implements hook_help().
+ *
+ * Respond to Provide online user help links.
+ *
+ * @param string $path The router menu path
+ * @return string A localized string containing the help text
+ */
+function lr_ciam_help($path) {
+    switch ($path) {
+        case 'admin/help#lr_ciam':
+            $loginradius_link = l(t('LoginRadius'), 'http://www.LoginRadius.com/', array('attributes' => array('target' => '_blank')));
+            $output = '';
+            $output .= '<h3>' . t('About') . '</h3>';
+            $output .= '<p>' . t('This CIAM module is developed by LoginRadius which is a Software As A Service (SaaS). CIAM module enables social login and traditional login on a Drupal website letting users log in through their existing IDs such as Facebook, Twitter, Google, Yahoo and over 15 more! Other than social login, lr_ciam plugin also include User Profile Data and Social Analytics. Please visit the !loginradius.', array('!loginradius' => $loginradius_link)) . '</p>';
+            $items_list = array(
+              t('Social login'),
+              t('Social analytics'),
+              t('Eliminating registration process'),
+              t('Syncronize social login with traditional login'),
+              t('Single Sign On'),
+              t('Hosted Page'),
+            );
+            $output .= theme('item_list', array(
+              'items' => $items_list,
+              'title' => t('Use'),
+            ));
+            $items = array(
+              l(t('Drupal live demo'), 'https://www.loginradius.com/integrations/drupal/', array('attributes' => array('target' => '_blank'))),
+              l(t('Drupal Plugin Documentations'), 'https://www.loginradius.com/integrations/drupal/', array('attributes' => array('target' => '_blank'))),
+              l(t('LoginRadius'), 'https://www.loginradius.com/', array('attributes' => array('target' => '_blank'))),
+              l(t('Other live demo'), 'https://www.loginradius.com/demo', array('attributes' => array('target' => '_blank'))),
+              l(t('Developers'), 'https://www.loginradius.com/developers/', array('attributes' => array('target' => '_blank'))),
+              l(t('LoginRadius blog'), 'https://blog.loginradius.com/', array('attributes' => array('target' => '_blank'))),
+              l(t('LoginRadius video'), 'https://www.youtube.com/LoginRadius', array('attributes' => array('target' => '_blank'))),
+            );
+            $output .= theme('item_list', array(
+              'items' => $items,
+              'title' => t('Important links'),
+            ));
+            return $output;
+    }
+}
+
+/**
+ * Delete user at Ciam.
+ *
+ * @param $account
+ */
+function lr_ciam_user_delete($account) {
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    if ($apiKey != '' && $secret != '') {
+        $accountObj = new AccountAPI($apiKey, $secret, array('output_format' => 'json'));
+        $ciam_uid = lr_ciam_get_ciam_uid($account->uid);
+
+        try {
+            $result = $accountObj->delete($ciam_uid);
+        }
+        catch (LoginRadiusException $e) {
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+
+        lr_ciam_delete_map_user($account->uid);
+    }
+}
+
+/**
+ * delete social account from db
+ *
+ * @param $user id
+ */
+function lr_ciam_delete_map_user($aid) {
+    try {
+        db_delete('loginradius_mapusers')
+            ->condition('user_id', $aid)
+            ->execute();
+    }
+    catch (Exception $e) {
+        watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+    }
+}
+
+/**
+ * Update user table and add ciam id
+ *
+ * @param $ciam_uid ciam uid
+ * @param $user_id user id
+ */
+function lr_ciam_update_user_table($ciam_uid, $user_id) {
+    try {
+        db_update('users')
+            ->fields(array('lr_ciam_uid' => $ciam_uid))
+            ->condition('uid', $user_id)
+            ->execute();
+    }
+    catch (Exception $e) {
+        watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+    }
+}
+
+/**
+ * hook_preprocess_page()
+ *
+ * Add Social login Script and Sharing script in all pages.
+ *
+ * @param $vars variables array
+ * @param $hook hook name
+ */
+function lr_ciam_preprocess_page(&$vars, $hook) {
+    $post_value = $_POST;
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $appName = variable_get('lr_ciam_site_name');
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    $sec = trim(variable_get('lr_auto_hide_messages'));
+    if (isset($_COOKIE['lr_message']) && $_COOKIE['lr_message'] != '') {        
+            $message = isset($_COOKIE['lr_message']) ? $_COOKIE['lr_message'] : '';                       
+            $response = (isset($_GET['lrresponse']) && $_GET['lrresponse'] != 'true') ? "error" : "success" ;
+            //setcookie("lr_message", "", -99999);
+            setcookie ('lr_message', '', time() - 3600,'/');
+            
+            if($message!= ""){
+                if($response == 'error'){                    
+                    drupal_set_message($message, $response); 
+                    if($sec != '' && $sec != '0'){
+                    header("Refresh:$sec");
+                    }
+                } else {
+                    drupal_set_message($message); 
+                    if($sec != '' && $sec != '0'){
+                    header("Refresh:$sec");
+                    }
+                }
+            }                             
+        }
+    if (user_is_logged_in()) {
+        global $user;
+        $callback_location = url('user', array('absolute' => TRUE));
+        $profileUrl = $callback_location . '/' . $user->uid . '/edit';
+        drupal_add_js('
+            var profileUrl =  "' . trim($profileUrl) . '";
+    ', array('type' => 'inline', 'scope' => 'header', 'weight' => 4));
+    }
+
+    $script = '';
+    if (variable_get('lr_ciam_custom_options') != '') {
+        $jsondata = lr_ciam_json_validate(variable_get('lr_ciam_custom_options'));
+        if (is_object($jsondata)) {
+            foreach ($jsondata as $key => $value) {
+                $script .= "commonOptions." . $key . "=";
+                if (is_object($value) || is_array($value)) {
+                    $encodedStr = json_encode($value);
+                    $script .= $encodedStr . ';';
+                }
+                else {
+                    $script .= $value . ';';
+                }
+            }
+        }
+        else {
+            if (is_string($jsondata)) {
+                $script = $jsondata;
+            }
+        }
+    }
+    if (variable_get('lr_ciam_terms_and_condition_html') != '') {
+        $script .= 'commonOptions.termsAndConditionHtml = "' . lr_ciam_remove_tags_options(variable_get('lr_ciam_terms_and_condition_html'), false) . '";';
+    }
+    $script .= 'commonOptions.formValidationMessage = true;';        
+    if (variable_get('lr_ciam_ask_required_field_on_traditional_login') != '') {
+        $script .= 'commonOptions.askRequiredFieldForTraditionalLogin = ' . variable_get('lr_ciam_ask_required_field_on_traditional_login') . ';';
+    }    
+    if (variable_get('lr_ciam_display_password_strength') != '' && variable_get('lr_ciam_display_password_strength') != 'false') {
+        $script .= 'commonOptions.displayPasswordStrength = ' . variable_get('lr_ciam_display_password_strength') . ';';
+    }
+    $script .= 'commonOptions.sott = "' . lr_ciam_get_sott($apiKey, $secret) . '";';
+    if (variable_get('lr_ciam_prompt_password_on_social_login') != '') {
+        $script .= 'commonOptions.promptPasswordOnSocialLogin = ' . variable_get('lr_ciam_prompt_password_on_social_login') . ';';
+    }
+    if (variable_get('lr_ciam_enable_user_name') != '') {
+        $script .= 'commonOptions.usernameLogin = ' . variable_get('lr_ciam_enable_user_name') . ';';
+    }
+    if (variable_get('lr_ciam_ask_email_always_for_unverified') != '') {
+        $script .= 'commonOptions.askEmailForUnverifiedProfileAlways = ' . variable_get('lr_ciam_ask_email_always_for_unverified') . ';';
+    } 
+    if (variable_get('lr_ciam_exist_phone_number') != '') {
+        $script .= 'commonOptions.existPhoneNumber = ' . variable_get('lr_ciam_exist_phone_number') . ';';
+    }
+    if (variable_get('lr_ciam_instant_otp_login') != '') {
+                $script .= 'commonOptions.instantOTPLogin = ' . variable_get('lr_ciam_instant_otp_login') . ';';
+                if (variable_get('lr_ciam_sms_template_one_time_passcode') != '') {
+                    $script .= 'commonOptions.smsTemplateInstantOTPLogin = "' . variable_get('lr_ciam_sms_template_one_time_passcode') . '";';
+                }
+            }
+            
+            if (variable_get('lr_ciam_instant_link_login') != '') {
+            $script .= 'commonOptions.instantLinkLogin = ' . variable_get('lr_ciam_instant_link_login') . ';';
+            if (variable_get('lr_ciam_instant_link_login_email_template') != '') {
+                    $script .= 'commonOptions.instantLinkLoginEmailTemplate = "' . variable_get('lr_ciam_instant_link_login_email_template') . '";';
+            }
+        }
+    if (variable_get('lr_ciam_welcome_email_template') != '' && variable_get('lr_ciam_welcome_email_template') != 'default' && variable_get('lr_ciam_welcome_email_template') != '0') {
+        $script .= 'commonOptions.welcomeEmailTemplate = "' . variable_get('lr_ciam_welcome_email_template') . '";';
+    }
+    if (variable_get('lr_ciam_forgot_password_template') != '' && variable_get('lr_ciam_forgot_password_template') != 'default' && variable_get('lr_ciam_forgot_password_template') != '0') {
+        $script .= 'commonOptions.resetPasswordEmailTemplate = "' . variable_get('lr_ciam_forgot_password_template') . '";';
+    }
+    if (variable_get('lr_ciam_email_verification_template') != '' && variable_get('lr_ciam_email_verification_template') != 'default' && variable_get('lr_ciam_email_verification_template') != '0') {
+        $script .= 'commonOptions.verificationEmailTemplate = "' . variable_get('lr_ciam_email_verification_template') . '";';
+    } 
+    if (variable_get('lr_ciam_instant_link_login_email_template') != '' && variable_get('lr_ciam_instant_link_login_email_template') != 'default' && variable_get('lr_ciam_instant_link_login_email_template') != '0') {
+        $script .= 'commonOptions.instantLinkLoginEmailTemplate = "' . variable_get('lr_ciam_instant_link_login_email_template') . '";';
+    }   
+    if (variable_get('lr_ciam_sms_template') != '' && variable_get('lr_ciam_sms_template') != 'default' && variable_get('lr_ciam_sms_template') != '0') {
+        $script .= 'commonOptions.smsTemplateWelcome = "' . variable_get('lr_ciam_sms_template') . '";';
+    }
+    if (variable_get('lr_ciam_sms_template_password_reset','') != '' && variable_get('lr_ciam_sms_template_password_reset') != 'default' && variable_get('lr_ciam_sms_template_password_reset') != '0') {
+        $script .= 'commonOptions.smsTemplateForgot = "' . variable_get('lr_ciam_sms_template_password_reset') . '";';
+    }
+    if (variable_get('lr_ciam_sms_template_change_number') != '' && variable_get('lr_ciam_sms_template_change_number') != 'default' && variable_get('lr_ciam_sms_template_change_number') != '0') {
+        $script .= 'commonOptions.smsTemplateUpdatePhone = "' . variable_get('lr_ciam_sms_template_change_number') . '";';
+    }
+    if (variable_get('lr_ciam_sms_template_phone_verification') != '' && variable_get('lr_ciam_sms_template_phone_verification') != 'default' && variable_get('lr_ciam_sms_template_phone_verification') != '0') {
+        $script .= 'commonOptions.smsTemplatePhoneVerification = "' . variable_get('lr_ciam_sms_template_phone_verification') . '";';
+    }
+    if (variable_get('lr_ciam_sms_template_one_time_passcode') != '' && variable_get('lr_ciam_sms_template_one_time_passcode') != 'default' && variable_get('lr_ciam_sms_template_one_time_passcode') != '0') {
+        $script .= 'commonOptions.smsTemplateInstantOTPLogin = "' . variable_get('lr_ciam_sms_template_one_time_passcode') . '";';
+    }    
+    if (variable_get('lr_ciam_sms_template_2fa') != '' && variable_get('lr_ciam_sms_template_2fa') != 'default' && variable_get('lr_ciam_sms_template_2fa') != '0') {
+        $script .= 'commonOptions.smsTemplate2FA = "' . variable_get('lr_ciam_sms_template_2fa') . '";';
+    }    
+    if (variable_get('lr_ciam_debug_mode') != '' && variable_get('lr_ciam_debug_mode') != 'false') {
+        $script .= 'commonOptions.debugMode = ' . variable_get('lr_ciam_debug_mode') . ';';
+    }
+
+    if (!empty($apiKey)) {
+        // Set the token in session and close the child window.
+        $callback_location = url('user', array('absolute' => TRUE));
+        $protocol = stripos($_SERVER['SERVER_PROTOCOL'], 'https') === true ? 'https://' : 'http://';
+        $homeDomain = $_SERVER['HTTP_HOST'] . $GLOBALS['base_path'];
+        $domainName = $protocol . $homeDomain;
+        $access_token = isset($_SESSION['access_token']) ? $_SESSION['access_token'] : '';
+        drupal_add_library('system', 'ui.datepicker');
+        drupal_add_js('//auth.lrcontent.com/v2/js/LoginRadiusV2.js', array(
+          'type' => 'external',
+          'scope' => 'header',
+          'weight' => 1,
+        ));
+         if (variable_get('lr_ciam_minify_js_css') == 'true') {
+          drupal_add_js(
+          drupal_get_path('module', 'lr_ciam') . '/js/LoginRadiusFrontEnd.min.js', array(
+          'type' => 'file',
+          'scope' => 'header',
+          'weight' => 10,
+            )
+          );
+         }
+         else {
+          drupal_add_js(
+          drupal_get_path('module', 'lr_ciam') . '/js/LoginRadiusFrontEnd.js', array(
+          'type' => 'file',
+          'scope' => 'header',
+          'weight' => 10,
+            )
+          );
+         }
+        $path = parse_url(url('', array('absolute' => TRUE)));
+        $sso_path = $path['path'];
+        drupal_add_js('    
+    var commonOptions = {};
+    var LocalDomain = "' . urldecode(lr_ciam_get_callback_url()) . '";   
+    var homeDomain = "' . $domainName . '";
+    var accessToken = "' . $access_token . '";
+    var autoHideTime = "' . variable_get('lr_auto_hide_messages') . '";
+    var loggedIn = "' . user_is_logged_in() . '";
+    commonOptions.apiKey = "' . $apiKey . '";
+    commonOptions.appName = "' . $appName . '";
+    commonOptions.appPath = "' . $sso_path . '";     
+    commonOptions.verificationUrl = "' . $callback_location . '";  
+    commonOptions.forgotPasswordUrl = "' . $callback_location . '";    
+    commonOptions.hashTemplate = true; 
+    commonOptions.callbackUrl = "' . (lr_ciam_get_callback_url()) . '";    
+    ' . $script . '
+    jQuery(document).ready(function () {
+    initializeResetPasswordCiamForm(commonOptions);
+    });', array('type' => 'inline', 'scope' => 'header', 'weight' => 4,));
+    }
+}
+
+/**
+ * get sott string
+ *
+ * @param $api key
+ * @param $secret key
+ * @return string
+ */
+function lr_ciam_get_sott($apiKey, $secret) {  
+       if ($apiKey != '' && $secret != '') {
+        $sottObj = new SOTT($apiKey, $secret, array('output_format' => 'json'));
+        try {  
+            $result = $sottObj->encrypt('10');
+            return $result = isset($result->Sott) ? $result->Sott : '';
+        }
+        catch (LoginRadiusException $e) {
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }    
+       }
+}
+
+/**
+ * Check String is json or not.
+ *
+ * @param $string 
+ * @return json|string
+ */
+function lr_ciam_json_validate($string) {
+    $result = json_decode($string);
+    if (json_last_error() == JSON_ERROR_NONE) {
+        return $result;
+    }
+    else {
+        return $string;
+    }
+}
+
+/**
+ * Remove html tags, new line and tags.
+ *
+ * @param $string
+ * @param bool $html
+ * @return mixed|string
+ */
+function lr_ciam_remove_tags_options($string, $html = TRUE) {
+    if ($html) {
+        $string = strip_tags($string);
+    }
+    $string = str_replace(array('<script>', '</script>'), '', $string);
+    $string = trim(str_replace('"', "'", $string));
+    $string = preg_replace('/[\t]+/', '', preg_replace('/[\r\n]+/', " ", $string));
+    return $string;
+}
+
+/**
+ * Implements hook_block_info().
+ *
+ * @return array An associative array whose keys define the delta for each block and whose values contain the block descriptions
+ */
+function lr_ciam_block_info() {
+    $blocks['lr_admin_login'] = array(
+      'info' => t('LoginRadius Admin Login Block'),
+    );
+    $blocks['login'] = array(
+      'info' => t('LoginRadius Social login'),
+      'cache' => DRUPAL_CACHE_PER_PAGE | DRUPAL_CACHE_PER_ROLE,
+    );
+    $blocks['lr_user_register'] = array(
+      'info' => t('LoginRadius Register Block'),
+      'cache' => DRUPAL_CACHE_PER_PAGE | DRUPAL_CACHE_PER_ROLE |DRUPAL_CACHE_PER_USER,
+    );
+    $blocks['lr_user_forgot'] = array(
+      'info' => t('LoginRadius Forgot Password Block'),
+      'cache' => DRUPAL_CACHE_PER_PAGE | DRUPAL_CACHE_PER_ROLE |DRUPAL_CACHE_PER_USER,
+    );
+    return $blocks;
+}
+
+/**
+ * Implements hook_block_view_alter().
+ * @param $data
+ * @param $block
+ */
+function lr_ciam_block_view_alter(&$data, $block) {
+    $callback_location = url('user', array('absolute' => TRUE));
+    if (variable_get('showmsg') != '') {
+        drupal_set_message(variable_get('showmsg'));
+        variable_del('showmsg');
+    }
+
+    switch ($block->delta) {
+        case 'lr_admin_login':
+            $data['content'] = theme('lr_admin_login');
+            break;
+        case 'login':
+            if (!user_is_logged_in()) {
+                $data['content'] = theme('lr_user_login');
+            }
+//            else {
+//                $data['content'] = '';
+//            }
+            break;
+        case 'lr_user_register':
+            if (!user_is_logged_in()) {
+                $data['content'] = theme('lr_user_register');
+            }
+//            else {
+//                $data['content'] = '';
+//            }
+            break;
+        case 'lr_user_forgot':
+            if (!user_is_logged_in()) {
+                $data['content'] = theme('lr_user_forgot');
+            }
+//            else {
+//                $data['content'] = '';
+//            }
+            break;
+        case 'main':
+            if (isset($data['content']['summary']['#attributes']['class']) && in_array('user-member', $data['content']['summary']['#attributes']['class'])) {
+                if (isset($_GET['vtype'])) {
+                    drupal_set_message('<h2 class="element-invisible">Error message</h2><ul><li class="messageinfo"></li><div class="clear"></div></ul><div id="resetpassword-container" style="display: none"></div>');
+                }
+                    drupal_add_js('jQuery(".messages").hide()', array('type' => 'inline', 'scope' => 'footer'));
+            }
+            break;
+    }
+}
+
+/**
+ * Implements hook_block_view().
+ *
+ * @param string $delta Which block to render. This is a unique identifier for the block within the module, defined in hook_block_info()
+ * @return array Contain block's body and subject
+ */
+function lr_ciam_block_view($delta) {
+    $block = array();
+    if ($delta == 'lr_admin_login') {
+        $block['content'] = '';
+    }
+    return $block;
+}
+
+
+
+function lr_ciam_block_configure($delta = '') {
+    $form = array();
+    if ($delta == 'lr_user_register') {
+        $form['custom_login_link'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Enter the link to custom login interface'),
+            '#default_value' => variable_get('custom_login_link',''),
+        );
+        $form['custom_forgot_link'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Enter the link to custom Forgot password interface'),
+            '#default_value' => variable_get('custom_forgot_link',''),
+        );
+    }
+    if ($delta == 'lr_user_forgot') {
+        $form['custom_login_link'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Enter the link to custom login interface'),
+            '#default_value' => variable_get('custom_login_link',''),
+        );
+        $form['custom_register_link'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Enter the link to custom register interface'),
+            '#default_value' => variable_get('custom_register_link',''),
+        );
+    }
+     if ($delta == 'login') {
+         $form['custom_forgot_link'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Enter the link to custom Forgot password interface'),
+            '#default_value' => variable_get('custom_forgot_link',''),
+        );
+        $form['custom_register_link'] = array(
+            '#type' => 'textfield',
+            '#title' => t('Enter the link to custom register interface'),
+            '#default_value' => variable_get('custom_register_link',''),
+        );
+    }
+    return $form;
+    
+}
+
+function lr_ciam_block_save($delta = '', $edit = array()) {
+    if ($delta == 'lr_user_forgot' || $delta == 'lr_user_register') {
+        variable_set('custom_login_link', $edit['custom_login_link']);
+    }
+     if ($delta == 'lr_user_forgot'|| $delta == 'login') {
+        variable_set('custom_register_link', $edit['custom_register_link']);
+    }
+    if ($delta == 'lr_user_register' || $delta == 'login') {
+        variable_set('custom_forgot_link', $edit['custom_forgot_link']);
+    }
+}
+
+
+
+/**
+ * Implement hook get_loginradius_token of social login module.
+ *
+ * @param $token
+ * @param $form
+ */
+function lr_ciam_get_loginradius_token($token, $form) {
+    $force_user_registration = variable_get('lr_ciam_force_registration');
+    if ($force_user_registration == 0) {
+        variable_set('lr_ciam_force_registration', 1);
+//        variable_set('lr_ciam_enabled_force_registration', 1);
+    }
+}
+
+/**
+ * Update user data when existing user data save.
+ *
+ * @param $userprofile
+ * @param $account
+ */
+function lr_ciam_add_existing_user_save($userprofile, $account) {
+    drupal_add_js('
+  if(sessionStorage.getItem("lr-user-uid") == null){
+  sessionStorage.setItem("lr-user-uid", "' . $userprofile->Uid . '");}', array('type' => 'inline', 'scope' => 'header'));
+
+    drupal_add_js('
+  if(localStorage.getItem("lr-user-uid") == null){
+  localStorage.setItem("lr-user-uid", "' . $userprofile->Uid . '");}', array('type' => 'inline', 'scope' => 'header'));
+
+    lr_ciam_update_user_table($userprofile->Uid, $account->uid);
+    if (variable_get('lr_ciam_update_profile') == 1) {
+        $data = array();
+        lr_ciam_field_mapping_create_user($data, $userprofile, $account);
+        $existing_user = user_load($account->uid);
+        $data = array_merge((array) $existing_user, $data);
+        user_save((object) array('uid' => $existing_user->uid), (array) $data);
+    }
+}
+
+/**
+ * Map User Registration Custom Fields in account.
+ *
+ * @param $form_state
+ * @param $userprofilelr_ciam_field_mapping_create_user
+ */
+function lr_ciam_field_mapping_create_user(&$form_state, $userprofile, $account) {
+    module_load_include('inc', 'lr_ciam', 'includes/lr_field_mapping');
+    $field_map = variable_get('lr_ciam_user_fields', array());
+
+    $instances = field_info_instances('user', 'user');
+
+    foreach ($instances as $field_name => $instance) {
+        if (isset($field_map[$field_name])) {
+            $fields = field_info_field($field_name);
+            $temp_parts = explode('|', $field_map[$field_name]);
+            if (isset($temp_parts[0]) && $temp_parts[0] == 'ciam') {
+                $callback = 'lr_ciam_field_mapping_field_convert_text';
+                if (isset($fields['module']) && $fields['module'] == 'list') {
+                    $callback = 'lr_ciam_field_mapping_field_convert_list';
+                }
+                $lr_field_mapping_property_name = $temp_parts[1];
+                if ($value = $callback($lr_field_mapping_property_name, $userprofile, $fields)) {
+                    $form_state[$field_name][LANGUAGE_NONE][0] = $value;
+                }
+            }
+        }
+    }
+
+
+    if (module_exists('profile2')) {
+        $profile_field_map = variable_get('lr_ciam_profile_fields', array());
+
+        foreach ($profile_field_map as $key => $value) {
+            $mapped_value[$key] = array_values($value);
+        }
+
+        foreach (field_info_instances('profile2') as $field_name => $instances) {
+            if (!empty($mapped_value[$field_name]) && strlen(implode($mapped_value[$field_name])) != 0) {
+                $profile = profile2_load_by_user($account->uid, $field_name);
+
+                if (!$profile) {
+                    $profile = profile_create(array(
+                      'type' => $field_name,
+                      'uid' => $account->uid
+                    ));
+                }
+
+                foreach ($instances as $instance => $array) {
+                    $field = field_info_field($array['field_name']);
+                    if (isset($profile_field_map[$field_name][$array['field_name']])) {
+                        $profile_temp_parts = explode('|', $profile_field_map[$field_name][$array['field_name']]);
+                        if (isset($profile_temp_parts[0]) && $profile_temp_parts[0] == 'ciam') {
+
+                            $callback = 'lr_ciam_field_mapping_field_convert_text';
+                            $lr_field_mapping_property_name = $profile_temp_parts[1];
+                            $value = $callback($lr_field_mapping_property_name, $userprofile, $field, $array);
+                            $profile->{$array['field_name']}[LANGUAGE_NONE][0]['value'] = $value; // Department info got from 3rd party site.
+                            $form_state['values']['profile_' . $field_name] = array();
+                            $form = array();
+                            $form['#parents'] = array();
+                            field_attach_submit('profile2', $profile, $form, $form_state); // Attach $profile to profile2 submit.
+                            $profile->bundle = $field_name; // Main is the profile type which is created in step 3.
+                            profile2_save($profile);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Implement hook add_user_data_after_save of social login.
+ *
+ * @param $account
+ * @param $userprofile
+ */
+function lr_ciam_add_user_data_after_save($account, $userprofile) {
+
+    if (variable_get('lr_ciam_force_registration') == 1) {
+        variable_del('lr_ciam_force_registration');
+//        variable_del('lr_ciam_enabled_force_registration');
+    }
+    drupal_add_js('
+  if(sessionStorage.getItem("lr-user-uid") == null){
+  sessionStorage.setItem("lr-user-uid", "' . $userprofile->Uid . '");}', array('type' => 'inline', 'scope' => 'header'));
+
+    drupal_add_js('
+  if(localStorage.getItem("lr-user-uid") == null){
+  localStorage.setItem("lr-user-uid", "' . $userprofile->Uid . '");}', array('type' => 'inline', 'scope' => 'header'));
+
+    lr_ciam_update_user_table($userprofile->Uid, $account->uid);
+    $data = array();
+    $existing_user = user_load($account->uid);
+    lr_ciam_field_mapping_create_user($data, $userprofile, $account);
+    $data = array_merge((array) $existing_user, $data);
+    user_save((object) array('uid' => $existing_user->uid), (array) $data);
+}
+
+/**
+ * Implement hook add_user_data_after_save of social login.
+ *
+ * @param $account
+ * @param $userprofile
+ */
+function lr_ciam_check_ciam_uid($userprofile) {
+    if (!empty($userprofile->Uid)) {
+        try {
+            $uid = db_query("SELECT uid FROM {users} WHERE lr_ciam_uid = :lr_ciam_uid", array(
+              ':lr_ciam_uid' => $userprofile->Uid,
+                ))->fetchField();
+        }
+        catch (Exception $e) {
+            watchdog('loginradius_logging', $e, array(), WATCHDOG_ERROR);
+        }
+
+        if ($uid) {
+            return user_load($uid);
+        }
+    }
+    return FALSE;
+}
+
+/**
+ * Convert text and text_long data.
+ *
+ * @param string $lr_field_mapping_property_name User profile property name through which data mapped
+ * @param object $userprofile User profile data that you got from social network
+ * @return array  Contain value of field map data
+ */
+function lr_ciam_field_mapping_field_convert_text($lr_field_mapping_property_name, $userprofile) {
+    $value = NULL;
+    if (isset($userprofile->CustomFields->$lr_field_mapping_property_name)) {
+        if (is_string($userprofile->CustomFields->$lr_field_mapping_property_name)) {
+            $value = $userprofile->CustomFields->$lr_field_mapping_property_name;
+        }
+    }
+
+    return $value ? array('value' => $value) : NULL;
+}
+
+/**
+ * Convert list type data.
+ *
+ * @param string $lr_field_mapping_property_name User profile property name through which data mapped
+ * @param object $userprofile User profile data that you got from social network
+ * @param string User field name stored in database
+ * @return array  Contain value of field map data
+ */
+function lr_ciam_field_mapping_field_convert_list($lr_field_mapping_property_name, $userprofile, $fields) {
+    $options = list_allowed_values($fields);
+    $best_match = 0.0;
+    $match_sl = strtolower($userprofile->CustomFields->$lr_field_mapping_property_name);
+
+    foreach ($options as $key => $option) {
+        $option = trim($option);
+        $match_option = strtolower($option);
+        $this_match = 0;
+        similar_text($match_option, $match_sl, $this_match);
+
+        if ($this_match > $best_match) {
+            $best_match = $this_match;
+            $best_key = $key;
+        }
+    }
+    return isset($best_key) ? array('value' => $best_key) : NULL;
+}
+
+/**
+ * Alter form option when Ciam enabled.
+ *
+ * @param $form
+ * @param $form_state
+ * @param $form_id
+ * @return mixed
+ */
+function lr_ciam_form_lr_ciam_lr_advance_settings_alter(&$form, &$form_state, $form_id) {
+    $instances = field_info_instances('user', 'user');
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    if (isset($apiKey) && !empty($apiKey) && isset($secret) && !empty($secret)) {
+        $socialLoginObject = new SocialLoginAPI($apiKey, $secret, array('authentication' => false, 'output_format' => 'json'));
+        $response = $socialLoginObject->getUserCustomFields($apiKey, $secret);
+
+        $fields = isset($response->CustomFields) ? $response->CustomFields : '';
+
+        if (!empty($fields) && count($fields) > 0) {
+
+            $properties = $fields;
+            $property_options = array();
+
+            foreach ($properties as $property => $property_info) {
+                $property_options['ciam|' . $property] = $property;
+            }
+            foreach ($instances as $field_name => $instance) {
+                $field = field_info_field($instance['field_name']);
+                if ($field['type'] == 'text' || $field['type'] == 'list_text') {
+                    $value = $form['fieldmap']['lr_ciam_user_fields'][$field_name]['#options'];
+                    $form['fieldmap']['lr_ciam_user_fields'][$field_name]['#options'] = array(
+                      t('LoginRadius Data') => $value,
+                      t('User Registration Custom Fields') => $property_options,
+                    );
+                }
+            }
+            if (module_exists('profile2')) {
+                foreach (field_info_instances('profile2') as $field_name => $instances) {
+                    foreach ($instances as $instance => $array) {
+                        $field = field_info_field($array['field_name']);
+                        if ($field['type'] == 'text') {
+                            $value = $form['fieldmap']['lr_ciam_profile_fields'][$field_name][$array['field_name']]['#options'];
+                            $form['fieldmap']['lr_ciam_profile_fields'][$field_name][$array['field_name']]['#options'] = array(
+                              t('LoginRadius Data') => $value,
+                              t('User Registration Custom Fields') => $property_options,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+    unset($form['user_settings']['lr_ciam_force_registration']);
+    $enablehosted = variable_get('lr_hosted_page_enable');
+    if (module_exists('lr_hosted_page') && (isset($enablehosted) && $enablehosted == '1')) {
+        unset($form['user_settings']);
+        unset($form['login_settings']);
+        unset($form['fieldmap']);
+    }
+    return $form;
+}
+
+/**
+ * Implements hook_admin_paths().
+ *
+ * Respond to Define administrative paths.
+ *
+ * @return array A list of administrative paths.
+ */
+function lr_ciam_admin_paths() {
+    return array(
+      'user/*/lr_ciam' => TRUE,
+      'user/*/lr_ciam/delete/*' => TRUE,
+    );
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Respond to disable traditional login block form.
+ *
+ * @param array $form Nested array of form elements that comprise the form.
+ * @param array $form_state A keyed array containing the current
+ * state of the form
+ * @param string $form_id A unique string identifying the form
+ * @return array A renderable html form
+ */
+function lr_ciam_form_alter(&$form, &$form_state, $form_id) {
+    if (variable_get('lr_ciam_disable_traditional_login') == 1) {
+        if ($form_id == 'user_login_block') {
+            unset($form['name']);
+            unset($form['pass']);
+            unset($form['actions']);
+            unset($form['links']);
+        }
+        return $form;
+    }
+}
+
+/**
+ * Implements hook_form_FORMID_alter().
+ *
+ * Respond to disable traditional block,unblock,cancel button.
+ * Will change edit button link.
+ *
+ * @param array $form Nested array of form elements that comprise the form.
+ * @param array $form_state A keyed array containing the current
+ * state of the form
+ * @param string $form_id A unique string identifying the form
+ * @return array A renderable html form
+ */
+function lr_ciam_form_user_admin_account_alter(&$form, &$form_state, $form_id) {
+    if ($form_id == 'user_admin_account') {
+        if (module_exists('lr_ciam')) {
+            foreach ($form['accounts']['#options'] as $key => $options) {
+                $form['accounts']['#options'][$key]['operations']['data']['#options'] = array();
+            }
+        }
+    }
+    return $form;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Respond to add a lr_ciam link on user register form.
+ *
+ * @param array $form Nested array of form elements that comprise the form.
+ * @param array $form_state A keyed array containing the current state of the form
+ */
+function lr_ciam_form_user_register_form_alter(&$form, &$form_state) {
+    // Add lr_ciam link to registration form.
+    if (isset($_SESSION['social_lrdata'])) {
+        $userprofile = $_SESSION['social_lrdata'];
+        unset($_SESSION['social_lrdata']);
+
+        if (isset($userprofile->ID) && !empty($userprofile->ID)) {
+            $data = lr_ciam_check_exist_username($userprofile);
+            $form['account']['name']['#default_value'] = $data['username'];
+            $form['account']['mail']['#default_value'] = $userprofile->Email_value;
+
+            if (variable_get('user_email_verification', TRUE)) {
+                $form['account']['pass']['#type'] = 'hidden';
+                $form['account']['pass']['#value'] = user_password();
+            }
+            lr_field_mapping_show_ciam_profile_field_to_register_form($form, $userprofile);
+        }
+    }
+}
+
+/**
+ * Implements hook_mail().
+ *
+ * @param string $key An identifier of the mail
+ * @param array $message An array to be filled in
+ * @param array $params An arbitrary array of parameters set by the caller to drupal_mail
+ *
+ * Implements hook_mail().
+ */
+function lr_ciam_mail($key, &$message, $params) {
+    switch ($key) {
+        case 'newuser':
+            $language = $message['language'];
+            $variables = array(
+              'user' => $params['account'],
+              'pass' => isset($params['pass']) ? $params['pass'] : '',
+            );
+            $message['subject'] = lr_ciam_mail_text($key . '_subject', $language, $variables);
+            $message['body'][] = lr_ciam_mail_text($key . '_body', $language, $variables);
+            break;
+    }
+}
+/**
+ * Function that process login/registration/popup functionality.
+ *
+ * @global object $user user information
+ * @param array $form Nested array of form elements that comprise the form.
+ * @param array $form_state A keyed array containing the current state of the form
+ * @param string $token LoginRadius access token
+ * @return array A renderable html form
+ */
+function lr_ciam_user_register_validate($form, &$form_state) {
+    global $user;
+    $post_value = $_REQUEST;
+
+
+    if (isset($post_value['action_completed']) && $post_value['action_completed'] == 'register') {
+        variable_set('showmsg', 'Email for verification has been sent to your provided email id, check email for further instructions');
+        drupal_goto();
+    }
+    if (isset($post_value['action_completed']) && $post_value['action_completed'] == 'forgotpassword') {
+        variable_set('showmsg', 'Password reset information sent to your provided email id, check email for further instructions');
+        drupal_goto();
+    }
+
+    $request_token = isset($post_value['token']) ? trim($post_value['token']) : '';
+    if (count(module_implements('get_loginradius_token')) > 0) {
+        $value = module_invoke_all('get_loginradius_token', $request_token, $form);
+        if (!empty($value)) {
+            return $value;
+        }
+    }
+    
+    // Handle email popup.
+    if (isset($post_value['lr_ciam_emailclick'])) {
+        return lr_ciam_email_popup_submit($form, $form_state, $post_value);
+    }
+    // Clear session of loginradius data when email popup cancel.
+    elseif (isset($post_value['lr_ciam_emailclick_cancel'])) {
+        unset($_SESSION['lrdata']);
+        drupal_goto();
+    }
+      
+    $apiKey = trim(variable_get('lr_ciam_apikey'));
+    $secret = trim(variable_get('lr_ciam_apisecret'));
+    $userObject = new UserAPI($apiKey, $secret, array('output_format' => 'json'));
+ 
+    // Check loginradius token is posted on this page.
+    if (empty($request_token) || $request_token == 'undefined') {
+        return;
+    }    
+        
+    //$request_token = 'ab66a35e-175d-4df2-a9c5-efec49186a8a';
+    
+    try {
+        $userprofile = $userObject->getProfile($request_token);
+        $userprofile->widget_token = $request_token;
+    }
+    catch (LoginRadiusException $e) {
+        if (count(module_implements('check_lrtoken_valid')) > 0) {
+           module_invoke_all('check_lrtoken_valid', $request_token); 
+        }
+        $msg = isset($e->getErrorResponse()->Description) ? $e->getErrorResponse()->Description : '';
+        drupal_set_message(t($msg), 'error');
+    }
+    
+    // Advanced module LR Code Hook Start.
+    // Make sure at least one module implements our hook.
+    if (count(module_implements('add_loginradius_userdata')) > 0 && isset($userprofile)) {
+        // Call all modules that implement the hook, and let them.
+        // Make changes to $variables.        
+        $result = module_invoke_all('add_loginradius_userdata', $userprofile, $userprofile->widget_token);
+
+        $value = end($result);
+        if (!empty($value)) {
+            $userprofile = $value;
+        }
+    }
+
+    // Advanced module LR Code Hook End.
+    // Handle login/registration functionality when user os not logged in.
+    if (!user_is_logged_in()) {
+       
+        if (isset($userprofile->ID) && $userprofile->ID != '') {
+           // print_r($userprofile);die;
+            $_SESSION['access_token'] = $request_token;
+            $_SESSION['password'] = $userprofile->Password;
+            $userprofile = lr_ciam_getuser_data($userprofile);        
+            variable_set('user_verify', 0);
+            $condition = empty($userprofile->Email_value);
+             
+
+            if ($condition) {
+                $account = user_external_load($userprofile->ID);
+                if (isset($account->uid) && $account->uid != 0) {
+                    return $form = lr_ciam_provide_login_to_unblock_user($account, $userprofile, $form, $form_state);
+                }
+                else {
+                    watchdog('loginradius_logging', "Email id field not provided", array(), WATCHDOG_ERROR);
+                }
+            }
+
+            return $form = lr_ciam_check_existing_user($form, $form_state, $userprofile);
+        }
+        elseif (!user_is_logged_in()) {
+            //$userprofile = isset($userprofile) ? $userprofile : '';
+            lr_ciam_show_error_message();
+        }
+    }
+    elseif (!empty($request_token)) {
+        if ((!isset($post_value['lr_source'])) || (isset($post_value['lr_source']) && !in_array($post_value['lr_source'], array(
+              'wall_post',
+              'friend_invite',
+            )))
+        ) {
+            lr_ciam_user_identities_submit($form, $user, $request_token);
+        }
+    }
+}

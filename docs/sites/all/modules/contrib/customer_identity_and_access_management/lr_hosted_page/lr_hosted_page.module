@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ * Responed to url handling for lr_sso_menu module.
+ *
+ * @return array An array of menu items
+ */
+
+module_load_include('inc', 'lr_ciam', 'includes/lr_ciam.functions');
+
+function lr_hosted_page_menu() {
+  $file_path = drupal_get_path('module', 'lr_hosted_page');
+  $items['admin/config/people/ciam/hosted'] = array(
+    'title' => 'Hosted Page',
+    'description' => 'hosted page system',  
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('lr_hosted_settings_form'),
+    'access arguments' => array('administer hosted'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 7,
+    'file path' => $file_path,
+    'file' => 'includes/lr_hosted_page.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Responed to Define user permissions.
+ *
+ * @return array An array of permission settings
+ */
+function lr_hosted_page_permission() {
+  return array(
+    'administer hosted' => array(
+      'title' => t('Administer hosted settings'),
+      'restrict access' => TRUE,
+    ),
+  );
+}
+
+function lr_hosted_page_preprocess_page(&$variables) {
+  global $user;
+  $current_path = current_path();
+  $node = arg(1);
+  $destination = array('destination' => "node/$node#comment-form");
+ 
+  $current_alias = drupal_get_path_alias($current_path);
+  $protocol = stripos($_SERVER['SERVER_PROTOCOL'],'https') === true ? 'https://' : 'http://';
+  $homeDomain = $_SERVER['HTTP_HOST'].$GLOBALS['base_path'];
+  $fulldomainname = $protocol.$homeDomain; 
+
+  $enablehosted = variable_get('lr_hosted_page_enable');
+  $site_name = variable_get('lr_ciam_site_name');
+  if((isset($enablehosted) && $enablehosted == '1') && (isset($site_name) && $site_name != '')){  
+  if (!user_is_logged_in()) { 
+
+    if (variable_get('lr_hosted_page_logout') == 1) {        
+        variable_del('lr_hosted_page_logout');       
+          drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=logout&return_url='.$fulldomainname);
+      } else if(($current_alias == 'user/login') && (isset($_GET['destination']) && $_GET['destination'] == $destination['destination']) || ($current_alias == 'user/login') || ($current_alias == 'user')){
+          $url = 'https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=login&return_url='.urldecode(lr_ciam_get_callback_url());
+          header('Location: ' . $url, TRUE, 302); 
+      } else if(($current_alias == 'user/register') && (isset($_GET['destination']) && $_GET['destination'] == $destination['destination']) || ($current_alias == 'user/register')){
+          $url = 'https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=register&return_url='.urldecode(lr_ciam_get_callback_url());
+          header('Location: ' . $url, TRUE, 302);           
+      } else if($current_alias == 'user/password'){
+          drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=forgotpassword&return_url='.urldecode(lr_ciam_get_callback_url()));
+      } 
+    } else {        
+      if($current_alias == 'user/'.$user->uid.'/edit'){
+         drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=profile');
+      } else if($current_alias == 'user/'.$user->uid.'/password'){
+         drupal_goto('https://'.variable_get('lr_ciam_site_name').'.hub.loginradius.com/auth.aspx?action=profile');
+      }
+    }    
+  } 
+}
+
+/**
+ * When user logout the set variable.
+ *
+ * @param $account
+ */
+function lr_hosted_page_user_logout($account) { 
+    if(isset($_GET['notlogged']) && $_GET['notlogged'] != '1') {
+    variable_set('lr_hosted_page_logout', 1); 
+    }
+}
+
+
+
+
+
+

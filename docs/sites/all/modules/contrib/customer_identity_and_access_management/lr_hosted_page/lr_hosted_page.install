@@ -1,0 +1,24 @@
+<?php
+
+/**
+ * @file
+ * Provides uninstall function for the CIAM module.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function lr_hosted_page_uninstall() {
+  variable_del('lr_hosted_page_enable');
+  variable_del('lr_hosted_page_logout');
+}
+
+/**
+ * Implements hook_schema().
+ */
+function lr_hosted_page_schema() {
+  db_update('system')
+    ->fields(array('weight' => 5))
+    ->condition('name', 'lr_hosted_page', '=')
+    ->execute();
+}

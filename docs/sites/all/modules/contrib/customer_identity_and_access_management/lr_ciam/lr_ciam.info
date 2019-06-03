@@ -1,0 +1,16 @@
+name = CIAM
+description = Allow users to sign up through a registration form. User Registration offers fully customized options for collecting and updating user data.
+package = CIAM
+core = 7.x
+stylesheets[all][] = css/lr_ciam.min.css
+configure = admin/config/people/ciam
+version = "3.2"
+project = "ciam_loginradius"
+
+
+
+; Information added by Drupal.org packaging script on 2018-08-17
+version = "7.x-3.2"
+core = "7.x"
+project = "customer_identity_and_access_management"
+datestamp = "1534495084"

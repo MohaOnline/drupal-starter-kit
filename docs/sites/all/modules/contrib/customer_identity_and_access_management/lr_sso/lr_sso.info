@@ -1,0 +1,16 @@
+name = SSO (Single Sign ON)
+description = Enable a single login system for multiple websites: users only need to log in once to get access to all of your web properties.
+dependencies[] = lr_ciam
+package = CIAM
+core = 7.x
+configure = admin/config/people/ciam/sso
+version = "3.2"
+project = "ciam_loginradius"
+
+
+
+; Information added by Drupal.org packaging script on 2018-08-17
+version = "7.x-3.2"
+core = "7.x"
+project = "customer_identity_and_access_management"
+datestamp = "1534495084"
