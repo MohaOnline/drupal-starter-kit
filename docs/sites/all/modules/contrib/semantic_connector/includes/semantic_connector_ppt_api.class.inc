@@ -1927,6 +1927,9 @@ class SemanticConnectorPPTApi_5_6 extends SemanticConnectorPPTApi_5_3 {
     $result = $this->connection->get($resource_path, array(
       'query' => $get_parameters,
     ));
+    if ($result === FALSE) {
+      return array();
+    }
 
     return json_decode($result, TRUE);
   }
@@ -2083,7 +2086,7 @@ class SemanticConnectorPPTApi_7_0 extends SemanticConnectorPPTApi_6_2 {
   public function addLiteral($project_id, $concept_uri, $property, $label, $language = NULL) {
     $resource_path = $this->getApiPath() . 'thesaurus/' . $project_id . '/addLiteral';
     $post_parameters = array(
-      'resourceUri' => $concept_uri,
+      'resource' => $concept_uri,
       'label' => $label,
       'property' => $property,
     );
@@ -2097,5 +2100,49 @@ class SemanticConnectorPPTApi_7_0 extends SemanticConnectorPPTApi_6_2 {
     ));
 
     return $result;
+  }
+}
+
+/**
+ * Class SemanticConnectorPPTApi_7_1
+ *
+ * API Class for the version 7.1.
+ */
+class SemanticConnectorPPTApi_7_1 extends SemanticConnectorPPTApi_7_0 {
+
+  /**
+   * Export data of a project as a file and store it on the server.
+   *
+   * @param string $project_id
+   *   The ID of the PoolParty project to export and store.
+   * @param string $format
+   *   The returned RDF format.
+   *   Possible values are: TriG, N3, Turtle, N-Triples, RDF/XML, TriX
+   * @param string $export_modules
+   *   A list of the export modules for the data that should be exported.
+   *   Possible values are:
+   *   - concepts - includes concept schemes, concepts, collections and notes
+   *   - workflow - workflow status for all concepts
+   *   - history - all history events
+   *   - freeConcepts - all free concepts
+   *   - void - the project VoiD graph
+   *   - adms - the project ADMS graph
+   *
+   * @return string
+   *   The URL of the stored file or an empty string if an error occurred.
+   */
+  public function storeProject($project_id, $format = 'RDF/XML', $export_modules = 'concepts') {
+    $resource_path = $this->getApiPath() . 'projects/' . $project_id . '/store';
+    $post_parameters = array(
+      'format' => $format,
+      'exportModules' => $export_modules,
+      'prettyPrint' => TRUE,
+    );
+    $file_path = $this->connection->post($resource_path, array(
+      'data' => $post_parameters,
+    ));
+    $file_path = json_decode($file_path);
+
+    return (filter_var($file_path, FILTER_VALIDATE_URL) !== FALSE) ? $file_path : '';
   }
 }

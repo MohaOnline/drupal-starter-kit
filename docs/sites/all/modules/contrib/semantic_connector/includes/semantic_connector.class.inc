@@ -699,8 +699,8 @@ class SemanticConnectorPPServerConnection extends SemanticConnectorConnection {
     // list when they are fully functional. The order of the versions is not
     // important.
     $available_api_versions = array(
-      'pp_server' => array('4.6', '5.3', '5.6', '6.0', '6.2', '7.0'),
-      'sonr' => array('4.6', '5.3', '5.6', '5.7', '6.0', '6.1', '7.0'),
+      'pp_server' => array('4.6', '5.3', '5.6', '6.0', '6.2', '7.0', '7.1'),
+      'sonr' => array('4.6', '5.3', '5.6', '5.7', '6.0', '6.1', '7.0', '7.1'),
     );
 
     $version_infos = array(

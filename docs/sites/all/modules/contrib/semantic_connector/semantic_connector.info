@@ -16,8 +16,8 @@ files[] = includes/semantic_connector_watchdog.class.inc
 stylesheets[all][] = css/semantic_connector.css
 scripts[] = js/semantic_connector.js
 
-; Information added by Drupal.org packaging script on 2019-01-11
-version = "7.x-2.10"
+; Information added by Drupal.org packaging script on 2019-06-03
+version = "7.x-2.11"
 core = "7.x"
 project = "semantic_connector"
-datestamp = "1547205190"
+datestamp = "1559574198"
