@@ -8,8 +8,11 @@
  * $polyfills is included to support HTML5 in IE8 and below.
  *
  * Adaptivetheme variables:
- * - $is_mobile: Bool, requires the Browscap module to return TRUE for mobile
- *   devices. Use to test for a mobile context.
+ * - $is_mobile: Mixed, requires the Mobile Detect or Browscap module to return
+ *   TRUE for mobile.  Note that tablets are also considered mobile devices.  
+ *   Returns NULL if the feature could not be detected.
+ * - $is_tablet: Mixed, requires the Mobile Detect to return TRUE for tablets.
+ *   Returns NULL if the feature could not be detected.
  *
  * @see template_preprocess()
  * @see template_preprocess_maintenance_page()
@@ -27,7 +30,7 @@
   <?php print $polyfills; ?>
 </head>
 <body class="<?php print $classes; ?>" <?php print $attributes;?>>
-  <?php print $page_top; ?>
+  <?php isset($page_top) ? print $page_top : '';  ?>
   <div id="page" class="container">
     <header id="header" class="clearfix" role="banner">
       <div id="branding" class="branding-elements clearfix">
@@ -53,6 +56,6 @@
       </div>
     </section>
   </div>
-  <?php print $page_bottom ?>
+  <?php isset($page_bottom) ? print $page_bottom : ''; ?>
 </body>
 </html>

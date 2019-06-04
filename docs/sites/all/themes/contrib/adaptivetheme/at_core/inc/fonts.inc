@@ -22,14 +22,14 @@ function font_elements() {
         'type' => 'title',
         'subtype' => 'branding',
         'element' => 'sn',
-        'selector' => '#site-name',
+        'selector' => 'h1#site-name',
         'setting' => 'site_name_font',
       ),
       'site_slogan' => array(
         'type' => 'title',
         'subtype' => 'branding',
         'element' => 'ss',
-        'selector' => '#site-slogan',
+        'selector' => 'h2#site-slogan',
         'setting' => 'site_slogan_font',
       ),
       'page_title' => array(
