@@ -1,0 +1,13 @@
+name = Interval Field
+description = A field and widget to allow entry of a date/time interval
+package = Date/Time
+core = 7.x
+dependencies[] = field
+dependencies[] = date_api
+files[] = interval.test
+
+; Information added by Drupal.org packaging script on 2019-04-02
+version = "7.x-1.2"
+core = "7.x"
+project = "interval"
+datestamp = "1554246489"

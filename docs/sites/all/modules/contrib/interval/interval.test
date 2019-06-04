@@ -1,0 +1,35 @@
+<?php
+
+class IntervalUnitTestCase extends DrupalUnitTestCase {
+
+  public static function getInfo() {
+    // Note: getInfo() strings should not be translated.
+    return array(
+      'name' => 'Interval unit test',
+      'description' => 'Test interval works properly.',
+      'group' => 'Interval',
+    );
+
+  }
+
+
+  public function testInterval() {
+    date_default_timezone_set('America/Vancouver');
+    $date = new DateTime();
+    // Set the date to a known problem datetime: 2017-02-28 21:06:37.000000
+    $date->setTimestamp(1488344797);
+
+
+    // Mock the interval and period
+    $item = [
+      'interval' => 1,
+      'period' => 'month',
+    ];
+
+    interval_apply_interval($date, $item, TRUE);
+
+    $time = $date->format('U');
+    // Ensure that the date is the last day of March at 21:06:37
+    $this->assertEqual($time, '1491019597', 'March 31st 21:06:37');
+  }
+}
