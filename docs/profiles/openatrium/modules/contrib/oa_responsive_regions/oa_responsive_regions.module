@@ -1,0 +1,168 @@
+<?php
+/**
+ * @file
+ * Let's you define responsive panels regions.
+ */
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function oa_responsive_regions_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'panels' || $owner == 'ctools') {
+    return "plugins/$plugin_type";
+  }
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function oa_responsive_regions_page_build(&$page) {
+  if ($responsive_regions = oa_responsive_regions_get_responsive_regions()) {
+    // Add module js if we have responsive regions on current page.
+    $path = drupal_get_path('module', 'oa_responsive_regions');
+    drupal_add_css($path . '/css/oa_responsive_regions.css');
+    drupal_add_js($path . '/js/oa_responsive_regions.js');
+  }
+}
+
+function oa_responsive_regions_get_responsive_regions() {
+  $responsive_regions = array();
+  if (module_exists('page_manager') && $page = page_manager_get_current_page()) {
+    $responsive_regions = _oa_responsive_regions_get_page_responsive_regions($page);
+  }
+  if (module_exists('panels_everywhere') && $page = _oa_responsive_regions_panels_everywhere_page()) {
+    $responsive_regions += _oa_responsive_regions_get_page_responsive_regions($page);
+  }
+  // Allow other modules to alter responsive regions.
+  drupal_alter('oa_responsive_regions', $responsive_regions);
+
+  return $responsive_regions;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function oa_responsive_regions_theme() {
+  $path = drupal_get_path('module', 'oa_responsive_regions') . '/templates';
+  return array(
+    'oa_responsive_regions_toggle' => array(
+      'variables' => array('position' => '', 'icon' => ''),
+      'path' => $path,
+      'template' => 'oa-responsive-regions-toggle',
+    ),
+    'oa_responsive_regions_mobile' => array(
+      'path' => $path,
+      'template' => 'oa-responsive-regions-mobile',
+    ),
+  );
+}
+
+/**
+ * Helper function to get responsive region positions.
+ */
+function _oa_responsive_regions_get_positions() {
+  // Positions for responsive regions.
+  $positions = array(
+    'top' => t('Top tray'),
+    'bottom' => t('Bottom tray'),
+    'left' => t('Left tray'),
+    'right' => t('Right tray'),
+    'center' => t('Full-width content region'),
+    'fluid' => t('Fluid content region')
+  );
+
+  // Allow other modules to alter the positions
+  drupal_alter('oa_responsive_regions_positions', $positions);
+
+  return $positions;
+}
+
+
+/**
+ * Helper function to get the responsive panels regions for a page.
+ */
+function _oa_responsive_regions_get_page_responsive_regions($page) {
+  $regions = array();
+  $handler = $page['handler'];
+
+  // Get the display.
+  if (isset($handler->conf['display'])) {
+    $display = $handler->conf['display'];
+  }
+  else {
+    // This is panelizer.
+    $context = $handler->conf['context'];
+    $display = $page['contexts'][$context]->data->panelizer['page_manager']->display;
+  }
+
+  // Check if we have responsive regions.
+  if ($display) {
+    foreach (array_keys($display->panels) as $region) {
+      if (!empty($display->panel_settings[$region]['style']) && $display->panel_settings[$region]['style'] == 'oa_responsive_region') {
+        // Let's add some info about the responsive region.
+        $settings = $display->panel_settings['style_settings'][$region];
+        $regions[$settings['position']] = array(
+          'region' => $region,
+          'settings' => $settings,
+        );
+      }
+    }
+  }
+
+  return $regions;
+}
+
+/**
+ * Helper function to check for using panels everywhere
+ *
+ * Taken from theme_panels_everywhere_page() and panels_everywhere_page_build()
+ */
+function _oa_responsive_regions_panels_everywhere_page() {
+  $task = page_manager_get_task('site_template');
+
+  // Panels everywhere arguments come from
+  // panels_everywhere_site_template_get_arguments() in site_template.inc
+  $args = array();
+  $args[] = array(
+    'keyword' => 'content',
+    'identifier' => t('Page content'),
+    'id' => 1,
+    'name' => 'page_content',
+    'settings' => array(),
+  );
+
+  ctools_include('context');
+  ctools_include('context-task-handler');
+  $contexts = ctools_context_handler_get_task_contexts($task, '', $args);
+
+  // Test to see if something has specified that we use a specific template on
+  // this page.
+  if ($handler_name = panels_everywhere_get_site_template()) {
+    $handler = page_manager_load_task_handler($task, '', $handler_name);
+  }
+  // If not, ask.
+  if (empty($handler)) {
+    $handlers = page_manager_load_sorted_handlers($task, '', TRUE);
+    if ($handlers) {
+      $handler_name = ctools_context_handler_get_render_handler($task, '', $handlers, $contexts, $args);
+      if ($handler_name) {
+        $handler = $handlers[$handler_name];
+      }
+    }
+  }
+
+  // Ensure display is loaded
+  if (empty($handler->conf['display'])) {
+    $handler->conf['display'] = panels_load_display($handler->conf['did']);
+  }
+
+  $result = array(
+    'name' => 'site_template',
+    'task' => $task,
+    'subtask' => '',
+    'contexts' => $contexts,
+    'arguments' => $args,
+    'handler' => $handler,
+  );
+  return $result;
+}

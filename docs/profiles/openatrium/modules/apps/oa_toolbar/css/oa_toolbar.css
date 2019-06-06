@@ -1,0 +1,204 @@
+/***********/
+/* Toolbar */
+/***********/
+
+ul.oa_toolbar {
+  list-style: none;
+	font-weight: normal;
+	position: relative;
+  padding: 0;
+  margin: 0;
+}
+
+ul.command-button-wrapper {
+  margin: 0;
+}
+
+/* Hide Navbar module's navbar */
+#navbar-bar {
+  display: none;
+}
+.drupal-navbar .navbar-tray-vertical .navbar-toggle-orientation,
+.drupal-navbar .navbar-icon-toggle-horizontal,
+.drupal-navbar .navbar-icon-toggle-vertical {
+  display: none;
+}
+.touch .drupal-navbar .navbar-tray-vertical.active {
+  bottom: 0 !important;
+}
+.navbar .oa-navigation .nav {
+  display: inline-block;
+  float: left;
+}
+.oa-menu-banner {
+  display: inline-block;
+  /* Allow it to take up horizonal space in menu but not vertical space */
+  height: 1px;
+  float: left;
+}
+.oa-navbar {
+  margin-bottom: 0;
+  border-width: 0;
+}
+
+.navbar.oa-navbar {
+  margin-bottom: 0;
+  border-width: 0;
+}
+
+.oa-navbar .btn-toolbar {
+  float: left;
+  margin: 3px 0 0 10px;
+}
+
+.oa-navbar a.dropdown-toggle.btn {
+  line-height: 1.5em;
+}
+
+#oa_toolbar .icon-home {
+  color: #333;
+}
+
+.navbar-inverse .oa-navbar .icon-home {
+  color: #fffeff;
+}
+
+.oa_toolbar .btn {
+	margin: 0 0;
+}
+
+.oa-navbar .btn-group {
+	margin: 0;
+}
+
+.oa-navbar ul.dropdown-menu .dropdown-column {
+	float: left;
+	margin: 0.5em;
+	padding: 0;
+}
+
+.oa-navbar .dropdown .dropdown-menu li {
+padding: 0 0;
+margin: 0;
+width: 100%;
+}
+
+.oa-navbar ul.dropdown-menu h3 {
+	font-size: 1.2em;
+	line-height: 30px;
+	margin: 0;
+	padding: 0 20px;
+}
+
+.oa-navbar li ul li {
+  margin: 0;
+}
+
+.oa-navbar li ul li ul {
+  margin: 0;
+}
+
+.oa-navbar li a.active {
+	font-style: italic;
+}
+
+.oa-navbar .more-link {
+	font-size: 12px;
+}
+.oa-navbar .moscone-flipped-container {
+  margin-bottom: 0;
+}
+
+.dropdown-menu > .oa-multicolumn {
+  display: flex;
+  flex-wrap: nowrap;
+}
+@media (max-width: 767px) {
+  .dropdown-menu > .oa-multicolumn {
+    flex-wrap: wrap;
+  }
+  .dropdown-menu > .oa-multicolumn > .oa-column {
+    width: 100%;
+  }
+}
+
+/**************/
+/* User badge */
+/**************/
+#oa-user-badge {
+  position: relative;
+}
+#oa-user-badge .user-badge img {
+  width: auto;
+  height: 29px;
+  margin: -5px -12px -5px 5px;
+}
+#oa-user-badge .dropdown-menu {
+  margin: 0;
+  min-width: inherit;
+}
+#oa-user-badge .dropdown-menu ul {
+  margin: 0;
+}
+#oa-user-badge .dropdown-menu ul li {
+  margin: 0;
+}
+
+/***************/
+/* Menu button */
+/***************/
+#toolbar-menu-button {
+  font-size: 14px;
+  text-transform: uppercase;
+  line-height: 1.5em;
+}
+.panel-pane .pull-left #toolbar-menu-button {
+  margin-left: 5px !important;
+}
+/* Space Menu */
+.oa-space-menu ul.nav {
+  display: inline-block;
+  float: left;
+  margin-top: 4px;
+}
+.oa-space-menu img {
+  max-height: 40px;
+  width: auto;
+  height: auto;
+  vertical-align: baseline;
+  padding: 2px 0;
+  margin: 0 0 0 5px;
+}
+.oa-space-menu ul > li > a > img {
+  max-height: 24px;
+  vertical-align: middle;
+  margin-right: 5px;
+  top: -2px;
+  position: relative;
+}
+
+.oa-space-menu i {
+  padding-right: 3px;
+}
+
+.oa-space-menu [class^="icon-"],
+.oa-space-menu [class*=" icon-"] {
+  padding-right: 6px;
+}
+
+.pane-oa-footer-panel img {
+  padding: 5px;
+}
+
+/** Space Nav toolbar Mobile **/
+@media (max-width: 767px) {
+  .oa-space-nav .oa-space-list {
+    padding-left: 0;
+  }
+  .oa-space-nav .oa-section-list {
+    display: none;
+  }
+  .oa-space-nav .oa-separator {
+    display: none;
+  }
+}

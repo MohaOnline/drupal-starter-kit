@@ -1,0 +1,40 @@
+.oa-favorites h3 {
+  white-space: nowrap;
+}
+.pull-right .oa-favorites {
+  margin: 0 5px 0 0;
+}
+.pull-left .oa-favorites {
+  margin: 0 0 0 5px;
+}
+/* styles for flag button in favorites dropdown */
+.oa-favorites .flag {
+  width: 100%;
+  border: none;
+  background: none;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  color: #000;
+  padding: 0;
+  margin: 0;
+  text-shadow: none;
+  text-align: left;
+}
+.oa-favorites .oa-is-favorite .icon-star {
+  color: gold;
+}
+.oa-favorites .flag:hover {
+  color: white;
+  background-color: #08c;
+}
+/* hide flag throbber to clean up dropdown */
+.oa-favorites .flag-throbber {
+  display: none;
+}
+.oa-favorites .flag-wrapper {
+  padding: 0 5px;
+}

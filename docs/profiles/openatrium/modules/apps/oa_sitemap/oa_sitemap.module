@@ -1,0 +1,336 @@
+<?php
+/**
+ * @file
+ * Code for the Open Atrium Site Map feature.
+ */
+
+include_once 'oa_sitemap.features.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function oa_sitemap_menu() {
+  $items['api/oa/sitemap/%'] = array(
+    'page callback' => 'oa_sitemap_spaces_callback',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+  );
+  $items['api/oa/sitemap-update/%node'] = array(
+    'page callback' => 'oa_sitemap_update_callback',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+  );
+  $items['api/oa/sitemap-delete/%node'] = array(
+    'page callback' => 'oa_sitemap_delete_callback',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+  );
+  $items['api/oa/sitemap-option/%'] = array(
+    'page callback' => 'oa_sitemap_option_callback',
+    'page arguments' => array(3),
+    'access arguments' => array('access content'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function oa_sitemap_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'ctools' && $plugin_type == 'content_types') {
+    return 'plugins/content_types';
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function oa_sitemap_theme() {
+  $path = drupal_get_path('module', 'oa_sitemap') . '/templates';
+  return array(
+    'oa_sitemap_header' => array(
+      'template' => 'oa-sitemap-header',
+      'variables' => array(
+        'link' => NULL,
+        'search' => NULL,
+      ),
+      'path' => $path,
+    ),
+    'oa_sitemap_app' => array(
+      'template' => 'oa-sitemap-app',
+      'variables' => array(
+        'sitemap_search' => NULL,
+      ),
+      'path' => $path,
+    ),
+  );
+}
+
+/**
+ * JSON callback to return space/subspace/section data for a given space node
+ * @param $nid int optional parent node
+ */
+function oa_sitemap_spaces_callback($nid) {
+  $spaces = array();
+  oa_sitemap_spaces($nid, $spaces, !empty($_GET['nids']) ? $_GET['nids'] : array());
+  drupal_json_output($spaces);
+  return;
+}
+
+/**
+ * Helper function to capture the Batch API redirect URL.
+ *
+ * @param string $url
+ *   (optional) URL to redirect to.
+ * @param array $options
+ *   (optional) URL options.
+ *
+ * @return string|NULL
+ *   If a URL is passed in, it'll return NULL; otherwise it'll return an array
+ *   containing the arguments that this function was last called with.
+ */
+function _oa_sitemap_batch_goto($url = NULL, $options = array()) {
+  static $cache;
+  if (is_null($url)) {
+    return $cache;
+  }
+  $cache = array($url, $options);
+}
+
+/**
+ * Ajax Callback for updating fields in a space from the sitemap
+ * @param $node
+ */
+function oa_sitemap_update_callback($node) {
+  if (!node_access('update', $node) || empty($_REQUEST['token']) || !drupal_valid_token($_REQUEST['token'], 'sitemap-node-' . $node->nid)) {
+    ajax_deliver(MENU_ACCESS_DENIED);
+    return;
+  }
+
+  $new_node = $_POST['node'];
+  // If empty, save all fields, else only update specified fields.
+  $update_fields = !empty($_POST['save']) ? $_POST['save'] : array();
+  $updated = FALSE;
+  if (!$update_fields || in_array('title', $update_fields)) {
+    _oa_sitemap_update_field($node, 'title', $new_node['title'], $updated);
+  }
+  if ($new_node['type'] == OA_SPACE_TYPE) {
+    // updating a space node
+    if (!$update_fields || in_array('oa_parent_space', $update_fields)) {
+      _oa_sitemap_update_field($node, 'oa_parent_space', $new_node['parent_id'], $updated, 'target_id');
+    }
+  }
+  else {
+    // updating a section node
+    if (!$update_fields || in_array('og_group_ref', $update_fields)) {
+      _oa_sitemap_update_field($node, 'og_group_ref', $new_node['parent_id'], $updated, 'target_id');
+    }
+  }
+  if ($updated) {
+    node_save($node);
+
+    // If a batch was set, we need to redirect to the batch and then back to
+    // this space in the sitemap.
+    $batch = batch_get();
+    if (!empty($batch)) {
+      batch_process('sitemap/' . $new_node['parent_id'], 'batch', '_oa_sitemap_batch_goto');
+      $batch_redirect = _oa_sitemap_batch_goto();
+      // Tell the Javascript app that we need to redirect.
+      drupal_json_output(array(array('command' => 'redirect', 'url' => url($batch_redirect[0], array('absolute' => TRUE) + $batch_redirect[1]))));
+    }
+  }
+  return TRUE;
+}
+
+/**
+ * Helper function to update a specific field.  Handles direct node fields,
+ * value fields, entity references, taxonomy references
+ * @param $node
+ * @param $field
+ * @param $value
+ * @param $updated
+ * @param $value_key
+ */
+function _oa_sitemap_update_field($node, $field, $value, &$updated, $value_key = NULL) {
+  $lang = LANGUAGE_NONE;
+  if (!$value_key) {
+    if ((empty($node->{$field}) && $value) || (!empty($node->{$field}) && $node->{$field} != $value)) {
+      $node->{$field} = $value;
+      $updated = TRUE;
+    }
+  }
+  elseif (
+    (empty($node->{$field}[$lang][0][$value_key]) && $value)
+    || (!empty($node->{$field}[$lang][0][$value_key]) && $node->{$field}[$lang][0][$value_key] != $value)) {
+    $node->{$field}[$lang][0][$value_key] = $value;
+    $updated = TRUE;
+    if (empty($value)) {
+      unset($node->{$field});
+    }
+    else {
+      $node->{$field}[$lang][0][$value_key] = $value;
+    }
+    $updated = TRUE;
+  }
+}
+
+/**
+ * Ajax Callback for deleting a node
+ * @param $node
+ */
+function oa_sitemap_delete_callback($node) {
+  if (!node_access('delete', $node) || empty($_REQUEST['token']) || !drupal_valid_token($_REQUEST['token'], 'sitemap-node-' . $node->nid)) {
+    ajax_deliver(MENU_ACCESS_DENIED);
+    return;
+  }
+  node_delete($node->nid);
+  return TRUE;
+}
+
+/**
+ * Ajax Callback for saving Show Help to user session
+ * @param $value
+ */
+function oa_sitemap_option_callback($value) {
+  global $user;
+  if (empty($_REQUEST['token']) || !drupal_valid_token($_REQUEST['token'], 'sitemap-option')) {
+    ajax_deliver(MENU_ACCESS_DENIED);
+    return;
+  }
+
+  if (($user->uid == 0) && !drupal_session_started()) {
+    return;
+  }
+
+  $_SESSION['oa_sitemap_option'] = $value;
+  return TRUE;
+}
+
+/**
+ * Main helper function to grab all the spaces for the sitemap.
+
+ * @param $node
+ *    Node object or nid to load for, or 0 for top level.
+ * @param $spaces
+ *    Array by reference to be filled with space listing
+ * @param $seen_nids
+ *   An array of NIDS that don't need to be reprocessed.
+ * @param $parent_child_depth
+ *   We want to load the current level and it's parents children for proper
+ *   movement in sitemap, this is an internal value that manages that.
+ * @param $override_parent_id
+ *  Set the parent ID to this.
+ *
+ * @returns
+ *   An array of data
+ *
+ */
+function oa_sitemap_spaces($node, &$spaces,  $seen_nids = array(), $parent_child_depth = 2, $override_parent_id = 0) {
+  global $user;
+
+  if (is_numeric($node) && $node > 0) {
+    $node = node_load($node);
+  }
+  $nid = $node ? $node->nid : 0;
+
+  $new_space = empty($node)
+    ? user_access('create ' . OA_SPACE_TYPE . ' content', $user)
+    : (module_exists('oa_subspaces') && og_user_access('node', $nid, 'create ' . OA_SPACE_TYPE . ' content', $user));
+
+  $visibility = 1;
+  $admin_access = empty($node) ? $new_space : node_access('update', $node);
+  $section_links = array();
+
+  // Make sure not already processed, as may be working up the tree to get
+  // parent's children.
+  if (!empty($spaces[$nid]) && !$parent_child_depth) {
+    return;
+  }
+
+  if ($node) {
+    $visibility = field_get_items('node', $node, 'group_access');
+    $visibility = $visibility[0]['value'];
+    $sections = oa_core_space_sections($nid, NODE_PUBLISHED, FALSE, array(
+      'field_oa_section|tid',
+      'field_oa_group_ref|target_id',
+      'field_oa_team_ref|target_id',
+      'field_oa_user_ref|target_id',
+    ));
+    foreach ($sections as $section) {
+      $id = $section->field_oa_section_tid;
+      if (empty($id)) {
+        $term = taxonomy_get_term_by_name('Default', 'section_type');
+        $id = !empty($term) ? current(array_keys($term)) : 0;
+      }
+      $section_links[] = array(
+        'nid' => $section->nid,
+        'parent_id' => ($nid == 0) ? -1 : $nid,
+        'type' => OA_SECTION_TYPE,
+        'title' => $section->title,
+        'url' => url('node/' . $section->nid),
+        'url_edit' => url('node/' . $section->nid . '/edit'),
+        //don't have a full section node, so can't call node_access('update',section)
+        //so use the parent's admin access
+        'admin' => $admin_access,
+        'visibility' =>
+          empty($section->field_oa_group_ref_target_id) &&
+          empty($section->field_oa_team_ref_target_id) &&
+          empty($section->field_oa_user_ref_target_id),
+        'icon_id' => $id,
+        'token' => drupal_get_token('sitemap-node-' . $section->nid),
+      );
+    }
+
+    $parents = field_get_items('node', $node, 'oa_parent_space');
+    $spaces[$nid] = array(
+      'nid' => $nid,
+      'parent_id' => $override_parent_id ? $override_parent_id :
+        // node_load here to make sure parent exists still.
+        ($parents && (($parent = node_load($parents[0]['target_id'])) && $parent->type == 'oa_space') ? $parents[0]['target_id']: 0),
+      'title' => decode_entities(check_plain($node->title)),
+      'url' =>  url('node/' . $nid),
+      'url_edit' => url('node/' . $nid . '/edit'),
+      'status' => $node->status,
+      'new_section' => og_user_access('node', $nid, "create " . OA_SECTION_TYPE . " content", $user),
+    );
+  }
+  else {
+    $spaces[$nid] = array(
+      'nid' => 0,
+      'parent_id' => -1 ,
+      'title' => t('Site Home'), // variable_get('site_name', t('Home')),
+      'url' => url('<front>'),
+      'url_edit' => '',
+      'status' => 1,
+      'new_section' => FALSE,
+    );
+  }
+  $spaces[$nid] += array(
+    'nid' => $nid,
+    'type' => OA_SPACE_TYPE,
+    'admin' => $admin_access,
+    'visibility' => $visibility,
+    'new_space'=> $new_space,
+    'sections' => $section_links,
+    'subspaces' => array(),
+    'children_fetched' => $parent_child_depth > 0,
+    'token' => drupal_get_token('sitemap-node-' . $nid),
+  );
+
+  // Fetch the children.
+  if ($parent_child_depth > 0) {
+    foreach (oa_core_get_groups_by_parent($nid) as $child) {
+      $spaces[$nid]['subspaces'][$child] = $child;
+      oa_sitemap_spaces($child, $spaces, $seen_nids, 0, $nid);
+    }
+  }
+
+  // If parent_id is not in spaces, need to get it.
+  $parent_id = $spaces[$nid]['parent_id'];
+  if ($parent_id > -1 && empty($spaces[$parent_id]) && empty($seen_nids[$parent_id])) {
+    oa_sitemap_spaces($parent_id, $spaces, $seen_nids, $parent_child_depth ? $parent_child_depth - 1 : 0);
+    $spaces[$parent_id]['subspaces'][$nid] = $nid;
+  }
+  return $spaces;
+}

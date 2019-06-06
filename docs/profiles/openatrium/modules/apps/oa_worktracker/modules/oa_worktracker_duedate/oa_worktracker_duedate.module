@@ -1,0 +1,77 @@
+<?php
+/**
+ * @file
+ * Code for the Open Atrium Work Tracker - Due Date feature.
+ */
+
+include_once 'oa_worktracker_duedate.features.inc';
+
+/**
+ * Implements hook_views_default_views_alter().
+ *
+ * Temporarily do this custom, until we can track down the problem
+ * in Features Override.
+ *
+ */
+function oa_worktracker_duedate_views_default_views_alter(&$data) {
+  if (isset($data['oa_worktracker'])) {
+    $fields =& $data['oa_worktracker']->display['task_list']->display_options['fields'];
+    $splitIndex = array_search('realname_1', array_keys($fields));
+    
+    $fields = array_merge(
+      array_slice($fields, 0, $splitIndex),
+      array('field_oa_worktracker_duedate' => array(
+        'id' => 'field_oa_worktracker_duedate',
+        'table' => 'field_data_field_oa_worktracker_duedate',
+        'field' => 'field_oa_worktracker_duedate',
+        'settings' => array(
+          'format_type' => 'oa_date',
+          'fromto' => 'both',
+          'multiple_number' => '',
+          'multiple_from' => '',
+          'multiple_to' => '',
+          'show_repeat_rule' => 'show',
+        ),
+      )),
+      array_slice($fields, $splitIndex)
+    );
+
+    $data['oa_worktracker']->display['task_list']->display_options['style_options']['columns']['field_oa_worktracker_duedate'] = 'field_oa_worktracker_duedate';
+
+    $data['oa_worktracker']->display['task_list']->display_options['style_options']['info']['field_oa_worktracker_duedate'] = array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    );
+  }
+}
+
+/**
+ * An '#after_build' callback for setting the default time.
+ */
+function _oa_worktracker_duedate_set_default_time($form, &$form_state) {
+  if (empty($form['value']['time']['#value'])) {
+    $form['value']['time']['#value'] = variable_get_value('oa_worktracker_duedate_default_time');
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function oa_worktracker_duedate_form_oa_worktracker_task_node_form_alter(&$form, &$form_state, $form_id) {
+  $langcode = $form['language']['#value'];
+  $form['field_oa_worktracker_duedate'][$langcode][0]['#after_build'][] = '_oa_worktracker_duedate_set_default_time';
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function oa_worktracker_duedate_form_comment_form_alter(&$form, &$form_state, $form_id) {
+  if ($form['#node']->type == 'oa_worktracker_task' && isset($form['field_oa_worktracker_duedate'])) {
+    $langcode = $form['language']['#value'];
+    $form['field_oa_worktracker_duedate'][$langcode][0]['#after_build'][] = '_oa_worktracker_duedate_set_default_time';
+  }
+}

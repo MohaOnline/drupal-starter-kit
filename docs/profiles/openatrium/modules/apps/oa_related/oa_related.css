@@ -1,0 +1,509 @@
+/* Columns of same height styles for paragraph forms */
+.row-same-height {
+  display: table;
+  width: 100%;
+}
+
+.col-centered {
+  margin: 0 auto;
+  float: none !important;
+}
+
+.col-xs-height {
+  display: table-cell;
+  float: none !important;
+}
+
+@media (min-width: 768px) {
+  .col-xs-height {
+    display: table-cell;
+    float: none !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .col-sm-height {
+    display: table-cell;
+    float: none !important;
+  }
+}
+
+/* Vertical alignment styles */
+.col-top {
+  vertical-align: top;
+}
+.col-middle {
+  vertical-align: middle;
+}
+.col-bottom {
+  vertical-align: bottom;
+}
+
+.margin-top {
+  margin-top: 5%;
+}
+
+/* Reduce some white space around the draggable handles */
+.field-type-paragraphs .field-multiple-table td.field-multiple-drag {
+  width: 20px;
+}
+.field-type-paragraphs .field-multiple-table td.field-multiple-drag a.tabledrag-handle {
+  padding-right: 0;
+}
+.field-type-paragraphs a.tabledrag-handle .handle {
+  margin-right: 0;
+  padding-right: 0;
+}
+
+/*Body fields on nodes END*/
+
+/*Edit form styling for paragraphs field*/
+
+.form-item-field-oa-related-add-more-type {
+  display: inline-block;
+  width: 70%;
+}
+
+.form-item-field-oa-related-add-more-type select {
+  width: 100%;
+  display: inline-block;
+  height: 34px;
+}
+
+#edit-field-oa-related-und-add-more .field-add-more-submit {
+  display: inline-block;
+  margin: 0;
+}
+
+/*CSS for various paragraph item styles*/
+.paragraphs-item-paragraph-media .file-image .content,
+.paragraphs-item-paragraph-media .file-video .content {
+  padding-bottom: 10px;
+}
+
+td.oa-image-quarter {
+  max-width: 256px;
+}
+
+.oa-table-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.oa-table-actions a {
+  font-size: 18px;
+  color: #777;
+}
+
+.oa-table-actions a:hover,
+.oa-table-actions a:focus {
+  text-decoration: none;
+}
+
+h4.oa-table-title {
+  margin-top: 0;
+}
+
+.table-bordered td.oa-table-noborder {
+  border: 0;
+}
+
+.pull-center .file-image .content,
+.pull-center .file-video .content {
+  clear: both;
+  text-align: center;
+}
+
+.pull-left .file-image .content {
+  padding-right: 10px;
+}
+
+.pull-right .file-image .content {
+  padding-left: 10px;
+}
+
+.pull-full .field-type-file .field-item {
+  display: inline-block;
+  width: 100%;
+  padding-right: 0;
+  text-align: center;
+}
+
+.pull-grid2 .field-type-file .field-item {
+  display: inline-block;
+  width: 49%;
+  padding-right: 1%;
+}
+
+.pull-grid3 .field-type-file .field-item {
+  display: inline-block;
+  width: 32%;
+  padding-right: 1%;
+}
+
+.pull-grid4 .field-type-file .field-item {
+  display: inline-block;
+  width: 24%;
+  padding-right: 1%;
+}
+
+.pull-grid5 .field-type-file .field-item {
+  display: inline-block;
+  width: 19%;
+  padding-right: 1%;
+}
+
+h3.oa_snippet_title {
+  margin-top: 5px;
+}
+
+.entity-paragraphs-item.oa-columns-2 {
+  -webkit-column-count: 2;
+  -moz-column-count: 2;
+  column-count: 2;
+  -webkit-column-width: 200px;
+  -moz-column-width: 200px;
+  column-width: 200px;
+}
+
+.entity-paragraphs-item.oa-columns-3 {
+  -webkit-column-count: 3;
+  -moz-column-count: 3;
+  column-count: 3;
+  -webkit-column-width: 200px;
+  -moz-column-width: 200px;
+  column-width: 200px;
+}
+
+.entity-paragraphs-item.oa-columns-4 {
+  -webkit-column-count: 4;
+  -moz-column-count: 4;
+  column-count: 4;
+  -webkit-column-width: 200px;
+  -moz-column-width: 200px;
+  column-width: 200px;
+}
+
+.entity-paragraphs-item.oa-callout-left {
+  float: left;
+  width: 32%;
+  margin-right: 20px;
+}
+
+.entity-paragraphs-item.oa-callout-right {
+  float: right;
+  width: 32%;
+  margin-left: 20px;
+}
+
+.oa-callout {
+  padding: 10px 15px;
+  border-style: solid;
+  border-width: 1px;
+  margin-bottom: 10px;
+}
+
+.entity-paragraphs-item .field-label-heading .field-label {
+  font-size: 16px;
+  font-weight: 200;
+  border-top: 1px solid #ccc;
+  margin-top: 20px;
+  text-align: right;
+  text-transform: uppercase;
+  clear: both;
+}
+
+.field-label-heading .field-label .field-colon {
+  display: none;
+}
+
+.paragraphs-item-paragraph-content h2:nth-child(1) {
+  margin-top: 0;
+}
+
+.paragraphs-item-paragraph-content .oa-discussion-parent {
+  margin-top: 0;
+}
+
+.paragraphs-item-paragraph-content .node-oa-discussion-post {
+  padding-right: 20px;
+}
+
+.paragraphs-item-paragraph-content .table {
+  margin-bottom: 0;
+}
+
+.paragraphs-item-paragraph-content hr {
+  margin-top: 0;
+}
+
+.oa-related-file {
+  clear: both;
+  margin-bottom: 10px;
+  padding: 0 0 10px 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.oa-related-file .oa-related-image {
+  display: inline-block;
+  width: 32%;
+}
+
+.oa-related-file .oa-related-image img {
+  vertical-align: middle;
+}
+
+.oa-related-file .oa-related-title {
+  display: inline-block;
+  word-wrap: break-word;
+  width: 42%;
+}
+
+.oa-related-file .oa-related-size {
+  display: inline-block;
+  width: 22%;
+  font-size: 12px;
+  text-align: right;
+}
+
+.oa-related-refitem {
+  clear: both;
+  padding: 0 0 5px 0;
+}
+
+.oa-related-refitem .oa-related-type {
+  display: inline;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding-left: 10px;
+  text-align: right;
+  float: right;
+}
+
+tr .field-type-entityreference .form-item {
+  white-space: normal;
+}
+
+/*Relates to paragraph forms*/
+
+/*Remove borders on paragraph draggable forms*/
+.field-type-paragraphs .table-bordered > tbody > tr > td {
+  border: none;
+}
+
+/*Paragraph icon buttons*/
+.field-type-paragraphs input.paragraphs-add-mode-button {
+  border-radius: 0 !important;
+  font-size: 1.8em !important;
+  margin-top: 0;
+  font-family: 'FontAwesome';
+}
+
+.field-type-paragraphs .form-item {
+  margin-top: 0;
+}
+
+#modal-content .field-type-paragraphs input.paragraphs-add-mode-button {
+  color: #333333;
+  background-color: white;
+  border-color: #cccccc;
+}
+
+/* Styling for paragraph forms */
+.p-border {
+  border: #ddd 1px solid;
+  border-radius: 4px;
+  background-color: whitesmoke;
+}
+
+.paragraph-form input.btn,
+.field-widget-paragraphs-embed input.paragraphs-add-more-submit.btn {
+  display: inline-block;
+}
+
+.field-widget-paragraphs-embed .tabledrag-toggle-weight-wrapper a {
+  display: none;
+}
+
+.field-widget-paragraphs-embed .paragraphs-media-widget .media-widget {
+  display: inline-block;
+}
+
+.field-widget-paragraphs-embed .form-actions {
+  background-color: transparent;
+}
+
+.field-widget-paragraphs-embed .action-links input {
+  width: 95%;
+}
+
+.field-widget-paragraphs-embed [id*='paragraph-bundle-title'] .placeholder {
+  font-size: 1.5em;
+  font-style: inherit;
+}
+
+.field-widget-paragraphs-embed table#field-oa-related-values td {
+  border: none;
+}
+
+.field-widget-paragraphs-embed [id*='paragraph-bundle-title'] {
+  padding: 1%;
+}
+
+. field-widget-paragraphs-embed .paragraph-form .draggable td {
+  border: none;
+}
+
+/*Related Content*/
+.oa-related-paragraph-form.paragraph-content .layout-select {
+  padding-top: 2%;
+}
+
+.oa-related-paragraph-form.paragraph-content .field-name-field-oa-related-content input.field-add-more-submit {
+  float: right;
+}
+
+.oa-related-paragraph-form.paragraph-content .layout-select {
+  margin-top: 4%;
+}
+
+.oa-related-paragraph-form.paragraph-content .dialog-links ul {
+  padding: 1%;
+}
+
+.oa-related-paragraph-form.paragraph-content ul.references-dialog-links li a[href*="oa-discussion-post"] {
+  background: url('icons/discussion.png') left no-repeat;
+}
+
+.oa-related-paragraph-form.paragraph-content ul.references-dialog-links li a[href*="oa-event"] {
+  background: url('icons/event.png') left no-repeat;
+}
+
+.oa-related-paragraph-form.paragraph-content ul.references-dialog-links li a[href*="oa-wiki-page"] {
+  background: url('icons/document.png') left no-repeat;
+}
+
+.oa-related-paragraph-form.paragraph-content ul.references-dialog-links li a[href*="oa-worktracker-task"] {
+  background: url('icons/task.png') left no-repeat;
+}
+
+.oa-related-paragraph-form.paragraph-content ul.references-dialog-links,
+ul.references-dialog-links li {
+  float: left;
+  margin: 0;
+  max-width: 81%;
+}
+
+.oa-related-paragraph-form.paragraph-content input.field-add-more-submit {
+  background-color: transparent;
+  width: 100%;
+}
+
+.oa-related-paragraph-form.paragraph-content .field-name-field-oa-related-content {
+  margin: 20px 0 20px 0;
+}
+
+.oa-related-paragraph-form.paragraph-content [id*='field-oa-related-content-values'] thead tr th.field-label {
+  display: none;
+}
+
+/* Media */
+.oa-related-paragraph-form.paragraph-media .field-name-field-oa-media {
+  margin-top: 20px;
+}
+
+.oa-related-paragraph-form.paragraph-media fieldset legend.panel-heading {
+  display: none;
+}
+
+/*Snippet*/
+.oa-related-paragraph-form.paragraph-snippet .field-name-field-snippet-content .dialog-links {
+  position: absolute;
+  top: 0;
+  right: 10px;
+}
+
+.oa-related-paragraph-form.paragraph-snippet .snippet-show-title {
+  position: relative;
+  top: 0;
+  right: 0;
+}
+
+.oa-related-paragraph-form.paragraph-snippet .snippet-lock-revision label {
+  float: left;
+  margin-right: 2%;
+}
+
+.oa-related-paragraph-form.paragraph-snippet .snippet-title-override label {
+  float: left;
+  margin-left: 2%;
+}
+
+.oa-related-paragraph-form.paragraph-snippet .snippet-title-override input {
+  display: block;
+  clear: left;
+}
+
+/*Text*/
+.oa-related-paragraph-form.paragraph-text .text-content label {
+  display: none;
+}
+
+.oa-related-paragraph-form.paragraph-text .text-layout {
+  padding-top: 2%;
+  max-width: 97%;
+}
+
+.field-type-paragraphs .field-multiple-table td.field-multiple-drag a.tabledrag-handle {
+  padding: 0;
+}
+
+/* Paragraph action links */
+.oa-related-paragraph-form .paragraph-action-links input.oa-related-trash {
+  border: none !important;
+  box-shadow: none !important;
+  background: none !important;
+  color: black !important;
+  font-family: 'FontAwesome' !important;
+}
+.oa-related-paragraph-form .paragraph-action-links.related-content {
+  position: absolute;
+  top: 190px;
+  right: -10px;
+}
+#modal-content .oa-related-paragraph-form .paragraph-action-links.related-content {
+  position: absolute;
+  top: 158px;
+  right: -10px;
+}
+.oa-related-paragraph-form .paragraph-action-links.related-media {
+  position: absolute;
+  top: 99px;
+  right: -10px;
+}
+#modal-content .oa-related-paragraph-form .paragraph-action-links.related-media {
+  position: absolute;
+  top: 99px;
+  right: -10px;
+}
+.oa-related-paragraph-form .paragraph-action-links.related-snippet {
+  position: absolute;
+  top: 178px;
+  right: -10px;
+}
+#modal-content .oa-related-paragraph-form .paragraph-action-links.related-snippet {
+  position: absolute;
+  top: 173px;
+  right: -10px;
+}
+.oa-related-paragraph-form .paragraph-action-links.related-text {
+  position: absolute;
+  top: 239px;
+  right: -10px;
+}
+#modal-content .oa-related-paragraph-form .paragraph-action-links.related-text {
+  position: absolute;
+  top: 251px;
+  right: -10px;
+}
+/* END Relates to paragraph forms*/

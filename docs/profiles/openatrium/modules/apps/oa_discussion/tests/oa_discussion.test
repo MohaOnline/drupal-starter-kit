@@ -1,0 +1,85 @@
+<?php
+
+/**
+ * @file
+ * Tests permission inheritence for oa_subspaces
+ */
+
+class oa_discussion extends oa_coreBaseWebTest {
+  static function getInfo() {
+    return array(
+      'name' => 'OA Discussions',
+      'description' => 'Test that create discussions correctly',
+      'group' => 'OA',
+    );
+  }
+
+  function test_oa_subspacesSectionAccess() {
+    variable_del('drupal_test_email_collector');
+    $langcode = LANGUAGE_NONE;
+    $section_key = "oa_section_ref[$langcode]";
+    $group_key = "og_group_ref[$langcode][0][default]";
+    $body_key = "body[$langcode][0][value]";
+    $body_comment_key = "comment_body[und][0][value]";
+    $notifications_key = "oa_notifications[notify_list][notification_add]";
+
+    extract($this->createOaSpaceAndUsers(array(), 
+      array('create oa_space content', 'create oa_section content', 'edit any oa_section content', 'create oa_discussion_post content', 'edit any oa_discussion_post content')));
+    $space2 = $this->createOaSpace(array('uid' => $space_admin->uid));
+    $section = $this->createNodeInOaSpace($space, array('type' => 'oa_section'));
+    $section2 = $this->createNodeInOaSpace($space, array('type' => 'oa_section'));
+    $section_of_space2 = $this->createNodeInOaSpace($space2, array('type' => 'oa_section'));
+    $this->assertTrue(!variable_get('drupal_test_email_collector', array()), 'Email collector is empty');
+    $this->drupalLogin($space_admin);
+    $this->drupalGet('node/' . $space->nid);
+    $edit = array(
+      'title' => $this->randomName(16),
+      $section_key => $section->nid,
+      $group_key => $space->nid,
+      $body_key => $this->randomName(26),
+      $notifications_key => 'user:' . $space_admin->uid,
+    );
+    $this->drupalPost('node/add/oa-discussion-post', $edit, t('Publish'));
+    // Email has only "created" message 
+    $this->assertTrue(count(variable_get('drupal_test_email_collector', array())) == 1, 'Email collector has one email');
+
+    $discussion = $this->drupalGetNodeByTitle($edit['title']);
+    $this->drupalGet('node/' . $discussion->nid);
+    $first_comment_edit = array(
+      $body_comment_key => $this->randomName(26),
+    );
+    $this->drupalPost('node/' . $discussion->nid, $first_comment_edit, t('Save'));
+
+    // "Replied" to message now added.
+    $this->assertTrue(count(variable_get('drupal_test_email_collector', array())) == 2, 'Email collector has two emails. ' . count(variable_get('drupal_test_email_collector', array())));
+
+    // Verify both the parent and child appear on parent.
+    $this->drupalGet('node/' . $discussion->nid);
+    $this->assertText($discussion->body[LANGUAGE_NONE][0]['value'], 'Node body of discussion appears.');
+    $this->assertText($first_comment_edit[$body_comment_key], 'Comment body on discussion appears.');
+
+    // Test without any sections.
+    $edit = array(
+      'title' => $this->randomName(16),
+      $group_key => $space->nid,
+      $body_key => $this->randomName(26),
+      $notifications_key => 'user:' . $space_admin->uid,
+    );
+    $this->drupalPost('node/add/oa-discussion-post', $edit, t('Publish'));
+    // Create email.
+    $this->assertTrue(count(variable_get('drupal_test_email_collector', array())) == 3, 'Email collector has three emails. ' . count(variable_get('drupal_test_email_collector', array())));
+
+    $discussion_no_section = $this->drupalGetNodeByTitle($edit['title']);
+    $this->drupalGet('node/' . $discussion_no_section->nid);
+    $second_comment_edit = array(
+      $body_comment_key => $this->randomName(26),
+    );
+    $this->drupalPost('node/' . $discussion_no_section->nid, $second_comment_edit, t('Save'));
+    // Replied to email.
+    $this->assertTrue(count(variable_get('drupal_test_email_collector', array())) == 4, 'Email collector has four emails. ' . count(variable_get('drupal_test_email_collector', array())));
+
+    $this->assertText($discussion_no_section->body[LANGUAGE_NONE][0]['value'], 'Node body of discussion appears.');
+    $this->assertText($second_comment_edit[$body_comment_key], 'Comment on discussion appears.');
+  }
+
+}

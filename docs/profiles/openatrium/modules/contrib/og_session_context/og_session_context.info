@@ -1,0 +1,15 @@
+name = Session Context
+description = Provides og_context value from session variable.
+package = Open Atrium
+core = 7.x
+php = 5.1
+
+dependencies[] = og
+dependencies[] = og_context
+
+; Information added by Drupal.org packaging script on 2016-04-19
+version = "7.x-1.0"
+core = "7.x"
+project = "og_session_context"
+datestamp = "1461076742"
+

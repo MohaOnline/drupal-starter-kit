@@ -1,0 +1,192 @@
+<?php
+/**
+ * @file
+ * Code for the OpenAtrium Wiki feature.
+ */
+
+include_once 'oa_wiki.features.inc';
+
+/**
+ * Implements hook_pre_features_rebuild().
+ *
+ * @see http://drupal.org/node/1549608
+ */
+function oa_wiki_pre_features_rebuild($component) {
+  if ($component == 'user_permission') {
+    drupal_static_reset('panelizer_entity_plugin_get_handler');
+  }
+}
+
+
+/**
+ * Implements hook_node_prepare().
+ */
+function oa_wiki_node_prepare($node) {
+  if (empty($node->nid) && $node->type == 'oa_wiki_page' && module_exists('og_menu_single') && (function_exists('oa_core_get_section_context') && ($section = oa_core_get_section_context())) && ($plid = og_menu_single_get_link_mlid('node', $section))) {
+    global $conf;
+    // No good way to set default for parent.
+    // @see menu_form_node_form_alter().
+    $conf['menu_parent_oa_wiki_page'] = OG_MENU_SINGLE_MENU_NAME . ':' . $plid;
+  }
+}
+
+/**
+ * Implements hook_strongarm_alter().
+ */
+function oa_wiki_strongarm_alter(&$items) {
+  // If workbench_moderation is enabled when oa_wiki is enabled, then we enable
+  // moderation for oa_wiki_pages.
+  if (module_exists('workbench_moderation')) {
+    $node_options_name = "node_options_oa_wiki_page";
+    if (isset($items[$node_options_name])) {
+      $items[$node_options_name]->value[] = 'moderation';
+      sort($items[$node_options_name]->value);
+    }
+  }
+
+  // Set up space-specific variables.
+  if (isset($data['variable_realm_list_og'])) {
+    // The assigned to settings.
+    if (!in_array('oa_wiki_vocab', $data['variable_realm_list_og']->value)) {
+      $data['variable_realm_list_og']->value[] = 'oa_wiki_vocab';
+    }
+  }
+}
+
+/**
+ * Implements hook_modules_implements_alter().
+ */
+function oa_wiki_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'strongarm_alter') {
+    // Move oa_wiki's implementation to the first one any other modules can
+    // override our default easily if they don't want workbenech enabled.
+    $group = $implementations['oa_wiki'];
+    unset($implementations['oa_wiki']);
+    $implementations = array_merge(array('oa_wiki' => $group), $implementations);
+  }
+  elseif (($hook == 'form_alter') && (isset($implementations['oa_wiki']))) {
+    $group = $implementations['oa_wiki'];
+    unset($implementations['oa_wiki']);
+    $implementations['oa_wiki'] = $group;
+  }
+}
+
+/**
+ * Implements hook_modules_installed().
+ */
+function oa_wiki_modules_installed($modules) {
+  // If workbench_moderation gets enabled later, then we set the variable
+  // manually so the user doesn't have to worry about reverting the feature.
+  if (in_array('workbench_moderation', $modules)) {
+    $node_options_name = "node_options_oa_wiki_page";
+    $node_options = variable_get($node_options_name, array());
+    $node_options[] = 'moderation';
+    sort($node_options);
+    variable_set($node_options_name, $node_options);
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for oa_wiki_page_node_form.
+ */
+function oa_wiki_form_oa_wiki_page_node_form_alter(&$form, &$form_state) {
+  _oa_core_hide_comment_settings($form);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function oa_wiki_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'oa_wiki_page_node_form' && module_exists('oa_files')) {
+    $submit_handlers = array(
+      'node_form_submit',
+      'save_draft_submit',
+    );
+    foreach (element_children($form['actions']) as $key) {
+      if (!empty($form['actions'][$key]['#submit']) && array_intersect($submit_handlers, $form['actions'][$key]['#submit'])) {
+        $form['actions'][$key]['#submit'][] = 'oa_wiki_redirect_to_view_submit';
+      }
+    }
+  }
+}
+
+/**
+ * Submission handlers that changes the submit destination to be the view page.
+ *
+ * With the redirect logic, submitting the form could result in user downloading
+ * the file they just uploaded, so this forces them onto the view page instead.
+ * Normal destination redirect logic applies still.
+ */
+function oa_wiki_redirect_to_view_submit($form, &$form_state) {
+  global $user;
+
+  if (!empty($form_state['nid']) && !empty($form_state['redirect'])) {
+    if ('node/' . $form_state['nid'] == $form_state['redirect']) {
+      $form_state['redirect'] .= '/view';
+    }
+
+    // don't create a session for anonymous users unless session already started
+    // needed to allow Varnish to cache anonymous pages
+    if (($user->uid != 0) || drupal_session_started()) {
+      // Track the original redirect just in case we loose it on multiple calls to oa_wiki_init().
+      $_SESSION['oa_wiki']['redirects'][$form_state['nid']] = $form_state['redirect'];
+    }
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function oa_wiki_init() {
+  if (module_exists('oa_files') && arg(0) == 'node' && is_numeric(arg(1)) && !arg(2) && ($node = menu_get_object()) && $node->type == 'oa_wiki_page') {
+    if (!empty($_SESSION['oa_wiki']['redirects'][arg(1)])) {
+      unset($_SESSION['oa_wiki']['redirects'][arg(1)]);
+    }
+    elseif ($node->status == 1) {
+      if (($path = oa_wiki_node_uri($node)) && $path['path'] != $_GET['q']) {
+        node_tag_new($node);
+        drupal_goto($path['path']);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function oa_wiki_entity_info_alter(&$info) {
+  if (!empty($info['node']['bundles']['oa_wiki_page']) && module_exists('oa_files')) {
+    $info['node']['bundles']['oa_wiki_page']['uri callback'] = 'oa_wiki_node_uri';
+  }
+}
+
+/**
+ * Change the URI to the file path for wikis.
+ *
+ * This only effects places that actually use entity_uri, whic is few but will
+ * save a boostrap (no redirect needed) for those places that do.
+ */
+function oa_wiki_node_uri($node) {
+  if (!($items = field_get_items('node', $node, 'field_oa_wiki_page_no_redirect')) || empty($items[0]['value'])) {
+    if (($items = field_get_items('node', $node, 'field_oa_media')) && count($items) == 1 && !empty($items[0]['uri']) && ($url = file_create_url($items[0]['uri']))) {
+      return array('path' => $url);
+    }
+  }
+  return node_uri($node);
+}
+
+/**
+ * Implements hook_field_access().
+ */
+function oa_wiki_field_access($op, $field, $entity_type, $entity, $account) {
+  if ($field['field_name'] == 'field_oa_wiki_page_no_redirect' && !module_exists('oa_files')) {
+    return FALSE;
+  }
+}
+
+/**
+ * Implements hook_oa_related_allowed_default().
+ */
+function oa_wiki_oa_related_allowed_default() {
+  return array('oa_wiki_page');
+}

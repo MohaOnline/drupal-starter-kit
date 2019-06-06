@@ -1,0 +1,22 @@
+name = Open Atrium Home
+description = Default Home Page for Open Atrium
+core = 7.x
+package = Open Atrium
+dependencies[] = ctools
+dependencies[] = page_manager
+apps[screenshots][] = app/screenshot.png
+apps[logo] = app/logo.png
+apps[author] = Phase2 Technology
+apps[author_url] = http://www.phase2technology.com/
+apps[server] = openatrium
+apps[package] = Core addons
+features[ctools][] = page_manager:pages_default:1
+features[features_api][] = api:2
+features[page_manager_pages][] = oa_homepage
+
+; Information added by Drupal.org packaging script on 2016-10-21
+version = "7.x-2.5"
+core = "7.x"
+project = "oa_home"
+datestamp = "1477054985"
+

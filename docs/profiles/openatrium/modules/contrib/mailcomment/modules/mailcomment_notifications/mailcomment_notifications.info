@@ -1,0 +1,13 @@
+name = Mail Comment Notifications
+description = Integrates Mail Comment and Notifications
+package = "Mail Comment"
+dependencies[] = mailcomment
+dependencies[] = notifications
+core = 7.x
+
+files[] = tests/mailcomment_notifications.test
+
+; Information added by drush on 2014-02-17
+version = "7.x-2.4+13-dev"
+project = "mailcomment"
+datestamp = "1392658148"

@@ -1,0 +1,48 @@
+#contextual-tabs {
+  margin-top: 5px;
+  z-index: 100;
+  position: relative;
+}
+
+#main #contextual-tabs {
+  float: right;
+  margin-top: 23px;
+  z-index: 100;
+  position: relative;
+}
+
+#contextual-tabs > li {
+  display: inline-block;
+}
+
+#contextual-tabs .btn span {
+  float: left;
+  text-indent: -99999px;
+  width: 0;
+}
+
+#contextual-tabs .btn {
+  min-height: 31px;
+}
+
+#contextual-tabs .btn i {
+  line-height: normal;
+}
+
+#contextual-tabs .item-list ul > li {
+  margin-left: 0;
+}
+
+#contextual-tabs li a.btn-sm > i {
+  font-size: 16px;
+}
+
+#contextual-tabs .dropdown-menu {
+  left: auto;
+  right: 0;
+  margin-bottom: 0;
+}
+
+#contextual-tabs .align-right li {
+  text-align: right;
+}

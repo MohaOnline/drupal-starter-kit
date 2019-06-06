@@ -1,0 +1,26 @@
+core = 7.x
+name = Open Atrium Devel
+description = Provides useful tools for developers working with Open Atrium
+package = Open Atrium
+
+dependencies[] = coder
+dependencies[] = coder_review
+dependencies[] = devel
+dependencies[] = installprofiletest
+dependencies[] = panopoly_core
+dependencies[] = simpletest_clone
+dependencies[] = field_ui
+dependencies[] = views_ui
+apps[screenshots][] = app/screenshot.png
+apps[logo] = app/logo.png
+apps[author] = Phase2 Technology
+apps[author_url] = http://www.phase2technology.com/
+apps[server] = openatrium
+apps[package] = Core addons
+
+; Information added by Drupal.org packaging script on 2017-12-14
+version = "7.x-2.4"
+core = "7.x"
+project = "oa_devel"
+datestamp = "1513285093"
+

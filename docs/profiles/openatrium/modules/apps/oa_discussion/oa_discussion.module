@@ -1,0 +1,44 @@
+<?php
+/**
+ * @file
+ * Code for the OpenAtrium Discussion feature.
+ */
+
+include_once 'oa_discussion.features.inc';
+
+/**
+ * Implements hook_pre_features_rebuild().
+ *
+ * @see http://drupal.org/node/1549608
+ */
+function oa_discussion_pre_features_rebuild($component) {
+  if ($component == 'user_permission') {
+    drupal_static_reset('panelizer_entity_plugin_get_handler');
+  }
+}
+
+/**
+ * Preprocess the media thumbnail.
+ *
+ * Add any additional File Caption.
+ */
+function oa_discussion_preprocess_media_thumbnail(&$variables) {
+  if (!empty($variables['element']['#file']->field_file_title[LANGUAGE_NONE][0]['value'])) {
+    $variables['element']['#name'] = $variables['element']['#file']->field_file_title[LANGUAGE_NONE][0]['value'];
+  }
+}
+
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function oa_discussion_form_oa_discussion_post_node_form_alter(&$form, &$form_state) {
+  _oa_core_hide_comment_settings($form);
+}
+
+/**
+ * Implements hook_oa_related_allowed_default().
+ */
+function oa_discussion_oa_related_allowed_default() {
+  return array('oa_discussion_post');
+}

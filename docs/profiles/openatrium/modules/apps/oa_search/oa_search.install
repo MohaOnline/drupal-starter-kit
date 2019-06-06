@@ -1,0 +1,110 @@
+<?php
+
+/**
+ * @file
+ * Provides install and update hooks for oa_search.
+ */
+
+
+/**
+ * Implements hook_install().
+ */
+function oa_search_install() {
+  oa_search_enable_pages();
+}
+
+/**
+ * Implements hook_enable().
+ */
+function oa_search_enable() {
+  oa_search_rebuild_index();
+}
+
+/**
+ * Enable search layout pages, disable panopoly search pages.
+ */
+function oa_search_update_7001() {
+  oa_search_enable_pages();
+}
+
+/**
+ * @see oa_search_update_7001().
+ */
+function oa_search_enable_pages() {
+  // Add pages
+  $pages = array(
+    'search-node' => FALSE,
+    'search-user' => FALSE,
+    'page-panopoly_search' => TRUE,
+  );
+  ctools_include('export');
+  ctools_export_load_object_reset('page_manager_pages');
+  foreach ($pages as $page_name => $disable) {
+    $page = page_manager_cache_load($page_name);
+    if ($function = ctools_plugin_get_function($page->subtask, 'enable callback')) {
+      $function($page, $disable);
+    }
+  }
+  menu_rebuild();
+}
+
+
+/**
+ * Re-build the panopoly search index.
+ */
+function oa_search_rebuild_index() {
+  if (module_exists('search_api')) {
+    $server = search_api_server_load('database_server');
+    if ($server) {
+      foreach (array('database_node_index', 'user_index') as $database_index) {
+        if ($index = search_api_index_load($database_index)) {
+          $server->addIndex($index);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Queue the indexes to be re-indexed.
+ */
+function oa_search_queue_reindex() {
+  if (module_exists('search_api')) {
+    $server = search_api_server_load('database_server');
+    if ($server) {
+      foreach (array('database_node_index', 'user_index') as $database_index) {
+        if ($index = search_api_index_load($database_index)) {
+          $index->reindex();
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Re-build the panopoly search index.
+ */
+function oa_search_update_7002() {
+  oa_search_rebuild_index();
+}
+
+/**
+ * Enable user search page
+ */
+function oa_search_update_7003() {
+  oa_search_enable_pages();
+}
+
+/**
+ * Re-build the panopoly search index.
+ */
+function oa_search_update_7201() {
+  oa_search_rebuild_index();
+}
+
+/**
+ * Re-build the panopoly search index.
+ */
+function oa_search_update_7202() {
+  oa_search_queue_reindex();
+}

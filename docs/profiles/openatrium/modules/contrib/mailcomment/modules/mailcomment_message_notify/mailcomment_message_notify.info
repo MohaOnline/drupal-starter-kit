@@ -1,0 +1,13 @@
+name = Mail Comment Message Notify
+description = Integrates Mail Comment and Message Notify
+package = "Mail Comment"
+dependencies[] = mailcomment
+dependencies[] = message_notify
+core = 7.x
+
+files[] = tests/mailcomment_message_notify.test
+
+; Information added by drush on 2014-02-17
+version = "7.x-2.4+13-dev"
+project = "mailcomment"
+datestamp = "1392658148"
