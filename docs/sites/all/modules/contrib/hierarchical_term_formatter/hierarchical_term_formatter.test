@@ -1,0 +1,374 @@
+<?php
+
+/**
+ * @file
+ * Tests for Field Multiple Limit, based on examples from field.test
+ */
+
+/**
+ * Test the field formatter settings work.
+ */
+class HierarchicalTermFormatterTestCase extends DrupalWebTestCase {
+
+  var $default_storage = 'field_sql_storage';
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Hierarchical Term Formatter tests',
+      'description' => 'Creates a taxonomy vocabulary and adds terms in a multilevel hierarchy. Adds a term reference field to an entity and populates it with terms from various parts of the hierarchy. Changes the formatter display settings and verifies the changes take effect.',
+      'group' => 'Field Formatter Settings',
+    );
+  }
+
+  /**
+   * Returns a new vocabulary with random properties.
+   */
+  function createVocabulary() {
+    // Create a vocabulary.
+    $vocabulary = new stdClass();
+    $vocabulary->name = $this->randomName();
+    $vocabulary->description = 'Vocabulary description is ' . $this->randomName();
+    $vocabulary->machine_name = drupal_strtolower($vocabulary->name);
+    $vocabulary->help = '';
+    $vocabulary->nodes = array('page' => 'page');
+    $vocabulary->weight = mt_rand(0, 10);
+    taxonomy_vocabulary_save($vocabulary);
+    return $vocabulary;
+  }
+
+  /**
+   * Returns a new term with random properties in vocabulary $vid.
+   */
+  function createTerm($parent = 0) {
+    $term = new stdClass();
+    $term->name = $this->randomName();
+    $term->description = 'Term description is ' . $this->randomName();
+
+    // Use the first available text format.
+    $term->format = db_query_range('SELECT format FROM {filter_format}', 0, 1)->fetchField();
+    $term->vid = $this->vocabulary->vid;
+    $term->parent = $parent;
+    taxonomy_term_save($term);
+    return $term;
+  }
+
+  /**
+   * Create many terms in a hierarchy that allows testing the formatter display.
+   */
+  function createHierarchy() {
+    $root_term = $this->createTerm();
+    $this->terms = array();
+    $this->terms['terms'][] = $root_term;
+    $this->terms['tids'][] = $root_term->tid;
+    $this->terms['names'][] = $root_term->name;
+
+    // Add 5 more root-level terms.
+    for ($i = 0; $i < 5; $i++) {
+      $term = $this->createTerm();
+      $this->terms['terms'][] = $term;
+      $this->terms['tids'][] = $term->tid;
+      $this->terms['names'][] = $term->name;
+    }
+
+    // Add 5 child terms to the root term and second term.
+    for ($i = 0; $i < 5; $i++) {
+      $term = $this->createTerm(array($root_term->tid, $root_term->tid + 1));
+      $this->terms['terms'][] = $term;
+      $this->terms['tids'][] = $term->tid;
+      $this->terms['names'][] = $term->name;
+    }
+
+    // Add 3 child terms to the 2nd child term.
+    for ($i = 0; $i < 3; $i++) {
+      $term = $this->createTerm($root_term->tid + 6);
+      $this->terms['terms'][] = $term;
+      $this->terms['tids'][] = $term->tid;
+      $this->terms['names'][] = $term->name;
+    }
+
+    // Add 3 child terms to the 3rd child term.
+    for ($i = 0; $i < 3; $i++) {
+      $term = $this->createTerm($root_term->tid + 7);
+      $this->terms['terms'][] = $term;
+      $this->terms['tids'][] = $term->tid;
+      $this->terms['names'][] = $term->name;
+    }
+
+    // Add 5 more root-level terms.
+    for ($i = 0; $i < 5; $i++) {
+      $term = $this->createTerm();
+      $this->terms['terms'][] = $term;
+      $this->terms['tids'][] = $term->tid;
+      $this->terms['names'][] = $term->name;
+    }
+  }
+
+  function createNode($random = FALSE) {
+    $langcode = LANGUAGE_NONE;
+
+    // Add a page with all or the the test terms selected.
+    $this->drupalGet('node/add/page');
+
+    // Create node.
+    $title_key = "title";
+    $body_key = "body[$langcode][0][value]";
+    $edit = array();
+    $edit[$title_key] = $this->randomName(8);
+    $edit[$body_key] = $this->randomName(16);
+
+    // Add all our test terms.
+    $this->random_terms = array();
+    $terms = $this->terms['tids'];
+
+    // For some tests we don't want all terms selected.
+    if ($random) {
+      foreach ($terms as $tid) {
+        // Flip a coin to keep or unset term.
+        if (rand(0, 1) === 1) {
+          $this->random_terms[$tid] = $tid;
+        }
+      }
+      $terms = $this->random_terms;
+    }
+
+    $edit["{$this->field_name}[$langcode][]"] = $terms;
+    $this->drupalPost('node/add/page', $edit, t('Save'));
+    // Check that the test node exists in the database.
+    $node = $this->drupalGetNodeByTitle($edit[$title_key]);
+    $this->node_id = $node->nid;
+    $this->assertTrue($node, 'Test node found in database.');
+  }
+
+  /**
+   * Set up a text field on the page content type so we can configure it.
+   * @see FieldInstanceCrudTestCase
+   */
+  function addTestFieldToPage() {
+    $this->entity_type = 'node';
+    $this->field_name = 'taxonomy_' . $this->vocabulary->machine_name;
+    $this->bundle = 'page';
+    $field = array(
+      'field_name' => 'taxonomy_' . $this->vocabulary->machine_name,
+      'type' => 'taxonomy_term_reference',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => $this->vocabulary->machine_name,
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    field_create_field($field);
+
+    $this->instance = array(
+      'field_name' => 'taxonomy_' . $this->vocabulary->machine_name,
+      'bundle' => 'page',
+      'entity_type' => 'node',
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'display' => array(
+        'default' => array(
+          'type' => 'hierarchical_term_formatter',
+        ),
+      ),
+    );
+    field_create_instance($this->instance);
+  }
+
+  function setUp() {
+    variable_set('field_storage_default', $this->default_storage);
+    $modules = array('hierarchical_term_formatter', 'taxonomy', 'field_ui');
+    parent::setUp($modules);
+    $this->vocabulary = $this->createVocabulary();
+    $this->createHierarchy();
+    $this->addTestFieldToPage();
+    $this->web_user = $this->drupalCreateUser(array('administer taxonomy', 'edit own page content', 'create page content'));
+    $this->drupalLogin($this->web_user);
+
+  }
+
+    /**
+   * Test that custom info settings are set and retained.
+   */
+  function testFieldInfo() {
+    $settings = hierarchical_term_formatter_field_formatter_info();
+    $this->formatter_settings = $settings['hierarchical_term_formatter']['settings'];
+
+    // Load the field instance and check that the defaults are correct.
+    $instance = field_read_instance($this->entity_type, $this->field_name, $this->bundle);
+    $field_htf_display = $instance['display']['default']['settings']['display'];
+    $this->assertEqual($field_htf_display, $this->formatter_settings['display'], 'Default display is set to all.');
+    $field_htf_link = $instance['display']['default']['settings']['link'];
+    $this->assertEqual($field_htf_link, $this->formatter_settings['link'], 'Default link terms is off.');
+    $field_htf_wrap = $instance['display']['default']['settings']['wrap'];
+    $this->assertEqual($field_htf_wrap, $this->formatter_settings['wrap'], 'Default html wrap is none.');
+    $field_htf_separator = $instance['display']['default']['settings']['separator'];
+    $this->assertEqual($field_htf_separator, $this->formatter_settings['separator'], 'Default separator is " » ".');
+
+    // Load the field instance, change all the settings and save.
+    $instance = field_read_instance($this->entity_type, $this->instance['field_name'], $this->instance['bundle']);
+    $instance['display']['default']['settings']['display'] = 'parents';
+    $instance['display']['default']['settings']['link'] = 1;
+    $instance['display']['default']['settings']['wrap'] = 'span';
+    $instance['display']['default']['settings']['separator'] = ' | ';
+    field_update_instance($instance);
+
+    // Reload it, and check that the values were saved.
+    $instance = field_read_instance($this->entity_type, $this->field_name, $this->bundle);
+    $field_htf_display = $instance['display']['default']['settings']['display'];
+    $this->assertEqual($field_htf_display, 'parents', 'Display is changed to parents.');
+    $field_htf_link = $instance['display']['default']['settings']['link'];
+    $this->assertEqual($field_htf_link, '1', 'Link terms changed to on.');
+    $field_htf_wrap = $instance['display']['default']['settings']['wrap'];
+    $this->assertEqual($field_htf_wrap, 'span', 'HTML wrap changed to <span>.');
+    $field_htf_separator = $instance['display']['default']['settings']['separator'];
+    $this->assertEqual($field_htf_separator, ' | ', 'Separator changed to " | ".');
+  }
+
+
+  /**
+   * Test that vocab and terms are created.
+   */
+  function testVocabTerms() {
+
+    // Check that our test vocab and terms were added.
+    $this->drupalGet('admin/structure/taxonomy');
+    $this->assertText($this->vocabulary->name, 'Vocabulary found in the vocabulary overview listing.');
+    $this->drupalGet('admin/structure/taxonomy/' . $this->vocabulary->machine_name);
+    $this->assertText($this->terms['names'][0], 'Term found in the vocabulary term list.');
+
+    //Test that the terms are display according to the formatter settings.
+    $instance = field_read_instance($this->entity_type, $this->field_name, $this->bundle);
+    $this->createNode();
+
+    $this->drupalGet('node/' . $this->node_id);
+
+    // Test display all terms.
+    foreach($this->terms['names'] as $name) {
+      $this->assertText($name, 'Expected term is displayed.');
+    }
+
+    // Test for separator. Separator should only appear between parent and
+    // child terms.
+    foreach($this->terms['terms'] as $term) {
+      $term_tree = array_reverse(taxonomy_get_parents_all($term->tid));
+
+      // Get rid of the term itself.
+      array_pop($term_tree);
+      if (count($term_tree)) {
+
+        // Next one to pop is the term's parent.
+        $parent = array_pop($term_tree);
+        $this->assertPattern('/' . $parent->name . $instance['display']['default']['settings']['separator'] . $term->name .'/', 'Pattern appears between parent and child term.');
+      }
+    }
+
+    // Test linked terms.
+    $instance['display']['default']['settings']['link'] = 1;
+    field_update_instance($instance);
+    $this->drupalGet('node/' . $this->node_id);
+    foreach($this->terms['terms'] as $term) {
+      $this->assertPattern('/\>' . $term->name . '<\/a>/', 'Term is linked.');
+    }
+
+    // Test wrapped terms.
+    $instance['display']['default']['settings']['link'] = '';
+    $instance['display']['default']['settings']['wrap'] = 'span';
+    field_update_instance($instance);
+    $this->drupalGet('node/' . $this->node_id);
+    foreach($this->terms['terms'] as $term) {
+      $this->assertPattern('/\>' . $term->name . '<\/span>/', 'Term is wrapped.');
+    }
+
+    // Test parents only display.
+    $instance = field_read_instance($this->entity_type, $this->instance['field_name'], $this->instance['bundle']);
+    $instance['display']['default']['settings']['display'] = 'parents';
+    $instance['display']['default']['settings']['wrap'] = '';
+    field_update_instance($instance);
+    $this->drupalGet('node/' . $this->node_id);
+    foreach($this->terms['terms'] as $term) {
+
+      // Parents display should show terms only if they have children.
+      $term_tree = array_reverse(taxonomy_get_parents_all($term->tid));
+
+      // Get rid of the term itself.
+      array_pop($term_tree);
+      if (count($term_tree)) {
+        // Next one to pop is the term's parent.
+        $parent = array_pop($term_tree);
+        $this->assertText($parent->name, 'Expected parent is displayed.');
+
+        // Check that the term has no children before testing it is not shown.
+        if (empty(taxonomy_get_children($term->tid))) {
+          $this->assertNoText($term->name, 'Not-Expected child is not displayed.');
+        }
+      }
+    }
+
+    // Test root term only display.
+    $instance = field_read_instance($this->entity_type, $this->instance['field_name'], $this->instance['bundle']);
+    $instance['display']['default']['settings']['display'] = 'root';
+    field_update_instance($instance);
+    $this->drupalGet('node/' . $this->node_id);
+    foreach($this->terms['terms'] as $term) {
+      $parents = taxonomy_get_parents_all($term->tid);
+
+      // Root is the last array item.
+      $root_term = array(array_pop($parents)); 
+      if (count($root_term)) {
+        preg_match_all('/' . $root_term[0]->name . '/', $this->content, $matches);
+        $this->assertTrue(count($matches[0]) === 1, 'Expected root is displayed once.');
+
+        // If the current term is not a root term, test that the current term is
+        // not displayed.
+        if ($root_term['0']->tid !== $term->tid) {
+          $this->assertNoText($term->name, 'Not-Expected child is not displayed.');
+        }
+      }
+    }
+
+    // Test non-root / non-topmost terms.
+    $instance = field_read_instance($this->entity_type, $this->instance['field_name'], $this->instance['bundle']);
+    $instance['display']['default']['settings']['display'] = 'nonroot';
+    field_update_instance($instance);
+    $this->drupalGet('node/' . $this->node_id);
+    foreach ($this->terms['terms'] as $term) {
+      $parents = taxonomy_get_parents_all($term->tid);
+
+      // Test that the root term(s) is(are) not present.
+      // More than 1 $parents means it's not a root term.
+      if (count($parents) > 1) {
+        $this->assertText($term->name, 'Expected non-root term is displayed.');
+      }
+
+      // This is a root term.
+      else {
+        $this->assertNoText($term->name, 'Not-Expected root term is not displayed.' . $term->name);
+      }
+    }
+
+    // Test leaf display.
+    $instance = field_read_instance($this->entity_type, $this->instance['field_name'], $this->instance['bundle']);
+    $instance['display']['default']['settings']['display'] = 'leaf';
+    field_update_instance($instance);
+
+    // Create a new node with random selection of terms.
+    $random = TRUE;
+    $this->createNode($random);
+
+    $this->drupalGet('node/' . $this->node_id);
+    foreach ($this->terms['terms'] as $term) {
+      if (isset($this->random_terms[$term->tid])) {
+        $this->assertText($term->name, 'Expected leaf is displayed.');
+      }
+      else {
+        $this->assertNoText($term->name, 'Unselected term is not displayed.');
+      }
+    }
+
+  }
+
+}

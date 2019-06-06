@@ -1,0 +1,13 @@
+name = Hierarchical Term Formatter
+description = Provides hierarchical term formatters for taxonomy reference fields.
+core = 7.x
+dependencies[] = taxonomy
+files[] = hierarchical_term_formatter.module
+files[] = hierarchical_term_formatter.test
+
+; Information added by Drupal.org packaging script on 2015-01-05
+version = "7.x-1.0"
+core = "7.x"
+project = "hierarchical_term_formatter"
+datestamp = "1420463790"
+

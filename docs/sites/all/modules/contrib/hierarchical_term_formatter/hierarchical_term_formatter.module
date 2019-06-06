@@ -1,0 +1,257 @@
+<?php
+
+/**
+ * @file
+ * Provides hierarchical term formatters for taxonomy reference fields.
+ */
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function hierarchical_term_formatter_field_formatter_info() {
+  return array(
+    'hierarchical_term_formatter' => array(
+      'label' => t('Hierarchical terms'),
+      'field types' => array('taxonomy_term_reference'),
+      'settings' => array(
+        'display' => 'all',
+        'link' => '',
+        'wrap' => 'none',
+        'separator' => ' » ',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function hierarchical_term_formatter_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $element = array();
+
+  $element['display'] = array(
+    '#title' => t('Terms to display'), 
+    '#description' => t('Choose what terms to display.'), 
+    '#type' => 'select',
+    '#options' => _hierarchical_term_formatter_display_options(),
+    '#default_value' => $settings['display'], 
+    '#required' => FALSE,
+  );
+  $element['link'] = array(
+    '#title' => t('Link each term'),
+    '#description' => t('If checked, the terms will link to their corresponding term pages.'), 
+    '#type' => 'checkbox',
+    '#default_value' => $settings['link'],
+  );
+  $element['wrap'] = array(
+    '#title' => t('Wrap each term'), 
+    '#description' => t('Choose what type of html elements you would like to wrap the terms in, if any.'), 
+    '#type' => 'select',
+    '#options' => _hierarchical_term_formatter_wrap_options(),
+    '#default_value' => $settings['wrap'], 
+    '#required' => FALSE,
+  );
+  $element['separator'] = array(
+    '#title' => t('Separator'), 
+    '#description' => t('Enter some text or markup that will separate each term in the hierarchy. Leave blank for no separator. Example: <em>»</em>'), 
+    '#type' => 'textfield', 
+    '#size' => 20, 
+    '#default_value' => $settings['separator'], 
+    '#required' => FALSE,
+  );
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function hierarchical_term_formatter_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $display_options = _hierarchical_term_formatter_display_options();
+  $wrap_options = _hierarchical_term_formatter_wrap_options();
+
+  $format = $settings['link'] ? t('Links') : t('Plain text');
+
+  $summary = t('Display: %display as %format', array('%display' => $display_options[$settings['display']], '%format' => $format));
+
+  if ($settings['wrap'] != 'none') {
+    $summary .= '<br />' . t('Wrapper: @wrap', array('@wrap' => $wrap_options[$settings['wrap']]));
+  }
+
+  if ($settings['separator']) {
+    $summary .= '<br />' . t('Separator: "%separator"', array('%separator' => filter_xss_admin($settings['separator'])));
+  }
+
+  return $summary;
+}
+
+/**
+ * Implements hook_field_formatter_prepare_view().
+ */
+function hierarchical_term_formatter_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items, $displays) {
+  // Pass on responsibility for loading terms to Taxonomy.module.
+  taxonomy_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, $items, $displays);
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function hierarchical_term_formatter_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = $used = array();
+  $settings = $display['settings'];
+
+  foreach ($items as $delta => $item) {
+    // Terms whose tid is 'autocreate' do not exist
+    // yet and $item['taxonomy_term'] is not set. Theme such terms as
+    // just their name.
+    if ($item['tid'] == 'autocreate') {
+      $terms = array('tid' => 'none', 'content' => check_plain($item['name']));
+    }
+    else {
+      // Build an array representing the term hierarchy.
+      switch ($settings['display']) {
+        case 'leaf':
+          $term_tree = array($item['taxonomy_term']);
+          break;
+        case 'root':
+          $parents = taxonomy_get_parents_all($item['taxonomy_term']->tid);
+          $term_tree = array(array_pop($parents)); // Root is the last array item.
+          // Keep track of which root terms have been added to avoid duplicates.
+          if (isset($used[$term_tree[0]->tid])) {
+            $term_tree = array();
+            break;
+          }
+          $used[$term_tree[0]->tid] = TRUE;
+          break;
+        case 'parents':
+          $term_tree = array_reverse(taxonomy_get_parents_all($item['taxonomy_term']->tid));
+          array_pop($term_tree); // Get rid of the leaf (last array item).
+          break;
+        case 'nonroot':
+          $term_tree = array();
+          $parents = taxonomy_get_parents_all($item['taxonomy_term']->tid);
+          // If there are 2 or more terms in the parents array keep [0] because
+          // it's not a root term.
+          if (count($parents) > 1) {
+            $term_tree = array(array_shift($parents));
+          }
+          break;
+        default: // 'all'
+          $term_tree = array_reverse(taxonomy_get_parents_all($item['taxonomy_term']->tid));
+          break;
+      }
+
+      // Remove empty elements caused by discarded items.
+      $term_tree = array_filter($term_tree);
+      $terms = array();
+
+      foreach ($term_tree as $term) {
+        if ($settings['link']) {
+          $uri = entity_uri('taxonomy_term', $term);
+          $link = array(
+            '#type' => 'link',
+            '#title' => $term->name,
+            '#href' => $uri['path'],
+            '#options' => $uri['options'],
+          );
+          $terms[] = array('tid' => $term->tid, 'content' => drupal_render($link));
+        }
+        else {
+          $terms[] = array('tid' => $term->tid, 'content' => check_plain($term->name));
+        }
+      }
+    }
+
+    // Make sure there are terms before adding to $element.
+    if (count($terms)) {
+      // Prepare theme variables.
+      $variables = array(
+        'terms' => $terms,
+        'separator' => $settings['separator']
+      );
+      if ($settings['wrap'] == 'none') {
+        $variables['wrapper'] = $variables['item_wrapper'] = '';
+      }
+      else if (in_array($settings['wrap'], array('ol', 'ul'))) {
+        $variables['wrapper'] = $settings['wrap'];
+        $variables['item_wrapper'] = 'li';
+      }
+      else {
+        $variables['wrapper'] = '';
+        $variables['item_wrapper'] = $settings['wrap'];
+      }
+
+      $element[$delta] = array(
+        '#markup' => theme('hierarchical_term_formatter', $variables),
+      );
+    }
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function hierarchical_term_formatter_theme($existing, $type, $theme, $path) {
+  return array(
+    'hierarchical_term_formatter' => array(
+      'variables' => array(
+        'terms' => array(),
+        'wrapper' => '',
+        'item_wrapper' => '',
+        'separator' => '',
+      ),
+    ), 
+  );
+}
+
+/**
+ * Theme the term hierarchy.
+ */
+function theme_hierarchical_term_formatter($variables) {
+  $items = array();
+  $separator = filter_xss_admin($variables['separator']);
+  $count = 0;
+  foreach ($variables['terms'] as $item) {
+    $count++;
+    if ($variables['item_wrapper']) {
+      $items[] = sprintf('<%s class="taxonomy-term count-%s tid-%s">%s</%s>',
+          $variables['item_wrapper'], $count, $item['tid'], $item['content'], $variables['item_wrapper']);
+    }
+    else {
+      $items[] = $item['content'];
+    }
+  }
+  if ($variables['wrapper']) {
+    return sprintf('<%s class="terms-hierarchy">%s</%s>',
+        $variables['wrapper'], join($separator, $items), $variables['wrapper']);
+  }
+  else {
+    return join($separator, $items);
+  }
+}
+
+function _hierarchical_term_formatter_wrap_options() {
+  return array(
+    'none' => t('None'),
+    'span' => t('<span> elements'),
+    'div' => t('<div> elements'),
+    'ul' => t('<li> elements surrounded by a <ul>'),
+    'ol' => t('<li> elements surrounded by a <ol>'),
+  );
+}
+
+function _hierarchical_term_formatter_display_options() {
+  return array(
+    'all' => t('The selected term and all of its parents'),
+    'parents' => t('Just the parent terms'),
+    'root' => t('Just the topmost/root term'),
+    'nonroot' => t('Any non-topmost/root terms'),
+    'leaf' => t('Just the selected term'),
+  );
+}
