@@ -1,0 +1,162 @@
+<?php
+/**
+ * @file
+ * Code for the OpenPublic installation.
+ */
+
+
+/**
+ * Implements hook_install().
+ *
+ * Perform actions to set up the site for this profile.
+ */
+function openpublic_install() {
+  // set the time limit to unlimited for install
+  drupal_set_time_limit(0);
+
+  // Allow visitor account creation with administrative approval.
+  variable_set('user_register', USER_REGISTER_VISITORS_ADMINISTRATIVE_APPROVAL);
+
+  // Enable context UI
+  variable_set('context_ui_dialog_enabled', TRUE);
+
+  // Upping the image jpeg quality ...because.
+  variable_set('image_jpeg_quality', 95);
+
+  openpublic_enable_themes();
+
+  $item =  array(
+    'module' =>  'apps',
+    'delta' =>  'manage_apps__openpublic',
+    'theme' =>  'rubik',
+    'status' =>  1,
+    'weight' =>  1,
+    'region' =>  'dashboard_main',
+    'custom' =>  0,
+    'pages' => NULL,
+    'visibility' =>  0,
+    'cache' =>  1,
+  );
+  $item = (object) $item;
+  drupal_write_record('block', $item);
+  variable_set('apps_install_path', 'sites/all/modules/contrib');
+}
+
+/**
+ * Set Rubik as the Admin Theme
+ */
+function openpublic_enable_themes() {
+  theme_enable(array("openomega"));
+  theme_enable(array("rubik"));
+  variable_set('admin_theme', 'rubik');
+  variable_set('node_admin_theme', '1');
+  variable_set("theme_default", "openomega");
+}
+
+
+/**
+ * Implements hook_install_tasks().
+ */
+function openpublic_install_tasks($install_state) {
+  require_once(drupal_get_path('module', 'apps') . '/apps.profile.inc');
+  $server = array(
+    'machine name' => 'openpublic',
+    'default apps' => array(
+      'openpublic_blog',
+      'openpublic_breaking_news',
+      'openpublic_document',
+      'openpublic_promotion',
+      'openpublic_event',
+      'openpublic_faqs',
+      'openpublic_home_page_feature',
+      'openpublic_media_room',
+      'openpublic_person',
+      'openpublic_press_release',
+      'openpublic_resources',
+      'openpublic_services',
+      'openpublic_site_page',
+      'openpublic_webform',
+    ),
+    'required apps' => array(),
+    'default content callback' => 'openpublic_default_content_install',
+  );
+  $task = apps_profile_install_tasks($install_state, $server);
+
+  require_once(drupal_get_path('module', 'apps') . '/apps.profile.inc');
+  $task = array_merge($task, apps_profile_install_tasks($install_state, $server));
+  return $task;
+}
+
+/**
+ * Callback to enable openpublic default content.
+ */
+function openpublic_default_content_install($modules) {
+  apps_include('manifest');
+  $apps = apps_apps('openpublic');
+  // Ignoring $modules because we want any demo module from any enabled app.
+  foreach ($apps as $app_name => $app) {
+    if (!empty($app['demo content module']) && !module_exists($app['demo content module']) && module_exists($app_name)) {
+      $enable[] = $app['demo content module'];
+    }
+  }
+  if ($enable) {
+    module_enable($enable);
+  }
+}
+
+/**
+ * Enable the context ui dialog
+ */
+function openpublic_update_7001() {
+  //TODO: It is worth looking at this being a feature export variable
+  variable_set('context_ui_dialog_enabled', TRUE);
+}
+
+/**
+ * Enable new Twitter pull needs.
+ */
+function openpublic_update_7101() {
+  if (!module_enable(array('oauth_common', 'twitter'))) {
+    throw new DrupalUpdateException('Unable to enable new dependencies oauth and twitter for twitter pull module.');
+  }
+}
+
+/**
+ * Clear out unused fields.
+ */
+function openpublic_update_7102() {
+  if (variable_get('openpublic_remove_unused_fields', TRUE)) {
+    field_delete_field('field_blog_show_author_info');
+    field_delete_field('field_blog_teaser');
+    field_delete_field('field_blog_terms');
+    field_delete_field('field_taxonomy_issues');
+    field_delete_field('field_detail_page_title');
+    field_delete_field('field_related_content');
+    field_delete_field('field_summary');
+    field_delete_field('field_blog_author');
+    field_delete_field('field_photo_author');
+    field_delete_field('field_document_author');
+  }
+}
+
+/**
+ * Re-enable blog if it's been enabled
+ */
+function openpublic_update_7103() {
+  if (variable_get('openpublic_enable_renamed_modules', TRUE)) {
+    if (drupal_get_installed_schema_version('phase2_blog') != SCHEMA_UNINSTALLED) {
+      module_enable(array('openpublic_blog'));
+    }
+    if (drupal_get_installed_schema_version('phase2_document') != SCHEMA_UNINSTALLED) {
+      module_enable(array('openpublic_document'));
+    }
+  }
+}
+
+
+/**
+ * Enable role/permission module that takes over from openpublic_defaults for that functionality.
+ */
+function openpublic_update_7104() {
+  module_enable(array('openpublic_users'));
+}

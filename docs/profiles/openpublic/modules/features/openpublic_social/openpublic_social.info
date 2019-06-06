@@ -1,0 +1,12 @@
+name = OpenPublic Social
+description = Provides social media integration for openpublic.
+core = 7.x
+package = OpenPublic
+dependencies[] = addthis
+dependencies[] = follow
+
+; Information added by Drupal.org packaging script on 2019-05-10
+version = "7.x-1.30"
+core = "7.x"
+project = "openpublic"
+datestamp = "1557499113"

@@ -1,0 +1,36 @@
+name = OpenPublic Comments
+description = Comment settings for OpenPublic
+core = 7.x
+package = OpenPublic
+dependencies[] = comment
+dependencies[] = comment_notify
+dependencies[] = context
+dependencies[] = ctools
+dependencies[] = features
+dependencies[] = strongarm
+dependencies[] = views
+features[ctools][] = context:context:3
+features[ctools][] = strongarm:strongarm:1
+features[ctools][] = views:views_default:3.0
+features[features_api][] = api:2
+features[user_permission][] = access comments
+features[user_permission][] = administer comment notify
+features[user_permission][] = administer comments
+features[user_permission][] = edit own comments
+features[user_permission][] = post comments
+features[user_permission][] = skip comment approval
+features[user_permission][] = subscribe to comments
+features[variable][] = comment_anonymous_services
+features[variable][] = comment_default_mode_services
+features[variable][] = comment_default_per_page_services
+features[variable][] = comment_form_location_services
+features[variable][] = comment_preview_services
+features[variable][] = comment_services
+features[variable][] = comment_subject_field_services
+features[views_view][] = comment_list
+
+; Information added by Drupal.org packaging script on 2019-05-10
+version = "7.x-1.30"
+core = "7.x"
+project = "openpublic"
+datestamp = "1557499113"

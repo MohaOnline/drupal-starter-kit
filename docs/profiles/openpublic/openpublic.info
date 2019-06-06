@@ -1,0 +1,107 @@
+name = OpenPublic
+description = OpenPublic Distribution
+
+core = 7.x
+
+
+; Core
+
+dependencies[] = block
+dependencies[] = color
+dependencies[] = comment
+dependencies[] = contextual
+dependencies[] = dashboard
+dependencies[] = help
+dependencies[] = image
+dependencies[] = list
+dependencies[] = menu
+dependencies[] = number
+dependencies[] = options
+dependencies[] = path
+dependencies[] = taxonomy
+dependencies[] = syslog
+dependencies[] = search
+dependencies[] = shortcut
+dependencies[] = toolbar
+dependencies[] = field
+dependencies[] = field_ui
+dependencies[] = file
+dependencies[] = rdf
+dependencies[] = statistics
+
+
+; Contrib
+
+dependencies[] = addthis
+dependencies[] = apps
+dependencies[] = boxes
+dependencies[] = comment_notify
+dependencies[] = conditional_styles
+dependencies[] = context
+dependencies[] = context_condition_admin_theme
+dependencies[] = context_field
+dependencies[] = context_ui
+dependencies[] = ctools
+dependencies[] = dashboard
+dependencies[] = date
+dependencies[] = delta
+dependencies[] = delta_ui
+dependencies[] = diff
+dependencies[] = entity
+dependencies[] = entity_autocomplete
+dependencies[] = entitycache
+dependencies[] = features
+dependencies[] = field_group
+dependencies[] = follow
+dependencies[] = googleanalytics
+dependencies[] = imce
+dependencies[] = imce_wysiwyg
+dependencies[] = libraries
+dependencies[] = node_reference
+dependencies[] = oauth_common
+dependencies[] = page_manager
+dependencies[] = panels
+dependencies[] = pathauto
+dependencies[] = recaptcha
+dependencies[] = securepages
+dependencies[] = strongarm
+dependencies[] = token
+dependencies[] = toolbar
+dependencies[] = twitter_pull
+dependencies[] = views
+dependencies[] = views_boxes
+dependencies[] = views_content
+dependencies[] = views_ui
+dependencies[] = xmlsitemap
+
+; Custom 
+
+dependencies[] = context_breadcrumb_current_page
+dependencies[] = context_bool_field
+dependencies[] = defaultcontent
+dependencies[] = openpublic_api
+dependencies[] = openpublic_splash
+dependencies[] = apps
+
+;Features
+
+dependencies[] = openpublic_users
+dependencies[] = openpublic_comments
+dependencies[] = openpublic_base_fields
+dependencies[] = openpublic_layouts
+dependencies[] = openpublic_social
+dependencies[] = openpublic_captcha
+dependencies[] = openpublic_menu
+dependencies[] = openpublic_menu_utility
+dependencies[] = openpublic_menu_footer
+dependencies[] = openpublic_accessibility
+dependencies[] = openpublic_filters
+
+files[] = openpublic.profile
+files[] = tests/main.test
+
+; Information added by Drupal.org packaging script on 2019-05-10
+version = "7.x-1.30"
+core = "7.x"
+project = "openpublic"
+datestamp = "1557499113"
