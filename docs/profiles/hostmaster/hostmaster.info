@@ -40,8 +40,8 @@ dependencies[] = views_bulk_operations
 dependencies[] = actions_permissions
 dependencies[] = r4032login
 
-; Information added by Drupal.org packaging script on 2019-04-04
-version = "7.x-3.174"
+; Information added by Drupal.org packaging script on 2019-06-07
+version = "7.x-3.175"
 core = "7.x"
 project = "hostmaster"
-datestamp = "1554386594"
+datestamp = "1559911759"

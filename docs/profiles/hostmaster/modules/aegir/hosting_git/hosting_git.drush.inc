@@ -57,7 +57,7 @@ function drush_hosting_git_pre_hosting_task($task) {
     if ($task->task_args['name']) {
       $task->options['name'] = $task->task_args['name'];
     }
-    if ($task->task_args['mail`']) {
+    if ($task->task_args['mail']) {
       $task->options['mail'] = $task->task_args['mail'];
     }
     if ($task->task_args['files']) {

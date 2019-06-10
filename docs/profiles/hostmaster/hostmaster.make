@@ -22,7 +22,7 @@ projects[hosting][download][tag] = 7.x-3.170
 
 projects[hosting_git][download][type] = git
 projects[hosting_git][subdir] = aegir
-projects[hosting_git][download][tag] = 7.x-3.170
+projects[hosting_git][download][tag] = 7.x-3.171
 
 projects[hosting_remote_import][download][type] = git
 projects[hosting_remote_import][subdir] = aegir
@@ -74,7 +74,7 @@ projects[module_filter][version] = 2.2
 projects[openidadmin][version] = 1.0
 projects[overlay_paths][version] = 1.3
 projects[r4032login][version] = 1.8
-projects[views][version] = 3.21
+projects[views][version] = 3.23
 projects[views_bulk_operations][version] = 3.5
 
 ; Two factor authentication
