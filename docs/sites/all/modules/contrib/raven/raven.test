@@ -80,7 +80,6 @@ class RavenTestCase extends DrupalWebTestCase {
     $this->drupalGet('admin/reports/status');
     $this->drupalGet('admin/config/development/logging');
     $edit['raven_enabled'] = TRUE;
-    $edit['raven_watchdog_handler'] = TRUE;
     $edit['raven_watchdog_levels[4]'] = 4;
     $edit['raven_watchdog_levels[6]'] = 6;
     $edit['raven_fatal_error_handler'] = TRUE;

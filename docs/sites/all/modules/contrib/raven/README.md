@@ -16,14 +16,17 @@ feedback loop.
 
 This module logs errors in a few ways:
 
-* Register error handler for uncaught exceptions
 * Register error handler for fatal errors
 * Handle watchdog messages
-* Register error handler for PHP errors (deprecated - use watchdog instead)
+* Record Sentry breadcrumbs for watchdog messages
 * Handle JavaScript exceptions via Raven.js.
 
 You can choose which errors you want to catch by enabling
 desired error handlers and selecting error levels.
+
+If desired, the SENTRY_DSN, SENTRY_ENVIRONMENT and SENTRY_RELEASE environment
+variables can be used to configure this module, overriding the corresponding
+settings at admin/config/development/logging.
 
 
 ## Installation for Drupal 7
@@ -79,7 +82,8 @@ a large set of data, with one notice for each item—you may find that storing a
 sending the errors to Sentry requires a large amount of memory and execution
 time, enough to exceed your configured memory_limit and max_execution_time
 settings. This could result in a stalled or failed request. The work-around for
-this case would be to disable sending PHP notices to Sentry.
+this case would be to disable sending PHP notices to Sentry, or, for
+long-running processes, to periodically call `raven_flush()`.
 
 
 ## Sponsors

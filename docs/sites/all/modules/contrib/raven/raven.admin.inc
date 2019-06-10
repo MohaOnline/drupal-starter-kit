@@ -6,19 +6,6 @@
  */
 
 /**
- * Returns supported PHP error levels and their labels.
- *
- * @return array
- *   An array containing supported PHP error levels and their labels.
- */
-function raven_get_error_levels() {
-  foreach (drupal_error_levels() as $level => $label) {
-    $levels[$level] = $label[0];
-  }
-  return $levels;
-}
-
-/**
  * Adds Raven settings form to form.
  *
  * @param array $form
@@ -27,9 +14,6 @@ function raven_get_error_levels() {
  *   The form state.
  */
 function raven_settings_form(array &$form, array &$form_state) {
-  // Show message if library cannot be loaded.
-  _raven_get_client();
-
   $form['raven'] = array(
     '#type' => 'fieldset',
     '#title' => t('Sentry'),
@@ -57,7 +41,7 @@ function raven_settings_form(array &$form, array &$form_state) {
   $form['raven']['php']['raven_dsn'] = array(
     '#type' => 'textfield',
     '#title' => t('Sentry DSN'),
-    '#description' => t('Sentry DSN credentials for current site.'),
+    '#description' => t('Sentry DSN credentials for current site. This setting can be overridden with the SENTRY_DSN environment variable.'),
     '#default_value' => variable_get('raven_dsn', ''),
   );
 
@@ -98,13 +82,6 @@ function raven_settings_form(array &$form, array &$form_state) {
     ),
   );
 
-  $form['raven']['php']['raven_exception_handler'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable exception handler'),
-    '#description' => t('Check to handle uncaught exceptions.'),
-    '#default_value' => variable_get('raven_exception_handler', TRUE),
-  );
-
   $form['raven']['php']['raven_fatal_error_handler'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable fatal error handler'),
@@ -120,62 +97,18 @@ function raven_settings_form(array &$form, array &$form_state) {
     '#size' => 10,
   );
 
-  $form['raven']['php']['error'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Deprecated: PHP error handler'),
-  );
-
-  $form['raven']['php']['error']['raven_error_handler'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Deprecated: Enable error handler'),
-    '#description' => t('Check to handle PHP errors. It is recommended to leave this off and rely on Drupal watchdog to capture PHP errors.'),
-    '#default_value' => variable_get('raven_error_handler', FALSE),
-  );
-
-  $form['raven']['php']['error']['raven_error_levels'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Error levels'),
-    '#description' => t('Check error levels to handle.'),
-    '#default_value' => variable_get('raven_error_levels', array()),
-    '#options' => raven_get_error_levels(),
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="raven_error_handler"]' => array('unchecked' => TRUE),
-      ),
-    ),
-  );
-
-  $form['raven']['php']['watchdog'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Watchdog handler'),
-  );
-
-  $form['raven']['php']['watchdog']['raven_watchdog_handler'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Enable watchdog handler'),
-    '#description' => t('Check to handle watchdog messages.'),
-    '#default_value' => variable_get('raven_watchdog_handler', TRUE),
-  );
-
-  $_watchdog_levels = watchdog_severity_levels();
-  $watchdog_levels = array();
-  foreach ($_watchdog_levels as $level => $label) {
+  foreach (watchdog_severity_levels() as $level => $label) {
     $watchdog_levels[$level + 1] = $label;
   }
-  $form['raven']['php']['watchdog']['raven_watchdog_levels'] = array(
+  $form['raven']['php']['raven_watchdog_levels'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Message levels'),
     '#description' => t('Check message levels to handle.'),
     '#default_value' => variable_get('raven_watchdog_levels', array()),
     '#options' => $watchdog_levels,
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="raven_watchdog_handler"]' => array('unchecked' => TRUE),
-      ),
-    ),
   );
 
-  $form['raven']['php']['watchdog']['raven_ignored_types'] = [
+  $form['raven']['php']['raven_ignored_types'] = [
     '#type' => 'textarea',
     '#title' => t('Ignored types'),
     '#description' => t('A list of log event types for which messages should not be sent to Sentry (one type per line). Commonly-configured types include <em>access denied</em> for 403 errors and <em>page not found</em> for 404 errors.'),
@@ -235,7 +168,7 @@ function raven_settings_form(array &$form, array &$form_state) {
   $form['raven']['js']['raven_public_dsn'] = array(
     '#type' => 'textfield',
     '#title' => t('Sentry Public DSN'),
-    '#description' => t('Sentry public DSN credentials for current site.'),
+    '#description' => t('Sentry public DSN credentials for current site. This setting can be overridden with the SENTRY_DSN environment variable.'),
     '#default_value' => variable_get('raven_public_dsn', ''),
   );
 
@@ -270,14 +203,14 @@ function raven_settings_form(array &$form, array &$form_state) {
   $form['raven']['raven_environment'] = array(
     '#type' => 'textfield',
     '#title' => t('Environment'),
-    '#description' => t('The environment in which this site is running.'),
+    '#description' => t('The environment in which this site is running. This setting can be overridden with the SENTRY_ENVIRONMENT environment variable.'),
     '#default_value' => variable_get('raven_environment', ''),
   );
 
   $form['raven']['raven_release'] = array(
     '#type' => 'textfield',
     '#title' => t('Release'),
-    '#description' => t('The release this site is running (could be a version or commit hash).'),
+    '#description' => t('The release this site is running (could be a version or commit hash). This setting can be overridden with the SENTRY_RELEASE environment variable.'),
     '#default_value' => variable_get('raven_release', ''),
   );
 }

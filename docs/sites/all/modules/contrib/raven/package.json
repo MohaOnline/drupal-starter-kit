@@ -2,7 +2,7 @@
   "name": "drupal-raven",
   "description": "Raven Drupal module",
   "devDependencies": {
-    "raven-js": "^3.27.0"
+    "raven-js": "^3.27.2"
   },
   "scripts": {
     "postinstall": "cp node_modules/raven-js/dist/*.* js/raven-js"

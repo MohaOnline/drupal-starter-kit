@@ -45,6 +45,16 @@ function raven_update_7201() {
 }
 
 /**
+ * Remove obsolete variables.
+ */
+function raven_update_7202() {
+  variable_del('raven_error_handler');
+  variable_del('raven_error_levels');
+  variable_del('raven_exception_handler');
+  variable_del('raven_watchdog_handler');
+}
+
+/**
  * Implements hook_requirements().
  */
 function raven_requirements($phase) {
@@ -97,7 +107,7 @@ function raven_requirements($phase) {
             'severity' => REQUIREMENT_WARNING,
           );
         }
-        elseif (!variable_get('raven_dsn', '')) {
+        elseif (empty($_SERVER['SENTRY_DSN']) && !variable_get('raven_dsn', '')) {
           $requirements['raven_dsn'] = array(
             'title' => $t('Sentry logging'),
             'value' => $t('Disabled'),
@@ -109,7 +119,7 @@ function raven_requirements($phase) {
           $requirements['raven_dsn'] = array(
             'title' => $t('Sentry logging'),
             'value' => $t('Enabled'),
-            'description' => $t('Sentry is set to log to %dsn.', array('%dsn' => variable_get('raven_dsn', ''))),
+            'description' => $t('Sentry is set to log to %dsn.', array('%dsn' => empty($_SERVER['SENTRY_DSN']) ? variable_get('raven_dsn', '') : $_SERVER['SENTRY_DSN'])),
             'severity' => REQUIREMENT_OK,
           );
           if (variable_get('raven_trace', FALSE)) {

@@ -42,64 +42,6 @@ function hook_raven_extra_alter(array &$extra) {
 }
 
 /**
- * Filter known errors so do not log them to Sentry again and again.
- *
- * @param array $error
- *   A reference to array containing error info.
- */
-function hook_raven_error_filter_alter(array &$error) {
-  $known_errors = array();
-
-  drupal_alter('raven_known_php_errors', $known_errors);
-
-  // Filter known errors to prevent spamming the Sentry server.
-  foreach ($known_errors as $known_error) {
-    $check = TRUE;
-
-    foreach ($known_error as $key => $value) {
-      if ($error[$key] != $value) {
-        $check = FALSE;
-        break;
-      }
-    }
-
-    if ($check) {
-      $error['process'] = FALSE;
-      break;
-    }
-  }
-}
-
-/**
- * Provide the list of known PHP errors.
- *
- * @param array $known_errors
- *   A reference to array containing PHP errors info.
- */
-function hook_raven_known_php_errors_alter(array &$known_errors) {
-  $known_errors[] = array(
-    'code' => E_NOTICE,
-    'message' => 'Array to string conversion',
-    'file' => DRUPAL_ROOT . '/sites/all/modules/views/plugins/views_plugin_cache.inc',
-    'line' => 206,
-  );
-
-  $known_errors[] = array(
-    'code' => E_NOTICE,
-    'message' => 'Undefined index: width',
-    'file' => DRUPAL_ROOT . '/sites/all/modules/flexslider/flexslider_fields/flexslider_fields.module',
-    'line' => 140,
-  );
-
-  $known_errors[] = array(
-    'code' => E_NOTICE,
-    'message' => 'Undefined index: height',
-    'file' => DRUPAL_ROOT . '/sites/all/modules/flexslider/flexslider_fields/flexslider_fields.module',
-    'line' => 141,
-  );
-}
-
-/**
  * Modify or suppress watchdog entries before logging them to Sentry.
  *
  * @param array $filter

@@ -8,8 +8,8 @@ test_dependencies[] = xautoload (5.x)
 configure = admin/config/development/logging
 files[] = raven.test
 
-; Information added by Drupal.org packaging script on 2019-04-29
-version = "7.x-2.15"
+; Information added by Drupal.org packaging script on 2019-06-04
+version = "7.x-2.16"
 core = "7.x"
 project = "raven"
-datestamp = "1556518690"
+datestamp = "1559675287"

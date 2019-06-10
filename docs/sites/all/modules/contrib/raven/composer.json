@@ -13,7 +13,7 @@
     ],
     "support": {
         "issues": "https://www.drupal.org/project/issues/raven",
-        "source": "http://cgit.drupalcode.org/raven"
+        "source": "https://git.drupalcode.org/project/raven"
     },
     "require": {
         "sentry/sentry": "^1.2.0"
