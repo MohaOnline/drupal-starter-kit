@@ -1,0 +1,13 @@
+name = Lazy-load
+description = "This module integrates bLazy script via image field display formatters and input-filters for inline images and iframes."
+core = 7.x
+dependencies[] = drupal:filter
+dependencies[] = libraries
+package = "Input filters"
+configure = admin/config/content/lazy
+
+; Information added by Drupal.org packaging script on 2019-04-22
+version = "7.x-1.4"
+core = "7.x"
+project = "lazy"
+datestamp = "1555908787"

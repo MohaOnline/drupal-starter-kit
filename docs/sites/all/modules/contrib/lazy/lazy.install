@@ -1,0 +1,212 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Lazy-load module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function lazy_install() {
+  $defaults = array(
+    'lazy_filter_errorClass' => 'b-error',
+    'lazy_filter_loadInvisible' => FALSE,
+    'lazy_filter_offset' => 100,
+    'lazy_filter_saveViewportOffsetDelay' => 50,
+    'lazy_filter_selector' => 'b-lazy',
+    'lazy_filter_alter_tag' => array('img' => 'img', 'iframe' => 'iframe'),
+    'lazy_filter_skipClass' => 'no-b-lazy',
+    'lazy_filter_src' => 'data-src',
+    'lazy_filter_successClass' => 'b-loaded',
+    'lazy_filter_validateDelay' => 25,
+    'lazy_filter_placeholderSrc' => 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
+    'lazy_disabled_paths' => 'rss.xml',
+  );
+
+  variable_set('lazy_filter_defaults', $defaults);
+  foreach ($defaults as $key => $value) {
+    variable_set($key, $value);
+  }
+}
+
+/**
+ * Implements hook_enable().
+ */
+function lazy_enable() {
+  $options = array(
+    '!config' => url('admin/config/content/lazy'),
+    '%filter' => 'Lazy-load',
+    '!path' => url('admin/config/content/formats'),
+  );
+  $message = t('The <a href="!config">Lazy-load</a> module was installed. The new %filter filter should be enabled in desired <a href="!path">text-formats</a>.', $options);
+  drupal_set_message($message, 'warning');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function lazy_uninstall() {
+  variable_del('lazy_filter_defaults');
+  variable_del('lazy_filter_errorClass');
+  variable_del('lazy_filter_loadInvisible');
+  variable_del('lazy_filter_offset');
+  variable_del('lazy_filter_saveViewportOffsetDelay');
+  variable_del('lazy_filter_selector');
+  variable_del('lazy_filter_alter_tag');
+  variable_del('lazy_filter_skipClass');
+  variable_del('lazy_filter_src');
+  variable_del('lazy_filter_successClass');
+  variable_del('lazy_filter_validateDelay');
+  variable_del('lazy_filter_placeholderSrc');
+  variable_del('lazy_filter_image_fields');
+  variable_del('lazy_library_installed');
+  variable_del('lazy_disabled_paths');
+
+  $module = 'lazy';
+  $name = 'lazy_filter';
+  db_delete('filter')
+    ->condition('module', $module)
+    ->condition('name', $name)
+    ->execute();
+
+  // Revert image field formatters back to `image`.
+  $lazy_enabled_fields = array();
+  $field_map = field_info_field_map();
+  $i = 1;
+  $max_messages = 10;
+  foreach ($field_map as $field_name => $field) {
+    if ($field['type'] === 'image') {
+      foreach ($field['bundles'] as $entity_type => $bundle) {
+        $field_instance = field_info_instance($entity_type, $field_name, $bundle[0]);
+        foreach ($field_instance['display'] as $display_name => $display) {
+          if ($field_instance['display'][$display_name]['module'] === 'lazy') {
+            $field_instance['display'][$display_name]['type'] = 'image';
+            $field_instance['display'][$display_name]['module'] = 'image';
+            field_update_instance($field_instance);
+            if ($i <= $max_messages) {
+              drupal_set_message(t('The %label (<code>!field_name</code>) field in %bundle (!entity_type) type is reverted back in the %display display mode.', array(
+                  '%label' => $field_instance['label'],
+                  '!field_name' => $field_instance['field_name'],
+                  '%bundle' => $field_instance['bundle'],
+                  '!entity_type' => $field_instance['entity_type'],
+                  '%display' => $display_name,
+                )),
+                'warning',
+                TRUE
+              );
+            }
+            $i++;
+          }
+        }
+      }
+    }
+  }
+  if ($i > $max_messages) {
+    drupal_set_message(t('Also reverted back %no other image fields.', array('%no' => $i - $max_messages)));
+  }
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function lazy_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $blazy = libraries_detect('blazy');
+    $requirements['blazy'] = array(
+      'title' => $t('bLazy'),
+    );
+    if ($blazy['installed']) {
+      $requirements['blazy']['value'] = $blazy['version'];
+      $requirements['blazy']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['blazy']['value'] = $blazy['error'];
+      $requirements['blazy']['description'] = $blazy['error message'];
+      $requirements['blazy']['severity'] = REQUIREMENT_ERROR;
+    }
+
+    variable_set('lazy_library_installed', $blazy['installed']);
+  }
+
+  return $requirements;
+}
+
+/**
+ * Update module default values.
+ */
+function lazy_update_7100() {
+  // Get current default values.
+  $defaults = variable_get('lazy_filter_defaults');
+
+  // Update it from old string value to new array value.
+  $defaults['lazy_filter_alter_tag'] = array('img' => 'img', 'iframe' => 'iframe');
+  // Fix already existing value with new format.
+  $lazy_filter_alter_tag = variable_get('lazy_filter_alter_tag');
+  switch ($lazy_filter_alter_tag) {
+    case 'img':
+      variable_set('lazy_filter_alter_tag', array('img' => 'img', 'iframe' => 0));
+      break;
+
+    case 'iframe':
+      variable_set('lazy_filter_alter_tag', array('img' => 0, 'iframe' => 'iframe'));
+      break;
+
+    default:
+      variable_set('lazy_filter_alter_tag', $defaults['lazy_filter_alter_tag']);
+      break;
+  }
+
+  // Add new setting to support image fields.
+  $defaults['lazy_filter_image_fields'] = FALSE;
+
+  // Update the defaults with new values.
+  variable_set('lazy_filter_defaults', $defaults);
+  variable_set('lazy_filter_image_fields', $defaults['lazy_filter_image_fields']);
+}
+
+/**
+ * Disable module, if bLazy library is not installed yet.
+ */
+function lazy_update_7101() {
+  $blazy = libraries_detect('blazy');
+  variable_set('lazy_library_installed', $blazy['installed']);
+}
+
+/**
+ * New configuration option to set which pages should disable Lazy-loading.
+ */
+function lazy_update_7102() {
+  $defaults = variable_get('lazy_filter_defaults');
+  $defaults['lazy_disabled_paths'] = 'rss.xml';
+  variable_set('lazy_filter_defaults', $defaults);
+  variable_set('lazy_disabled_paths', $defaults['lazy_disabled_paths']);
+}
+
+/**
+ * Image fields now use display formatter to enable lazy-loading per field.
+ */
+function lazy_update_7103() {
+  $image_fields = variable_get('lazy_filter_image_fields');
+  if ($image_fields) {
+    $field_map = field_info_field_map();
+    foreach ($field_map as $field_name => $field) {
+      if ($field['type'] === 'image') {
+        foreach ($field['bundles'] as $entity_type => $bundle) {
+          $field_instance = field_info_instance($entity_type, $field_name, $bundle[0]);
+          foreach ($field_instance['display'] as $display_name => $display) {
+            if ($field_instance['display'][$display_name]['type'] === 'image') {
+              $field_instance['display'][$display_name]['type'] = 'lazy';
+              $field_instance['display'][$display_name]['module'] = 'lazy';
+              field_update_instance($field_instance);
+            }
+          }
+        }
+      }
+    }
+  }
+  variable_del('lazy_filter_image_fields');
+}
