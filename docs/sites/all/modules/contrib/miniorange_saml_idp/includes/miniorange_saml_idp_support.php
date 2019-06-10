@@ -31,6 +31,7 @@ class MiniorangeSAMLIdpSupport {
        $fields = array (
           'company' => $_SERVER ['SERVER_NAME'],
           'email' => $this->email,
+          'ccEmail' => 'drupalsupport@xecurify.com',
           'phone' => $this->phone,
           'query' => $this->query,
           'subject' => 'Drupal-7 SAML IDP Free Query',

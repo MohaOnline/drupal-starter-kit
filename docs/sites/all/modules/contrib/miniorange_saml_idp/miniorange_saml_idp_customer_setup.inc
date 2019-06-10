@@ -109,19 +109,19 @@ function miniorange_saml_idp_customer_setup($form, &$form_state) {
     );
 
     $form['markup_reg_msg'] = array(
-        '#markup' => '<div class="mo_saml_register_message">You need to Register with miniOrange before upgrading to any of our premium versions of the module.</center></div>',
+        '#markup' => '<div class="mo_saml_register_message">You need to Register/Login with miniOrange before upgrading module.</center></div>',
     );
 
     $form['markup_idp_2'] = array(
         '#markup' => '<br>Just complete the short registration below to configure'
-            . ' the SAML IDP Plugin. Please enter a valid email id <br>that you have'
+            . ' the SAML IDP Plugin. Please enter a valid email id that you have'
             . ' access to. You will be able to move forward after verifying an OTP'
             . ' that we will send to this email.',
     );
 
     $form['miniorange_saml_idp_customer_setup_username'] = array(
         '#type' => 'textfield',
-        '#title' => t('Email'),
+        '#title' => t('Email<span style="color: red">*</span>'),
         '#attributes' => array('style' => 'width:60%'),
     );
 

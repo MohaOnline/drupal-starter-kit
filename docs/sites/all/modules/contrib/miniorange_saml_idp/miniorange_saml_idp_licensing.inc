@@ -13,8 +13,8 @@
      if(!Utilities::isCustomerRegistered())
      {
          $admin_email =  variable_get('miniorange_saml_idp_customer_admin_email');
-         $payment_page1 = "https://auth.miniorange.com/moas/login?username=$admin_email&redirectUrl=https://auth.miniorange.com/moas/initializepayment&requestOrigin=drupal_saml_idp_basic_plan";
-         $payment_page2 = "https://auth.miniorange.com/moas/login?username=$admin_email&redirectUrl=https://auth.miniorange.com/moas/initializepayment&requestOrigin=drupal_saml_idp_premium_plan";
+         $payment_page1 = "https://login.xecurify.com/moas/login?username=$admin_email&redirectUrl=https://login.xecurify.com/moas/initializepayment&requestOrigin=drupal_saml_idp_basic_plan";
+         $payment_page2 = "https://login.xecurify.com/moas/login?username=$admin_email&redirectUrl=https://login.xecurify.com/moas/initializepayment&requestOrigin=drupal_saml_idp_premium_plan";
          $targetBlank = 'target="_blank"';
      }
      else
@@ -227,7 +227,7 @@
          '#markup' => '<h3>** End to End Identity Provider Integration (additional charges applicable)</h3>'
              . ' We will setup a Conference Call / Gotomeeting and do end to end configuration for you to setup dupal as IDP.'
              . ' We provide services to do the configuration on your behalf.<br />'
-             . ' If you have any doubts regarding the licensing plans, you can mail us at <a href="mailto:info@miniorange.com"><i>info@miniorange.com</i></a> or submit a query using the support form <b>(support form available on each tab)</b>.<br><br></div></div>'
+             . ' If you have any doubts regarding the licensing plans, you can mail us at <a href="mailto:info@xecurify.com"><i>info@xecurify.com</i></a> or submit a query using the support form <b>(support form available on each tab)</b>.<br><br></div></div>'
      );
 
      $form['markup_8'] = array(

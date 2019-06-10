@@ -107,8 +107,6 @@ function miniorange_saml_idp_export_config($form, &$form_state)
 
     $form['mo_markup_div_imp']=array('#markup'=>'</div>');
 
-    Utilities::faq($form, $form_state);
-
     Utilities::AddSupportButton($form, $form_state);
 
     return $form;

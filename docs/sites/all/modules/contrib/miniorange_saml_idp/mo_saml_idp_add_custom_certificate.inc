@@ -246,8 +246,6 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
 
     $form['markup_div_imp11w']=array('#markup'=>'</div>');
 
-    Utilities::faq($form, $form_state);
-
     Utilities::AddSupportButton($form, $form_state);
 
     return $form;

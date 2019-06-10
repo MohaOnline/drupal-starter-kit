@@ -49,7 +49,7 @@ function miniorange_saml_idp_support($form, &$form_state) {
     );
 
     $form['miniorange_saml_support_note'] = array(
-        '#markup' => '<div><br/>If you want custom features in the plugin, just drop an email to <a href="mailto:info@miniorange.com">info@miniorange.com</a></div>'
+        '#markup' => '<div><br/>If you want custom features in the plugin, just drop an email to <a href="mailto:info@xecurify.com">info@xecurify.com</a></div>'
     );
 
     return $form;

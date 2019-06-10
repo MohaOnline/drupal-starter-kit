@@ -1,7 +1,7 @@
 function test(plan){
   var f = document.createElement("form");
   f.setAttribute('method',"post");
-  f.setAttribute("action", "https://auth.miniorange.com/moas/login");
+  f.setAttribute("action", "https://login.xecurify.com/moas/login");
   f.setAttribute("target", "_blank");
 
   var i = document.createElement("input"); 
@@ -12,7 +12,7 @@ function test(plan){
   var i2 = document.createElement("input");
   i2.setAttribute("type", "text");
   i2.setAttribute("name", "redirectUrl");
-  i2.setAttribute("value", "https://auth.miniorange.com/moas/initializepayment");
+  i2.setAttribute("value", "https://login.xecurify.com/moas/initializepayment");
 
   var i3 = document.createElement("input"); 
   i3.setAttribute('type',"text");

@@ -165,8 +165,6 @@ function miniorange_saml_idp_attribute_mapping($form, &$form_state) {
         '#markup' => '</div>',
     );
 
-  Utilities::faq($form, $form_state);
-
   Utilities::AddSupportButton($form, $form_state);
 
   return $form;
@@ -179,13 +177,6 @@ function miniorange_saml_idp_attribute_mapping($form, &$form_state) {
  function miniorange_saml_idp_save_attribute_mapping($form, &$form_state)
  {
       global $base_url;
-      $mo_admin_email = variable_get('miniorange_saml_idp_customer_admin_email',NULL);
-
-      if(!isset($mo_admin_email)){
-        drupal_set_message(t('Please register with miniOrange to enable Drupal as IDP.'));
-        drupal_goto($base_url . '/?q=admin/config/people/miniorange_saml_idp');
-      }
-
       $nameid_attr = $form['miniorange_saml_idp_nameid_attr_map']['#value'];
       if($nameid_attr == ''){
         $nameid_attr = 'emailAddress';

@@ -3,7 +3,6 @@ include "basicEnum.php";
 
 class mo_options_enum_identity_provider extends BasicEnum{
     const IDP_Base_Url='miniorange_saml_idp_issuer';
-    const IDP_Entity_ID = 'miniorange_saml_idp_issuer';
 }
 
 class mo_options_enum_service_provider extends BasicEnum{

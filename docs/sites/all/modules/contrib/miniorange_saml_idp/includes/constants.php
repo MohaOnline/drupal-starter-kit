@@ -10,6 +10,6 @@
  */
 class MiniorangeSAMLIdpConstants {
 
-  const BASE_URL = 'https://auth.miniorange.com';
+  const BASE_URL = 'https://login.xecurify.com';
 
 }

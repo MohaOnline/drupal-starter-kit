@@ -10,7 +10,7 @@ function miniorange_idp_feedback()
         $email = $_POST['query_feedback_email'];
         $message = '<br><b>Reason: </b>'.$reason.'<br><br><b>Feedback:</b> '.$q_feedback;
 
-        $url = 'https://auth.miniorange.com/moas/api/notify/send';
+        $url = 'https://login.xecurify.com/moas/api/notify/send';
         $ch = curl_init($url);
         $phone = variable_get('miniorange_saml_idp_customer_admin_phone','');
         $customerKey= variable_get('miniorange_saml_idp_customer_id', '');
@@ -43,8 +43,8 @@ function miniorange_idp_feedback()
                     'customerKey' => $customerKey,
                     'fromEmail' => $fromEmail,
                     'fromName' => 'miniOrange',
-                    'toEmail' => 'drupalsupport@miniorange.com',
-                    'toName' => 'drupalsupport@miniorange.com',
+                    'toEmail' => 'drupalsupport@xecurify.com',
+                    'toName' => 'drupalsupport@xecurify.com',
                     'subject' => 'Drupal-7 SAML IDP Module Feedback',
                     'content' => $content
                 ),
@@ -147,7 +147,7 @@ function miniorange_idp_feedback()
 }
 
 function get_idp_timestamp() {
-    $url = 'https://auth.miniorange.com/moas/rest/mobile/get-timestamp';
+    $url = 'https://login.xecurify.com/moas/rest/mobile/get-timestamp';
     $ch  = curl_init( $url );
 
     curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );

@@ -14,6 +14,7 @@
         'pageURL' => $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
 
     )),array('type' => 'setting'));
+    variable_set('mo_saml_tourTaken_' . getPage_name(), true);
 
 if(isset($_POST['doneTour']) && isset($_POST['pageID']))
 {
@@ -344,7 +345,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mosaml_vt_impexp',
             'pointToSide'   =>  'left',
             'titleHTML'     =>  '<h1>Download Configuration</h1>',
-            'contentHTML'   =>  'If you are having trouble setting up the plugin, Export the configurations and mail us at info@miniorange.com.',
+            'contentHTML'   =>  'If you are having trouble setting up the plugin, Export the configurations and mail us at info@xecurify.com.',
             'ifNext'        =>  true,
             'buttonText'    =>  'End Tour',
             'img'           =>  array(),
