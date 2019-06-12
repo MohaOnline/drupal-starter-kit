@@ -1,0 +1,13 @@
+name = Little helpers
+description = Utility code to make development with Drupal easier.
+core = 7.x
+php = 5.4
+
+dependencies[] = field
+dependencies[] = psr0
+
+; Information added by Drupal.org packaging script on 2018-05-16
+version = "7.x-1.7"
+core = "7.x"
+project = "little_helpers"
+datestamp = "1526495588"

@@ -1,0 +1,39 @@
+language: php
+sudo: false
+
+php:
+  - 7.0
+
+mysql:
+  database: drupal
+  username: root
+  encoding: utf8
+
+cache:
+  directories:
+     - $HOME/.composer/cache
+     - $HOME/.drush/cache
+
+install:
+  - export PATH="$HOME/.composer/vendor/bin:$PATH"
+  - composer global require drush/drush:8.1.*
+
+before_script:
+  - repo=`pwd`
+  - cd ..
+  - git clone https://github.com/torotil/upal.git
+  - upal=`pwd`/upal
+  - mysql -e 'create database drupal'
+  - php -d include_path=`pwd` -d sendmail_path=`which true` ~/.composer/vendor/bin/drush.php --yes core-quick-drupal --core=drupal-7.x --profile=testing --no-server --db-url=mysql://root:@127.0.0.1/drupal --root=`pwd`/test-root
+  - ln -s $repo test-root/sites/all/modules/little_helpers
+  - cd test-root
+  - root=`pwd`
+  - drush dl ctools psr0 views webform
+  - drush --yes pm-enable little_helpers webform
+
+script:
+  - cd $repo
+  - UPAL_ROOT=$root UPAL_DB_URL=mysql://root:@127.0.0.1/drupal UPAL_WEB_URL=http://127.0.0.1 phpunit -c phpunit.xml.dist --bootstrap $upal/bootstrap.php --coverage-clover=coverage.xml .
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

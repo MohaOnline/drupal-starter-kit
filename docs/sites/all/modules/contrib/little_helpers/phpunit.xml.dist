@@ -1,0 +1,33 @@
+<!-- Copy and rename to phpunit.xml. Customize as needed. -->
+<phpunit backupGlobals="false"
+    backupStaticAttributes="false"
+    syntaxCheck="false">
+  <php>
+    <!--User must have write permissions to this directory.-->
+    <!--If not supplied, defaults to sys_get_tmp_dir().-->
+    <!-- <var name="UPAL_TMP" value="/tmp"/> -->
+
+    <!--Uncomment the line below if your path to drush differs from `which drush`. Use absolute path.-->
+    <!--You currently need 'master' branch of drush after 2011.07.21. Drush 4.6 will be OK - http://drupal.org/node/1105514-->
+    <!--<var name="UNISH_DRUSH" value="/Users/mw/bin/drush"/>-->
+
+  </php>
+
+<filter>
+  <whitelist processUncoveredFilesFromWhitelist="true" addUncoveredFilesFromWhitelist="true">
+    <directory suffix=".php">.</directory>
+    <directory suffix=".inc">.</directory>
+    <directory suffix=".module">.</directory>
+    <exclude>
+      <directory suffix="Test.php">.</directory>
+      <directory suffix=".api.php">.</directory>
+      <directory suffix=".tpl.php">.</directory>
+      <directory suffix=".features.inc">.</directory>
+      <directory suffix=".features.field_base.inc">.</directory>
+      <directory suffix=".features.field_instance.inc">.</directory>
+      <directory suffix=".features.taxonomy.inc">.</directory>
+      <directory suffix=".features.uuid_term.inc">.</directory>
+    </exclude>
+  </whitelist>
+</filter>
+</phpunit>
