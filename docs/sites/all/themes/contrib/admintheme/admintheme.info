@@ -1,0 +1,58 @@
+name = Admin ipstheme
+description = A simple admin theme with responsive
+package = Core
+version = VERSION
+core = 7.x
+;stylesheets[screen][] = reset.css
+;stylesheets[screen][] = style.css
+stylesheets[screen][] = css/bootstrap/css/bootstrap.min.css
+stylesheets[screen][] = css/plugins/font-awesome/css/font-awesome.min.css
+stylesheets[screen][] = css/bootstrap/ionicons.min.css
+stylesheets[screen][] = css/dist/css/AdminLTE.min.css
+stylesheets[screen][] = css/dist/css/skins/_all-skins.min.css
+stylesheets[screen][] = css/plugins/iCheck/flat/blue.css
+stylesheets[screen][] = css/plugins/datepicker/datepicker3.css
+stylesheets[screen][] = css/plugins/daterangepicker/daterangepicker.css
+stylesheets[screen][] = css/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css
+stylesheets[screen][] = css/plugins/datatables/dataTables.bootstrap.css
+stylesheets[screen][] = css/plugins/select2/select2.min.css
+stylesheets[screen][] = css/admin-style.css
+
+
+
+scripts[] = css/dist/js/app.js
+scripts[] = css/bootstrap/js/bootstrap.min.js
+scripts[] = css/plugins/fastclick/fastclick.js
+scripts[] = css/plugins/iCheck/icheck.min.js
+scripts[] = css/plugins/datatables/jquery.dataTables.min.js
+scripts[] = css/plugins/datatables/dataTables.bootstrap.min.js
+scripts[] = js/select2.min.js
+scripts[] = js/admin.js
+
+
+settings[shortcut_module_link] = 1
+regions[content] = Content
+regions[admin_menu] = Admin Menu
+regions[help] = Help
+regions[page_top] = Page top
+regions[page_bottom] = Page bottom
+regions[sidebar_first] = First sidebar
+regions_hidden[] = sidebar_first
+
+; Information added by Drupal.org packaging script on 2017-07-31
+version = "7.56"
+project = "drupal"
+datestamp = "1498069849"
+
+
+; Information added by Drupal.org packaging script on 2018-07-09
+version = "7.x-1.3"
+core = "7.x"
+project = "admintheme"
+datestamp = "1531122229"
+
+; Information added by Drupal.org packaging script on 2018-09-04
+version = "7.x-1.5"
+core = "7.x"
+project = "admintheme"
+datestamp = "1536051186"
