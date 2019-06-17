@@ -5,6 +5,9 @@
  *   Default webform component callbacks for functionality related to the Form Builder.
  */
 
+use Drupal\form_builder\Loader;
+use Drupal\form_builder_webform\HiddenElement;
+
 /**
  * Configuration form for the "unique" property.
  */
@@ -388,7 +391,7 @@ function _form_builder_webform_form_builder_types_hidden() {
   $fields['hidden'] = array(
     'title' => t('Hidden'),
     'weight' => 8,
-    'class' => 'FormBuilderWebformHiddenElement',
+    'class' => HiddenElement::class,
   );
   $component['name'] = t('New hidden');
   $fields['hidden']['default'] = _form_builder_webform_default('hidden', array(
@@ -451,7 +454,8 @@ function _form_builder_webform_form_builder_types_markup() {
   );
   $component['name'] = t('New markup');
   $component['value'] = $default;
-  $fields['markup']['default'] = _form_builder_webform_default('markup', array(), $component);
+  $extras['format'] = filter_default_format($GLOBALS['user']);
+  $fields['markup']['default'] = _form_builder_webform_default('markup', $extras, $component);
 
   return $fields;
 }
@@ -626,7 +630,7 @@ function _form_builder_webform_form_builder_save_pagebreak($component, $form_ele
   if ($component['pid'] !== 0) {
     drupal_set_message(t('Page breaks may not be nested inside fieldsets. Each pagebreak has been moved outside of fieldsets.'), 'status', FALSE);
 
-    $parent = FormBuilderLoader::instance()
+    $parent = Loader::instance()
       ->fromCache('webform', $form_element['#form_builder']['form_id'])
       ->getElementArray($form_element['#form_builder']['parent_id']);
 
@@ -1038,15 +1042,16 @@ function _form_builder_webform_build_edit_form($component_type, $element, $prope
   $component = isset($element['#webform_component']) ? $element['#webform_component'] : $defaults_function();
   $nid = isset($component['nid']) ? $component['nid'] : NULL;
 
-  // Build the entire _webform_edit_file() form based on the current state of
+  // Build the entire _webform_edit_COMPONENT() form based on the current state of
   // the component, and obtain the slice of it that we want.
-  $empty_form = array();
-  $empty_form_state = form_state_defaults();
+  $form_id = 'webform_component_edit_form';
+  $form_state = form_state_defaults();
 
   // The full node is needed here so that the "private" option can be access
   // checked.
   $node = !isset($nid) ? (object) array('nid' => NULL, 'webform' => webform_node_defaults()) : node_load($nid);
-  $form = webform_component_edit_form($empty_form, $empty_form_state, $node, $component);
+  $form = $form_id([], $form_state, $node, $component);
+  drupal_alter(['form', 'form_webform_component_edit_form'], $form, $form_state, $form_id);
   $form = drupal_array_get_nested_value($form, $form_nested_keys);
 
   // Force the form to have a consistent #tree structure so it will appear in

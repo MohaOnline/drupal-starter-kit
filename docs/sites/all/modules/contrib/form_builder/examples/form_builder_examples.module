@@ -5,6 +5,8 @@
  * Sample implementations of form_builder.
  */
 
+use Drupal\form_builder\Loader;
+
 /**
  * Implementation of hook_menu().
  */
@@ -407,7 +409,7 @@ function form_builder_examples_export_form() {
 
   $form = array();
 
-  $current = FormBuilderLoader::instance()
+  $current = Loader::instance()
     ->fromCache('example', 'sample')
     ->getFormArray();
 

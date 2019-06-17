@@ -1,4 +1,4 @@
-[![Build Status (7.x-1.x)](https://travis-ci.org/torotil/form_builder.svg?branch=7.x-1.x)](https://travis-ci.org/torotil/form_builder)
+[![Build Status (7.x-1.x)](https://travis-ci.org/moreonion/form_builder.svg?branch=7.x-2.x)](https://travis-ci.org/torotil/form_builder)
 
 ## Overview
 
@@ -16,7 +16,7 @@ Just install it like [any other drupal module](https://www.drupal.org/documentat
 ### Requirements
 
 * [Options Element](https://www.drupal.org/project/options_element)
-* _PHP 5.4_ or higher.
+* _PHP 7.0_ or higher.
 
 ### Integrations / Modules based on form_builder
 
@@ -27,13 +27,13 @@ Just install it like [any other drupal module](https://www.drupal.org/documentat
 
 ### Maintenance status
 
-The 7.x-1.x branch is actively developed. The 6.x-1.x branch is only minimally maintained and will receive security fixes only.
+Only the 7.x-2.x branch is actively developed. Other branches are only minimally maintained and will receive security fixes only.
 
 ### Contributing
 
 Apart from contributing code there is numerous other ways to contribute:
 
-* Triage bugs: Try to confirm reported bugs. Provide steps-by-step instructions to reproduce them preferably starting from a clean Drupal installation.
+* Triage bugs: Try to confirm reported bugs. Provide step-by-step instructions to reproduce them preferably starting from a clean Drupal installation.
 * [Review and test patches](https://www.drupal.org/patch/review): Does the patch really fix the issue? Does it have any unwanted side-effects?
 * Re-roll patches against the latest dev-version if needed.
 * Write tests.

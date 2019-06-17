@@ -5,6 +5,8 @@
  * Implementations of hook_form_builder_properties in separate functions.
  */
 
+use Drupal\form_builder\Loader;
+
 /**
  * Configuration form for the "key" property.
  *
@@ -18,7 +20,7 @@ function form_builder_property_key_form(&$form_state, $form_type, $element, $pro
   $form['key'] = array(
     '#title' => t('Form key'),
     '#type' => 'machine_name',
-    '#default_value' => preg_match('/^new_[0-9]+$/', $element['#key']) ? '' : $element['#key'],
+    '#default_value' => $element['#key'],
     '#maxlength' => 128,
     '#description' => t('The form key is used in the field "name" attribute. Must be alphanumeric and underscore characters.'),
     '#machine_name' => array(
@@ -46,7 +48,7 @@ function form_builder_property_key_form_validate($element, $form_state) {
   if ($element['#value'] != $element['#default_value']) {
     // Assuming to be called from form_builder_field_configure().
     list($form_type, $form_id, $element_id) = $form_state['build_info']['args'];
-    $form_obj = FormBuilderLoader::instance()->fromCache($form_type, $form_id);
+    $form_obj = Loader::instance()->fromCache($form_type, $form_id);
     $parent = _form_builder_get_element_parent($form_obj, $element_id);
     $new_key = $form_state['values']['key'];
     if (isset($parent[$new_key])) {

@@ -5,6 +5,10 @@
  * Generic form building framework and user interface.
  */
 
+use Drupal\form_builder\FormBase;
+use Drupal\form_builder\Loader;
+use Drupal\form_builder_webform\PropertyOptions;
+
 define('FORM_BUILDER_ROOT', 0);
 
 /**
@@ -164,7 +168,7 @@ function form_builder_menu_field_access($op, $form_type, $form_id, $element_id) 
   if ($op == 'clone') {
     // Unique fields cannot be cloned (or otherwise they would not be unique).
     // Cloning fieldsets is also not currently supported.
-    $fields = FormBuilderLoader::instance()->getElementTypeInfo($form_type, $form_id);
+    $fields = Loader::instance()->getElementTypeInfo($form_type, $form_id);
     $access = !empty($element['#form_builder']['element_type']) && empty($fields[$element['#form_builder']['element_type']]['unique']) && $element['#form_builder']['element_type'] != 'fieldset';
   }
   if ($op == 'configure' && !empty($element['#form_builder']['configurable'])) {
@@ -249,7 +253,7 @@ function form_builder_form_builder_properties($form_type) {
   );
 
   if ($form_type == 'webform') {
-    $properties['options']['class'] = 'FormBuilderWebformPropertyOptions';
+    $properties['options']['class'] = PropertyOptions::class;
   }
   return $properties;
 }
@@ -419,24 +423,10 @@ function form_validate_url(&$element, &$form_state) {
 }
 
 /**
- * Implementation of hook_registry_files_alter().
- *
- * Reassign formbuilder include files to their respective modules.
- * Required to make module_invoke() type of calls working.
- */
-function form_builder_registry_files_alter(&$files, $module_cache) {
-  $module_files = file_scan_directory(drupal_get_path('module', 'form_builder') . '/modules', '!^.*\.inc$!');
-  foreach ($module_files as $path => $file) {
-    $files[$file->uri]['module'] = $file->name;
-    $files[$file->uri]['weight'] = 0;
-  }
-}
-
-/**
  * Implement hook_cron().
  *
  * Remove stale form_builder_cache entries.
  */
 function form_builder_cron() {
-  FormBuilderFormBase::purge(variable_get('form_builder_timeout', 21600));
+  FormBase::purge(variable_get('form_builder_timeout', 21600));
 }
