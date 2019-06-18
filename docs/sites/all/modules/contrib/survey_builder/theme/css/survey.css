@@ -1,0 +1,108 @@
+#block-system-main #form-builder-wrapper {
+  padding-top: 0;
+}
+
+#form-builder-field-palette .form-builder-fields .form-builder-palette-element {
+  float: none;
+  margin-bottom: 5px;
+}
+
+/**
+ * Survey Questions Block
+ */
+
+.survey-questions {
+  overflow: scroll;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+  .survey-questions .form-builder-fields {
+    width: 100%;
+    overflow: hidden;
+  }
+
+    .survey-questions .form-builder-fields li {
+      display: block;
+      width: 260px;
+      margin-bottom: 5px;
+      padding: 3px;
+      list-style-type: none;
+      background-color: white;
+      border: 1px solid #999;
+      font-size: 11px;
+      cursor: move;
+    }
+
+    .survey-questions .form-builder-fields li a,
+    .survey-questions .form-builder-fields li a:hover,
+    .survey-questions .form-builder-fields li a:active,
+    .survey-questions .form-builder-fields li a:visited {
+      text-decoration: none;
+      cursor: move;
+      color: black;
+      text-align: center;
+    }
+
+/*
+ * Clone Button
+ */
+.survey-builder-clone-button {
+  display: block;
+  float: right;
+  margin-right: 10px;
+}
+
+/*
+ * Survey
+ */
+
+.page-survey #form-builder-wrapper h3.form-builder-title {
+  margin: 0 0 0 10px;
+}
+
+.page-survey #form-builder-wrapper.no-palette #form-builder,
+.page-survey #form-builder-wrapper.with-palette #form-builder {
+  position: relative;
+  min-height: 200px;
+  padding-bottom: 30px;
+  margin: 0;
+  border: none;
+}
+
+  .page-survey #form-builder-wrapper.no-palette #form-builder .save-survey,
+  .page-survey #form-builder-wrapper.with-palette #form-builder .save-survey {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin-top: 10px;
+  }
+
+/*
+ * Create & Clone Survey Forms
+ */
+
+.block-survey-builder {
+  display: none;
+  width: 404px;
+  z-index:10;
+  padding: 20px;
+  background-color: #fff;
+  -moz-box-shadow:0 0 90px 5px #000;
+  -webkit-box-shadow: 0 0 90px #000;
+  box-shadow: 0 0 90px #000;
+}
+
+  .block-survey-builder .close {
+    background-image: url('../img/close.png');
+    position: absolute;
+    right: -13px;
+    top: -10px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+  }
+
+  .block-survey-builder .form-submit {
+    float: right;
+  }

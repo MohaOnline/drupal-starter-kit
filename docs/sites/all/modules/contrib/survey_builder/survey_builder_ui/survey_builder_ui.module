@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Survey Builder UI feature.
+ */
+
+include_once('survey_builder_ui.features.inc');

@@ -1,0 +1,28 @@
+core = "7.x"
+dependencies[] = "features"
+dependencies[] = "menu"
+dependencies[] = "survey_builder"
+dependencies[] = "views"
+dependencies[] = "views_ui"
+description = "Views and menu items for a basic survey building and completion interface"
+features[ctools][] = "views:views_default:3.0"
+features[menu_links][] = "navigation:survey/new/edit"
+features[views_view][] = "survey_responses"
+features[views_view][] = "surveys"
+name = "Survey Builder UI"
+package = "Other"
+php = "5.2.4"
+
+; Information added by drupal.org packaging script on 2013-01-11
+version = "7.x-1.0-beta1"
+core = "7.x"
+project = "survey_builder"
+datestamp = "1357924166"
+
+
+; Information added by Drupal.org packaging script on 2014-09-16
+version = "7.x-1.2"
+core = "7.x"
+project = "survey_builder"
+datestamp = "1410878031"
+

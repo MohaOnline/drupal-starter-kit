@@ -1,0 +1,20 @@
+core = "7.x"
+dependencies[] = "entity"
+dependencies[] = "features"
+dependencies[] = "form_builder"
+dependencies[] = "views"
+description = "Survey building interface with a central repository of questions"
+files[] = "includes/survey_builder.entity.inc"
+files[] = "includes/survey_builder.question.inc"
+files[] = "includes/survey_builder.survey.inc"
+files[] = "includes/views/views_handler_field_link.inc"
+name = "Survey Builder"
+package = "Other"
+php = "5.2.4"
+
+; Information added by Drupal.org packaging script on 2014-09-16
+version = "7.x-1.2"
+core = "7.x"
+project = "survey_builder"
+datestamp = "1410878031"
+

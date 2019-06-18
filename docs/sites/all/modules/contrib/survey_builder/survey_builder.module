@@ -1,0 +1,844 @@
+<?php
+/**
+ * @file
+ * Code for the Survey Builder module.
+ */
+
+define('SURVEY_BUILDER_NEW', 'new');
+
+/**
+ * Implements hook_menu()
+ *
+ * Note: Survey callback are defined in SurveyUIController in survey_builder.admin.inc
+ */
+function survey_builder_menu() {
+  return array(
+    'survey-response/%' => array(
+      'title' => 'View Completed Survey',
+      'page callback' => 'survey_builder_response_view',
+      'page arguments' => array(1),
+      'file' => 'includes/survey_builder.admin.inc',
+      'access arguments' => array('survey view'),
+      'type' => MENU_CALLBACK,
+    ),
+  );
+}
+
+/**
+ * Implements of hook_permission().
+ */
+function survey_builder_permission() {
+  return array(
+    'survey create' => array(
+      'title' => t('Create Survey'),
+      'description' => t('Create and edit survey builder surveys'),
+    ),
+    'survey complete' => array(
+      'title' => t('Complete Survey'),
+      'description' => t('Complete survey builder surveys'),
+    ),
+    'survey complete as user' => array(
+      'title' => t('Complete Survey as Other User'),
+      'description' => t('Complete survey builder surveys on behalf of any other user'),
+    ),
+    'survey view' => array(
+      'title' => t('View Completed Survey'),
+      'description' => t('View a completed survey builder survey'),
+    ),
+    'survey delete' => array(
+      'title' => t('Delete Survey'),
+      'description' => t('Delete survey builder surveys'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function survey_builder_entity_info() {
+  return array(
+    'survey' => array(
+      'label' => t('Survey'),
+      'entity class' => 'SurveyEntity',
+      'controller class' => 'SurveyEntityController',
+      'metadata controller class' => 'SurveyBuilderEntityMetadata',
+      'views controller class' => 'EntityDefaultViewsController',
+      'base table' => 'survey',
+      'module' => 'survey_builder',
+      'exportable' => TRUE,
+      'entity keys' => array(
+        'id' => 'pid',
+        'label' => 'title',
+      ),
+      'bundle keys' => array(
+        'bundle' => 'type',
+      ),
+      'bundles' => array(
+        'survey' => array(
+          'label' => t('Survey'),
+          'admin' => array(
+            'path'             => 'admin/structure/surveys/manage/survey',
+            'access arguments' => array('administer site configuration'),
+          ),
+        ),
+      ),
+      'access callback' => 'survey_access',
+      'uri callback' => 'entity_class_uri',
+      'fieldable' => TRUE,
+      'view modes' => array(
+        'full' => array(
+          'label'           => t('Survey full view'),
+          'custom settings' => FALSE,
+        ),
+        'summary' => array(
+          'label'           => t('Survey summary (text only) view'),
+          'custom settings' => FALSE,
+        ),
+      ),
+      'admin ui' => array(
+        'path' => 'admin/structure/surveys',
+        'file' => 'includes/survey_builder.admin.inc',
+        'controller class' => 'SurveyUIController',
+        'menu wildcard' => '%survey',
+      ),
+    ),
+    'survey_response' => array(
+      'label' => t('Survey Response'),
+      'entity class' => 'SurveyResponseEntity',
+      'controller class' => 'EntityAPIController',
+      'metadata controller class' => 'SurveyResponseEntityMetadata',
+      'views controller class' => 'EntityDefaultViewsController',
+      'base table' => 'survey_response',
+      'entity keys' => array(
+        'id' => 'pid',
+      ),
+      'bundle keys' => array(),
+      'bundles' => array(),
+      'uri callback' => 'entity_class_uri',
+    ),
+    'question' => array(
+      'label' => t('Question'),
+      'entity class' => 'QuestionEntity',
+      'controller class' => 'EntityAPIControllerExportable',
+      'metadata controller class' => 'SurveyBuilderEntityMetadata',
+      'views controller class' => 'EntityDefaultViewsController',
+      'base table' => 'survey_question',
+      'exportable' => TRUE,
+      'entity keys' => array(
+        'id' => 'pid',
+        'label' => 'label',
+        'bundle' => 'type',
+      ),
+      'bundle keys' => array(),
+      'bundles' => array(),
+      'uri callback' => 'entity_class_uri',
+    ),
+    'question_response' => array(
+      'label' => t('Question Response'),
+      'entity class' => 'QuestionResponseEntity',
+      'controller class' => 'EntityAPIController',
+      'metadata controller class' => 'QuestionResponseEntityMetadata',
+      'views controller class' => 'EntityDefaultViewsController',
+      'base table' => 'survey_question_response',
+      'entity keys' => array(
+        'id' => 'pid',
+      ),
+      'bundle keys' => array(),
+      'bundles' => array(),
+      'uri callback' => 'entity_class_uri',
+    ),
+  );
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function survey_builder_views_api() {
+  list($module, $api) = func_get_args();
+  if ($module == "views" && $api == "views_default") {
+    return array("version" => "3.0");
+  }
+}
+
+/**
+ * Implements hook_views_data()
+ */
+function survey_builder_views_data_alter(&$data) {
+
+  $data['survey']['link'] = array(
+    'title' => t('Link'),
+    'help' => t('Link to complete a survey'),
+    'field' => array(
+      'handler' => 'survey_builder_views_handler_field_survey_link',
+    ),
+  );
+
+  $data['survey']['edit_link'] = array(
+    'title' => t('Edit Link'),
+    'help' => t('Link to edit a survey'),
+    'field' => array(
+      'handler' => 'survey_builder_views_handler_field_survey_edit_link',
+    ),
+  );
+
+  $data['survey']['delete_link'] = array(
+    'title' => t('Delete Link'),
+    'help' => t('Link to delete a survey'),
+    'field' => array(
+      'handler' => 'survey_builder_views_handler_field_survey_delete_link',
+    ),
+  );
+
+  $data['survey']['responses_Link'] = array(
+    'title' => t('Responses Link'),
+    'help' => t('Link to a list of this survey\'s responses'),
+    'field' => array(
+      'handler' => 'survey_builder_views_handler_field_survey_responses_link',
+    ),
+  );
+
+  $data['survey_response']['link'] = array(
+    'title' => t('Link'),
+    'help' => t('Link to view a survey response'),
+    'field' => array(
+      'handler' => 'survey_builder_views_handler_field_survey_response_link',
+    ),
+  );
+
+}
+
+/**
+ * Implements hook_theme().
+ */
+function survey_builder_theme($existing, $type, $theme, $path) {
+  return array(
+    'views_view_fields__questions__block' => array(
+      'variables' => array('view' => NULL),
+      'function' => 'survey_builder_question_palette_render',
+      'file' => 'includes/survey_builder.admin.inc',
+      'original hook' => 'views_view',
+    ),
+  );
+}
+
+/**
+ * Survey access callback
+ */
+function survey_access($op, $entity = NULL, $account = NULL) {
+  $perms = array(
+    'view' => 'complete',
+    'create' => 'create',
+    'update' => 'create',
+    'delete' => 'delete',
+  );
+  return user_access('survey ' . $perms[$op], $account);
+}
+
+/**
+ * Implements hook_form_builder_save()
+ */
+function survey_builder_form_builder_save($form, $form_type, $form_id) {
+
+  if ($form_type != 'survey') {
+    return;
+  }
+
+  module_load_include('inc', 'survey_builder', 'includes/survey_builder.survey');
+
+  $title = '';
+  $override_title = FALSE;
+
+  // Get survey title
+  if (empty($form['#survey_title'])) {
+      $title = t('New Survey');
+  }
+  else {
+      $title = $form['#survey_title'];
+      $override_title = TRUE;
+      unset($form['#survey_title']);
+  }
+
+  // Dummy form_state
+  $form_state = array();
+
+  // Retrieve or create new survey
+  if ($form_id == SURVEY_BUILDER_NEW) {
+    // build a new survey entity object
+    $survey = entity_create('survey', array(
+      'title'    => $title,
+      'name_raw' => $title,
+      'type'     => 'survey',
+    ));
+
+  }
+  else {
+    $survey = survey_load($form_id);
+  }
+
+  // Set bundle
+  $survey->bundle = 'survey';
+
+  // Set title
+  $survey->title = ($override_title)? $title : $survey->title ;
+
+  // Process fields to create survey form
+  foreach ($form as $key => &$field) {
+    survey_builder_save_process_field($field);
+  }
+
+  $survey->fields = $form;
+
+  //passing query params to modules altering surveys through $form_state array
+  $params     = drupal_get_query_parameters();
+  $form_state = array('survey_params' => $params);
+
+  // Allow other modules to alter surveys
+  drupal_alter('survey_builder_survey_save', $form, $form_state, $survey);
+
+  // Save form to cache
+  form_builder_cache_save('survey', $form_id, $form);
+
+  // Save survey
+  $status = entity_save('survey', $survey);
+  if ($status != SAVED_NEW && $status != SAVED_UPDATED) {
+    return FALSE;
+  }
+
+  // Purge form builder cache
+  survey_builder_rebuild_cache();
+
+  module_invoke_all('survey_builder_survey_saved', $survey);
+}
+
+/**
+ * Implements hook_form_builder_load()
+ */
+function survey_builder_form_builder_load($form_type, $form_id) {
+
+  if ($form_type != 'survey') {
+    return;
+  }
+
+  module_load_include('inc', 'survey_builder', 'includes/survey_builder.survey');
+
+  $survey = survey_load($form_id);
+  if ($survey === FALSE) {
+    return;
+  }
+
+  $form = $survey->fields;
+  foreach ($form as $key => &$field) {
+    survey_builder_load_process_field($field);
+  }
+
+  $form['#survey_title'] = $survey->title;
+
+  // Allow other modules to alter surveys
+  drupal_alter('survey_builder_survey_load', $form, $survey);
+
+  return $form;
+
+}
+
+/**
+ * Implements hook_form_builder_add_element_alter()
+ */
+function survey_builder_form_builder_add_element_alter(&$element, $form_type, $form_id) {
+  if (empty($_GET['question_id'])) {
+    return;
+  }
+
+  module_load_include('inc', 'survey_builder', 'includes/survey_builder.question');
+
+  // Saving the element_id for later
+  $element_id = $element['#form_builder']['element_id'];
+
+  $question = question_load($_GET['question_id']);
+  if (!$question) {
+    watchdog('survey_builder', 'Unable to load question: %question_id',
+      array('%question_id' => $_GET['question_id']), WATCHDOG_ERROR);
+    return;
+  }
+
+  $element = array_merge($element, $question->field);
+  $element['#form_builder']['element_type'] = 'question';
+  $element['#question_id'] = $question->pid;
+  $element['#title'] = $question->label;
+
+  // Mark the element as new
+  $element['#form_builder']['is_new'] = TRUE;
+
+  // Giving it the new id
+  $element['#form_builder']['element_id'] = $element_id;
+  $element['#key'] = $element_id;
+
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter()
+ */
+function survey_builder_form_form_builder_preview_alter(&$form, &$form_state, $form_id) {
+
+  $form['#pre_render'][] = 'survey_builder_form_builder_pre_render';
+
+  $button = l(
+    'Save Survey',
+    implode('/', array('survey', $form['#form_builder']['form_id'], 'save')),
+    array(
+      'attributes' => array('class' => array('button'),
+      ),
+      'query' => drupal_get_query_parameters(),
+    )
+  );
+
+  $form['save_survey'] = array(
+    '#markup' => '<div class="save-survey">' . $button . '</div>',
+    '#weight' => 999,
+  );
+
+}
+
+/**
+ * Pre-render callback for survey form
+ */
+function survey_builder_form_builder_pre_render($form) {
+
+  // Show survey title
+  $form['#title'] = (isset($form['#survey_title'])) ? $form['#survey_title'] : '';
+
+  // Let form builder know the field palette block is enabled
+  $form['#block_enabled'] = TRUE;
+
+  return $form;
+
+}
+
+/**
+ * Implements hook_form_builder_types()
+ */
+function survey_builder_form_builder_types() {
+  return array(
+    'survey' => array(
+      'question' => array(
+        'title' => t('Question'),
+        'properties' => array(
+          'title',
+        ),
+        'default' => array(
+          '#title' => t('New question'),
+          '#type' => 'question',
+        ),
+        'palette_group' => 'special',
+      ),
+      'fieldset' => array(
+        'title' => t('Fieldset'),
+        'properties' => array(
+          'title',
+          'description',
+          'collapsible',
+          'collapsed',
+        ),
+        'default' => array(
+          '#title' => t('New fieldset'),
+          '#type' => 'fieldset',
+          '#collapsible' => TRUE,
+          '#collapsed' => FALSE,
+        ),
+        'palette_group' => 'default',
+      ),
+      'select' => array(
+        'title' => t('Select list'),
+        'properties' => array(
+          'title',
+          'description',
+          'default_value',
+          'required',
+          'options',
+          'scores',
+          'multiple', // Handled by options element.
+          'key_type', // Handled by options element.
+          'key_type_toggle', // Handled by options element.
+          'key_type_toggled', // Handled by options element.
+        ),
+        'default' => array(
+          '#title' => t('New select list'),
+          '#type' => 'select',
+          '#options' => array('1' => 'one', '2' => 'two', '3' => 'three'),
+          '#scores' => array(),
+          '#multiple_toggle' => TRUE,
+        ),
+        'palette_group' => 'default',
+      ),
+      'checkboxes' => array(
+        'title' => t('Checkboxes'),
+        'properties' => array(
+          'title',
+          'description',
+          'default_value',
+          'required',
+          'options',
+          'scores',
+          'multiple',
+          'key_type', // Handled by options element.
+          'key_type_toggle', // Handled by options element.
+          'key_type_toggled', // Handled by options element.
+        ),
+        'default' => array(
+          '#title' => t('New checkboxes'),
+          '#type' => 'checkboxes',
+          '#options' => array('1' => 'one', '2' => 'two', '3' => 'three'),
+          '#scores' => array(),
+        ),
+        'palette_group' => 'default',
+      ),
+      'radios' => array(
+        'title' => t('Radios'),
+        'properties' => array(
+          'title',
+          'description',
+          'default_value',
+          'required',
+          'options',
+          'scores',
+          'key_type', // Handled by options element.
+          'key_type_toggle', // Handled by options element.
+          'key_type_toggled', // Handled by options element.
+        ),
+        'default' => array(
+          '#title' => t('New radios'),
+          '#type' => 'radios',
+          '#options' => array('1' => 'one', '2' => 'two', '3' => 'three'),
+          '#scores' => array(),
+        ),
+        'palette_group' => 'default',
+      ),
+      'textfield' => array(
+        'title' => t('Textfield'),
+        'properties' => array(
+          'title',
+          'description',
+          'field_prefix',
+          'field_suffix',
+          'default_value',
+          'required',
+          'size',
+        ),
+        'default' => array(
+          '#title' => t('New textfield'),
+          '#type' => 'textfield',
+        ),
+        'palette_group' => 'default',
+      ),
+      'textarea' => array(
+        'title' => t('Textarea'),
+        'properties' => array(
+          'title',
+          'description',
+          'default_value',
+          'required',
+          'rows',
+          'cols',
+        ),
+        'default' => array(
+          '#title' => t('New textarea'),
+          '#type' => 'textarea',
+        ),
+        'palette_group' => 'default',
+      ),
+      'number' => array(
+        'title' => t('Number'),
+        'properties' => array(
+          'title',
+          'description',
+          'default_value',
+          'required',
+        ),
+        'default' => array(
+          '#key' => 'number',
+          '#title' => t('New number'),
+          '#type' => 'textfield',
+          '#element_validate' => array (
+            'survey_builder_element_validate_number'
+          )
+        ),
+      ),
+    ),
+  );
+}
+
+function survey_builder_element_validate_number($element, &$form_state, $form) {
+  if (strlen(trim($element['#value'])) > 0 && !is_numeric($element['#value'])) {
+    form_error($element, t('%title must be a number', array('%title' => $element['#title'])));
+  }
+}
+
+/**
+ * Implements hook_form_builder_property_groups()
+ */
+function survey_builder_form_builder_property_groups($form_type) {
+  if ($form_type == 'survey') {
+    return array(
+      'scores' => array(
+        'title' => t('Scores'),
+        'weight' => 2.5,
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_form_builder_properties().
+ */
+function survey_builder_form_builder_properties($form_type) {
+  if ($form_type == 'survey') {
+    module_load_include('inc', 'survey_builder', 'includes/survey_builder.admin');
+    return array(
+      'scores' => array(
+        'form' => 'survey_builder_property_scores_form',
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_form_builder_properties().
+ */
+function survey_builder_form_builder_properties_alter(&$properties, &$form_type) {
+  if ($form_type == 'survey') {
+    module_load_include('inc', 'survey_builder', 'includes/survey_builder.admin');
+    $properties['title'] = array('form' => 'survey_builder_property_title_form');
+  }
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function survey_builder_block_info() {
+  return array(
+    'new_survey_form' => array(
+      'info' => t('Survey Builder: New Survey'),
+    ),
+    'clone_survey_form' => array(
+      'info' => t('Survey Builder: Clone Survey'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function survey_builder_block_view($delta) {
+
+  switch ($delta) {
+    case 'new_survey_form':
+      // Only create block when creating new survey
+      if (arg(0) == 'survey' && arg(1) == SURVEY_BUILDER_NEW && (!isset($_GET['start']) || $_GET['start'] != 0)) {
+        module_load_include('inc', 'survey_builder', 'includes/survey_builder.admin');
+        return array(
+          'subject' => t('New Survey'),
+          'content' => drupal_get_form('survey_builder_new_form'),
+        );
+      }
+      break;
+
+    case 'clone_survey_form':
+      // Only create block when editing a survey
+      if (arg(0) == 'survey' && arg(2) == 'edit') {
+        module_load_include('inc', 'survey_builder', 'includes/survey_builder.admin');
+        return array(
+          'subject' => t('Clone Survey'),
+          'content' => drupal_get_form('survey_builder_clone_form', arg(1)),
+        );
+      }
+      break;
+  }
+
+}
+
+/**
+ * Implements hook_block_list_alter()
+ * Only display questions palette view when we're on a form builder form page
+ */
+function survey_builder_block_list_alter(&$blocks) {
+  if (!form_builder_active_form()) {
+    foreach ($blocks as $id => $block) {
+      if ($block->module == 'views' && $block->delta == 'questions-block') {
+        unset($blocks[$id]);
+      }
+    }
+  }
+}
+
+/**
+ * Load a single survey entity from its ID
+ *
+ * @param $pid
+ *   The entity ID.
+ */
+function survey_load($pid) {
+  $entities = entity_load('survey', array($pid));
+  if (count($entities)) {
+    return array_shift($entities);
+  }
+  return FALSE;
+}
+
+/**
+ * Load multiple survey entities based on certain conditions.
+ *
+ * @param $pids
+ *   An array of entity IDs.
+ * @param $conditions
+ *   An array of conditions to match against the {entity} table.
+ * @param $reset
+ *   A boolean indicating that the internal cache should be reset.
+ * @return
+ *   An array of survey entity objects, indexed by pid.
+ */
+function survey_load_multiple($pids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('survey', $pids, $conditions, $reset);
+}
+
+
+/**
+ * Menu title callback for showing individual entities
+ */
+function survey_page_title(SurveyEntity $survey){
+  return $survey->title;
+}
+
+/**
+ * Complete survey form callback
+ */
+function survey_builder_complete_form($form, &$form_state, $form_id) {
+
+  module_load_include('inc', 'survey_builder', 'includes/survey_builder.survey');
+
+  $survey = survey_load($form_id);
+  if (!$survey) {
+    drupal_not_found();
+    exit();
+  }
+
+  drupal_set_title($survey->title);
+
+  $form_state['survey_id'] = $form_id;
+
+  $params = drupal_get_query_parameters();
+  if (!empty($params['user']) && is_numeric($params['user'])) {
+    $form_state['user_uid'] = $params['user'];
+  }
+
+  $form = $survey->fields;
+  foreach ($form as $key => &$field) {
+    survey_builder_load_process_field($field);
+  }
+
+  $form['submit'] = array(
+    '#type'   => 'submit',
+    '#value'  => t('Submit'),
+    '#weight' => 1000,
+  );
+
+  return $form;
+
+}
+
+/**
+ * Complete survey form submit handler
+ */
+function survey_builder_complete_form_submit($form, &$form_state) {
+
+  module_load_include('inc', 'survey_builder', 'includes/survey_builder.survey');
+
+  // Get completion user UID (if set)
+  $uid = FALSE;
+  $skip_access = FALSE;
+  if (!empty($form_state['user_uid'])) {
+    $uid = $form_state['user_uid'];
+    if (!empty($form_state['user_skip_access'])) {
+      $skip_access = $form_state['user_skip_access'];
+    }
+  }
+
+  // Save survey response entity and associated question response entities
+  $response_id = survey_response_save($form_state['survey_id'], $form_state['input'], $form_state, $uid, $skip_access);
+  if (!$response_id) {
+    drupal_set_message(t('Unable to save survey response'), 'error');
+  }
+
+  $form_state['redirect'] = 'surveys';
+
+}
+
+/**
+ * Prepare a field from a form builder form array for loading
+ */
+function survey_builder_load_process_field(&$field, $survey_response_id = FALSE) {
+
+  module_load_include('inc', 'survey_builder', 'includes/survey_builder.question');
+
+  if (isset($field['#type']) && $field['#type'] == 'fieldset') {
+    // Recursively process any fields within the fieldset
+    foreach ($field as $key => &$value) {
+      if ($key[0] != '#') {
+        survey_builder_load_process_field($value, $survey_response_id);
+      }
+    }
+  }
+  else {
+    $question = question_load($field['#question_id']);
+    if (!$question) {
+      watchdog('survey_builder', 'Unable to load question: %id',
+        array('%id' => $field['#question_id']), WATCHDOG_ERROR);
+      return;
+    }
+
+    // Set question label in field array
+    $question->field['#title'] = $question->label;
+
+    unset($field['#options']);
+
+    // Merge question values into field
+    $field = array_merge($question->field, $field);
+
+    // If a response ID has been supplied then attempt to load this question's response
+    if ($survey_response_id !== FALSE) {
+
+      $response = question_response_load($survey_response_id, $field['#key']);
+      if (!$response) {
+        return;
+      }
+      elseif (is_array($response)) {
+        $field['#default_value'] = array();
+        foreach ($response as $value) {
+          $field['#default_value'][] = $value->value;
+        }
+      }
+      elseif (!is_null($response->value_key)) {
+        $field['#default_value'] = $response->value_key;
+      }
+      else {
+        $field['#default_value'] = $response->value;
+      }
+
+      if ($field['#type'] == 'checkboxes' && !is_array($field['#default_value'])) {
+        $field['#default_value'] = array($field['#default_value']);
+      }
+
+    }
+
+  }
+
+}
+
+/**
+ * Sets up content to show an individual survey
+ */
+function survey_page_view($survey, $view_mode = 'full') {
+  $controller = entity_get_controller('survey');
+  $content = $controller->view(array($survey->pid => $survey));
+  drupal_set_title($survey->title);
+  $content['survey_form'] = drupal_get_form('survey_builder_complete_form', $survey->pid);
+  return $content;
+}

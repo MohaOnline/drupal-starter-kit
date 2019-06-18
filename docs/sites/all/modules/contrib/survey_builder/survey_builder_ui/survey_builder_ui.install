@@ -1,0 +1,37 @@
+<?php
+
+/**
+ * Implement hook_enable().
+ */
+function survey_builder_ui_enable() {
+  $config = array(
+    'survey_builder' => array(
+      'new_survey_form' => 0,
+      'clone_survey_form' => 0,
+    ),
+    'views' => array(
+      'questions-block' => 10,
+    ),
+    'form_builder' => array(
+      'fields' => 20,
+    ),
+  );
+
+  // Flush all caches
+  drupal_flush_all_caches();
+
+  // Enable all blocks used by survey_builder_ui
+  foreach($config as $module => $blocks) {
+    foreach($blocks as $delta => $weight) {
+      db_update('block')
+        ->condition('module', $module)
+        ->condition('delta', $delta)
+        ->fields(array(
+          'status' => 1,
+          'region' => 'sidebar_first',
+          'weight' => $weight,
+        ))
+        ->execute();
+    }
+  }
+}

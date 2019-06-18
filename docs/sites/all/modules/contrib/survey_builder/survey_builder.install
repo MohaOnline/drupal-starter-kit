@@ -1,0 +1,300 @@
+<?php
+/**
+ * @file
+ * Install file to create question and survey entity storage
+ */
+
+/**
+ * Implement hook_schema().
+ */
+function survey_builder_schema() {
+  return array(
+    'survey' => array(
+      'description' => 'Stores survey items.',
+      'fields' => array(
+        'pid' => array(
+          'description' => 'Primary Key: Unique survey ID.',
+          'type' => 'serial',
+          'not null' => TRUE,
+        ),
+        'type' => array(
+          'description' => 'Bundle key of the survey.',
+          'type' => 'varchar',
+          'length' => 32,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'name' => array(
+          'description' => 'Machine name of the survey.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'title' => array(
+          'description' => 'Title of the survey.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'fields' => array(
+          'description' => 'Fields data for the survey.',
+          'type' => 'blob',
+          'size' => 'big',
+          'not null' => TRUE,
+          'serialize' => TRUE,
+        ),
+        'uid' => array(
+          'description' => 'Foreign key for the user who created the survey',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'created' => array(
+          'description' => 'Creation timestamp',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'status' => array(
+          'type' => 'int',
+          'not null' => TRUE,
+          // Set the default to ENTITY_CUSTOM without using the constant as it is
+          // not safe to use it at this point.
+          'default' => 0x01,
+          'size' => 'tiny',
+          'description' => 'The exportable status of the survey.',
+        ),
+        'module' => array(
+          'description' => 'The name of the providing module.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ),
+      ),
+      'primary key' => array('pid'),
+      'unique keys' => array('name' => array('name')),
+      'foreign keys' => array(
+        'creator' => array(
+          'table' => 'users',
+          'columns' => array('uid' => 'uid'),
+        ),
+      ),
+    ),
+    'survey_response' => array(
+      'description' => 'Stores survey response items.',
+      'fields' => array(
+        'pid' => array(
+          'description' => 'Primary Key: Unique survey response ID.',
+          'type' => 'serial',
+          'not null' => TRUE,
+        ),
+        'survey_id' => array(
+          'description' => 'Foreign key for the survey',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'score' => array(
+          'description' => 'Response score value',
+          'type' => 'int',
+          'not null' => FALSE,
+        ),
+        'uid' => array(
+          'description' => 'Foreign key for the user who completed the survey',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'created' => array(
+          'description' => 'Creation timestamp',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('pid'),
+      'foreign keys' => array(
+        'survey' => array(
+          'table' => 'survey',
+          'columns' => array('survey_id' => 'pid'),
+        ),
+        'creator' => array(
+          'table' => 'users',
+          'columns' => array('uid' => 'uid'),
+        ),
+      ),
+      'indexes' => array(
+        'survey_id' => array('survey_id'),
+        'uid' => array('uid'),
+      ),
+    ),
+    'survey_question' => array(
+      'description' => 'Stores question items.',
+      'fields' => array(
+        'pid' => array(
+          'description' => 'Primary Key: Unique question ID.',
+          'type' => 'serial',
+          'not null' => TRUE,
+        ),
+        'type' => array(
+          'description' => 'Bundle key of the question.',
+          'type' => 'varchar',
+          'length' => 32,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'name' => array(
+          'description' => 'Machine name of the question.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => '',
+        ),
+        'label' => array(
+          'description' => 'Text of the question.',
+          'type' => 'text',
+          'size' => 'medium',
+          'not null' => TRUE,
+        ),
+        'field' => array(
+          'description' => 'Field data for the question.',
+          'type' => 'blob',
+          'not null' => TRUE,
+          'serialize' => TRUE,
+        ),
+        'uid' => array(
+          'description' => 'Foreign key for the user who created the question',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'created' => array(
+          'description' => 'Creation timestamp',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'status' => array(
+          'type' => 'int',
+          'not null' => TRUE,
+          // Set the default to ENTITY_CUSTOM without using the constant as it is
+          // not safe to use it at this point.
+          'default' => 0x01,
+          'size' => 'tiny',
+          'description' => 'The exportable status of the question.',
+        ),
+        'module' => array(
+          'description' => 'The name of the providing module.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ),
+      ),
+      'primary key' => array('pid'),
+      'unique keys' => array('name' => array('name')),
+      'foreign keys' => array(
+        'creator' => array(
+          'table' => 'users',
+          'columns' => array('uid' => 'uid'),
+        ),
+      ),
+    ),
+    'survey_question_response' => array(
+      'description' => 'Stores question response items.',
+      'fields' => array(
+        'pid' => array(
+          'description' => 'Primary Key: Unique question response ID.',
+          'type' => 'serial',
+          'not null' => TRUE,
+        ),
+        'question_id' => array(
+          'description' => 'Foreign key for the question',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'question_key' => array(
+          'description' => 'Key of the question (to identify it within the survey)',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ),
+        'survey_response_id' => array(
+          'description' => 'Foreign key for the user who answered the question',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'value' => array(
+          'description' => 'Response value',
+          'type' => 'text',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'value_key' => array(
+          'description' => 'Key of the response value (for fixed option questions)',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => FALSE,
+        ),
+        'score' => array(
+          'description' => 'Response score value',
+          'type' => 'int',
+          'not null' => FALSE,
+        ),
+        'created' => array(
+          'description' => 'Creation timestamp',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array('pid'),
+      'foreign keys' => array(
+        'question' => array(
+          'table' => 'survey_question',
+          'columns' => array('question_id' => 'pid'),
+        ),
+        'survey_response' => array(
+          'table' => 'survey_response',
+          'columns' => array('survey_response_id' => 'pid'),
+        ),
+      ),
+      'indexes' => array(
+        'question_id' => array('question_id'),
+        'survey_response_id_question_key' => array('survey_response_id', 'question_key'),
+      ),
+    ),
+  );
+}
+
+/**
+ * Change {survey_question}.label into text.
+ */
+function survey_builder_update_7000(&$sandbox) {
+  $schema = survey_builder_schema();
+  db_change_field('survey_question', 'label', 'label', $schema['survey_question']['fields']['label']);
+}
+
+/**
+ * Increase size of survey fields column
+ */
+function survey_builder_update_7001(&$sandbox) {
+  $schema = survey_builder_schema();
+  db_change_field('survey', 'fields', 'fields', $schema['survey']['fields']['fields']);
+}
+
+/**
+ * Add indexes
+ */
+function survey_builder_update_7002(&$sandbox) {
+  $schema = survey_builder_schema();
+  foreach($schema as $table_name => $table) {
+    if (isset($table['indexes'])) {
+      foreach($table['indexes'] as $index => $fields) {
+        db_add_index($table_name, $index, $fields);
+      }
+    }
+  }
+}
+
+/**
+ * Add score fields
+ */
+function survey_builder_update_7003(&$sandbox) {
+  $schema = survey_builder_schema();
+  db_add_field('survey_response', 'score', $schema['survey_response']['fields']['score']);
+  db_add_field('survey_question_response', 'score', $schema['survey_question_response']['fields']['score']);
+}
