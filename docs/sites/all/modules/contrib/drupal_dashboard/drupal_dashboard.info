@@ -1,0 +1,11 @@
+name = Drupal Dashboard
+description = Drupal Dashboard for system details
+core = 7.x
+package = "Other"
+
+; Information added by Drupal.org packaging script on 2015-10-09
+version = "7.x-1.1"
+core = "7.x"
+project = "drupal_dashboard"
+datestamp = "1444411440"
+

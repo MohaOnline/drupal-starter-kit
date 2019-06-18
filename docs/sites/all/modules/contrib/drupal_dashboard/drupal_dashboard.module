@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @file
+ * Module file.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function drupal_dashboard_menu() {
+  $items = array();
+  $items['admin/drupal-dashboard'] = array(
+    'title' => 'Drupal Dashboard',
+    'page callback' => 'drupal_dashboard_system',
+    'file' => 'includes/drupal_dashboard.inc',
+    'access arguments' => array('access drupal dashboard'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function drupal_dashboard_permission() {
+  return array(
+    'access drupal dashboard' => array(
+      'title' => t('View the drupal dashboard'),
+      'description' => t('Stats related to the drupal site.', array()),
+    ),
+  );
+}
