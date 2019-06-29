@@ -5,8 +5,7 @@ namespace Drupal\uikit;
 /**
  * Provides helper functions for the UIkit base theme.
  */
-class UIkit
-{
+class UIkit {
 
   /**
    * The UIkit library project page.
@@ -74,8 +73,7 @@ class UIkit
    * @return bool
    *   Returns true if the given path is the current path, false if otherwise.
    */
-  public static function getActivePath($path)
-  {
+  public static function getActivePath($path) {
     $active_path = FALSE;
 
     // Checks if the path is the current page.
@@ -102,8 +100,7 @@ class UIkit
    * @return
    *   The active theme's machine name.
    */
-  public static function getActiveTheme()
-  {
+  public static function getActiveTheme() {
     global $theme;
     return $theme;
   }
@@ -111,8 +108,7 @@ class UIkit
   /**
    * Retrieves UIkit, jQuery, jQuery Migrate and Font Awesome CDN assets.
    */
-  public static function getCdnAssets()
-  {
+  public static function getCdnAssets() {
     // Add the UIkit stylesheet.
     drupal_add_css('//cdnjs.cloudflare.com/ajax/libs/uikit/' . self::UIKIT_LIBRARY_VERSION . '/css/uikit.min.css', array(
       'type' => 'external',
@@ -152,8 +148,7 @@ class UIkit
    * @return mixed
    *   The theme setting's value.
    */
-  public static function getThemeSetting($setting, $theme = NULL)
-  {
+  public static function getThemeSetting($setting, $theme = NULL) {
     if (empty($theme)) {
       $theme = self::getActiveTheme();
     }
@@ -171,8 +166,7 @@ class UIkit
    * @return string
    *   The current page title.
    */
-  public static function getPageTitle()
-  {
+  public static function getPageTitle() {
     return drupal_get_title();
   }
 
@@ -208,8 +202,7 @@ class UIkit
    * @return string
    *   The name of the included file, if successful; FALSE otherwise.
    */
-  public static function loadIncludeFile($type, $theme, $name = NULL, $sub_directory = '')
-  {
+  public static function loadIncludeFile($type, $theme, $name = NULL, $sub_directory = '') {
     static $files = array();
 
     if (isset($sub_directory)) {
