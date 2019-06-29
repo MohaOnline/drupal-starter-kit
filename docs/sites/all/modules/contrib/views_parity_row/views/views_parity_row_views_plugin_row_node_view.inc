@@ -1,8 +1,5 @@
 <?php
 
-// Until I find a better solution...
-include('views_parity_row_base.inc');
-
 /**
  * @file
  * Contains the Views Parity Row row style plugin for node.

@@ -65,7 +65,7 @@ trait views_parity_row_base {
       'end' => array(
         '#type' => 'textfield',
         '#title' => t('End'),
-        '#description' => t('End at which row ? Set <em>0</em> to disable.'),
+        '#description' => t('End at which row ?'),
         '#size' => 6,
         '#maxlength' => 6,
         '#default_value' => isset($options['end']) ? (int) $options['end'] : $default['views_parity_row']['end']['default'],
@@ -86,12 +86,7 @@ trait views_parity_row_base {
     if ($options['views_parity_row_enable'] == TRUE) {
       $view_mode_override = FALSE;
       if ($index >= $options['views_parity_row']['start']) {
-        if ($options['views_parity_row']['end'] != 0) {
-          if ($index <= $options['views_parity_row']['end']) {
-            $view_mode_override = TRUE;
-          }
-        }
-        else {
+        if ($index <= $options['views_parity_row']['end']) {
           $view_mode_override = TRUE;
         }
       }
