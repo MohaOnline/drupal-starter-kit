@@ -1,0 +1,13 @@
+name = Simplenews Status Reset
+description = allows to reset the sent status of an already sent Simplenews newsletter issue
+package = Mail
+core = 7.x
+
+dependencies[] = simplenews
+
+; Information added by Drupal.org packaging script on 2015-07-31
+version = "7.x-1.0"
+core = "7.x"
+project = "simplenews_status_reset"
+datestamp = "1438385940"
+

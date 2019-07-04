@@ -1,0 +1,126 @@
+<?php
+/**
+ * @file
+ * Simplenews Status Reset module file.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function simplenews_status_reset_permission() {
+  return array(
+    'reset simplenews status' => array(
+      'title' => t('Reset Simplenews sent status'),
+      'description' => t('Reset the sent status of an already sent Simplenews newsletter issue.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ * 
+ * Adds a status reset button to the "newsletter" tab on Simplenews nodes
+ * marked as sent. 
+ */
+function simplenews_status_reset_form_simplenews_node_tab_send_form_alter(&$form, &$form_state, $form_id) {
+  if (!user_access('reset simplenews status')) {
+    /*
+     * The active user does not have permission to reset status.
+     * So we can exit the function already.
+     */
+    return;
+  }
+
+  // If the 'none' key is present, the newsletter has been already sent.
+  if (!empty($form['simplenews']['none'])) {
+
+    /*
+     * Override form submit handler with our own (on the original form, the
+     * submit button is missing, but the handler is still set).
+     */
+    $form['#submit'] = array('simplenews_status_reset_reset_newsletter_status_submit');
+
+    if (!isset($form_state['confirm'])) {
+      /*
+       * The user must confirm the status change.
+       *
+       * If 'confirm' is not set, we present our initial form with our reset
+       * button.
+       */
+      $form['newsletter_status'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Reset status'),
+        '#collapsible' => FALSE,
+        '#collapsed' => FALSE,
+        '#description' => t('Reset the "sent" status of the newsletter and allow to the send the same newsletter again.'),
+      );
+
+      $form['newsletter_status']['reset'] = array(
+        '#type' => 'submit',
+        '#value' => t('Reset status'),
+      );
+
+    }
+    else {
+      /*
+       * The user has already pressed the status reset button and now has to
+       * confirm the action.
+       */
+
+      // Unset the simplenews fieldset to keep the form clear.
+      unset($form['simplenews']);
+      // Fetch the node ID.
+      $nid = $form['nid']['#value'];
+      // Build the confirmation form.
+      $form = confirm_form($form,
+        t('Do you really want to reset the "sent" status of this newsletter?'),
+        "node/$nid",
+        NULL,
+        t('Reset status')
+      );
+    }
+  }
+}
+
+/**
+ * Submit callback for our modified simplenews_node_tab_send_form form.
+ */
+function simplenews_status_reset_reset_newsletter_status_submit($form, &$form_state) {
+  if (!isset($form_state['confirm'])) {
+    /*
+     * The user has pressed the status reset button, but has to confirm the
+     * action. set a "confirm" flag and rebuild the form.
+     */
+    $form_state['confirm'] = TRUE;
+    $form_state['rebuild'] = TRUE;
+  }
+  else {
+    // The user has confirmed the status reset.
+    $nid = $form_state['values']['nid'];
+    simplenews_status_reset_reset_newsletter_status($nid);
+    drupal_set_message(t('The newsletter status has been reset.'));
+  }
+}
+
+/**
+ * Reset the sent status of a given newsletter issue.
+ * 
+ * @param int $nid
+ *   node ID of a Simplenews newsletter issue
+ * 
+ * @return bool
+ *   TRUE if the status has been reset successfully. NOTE: as there is no
+ *   feedback from Simplenews about the update success, always TRUE will be
+ *   returned, except the given $nid is empty or not a valid node ID.
+ */
+function simplenews_status_reset_reset_newsletter_status($nid) {
+  if (empty($nid)) {
+    return FALSE;
+  }
+  $node = node_load($nid);
+  if (empty($node)) {
+    return FALSE;
+  }
+  simplenews_newsletter_update_sent_status($node, SIMPLENEWS_STATUS_SEND_NOT);
+  return TRUE;
+}
