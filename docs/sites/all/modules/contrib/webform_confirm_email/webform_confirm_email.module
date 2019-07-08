@@ -1,0 +1,845 @@
+<?php
+/**
+ * @file
+ */
+
+include_once 'webform_confirm_email.admin.inc';
+include_once 'webform_confirm_email.inc';
+
+/**
+ * Implements hook_webform_submission_delete().
+ *
+ * Respond to a Webform submission being deleted - if a submission
+ * is deleted the hash for the confirmation URL can be deleted too
+ *
+ * @param $node
+ *   The Webform node on which this submission was made.
+ * @param $submission
+ *   The Webform submission that was just deleted from the database.
+ */
+function webform_confirm_email_webform_submission_delete($node, $submission) {
+  db_delete('webform_confirm_email_code')
+    ->condition('nid', $node->nid)
+    ->condition('sid', $submission->sid)
+    ->execute();
+
+  db_delete('webform_confirm_email_confirmation_emails')
+    ->condition('nid', $node->nid)
+    ->condition('sid', $submission->sid)
+    ->execute();
+}
+
+/**
+ * Check whether a given email ID is a confirmation or conditional email
+ * and return its type.
+ *
+ * @param $nid
+ *   The Webform node ID for which the email type is fetched
+ * @param $eid
+ *   The Webform email ID for which the email type is fetched
+ */
+function webform_confirm_email_get_email_type($nid, $eid) {
+  return db_query(
+    'SELECT email_type '.
+    '  FROM {webform_confirm_email} ' .
+    '    WHERE nid = :nid ' .
+    '    AND   eid = :eid ',
+    array(
+      ':nid' => (int) $nid,
+      ':eid' => (int) $eid,
+    )
+  )->fetchField();
+}
+
+/**
+ * generate a hash for a new email submission, or get an existing hash
+ *
+ * @param $nid
+ *   node id of the submitted form
+ * @param $sid
+ *   submission id of the submitted form
+ * @param $email
+ *   email address of the submitter; if empty, it's assumed that the submission
+ *   has already happened and the webform_confirm_email_code table is searched
+ *   for a hash
+ */
+function webform_confirm_email_generate_key($nid, $sid, $eid, $email = NULL) {
+  if (isset($email)) {
+    return hash_hmac('md5', serialize(array($nid, $sid, $eid, $email)), drupal_get_private_key());
+  }
+  else {
+    $result = db_query(
+      'SELECT code ' .
+      '  FROM {webform_confirm_email_code} ' .
+      '    WHERE nid = :nid ' .
+      '    AND   sid = :sid ' .
+      '    AND   eid = :eid ',
+      array(
+        ':nid' => $nid,
+        ':sid' => $sid,
+        ':eid' => $eid,
+      )
+    );
+    return $result->fetchField();
+  }
+}
+
+/**
+ * Implements hook_mail_alter().
+ * When drupal sends an email this function checks whether there is an entry
+ * in the webform_confirm_email table that identifies the email as being a
+ * confirmation request or confirmation email.
+ * If it's a confirmational mail a hash code is generated, an URL is generated
+ * out of the hash and the [submission:confirm_url] is replaced in the email by
+ * this generated confirmation URL.
+ * If it's a confirmation email, the email is stopped from being send; This is because
+ * after a webform submission the webform module would send all emails that are
+ * registered for this form; but we want the confirmation email to be send only when
+ * the user uses the confirmation link that is send to him/her in the confirmation request email.
+ *
+ * @param $message
+ */
+function webform_confirm_email_mail_alter(&$message) {
+  if (!empty($message['params']['node']) && !empty($message['params']['submission'])) {
+    $nid = (int) ($message['params']['node']->nid);
+    $sid = (int) ($message['params']['submission']->sid);
+    $eid = (int) $message['params']['email']['eid'];
+    if (   webform_confirm_email_get_email_type($nid, $eid) == WEBFORM_CONFIRM_EMAIL_CONFIRMATION
+        && isset($message['params']['webform_confirm_email_confirmation_send']) == FALSE) {
+      $obj = array(
+        'nid'           => $nid,
+        'sid'           => $sid,
+        'email_message' => $message,
+      );
+      $message['send'] = FALSE; // prevents drupal_mail from actually sending the message
+      drupal_write_record('webform_confirm_email_confirmation_emails', $obj);
+    }
+  }
+}
+
+/**
+ * callback function that is set in hook_menu().
+ * This function is called when a user clicks on the confirmation URL that
+ * a submitee gets via email after the 1st submission.
+ * If the submission code is found the confirmation mail is send and
+ * the submission record is removed from the DB
+ */
+function webform_confirm_email_confirmation($node,
+                                            $submission,
+                                            $eid,
+                                            $code) {
+
+  if (   !empty($code)
+      && webform_confirm_email_generate_key($node->nid, $submission->sid, $eid) == $code) {
+
+    db_delete('webform_confirm_email_code')
+      ->condition('nid', $node->nid)
+      ->condition('sid', $submission->sid)
+      ->condition('eid', $eid)
+      ->execute();
+    db_query(
+      'UPDATE {webform_submissions} ' .
+      '  SET confirmed = 1 ' .
+      '  WHERE nid = :nid ' .
+      '  AND   sid = :sid ',
+      array(':nid' => $node->nid, ':sid' => $submission->sid)
+    );
+    $email_messages = db_query(
+      'SELECT email_message ' .
+      '  FROM {webform_confirm_email_confirmation_emails} ' .
+      '    WHERE nid = :nid ' .
+      '    AND   sid = :sid ' ,
+      array(
+        ':nid' => $node->nid,
+        ':sid' => $submission->sid,
+      )
+    )->fetchCol();
+
+    foreach ($email_messages as $email_message) {
+      $email_message = unserialize($email_message);
+      // Concatenate and wrap the e-mail body.
+      if (is_array($email_message['body'])) {
+        $email_message['body'] = implode("\n\n", $email_message['body']);
+      }
+
+      $email_message['params']['webform_confirm_email_confirmation_send'] = TRUE;
+
+      $email_message = drupal_mail(
+        $email_message['module'],
+        $email_message['key'],
+        $email_message['to'],
+        $email_message['language'],
+        $email_message['params'],
+        $email_message['from'],
+        TRUE
+      );
+
+      if ($email_message['result'] == FALSE) {
+        watchdog(
+          'mail',
+          'Error sending e-mail (from %from to %to).',
+          array(
+            '%from' => $email_message['from'],
+            '%to'   => $email_message['to']
+          ),
+          WATCHDOG_ERROR
+        );
+        drupal_set_message(t(
+            'Unable to send e-mail. ' .
+            'Please contact the site administrator if the problem persists.'
+          ),
+          'error'
+        );
+      }
+    }
+    $codes_left_to_be_confirmed = db_query(
+      'SELECT nid ' .
+      '  FROM {webform_confirm_email_code} ' .
+      '    WHERE nid = :nid ' .
+      '    AND   sid = :sid ' ,
+      array(
+        ':nid' => $node->nid,
+        ':sid' => $submission->sid,
+      )
+    )->fetchField();
+    if ($codes_left_to_be_confirmed == FALSE) {
+      db_query(
+        'DELETE FROM {webform_confirm_email_confirmation_emails} ' .
+        '  WHERE nid = :nid ' .
+        '  AND   sid = :sid ' ,
+        array(
+          ':nid' => $node->nid,
+          ':sid' => $submission->sid,
+        )
+      );
+    }
+    // call implementations of hook_email_confirmed
+    module_invoke_all('webform_confirm_email_email_confirmed', $node, $submission);
+    // trigger a rules email confirmed event
+    if (module_exists('rules') == TRUE) {
+      rules_invoke_event('webform_confirm_email_email_confirmed', $node, $submission);
+    }
+  }
+  $redirect_url = db_query(
+    'SELECT redirect_url ' .
+    '  FROM {webform_confirm_email} ' .
+    '    WHERE nid = :nid ' .
+    '    AND   eid = :eid ',
+    array(
+      ':nid' => $node->nid,
+      ':eid' => $eid,
+    )
+  )->fetchField();
+
+  if ($redirect_url == NULL) {
+    if (empty($node->webform['redirect_url']) == TRUE) {
+      drupal_not_found();
+    }
+    elseif (   $node->webform['redirect_url'] == '<confirmation>'
+            || $node->webform['redirect_url'] == '<none>') {
+      $redirect_url = 'node/' . $node->nid . '/done';
+    }
+    else {
+      $redirect_url = $node->webform['redirect_url'];
+    }
+  }
+
+  $redirect = array(
+    'path' => $redirect_url,
+    'code' => 302,
+    'query' => array(
+      'sid'     => $submission->sid,
+      'confirm' => TRUE,
+      'token'   => md5($submission->submitted . $submission->sid . drupal_get_private_key()),
+    ),
+  );
+  drupal_alter('webform_confirm_email_confirmation_redirect', $redirect, $node, $submission);
+  drupal_goto($redirect['path'], $redirect, $redirect['code']);
+}
+
+/**
+ * Implements hook_menu().
+ */
+function webform_confirm_email_menu() {
+  return array(
+    'node/%webform_menu/sid/%webform_menu_submission/eid/%/confirm_email/%' => array(
+      'title'           => 'Submit email confirmation',
+      'load arguments'  => array(1),
+      'page callback'   => 'webform_confirm_email_confirmation',
+      'page arguments'  => array(1, 3, 5, 7),
+      'access callback' => TRUE,
+      'type'            => MENU_CALLBACK,
+    ),
+    'node/%webform_menu/webform/confirmation_request/%webform_menu_email' => array(
+      'title'            => t('Edit confirmation request e-mail settings'),
+      'load arguments'   => array(1),
+      'page callback'    => 'webform_confirm_email_confirmation_request_email_edit',
+      'page arguments'   => array(1, 4),
+      'access callback'  => 'node_access',
+      'access arguments' => array('update', 1),
+      'type'             => MENU_CALLBACK,
+    ),
+    'node/%webform_menu/webform/confirmation_request/%webform_menu_email/delete' => array(
+      'title'            => t('Delete a confirmation request e-mail'),
+      'load arguments'   => array(1),
+      'page callback'    => 'webform_confirm_email_delete',
+      'page arguments'   => array(1, 4),
+      'access callback'  => 'node_access',
+      'access arguments' => array('update', 1),
+      'type'             => MENU_CALLBACK,
+    ),
+    'node/%webform_menu/webform/confirmation/%webform_menu_email' => array(
+      'title'            => t('Edit confirmation e-mail settings'),
+      'load arguments'   => array(1),
+      'page callback'    => 'webform_confirm_email_confirmation_email_edit',
+      'page arguments'   => array(1, 4),
+      'access callback'  => 'node_access',
+      'access arguments' => array('update', 1),
+      'type'             => MENU_CALLBACK,
+    ),
+    'node/%webform_menu/webform/confirmation/%webform_menu_email/delete' => array(
+      'title'            => t('Delete a confirmation e-mail'),
+      'load arguments'   => array(1),
+      'page callback'    => 'webform_confirm_email_delete',
+      'page arguments'   => array(1, 4),
+      'access callback'  => 'node_access',
+      'access arguments' => array('update', 1),
+      'type'             => MENU_CALLBACK,
+    ),
+    'node/%webform_menu/webform/confirmation-settings' => array(
+      'title'            => t('Confirmation mail settings'),
+      'page callback'    => 'drupal_get_form',
+      'page arguments'   => array('webform_confirm_email_settings', 1),
+      'access callback'  => 'node_access',
+      'access arguments' => array('update', 1),
+      'weight'           => 2,
+      'type'             => MENU_LOCAL_TASK,
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu_alter().
+ */
+function webform_confirm_email_menu_alter(&$items) {
+  if (isset($items['node/%webform_menu/webform-results']) == TRUE) {
+    $items['node/%webform_menu/webform-results'] = array(
+      'title'            => 'Results',
+      'page callback'    => 'webform_confirm_email_results_submissions',
+      'page arguments'   => array(1, FALSE, '50'),
+      'access callback'  => 'webform_results_access',
+      'access arguments' => array(1),
+      'file'             => drupal_get_path('module', 'webform_confirm_email') . '/webform_confirm_email.report.inc',
+      'weight'           => 2,
+      'type'             => MENU_LOCAL_TASK,
+      'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+    );
+    $items['node/%webform_menu/webform-results/submissions'] = array(
+      'title'            => 'Submissions',
+      'page callback'    => 'webform_confirm_email_results_submissions',
+      'page arguments'   => array(1, FALSE, '50'),
+      'access callback'  => 'webform_results_access',
+      'access arguments' => array(1),
+      'file'             => drupal_get_path('module', 'webform_confirm_email') . '/webform_confirm_email.report.inc',
+      'weight'           => 4,
+      'type'             => MENU_DEFAULT_LOCAL_TASK,
+    );
+    $items['node/%webform_menu/webform-results/table'] = array(
+      'title'            => 'Table',
+      'page callback'    => 'webform_confirm_email_results_table',
+      'page arguments'   => array(1, '50'),
+      'access callback'  => 'webform_results_access',
+      'access arguments' => array(1),
+      'file'             => drupal_get_path('module', 'webform_confirm_email') . '/webform_confirm_email.report.inc',
+      'weight'           => 6,
+      'type'             => MENU_LOCAL_TASK,
+    );
+  }
+}
+
+/**
+ * Implements hook_token_info_alter().
+ */
+function webform_confirm_email_token_info_alter(&$data) {
+  $data['tokens']['submission']['confirm_url'] = array(
+    'name'        => t("Confirmation URL"),
+    'description' => t('The URL in the email body generated by webform_confirm_email for the user to click and confirm his/her submissions.'),
+  );
+}
+
+
+/**
+* Implementation hook_token_info().
+*/
+function webform_confirm_email_token_info() {
+  $info['types']['webform-submission'] = array(
+    'name'        => t('Submission'),
+    'description' => t('Tokens related to webform submissions.'),
+    'needs-data'  => 'submission',
+  );
+
+  $info['tokens']['webform-submission']['serial'] = array(
+    'name'        => t('Serial number'),
+    'description' => t('The serial number of this webform submission.'),
+  );
+  $info['tokens']['webform-submission']['sid'] = array(
+    'name'        => t('Submission ID'),
+    'description' => t('The unique indentifier for the webform submission.'),
+  );
+  $info['tokens']['webform-submission']['date'] = array(
+    'name'        => t('Date submitted'),
+    'description' => t('The date the webform was submitted.'),
+    'type'        => 'date',
+  );
+  $info['tokens']['webform-submission']['ip-address'] = array(
+    'name'        => t('IP address'),
+    'description' => t('The IP address that was used when submitting the webform.'),
+  );
+  $info['tokens']['webform-submission']['user'] = array(
+    'name'        => t('Submitter'),
+    'description' => t('The user that submitted the webform result.'),
+    'type'        => 'user',
+  );
+  $info['tokens']['webform-submission']['url'] = array(
+    'name'        => t('URL'),
+    'description' => t("Webform tokens related to the submission's URL."),
+    'type'        => 'url',
+  );
+  $info['tokens']['webform-submission']['edit-url'] = array(
+    'name'        => t('Edit URL'),
+    'description' => t("Webform tokens related to the submission's Edit URL."),
+    'type'        => 'url',
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function webform_confirm_email_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  if ($type !== 'submission' && $type !== 'webform-submission' || empty($data['webform-submission'])) {
+    return $replacements;
+  }
+
+  $submission  = $data['webform-submission'];
+  $sanitize    = !empty($options['sanitize']);
+  $url_options = array('absolute' => TRUE);
+  if (isset($options['language'])) {
+    $url_options['language'] = $options['language'];
+    $language_code           = $options['language']->language;
+  }
+  else {
+    $language_code = NULL;
+  }
+  $node = isset($data['node']) ? $data['node'] : node_load($submission->nid);
+  if (   $type === 'submission'
+      && isset($tokens['confirm_url'])
+      && !empty($data['webform-email'])) {
+    $nid = (int) ($node->nid);
+    $sid = (int) ($submission->sid);
+    $eid = (int) $data['webform-email']['eid'];
+    if (webform_confirm_email_get_email_type($nid, $eid) == WEBFORM_CONFIRM_EMAIL_CONFIRMATION_REQUEST) {
+      $obj = array(
+        'nid'   => $nid,
+        'sid'   => $sid,
+        'eid'   => $eid,
+        'email' => $data['webform-email']['email'],
+      );
+      $obj['code']     = webform_confirm_email_generate_key($nid, $sid, $eid, $obj['email']);
+      $obj['datetime'] = REQUEST_TIME;
+      $confirm_url = url(
+        "node/$nid/sid/$sid/eid/$eid/confirm_email/" . $obj['code'],
+        array(
+          'absolute' => TRUE,
+          'external' => FALSE,
+        )
+      );
+
+      $result = db_query(
+        'SELECT nid ' .
+        '  FROM {webform_confirm_email_code} ' .
+        '    WHERE nid = :nid ' .
+        '    AND   sid = :sid ' .
+        '    AND   eid = :eid ' ,
+        array(
+          ':nid' => $nid,
+          ':sid' => $sid,
+          ':eid' => $eid,
+        )
+      )->fetchField();
+
+      if ($result != FALSE) {
+        // mail was resend -> update record
+        drupal_write_record(
+          'webform_confirm_email_code',
+          $obj,
+          array('nid', 'sid', 'eid')
+        );
+      }
+      else {
+        // new mail
+        drupal_write_record('webform_confirm_email_code', $obj);
+      }
+
+      if (!empty($data['webform-email']['html'])) {
+        $confirm_url = "<a href=\"$confirm_url\">$confirm_url</a>";
+      }
+      $replacements['[submission:confirm_url]'] = $confirm_url;
+    }
+  }
+  elseif ($type === 'webform-submission' && !empty($tokens)) {
+    foreach ($tokens as $key => $repl_str) {
+      switch ($key) {
+        case 'serial':
+          $replacements[$repl_str] = $submission->serial ? $submission->serial : '';
+          break;
+        case 'sid':
+          $replacements[$repl_str] = $submission->sid ? $submission->sid : '';
+          break;
+        case 'date':
+          $replacements[$repl_str] = format_date($submission->submitted, 'medium', '', NULL, $language_code);
+          break;
+        case 'ip-address':
+          $replacements[$repl_str] = $sanitize ? check_plain($submission->remote_addr) : $submission->remote_addr;
+          break;
+        case 'user':
+          $account                 = user_load($submission->uid);
+          $name                    = format_username($account);
+          $replacements[$repl_str] = $sanitize ? check_plain($name) : $name;
+          break;
+        case 'url':
+          $replacements[$repl_str] = $submission->sid ? url("node/{$node->nid}/submission/{$submission->sid}", $url_options) : '';
+          break;
+        case 'edit-url':
+          $replacements[$repl_str] = $submission->sid ? url("node/{$node->nid}/submission/{$submission->sid}/edit", $url_options) : '';
+          break;
+      }
+    }
+    // Chained token relationships.
+    if ($date_tokens = token_find_with_prefix($tokens, 'date')) {
+      $replacements += token_generate('date', $date_tokens, array('date' => $submission->submitted), $options);
+    }
+    if (($user_tokens = token_find_with_prefix($tokens, 'user')) && $account = user_load($submission->uid)) {
+      $replacements += token_generate('user', $user_tokens, array('user' => $account), $options);
+    }
+    if ($submission->sid) {
+      if ($url_tokens = token_find_with_prefix($tokens, 'url')) {
+        $replacements += token_generate('url', $url_tokens, array('path' => "node/{$node->nid}/submission/{$submission->sid}"), $options);
+      }
+      if ($url_tokens = token_find_with_prefix($tokens, 'edit-url')) {
+        $replacements += token_generate('url', $url_tokens, array('path' => "node/{$node->nid}/submission/{$submission->sid}/edit"), $options);
+      }
+    }
+  }
+
+  return $replacements;
+}
+
+/**
+ * Implements hook_help().
+ */
+function webform_confirm_email_help($path, $arg) {
+  if ($path === 'admin/help#webform_confirm_email') {
+   return '<h3>Configuration</h3>
+You will only notice it is installed when visiting a webform emails
+configuration tab. That is, if your webform is defined on a node with node ID
+19, you\'ll find the settings by "http://mydomain.net/node/19/webform/emails".
+With webform_confirm_email installed you\'ll see 3 email tables instead of 1,
+one table for "standard emails", one for "confirmation request emails" and one
+for "confirmation emails".
+<br>
+<br>
+The "standard emails" behave just like normal webform emails, "confirmation
+reques emails" are send to users asking them to click on a confirmation link
+and "confirmation emails" are send only when the confirmation link was used.
+<br>
+<br>
+The forms for changing the 3 different webform email settings (from address,
+from name, to address, to name, ...) is the same as the webform email settings
+form.  The only difference is in the 2nd email type, the "confirmation request
+email", where you have an added entry in the "Token values" list, here you\'ll
+find the [submission:confirm_url] token that should be used in confirmation
+request emails.
+This token will be expanded to the confirmation link. So as an example the
+content of your "E-mail template" could look like this:
+<br>
+<br>
+"Hallo [submission:values:first_name] [submission:values:last_name],
+<br>
+<br>
+<p style="text-indent:2em;">please visit the link below to confirm your submission.</p>
+[submission:confirm_url]
+<br>
+<br>
+Thank you!
+<br>
+<br>
+Your petition team"';
+  }
+}
+
+/**
+ * Implements hook_cron().
+ */
+function webform_confirm_email_cron() {
+  // get all node id's that we have to check for expired requests
+  $nids_lifetime = db_query(
+    'SELECT nid, confirm_email_request_lifetime, confirm_email_delete_submissions ' .
+    '  FROM {webform} ' .
+    '  WHERE confirm_email_request_lifetime IS NOT NULL '
+    )->fetchAllAssoc('nid');
+
+  if (!empty($nids_lifetime)) {
+    foreach ($nids_lifetime as $nid => $settings) {
+      $expired_sids = array();
+      // calculate the oldets timestamp that is still not expired
+      // for this nid;
+      $timestamp = REQUEST_TIME - $settings->confirm_email_request_lifetime;
+      $expired_sids[$nid] = db_query(
+        'SELECT sid ' .
+        '  FROM {webform_confirm_email_code} ' .
+        '    WHERE nid = :nid ' .
+        '    AND   datetime < :oldest ' .
+        '  GROUP BY sid ' ,
+        array(
+          ':nid'    => $nid,
+          ':oldest' => $timestamp,
+        )
+      )->fetchCol();
+
+      if (!empty($expired_sids[$nid])) {
+        // delete requests from both tables (webform_confirm_email_code,
+        // webform_confirm_email_confirmation_emails) at once via JOIN
+        db_query(
+          'DELETE code, conf ' .
+          '  FROM {webform_confirm_email_code} code ' .
+          '  LEFT JOIN {webform_confirm_email_confirmation_emails} conf' .
+          '    ON  code.nid = conf.nid ' .
+          '    AND code.sid = conf.sid ' .
+          '  WHERE code.nid = :nid ' .
+          '  AND   code.sid in (:sids) ' ,
+          array(
+            ':nid'  => $nid,
+            ':sids' => $expired_sids[$nid],
+          )
+        );
+      }
+      module_invoke_all('webform_confirm_email_request_expired', $expired_sids);
+      if ($settings->confirm_email_delete_submissions) {
+        require_once drupal_get_path('module', 'webform') . '/includes/webform.submissions.inc';
+        $node = node_load($nid);
+        foreach ($expired_sids[$nid] as $sid) {
+          webform_submission_delete($node, webform_get_submission($nid, $sid));
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function webform_confirm_email_theme_registry_alter(&$registry) {
+  $path = drupal_get_path('module', 'webform_confirm_email');
+
+  $t = &$registry['webform_results_submissions'];
+  if ($t['type'] == 'module') {
+    $t['template'] = $path . '/templates/webform-results-submissions';
+    $t['file'] = 'webform_confirm_email.report.inc';
+    $t['includes'][] = $path . '/webform_confirm_email.report.inc';
+    $t['theme path'] = $path;
+    $functions = [];
+    foreach ($t['preprocess functions'] as $f) {
+      if ($f == 'template_preprocess_webform_results_submissions') {
+        $functions[] = 'template_preprocess_webform_confirm_email_results_submissions';
+      }
+      $functions[] = $f;
+    }
+    $t['preprocess functions'] = $functions;
+  }
+  unset($t);
+
+  $t = &$registry['webform_results_table'];
+  if ($t['type'] == 'module') {
+    $t['file'] = 'webform_confirm_email.report.inc';
+    $t['includes'][] = $path . '/webform_confirm_email.report.inc';
+    $t['theme path'] = $path;
+    $t['variables']['confirmed_form'] = NULL;
+    $t['function'] = 'theme_webform_confirm_email_results_table';
+  }
+  unset($t);
+
+  $registry['webform_emails_form']['function']    = 'theme_webform_confirm_email_emails_form';
+  $registry['webform_email_add_form']['function'] = 'theme_webform_confirm_email_email_add_form';
+}
+
+
+/**
+ * Implements hook_webform_template_insert().
+ */
+function webform_confirm_email_webform_template_insert($node, $template) {
+  db_query(
+    'INSERT INTO {webform_confirm_email} ' .
+    '  (nid, eid, email_type) ' .
+    '  SELECT :target_nid, eid, email_type ' .
+    '    FROM {webform_confirm_email} ' .
+    '      WHERE nid=:template_nid ' ,
+    array(':target_nid' => $node->nid, ':template_nid' => $template->nid)
+  );
+}
+
+/**
+ * Implements hook_webform_template_update().
+ */
+function webform_confirm_email_webform_template_update($node, $template) {
+  db_delete('webform_confirm_email')->condition('nid', $node->nid)->execute();
+  webform_confirm_email_webform_template_insert($node, $template);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function webform_confirm_email_form_webform_results_download_form_alter(&$form, &$form_state, $form_id) {
+  $options = array(
+    WEBFORM_CONFIRM_EMAIL_FILTER_NONE        => t('Download all submissions'),
+    WEBFORM_CONFIRM_EMAIL_FILTER_CONFIRMED   => t('Download only confirmed submissions'),
+    WEBFORM_CONFIRM_EMAIL_FILTER_UNCONFIRMED => t('Download only unconfirmed submissions'),
+  );
+  $form['range']['confirmed']= array(
+    '#type'          => 'radios',
+    '#title'         => t('You can restrict the download to include only (un)confirmed submissions'),
+    '#default_value' => WEBFORM_CONFIRM_EMAIL_FILTER_NONE,
+    '#options'       => $options,
+    '#access'        => TRUE,
+  );
+  array_unshift($form['range']['#element_validate'], 'webform_confirm_email_range_validate');
+
+  return $form;
+}
+
+/**
+ * Form-API element validate function for the range element.
+ */
+function webform_confirm_email_range_validate($element, &$form_state) {
+  _webform_confirm_email_range_confirmed($element['confirmed']['#value']);
+}
+
+/**
+ * Helper function to store and retrieve the range configuration.
+ *
+ * This is a hack to smuggle in this value into our query alter function.
+ *
+ * @see webform_confirm_email_query_webform_download_sids_alter()
+ */
+function _webform_confirm_email_range_confirmed($value = NULL) {
+  $v = &drupal_static(__FUNCTION__);
+  if (!is_null($value)) {
+    $v = $value;
+  }
+  return $v;
+}
+
+/**
+ * Implements hook_query_TAG_alter().
+ */
+function webform_confirm_email_query_webform_download_sids_alter($query) {
+  $confirmed = _webform_confirm_email_range_confirmed();
+  if (!empty($confirmed)) {
+    $op = $confirmed == WEBFORM_CONFIRM_EMAIL_FILTER_CONFIRMED ? '>' : '=';
+    $query->condition('ws.confirmed', 0, $op);
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter().
+ */
+function webform_confirm_email_query_webform_get_submissions_sids_alter($query) {
+  webform_confirm_email_query_webform_download_sids_alter($query);
+}
+
+/**
+ * Implements hook_query_TAG_alter().
+ */
+function webform_confirm_email_query_webform_get_submission_count_alter($query) {
+  webform_confirm_email_query_webform_download_sids_alter($query);
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function webform_confirm_email_views_api() {
+  return array(
+    'api'  => 3.0,
+    'path' => drupal_get_path('module', 'webform_confirm_email') . '/views',
+  );
+}
+
+/**
+ * Implements hook_node_export_alter().
+ */
+function webform_confirm_email_node_export_alter(array &$nodes, $format) {
+
+  $module = 'webform_confirm_email';
+
+  foreach ($nodes as $i => &$node) {
+    foreach ($node->webform['emails'] as $eid => &$email) {
+      $email[$module] = db_select($module)
+        ->fields($module)
+        ->condition('nid', $node->nid)
+        ->condition('eid', $eid)
+        ->execute()
+        ->fetch();
+    }
+  }
+}
+
+/**
+ * Implements hook_node_export_after_import_alter().
+ */
+function webform_confirm_email_node_export_after_import_alter(array &$nodes, $format, $save) {
+
+  $module = 'webform_confirm_email';
+
+  foreach ($nodes as $node) {
+    foreach ($node->webform['emails'] as $eid => $email) {
+
+      $email['nid'] = $node->nid;
+
+      if (is_object($email[$module])) {
+        $email[$module]->nid = $node->nid;
+        drupal_write_record($module, $email[$module]);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_batch_alter().
+ *
+ * Override the rows callback for webform batch downloads.
+ *
+ * @see webform_results_export_batch()
+ */
+function webform_confirm_email_batch_alter(array &$batch) {
+  // Look for a batch API array as defined in webform_results_export_batch().
+  foreach ($batch['sets'] as &$batch_set) {
+    if (!empty($batch_set['operations'][2]) && $batch_set['operations'][2][0] == 'webform_results_batch_rows') {
+      // Call our wrapped version of webform_results_batch_row() instead.
+      $batch_set['operations'][2][0] = 'webform_confirm_email_results_batch_rows';
+    }
+  }
+}
+
+/**
+ * Callback to add the confirmed filter to the query for batch jobs.
+ *
+ * @see webform_confirm_email_batch_alter()
+ */
+function webform_confirm_email_results_batch_rows($node, $format = 'delimited', $options = array(), &$context) {
+  if (isset($options['range']['confirmed'])) {
+    _webform_confirm_email_range_confirmed($options['range']['confirmed']);
+  }
+  webform_results_batch_rows($node, $format, $options, $context);
+}

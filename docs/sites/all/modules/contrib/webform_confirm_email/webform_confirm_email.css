@@ -1,0 +1,22 @@
+/**
+ * @file
+ */
+
+#edit-lifetime-container .form-item-days,
+#edit-lifetime-container .form-item-hours,
+#edit-lifetime-container .form-item-minutes {
+  float: left;
+  margin-right: 3%;
+  margin-bottom: 2em;
+}
+
+#edit-lifetime-container .form-item-delete-submissions {
+  clear: both;
+}
+
+#edit-lifetime-container .form-item-delete-submissions label {
+  font-weight: bold;
+}
+#edit-lifetime-container .form-item-delete-submissions .description {
+  margin-top: 0.7em;
+}
