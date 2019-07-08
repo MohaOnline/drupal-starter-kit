@@ -8,7 +8,7 @@ Use this component with the `.sync` modifier on the `filters` prop.
   <section class="filter-editor">
 
     <header>
-      <el-dropdown trigger="click" menu-align="start">
+      <el-dropdown trigger="click" placement="bottom-start">
         <el-button>
           {{ text('Add filter') }}<i class="el-icon-caret-bottom el-icon--right"></i>
         </el-button>

@@ -72,9 +72,12 @@ class NewsletterList extends Model {
    * Load a list by it’s ID.
    */
   public static function load($id) {
-    if ($rows = static::loadQuery(['list_id' => $id])) {
-      return $rows[$id];
+    $lists = drupal_static(__CLASS__ . '::' . __FUNCTION__, []);
+    if (!isset($lists[$id])) {
+      $rows = static::loadQuery(['list_id' => $id]);
+      $lists[$id] = $rows ? $rows[$id] : NULL;
     }
+    return $lists[$id];
   }
 
   /**

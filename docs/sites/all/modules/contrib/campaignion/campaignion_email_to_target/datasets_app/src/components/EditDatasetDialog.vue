@@ -3,7 +3,6 @@
     :title="dialogTitle"
     :visible="showEditDialog"
     :close-on-click-modal="false"
-    size="large"
     :before-close="dialogCancelHandler"
     class="dsa-edit-dataset-dialog"
     >
@@ -52,31 +51,31 @@
 
           <div v-if="showContactErrors && !contactsAreValid" class="dsa-invalid-contacts-message messages error" slot="beforeTable">{{ text('invalid contacts message') }}</div>
 
-          <template slot="__error" scope="props">
+          <template v-slot:__error="props">
             <span v-if="showContactErrors && props.row.__error" class="dsa-invalid-contact">✘</span>
           </template>
 
-          <template slot="__delete" scope="props">
+          <template v-slot:__delete="props">
             <a href="#" class="dsa-delete-contact" @click.prevent.stop="deleteContact(props.row.id)">{{ text('delete') }}</a>
           </template>
 
-          <template v-for="col in contentColumns" :slot="col" scope="props">
+          <template v-for="col in contentColumns" v-slot:[col]="props">
             <div :class="{
               'dsa-contact-field': true,
               'dsa-contact-field-invalid': showContactErrors && !isValidValue(col, props.row[col])
             }">{{ props.row[col] }}</div>
           </template>
 
-          <template :slot="'h__' + column.key" scope="props" v-for="column in columns">
+          <template v-for="column in columns" v-slot:[`h__${column.key}`]="props">
             <span class="VueTables__heading" v-tooltip.top="{
               content: columnHeaderTooltipText(column),
               boundariesElement: $el.children[0]
             }">{{ column.title }}</span>
           </template>
 
-          <template slot="h____error" scope="props"></template>
+          <template v-slot:h____error="props"></template>
 
-          <template slot="h____delete" scope="props">
+          <template v-slot:h____delete="props">
             <span class="VueTables__heading"></span>
           </template>
         </v-client-table>
@@ -99,7 +98,8 @@
 import EditValuePopup from '@/components/EditValuePopup'
 import {mapState} from 'vuex'
 import {INVALID_CONTACT_STRING} from '@/utils'
-import {find, pick} from 'lodash'
+import find from 'lodash/find'
+import pick from 'lodash/pick'
 import animatedScrollTo from 'animated-scrollto'
 import Papa from 'papaparse'
 import {saveAs} from 'file-saver'

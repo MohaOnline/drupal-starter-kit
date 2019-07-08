@@ -98,12 +98,15 @@ module.exports = {
     var redirectSelectors = listSelectors(redirect.selector, 2)
 
     browser
-      .pause(500)
+      .pause(300)
       .moveToElement(redirectSelectors[1] + ' .pra-redirect-handle', 5, 5)
+      .pause(50)
       .mouseButtonDown(0)
+      .pause(50)
       .moveToElement(redirectSelectors[0] + ' .pra-redirect-handle', 5, 5)
+      .pause(50)
       .mouseButtonUp(0)
-      .pause(500)
+      .pause(300)
 
     browser.expect.element(redirectSelectors[0] + ' .pra-redirect-label').text.to.be.equal('Spam haters go here')
     browser.expect.element(redirectSelectors[1] + ' .pra-redirect-label').text.to.be.equal('My internal label')

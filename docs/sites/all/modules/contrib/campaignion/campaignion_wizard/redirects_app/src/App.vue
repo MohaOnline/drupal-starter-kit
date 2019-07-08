@@ -28,7 +28,7 @@
 
 <script>
 import {mapState} from 'vuex'
-import {isEqual} from 'lodash'
+import isEqual from 'lodash/isEqual'
 import {clone, dispatch, validateDestination} from '@/utils'
 import api from '@/utils/api'
 import RedirectList from './components/RedirectList'

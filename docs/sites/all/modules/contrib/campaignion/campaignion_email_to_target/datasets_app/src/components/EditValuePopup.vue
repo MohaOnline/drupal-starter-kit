@@ -19,7 +19,7 @@
 import {mapState} from 'vuex'
 import Popper from 'popper.js/dist/umd/popper'
 import {dispatch} from '@/utils'
-import {find} from 'lodash'
+import find from 'lodash/find'
 
 var popper = {}
 

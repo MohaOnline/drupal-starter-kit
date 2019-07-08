@@ -102,7 +102,7 @@ class Client extends _Client {
    */
   public function getDataset($key) {
     if (!array_key_exists($key, $this->datasets)) {
-      $this->datasets[$key] = Dataset::fromArray($this->get($key));
+      $this->datasets[$key] = Dataset::fromArray($this->get(urlencode($key)));
     }
     return $this->datasets[$key];
   }
@@ -121,7 +121,8 @@ class Client extends _Client {
    */
   public function getTargets($dataset_key, array $selector) {
     try {
-      return $this->get("$dataset_key/select", $selector);
+      $key = urlencode($dataset_key);
+      return $this->get("$key/select", $selector);
     }
     catch (HttpError $e) {
       if (in_array($e->getCode(), [400, 404])) {

@@ -3,7 +3,6 @@
     :title="text('Choose your dataset')"
     :visible="showSelectDialog"
     :close-on-click-modal="false"
-    size="medium"
     :before-close="dialogCancelHandler"
     class="dsa-select-dataset-dialog"
     >

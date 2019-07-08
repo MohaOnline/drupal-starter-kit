@@ -8,7 +8,6 @@ The dialog to edit a redirect.
     :title="dialogTitle"
     :visible="visible"
     :close-on-click-modal="false"
-    size="large"
     :before-close="dialogCancelHandler"
     >
 
@@ -56,7 +55,8 @@ import {clone, validateDestination} from '@/utils'
 import {OPERATORS, emptyRedirect} from '@/utils/defaults'
 import api from '@/utils/api'
 import {mapState} from 'vuex'
-import {isEqual, omit} from 'lodash'
+import isEqual from 'lodash/isEqual'
+import omit from 'lodash/omit'
 import {DestinationField} from 'campaignion_vue'
 import FilterEditor from './FilterEditor'
 

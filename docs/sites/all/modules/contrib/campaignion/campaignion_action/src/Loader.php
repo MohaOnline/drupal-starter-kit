@@ -11,6 +11,15 @@ class Loader {
   protected $types = [];
 
   /**
+   * Inject a custom loader instance.
+   *
+   * NOTE: Only for testing purposes.
+   */
+  public static function injectInstance($instance) {
+    static::$instance = $instance;
+  }
+
+  /**
    * Get a singleton instance of this class.
    */
   public static function instance() {

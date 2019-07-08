@@ -37,19 +37,30 @@ class CronRunner {
   }
 
   /**
-   * Send a batch of queue items to their respective provider.
+   * Select a batch of queue items then send them.
    */
   public function sendQueue() {
-    $lists = NewsletterList::listAll();
     $items = QueueItem::claimOldest($this->sendBatchSize);
+    $this->sendQueueItems($items);
+  }
 
+  /**
+   * Send a list of queue items.
+   *
+   * @param \Drupal\campaignion_newsletters\QueueItem[] $items
+   *   The list of queue items to be sent.
+   */
+  public function sendQueueItems(array $items) {
+    $failures = [];
     foreach ($items as $item) {
-      $list = $lists[$item->list_id];
-      $provider = $list->provider();
-      $method = $item->action;
-
+      if (isset($failures[$item->email][$item->list_id])) {
+        // An earlier item for the same email/list combo. In order to preserve
+        // the order of queue items for a single subsrciption we have to skip
+        // this item.
+        continue;
+      }
       try {
-        $provider->{$method}($list, $item);
+        $item->send();
         $item->delete();
       }
       catch (ApiError $e) {
@@ -57,6 +68,9 @@ class CronRunner {
         if ($e->isPersistent()) {
           // There is no point to items with persistent errors in the queue.
           $item->delete();
+        }
+        else {
+          $failures[$item->email][$item->list_id] = TRUE;
         }
       }
     }

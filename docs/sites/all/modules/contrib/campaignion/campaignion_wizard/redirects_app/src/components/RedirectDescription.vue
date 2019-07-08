@@ -14,7 +14,7 @@ Display a human readable description of a redirect’s filters.
 
 <script>
 import {OPERATORS} from '@/utils/defaults'
-import {find} from 'lodash'
+import find from 'lodash/find'
 
 export default {
   props: {

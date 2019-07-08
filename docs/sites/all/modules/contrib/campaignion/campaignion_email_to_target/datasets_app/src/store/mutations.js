@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import {emptyDataset} from '@/utils/defaults'
 import {clone, elementIndex, validateContacts} from '@/utils'
-import {findIndex} from 'lodash'
+import findIndex from 'lodash/findIndex'
 
 var idCounter = 0
 

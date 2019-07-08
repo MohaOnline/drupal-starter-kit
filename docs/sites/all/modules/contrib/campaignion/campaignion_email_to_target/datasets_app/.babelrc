@@ -12,7 +12,7 @@
         "istanbul",
         ["component", [{
           "libraryName": "element-ui",
-          "styleLibraryName": "theme-default"
+          "styleLibraryName": "theme-chalk"
         }]]
       ]
     },
@@ -20,7 +20,7 @@
       "plugins": [
         ["component", [{
           "libraryName": "element-ui",
-          "styleLibraryName": "theme-default"
+          "styleLibraryName": "theme-chalk"
         }]]
       ]
     }

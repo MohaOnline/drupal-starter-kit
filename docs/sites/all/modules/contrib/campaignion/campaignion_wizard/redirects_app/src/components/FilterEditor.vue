@@ -8,7 +8,7 @@ Use this component with the `.sync` modifier on the `filters` prop.
   <section class="pra-filter-editor">
 
     <header>
-      <ElDropdown trigger="click" menu-align="start">
+      <ElDropdown trigger="click" placement="bottom-start">
         <ElButton>
           {{ text('Add filter') }}<i class="el-icon-caret-bottom el-icon--right"></i>
         </ElButton>
@@ -58,7 +58,7 @@ Use this component with the `.sync` modifier on the `filters` prop.
 </template>
 
 <script>
-import {find} from 'lodash'
+import find from 'lodash/find'
 
 export default {
   data () {

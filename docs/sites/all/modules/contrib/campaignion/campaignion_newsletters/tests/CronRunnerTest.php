@@ -75,5 +75,32 @@ class CronRunnerTest extends \DrupalUnitTestCase {
     $this->assertLessThan(1, microtime(TRUE) - $start);
   }
 
+  /**
+   * Later queue items for one subscription are skipped after failures.
+   */
+  public function testSendQueueItemsPreservesOrder() {
+    $c = new CronRunner(10, 0);
+
+    $item_factory = $this->getMockBuilder(QueueItem::class)->setMethods(['send']);
+    $item1 = $item_factory->getMock();
+    $item1->email = 't1@example.com';
+    $item1->list_id = 1;
+    $item1->expects($this->once())->method('send')
+      ->willThrowException(new ApiError('test'));
+    $items[] = $item1;
+    $item2 = $item_factory->getMock();
+    $item2->email = 't1@example.com';
+    $item2->list_id = 2;
+    $item2->expects($this->once())->method('send');
+    $items[] = $item2;
+    $item3 = $item_factory->getMock();
+    $item3->email = 't1@example.com';
+    $item3->list_id = 1;
+    $item3->expects($this->never())->method('send');
+    $items[] = $item3;
+
+    $c->sendQueueItems($items);
+  }
+
 }
 

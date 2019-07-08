@@ -4,6 +4,7 @@ namespace Drupal\campaignion_email_to_target\Wizard;
 
 use Drupal\campaignion_action\Loader;
 use Drupal\campaignion_wizard\WebformStepUnique;
+use Drupal\little_helpers\Rest\HttpError;
 use Drupal\little_helpers\Webform\Webform;
 
 /**
@@ -21,7 +22,19 @@ class FormStep extends WebformStepUnique {
   public function validateStep($form, &$form_state) {
     parent::validateStep($form, $form_state);
     // $form['#node'] has already been updated by form_builder_webform_save_form_validate().
-    $dataset = Loader::instance()->actionFromNode($form['#node'])->dataset();
+    try {
+      $dataset = Loader::instance()->actionFromNode($form['#node'])->dataset();
+    }
+    catch (HttpError $e) {
+      watchdog_exception('campaignion_email_to_target', $e, 'Unable to load dataset for node/%nid', ['%nid' => $form['#node']->nid]);
+      if (in_array($e->getCode(), [401, 403, 404])) {
+        form_error($form, t('It seems that an inaccessible dataset is configured for this action. Please go to the target step and configure a different dataset.'));
+      }
+      elseif ($e->getCode() < 0) {
+        form_error($form, t('A temporary error occured while validating the form configuration. Please try again in a few minutes.'));
+      }
+      return;
+    }
     $webform = new Webform($form['#node']);
 
     $selector_pages = 1;

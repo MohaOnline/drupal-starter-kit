@@ -84,6 +84,11 @@ class QueueItem extends Model {
   /**
    * Load and lock queue items in order to process them.
    *
+   * The queue should preserve the order of queue items for a single email
+   * address / list combination. That means it should never return a queue item
+   * for such a combination where another item for the same combination is still
+   * locked.
+   *
    * @param int $limit
    *   Maximum number of queue items to load.
    * @param int $time
@@ -97,11 +102,20 @@ class QueueItem extends Model {
     $t = static::$table;
     $now = time();
     $limit = (int) $limit;
-    // This is MySQL specific and there is no abstraction in Drupal for it.
-    $result = db_query("SELECT * FROM {{$t}} WHERE LOCKED<$now ORDER BY CREATED LIMIT $limit LOCK IN SHARE MODE");
+    // “LOCK IN SHARE MODE” is MySQL specific and there is no abstraction in
+    // Drupal for it.
+    $sql = <<<SQL
+SELECT q.*
+FROM {{$t}} q
+  LEFT OUTER JOIN {{$t}} ql ON ql.email=q.email AND ql.list_id=q.list_id AND ql.locked>=:now
+WHERE q.locked<:now AND ql.id IS NULL
+ORDER BY q.created
+LIMIT $limit
+LOCK IN SHARE MODE
+SQL;
     $items = [];
     $ids = [];
-    foreach ($result as $row) {
+    foreach (db_query($sql, [':now' => $now]) as $row) {
       $row->locked = $now + $time;
       $item = new static($row, FALSE);
       $ids[] = $row->id;
@@ -172,6 +186,16 @@ class QueueItem extends Model {
    */
   public function welcome() {
     return !empty($this->args['send_welcome']);
+  }
+
+  /**
+   * Trigger the queued action on the list’s provider.
+   *
+   * @throws \Drupal\campaignion_newsletters\ApiError
+   */
+  public function send() {
+    $list = NewsletterList::load($this->list_id);
+    $list->provider()->{$this->action}($list, $this);
   }
 
 }
