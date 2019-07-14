@@ -1,0 +1,16 @@
+name = Real AES
+description = "Library module for Defuse's PHP encryption library."
+core = 7.x
+PHP = 5.4
+package = Encryption
+
+dependencies[] = libraries
+dependencies[] = ctools
+dependencies[] = encrypt
+
+; Information added by Drupal.org packaging script on 2018-03-14
+version = "7.x-2.1"
+core = "7.x"
+project = "real_aes"
+datestamp = "1521065284"
+
