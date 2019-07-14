@@ -1,0 +1,40 @@
+<?php
+/**
+ * @file
+ *
+ * Define webform_submission hook
+ */
+
+/**
+ * Implements hook_webform_submission_insert().
+ */
+function pgbar_static_count_webform_submission_insert($node, $submission) {
+  $count = db_query(
+    'SELECT count ' .
+    '  FROM {pgbar_webform_submissions_static} ' .
+    '    WHERE nid = :nid ' ,
+    array(':nid' => $node->nid)
+  )->fetchField();
+
+  if ($count == FALSE) {
+    db_insert('pgbar_webform_submissions_static')
+      ->fields(array('nid' => $node->nid, 'count' => 1))
+      ->execute();
+  }
+  else {
+    $count++;
+    db_update('pgbar_webform_submissions_static')
+      ->condition('nid', $node->nid)
+      ->fields(array('count' => $count))
+      ->execute();
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function pgbar_static_count_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'pgbar' && $plugin == 'source') {
+    return 'plugin';
+  }
+}

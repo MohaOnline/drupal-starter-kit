@@ -1,0 +1,31 @@
+<?php
+/**
+ * @file
+ *
+ * define schema for static webform submission counts
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function pgbar_static_count_schema() {
+  $schema['pgbar_webform_submissions_static'] = array(
+    'description' => 'Table for storing a static counter of webform submissions per node.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The node identifier of a webform.',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'count' => array(
+        'description' => 'The number of webform submissions for this node.',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+    ),
+  );
+
+  return $schema;
+}

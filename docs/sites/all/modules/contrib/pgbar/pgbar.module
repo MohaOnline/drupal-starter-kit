@@ -1,0 +1,61 @@
+<?php
+/**
+ * @file
+ * The main module file for the pgbar module.
+ *
+ * - Defines the pgbar theme function.
+ */
+
+require_once dirname(__FILE__) . '/fields.inc.php';
+
+/**
+ * Implements hook_theme().
+ */
+function pgbar_theme() {
+  $vars = array(
+    'current' => 0,
+    'target' => 0,
+    'style' => NULL,
+    'texts' => array(),
+    'html_id' => '',
+  );
+  $hooks['pgbar'] = array(
+    'variables' => $vars,
+    'template'  => 'pgbar',
+  );
+  return $hooks;
+}
+
+/**
+ * Theme preprocess function for pgbar.
+ */
+function pgbar_preprocess_pgbar(&$v) {
+  $v['goal_reached'] = $v['current'] >= $v['target'];
+
+  if (isset($v['style'])) {
+    $v['theme_hook_suggestions'][] = 'pgbar__' . $v['style'];
+  }
+
+  $v['percentage'] = min(array($v['current'] / $v['target'] * 100, 100));
+  $v['format_fn'] = function_exists('format_number') ? 'format_number' : 'number_format';
+}
+
+/**
+ * Implements hook_polling_plugin_info().
+ */
+function pgbar_polling_field_type_plugin_info() {
+  $plugins['pgbar'] = '\\Drupal\\pgbar\\PgbarPolling';
+  return $plugins;
+}
+
+/**
+ * Implements hook_pgbar_source_plugin_info().
+ */
+function pgbar_pgbar_source_plugin_info() {
+  $p['null'] = '\\Drupal\\pgbar\\Source\\StaticCount';
+  if (module_exists('webform')) {
+    $p['webform_submission_count'] = '\\Drupal\\pgbar\\Source\\WebformSubmissionCount';
+    $p['webform_component_sum'] = '\\Drupal\\pgbar\\Source\\WebformComponentSum';
+  }
+  return $p;
+}

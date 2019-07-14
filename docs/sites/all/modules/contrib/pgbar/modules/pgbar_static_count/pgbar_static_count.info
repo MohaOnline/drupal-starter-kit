@@ -1,0 +1,15 @@
+name = PGBar webform submission static count
+description = PGBar that counts all webform submissions for a node, remembering also deleted submissions
+core = 7.x
+
+dependencies[] = ctools
+dependencies[] = pgbar
+dependencies[] = webform
+
+
+files[] = plugin/webform_submissions_static.inc.php
+; Information added by Drupal.org packaging script on 2019-07-02
+version = "7.x-2.6"
+core = "7.x"
+project = "pgbar"
+datestamp = "1562078310"

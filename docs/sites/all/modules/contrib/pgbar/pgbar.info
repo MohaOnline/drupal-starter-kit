@@ -1,0 +1,17 @@
+name = Progress bar
+description = Enables you to build a progress bar based on webform submissions, number fields, …
+core = 7.x
+php = 5.5
+
+dependencies[] = entity
+dependencies[] = jquery_update
+dependencies[] = polling
+dependencies[] = psr0
+
+stylesheets[screen][] = pgbar.css
+
+; Information added by Drupal.org packaging script on 2019-07-02
+version = "7.x-2.6"
+core = "7.x"
+project = "pgbar"
+datestamp = "1562078310"
