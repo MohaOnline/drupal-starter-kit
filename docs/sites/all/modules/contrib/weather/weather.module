@@ -22,14 +22,14 @@
  */
 
 /**
- * Implement hook_views_api().
+ * Implements hook_views_api().
  */
 function weather_views_api() {
   return array('api' => 3);
 }
 
 /**
- * Implement hook_cron().
+ * Implements hook_cron().
  *
  * Deletes expired forecasts and forecast information.
  */
@@ -45,7 +45,7 @@ function weather_cron() {
 }
 
 /**
- * Implement hook_permission().
+ * Implements hook_permission().
  */
 function weather_permission() {
   return array(
@@ -62,7 +62,7 @@ function weather_permission() {
 }
 
 /**
- * Implement hook_menu().
+ * Implements hook_menu().
  */
 function weather_menu() {
   $items['admin/config/user-interface/weather'] = array(
@@ -241,7 +241,7 @@ function weather_menu() {
 }
 
 /**
- * Implement hook_help().
+ * Implements hook_help().
  */
 function weather_help($path, $arg) {
   $output = '';
@@ -252,12 +252,14 @@ function weather_help($path, $arg) {
         array('@url' => url('admin/config/regional/date-time')));
       $output .= '</p>';
       break;
+
     case 'admin/config/user-interface/weather/places':
       $output .= '<p>';
       $output .= t('You can add new places to the module. Just paste the URL of the weather forecast on the <a href="@url">yr.no</a> website in the input field below. The easiest way to do this is to search on their website for the wanted place, click on the forecast link and copy the URL from the address bar of your browser.',
         array('@url' => url('http://www.yr.no/')));
       $output .= '</p>';
       break;
+
     case 'user/%/weather':
       $output .= '<p>';
       $output .= t('You can add, edit, and delete locations from your custom weather display.');
@@ -270,7 +272,7 @@ function weather_help($path, $arg) {
 }
 
 /**
- * Implement hook_block_info().
+ * Implements hook_block_info().
  */
 function weather_block_info() {
   module_load_include('inc', 'weather', 'weather.common');
@@ -300,13 +302,13 @@ function weather_block_info() {
 }
 
 /**
- * Implement hook_block_view().
+ * Implements hook_block_view().
  */
 function weather_block_view($delta = '') {
   global $user;
   module_load_include('inc', 'weather', 'weather.common');
   $block = array();
-  // Handle the 'system_NUMBER' type of blocks
+  // Handle the 'system_NUMBER' type of blocks.
   if (strpos($delta, '_') === FALSE) {
     $display_type = $delta;
   }
@@ -342,6 +344,7 @@ function weather_block_view($delta = '') {
           array('weather' => $weather, 'display' => $display));
       }
       break;
+
     case 'location':
       if (user_access('access content')) {
         // Set up the node location weather block.
@@ -416,6 +419,7 @@ function weather_block_view($delta = '') {
         }
       }
       break;
+
     case 'geofield':
       if (user_access('access content')) {
         // Set up the node geofield weather block.
@@ -464,6 +468,7 @@ function weather_block_view($delta = '') {
         }
       }
       break;
+
     case 'geofieldtaxonomyterms':
       if (user_access('access content')) {
         // Set up the taxonomy terms geofield weather block.
@@ -513,6 +518,7 @@ function weather_block_view($delta = '') {
         }
       }
       break;
+
     case 'ip':
       if (user_access('access content') and module_exists('smart_ip')) {
         $smart_ip_session = smart_ip_session_get('smart_ip');
@@ -541,6 +547,7 @@ function weather_block_view($delta = '') {
         }
       }
       break;
+
     case 'system':
       if (user_access('access content')) {
         // Show a system-wide weather display.
@@ -576,10 +583,10 @@ function weather_block_view($delta = '') {
  * @param int $uid
  *   User id.
  *
- * @return boolean
+ * @return bool
  *   TRUE or FALSE.
  */
-function weather_access_userblock($uid=NULL) {
+function weather_access_userblock($uid = NULL) {
   global $user;
   // If $uid is not set, just check for the access permission.
   if (is_null($uid) || $user->uid == $uid) {
@@ -589,8 +596,8 @@ function weather_access_userblock($uid=NULL) {
 }
 
 /**
-* Implements hook_date_format_types().
-*/
+ * Implements hook_date_format_types().
+ */
 function weather_date_format_types() {
   return array(
     'weather'  => t('Weather'),
@@ -598,48 +605,56 @@ function weather_date_format_types() {
 }
 
 /**
-* Implements hook_date_formats().
-*/
+ * Implements hook_date_formats().
+ */
 function weather_date_formats() {
   $formats = array();
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'F j, Y', // e.g. March 6, 2014
+  // e.g. March 6, 2014.
+    'format' => 'F j, Y',
     'locales' => array(''),
   );
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'F j', // e.g. March 6
+  // e.g. March 6.
+    'format' => 'F j',
     'locales' => array(''),
   );
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'Y/m/d', // e.g. 2014/03/06
+  // e.g. 2014/03/06.
+    'format' => 'Y/m/d',
     'locales' => array(''),
   );
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'm/d', // e.g. 03/06
+  // e.g. 03/06.
+    'format' => 'm/d',
     'locales' => array(''),
   );
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'j. F Y', // e.g. 6. March 2014
+  // e.g. 6. March 2014.
+    'format' => 'j. F Y',
     'locales' => array(''),
   );
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'j. F', // e.g. 6. March
+  // e.g. 6. March.
+    'format' => 'j. F',
     'locales' => array(''),
   );
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'd.m.Y', // e.g. 06.03.2014
+  // e.g. 06.03.2014.
+    'format' => 'd.m.Y',
     'locales' => array(''),
   );
   $formats[] = array(
     'type'    => 'weather',
-    'format' => 'd.m.', // e.g. 06.03.
+  // e.g. 06.03.
+    'format' => 'd.m.',
     'locales' => array(''),
   );
   return $formats;
@@ -650,7 +665,7 @@ function weather_date_formats() {
  */
 function weather_theme() {
   return array(
-    // Custom theme function for preprocessing variables
+    // Custom theme function for preprocessing variables.
     'weather_forecast_preprocess' => array(
       'file' => 'weather_theme.inc',
       'variables' => array('weather' => NULL, 'display' => NULL),
@@ -660,7 +675,7 @@ function weather_theme() {
       'template' => 'weather',
       'variables' => array('weather' => NULL),
     ),
-    // Detailed forecast template
+    // Detailed forecast template.
     'weather_detailed_forecast' => array(
       'template' => 'weather_detailed_forecast',
       'variables' => array('weather' => NULL),

@@ -25,10 +25,11 @@
  * Field handler to allow selection of pressure units.
  */
 class weather_handler_pressure extends views_handler_field_numeric {
+
   /**
    * Setup default unit.
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['unit'] = array('default' => 'hpa');
     return $options;
@@ -37,7 +38,7 @@ class weather_handler_pressure extends views_handler_field_numeric {
   /**
    * Provide unit to select.
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     $form['unit'] = array(
       '#title' => t('Unit for pressure display'),
       '#description' => t('Select unit for formatted pressures or display only value.'),
@@ -60,7 +61,7 @@ class weather_handler_pressure extends views_handler_field_numeric {
   /**
    * Render pressure with selected unit.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
@@ -68,4 +69,5 @@ class weather_handler_pressure extends views_handler_field_numeric {
     module_load_include('inc', 'weather', 'weather_theme');
     return weather_format_pressure($value, $this->options['unit']);
   }
+
 }

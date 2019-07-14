@@ -56,7 +56,6 @@
  * exception is the last dot in the following country:
  *
  * "Virgin Islands, U.S." -> "Virgin_Islands,_U.S_"
- *
  */
 function _weather_data_installation() {
   // Delete all original entries from the table, if any.
@@ -106,7 +105,7 @@ function _weather_data_installation() {
 }
 
 /**
- * Implement hook_install().
+ * Implements hook_install().
  *
  * Currently, it's only needed to insert data into the weather_icao
  * table. We use a helper function for this task.
@@ -118,13 +117,13 @@ function weather_install() {
 }
 
 /**
- * Implement hook_uninstall().
+ * Implements hook_uninstall().
  */
 function weather_uninstall() {
   variable_del('weather_image_directory');
   variable_del('date_format_weather');
   variable_del('weather_forecast_days');
-  // Remove blocks provided by the module
+  // Remove blocks provided by the module.
   db_delete('block')
     ->condition('module', 'weather')
     ->execute();
@@ -137,7 +136,7 @@ function weather_uninstall() {
 }
 
 /**
- * Implement hook_schema().
+ * Implements hook_schema().
  */
 function weather_schema() {
   $schema['weather_displays'] = array(
@@ -145,20 +144,28 @@ function weather_schema() {
     'fields' => array(
       'type' => array(
         'description' => 'Type of display (system-wide, user, default).',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'number' => array(
         'description' => 'Display number.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'config' => array(
         'description' => 'Configuration for display (units and settings).',
-        'type' => 'text', 'size' => 'normal', 'not null' => TRUE, 'serialize' => TRUE
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'serialize' => TRUE,
       ),
     ),
     'primary key' => array(
       'type',
-      'number'
+      'number',
     ),
   );
   $schema['weather_places'] = array(
@@ -166,31 +173,52 @@ function weather_schema() {
     'fields' => array(
       'geoid' => array(
         'description' => 'GeoID of the location.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'latitude' => array(
         'description' => 'Latitude of location.',
-        'type' => 'float', 'size' => 'big', 'not null' => TRUE, 'default' => 0.0
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 0.0,
       ),
       'longitude' => array(
         'description' => 'Longitude of location.',
-        'type' => 'float', 'size' => 'big', 'not null' => TRUE, 'default' => 0.0
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 0.0,
       ),
       'country' => array(
         'description' => 'Country of location.',
-        'type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'name' => array(
         'description' => 'Name of location.',
-        'type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'link' => array(
         'description' => 'Shortened link of location at yr.no.',
-        'type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'status' => array(
         'description' => 'Status of place',
-        'type' => 'varchar', 'length' => 8, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
       ),
     ),
     'primary key' => array(
@@ -202,27 +230,40 @@ function weather_schema() {
     'fields' => array(
       'id' => array(
         'description' => 'ID.',
-        'type' => 'serial', 'not null' => TRUE
+        'type' => 'serial',
+        'not null' => TRUE,
       ),
       'display_type' => array(
         'description' => 'Type of display (system-wide, user, location, default, ...).',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'display_number' => array(
         'description' => 'Display number.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'place_geoid' => array(
         'description' => 'GeoID of the place.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'displayed_name' => array(
         'description' => 'Displayed name of place.',
-        'type' => 'varchar', 'length' => 255, 'not null' => FALSE
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
       ),
       'weight' => array(
         'description' => 'Weight of the location.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'primary key' => array(
@@ -231,7 +272,7 @@ function weather_schema() {
     'foreign keys' => array(
       'display_type' => array('weather_displays' => 'type'),
       'display_number' => array('weather_displays' => 'number'),
-      'place_geoid' => array('weather_places' => 'geoid')
+      'place_geoid' => array('weather_places' => 'geoid'),
     ),
   );
   $schema['weather_forecasts'] = array(
@@ -239,51 +280,79 @@ function weather_schema() {
     'fields' => array(
       'id' => array(
         'description' => 'ID.',
-        'type' => 'serial', 'not null' => TRUE
+        'type' => 'serial',
+        'not null' => TRUE,
       ),
       'geoid' => array(
         'description' => 'GeoID of the location.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'time_from' => array(
         'description' => 'Start time of forecast.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'time_to' => array(
         'description' => 'End time of forecast.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'period' => array(
         'description' => 'Period of day.',
-        'type' => 'varchar', 'length' => 1, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'symbol' => array(
         'description' => 'Symbol to use for weather display.',
-        'type' => 'varchar', 'length' => 3, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 3,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'precipitation' => array(
         'description' => 'Amount of precipitation in mm.',
-        'type' => 'float', 'size' => 'big', 'not null' => FALSE, 'default' => NULL
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'wind_direction' => array(
         'description' => 'Wind direction in degrees.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'wind_speed' => array(
         'description' => 'Wind speed in m/s.',
-        'type' => 'float', 'size' => 'big', 'not null' => FALSE, 'default' => NULL
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'temperature' => array(
         'description' => 'Temperature in degree celsius.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'pressure' => array(
         'description' => 'Pressure in hPa.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
     ),
     'primary key' => array(
-      'id'
+      'id',
     ),
   );
   $schema['weather_forecast_information'] = array(
@@ -291,34 +360,48 @@ function weather_schema() {
     'fields' => array(
       'geoid' => array(
         'description' => 'GeoID of the location.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'last_update' => array(
         'description' => 'UTC time of last update.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'next_update' => array(
         'description' => 'UTC time of next scheduled update.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'next_download_attempt' => array(
         'description' => 'UTC time of next scheduled download attempt.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'utc_offset' => array(
         'description' => 'UTC offset of local time in minutes.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'primary key' => array(
-      'geoid'
+      'geoid',
     ),
   );
   return $schema;
 }
 
 /**
- * Implement hook_update_last_removed().
+ * Implements hook_update_last_removed().
  *
  * 7104 was the last update of the 7.x-1.x branch.
  * The module only supports an upgrade to the 7.x-2.x branch from the
@@ -337,20 +420,28 @@ function weather_update_7200(&$sandbox) {
     'fields' => array(
       'type' => array(
         'description' => 'Type of display (system-wide, user, location, default, ...).',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'number' => array(
         'description' => 'Display number.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'config' => array(
         'description' => 'Configuration for display (units and settings).',
-        'type' => 'text', 'size' => 'normal', 'not null' => TRUE, 'serialize' => TRUE
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'serialize' => TRUE,
       ),
     ),
     'primary key' => array(
       'type',
-      'number'
+      'number',
     ),
   ));
   db_create_table('weather_places', array(
@@ -358,31 +449,52 @@ function weather_update_7200(&$sandbox) {
     'fields' => array(
       'geoid' => array(
         'description' => 'GeoID of the location.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'latitude' => array(
         'description' => 'Latitude of location.',
-        'type' => 'float', 'size' => 'big', 'not null' => TRUE, 'default' => 0.0
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 0.0,
       ),
       'longitude' => array(
         'description' => 'Longitude of location.',
-        'type' => 'float', 'size' => 'big', 'not null' => TRUE, 'default' => 0.0
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => 0.0,
       ),
       'country' => array(
         'description' => 'Country of location.',
-        'type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'name' => array(
         'description' => 'Name of location.',
-        'type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'link' => array(
         'description' => 'Shortened link of location at yr.no.',
-        'type' => 'varchar', 'length' => 255, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'status' => array(
         'description' => 'Status of place',
-        'type' => 'varchar', 'length' => 8, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 8,
+        'not null' => TRUE,
+        'default' => '',
       ),
     ),
     'primary key' => array(
@@ -394,27 +506,40 @@ function weather_update_7200(&$sandbox) {
     'fields' => array(
       'id' => array(
         'description' => 'ID.',
-        'type' => 'serial', 'not null' => TRUE
+        'type' => 'serial',
+        'not null' => TRUE,
       ),
       'display_type' => array(
         'description' => 'Type of display (system-wide, user, location, default, ...).',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'display_number' => array(
         'description' => 'Display number.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
       'place_geoid' => array(
         'description' => 'GeoID of the place.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'displayed_name' => array(
         'description' => 'Displayed name of place.',
-        'type' => 'varchar', 'length' => 255, 'not null' => FALSE
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
       ),
       'weight' => array(
         'description' => 'Weight of the location.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'primary key' => array(
@@ -423,7 +548,7 @@ function weather_update_7200(&$sandbox) {
     'foreign keys' => array(
       'display_type' => array('weather_displays' => 'type'),
       'display_number' => array('weather_displays' => 'number'),
-      'place_geoid' => array('weather_places' => 'geoid')
+      'place_geoid' => array('weather_places' => 'geoid'),
     ),
   ));
   db_create_table('weather_forecasts', array(
@@ -431,48 +556,75 @@ function weather_update_7200(&$sandbox) {
     'fields' => array(
       'geoid' => array(
         'description' => 'GeoID of the location.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'time_from' => array(
         'description' => 'Start time of forecast.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'time_to' => array(
         'description' => 'End time of forecast.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'period' => array(
         'description' => 'Period of day.',
-        'type' => 'varchar', 'length' => 1, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'symbol' => array(
         'description' => 'Symbol to use for weather display.',
-        'type' => 'varchar', 'length' => 3, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 3,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'precipitation' => array(
         'description' => 'Amount of precipitation in mm.',
-        'type' => 'float', 'size' => 'big', 'not null' => FALSE, 'default' => NULL
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'wind_direction' => array(
         'description' => 'Wind direction in degrees.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'wind_speed' => array(
         'description' => 'Wind speed in m/s.',
-        'type' => 'float', 'size' => 'big', 'not null' => FALSE, 'default' => NULL
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'temperature' => array(
         'description' => 'Temperature in degree celsius.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'pressure' => array(
         'description' => 'Pressure in hPa.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
     ),
     'primary key' => array(
       'geoid',
-      'time_from'
+      'time_from',
     ),
   ));
   db_create_table('weather_forecast_information', array(
@@ -480,27 +632,41 @@ function weather_update_7200(&$sandbox) {
     'fields' => array(
       'geoid' => array(
         'description' => 'GeoID of the location.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'last_update' => array(
         'description' => 'UTC time of last update.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'next_update' => array(
         'description' => 'UTC time of next scheduled update.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'next_download_attempt' => array(
         'description' => 'UTC time of next scheduled download attempt.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'utc_offset' => array(
         'description' => 'UTC offset of local time in minutes.',
-        'type' => 'int', 'not null' => TRUE, 'default' => 0
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'primary key' => array(
-      'geoid'
+      'geoid',
     ),
   ));
   // Install data.
@@ -513,7 +679,7 @@ function weather_update_7200(&$sandbox) {
 function weather_update_7201(&$sandbox) {
   db_update('role_permission')
     ->fields(array(
-      'permission' => 'access weather search page'
+      'permission' => 'access weather search page',
     ))
     ->condition('permission', 'access weather pages')
     ->condition('module', 'weather')
@@ -542,7 +708,7 @@ function weather_update_7202(&$sandbox) {
       ->fields(array(
         'type' => $old_display->type,
         'number' => $old_display->number,
-        'config' => serialize($config)
+        'config' => serialize($config),
       ))
       ->execute();
   }
@@ -594,62 +760,91 @@ function weather_update_7205(&$sandbox) {
     'fields' => array(
       'id' => array(
         'description' => 'ID.',
-        'type' => 'serial', 'not null' => TRUE
+        'type' => 'serial',
+        'not null' => TRUE,
       ),
       'geoid' => array(
         'description' => 'GeoID of the location.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'time_from' => array(
         'description' => 'Start time of forecast.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'time_to' => array(
         'description' => 'End time of forecast.',
-        'type' => 'varchar', 'length' => 20, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 20,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'period' => array(
         'description' => 'Period of day.',
-        'type' => 'varchar', 'length' => 1, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'symbol' => array(
         'description' => 'Symbol to use for weather display.',
-        'type' => 'varchar', 'length' => 3, 'not null' => TRUE, 'default' => ''
+        'type' => 'varchar',
+        'length' => 3,
+        'not null' => TRUE,
+        'default' => '',
       ),
       'precipitation' => array(
         'description' => 'Amount of precipitation in mm.',
-        'type' => 'float', 'size' => 'big', 'not null' => FALSE, 'default' => NULL
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'wind_direction' => array(
         'description' => 'Wind direction in degrees.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'wind_speed' => array(
         'description' => 'Wind speed in m/s.',
-        'type' => 'float', 'size' => 'big', 'not null' => FALSE, 'default' => NULL
+        'type' => 'float',
+        'size' => 'big',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'temperature' => array(
         'description' => 'Temperature in degree celsius.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
       'pressure' => array(
         'description' => 'Pressure in hPa.',
-        'type' => 'int', 'not null' => FALSE, 'default' => NULL
+        'type' => 'int',
+        'not null' => FALSE,
+        'default' => NULL,
       ),
     ),
     'primary key' => array(
-      'id'
+      'id',
     ),
   ));
 }
 
 /**
  * Add Astoria, Oregon, USA.
+ *
  * Add regions to some place names.
  */
 function weather_update_7206(&$sandbox) {
   // Do not use this in case of updates from older versions.
-  #_weather_data_installation();
+  // _weather_data_installation();
 }
 
 /**
@@ -664,7 +859,7 @@ function weather_update_7207(&$sandbox) {
  */
 function weather_update_7208(&$sandbox) {
   // Do not use this in case of updates from older versions.
-  #_weather_data_installation();
+  // _weather_data_installation();
 }
 
 /**
@@ -682,7 +877,7 @@ function weather_update_7209(&$sandbox) {
       'type' => 'varchar',
       'length' => 8,
       'not null' => TRUE,
-      'default' => ''
+      'default' => '',
     );
     db_add_field('weather_places', 'status', $spec);
     // Reload data.

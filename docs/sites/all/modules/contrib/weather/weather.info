@@ -30,9 +30,8 @@ files[] = views_handlers/weather_handler_wind.inc
 files[] = views_handlers/weather_handler_wind_direction.inc
 files[] = views_handlers/weather_handler_wind_speed.inc
 
-; Information added by Drupal.org packaging script on 2015-12-11
-version = "7.x-2.14"
+; Information added by Drupal.org packaging script on 2019-07-10
+version = "7.x-2.15"
 core = "7.x"
 project = "weather"
-datestamp = "1449842053"
-
+datestamp = "1562766207"

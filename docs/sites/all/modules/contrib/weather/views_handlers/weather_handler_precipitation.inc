@@ -25,13 +25,15 @@
  * Field handler to render precipitation.
  */
 class weather_handler_precipitation extends views_handler_field_numeric {
+
   /**
    * Render precipitation.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
     return $values->{$this->field_alias};
   }
+
 }

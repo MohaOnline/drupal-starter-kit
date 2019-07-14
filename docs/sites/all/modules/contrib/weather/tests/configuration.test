@@ -25,6 +25,7 @@
  * Test class for configuration.
  */
 class WeatherConfigurationTestCase extends DrupalWebTestCase {
+
   /**
    * General information.
    */
@@ -37,7 +38,7 @@ class WeatherConfigurationTestCase extends DrupalWebTestCase {
   }
 
   /**
-   * Set up testing environment
+   * Set up testing environment.
    */
   public function setUp() {
     parent::setUp('weather', 'block');
@@ -47,23 +48,23 @@ class WeatherConfigurationTestCase extends DrupalWebTestCase {
    * Tests configuration of weather block.
    */
   public function testConfiguration() {
-    // Set a fixed time for testing to 2013-10-07 20:00:00 UTC
+    // Set a fixed time for testing to 2013-10-07 20:00:00 UTC.
     variable_set('weather_time_for_testing', 1381176000);
     // This user may setup a system-wide weather block.
     $admin_user = $this->drupalCreateUser(array(
       'access content', 'administer custom weather block',
-      'administer site configuration', 'administer blocks'
+      'administer site configuration', 'administer blocks',
     ));
-    // Test with admin user
+    // Test with admin user.
     $this->drupalLogin($admin_user);
-    // Enable a system-wide weather block
+    // Enable a system-wide weather block.
     $this->drupalPost('admin/config/user-interface/weather/system-wide/add', array(), t('Save'));
-    // Configure the default place
+    // Configure the default place.
     $this->drupalPost('admin/config/user-interface/weather/system-wide/1/add', array(), t('Save'));
-    // Enable block
+    // Enable block.
     $edit = array('blocks[weather_system_1][region]' => 'sidebar_second');
     $this->drupalPost('admin/structure/block', $edit, t('Save blocks'));
-    // Make sure that the weather block is displayed with correct test forecast data
+    // Make sure that the weather block is displayed with correct test forecast data.
     $this->drupalGet('node');
     $this->assertRaw('<div class="weather">');
     $this->assertLink('Hamburg');
@@ -81,7 +82,8 @@ class WeatherConfigurationTestCase extends DrupalWebTestCase {
     $this->drupalGet('node');
     $this->assertRaw('48&thinsp;°F');
     $this->assertRaw('55&thinsp;°F');
-    // Logout current user
+    // Logout current user.
     $this->drupalLogout();
   }
+
 }

@@ -25,10 +25,11 @@
  * Field handler to allow selection of temperature units.
  */
 class weather_handler_temperature extends views_handler_field_numeric {
+
   /**
    * Setup default unit.
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['unit'] = array('default' => 'celsius');
     return $options;
@@ -37,7 +38,7 @@ class weather_handler_temperature extends views_handler_field_numeric {
   /**
    * Provide unit to select.
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     $form['unit'] = array(
       '#title' => t('Unit for temperature display'),
       '#description' => t('Select unit for formatted temperatures or display only value.'),
@@ -58,7 +59,7 @@ class weather_handler_temperature extends views_handler_field_numeric {
   /**
    * Render temperature with selected unit.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
@@ -66,4 +67,5 @@ class weather_handler_temperature extends views_handler_field_numeric {
     module_load_include('inc', 'weather', 'weather_theme');
     return weather_format_temperature($value, $this->options['unit']);
   }
+
 }

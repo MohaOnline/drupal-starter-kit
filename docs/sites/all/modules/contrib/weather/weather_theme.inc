@@ -84,156 +84,78 @@ function theme_weather_forecast_preprocess($variables) {
 
 /**
  * Returns weather condition as translated text from yr.no symbol number.
- * 
- * @param $condition_no
- * The weather condition number from yr.no
- * 
- * @return $string
- * Translated text with corresponding weather condition
+ *
+ * @param mixed $condition_no
+ *   The weather condition number from yr.no.
+ *
+ * @return string
+ *   Translated text with corresponding weather condition
  */
 function weather_format_condition($condition_no) {
   // Strip the suffix "d", "n", and "m".
   // (day, night, mørketid -> polar night)
   $condition_no = substr($condition_no, 0, 2);
-  switch ($condition_no) {
-    case 1:
-      $txt = t('Clear sky');
-      break;
-    case 2:
-      $txt = t('Fair');
-      break;
-    case 3:
-      $txt = t('Partly cloudy');
-      break;
-    case 4:
-      $txt = t('Cloudy');
-      break;
-    case 5:
-      $txt = t('Rain showers');
-      break;
-    case 6:
-      $txt = t('Rain showers and thunder');
-      break;
-    case 7:
-      $txt = t('Sleet showers');
-      break;
-    case 8:
-      $txt = t('Snow showers');
-      break;
-    case 9:
-      $txt = t('Rain');
-      break;
-    case 10:
-      $txt = t('Heavy rain');
-      break;
-    case 11:
-      $txt = t('Heavy rain and thunder');
-      break;
-    case 12:
-      $txt = t('Sleet');
-      break;
-    case 13:
-      $txt = t('Snow');
-      break;
-    case 14:
-      $txt = t('Snow and thunder');
-      break;
-    case 15:
-      $txt = t('Fog');
-      break;
-    case 20:
-      $txt = t('Sleet showers and thunder');
-      break;
-    case 21:
-      $txt = t('Snow showers and thunder');
-      break;
-    case 22:
-      $txt = t('Rain and thunder');
-      break;
-    case 23:
-      $txt = t('Sleet and thunder');
-      break;
-    case 24:
-      $txt = t('Light rain showers and thunder');
-      break;
-    case 25:
-      $txt = t('Heavy rain showers and thunder');
-      break;
-    case 26:
-      $txt = t('Light sleet showers and thunder');
-      break;
-    case 27:
-      $txt = t('Heavy sleet showers and thunder');
-      break;
-    case 28:
-      $txt = t('Light snow showers and thunder');
-      break;
-    case 29:
-      $txt = t('Heavy snow showers and thunder');
-      break;
-    case 30:
-      $txt = t('Light rain and thunder');
-      break;
-    case 31:
-      $txt = t('Light sleet and thunder');
-      break;
-    case 32:
-      $txt = t('Heavy sleet and thunder');
-      break;
-    case 33:
-      $txt = t('Light snow and thunder');
-      break;
-    case 34:
-      $txt = t('Heavy snow and thunder');
-      break;
-    case 40:
-      $txt = t('Light rain showers');
-      break;
-    case 41:
-      $txt = t('Heavy rain showers');
-      break;
-    case 42:
-      $txt = t('Light sleet showers');
-      break;
-    case 43:
-      $txt = t('Heavy sleet showers');
-      break;
-    case 44:
-      $txt = t('Light snow showers');
-      break;
-    case 45:
-      $txt = t('Heavy snow showers');
-      break;
-    case 46:
-      $txt = t('Light rain');
-      break;
-    case 47:
-      $txt = t('Light sleet');
-      break;
-    case 48:
-      $txt = t('Heavy sleet');
-      break;
-    case 49:
-      $txt = t('Light snow');
-      break;
-    case 50:
-      $txt = t('Heavy snow');
-      break;
-    default:
-      $txt = t('No data');
+  $conditions = array(
+    'null' => t('No data'),
+    '01' => t('Clear sky'),
+    '02' => t('Fair'),
+    '03' => t('Partly cloudy'),
+    '04' => t('Cloudy'),
+    '05' => t('Rain showers'),
+    '06' => t('Rain showers and thunder'),
+    '07' => t('Sleet showers'),
+    '08' => t('Snow showers'),
+    '09' => t('Rain'),
+    '10' => t('Heavy rain'),
+    '11' => t('Heavy rain and thunder'),
+    '12' => t('Sleet'),
+    '13' => t('Snow'),
+    '14' => t('Snow and thunder'),
+    '15' => t('Fog'),
+    '20' => t('Sleet showers and thunder'),
+    '21' => t('Snow showers and thunder'),
+    '22' => t('Rain and thunder'),
+    '23' => t('Sleet and thunder'),
+    '24' => t('Light rain showers and thunder'),
+    '25' => t('Heavy rain showers and thunder'),
+    '26' => t('Light sleet showers and thunder'),
+    '27' => t('Heavy sleet showers and thunder'),
+    '28' => t('Light snow showers and thunder'),
+    '29' => t('Heavy snow showers and thunder'),
+    '30' => t('Light rain and thunder'),
+    '31' => t('Light sleet and thunder'),
+    '32' => t('Heavy sleet and thunder'),
+    '33' => t('Light snow and thunder'),
+    '34' => t('Heavy snow and thunder'),
+    '40' => t('Light rain showers'),
+    '41' => t('Heavy rain showers'),
+    '42' => t('Light sleet showers'),
+    '43' => t('Heavy sleet showers'),
+    '44' => t('Light snow showers'),
+    '45' => t('Heavy snow showers'),
+    '46' => t('Light rain'),
+    '47' => t('Light sleet'),
+    '48' => t('Heavy sleet'),
+    '49' => t('Light snow'),
+    '50' => t('Heavy snow'),
+  );
+
+  if (!array_key_exists($condition_no, $conditions)) {
+    $condition_no = 'null';
   }
-  return $txt;
+
+  return $conditions[$condition_no];
 }
 
 /**
  * Returns the <img> tag for the weather image to use for the current condition.
- * 
+ *
  * @param $symbol
  *   The weather condition number from yr.no
  * @param $condition
  *   The translated condition text.
- * 
- * @return $string
+ *
+ * @return string
  *   Ready formatted HTML <img> tag
  */
 function weather_format_image($symbol, $condition) {
@@ -242,21 +164,21 @@ function weather_format_image($symbol, $condition) {
   // Determine the active theme path.
   $theme_path = drupal_get_path('theme', variable_get('theme_default', NULL));
   $custom_path = $theme_path . '/' . variable_get('weather_image_directory', '') . '/';
-  // Construct the filename
+  // Construct the filename.
   $image = $custom_path . $symbol . '.png';
   if (!is_readable($image)) {
     $default_path = drupal_get_path('module', 'weather') . '/images/';
     $image = $default_path . $symbol . '.png';
   }
   $size = getimagesize($image);
-  // Prepare the <img> tag
+  // Prepare the <img> tag.
   return theme('image', array(
     'path' => $image,
     'width' => $size[0],
     'height' => $size[1],
     'alt' => $condition,
     'title' => $condition,
-    'attributes' => array('class' => 'weather-image')
+    'attributes' => array('class' => 'weather-image'),
   ));
 }
 
@@ -272,9 +194,9 @@ function weather_format_image($symbol, $condition) {
  *   Formatted representation in the desired unit.
  */
 function weather_format_temperature($temperature, $unit) {
-  // Do the calculation
+  // Do the calculation.
   $fahrenheit = (int) ($temperature * 9 / 5) + 32;
-  // Format the temperature
+  // Format the temperature.
   if ($unit == 'fahrenheit') {
     $result = t('!temperature&thinsp;°F', array('!temperature' => $fahrenheit));
   }
@@ -282,7 +204,7 @@ function weather_format_temperature($temperature, $unit) {
     $result = t('!temperature_c&thinsp;°C / !temperature_f&thinsp;°F',
       array(
         '!temperature_c' => $temperature,
-        '!temperature_f' => $fahrenheit
+        '!temperature_f' => $fahrenheit,
       )
     );
   }
@@ -290,7 +212,7 @@ function weather_format_temperature($temperature, $unit) {
     $result = t('!temperature_f&thinsp;°F / !temperature_c&thinsp;°C',
       array(
         '!temperature_f' => $fahrenheit,
-        '!temperature_c' => $temperature
+        '!temperature_c' => $temperature,
       )
     );
   }
@@ -314,7 +236,7 @@ function weather_format_temperature($temperature, $unit) {
  * Windchill temperature is only defined for temperatures at or below
  * 10 °C (50 °F) and wind speeds above 1.34 m/s (3 mph). Bright sunshine
  * may increase the wind chill temperature.
- * @link http://en.wikipedia.org/wiki/Wind_chill
+ * @link http://en.wikipedia.org/wiki/Wind_chill.
  *
  * @param int $temperature
  *   Temperature in degree celsius.
@@ -373,7 +295,7 @@ function weather_format_wind($wind_direction, $wind_speed, $unit, $abbreviated, 
         '!description' => $beaufort['description'],
         '!speed' => $speed,
         '!direction' => $direction,
-        '!degree' => $wind_direction
+        '!degree' => $wind_direction,
       )
     );
   }
@@ -382,7 +304,7 @@ function weather_format_wind($wind_direction, $wind_speed, $unit, $abbreviated, 
       array(
         '!description' => $beaufort['description'],
         '!speed' => $speed,
-        '!direction' => $direction
+        '!direction' => $direction,
       )
     );
   }
@@ -461,21 +383,26 @@ function weather_format_wind_direction($wind_direction, $settings) {
         '!degree' => $wind_direction,
       ));
       break;
+
     case 'abbreviated':
       $result = weather_bearing_to_text($wind_direction, TRUE);
       break;
+
     case 'abbreviated_degree':
       $result = t('!direction (!degree°)', array(
         '!direction' => weather_bearing_to_text($wind_direction, TRUE),
         '!degree' => $wind_direction,
       ));
       break;
+
     case 'degree':
       $result = t('!degree°', array('!degree' => $wind_direction));
       break;
+
     case 'degree_value':
       $result = $wind_direction;
       break;
+
     default:
       $result = weather_bearing_to_text($wind_direction);
   }
@@ -490,14 +417,14 @@ function weather_format_wind_direction($wind_direction, $settings) {
  *
  * @param string $bearing
  *   Compass bearing in degrees.
- * @param boolean $abbreviated
+ * @param bool $abbreviated
  *   If true, return abbreviated directions (N, NNW) instead of
  *   full text (North, North-Northwest). Defaults to full text directions.
  *
  * @return string
  *   Formatted representation.
  */
-function weather_bearing_to_text($bearing, $abbreviated=FALSE) {
+function weather_bearing_to_text($bearing, $abbreviated = FALSE) {
   // Determine the sector. This works for 0° up to 348.75°
   // If the bearing was greater than 348.75°, perform a wrap (%16)
   $sector = floor(($bearing + 11.25) / 22.5) % 16;
@@ -519,7 +446,7 @@ function weather_bearing_to_text($bearing, $abbreviated=FALSE) {
       t('West'),
       t('West-Northwest'),
       t('Northwest'),
-      t('North-Northwest')
+      t('North-Northwest'),
     );
   }
   else {
@@ -539,7 +466,7 @@ function weather_bearing_to_text($bearing, $abbreviated=FALSE) {
       t('W'),
       t('WNW'),
       t('NW'),
-      t('NNW')
+      t('NNW'),
     );
   }
   return $direction[$sector];
@@ -574,18 +501,42 @@ function weather_calculate_beaufort($wind_speed) {
     t('Hurricane'),
   );
   $number = 0;
-  if ($wind_speed >= 0.3) $number = 1;
-  if ($wind_speed >= 1.6) $number = 2;
-  if ($wind_speed >= 3.5) $number = 3;
-  if ($wind_speed >= 5.5) $number = 4;
-  if ($wind_speed >= 8.0) $number = 5;
-  if ($wind_speed >= 10.8) $number = 6;
-  if ($wind_speed >= 13.9) $number = 7;
-  if ($wind_speed >= 17.2) $number = 8;
-  if ($wind_speed >= 20.8) $number = 9;
-  if ($wind_speed >= 24.5) $number = 10;
-  if ($wind_speed >= 28.5) $number = 11;
-  if ($wind_speed >= 32.7) $number = 12;
+  if ($wind_speed >= 0.3) {
+    $number = 1;
+  }
+  if ($wind_speed >= 1.6) {
+    $number = 2;
+  }
+  if ($wind_speed >= 3.5) {
+    $number = 3;
+  }
+  if ($wind_speed >= 5.5) {
+    $number = 4;
+  }
+  if ($wind_speed >= 8.0) {
+    $number = 5;
+  }
+  if ($wind_speed >= 10.8) {
+    $number = 6;
+  }
+  if ($wind_speed >= 13.9) {
+    $number = 7;
+  }
+  if ($wind_speed >= 17.2) {
+    $number = 8;
+  }
+  if ($wind_speed >= 20.8) {
+    $number = 9;
+  }
+  if ($wind_speed >= 24.5) {
+    $number = 10;
+  }
+  if ($wind_speed >= 28.5) {
+    $number = 11;
+  }
+  if ($wind_speed >= 32.7) {
+    $number = 12;
+  }
   return array('number' => $number, 'description' => $description[$number]);
 }
 
@@ -626,7 +577,7 @@ function weather_format_pressure($pressure, $unit) {
     $result = $pressure;
   }
   else {
-    // default to metric units
+    // Default to metric units.
     $result = t('!pressure&thinsp;hPa', array('!pressure' => $pressure));
   }
   return preg_replace("/([^ ]*)&thinsp;([^ ]*)/",
@@ -702,7 +653,7 @@ function _weather_calculate_sun_info($date, $utc_offset, $geoid) {
   module_load_include('inc', 'weather', 'weather.common');
   // Get the coordinates for sunrise and sunset calculation.
   $coordinates = weather_get_information_about_geoid($geoid);
-  // Calculate the timestamp for the local time zone
+  // Calculate the timestamp for the local time zone.
   $time = strtotime($date . ' 12:00:00 UTC') - 60 * $utc_offset;
   $sun_info = date_sun_info($time, $coordinates->latitude, $coordinates->longitude);
   // Handle special cases (no sunrise or sunset at all).

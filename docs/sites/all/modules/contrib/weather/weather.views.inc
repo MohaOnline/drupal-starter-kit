@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Views integration for weather module
+ * Views integration for weather module.
  *
  * Copyright © 2013-2015 Dr. Tobias Quathamer <t.quathamer@mailbox.org>
  *
@@ -22,12 +22,12 @@
  */
 
 /**
- * Implement hook_views_data().
+ * Implements hook_views_data().
  */
 function weather_views_data() {
   return array(
     'weather_places' => array(
-      // Definitions for table
+      // Definitions for table.
       'table' => array(
         'group' => t('Weather'),
         'base' => array(
@@ -184,7 +184,7 @@ function weather_views_data() {
         'join' => array(
           'weather_places' => array(
             'left_field' => 'geoid',
-            'field' => 'geoid'
+            'field' => 'geoid',
           ),
         ),
       ),
@@ -200,14 +200,12 @@ function weather_views_data() {
 }
 
 /**
- * Implement hook_views_pre_execute().
- *
- * @param $view
+ * Implements hook_views_pre_execute().
  */
 function weather_views_pre_execute(&$view) {
-  // Check if the view uses the weather places table
+  // Check if the view uses the weather places table.
   if ($view->base_table == 'weather_places') {
-    // Clone the current query for modification
+    // Clone the current query for modification.
     $current_query = &$view->build_info['query'];
     $new_query = clone $current_query;
     // Ensure that the geoid is included in the query. If it was
@@ -218,7 +216,7 @@ function weather_views_pre_execute(&$view) {
     foreach ($result as $row) {
       $geoids[] = $row->weather_places_geoid;
     }
-    // Reduce the geoids to unique values
+    // Reduce the geoids to unique values.
     $geoids = array_unique($geoids);
     sort($geoids);
     // Get all geoids with current forecasts (no download needed).
@@ -228,12 +226,12 @@ function weather_views_pre_execute(&$view) {
       'SELECT * FROM {weather_forecast_information} WHERE geoid IN (:geoids) AND next_download_attempt > :current_utc_time',
       array(':geoids' => $geoids, ':current_utc_time' => $current_utc_time)
     );
-    // Construct an array with geoids with current forecasts
+    // Construct an array with geoids with current forecasts.
     $no_download_needed = array();
     foreach ($current_forecasts as $current_forecast) {
       $no_download_needed[] = $current_forecast->geoid;
     }
-    // Get all geoids which need a download
+    // Get all geoids which need a download.
     $need_downloads = array_diff($geoids, $no_download_needed);
     module_load_include('inc', 'weather', 'weather.common');
     // Use at most three download attempts.

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Detailed template for the weather module.

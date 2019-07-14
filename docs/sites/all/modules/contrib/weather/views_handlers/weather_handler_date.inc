@@ -22,13 +22,14 @@
  */
 
 /**
- * Field handler to 
+ * Field handler to .
  */
 class weather_handler_date extends views_handler_field_date {
+
   /**
    * Override init function for additional fields to add.
    */
-  function init(&$view, &$options) {
+  public function init(&$view, &$options) {
     parent::init($view, $options);
     $this->additional_fields['utc_offset'] = array(
       'table' => 'weather_forecast_information',
@@ -39,7 +40,7 @@ class weather_handler_date extends views_handler_field_date {
   /**
    * Calculate UNIX timestamp of date.
    */
-  function get_value($values, $field = NULL) {
+  public function get_value($values, $field = NULL) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
@@ -51,4 +52,5 @@ class weather_handler_date extends views_handler_field_date {
     $minutes = sprintf("%02d", $utc_offset % 60);
     return strtotime($value . ' ' . $sign . $hours . ':' . $minutes);
   }
+
 }

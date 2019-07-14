@@ -25,10 +25,11 @@
  * Field handler to render the weather condition and return an <img> tag.
  */
 class weather_handler_condition extends views_handler_field {
+
   /**
    * Render translated condition or <img> tag.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
@@ -41,4 +42,5 @@ class weather_handler_condition extends views_handler_field {
       return $condition;
     }
   }
+
 }

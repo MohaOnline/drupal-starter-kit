@@ -25,13 +25,15 @@
  * Field handler to render UTC offset.
  */
 class weather_handler_utc_offset extends views_handler_field_numeric {
+
   /**
    * Render UTC offset.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
     return $values->{$this->field_alias};
   }
+
 }

@@ -35,7 +35,7 @@
  * @param int $time
  *   Timestamp for which the weather should be returned. This is only
  *   needed to enable proper testing of the module.
- * 
+ *
  * @return array
  *   Weather array with forecast information.
  */
@@ -93,16 +93,16 @@ function weather_get_forecasts_from_database($geoid, $utc_offset, $days, $detail
 
 /**
  * Create a weather array with the forecast data from database.
- * 
+ *
  * @param array $forecasts
- * Raw forecast data from database.
- * 
+ *   Raw forecast data from database.
+ *
  * @return array
- * Weather array with forecast information.
+ *   Weather array with forecast information.
  */
 function _weather_create_weather_array($forecasts) {
   $weather = array();
-  // Cycle through all forecasts and set up a hierarchical array structure
+  // Cycle through all forecasts and set up a hierarchical array structure.
   foreach ($forecasts as $forecast) {
     list($day_from, $time_from) = explode(' ', $forecast->time_from);
     $time_range = substr($time_from, 0, 5);
@@ -123,10 +123,10 @@ function _weather_create_weather_array($forecasts) {
 
 /**
  * Downloads a new forecast from yr.no.
- * 
+ *
  * @param string $geoid
  *   The GeoID for which the forecasts should be downloaded.
- * 
+ *
  * @return bool
  *   TRUE on success, FALSE on failure.
  */
@@ -144,7 +144,7 @@ function _weather_download_forecast($geoid) {
     }
     return _weather_parse_forecast($xml, $geoid);
   }
-  // Specify timeout in seconds
+  // Specify timeout in seconds.
   $timeout = 10;
   module_load_include('inc', 'weather', 'weather.common');
   $url = _weather_get_link_for_geoid($geoid, 'yr');
@@ -157,7 +157,7 @@ function _weather_download_forecast($geoid) {
     // Make an entry about this error into the watchdog table.
     watchdog('weather', 'Download of forecast failed: @error',
       array('@error' => $response->error), WATCHDOG_ERROR);
-    // Show a message to users with administration priviledges
+    // Show a message to users with administration priviledges.
     if (user_access('administer custom weather block') or user_access('administer site configuration')) {
       drupal_set_message(t('Download of forecast failed: @error',
         array('@error' => $response->error)), 'error');
@@ -172,7 +172,7 @@ function _weather_download_forecast($geoid) {
  *   XML to be parsed.
  * @param string $geoid
  *   The GeoID for which the forecasts should be parsed.
- * 
+ *
  * @return bool
  *   TRUE on success, FALSE on failure.
  */
@@ -206,7 +206,7 @@ function _weather_parse_forecast($xml, $geoid = '') {
   $meta['next_download_attempt'] = $meta['next_update'];
   // Merge meta information for this location.
   // This prevents an integrity constraint violation, if multiple
-  // calls to this function occur at the same time. See bug #1412352
+  // calls to this function occur at the same time. See bug #1412352.
   db_merge('weather_forecast_information')
     ->key(array('geoid' => $meta['geoid']))
     ->fields($meta)
@@ -262,13 +262,13 @@ function _weather_update_places($fc) {
   $place['country'] = (string) $fc->location->country;
   $place['name'] = (string) $fc->location->name;
   $url = (string) $fc->credit->link['url'];
-  // Remove "http://www.yr.no/place/" from the URL
+  // Remove "http://www.yr.no/place/" from the URL.
   $link = substr($url, 23);
   // Split by slashes and remove country (first item) and "forecast.xml" (last item)
   $link_parts = explode('/', $link);
-  // Remove country
+  // Remove country.
   array_shift($link_parts);
-  // Remove "forecast.xml"
+  // Remove "forecast.xml".
   array_pop($link_parts);
   $place['link'] = implode('/', $link_parts);
   // Fetch stored information about geoid.

@@ -25,10 +25,11 @@
  * Field handler to render the wind direction.
  */
 class weather_handler_wind_direction extends views_handler_field {
+
   /**
    * Setup default settings.
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['wind_settings'] = array('default' => 'normal');
     return $options;
@@ -37,7 +38,7 @@ class weather_handler_wind_direction extends views_handler_field {
   /**
    * Provide settings to select for wind direction.
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     $form['wind_settings'] = array(
       '#title' => t('Formatting of wind direction display'),
       '#description' => t('Select formatting for wind directions or display only value.'),
@@ -58,7 +59,7 @@ class weather_handler_wind_direction extends views_handler_field {
   /**
    * Render wind information with selected unit.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
@@ -66,4 +67,5 @@ class weather_handler_wind_direction extends views_handler_field {
     module_load_include('inc', 'weather', 'weather_theme');
     return weather_format_wind_direction($value, $this->options['wind_settings']);
   }
+
 }

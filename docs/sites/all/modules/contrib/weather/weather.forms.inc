@@ -50,7 +50,8 @@ function weather_admin_main_page() {
       $rows[] = array(array(
         'data' => l(t('Add location to this display'), $path . $display_number . '/add'),
         'colspan' => 2,
-      ));
+      ),
+      );
 
       $output .= theme('table', array('header' => $header, 'rows' => $rows));
       if (isset($form['pager']['#value'])) {
@@ -64,7 +65,7 @@ function weather_admin_main_page() {
 }
 
 /**
- * Construct a form for general settings of the Weather module
+ * Construct a form for general settings of the Weather module.
  */
 function weather_admin_main_page_form() {
   // Determine the active theme path.
@@ -91,13 +92,13 @@ function weather_admin_main_page_form() {
 }
 
 /**
- * Handle the submission for general settings of the Weather module
+ * Handle the submission for general settings of the Weather module.
  */
 function weather_admin_main_page_form_submit($form, &$form_state) {
   $directory = $form_state['values']['weather_image_directory'];
   // Remove whitespace and directory separators from the string.
   $directory = trim(trim($directory, '/\\'));
-  // Replace Windows-style directory separators with Unix separators
+  // Replace Windows-style directory separators with Unix separators.
   $directory = implode('/', explode('\\', $directory));
   variable_set('weather_image_directory', $directory);
   variable_set('weather_forecast_days', $form_state['values']['weather_forecast_days']);
@@ -109,17 +110,17 @@ function weather_admin_main_page_form_submit($form, &$form_state) {
  */
 function weather_admin_places() {
   $output = '';
-  // Create form for adding places
+  // Create form for adding places.
   $form = drupal_get_form('weather_admin_places_form');
   $output .= drupal_render($form);
-  // Create tables for modified places
+  // Create tables for modified places.
   $tables = array(
     'added' => t('Added places'),
     'modified' => t('Modified places'),
   );
   foreach ($tables as $status => $caption) {
     $header = array(t('GeoID'), t('Latitude'), t('Longitude'),
-      t('Country'), t('Name'), t('Link')
+      t('Country'), t('Name'), t('Link'),
     );
     $rows = array();
     $result = db_query('SELECT * FROM {weather_places}
@@ -147,7 +148,7 @@ function weather_admin_places() {
 }
 
 /**
- * Construct a form for place additions of the Weather module
+ * Construct a form for place additions of the Weather module.
  */
 function weather_admin_places_form() {
   $form['weather_yrno_url'] = array(
@@ -163,26 +164,26 @@ function weather_admin_places_form() {
 }
 
 /**
- * Handle the submission of a new place
+ * Handle the submission of a new place.
  */
 function weather_admin_places_form_submit($form, &$form_state) {
   module_load_include('inc', 'weather', 'weather_parser');
   $url = $form_state['values']['weather_yrno_url'];
   // Remove whitespace from the string.
   $url = trim($url);
-  // Check for the english version
+  // Check for the english version.
   if (substr($url, 0, 23) != 'http://www.yr.no/place/') {
     drupal_set_message(t('Please make sure to use the English version of the forecast, starting with "http://www.yr.no/<strong>place</strong>/".'), 'error');
     return;
   }
   // Ensure that the link is not known yet.
-  // Remove "http://www.yr.no/place/" from the URL
+  // Remove "http://www.yr.no/place/" from the URL.
   $link = substr($url, 23);
-  // Remove trailing slash
+  // Remove trailing slash.
   $link = trim($link, '/');
   // Split by slashes and remove country (first item)
   $link_parts = explode('/', $link);
-  // Remove country
+  // Remove country.
   $country = array_shift($link_parts);
   $link = implode('/', $link_parts);
   $result = db_query('SELECT * FROM {weather_places} WHERE country = :country AND link = :link',
@@ -216,7 +217,7 @@ function weather_admin_places_form_submit($form, &$form_state) {
 function weather_user_main_page($uid) {
   $header = array(
     t('Displayed name'),
-    t('Weight')
+    t('Weight'),
   );
   $path = 'user/' . $uid . '/weather/';
   $rows = array();
@@ -226,14 +227,15 @@ function weather_user_main_page($uid) {
   foreach ($result as $location) {
     $rows[] = array(
       l($location->displayed_name, $path . $location->id),
-      $location->weight
+      $location->weight,
     );
   }
   // Insert link for adding locations into the table as last row.
   $rows[] = array(array(
     'data' => l(t('Add location to this display'), $path . 'add'),
     'colspan' => 2,
-  ));
+  ),
+  );
   $output = theme('table', array('header' => $header, 'rows' => $rows));
   if (isset($form['pager']['#value'])) {
     $output .= drupal_render($form['pager']);
@@ -254,7 +256,7 @@ function weather_user_main_page($uid) {
  * @return array
  *   Form array for the weather display.
  */
-function weather_display_config_form($form, &$form_state, $display_type, $display_number=NULL) {
+function weather_display_config_form($form, &$form_state, $display_type, $display_number = NULL) {
   module_load_include('inc', 'weather', 'weather.common');
   $mode = 'edit';
   if ($display_number == 'add') {
@@ -286,7 +288,9 @@ function weather_display_config_form($form, &$form_state, $display_type, $displa
     '#title' => t('Temperature'),
     '#description' => t('Unit for displaying temperatures.'),
     '#default_value' => $config->config['temperature'],
-    '#options' => array('celsius' => t('Celsius'), 'fahrenheit' => t('Fahrenheit'),
+    '#options' => array(
+      'celsius' => t('Celsius'),
+      'fahrenheit' => t('Fahrenheit'),
       'celsiusfahrenheit' => t('Celsius / Fahrenheit'),
       'fahrenheitcelsius' => t('Fahrenheit / Celsius'),
     ),
@@ -296,8 +300,12 @@ function weather_display_config_form($form, &$form_state, $display_type, $displa
     '#title' => t('Wind speed'),
     '#description' => t('Unit for displaying wind speeds.'),
     '#default_value' => $config->config['windspeed'],
-    '#options' => array('kmh' => t('km/h'), 'mph' => t('mph'), 'knots' => t('Knots'),
-      'mps' => t('meter/s'), 'beaufort' => t('Beaufort'),
+    '#options' => array(
+      'kmh' => t('km/h'),
+      'mph' => t('mph'),
+      'knots' => t('Knots'),
+      'mps' => t('meter/s'),
+      'beaufort' => t('Beaufort'),
     ),
   );
   $form['config']['pressure'] = array(
@@ -305,7 +313,11 @@ function weather_display_config_form($form, &$form_state, $display_type, $displa
     '#title' => t('Pressure'),
     '#description' => t('Unit for displaying pressure.'),
     '#default_value' => $config->config['pressure'],
-    '#options' => array('hpa' => t('hPa'), 'kpa' => t('kPa'), 'inhg' => t('inHg'), 'mmhg' => t('mmHg'),
+    '#options' => array(
+      'hpa' => t('hPa'),
+      'kpa' => t('kPa'),
+      'inhg' => t('inHg'),
+      'mmhg' => t('mmHg'),
     ),
   );
   $form['config']['distance'] = array(
@@ -371,7 +383,7 @@ function weather_display_config_form($form, &$form_state, $display_type, $displa
 }
 
 /**
- * Implement hook_form_submit().
+ * Implements hook_form_submit().
  */
 function weather_display_config_form_submit($form, &$form_state) {
   if ($form_state['values']['number'] == NULL) {
@@ -400,7 +412,7 @@ function weather_display_config_form_submit($form, &$form_state) {
     db_merge('weather_displays')
       ->key(array(
         'type' => $form_state['values']['type'],
-        'number' => $form_state['values']['number']
+        'number' => $form_state['values']['number'],
       ))
       ->fields(array(
         'config' => serialize($form_state['values']['config']),
@@ -417,7 +429,7 @@ function weather_display_config_form_submit($form, &$form_state) {
 }
 
 /**
- * Implement hook_form_submit().
+ * Implements hook_form_submit().
  */
 function weather_display_delete_submit($form, &$form_state) {
   if ($form_state['values']['type'] == 'user') {
@@ -454,7 +466,7 @@ function weather_display_delete_confirm($form, &$form_state, $display_type, $dis
 }
 
 /**
- * Implement actual deletion of display.
+ * Implements actual deletion of display.
  */
 function weather_display_delete_confirm_submit($form, &$form_state) {
   // Delete associated locations.
@@ -533,7 +545,7 @@ function weather_get_places($country) {
  * @return array
  *   Form array.
  */
-function weather_location_settings_form($form, &$form_state, $display_type, $display_number, $id=NULL) {
+function weather_location_settings_form($form, &$form_state, $display_type, $display_number, $id = NULL) {
   $mode = 'edit';
   // Handle the addition of a new place.
   if ($id == 'add') {
@@ -647,7 +659,7 @@ function weather_location_settings_form_place_callback($form, $form_state) {
 }
 
 /**
- * Implement hook_form_validate().
+ * Implements hook_form_validate().
  */
 function weather_location_settings_form_validate($form, &$form_state) {
   module_load_include('inc', 'weather', 'weather.common');
@@ -658,7 +670,7 @@ function weather_location_settings_form_validate($form, &$form_state) {
 }
 
 /**
- * Implement hook_form_submit().
+ * Implements hook_form_submit().
  */
 function weather_location_settings_form_submit($form, &$form_state) {
   // Determine whether to insert or update a location.
@@ -679,7 +691,7 @@ function weather_location_settings_form_submit($form, &$form_state) {
 }
 
 /**
- * Implement hook_form_submit().
+ * Implements hook_form_submit().
  */
 function weather_location_delete_submit($form, &$form_state) {
   if ($form_state['values']['display_type'] == 'user') {
@@ -730,7 +742,7 @@ function weather_location_delete_confirm($form, &$form_state, $location_id) {
 }
 
 /**
- * Implement actual deletion of location.
+ * Implements actual deletion of location.
  */
 function weather_location_delete_confirm_submit($form, &$form_state) {
   db_delete('weather_displays_places')
@@ -798,7 +810,7 @@ function weather_search_location($search = NULL) {
     foreach ($result as $location) {
       $locations[] = $location;
     }
-    // If there are no results, notify user
+    // If there are no results, notify user.
     if (empty($locations)) {
       drupal_set_message(t('Your search did not return any results.'), 'error');
       drupal_goto('weather');

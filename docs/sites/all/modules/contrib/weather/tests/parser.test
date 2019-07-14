@@ -25,6 +25,7 @@
  * Test class for the parser.
  */
 class WeatherParserTestCase extends DrupalWebTestCase {
+
   /**
    * General information.
    */
@@ -102,9 +103,9 @@ class WeatherParserTestCase extends DrupalWebTestCase {
     $days = array(
       '2013-10-07', '2013-10-08', '2013-10-09', '2013-10-10',
       '2013-10-11', '2013-10-12', '2013-10-13', '2013-10-14',
-      '2013-10-15', '2013-10-16', '2013-10-17'
+      '2013-10-15', '2013-10-16', '2013-10-17',
     );
-    // Set a fixed time for testing to 2013-10-07 20:00:00 UTC
+    // Set a fixed time for testing to 2013-10-07 20:00:00 UTC.
     variable_set('weather_time_for_testing', 1381176000);
     // Fetch all weather forecasts for Hamburg
     // and check the correct days of forecasts.
@@ -131,7 +132,7 @@ class WeatherParserTestCase extends DrupalWebTestCase {
     $weather = weather_get_weather('geonames_2911298', 1, TRUE);
     $this->assertIdentical(array_keys($weather['forecasts']), array_slice($days, 0, 1));
     // Go a few days forward ...
-    // Set a fixed time for testing to 2013-10-12 10:00:00 UTC
+    // Set a fixed time for testing to 2013-10-12 10:00:00 UTC.
     variable_set('weather_time_for_testing', 1381572000);
     // Fetch all weather forecasts for Hamburg
     // and check the correct days of forecasts.
@@ -146,4 +147,5 @@ class WeatherParserTestCase extends DrupalWebTestCase {
     $weather = weather_get_weather('geonames_2911298', 2, TRUE);
     $this->assertIdentical(array_keys($weather['forecasts']), array_slice($days, 5, 2));
   }
+
 }

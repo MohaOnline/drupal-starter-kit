@@ -23,7 +23,7 @@
 
 /**
  * Display a detailed weather forecast for a given place.
- * 
+ *
  * @param string $country
  *   Country of place.
  * @param string $link
@@ -43,14 +43,14 @@ function weather_show_detailed_forecast($country, $link) {
   // Examine the last element of the link.
   if (preg_match('/^[0-9]+$/', $last_link_element)) {
     // Only digits, remove that part from the link.
-    $link = join('/', $link_parts);
+    $link = implode('/', $link_parts);
     // Use the system-wide display with the given number.
     $display_type = 'system-wide';
     $display_number = $last_link_element;
   }
   elseif ($last_link_element == 'u') {
     // Only the letter 'u', remove that part from the link.
-    $link = join('/', $link_parts);
+    $link = implode('/', $link_parts);
     // Use the user's custom display.
     $display_type = 'user';
     $display_number = $user->uid;
@@ -110,7 +110,7 @@ function weather_show_detailed_forecast($country, $link) {
  * @return array
  *   Array of sorted displays.
  */
-function weather_get_displays_in_use($type='system-wide') {
+function weather_get_displays_in_use($type = 'system-wide') {
   return db_query('SELECT number FROM {weather_displays} WHERE type=:type ORDER BY number ASC',
     array(':type' => $type))->fetchCol();
 }
@@ -147,10 +147,10 @@ function weather_get_places_in_use($display_type, $display_number) {
  * @param int $display_number
  *   Display number.
  *
- * @return
+ * @return object
  *   Display configuration.
  */
-function weather_get_display_config($display_type, $display_number=NULL) {
+function weather_get_display_config($display_type, $display_number = NULL) {
   $config = db_query('SELECT * FROM {weather_displays} WHERE type=:type AND number=:number',
     array(':type' => $display_type, ':number' => $display_number))->fetchObject();
   if (empty($config)) {
@@ -199,7 +199,7 @@ function weather_get_information_about_geoid($wanted_geoid) {
 
 /**
  * Construct the link for the given GeoID.
- * 
+ *
  * @param string $geoid
  *   The GeoID to construct the link for.
  * @param string $destination
@@ -207,11 +207,11 @@ function weather_get_information_about_geoid($wanted_geoid) {
  *   'system-wide', 'default', 'user', 'yr', and 'autocomplete'.
  * @param int $number
  *   Optional number of display. Applies only to 'system-wide'.
- * 
+ *
  * @return string
  *   The link for the GeoID.
  */
-function _weather_get_link_for_geoid($geoid, $destination, $number=1) {
+function _weather_get_link_for_geoid($geoid, $destination, $number = 1) {
   $info = weather_get_information_about_geoid($geoid);
   // Conversion rules for all link parts:
   // - Replace all spaces with an underscore.
@@ -225,12 +225,15 @@ function _weather_get_link_for_geoid($geoid, $destination, $number=1) {
     case 'system-wide':
       $link = 'weather/' . $link . '/' . $number;
       break;
+
     case 'default':
       $link = 'weather/' . $link;
       break;
+
     case 'user':
       $link = 'weather/' . $link . '/u';
       break;
+
     case 'yr':
       // Encode special characters except the '/' in the URL.
       // Otherwise, the request will fail on yr.no.
@@ -238,9 +241,11 @@ function _weather_get_link_for_geoid($geoid, $destination, $number=1) {
       $link = str_replace('%2F', '/', $link);
       $link = 'http://www.yr.no/place/' . $link . '/forecast.xml';
       break;
+
     case 'yr.no':
       $link = 'http://www.yr.no/place/' . $link . '/';
       break;
+
     case 'autocomplete':
       // Nothing to do here.
       break;
@@ -307,18 +312,18 @@ function weather_get_nearest_station($latitude, $longitude) {
 
 /**
  * Returns a weather object for the specified GeoID.
- * 
+ *
  * @param string $geoid
  *   GeoID of the place for which the weather is desired.
  * @param int $days
  *   Return weather for specified number of days (0 = all available days).
  * @param bool $detailed
  *   Return detailed forecasts or just one forecast per day.
- * 
+ *
  * @return array
  *   Weather array with forecast information.
  */
-function weather_get_weather($geoid, $days=0, $detailed=TRUE) {
+function weather_get_weather($geoid, $days = 0, $detailed = TRUE) {
   // Support testing of module with fixed times instead of current time.
   $time = variable_get('weather_time_for_testing', REQUEST_TIME);
   module_load_include('inc', 'weather', 'weather_parser');

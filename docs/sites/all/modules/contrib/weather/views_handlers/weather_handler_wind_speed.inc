@@ -25,10 +25,11 @@
  * Field handler to render the wind speed.
  */
 class weather_handler_wind_speed extends views_handler_field {
+
   /**
    * Setup default unit for wind speed.
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['unit'] = array('default' => 'kmh');
     return $options;
@@ -37,7 +38,7 @@ class weather_handler_wind_speed extends views_handler_field {
   /**
    * Provide units to select for wind speed.
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     $form['unit'] = array(
       '#title' => t('Unit for wind speed display'),
       '#description' => t('Select unit for formatted wind speeds or display only value.'),
@@ -62,7 +63,7 @@ class weather_handler_wind_speed extends views_handler_field {
   /**
    * Render wind speed with selected unit.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
@@ -70,4 +71,5 @@ class weather_handler_wind_speed extends views_handler_field {
     module_load_include('inc', 'weather', 'weather_theme');
     return weather_format_wind_speed($value, $this->options['unit']);
   }
+
 }

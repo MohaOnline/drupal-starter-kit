@@ -25,10 +25,11 @@
  * Field handler to render the wind condition.
  */
 class weather_handler_wind extends views_handler_field {
+
   /**
    * Override init function for additional fields to add.
    */
-  function init(&$view, &$options) {
+  public function init(&$view, &$options) {
     parent::init($view, $options);
     $this->additional_fields['wind_speed'] = 'wind_speed';
   }
@@ -36,7 +37,7 @@ class weather_handler_wind extends views_handler_field {
   /**
    * Setup default options for wind formatting.
    */
-  function option_definition() {
+  public function option_definition() {
     $options = parent::option_definition();
     $options['wind_settings'] = array('default' => 'normal');
     $options['unit'] = array('default' => 'kmh');
@@ -46,7 +47,7 @@ class weather_handler_wind extends views_handler_field {
   /**
    * Provide settings to select for wind formatting.
    */
-  function options_form(&$form, &$form_state) {
+  public function options_form(&$form, &$form_state) {
     $form['wind_settings'] = array(
       '#title' => t('Formatting of wind direction display'),
       '#description' => t('Select formatting for wind directions.'),
@@ -78,7 +79,7 @@ class weather_handler_wind extends views_handler_field {
   /**
    * Render wind information with selected unit.
    */
-  function render($values) {
+  public function render($values) {
     if (is_null($values->{$this->field_alias})) {
       return;
     }
@@ -91,4 +92,5 @@ class weather_handler_wind extends views_handler_field {
     module_load_include('inc', 'weather', 'weather_theme');
     return weather_format_wind($wind_direction, $wind_speed, $this->options['unit'], $abbreviated, $exact_degree);
   }
+
 }
