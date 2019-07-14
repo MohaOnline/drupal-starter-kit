@@ -1,0 +1,93 @@
+<?php
+
+/**
+ * @file
+ * Datex install file, for adding or removing datex variables.
+ */
+
+function _datex_fix_missing_datex_api_module() {
+  $modules = ['datex_api'];
+  db_delete('system')
+    ->condition('name', $modules, 'IN')
+    ->condition('type', 'module')
+    ->execute();
+}
+
+function _datex_fix_module_weights() {
+  // To run after schedule module.
+  db_update('system')
+    ->fields(['weight' => 100])
+    ->condition('name', 'datex', '=')
+    ->execute();
+}
+
+
+/**
+ * Implements hook_disable().
+ */
+function datex_disable() {
+  _datex_fix_missing_datex_api_module();
+}
+
+/**
+ * Implements hook_install().
+ */
+function datex_install() {
+  _datex_fix_module_weights();
+  _datex_fix_missing_datex_api_module();
+
+  datex_uninstall();
+
+  variable_set('datex_schema', [
+    'default' => [
+      'en' => 'persian',
+      'fa' => 'persian',
+    ],
+  ]);
+
+  // popup
+  variable_set('datex_popup_js_minified', TRUE);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function datex_uninstall() {
+  _datex_fix_missing_datex_api_module();
+
+  // Because we messed up old versions, leftover variables might be there.
+  $variables = array_map('unserialize', db_query('SELECT name, value FROM {variable}')->fetchAllKeyed());
+  $datex_variables = [];
+  foreach ($variables as $name => $variable) {
+    if (substr($name, 0, strlen('datex')) === 'datex') {
+      variable_del($name);
+    }
+  }
+}
+
+
+/**
+ * Implements hook_requirements().
+ */
+function datex_requirements() {
+  _datex_fix_missing_datex_api_module();
+
+  $requirements = [];
+  $t = get_t();
+
+  // we need DATEX_USE_INTL.
+  require_once 'datex.module';
+
+  $intl = ['@intl' => 'http://php.net/manual/en/intl.installation.php'];
+  $requirements['datex_intl'] = [
+    'title' => $t('PHP Intl'),
+    'severity' => DATEX_USE_INTL ? REQUIREMENT_OK : REQUIREMENT_WARNING,
+    'value' => DATEX_USE_INTL ? $t('Available') : $t('Not available'),
+    'description' => $t(
+      '<a href="@intl">php-intl</a> ' .
+      'is required for full support of non-gregorian calendars. Else, datex ' .
+      'functionality will be very limited', $intl),
+  ];
+
+  return $requirements;
+}

@@ -1,0 +1,305 @@
+<?php
+
+/**
+ * @file
+ * Localized js date picker.
+ */
+
+require_once 'form.inc';
+
+
+/**
+ * Implements hook_enable().
+ */
+function datex_popup_enable() {
+  if (!module_exists('jquery_update')) {
+    drupal_set_message(t("Attention: datex-popup won't work with old versions of jquery. Use jquery_update module."), 'warning');
+  }
+}
+
+/**
+ * Add datex javascript libraries.
+ */
+function _datex_add_lib() {
+  static $self_loaded = FALSE;
+  if ($self_loaded) {
+    return;
+  }
+  $self_loaded = TRUE;
+
+  $datex_module_path = drupal_get_path('module', 'datex_popup');
+  $min = variable_get('datex_popup_js_min', TRUE) ? '.min' : '';
+
+  // Disabled for now
+  $min = '';
+
+  drupal_add_js($datex_module_path . '/asset/datex.js');
+  drupal_add_js($datex_module_path . "/asset/PersianDate/dist/persian-date$min.js");
+  drupal_add_js($datex_module_path . "/asset/pwt.datepicker/dist/js/persian-datepicker$min.js");
+
+  $theme = variable_get('datex_popup_theme', 'none');
+  if ($theme !== 'none') {
+    drupal_add_css($datex_module_path . "/asset/pwt.datepicker/dist/css/theme/persian-datepicker-$theme.min.css");
+  }
+  else {
+    drupal_add_css($datex_module_path . "/asset/pwt.datepicker/dist/css/persian-datepicker$min.css");
+  }
+}
+
+/**
+ * Implements hook_js_alter().
+ *
+ * Whenever date_popup.js is loaded, Remove it and inject datex library.
+ */
+function datex_popup_js_alter(&$js) {
+  foreach (array_keys($js) as $each) {
+    foreach ([
+               'locale.datepicker.js',
+               'date_popup.js',
+               'jquery.ui.datepicker.min.js',
+               'timeentry',
+               'timepicker',
+             ] as $unset) {
+      if (strpos($each, $unset) !== FALSE) {
+        unset($js[$each]);
+        // instead use ours
+        _datex_add_lib();
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_css_alter().
+ */
+function datex_popup_css_alter(&$css) {
+  foreach (array_keys($css) as $each) {
+    foreach ([
+               'jquery.ui.datepicker.css',
+               'date_popup',
+               'timeentry',
+               'timepicker',
+             ] as $unset) {
+      if (strpos($each, $unset) !== FALSE) {
+        unset($css[$each]);
+        // instead use ours
+        _datex_add_lib();
+      }
+    }
+  }
+}
+
+// ____________________________________________________________________________
+
+/**
+ * Convert a gregorian date into timestamp.
+ */
+function _datex_popup_year_to_timestamp(DatexInterface $cal, $greg_year, $want_greg) {
+  $cal->xSetDate($greg_year, 1, 1);
+  if (!$want_greg) {
+    $cal->setDateLocale($cal->format('Y'), 1, 1);
+  }
+  return $cal->getTimestamp();
+}
+
+/**
+ * Parse date string.
+ */
+function _datex_popup_parse(DatexInterface $calendar, $value, $g) {
+  // Somebody please, give this man a regex.
+  if (!is_string($value)) {
+    return NULL;
+  }
+  $value = trim($value);
+
+  // Replace, just to make sure.
+  $date = explode('/', str_replace('\\', '/', $value));
+  if (empty($date)) {
+    return NULL;
+  }
+  foreach ($date as $granul) {
+    if (intval($granul) === 0) {
+      return NULL;
+    }
+  }
+
+  $has_day = in_array('day', $g, TRUE);
+  $has_month = in_array('month', $g, TRUE);
+
+  if ($has_day && count($date) < 3 || $has_month && count($date) < 2) {
+    return NULL;
+  }
+  $year = (int) ($date[0]);
+  $month = $has_month ? (int) ($date[1]) : 6;
+  $day = $has_day ? (int) ($date[2]) : 25;
+
+  $calendar->setDateLocale($year, $month, $day);
+  return TRUE;
+}
+
+/**
+ * Form element validation callback for date popup form element.
+ */
+function _datex_date_popup_field_element_validate_callback(&$element, &$fs) {
+  if (date_hidden_element($element)) {
+    return;
+  }
+
+  $greg = FALSE;
+  $calendar = _datex_date_field_calendar($element);
+  $calendar = _datex_date_field_calendar($element);
+  if (!$calendar) {
+    $calendar = datex_factory();
+    if (!$calendar) {
+      $calendar = datex_factory(NULL, 'en');
+    }
+    $greg = $calendar->getCalendarName() !== 'persian';
+  }
+  $date_fmt = date_popup_date_format($element);
+  $time_fmt = date_popup_time_format($element);
+  $dg = date_popup_date_granularity($element);
+  $tg = date_popup_time_granularity($element);
+  $input = _datex_get_fs($element, $fs, NULL, TRUE);
+  $has_date_input = $input && isset($input['date']) && !empty($input['date']);
+  $has_time_input = $input && isset($input['time']) && !empty($input['time']);
+  $has_default = !empty($element['#default_value']);
+  $def = date_default_date($element);
+  $has_month = in_array('month', $dg);
+  $has_day = in_array('day', $dg);
+  list($from, $to) = date_range_years($element['#date_year_range']);
+  $from = _datex_popup_year_to_timestamp($calendar, $from, $greg) . '000';
+  $to = _datex_popup_year_to_timestamp($calendar, $to, $greg) . '000';
+  if (!$greg && !$has_month) {
+    $def->setDate($def->format('Y'), 6, $def->format('j'));
+  }
+  if (!$greg && !$has_day) {
+    $def->setDate($def->format('Y'), $def->format('n'), 25);
+  }
+  $calendar->setTimestamp($def->getTimestamp());
+
+  // Remove minute/second, if there should be none.
+  $v = _datex_get_fs($element, $fs, 'time', TRUE);
+  if ($v) {
+    if (count(explode(':', $v)) === 3 && !in_array('second', $tg, TRUE)) {
+      $v = explode(':', $v);
+      unset($v[2]);
+      $v = implode(':', $v);
+      _datex_set_fs($element, $fs, $v, 'time', TRUE);
+    }
+    if (count(explode(':', $v)) === 2 && !in_array('minute', $tg, TRUE)) {
+      $v = explode(':', $v);
+      unset($v[1]);
+      $v = implode(':', $v);
+      _datex_set_fs($element, $fs, $v, 'time', TRUE);
+    }
+  }
+  $v = _datex_get_fs($element, $fs, 'time', FALSE);
+  if ($v) {
+    if (count(explode(':', $v)) === 3 && !in_array('second', $tg, TRUE)) {
+      $v = explode(':', $v);
+      unset($v[2]);
+      $v = implode(':', $v);
+      _datex_set_fs($element, $fs, $v, 'time', FALSE);
+    }
+    if (count(explode(':', $v)) === 2 && !in_array('minute', $tg, TRUE)) {
+      $v = explode(':', $v);
+      unset($v[1]);
+      $v = implode(':', $v);
+      _datex_set_fs($element, $fs, $v, 'time', FALSE);
+    }
+  }
+
+  $parse = $has_date_input ? _datex_popup_parse($calendar, $input['date'], $dg) : NULL;
+  if ($parse === NULL) {
+    // Let date_popup handle this.
+    return;
+  }
+  if ($parse === FALSE) {
+    form_set_error($element['#name'], t('Invalid date'));
+    return;
+  }
+  $v = $calendar->xFormat($date_fmt);
+  _datex_set_fs($element, $fs, $v, 'date', TRUE);
+  _datex_set_fs($element, $fs, $v, 'date', FALSE);
+}
+
+/**
+ * Implements hook_date_popup_process_alter().
+ */
+function datex_popup_date_popup_process_alter(&$element, &$fs) {
+  $greg = FALSE;
+  $calendar = _datex_date_field_calendar($element, TRUE, 'en');
+  if (!$calendar) {
+    $calendar = datex_factory(NULL, NULL, 'en');
+    if (!$calendar) {
+      $calendar = datex_factory(NULL, 'en', 'en');
+    }
+    $greg = $calendar->getCalendarName() !== 'persian';
+  }
+  $date_fmt = date_popup_date_format($element);
+  $time_fmt = date_popup_time_format($element);
+  $dg = date_popup_date_granularity($element);
+  $tg = date_popup_time_granularity($element);
+  $input = _datex_get_fs($element, $fs, NULL, TRUE);
+  $has_date_input = $input && isset($input['date']) && !empty($input['date']);
+  $has_time_input = $input && isset($input['time']) && !empty($input['time']);
+  $has_default = !empty($element['#default_value']);
+  $def = date_default_date($element);
+  $has_month = in_array('month', $dg);
+  $has_day = in_array('day', $dg);
+  list($from, $to) = date_range_years($element['#date_year_range']);
+  $from = _datex_popup_year_to_timestamp($calendar, $from, $greg) . '000';
+  $to = _datex_popup_year_to_timestamp($calendar, $to, $greg) . '000';
+  if (!$greg && !$has_month) {
+    $def->setDate($def->format('Y'), 6, $def->format('j'));
+  }
+  if (!$greg && !$has_day) {
+    $def->setDate($def->format('Y'), $def->format('n'), 25);
+  }
+  $calendar->setTimestamp($def->getTimestamp());
+
+  // ____________________________________________ INFO GATHERED, NOW THE ACTUAL
+
+  $extra = [
+    'min' => $from,
+    'max' => $to,
+    'has-init' => 0, #$has_default || $has_date_input ? 1 : 0,
+    'has-month' => in_array('month', $dg, TRUE),
+    'has-day' => in_array('day', $dg, TRUE),
+    'value' => $calendar->xFormat('Y-n-j'),
+    'tp' => $calendar->getCalendarName(),
+    'init' => $calendar->getTimestamp() . '000',
+    'has-minute' => in_array('minute', $tg, TRUE),
+  ];
+  if ($calendar->getCalendarName() === 'persian') {
+    $element['date']['#description'] = 'Eg 1390/02/24';
+    $extra['tp'] = 'persian';
+  }
+  else {
+    $element['date']['#description'] = 'Eg 2015/02/24';
+    $extra['tp'] = 'gregorian';
+  }
+
+  if (!isset($element['date']['#attributes'])) {
+    $element['date']['#attributes'] = [];
+  }
+  if (!isset($element['time']['#attributes'])) {
+    $element['time']['#attributes'] = [];
+  }
+
+  foreach (['date', 'time'] as $key) {
+    $element[$key]['#attributes']['autocomplete'] = 'off';
+    foreach ($extra as $name => $value) {
+      $element[$key]['#attributes']['data-datex-' . $name] = $value;
+    }
+  }
+
+  if ($has_date_input) {
+    $element['#value']['date'] = $input['date'];
+    $element['date']['#value'] = $input['date'];
+  }
+  elseif (!empty($element['date']['#value'])) {
+    $element['date']['#value'] = $calendar->format('Y/n/j');
+  }
+}
+

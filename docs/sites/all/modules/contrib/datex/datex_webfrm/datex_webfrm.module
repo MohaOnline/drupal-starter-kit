@@ -1,0 +1,110 @@
+<?php
+
+/**
+ * Implements hook_js_alter().
+ *
+ * ensure datex_webfrm is added BEFORE webform.
+ */
+function datex_webfrm_js_alter(&$js) {
+  if (!module_exists('datex_popup')) {
+    return;
+  }
+
+  $datex_module_path = drupal_get_path('module', 'datex_webfrm');
+  drupal_add_js($datex_module_path . '/datex_webfrm.js');
+
+  // This function is called and there is a second pass. In the second pass
+  // out library will be there. We'll bring it to the beginning.
+  foreach (array_keys($js) as $each) {
+    if (strpos($each, 'datex_webfrm') !== FALSE) {
+      $u = $js[$each];
+      unset($js[$each]);
+      array_unshift($js, $u);
+    }
+  }
+}
+
+function _datex_webform_date_element_validate(&$el, &$fs, &$f) {
+  $calendar = datex_factory();
+
+  if (!$calendar) {
+    return;
+  }
+  if ($el['month']['#value'] === '' || $el['day']['#value'] === '' || $el['year']['#value'] === '') {
+    return;
+  }
+  foreach (['day', 'month', 'year'] as $field_type) {
+    if (empty($el[$field_type]['#value'])) {
+      return;
+    }
+  }
+
+  $calendar->setDateLocale($el['year']['#value'], $el['month']['#value'], $el['day']['#value']);
+  $el['year']['#value'] = $calendar->xFormat('Y');
+  $el['month']['#value'] = $calendar->xFormat('n');
+  $el['day']['#value'] = $calendar->xFormat('j');
+}
+
+function _datex_webform_date_element_process(&$el, &$fs, &$f) {
+  $calendar = datex_factory();
+  if (!$calendar) {
+    return;
+  }
+
+  $req = $el['#webform_component']['required'];
+  $year_now = intval($calendar->format('Y'));
+
+  $year_before = webform_strtodate('Y', $el['#webform_component']['extra']['start_date']);
+  $calendar->xSetDate($year_before, 1, 1);
+  $year_before = intval($calendar->format('Y'));
+
+  $year_after = webform_strtodate('Y', $el['#webform_component']['extra']['end_date']);
+  $calendar->xSetDate($year_after, 1, 1);
+  $year_after = intval($calendar->format('Y'));
+
+  $el['year']['#options'] = $req
+    ? []
+    : [array_shift($el['year']['#options'])];
+  for ($year = $year_before; $year <= $year_after; $year++) {
+    $el['year']['#options'][$year] = $year;
+  }
+
+  $one = array_shift($el['month']['#options']);
+  $el['month']['#options'] = $calendar->listOptions('monthNames', $el['#required']);
+  array_shift($el['month']['#options']);
+  if (!$req) {
+    array_unshift($el['month']['#options'], $one);
+  }
+
+  return $el;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function datex_webfrm_form_alter(&$f, &$fs, $form_id) {
+  if (
+    datex_factory(NULL, NULL, 'en')
+    && isset($f['submitted'])
+    && isset($f['#process'])
+    && is_array($f['#process'])
+    && in_array('webform_client_form_process', $f['#process'])
+    && isset($f['submitted'])
+    && is_array($f['submitted'])
+  ) {
+    foreach ($f['submitted'] as $name => &$el) {
+      if ($el['#type'] === 'date') {
+        $el['#process'] = array_merge(
+          $el['#process'],
+          ['_datex_webform_date_element_process']
+        );
+        $el['#element_validate'] = array_merge(
+          ['_datex_webform_date_element_validate'],
+          $el['#element_validate']
+        );
+      }
+    }
+  }
+}
+
+

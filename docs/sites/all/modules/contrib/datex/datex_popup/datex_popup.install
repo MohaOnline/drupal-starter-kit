@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * @file
+ * Check to see if jquery_update is available.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function datex_popup_requirements() {
+  $requirements = [];
+  $t = get_t();
+
+  $requirements['datex_popup_jquery'] = [
+    'title' => $t('JQuery Library Version'),
+    'severity' => module_exists('jquery_update') ? REQUIREMENT_OK : REQUIREMENT_INFO,
+    'value' => module_exists('jquery_update') ? $t('jquery_update is enabled') : $t('jquery_update missing'),
+    'description' => $t(
+      'Make sure you have the latest version of library loaded' .
+      ' Use the jquery_update module or any other mean of updating the jquery library.'),
+  ];
+
+  return $requirements;
+}
