@@ -1,0 +1,174 @@
+<?php
+/**
+ * Install the tripal stock module including it's content type
+ * @file
+ */
+
+/**
+ * Implements hook_disable().
+ * Disable default views when module is disabled
+ *
+ * @ingroup tripal_legacy_stock
+ */
+function tripal_stock_disable() {
+
+  // Disable all default views provided by this module
+  require_once("tripal_stock.views_default.inc");
+  $views = tripal_stock_views_default_views();
+  foreach (array_keys($views) as $view_name) {
+    tripal_disable_view($view_name,FALSE,array('suppress_error' => TRUE));
+  }
+
+}
+
+/**
+ * Implementation of hook_requirements().
+ *
+ * @ingroup tripal_legacy_stock
+ */
+function tripal_stock_requirements($phase) {
+  $requirements = array();
+  if ($phase == 'install') {
+    // make sure chado is installed
+    if (!$GLOBALS["chado_is_installed"]) {
+      $requirements ['tripal_stock'] = array(
+        'title' => "tripal_stock",
+        'value' => "ERROR: Chado must be installed before this module can be enabled",
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Implementation of hook_install().
+ *
+ * @ingroup tripal_legacy_stock
+ */
+function tripal_stock_install() {
+  // set the default vocabularies
+  tripal_set_default_cv('stock', 'type_id', 'stock_type');
+  tripal_set_default_cv('stockprop', 'type_id', 'stock_property');
+  tripal_set_default_cv('stock_relationship', 'type_id', 'stock_relationship');
+
+  // add the materialized view
+  tripal_stock_add_organism_count_mview();
+}
+
+/**
+ * Implementation of hook_uninstall().
+ *
+ * @ingroup tripal_legacy_stock
+ */
+function tripal_stock_uninstall() {
+
+}
+
+/**
+ * Implementation of hook_schema().
+ *
+ * @ingroup tripal_legacy_stock
+ */
+function tripal_stock_schema() {
+  $schema['chado_stock'] = array(
+    'fields' => array(
+      'vid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'stock_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'stock_id' => array('stock_id'),
+       'nid' => array('nid'),
+    ),
+    'unique' => array(
+      'stock_id' => array('stock_id'),
+    ),
+    'primary key' => array('vid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Creates a materialized view that stores the type & number of stocks per organism
+ *
+ * @ingroup tripal_stock
+ */
+function tripal_stock_add_organism_count_mview() {
+  $view_name = 'organism_stock_count';
+  $comment = 'Stores the type and number of stocks per organism';
+
+  $schema = array(
+    'description' => $comment,
+    'table' => $view_name,
+    'fields' => array(
+      'organism_id' => array(
+        'size' => 'big',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'genus' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'species' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+      'common_name' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'num_stocks' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'cvterm_id' => array(
+        'size' => 'big',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'stock_type' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'organism_stock_count_idx1' => array('organism_id'),
+      'organism_stock_count_idx2' => array('cvterm_id'),
+      'organism_stock_count_idx3' => array('stock_type'),
+    ),
+  );
+
+  $sql = "
+    SELECT
+        O.organism_id, O.genus, O.species, O.common_name,
+        count(S.stock_id) as num_stocks,
+        CVT.cvterm_id, CVT.name as stock_type
+     FROM organism O
+        INNER JOIN stock S  ON O.Organism_id = S.organism_id
+        INNER JOIN cvterm CVT ON S.type_id     = CVT.cvterm_id
+     GROUP BY
+        O.Organism_id, O.genus, O.species, O.common_name, CVT.cvterm_id, CVT.name
+  ";
+
+  tripal_add_mview($view_name, 'tripal_stock', $schema, $sql, $comment);
+}
+

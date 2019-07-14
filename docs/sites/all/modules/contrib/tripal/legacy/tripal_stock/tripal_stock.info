@@ -1,0 +1,16 @@
+name = Tripal Stock
+description = Supports the stock tables of Chado by providing pages for viewing, and editing of stocks. Table list: http://gmod.org/wiki/Chado_Stock_Module
+core = 7.x
+project = tripal
+package = Tripal v2 Legacy
+version = 7.x-3.1
+
+dependencies[] = tripal_core
+dependencies[] = tripal_chado_views
+dependencies[] = tripal_organism
+
+; Information added by Drupal.org packaging script on 2019-06-26
+version = "7.x-3.2"
+core = "7.x"
+project = "tripal"
+datestamp = "1561520293"

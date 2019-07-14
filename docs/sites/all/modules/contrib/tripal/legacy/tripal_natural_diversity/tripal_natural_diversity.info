@@ -1,0 +1,20 @@
+name = Tripal Natural Diversity
+description = Supports the natural diversity (ND) tables of Chado by providing pages for viewing of data in the ND tables as associated with features, stocks and projects. Table list at: http://gmod.org/wiki/Chado_Natural_Diversity_Module
+core = 7.x
+project = tripal
+package = Tripal v2 Legacy
+version = 7.x-3.1
+
+dependencies[] = tripal_core
+dependencies[] = tripal_chado_views
+dependencies[] = tripal_cv
+dependencies[] = tripal_db
+dependencies[] = tripal_genetic
+dependencies[] = tripal_phenotype
+dependencies[] = tripal_project
+
+; Information added by Drupal.org packaging script on 2019-06-26
+version = "7.x-3.2"
+core = "7.x"
+project = "tripal"
+datestamp = "1561520293"

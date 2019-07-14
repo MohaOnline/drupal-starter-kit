@@ -1,0 +1,18 @@
+name = Tripal Phylotree
+description = Supports the phylogeny tables of Chado by providing pages for viewing and editing of phylotrees. Table list at: http://gmod.org/wiki/chado_phylotree_Module. This module was added to Tripal through collaboration with the LegumeInformation group (http://http://legumeinfo.org/)
+core = 7.x
+project = tripal_phylogeny
+package = Tripal v2 Legacy
+version = 7.x-3.1
+dependencies[] = tripal_core
+dependencies[] = tripal_cv
+dependencies[] = tripal_db
+dependencies[] = tripal_organism
+dependencies[] = tripal_analysis
+dependencies[] = tripal_feature
+
+; Information added by Drupal.org packaging script on 2019-06-26
+version = "7.x-3.2"
+core = "7.x"
+project = "tripal"
+datestamp = "1561520293"

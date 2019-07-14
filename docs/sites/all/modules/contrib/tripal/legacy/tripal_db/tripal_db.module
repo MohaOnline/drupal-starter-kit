@@ -1,0 +1,150 @@
+<?php
+/**
+ * @file
+ * General functions for the db module
+ */
+
+/**
+ * @defgroup tripal_legacy_db Legacy Database Reference Module
+ * @ingroup tripal_legacy_modules
+ * @{
+ * Provides functions for managing chado database references which link chado content, such
+ * as features and stocks, to records/pages in external databases/websites. For example,
+ * you might have a feature record in your site which is also in the NCBI website and by
+ * adding a database refrence to your feature, an automatic link to the content at NCBI
+ * is created.
+ * @}
+ */
+
+require_once 'api/tripal_db.DEPRECATED.inc';
+
+
+/**
+ * Implements hook_menu().
+ *
+ * @ingroup tripal_legacy_db
+ */
+function tripal_db_menu() {
+  $items = array();
+
+  $items['admin/tripal/legacy/tripal_db/views/dbs/enable'] = array(
+    'title' => 'Enable Database Administrative View',
+    'page callback' => 'tripal_enable_view',
+    'page arguments' => array('tripal_db_admin_dbs', 'admin/tripal/legacy/tripal_db'),
+    'access arguments' => array('administer db cross-references'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/tripal/legacy/tripal_db/views/dbxrefs/enable'] = array(
+    'title' => 'Enable Reference Administrative View',
+    'page callback' => 'tripal_enable_view',
+    'page arguments' => array('tripal_db_admin_dbxrefs', 'admin/tripal/legacy/tripal_db'),
+    'access arguments' => array('administer db cross-references'),
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/tripal/legacy/tripal_db/dbxref/auto_name/%/%'] = array(
+    'page callback' => 'tripal_db_dbxref_accession_autocomplete',
+    'page arguments' => array(6, 7),
+    'access arguments' => array('administer db cross-references'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_help().
+ (
+ * Purpose: Adds a help page to the module list
+ */
+function tripal_db_help ($path, $arg) {
+  if ($path == 'admin/help#tripal_db') {
+    return theme('tripal_db_help', array());
+  }
+}
+
+/**
+ * Implements hook_permission().
+ *
+ * Set the permission types that the chado module uses.  Essentially we
+ *  want permissionis that protect creation, editing and deleting of chado
+ *  data objects
+ *
+ * @ingroup tripal_legacy_db
+ */
+function tripal_db_permission() {
+  return array(
+    'administer db cross-references' => array(
+      'title' => t('Administer External Database Cross-references.'),
+      'description' => t('Allows the user to add, edit or delete external databases references stored in the Chado database.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_views_api().
+ *
+ * Essentially this hook tells drupal that there is views support for
+ *  for this module which then includes tripal_db.views.inc where all the
+ *  views integration code is
+ *
+ * @ingroup tripal_legacy_db
+ */
+function tripal_db_views_api() {
+  return array('api' => 3.0);
+}
+
+/**
+ *  Implements hook_theme().
+ *
+ *  We need to let drupal know about our theme functions and their arguments.
+ *  We create theme functions to allow users of the module to customize the
+ *  look and feel of the output generated in this module
+ *
+ * @ingroup tripal_legacy_db
+ */
+function tripal_db_theme($existing, $type, $theme, $path) {
+
+ $items = array(
+    'tripal_db_help' => array(
+      'template' => 'tripal_db_help',
+      'variables' =>  array(NULL),
+      'path' => "$path/theme/templates"
+    )
+  );
+  return $items;
+}
+
+
+/**
+ * This function is intended to be used in autocomplete forms
+ * for searching for accession that begin with the provided string
+ *
+ * @param $db_id
+ *   The DB ID in which to search for the term
+ * @param $string
+ *   The string to search for
+ *
+ * @return
+ *   A json array of terms that begin with the provided string
+ *
+ * @ingroup tripal_legacy_db_api
+ */
+function tripal_db_dbxref_accession_autocomplete($db_id, $string = '') {
+  if (!$db_id) {
+    return drupal_json_output(array());
+  }
+  $sql = "
+    SELECT dbxref_id, accession
+    FROM {dbxref}
+    WHERE db_id = :db_id and lower(accession) like lower(:accession)
+    ORDER by accession
+    LIMIT 25 OFFSET 0
+  ";
+  $results = chado_query($sql, array(':db_id' => $db_id, ':accession' => $string . '%'));
+  $items = array();
+  foreach ($results as $ref) {
+    $items[$ref->accession] = $ref->accession;
+  }
+
+  drupal_json_output($items);
+}

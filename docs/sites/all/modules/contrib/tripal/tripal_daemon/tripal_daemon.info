@@ -1,0 +1,15 @@
+name = Tripal Jobs Daemon
+description = Creates a Daemon to run Tripal Jobs as they are submitted.
+core = 7.x
+package = Tripal Extensions
+
+dependencies[] = drushd
+dependencies[] = tripal
+
+files[] = TripalDaemon.inc
+
+; Information added by Drupal.org packaging script on 2019-06-26
+version = "7.x-3.2"
+core = "7.x"
+project = "tripal"
+datestamp = "1561520293"
