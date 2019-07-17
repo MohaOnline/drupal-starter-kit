@@ -1,0 +1,10 @@
+name = Media Ckeditor test
+description = Provides hooks for testing Media Ckeditor module functionality.
+package = Media
+core = 7.x
+hidden = FALSE
+
+; Information added by drush on 2018-10-28
+version = "7.x-2.9+1-dev"
+project = "media_ckeditor"
+datestamp = "1540751154"

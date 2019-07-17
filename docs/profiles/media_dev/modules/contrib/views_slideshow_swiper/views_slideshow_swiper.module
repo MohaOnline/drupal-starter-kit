@@ -1,0 +1,115 @@
+<?php
+
+/**
+ * @file
+ * Adds Swiper as a backend for Views Slideshow.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function views_slideshow_swiper_help($path, $arg) {
+  switch ($path) {
+    // Main module help for the block module
+    case 'admin/help#views_slideshow_swiper':
+      return '<p>' . t('More to come. For now see the README.txt file please.') . '</p>';
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function views_slideshow_swiper_theme($existing, $type, $theme, $path) {
+  return array(
+    'views_slideshow_swiper' => array(
+      'variables' => array(
+        'view' => NULL,
+        'settings' => array(),
+        'rows' => array(),
+        'title' => ''
+      ),
+      'template' => 'theme/views-slideshow-swiper',
+      'file' => 'theme/views_slideshow_swiper.theme.inc',
+      'pattern' => 'views_slideshow_swiper__',
+    ),
+    'views_slideshow_swiper_main_frame' => array(
+      'variables' => array(
+        'vss_id' => NULL,
+        'view' => NULL,
+        'prevEl' => NULL,
+        'nextEl' => NULL,
+        'paginationEl' => NULL,
+        'settings' => NULL,
+        'rows' => NULL
+       ),
+      'template' => 'theme/views-slideshow-swiper-main-frame',
+    ),
+    'views_slideshow_swiper_main_frame_row' => array(
+      'variables' => array(
+        'vss_id' => NULL,
+        'items' => NULL,
+        'count' => NULL,
+        'view' => NULL
+      ),
+      'template' => 'theme/views-slideshow-swiper-main-frame-row',
+    ),
+    'views_slideshow_swiper_main_frame_row_item' => array(
+      'variables' => array('item' => NULL, 'item_count' => NULL, 'view' => NULL),
+      'template' => 'theme/views-slideshow-swiper-main-frame-row-item',
+    ),
+  );
+}
+
+function _views_slideshow_swiper_install_msg() {
+  return t('You need to install the Swiper JS library. Unzip the library archive into a directory in sites/all/libraries called Swiper so the JS file is located at: sites/all/libraries/Swiper/dist/js/swiper.js. You can find the plugin at !url.', array('!url' => l('http://idangero.us/swiper', 'http://idangero.us/swiper', array('attributes' => array('target' => '_blank')))));
+}
+
+function views_slideshow_swiper_libraries_info() {
+  $libraries['Swiper'] = array(
+    'name' => 'Swiper Slider',
+    'vendor url' => 'http://www.idangero.us/swiper',
+    'download url' => 'https://github.com/nolimits4web/Swiper/releases',
+    'path' => 'dist',
+    'version arguments' => array(
+      'file' => 'package.json',
+      'pattern' => '#version"[^"]*"([^"]*)#',
+    ),
+    'files' => array(
+      'js' => array('js/swiper.min.js'),
+      'css' => array('css/swiper.css'),
+    ),
+    'variants' => array(
+      'source' => array(
+        'path' => 'dist',
+        'files' => array(
+          'js' => array('js/swiper.js'),
+          'css' => array('css/swiper.css'),
+        ),
+      ),
+      'minified' => array(
+        'path' => 'dist',
+        'files' => array(
+          'js' => array('js/swiper.min.js'),
+          'css' => array('css/swiper.min.css'),
+        ),
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+include_once('theme/views_slideshow_swiper.theme.inc');
+
+function template_preprocess_views_slideshow_swiper_main_frame(&$vars) {
+  _views_slideshow_swiper_preprocess_views_slideshow_swiper_main_frame($vars);
+}
+
+function template_preprocess_views_slideshow_swiper_main_frame_row(&$vars) {
+  _views_slideshow_swiper_preprocess_views_slideshow_swiper_main_frame_row($vars);
+}
+
+function template_preprocess_views_slideshow_swiper_main_frame_row_item(&$vars) {
+  _views_slideshow_swiper_preprocess_views_slideshow_swiper_main_frame_row_item($vars);
+}
+

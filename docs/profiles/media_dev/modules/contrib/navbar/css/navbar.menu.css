@@ -1,0 +1,173 @@
+/**
+ * @file navbar.menu.css
+ */
+#navbar-administration .navbar-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+#navbar-administration .navbar-box {
+  display: block;
+  line-height: 1em; /* this prevents the value "normal" from being returned as the line-height */
+  position: relative;
+  width: auto;
+}
+#navbar-administration .navbar-tray-horizontal .navbar-menu .navbar-handle,
+#navbar-administration .navbar-tray-horizontal .navbar-menu .navbar-menu,
+#navbar-administration .navbar-tray-vertical .navbar-menu > .navbar-twisty > .navbar-menu {
+  display: none;
+}
+#navbar-administration .navbar-tray-vertical .navbar-twisty.open > .navbar-menu {
+  display: block; /* Show the sub-menus */
+}
+#navbar-administration .navbar-tray-vertical .navbar-handle + .navbar-menu-item {
+  margin-right: 3em; /* LTR */
+}
+#navbar-administration .navbar-tray .navbar-active-trail > .navbar-box .navbar-menu-item,
+#navbar-administration .navbar-tray .navbar-active
+/* Drupal's active menu item class. */
+#navbar-administration .navbar-tray .active {
+  color: #000;
+  font-weight: bold;
+}
+/* ----- Toolbar menu tray for viewports less than 320px ------ */
+@media screen and (max-width: 319px) {
+  #navbar-administration .navbar-tray-vertical.navbar-active {
+    width: 100%;
+  }
+}
+
+/**
+ * Items.
+ */
+#navbar-administration .navbar-level-2 > ul {
+  background-color: #fafafa;
+  border-bottom-color: #cccccc;
+  border-top-color: #e5e5e5;
+}
+#navbar-administration .navbar-level-3 > ul {
+  background-color: #f5f5f5;
+  border-bottom-color: #c5c5c5;
+  border-top-color: #dddddd;
+}
+#navbar-administration .navbar-level-4 > ul {
+  background-color: #eeeeee;
+  border-bottom-color: #bbbbbb;
+  border-top-color: #d5d5d5;
+}
+#navbar-administration .navbar-level-5 > ul {
+  background-color: #e5e5e5;
+  border-bottom-color: #b5b5b5;
+  border-top-color: #cccccc;
+}
+#navbar-administration .navbar-level-6 > ul {
+  background-color: #eeeeee;
+  border-bottom-color: #aaaaaa;
+  border-top-color: #c5c5c5;
+}
+#navbar-administration .navbar-level-7 > ul {
+  background-color: #fafafa;
+  border-bottom-color: #b5b5b5;
+  border-top-color: #cccccc;
+}
+#navbar-administration .navbar-level-8 > ul {
+  background-color: #dddddd;
+  border-bottom-color: #cccccc;
+  border-top-color: #dddddd;
+}
+
+/**
+ * Handle.
+ */
+#navbar-administration .navbar-handle:hover {
+  cursor: pointer;
+}
+#navbar-administration .navbar-icon.navbar-handle {
+  bottom: 0;
+  display: block;
+  height: 100%;
+  padding: 0;
+  position: absolute;
+  right: 0; /* LTR */
+  top: 0;
+  z-index: 1;
+}
+
+
+/**
+ * Styling for Custom Navbar Dropdown
+ * adapted from Bryant Crayton bccrayton's work at https://www.drupal.org/node/2390047
+ */
+
+.navbar-tray-horizontal .navbar-menu-administration ul {
+  list-style:none !important;
+  position:relative !important;
+  float:left !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul a {
+  display:block !important;
+  text-decoration:none !important;
+  line-height:39px !important;
+  padding:0 15px !important;
+  padding-left: 35px !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul li {
+  position:relative !important;
+  float:left !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul li.current-menu-item {
+  background:#ddd !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul li:hover, .navbar-tray-horizontal .navbar-menu-administration ul li.open {
+  background:#f6f6f6 !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul ul {
+  display:none !important;
+  position:absolute !important;
+  top:100% !important;
+  left:0 !important;
+  background:#fff !important;
+  padding:0 !important;
+  border: 1px solid #DDDDDD !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul ul li {
+  float:none !important;
+  width:200px !important;
+  border: none !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul ul a {
+  line-height:120% !important;
+  padding:10px 15px !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul ul ul {
+  top:-1px !important;
+  left:100% !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration ul li:hover > ul {
+  display:block !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration .navbar-menu li li .navbar-handle {
+  display:block !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration .navbar-menu .navbar-menu .navbar-icon.navbar-handle:before {
+  background-image: url("../icons/bebebe/chevron-disc-right.svg") !important;
+}
+
+.navbar-tray-horizontal .navbar-menu-administration .navbar-menu .navbar-menu .navbar-icon.navbar-handle:before {
+  background-image: url("../icons/bebebe/chevron-disc-right.png") !important;
+}

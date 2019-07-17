@@ -1,0 +1,10 @@
+name = Administration Menu Select
+description = Allows users to choose which Administration menu module to use.
+package = Administration
+core = 7.x
+configure = admin/config/user-interface/admin_select
+
+; Information added by drush on 2014-09-05
+version = "7.x-1.5+2-dev"
+project = "admin_select"
+datestamp = "1409880295"

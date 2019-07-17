@@ -1,0 +1,151 @@
+EXIF_Custom 7.x-1.22, 2019-02-16
+--------------------------------
+By DamienMcKenna: Documented exif_custom_process_entity().
+#2995082 by DamienMcKenna: Correct hook_entity_presave().
+#2927982 by DamienMcKenna: Rewrote test coverage from scratch.
+#2994216 by DamienMcKenna: Control whether EXIF data is reloaded on file update.
+#2995145 by DamienMcKenna: Make image processing automatic.
+
+
+EXIF_Custom 7.x-1.21, 2018-04-02
+--------------------------------
+#2935613 by DamienMcKenna: Move menu items under admin/config/media.
+#2935832 by DamienMcKenna: Simplify hook_menu().
+#2935833 by DamienMcKenna: Fix spelling of "EXIF" :)
+#2935837 by DamienMcKenna: Redirect to the mappings list page after updating a
+  mapping.
+#2927984 by smustgrave: Remove primary keys before adding new ones.
+#2942048 by DamienMcKenna: New submodule with a field widget for images to show
+  all available EXIF values.
+#2942055 by yo30, DamienMcKenna: 'Administer' permission clashes with EXIF
+  module.
+
+
+EXIF_Custom 7.x-1.20, 2018-01-03
+--------------------------------
+#2932214 by DamienMcKenna: Fixed compatibility with older PHP releases.
+#2928058 by DamienMcKenna: "View iamge metadata" permission mislabeled.
+#2934028 by DamienMcKenna: Add a CHANGELOG.txt file.
+
+
+EXIF_Custom 7.x-1.19, 2017-12-17
+--------------------------------
+#2929232 by joseph.olstad, alrueden, DamienMcKenna: Can't upload example image.
+#2927984 by DamienMcKenna: Error running update 7100.
+#2928054 by DamienMcKenna: Add an option to switch between drupal_realpath() and
+  file_create_url().
+#2928055 by DamienMcKenna: Add hook_uninstall() to remove unwanted variables.
+#2927986 by DamienMcKenna: Simplify exif_custom_get_exif_fields() a little.
+#2928049 by DamienMcKenna: Add an initial README.txt file to build from.
+
+
+EXIF_Custom 7.x-1.18, 2017-12-01
+--------------------------------
+#2643818 by michaelmallett, DamienMcKenna: Use of drupal_realpath deprecated,
+  breaks for remote schemas.
+#2715401 by jrglasgow, DamienMcKenna: Add primary keys to the tables.
+#2927675 by DamienMcKenna: EXIF data does not import on file upload.
+#2901964 by DamienMcKenna: Fix code styling / standards compliance.
+#2926379 by DamienMcKenna: The 'Site default mapping' setting wasn't saving
+  correctly.
+#2926381 by DamienMcKenna: Improved label when no site default mapping is
+  selected.
+
+
+EXIF_Custom 7.x-1.17, 2017-10-15
+--------------------------------
+#2565625 by davidsickmiller: Saving multiple keywords as separate multiple
+  taxonomy values.
+#2215179 by danquah, DamienMcKenna: Exclude image from mapping by path.
+
+
+EXIF_Custom 7.x-1.16, 2017-08-14
+--------------------------------
+#2182701 by danquah, DamienMcKenna: File fields edited in Media Browser gets
+  overwritten.
+#2266435 by DamienMcKenna: Redirect to the mapping edit page after creation.
+#2266445 by DamienMcKenna: Both fields should be required when creating a new
+  mapping.
+#2055529 by DamienMcKenna, gaele, sazcurrain: Notice: Undefined index:
+  *EXIF_FIELD_PLACEHOLDER* in exif_custom_process_entity().
+#2266413 by DamienMcKenna: "Incorrect APP1 Exif Identifier Code".
+#2224057 by DamienMcKenna:  PHP Fatal error:  Call to undefined function
+  exif_custom_settings_form_user_submit() in drupal7/includes/form.inc on line
+  1485.
+#2661626 by Leon Kessler: Fatal error: Call to undefined function
+  exif_custom_get_mid().
+#2654722 by michaelmallett: Auto import config setting doesn't work.
+#2496031 by Leon Kessler: entity translation enabled fields not filled.
+#2600654 by felribeiro, erickbj: Missing the link to the configuration page in
+  module list.
+By joseph.olstad: Add a very basic simpletest, this will check for at least
+  basic syntax rules automatically and whether or not a patch applies cleanly
+  and that the exif_custom module can install correctly.
+#2134417 by DamienMcKenna, Hydra:  Fatal error: Call to a member function
+  fetchObject() on a non-object in exif_custom/exif_custom.module on line 121.
+#2496031 by Leon Kessler: entity translation enabled fields not filled.
+#2360967 by Dane Powell: Fixed Features integration.
+#2112241 by thamba: EXIF meta data overrides user submitted text on multiple
+  image upload.
+
+
+EXIF_Custom 7.x-1.14, 2013-02-04
+--------------------------------
+Deal with it when image does not have expected exif info.
+Fix issues with patching.
+#2141235 by mikemiles86: Features integration.
+#2075469 by gaele: Warning when image not jpeg or tiff.
+#2058087 by thamba, gaele: Fix field length and formatting issue.
+By edwbaker: Latest from SP project.
+
+
+EXIF_Custom 7.x-1.13, 2013-04-18
+--------------------------------
+By edwbaker: UI Improvements.
+By edwbaker: Fix character encodings.
+By edwbaker: Fix warnings.
+
+
+EXIF_Custom 7.x-1.11, 2013-03-05
+--------------------------------
+By edwbaker: Don't process variable if not set.
+By edwbaker: XMP issues.
+By edwbaker: Coding standards.
+
+
+EXIF_Custom 7.x-1.9, 2013-02-04
+-------------------------------
+By edwbaker: Also add XMP metadata.
+By edwbaker: Work with countries module.
+By edwbaker: Allow mapping to title field.
+
+
+EXIF_Custom 7.x-1.7, 2012-11-27
+-------------------------------
+By edwbaker: Don't process file with no metadata.
+By edwbaker: Check IPTC is set before looping over it.
+
+
+EXIF_Custom 7.x-1.6, 2012-11-26
+-------------------------------
+By edwbaker: Fixed permissions issues.
+
+
+EXIF_Custom 7.x-1.5, 2012-11-21
+-------------------------------
+By edwbaker: Fixed ependencies.
+
+
+EXIF_Custom 7.x-1.4, 2012-11-19
+-------------------------------
+By edwbaker: Fix character encoding issues.
+
+
+EXIF_Custom 7.x-1.3, 2012-11-20
+-------------------------------
+By edwbaker: Don't try to dsave metadata on file upload.
+
+
+EXIF_Custom 7.x-1.1, 2012-11-19
+-------------------------------
+By edwbaker: Initial commit.

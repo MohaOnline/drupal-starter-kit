@@ -1,0 +1,41 @@
+<?php
+
+/*
+ * Implements hook_requirements().
+ */
+function views_slideshow_swiper_requirements($phase) {
+  $requirements = array();
+  // Ensure translations do not break at install time
+  $t = get_t();
+
+  $requirements['views_slideshow_swiper'] = array(
+    'title' => $t('Swiper Library'),
+  );
+
+  if (!function_exists('libraries_detect')) {
+    if ($library = system_rebuild_module_data()['libraries']) {
+      module_load_include('module','libraries', 'libraries');
+    } else {
+      $requirements['views_slideshow_swiper']['value'] = $t('Cannot find a dependency, the Libraries API (libraries) module.');
+      $requirements['views_slideshow_swiper']['severity'] = REQUIREMENT_ERROR;
+    }
+  }
+
+  $library = libraries_detect('Swiper');
+  if ($library !== FALSE) {
+    $requirements['views_slideshow_swiper']['value'] = $t('Installed') . ' - ' . $library['version'];
+    $requirements['views_slideshow_swiper']['severity'] = REQUIREMENT_OK;
+  }
+  else {
+    $requirements['views_slideshow_swiper']['value'] = $t('Not Installed');
+    // Allow module to install even if Swiper library is not detected, but report it as an error post-install.
+    if ($phase = 'install') {
+      $severity = REQUIREMENT_WARNING;
+    } else {
+      $severity = REQUIREMENT_ERROR;
+    }
+    $requirements['views_slideshow_swiper']['severity'] = $severity;
+    $requirements['views_slideshow_swiper']['description'] = $t('Please install the example library %url.', array('%url' => 'http://example.com'));
+  }
+  return $requirements;
+}

@@ -1,0 +1,205 @@
+<?php
+
+/**
+ * @file media_bliptv/media_bliptv.module
+ *
+ * Media: BlipTV provides a stream wrapper and formatters for videos provided
+ * by BlipTV, available at http://blip.tv/.
+ *
+ * @TODO:
+ * Tie in BlipTV API.
+ * Allow editors to search for videos to display on the browser.
+ * Allow editors to put in a bliptv username to display on the browser.
+ * Allow editors to log in w/ their credentials.
+ * Allow editors to upload videos to BlipTV.
+ */
+
+// A registry of variable_get defaults.
+include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'media_bliptv') . '/includes/media_bliptv.variables.inc';
+
+// Hooks and callbacks for integrating with Styles module for display.
+// @todo Can save a little overhead for people without Styles module by wrapping
+//   this inside a module_exists('styles'). However, is that safe to do in
+//   global context? If not, is there any down side to doing it in hook_init()?
+include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'media_bliptv') . '/includes/media_bliptv.styles.inc';
+
+// Hooks and callbacks for integrating with File Entity module for display.
+include_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'media_bliptv') . '/includes/media_bliptv.formatters.inc';
+
+/**
+ * Implements hook_media_internet_providers().
+ */
+function media_bliptv_media_internet_providers() {
+  $path = drupal_get_path('module', 'media_bliptv');
+  return array(
+    'MediaInternetBlipTVHandler' => array(
+      'title' => 'bliptv',
+      'image' => $path . '/images/stream-bliptv.png'
+    ),
+  );
+}
+
+/**
+ * Implements hook_stream_wrappers().
+ */
+function media_bliptv_stream_wrappers() {
+  return array(
+    'bliptv' => array(
+      'name' => t('BlipTV videos'),
+      'class' => 'MediaBlipTVStreamWrapper',
+      'description' => t('Videos provided by BlipTV.'),
+      'type' => STREAM_WRAPPERS_READ_VISIBLE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function media_bliptv_theme($existing, $type, $theme, $path) {
+  return array(
+    'media_bliptv_preview_style' => array(
+      'variables' => array('style_name' => NULL),
+      'file' => 'media_bliptv.theme.inc',
+      'path' => $path . '/includes/themes',
+    ),
+    'media_bliptv_field_formatter_styles' => array(
+      'variables' => array('element' => NULL, 'style' => NULL),
+      'file' => 'media_bliptv.theme.inc',
+      'path' => $path . '/includes/themes',
+    ),
+    'media_bliptv_video' => array(
+      'variables' => array('uri' => NULL, 'width' => NULL, 'height' => NULL, 'autoplay' => NULL, 'fullscreen' => NULL),
+      'file' => 'media_bliptv.theme.inc',
+      'path' => $path . '/includes/themes',
+      'template' => 'media-bliptv-video',
+    ),
+    'media_bliptv_embed' => array(
+      'variables' => array('style_name' => NULL, 'uri' => NULL, 'alt' => NULL, 'title' => NULL),
+      'file' => 'media_bliptv.theme.inc',
+      'path' => $path . '/includes/themes',
+    ),
+    'media_bliptv_styles' => array(
+      'variables' => array('element' => NULL, 'style' => NULL),
+      'file' => 'media_bliptv.theme.inc',
+      'path' => $path . '/includes/themes',
+    ),
+  );
+}
+
+/**
+ * Implements hook_media_parse().
+ *
+ * @todo This hook should be deprecated. Refactor Media module to not call it
+ *   any more, since media_internet should be able to automatically route to the
+ *   appropriate handler.
+ */
+function media_bliptv_media_parse($embed_code) {
+  $handler = new MediaInternetBlipTVHandler($embed_code);
+  return $handler->parse($embed_code);
+}
+
+/**
+ * Implements hook_media_format_form_prepare_alter().
+ */
+function media_bliptv_media_format_form_prepare_alter(&$form, &$form_state, $media) {
+  $settings = array('autosubmit' => ($media->type == "video"));
+  drupal_add_js(array('media_format_form' => $settings), 'setting');
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function media_bliptv_ctools_plugin_api($owner, $api) {
+  static $api_versions = array(
+    'file_entity' => array(
+      'file_default_displays' => 1,
+    ),
+  );
+  if (isset($api_versions[$owner][$api])) {
+    return array('version' => $api_versions[$owner][$api]);
+  }
+}
+
+/**
+ * Converts RSS response into an array, including custom blip elements.
+ */
+function media_blip_get_rss($feed) {
+
+// http://blip.tv/dtd/blip/1.0
+// work around for the namespace limitation http://drupal.org/node/1060208
+
+/**
+  <blip:user>redvsblue</blip:user>
+  <blip:userid>792887</blip:userid>
+  <blip:safeusername>redvsblue</blip:safeusername>
+  <blip:showpath>red-vs-blue</blip:showpath>
+  <blip:show>Red vs. Blue</blip:show>
+
+  <blip:showpage>http://redvsblue.blip.tv/</blip:showpage>
+  <blip:picture>http://blip.tv/skin/blipnew/placeholder_user.gif</blip:picture>
+  <blip:posts_id>4054515</blip:posts_id>
+  <blip:item_id>4035623</blip:item_id>
+  <blip:item_type>file</blip:item_type>
+  <blip:contentRating>TV-UN</blip:contentRating>
+
+  <blip:rating>0.0</blip:rating>
+  <blip:datestamp>2010-08-23T14:50:29Z</blip:datestamp>
+  <blip:language>English</blip:language>
+  <blip:adChannel>Videogames,Animation,Comedy</blip:adChannel>
+  <blip:recommendations>0</blip:recommendations>
+  <blip:recommendable>0</blip:recommendable>
+
+  <blip:core>0</blip:core>
+  <blip:core_value>9</blip:core_value>
+  <blip:channel_name>Animation and Comics</blip:channel_name>
+  <blip:betaUser>1</blip:betaUser>
+  <blip:adminRating>2</blip:adminRating>
+  <blip:runtime>205</blip:runtime>
+
+  <blip:embedLookup>h6Uagfe8VwI</blip:embedLookup>
+  <blip:embedUrl type="application/x-shockwave-flash">http://blip.tv/play/h6Uagfe8VwI</blip:embedUrl>
+  <blip:thumbnail_src>RoosterTeeth-RedVsBlueReachMiniSeriesEpisode2998.jpg</blip:thumbnail_src>
+  <blip:puredescription><![CDATA[Sarge sets off for Reach but runs into some problems.]]></blip:puredescription>
+  <blip:smallThumbnail>http://a.images.blip.tv/RoosterTeeth-RedVsBlueReachMiniSeriesEpisode2998-175.jpg</blip:smallThumbnail>
+
+  <blip:license>No license (All rights reserved)</blip:license>
+*/
+
+/**
+  <media:player url="http://blip.tv/file/4035623"><![CDATA[<iframe src="http://blip.tv/play/h6Uagfe8VwI.html" width="480" height="300" frameborder="0" allowfullscreen></iframe><embed type="application/x-shockwave-flash" src="http://a.blip.tv/api.swf#h6Uagfe8VwI" style="display:none"></embed>]]></media:player>
+  <media:title>Red vs. Blue Reach Mini Series: Episode 2</media:title>
+  <media:thumbnail url="http://a.images.blip.tv/RoosterTeeth-RedVsBlueReachMiniSeriesEpisode2998.jpg"/>
+*/
+
+  $rawFeed = file_get_contents($feed);
+  $xml = new SimpleXmlElement($rawFeed);
+
+	foreach ($xml->channel->item as $item) {   
+      
+      // Stardard RSS elements
+	  $video = array();
+	  $video['title'] = (string) $item->title;
+	  $video['link'] = (string) $item->link;
+	  $video['description'] = (string) $item->description;
+	  $video['pubDate'] = (string) $item->pubDate;
+	  $video['guid'] = (string) $item->guid;
+
+	  //Multiple categories
+	  foreach ($item->category as $category) {
+		$video['category'][] = (string) $category;
+	  }
+	
+	  // MRSS Specific Namespace Elements
+	  $mrss = $item->children('http://search.yahoo.com/mrss/');   
+	  $video['thumbnail'] = (string) $mrss->thumbnail;   
+  
+	  // BlipTV Specific Namespace Elements
+	  $bliptv = $item->children('http://blip.tv/dtd/blip/1.0'); 	  
+	  $video['user'] = (string) $bliptv->thumbnail; 
+      $video['embedLookup'] = (string) $bliptv->embedLookup;
+      $video['thumbnail_src'] = (string) $bliptv->thumbnail_src;
+  }
+  
+  return $video;
+}

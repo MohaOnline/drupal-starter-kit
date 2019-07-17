@@ -1,0 +1,11 @@
+name = Mobile Detect
+description = Lightweight mobile detection based on <a href='http://mobiledetect.net/'>Mobile_Detect.php</a>
+core = 7.x
+package = Mobile Detect
+
+files[] = mobile_detect.drush.inc
+
+; Information added by drush on 2015-11-13
+version = "7.x-1.0-alpha1+1-dev"
+project = "mobile_detect"
+datestamp = "1447380377"

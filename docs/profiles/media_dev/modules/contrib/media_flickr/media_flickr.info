@@ -1,0 +1,17 @@
+name = Media: Flickr
+description = Adds Flickr as a supported media provider.
+package = Media
+core = 7.x
+
+dependencies[] = media_internet
+
+files[] = includes/MediaFlickrStreamWrapper.inc
+files[] = includes/MediaInternetFlickrHandler.inc
+files[] = media_flickr.test
+
+configure = admin/config/media/media_flickr
+
+; Information added by drush on 2017-07-13
+version = "7.x-2.0-alpha5+0-dev"
+project = "media_flickr"
+datestamp = "1499979616"

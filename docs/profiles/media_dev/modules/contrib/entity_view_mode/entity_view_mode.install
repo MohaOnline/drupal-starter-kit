@@ -1,0 +1,109 @@
+<?php
+
+/**
+ * @file entity_view_mode.install
+ * Contains install hooks.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function entity_view_mode_schema() {
+  $schema['entity_view_mode'] = array(
+    'description' => 'Stored user-defined entity view modes.',
+    'fields' => array(
+      'entity_type' => array(
+        'description' => 'The entity type of the view mode.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'machine_name' => array(
+        'description' => 'The machine-readable name of this view mode.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this view mode.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'custom_settings' => array(
+        'description' => 'A boolean indicating whether this view mode has custom settings.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('entity_type', 'machine_name'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function entity_view_mode_update_7001(&$sandbox) {
+  $schema = array(
+    'description' => 'Stored user-defined entity view modes.',
+    'fields' => array(
+      'entity_type' => array(
+        'description' => 'The entity type of the view mode.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'machine_name' => array(
+        'description' => 'The machine-readable name of this view mode.',
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'label' => array(
+        'description' => 'The human-readable name of this view mode.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'custom_settings' => array(
+        'description' => 'A boolean indicating whether this view mode has custom settings.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('entity_type', 'machine_name'),
+  );
+
+  db_create_table('entity_view_mode', $schema);
+
+  // Now populate the table.
+  $view_modes_data = variable_get('entity_view_modes', array());
+  foreach ($view_modes_data as $entity_type => $view_modes) {
+    foreach ($view_modes as $view_mode_name => $view_mode) {
+      $record = array(
+        'entity_type'     => $entity_type,
+        'machine_name'    => $view_mode_name,
+        'label'           => $view_mode['label'],
+        'custom_settings' => $view_mode['custom settings'],
+      );
+
+      db_insert('entity_view_mode')
+        ->fields($record)
+        ->execute();
+    }
+  }
+
+  // Clean up: delete the old variable.
+  variable_del('entity_view_modes');
+
+  return t('Entity view mode table created.');
+}

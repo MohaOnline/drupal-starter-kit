@@ -1,0 +1,13 @@
+.matrix-wrapper .fieldset-wrapper {
+    padding:0;
+}
+
+.matrix-wrapper .form-wrapper {
+    border:0;
+    margin:0;
+    padding:2px;
+}
+
+.matrix-wrapper .form-item{
+    display: inline;
+}

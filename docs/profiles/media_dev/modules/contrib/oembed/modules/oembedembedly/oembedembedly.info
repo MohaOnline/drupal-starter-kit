@@ -1,0 +1,10 @@
+package = oEmbed
+name = oEmbed Embed.ly
+description = Provides definitions for all of Embed.ly:s providers
+core = 7.x
+dependencies[] = oembed
+
+; Information added by drush on 2019-05-05
+version = "7.x-1.0-rc2+40-dev"
+project = "oembed"
+datestamp = "1557064497"

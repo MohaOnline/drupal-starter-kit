@@ -1,0 +1,8 @@
+.views_slideshow_swiper-processed {
+	overflow: hidden;
+}
+
+.views_slideshow_swiper-processed > ul {
+	list-style:none;
+	padding-left: 0;
+}

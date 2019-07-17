@@ -1,0 +1,9 @@
+name = Actions permissions (VBO)
+description = Provides permission-based access control for actions. Used by Views Bulk Operations.
+package = Administration
+core = 7.x
+
+; Information added by drush on 2019-05-17
+version = "7.x-3.5+3-dev"
+project = "views_bulk_operations"
+datestamp = "1558068971"

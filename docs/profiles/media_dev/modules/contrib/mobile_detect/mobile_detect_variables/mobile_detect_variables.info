@@ -1,0 +1,11 @@
+name = Mobile Detect Variables
+description = Sub-module to provide $is_mobile and $is_tablet to preprocess and templates.
+core = 7.x
+package = Mobile Detect
+
+dependencies[] = mobile_detect
+
+; Information added by drush on 2015-11-13
+version = "7.x-1.0-alpha1+1-dev"
+project = "mobile_detect"
+datestamp = "1447380377"

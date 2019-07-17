@@ -1,0 +1,266 @@
+<?php
+
+/**
+ * @file
+ * Tinypng_on_upload.module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function tinypng_on_upload_menu() {
+  $items = array();
+
+  $items['admin/config/media/tinypng_on_upload'] = array(
+    'title' => 'TinyPNG On Upload Settings',
+    'description' => 'API Key and settings for the TinyPNG service',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tinypng_on_upload_settings_form'),
+    'access arguments' => array('administer users'),
+    'file'             => 'includes/tinypng_on_upload.admin.inc',
+    // 'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements hook_file_insert().
+ */
+function tinypng_on_upload_file_insert($file) {
+  $optimized = FALSE;
+  // Add a check to see if the file is a jpg or png.
+  $validate = file_validate_extensions($file, 'jpg jpeg png');
+
+  if (empty($validate)) {
+
+    $img_info = getimagesize($file->uri);
+    // Attempt to check if image is CMYK by checking for 4 color channels.
+    if (!empty($img_info['channels']) && $img_info['channels'] != 4) {
+
+      $optimized = tinypng_on_upload_optimize($file->uri);
+      watchdog('tinypng_on_upload', 'A jpg or has been added. result: ' . $optimized);
+    }
+
+    if ($optimized) {
+
+      file_usage_add($file, 'tinypng_on_upload', 'optimized_images', $file->fid);
+
+    }
+
+  }
+
+}
+
+/**
+ * Implements hook_file_delete().
+ */
+function tinypng_on_upload_file_delete($file) {
+
+  file_usage_delete($file, 'tinypng_on_upload');
+
+}
+
+
+/**
+ * TinyPNG ImageAPI Optimize service callback.
+ *
+ * Liberally 'borrowed' from the ImageAPI Optimize TinyPNG service patch.
+ */
+function tinypng_on_upload_optimize($dst) {
+
+  // Check if you have curl loaded.
+  if (!function_exists('curl_init')) {
+    drupal_set_message(t('ImageAPI Optimize TinyPNG service requires PHP curl library. Please check that php_curl extension is enabled', 'warning', FALSE));
+    return FALSE;
+  }
+
+  // Check if json is available.
+  if (!function_exists('json_decode')) {
+    drupal_set_message(t('ImageAPI Optimize TinyPNG service requires PHP json support', 'warning', FALSE));
+    return FALSE;
+  }
+
+  // Prepare the request.
+  $filepath = drupal_realpath($dst);
+
+  $settings = variable_get('tinypng_on_upload_tinypng');
+
+  $request = curl_init();
+  curl_setopt_array($request, array(
+    CURLOPT_URL => 'https://api.tinypng.com/shrink',
+    CURLOPT_USERPWD => "api:" . $settings['api_key'],
+    CURLOPT_POSTFIELDS => file_get_contents($filepath),
+    CURLOPT_BINARYTRANSFER => TRUE,
+    CURLOPT_RETURNTRANSFER => TRUE,
+    CURLOPT_HEADER => FALSE,
+    /* Uncomment below if you have trouble validating our SSL certificate.
+       Download cacert.pem from: http://curl.haxx.se/ca/cacert.pem */
+    // CURLOPT_CAINFO => __DIR__ . "/cacert.pem",
+    CURLOPT_SSL_VERIFYPEER => TRUE,
+  ));
+
+  // Make the request.
+  $response = curl_exec($request);
+  $json = json_decode($response, TRUE);
+
+  if (curl_getinfo($request, CURLINFO_HTTP_CODE) === 201) {
+    /* Compression was successful, retrieve output. */
+    $result = drupal_http_request($json['output']['url']);
+    if (!isset($result->error)) {
+      if (!file_save_data($result->data, $dst, FILE_EXISTS_REPLACE)) {
+        drupal_set_message(t('Processed image received from TinyPNG.com could not be saved to disk on @dir. Please review the directory permissions'), array('@dir' => $filepath), 'warning');
+        curl_close($request);
+        return FALSE;
+      }
+
+      if ($settings['debug_mode_tinypng']) {
+        drupal_set_message(t('Sucessful request to TinyPNG.com for @file', array('@file' => $dst)), 'status');
+        drupal_set_message(t('Initial file size = @input bytes.<br>Final file size = @output bytes.<br>Compression ratio = @ratio.',
+          array(
+            '@input' => $json['input']['size'],
+            '@output' => $json['output']['size'],
+            '@ratio' => $json['output']['ratio'])
+          ), 'status');
+      }
+      // Everything went OK.
+      curl_close($request);
+      return TRUE;
+    }
+  }
+
+  // Something went wrong :(
+  drupal_set_message(t('TinyPNG.com could not process your request for @file. Error code = @error - @msg', array(
+    '@file' => $filepath,
+    '@error' => $json['error'],
+    '@msg' => $json['message'])
+  ), 'warning');
+
+  curl_close($request);
+
+  return FALSE;
+}
+
+/**
+ * Queue processing callback function to optimized queued images.
+ *
+ * @param int $file_id
+ *   Drupal File ID to be optimized.
+ */
+function _tinypng_on_upload_file_process($file_id) {
+
+  $file = file_load($file_id);
+  $validate = file_validate_extensions($file, 'jpg png');
+
+  if (empty($validate)) {
+    $img_info = getimagesize($file->uri);
+
+    if ($img_info['channels'] != 4) {
+
+      $optimized = tinypng_on_upload_optimize($file->uri);
+
+      watchdog('tinypng_on_upload', 'file with file id @fileid has been processed. Result: @optimized', array(
+        '@optimized' => $optimized,
+         '@fileid' => $file->fid)
+      );
+    }
+
+    if ($optimized) {
+      file_usage_add($file, 'tinypng_on_upload', 'optimized_images', $file->fid);
+    }
+
+  }
+
+}
+
+
+/**
+ * Implements hook_cron_queue_info().
+ *
+ * Declares cron queue handler for image updates.
+ */
+function tinypng_on_upload_cron_queue_info() {
+  // Load the admin page so we are able to use the utility functions.
+  module_load_include('inc', 'tinypng_on_upload', 'includes/tinypng_on_upload.admin');
+
+  // Get all instance machine names for the declared image fields.
+  $instances = _tinypng_on_upload_get_image_type_machine_names();
+
+  // Loop through each machine name to check and make sure a queue has been
+  // added and has items to process
+  // if so, declare the callback function.
+  foreach ($instances as $instance) {
+
+    $queues = DrupalQueue::get($instance['field_name'] . '_image_updates');
+    $num_items = $queues->numberOfItems();
+
+    if ($num_items > 0) {
+
+      watchdog('tinypng_on_upload', 'Tinypng image update queue created for the %fieldname image field. %numimages queued for processing.', array('%fieldname' => $instance['field_name'], '%numimages' => $num_items));
+
+    }
+
+    $queue[$instance['field_name'] . '_image_updates'] = array(
+      'worker callback' => '_tinypng_on_upload_file_process',
+    // Function to call for each item.
+      'time' => 60,
+    // Seconds to spend working on the queue.
+    );
+  }
+
+  return $queue;
+}
+
+/**
+ * Use batch API to process all un optimized images.
+ *
+ * @param int $file_id
+ *   file FID.
+ */
+function _tinypng_on_upload_batch_file_process($file_id, &$context) {
+
+  $file = file_load($file_id);
+  $validate = file_validate_extensions($file, 'jpg png');
+
+  if (empty($validate)) {
+
+    $context['message'] = t("Now processing @filename.", array('@filename' => $file->filename));
+    $img_info = getimagesize($file->uri);
+
+    if ($img_info['channels'] != 4) {
+
+      $optimized = tinypng_on_upload_optimize($file->uri);
+
+    }
+
+    if ($optimized) {
+      $context['results'][] = $file->fid . " : " . $optimized;
+      file_usage_add($file, 'tinypng_on_upload', 'optimized_images', $file->fid);
+    }
+
+  }
+
+}
+
+/**
+ * Callback for after the manual queue has been processed.
+ */
+function tinypng_on_upload_process_all_images_process_queue($success, $results, $operations) {
+  if ($success) {
+    // Here we could do something meaningful with the results.
+    // Display the number of images we processed.
+    drupal_set_message(t('@count images successfully optimized.', array('@count' => count($results))));
+  }
+  else {
+    // An error occurred.
+    // $operations contains the operations that remained unprocessed.
+    $error_operation = reset($operations);
+    drupal_set_message(t('An error occurred while processing @operation with arguments : @args', array(
+          '@operation' => $error_operation[0],
+          '@args' => print_r($error_operation[0], TRUE),
+        )
+      )
+    );
+  }
+}

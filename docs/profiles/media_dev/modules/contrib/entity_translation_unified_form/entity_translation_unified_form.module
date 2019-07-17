@@ -1,0 +1,226 @@
+<?php
+
+/**
+ * @file
+ * Places entity translated fields inline in a single form.
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add checkbox to node type form to set whether or not the node type should enable unified forms.
+ */
+function entity_translation_unified_form_form_node_type_form_alter(&$form, $form_state) {
+  $form['#process'][] = 'entity_translation_unified_form_form_node_type_form_process';
+  $form['#submit'][] = 'entity_translation_unified_form_form_node_type_form_submit';
+}
+
+/**
+ * Add an "enable" checkbox to the node type's multilingual settings.
+ */
+function entity_translation_unified_form_form_node_type_form_process(&$form, $form_state) {
+  $type = $form['#node_type']->type;
+
+  // Hide settings when entity translation is disabled for this content type.
+  $states = array(
+    'visible' => array(
+      ':input[name="language_content_type"]' => array('value' => ENTITY_TRANSLATION_ENABLED),
+    ),
+  );
+  $form['workflow']['entity_translation_unified_form'] = array(
+    '#title' => t('Unified form'),
+    '#type' => 'fieldset',
+    '#weight' => 10,
+    '#states' => $states,
+  );
+  $form['workflow']['entity_translation_unified_form']['entity_translation_unified_form_enable'] = array(
+    '#title' => t('Place all entity-translatable fields for all enabled languages inline on the node add/edit form'),
+    '#type' => 'checkbox',
+    '#default_value' => variable_get('entity_translation_unified_form_enable_' . $type, FALSE),
+    '#disabled' => FALSE,
+    '#states' => $states,
+  );
+  return $form;
+}
+
+/**
+ * Submit handler. Sets content type-specific variable that is used to determine whether or not the content type may used unified forms.
+ */
+function entity_translation_unified_form_form_node_type_form_submit(&$form, $form_state) {
+  variable_set('entity_translation_unified_form_enable_' . $form['#node_type']->type, $form_state['values']['entity_translation_unified_form_enable']);
+}
+
+/**
+ * Add language fields to node forms.
+ *
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function entity_translation_unified_form_form_node_form_alter(&$form, &$form_state, $form_id) {
+  if (variable_get('entity_translation_unified_form_enable_' . $form['#bundle'], FALSE)) {
+    // Add entity translation form elements for unified language node form.
+    entity_translation_unified_form_add_fields($form, $form_state);
+
+    // (see i18n_node_form_node_form_alter)
+    // Replace core's node submit callback with our own,
+    // in order to save entity_translation node object in all languages added to the form by entity_translation_unified_form.
+    $key = array_search('node_form_submit', $form['actions']['submit']['#submit']);
+    if ($key !== FALSE) {
+      $form['actions']['submit']['#submit'][$key] = 'entity_translation_unified_form_node_form_submit';
+    }
+  }
+}
+
+/**
+ * Add opposite-language ET fields to a form.
+ */
+function entity_translation_unified_form_add_fields(&$form, &$form_state) {
+  form_load_include($form_state, 'inc', 'node', 'node.pages');
+  $entity_type = $form['#entity_type'];
+  $bundle = $form['#bundle'];
+
+  // Get and process each of the entity type's fields.
+  $fields_info = field_info_instances($entity_type, $bundle);
+  foreach ($fields_info as $field_name => $field_instance) {
+    $field = field_info_field($field_name);
+    if ($field['type'] == 'field_collection') {
+      // Process what's in the field collection.
+      entity_translation_unified_form_add_field_collection($form, $form_state, $field, $field_instance);
+    }
+    // Process the field.
+    entity_translation_unified_form_node_insert_other_language_fields($form, $form_state, $field, $field_instance);
+  }
+}
+
+/**
+ * Add fields within field collections.
+ */
+function entity_translation_unified_form_add_field_collection(&$form, &$form_state, $field, $field_instance) {
+  $field_name = $field_instance['field_name'];
+
+  $max_delta = $form[$field_name][LANGUAGE_NONE]['#max_delta'];
+  for ($delta = 0; $delta <= $max_delta; $delta++) {
+    $collection = &$form[$field_name][LANGUAGE_NONE][$delta];
+    if (!empty($collection)) {
+      entity_translation_unified_form_add_fields($collection, $form_state);
+    }
+  }
+}
+
+/**
+ * Add all enabled language fields for a single field.
+ */
+function entity_translation_unified_form_node_insert_other_language_fields(&$form, &$field_state, $field, $field_instance) {
+  global $language;
+
+  $entity_type = $form['#entity_type'];
+
+  // Only process entity-translatable fields.
+  if (field_is_translatable($entity_type, $field)) {
+    $entity = $form['#entity'];
+    $field_name = $field_instance['field_name'];
+
+    $other_languages = entity_translation_unified_form_get_other_languages();
+    foreach ($other_languages as $other_langcode => $other_language) {
+      $items = field_get_items($entity_type, $entity, $field_name, $other_langcode);
+
+      // Build and attach the translated field.
+      $field_form = array(
+        '#parents' => isset($form['#parents']) ? $form['#parents'] : array(),
+      );
+      $field_form = field_default_form($entity_type, $entity, $field, $field_instance, $other_langcode, $items, $field_form, $field_state);
+      $form[$field_name][$other_langcode] = $field_form[$field_name][$other_langcode];
+
+      // Update the translated field's title.
+      _entity_translation_element_title_append($form[$field_name][$other_langcode], ' (' . t($other_language->name) . ')');
+    }
+
+    // Update the original field's title, and add CSS classes.
+    if (isset($form[$field_name][$language->language])) {
+      _entity_translation_element_title_append($form[$field_name][$language->language], ' (' . t($language->name) . ')');
+    }
+    elseif (isset($form[$field_name][LANGUAGE_NONE])) {
+      _entity_translation_element_title_append($form[$field_name][LANGUAGE_NONE], ' (' . t($language->name) . ')');
+    }
+
+    // Add CSS class to identify translated fields.
+    $form[$field_name]['#attributes']['class'][] = 'etuf-translated-field';
+  }
+}
+
+/**
+ * Form submission handler for node_form().
+ *
+ * Configure entity translation node object for entity_translation_unified_form.
+ */
+function entity_translation_unified_form_node_form_submit($form, &$form_state) {
+  global $language;
+  $node = node_form_submit_build_node($form, $form_state);
+  $insert = empty($node->nid);
+
+  // Add entity_translation_unified_form handling for entity translations prior to node save.
+  $other_languages = entity_translation_unified_form_get_other_languages();
+  $entity_handler = entity_translation_get_handler('node', $node, TRUE);
+  foreach ($other_languages as $other_langcode => $other_language) {
+    if (!isset($node->translations->data[$other_langcode])) {
+      $translation = array(
+        'translate' => 0,
+        'status' => 1,
+        'language' => $other_langcode,
+        'source' => $node->language,
+      );
+
+      $entity_handler->setTranslation($translation, $node);
+    }
+  }
+
+  // Fixing issue where status of current language is unset - it must always be 1.
+  if (isset($node->translations->data[$language->language])) {
+    $node->translations->data[$language->language]['status'] = 1;
+  }
+
+  node_save($node);
+  $node_link = l(t('view'), 'node/' . $node->nid);
+  $watchdog_args = array('@type' => $node->type, '%title' => $node->title);
+  $t_args = array('@type' => node_type_get_name($node), '%title' => $node->title);
+
+  if ($insert) {
+    watchdog('content', '@type: added %title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
+    drupal_set_message(t('@type %title has been created.', $t_args));
+  }
+  else {
+    watchdog('content', '@type: updated %title.', $watchdog_args, WATCHDOG_NOTICE, $node_link);
+    drupal_set_message(t('@type %title has been updated.', $t_args));
+  }
+  if ($node->nid) {
+    $form_state['values']['nid'] = $node->nid;
+    $form_state['nid'] = $node->nid;
+    $form_state['redirect'] = node_access('view', $node) ? 'node/' . $node->nid : '<front>';
+  }
+  else {
+    // In the unlikely case something went wrong on save, the node will be
+    // rebuilt and node form redisplayed the same way as in preview.
+    drupal_set_message(t('The post could not be saved.'), 'error');
+    $form_state['rebuild'] = TRUE;
+  }
+  // Clear the page and block caches.
+  cache_clear_all();
+}
+
+/**
+ * Helper function to get all languages, excluding current language.
+ */
+function entity_translation_unified_form_get_other_languages() {
+  global $language;
+
+  // Get the list of all languages.
+  $languages = language_list();
+  $other_languages = array();
+
+  // Add each enabled language, aside from the current language to an array.
+  foreach ($languages as $field_language_code => $field_language) {
+    if ($field_language_code != $language->language) {
+      $other_languages[$field_language_code] = $field_language;
+    }
+  }
+  return $other_languages;
+}

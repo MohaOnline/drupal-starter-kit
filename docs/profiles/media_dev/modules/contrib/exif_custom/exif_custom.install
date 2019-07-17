@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * @file
+ * Schema and update hook implementations for the EXIF Custom module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function exif_custom_schema() {
+  $schema['exif_custom_maps'] = array(
+    'description' => 'Stores a list of custom field maps for exif_custom module.',
+    'fields' => array(
+      'mid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Mapping identifier',
+      ),
+      'name' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'desciption' => 'The name of the mapping.',
+      ),
+    ),
+    'primary key' => array('mid'),
+  );
+  $schema['exif_custom_mapped_fields'] = array(
+    'description' => 'Stores mappings of field for exif_custom module.',
+    'fields' => array(
+      'mid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'The ID of the mapping being saved.',
+      ),
+      'exif_field' => array(
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => '128',
+        'default' => '',
+        'not null' => TRUE,
+        'desciption' => 'The EXIF field to save the mapping of.',
+      ),
+      'exif_example' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'desciption' => 'The EXIF field to save the mapping of.',
+      ),
+      'img_field' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => TRUE,
+        'desciption' => 'The image field to map to.',
+      ),
+    ),
+    'primary key' => array('mid', 'exif_field'),
+  );
+  $schema['exif_custom_users'] = array(
+    'description' => 'Stores indivdual user\'s default mapping',
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => "User's uid.",
+      ),
+      'mid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Default mid of user.',
+      ),
+    ),
+    'primary key' => array('uid'),
+  );
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function exif_custom_uninstall() {
+  variable_del('exif_custom_default');
+  variable_del('exif_custom_exclude_paths');
+  variable_del('exif_custom_overwrite_existing');
+  variable_del('exif_custom_request_method');
+}
+
+/**
+ * Add primary keys to DB tables.
+ */
+function exif_custom_update_7100() {
+  // Remove existing primary keys.
+  db_drop_primary_key('exif_custom_users');
+  db_drop_primary_key('exif_custom_mapped_fields');
+  db_drop_primary_key('exif_custom_maps');
+
+  // Update the field.
+  db_change_field('exif_custom_mapped_fields', 'exif_field', 'exif_field', array(
+    'description' => 'EXIF tag name',
+    'type' => 'varchar',
+    'length' => '128',
+    'not null' => TRUE,
+    'default' => '',
+  ));
+
+  // Add the primary keys back again.
+  db_add_primary_key('exif_custom_users', array('uid'));
+  db_add_primary_key('exif_custom_mapped_fields', array('mid', 'exif_field'));
+  db_add_primary_key('exif_custom_maps', array('mid'));
+}
+
+/**
+ * Reload the menus to get the new menu structure.
+ */
+function exif_custom_update_7101() {
+  variable_set('menu_rebuild_needed', TRUE);
+  drupal_set_message(t('Please note that the Custom EXIF mappings are now located under the Media configuration menu instead of the Content configuration menu.'));
+}
+
+/**
+ * Change permission name.
+ */
+function exif_custom_update_7102() {
+  $roles = user_roles();
+  $permissions_new = array('administer exif_custom');
+  foreach ($roles as $key => $value) {
+    $role_load = user_role_load_by_name($value);
+    $roles_l = array($role_load->rid => $role_load->name);
+    $role_permissions = user_role_permissions($roles_l);
+    $permissions = $role_permissions[$role_load->rid];
+    if (isset($permissions['administer image metadata'])) {
+      user_role_grant_permissions($role_load->rid, $permissions_new);
+    }
+  }
+}
+
+/**
+ * Make all image processing automatic.
+ */
+function exif_custom_update_7103() {
+  variable_del('exif_custom_checks');
+}

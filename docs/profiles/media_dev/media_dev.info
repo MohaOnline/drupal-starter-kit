@@ -1,0 +1,48 @@
+name = Media 4.x Development
+description = Makes media 4.x development easier by pre-configuring required modules and providing some dummy media.
+version = 7.x-4.x
+core = 7.x
+
+exclusive = true
+
+; Core modules
+dependencies[] = block
+dependencies[] = color
+dependencies[] = comment
+dependencies[] = contextual
+dependencies[] = dashboard
+dependencies[] = help
+dependencies[] = image
+dependencies[] = menu
+dependencies[] = path
+dependencies[] = taxonomy
+dependencies[] = dblog
+dependencies[] = search
+dependencies[] = shortcut
+dependencies[] = field_ui
+dependencies[] = file
+dependencies[] = rdf
+
+; Contrib modules
+;dependencies[] = admin_menu
+dependencies[] = ctools
+dependencies[] = devel
+dependencies[] = file_entity
+dependencies[] = libraries
+dependencies[] = media
+dependencies[] = media_bulk_upload
+dependencies[] = media_wysiwyg
+dependencies[] = media_wysiwyg_view_mode
+dependencies[] = media_internet
+dependencies[] = oembed
+dependencies[] = plupload
+dependencies[] = token
+dependencies[] = transliteration
+dependencies[] = views
+dependencies[] = wysiwyg
+
+; Information added by Drupal.org packaging script on 2019-06-10
+version = "7.x-4.0"
+core = "7.x"
+project = "media_dev"
+datestamp = "1560181730"

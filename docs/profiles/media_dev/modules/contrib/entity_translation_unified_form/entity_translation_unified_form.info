@@ -1,0 +1,11 @@
+name = Entity translation unified form
+description = Places all entity-translatable fields inline in a single form
+core = 7.x
+package = Multilingual - Entity Translation
+dependencites[] = entity_translation
+
+; Information added by Drupal.org packaging script on 2018-09-17
+version = "7.x-1.0"
+core = "7.x"
+project = "entity_translation_unified_form"
+datestamp = "1537222685"

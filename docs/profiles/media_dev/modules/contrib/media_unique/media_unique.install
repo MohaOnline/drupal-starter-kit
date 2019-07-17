@@ -1,0 +1,101 @@
+<?php
+
+
+/**
+ * Media Unique table for capturing sha1.
+ * @return array() with table definition as required.
+ */
+function __media_unique_schema() {
+  $schema['media_unique'] = array(
+    'description' => 'sha1 hashes for files',
+    'fields' => array(
+      'entity_id' => array(
+        'description' => 'Entity ID',
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'sha1' => array(
+        'description' => 'sha1 hash of file at entity_id',
+        'type' => 'varchar',
+        'length' => 256,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('entity_id'),
+  );
+  return $schema;
+}
+
+
+/**
+ * Implements hook_schema().
+ */
+function media_entity_schema() {
+  $schema = __media_entity_schema(); //Grab media entity table definition.
+  return $schema;
+}
+
+
+/**
+* Implementation of hook_install
+*/
+function media_unique_install() {
+  variable_set('media_unique_file_pointer', 0);
+  variable_set('media_unique_batch_limit', 20);
+  variable_set('media_unique_bundle_to_process', 'image');
+}
+
+
+/**
+* Implementation of hook_enable
+*/
+function media_unique_enable() {
+  if (!db_table_exists('media_unique')) {
+    $schema = __media_unique_schema();
+    db_create_table('media_unique', $schema['media_unique']);
+  }
+}
+
+
+/**
+* Implementation of hook_install
+*/
+function media_unique_uninstall() {
+  variable_del('media_unique_file_pointer');
+  variable_del('media_unique_batch_limit');
+  variable_del('media_unique_bundle_to_process');
+  db_drop_table('media_unique');
+}
+
+
+/**
+* Implementation of hook_requirements
+*/
+function media_unique_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  if ($phase == 'install') {
+    if (module_exists('bad_performance')) {
+      $requirements['media_unique'] = array(
+        'title' => $t('bad_performance needs to be disabled and uninstalled. '), 
+        'value' => $t('Media unique is not compatible with the bad_performance module.'), 
+        'severity' => REQUIREMENT_ERROR, 
+      );
+    }
+  }
+  return $requirements;
+}
+
+
+/**
+ * Create the media_unique schema because we need to store the sha1 hashes.
+ * The sha1 hashes will be used repeatedly, storing them in the db is one solution.
+ */
+function media_unique_update_7000() {
+  $schema = __media_unique_schema();
+  db_create_table('media_unique', $schema['media_unique']);
+}
+

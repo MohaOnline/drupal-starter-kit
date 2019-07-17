@@ -1,0 +1,10 @@
+name = Administration menu Toolbar style
+description = A better Toolbar.
+package = Administration
+core = 7.x
+dependencies[] = admin_menu
+
+; Information added by drush on 2019-02-12
+version = "7.x-3.0-rc6+8-dev"
+project = "admin_menu"
+datestamp = "1549983490"

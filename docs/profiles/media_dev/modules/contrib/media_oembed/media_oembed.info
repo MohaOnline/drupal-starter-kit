@@ -1,0 +1,16 @@
+name = Media: oEmbed
+description = Adds oEmbed as a supported media provider.
+package = Media
+core = 7.x
+
+dependencies[] = media_internet
+
+files[] = includes/MediaOEmbedStreamWrapper.inc
+files[] = includes/MediaInternetOEmbedHandler.inc
+
+configure = admin/config/media/media-oembed
+
+; Information added by drush on 2017-06-15
+version = "7.x-2.7+1-dev"
+project = "media_oembed"
+datestamp = "1497556087"
