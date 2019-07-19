@@ -30,10 +30,10 @@ function _powertagging_get_visual_mapper_data($powertagging_config, $fetch_relat
       $sparql_api = $sparql_endpoint->getApi();
 
       if ($fetch_relations) {
-        $concept = $sparql_api->getVisualMapperData($root_uri, $project_languages[$lang], (isset($_GET['parent_info']) && $_GET['parent_info'] === 'true'));
+        $concept = $sparql_api->getVisualMapperData($root_uri, $lang, (isset($_GET['parent_info']) && $_GET['parent_info'] === 'true'));
       }
       else {
-        $concept = $sparql_api->createRootUriObject($root_uri, $project_languages[$lang]);
+        $concept = $sparql_api->createRootUriObject($root_uri, $lang);
       }
 
       // Display the data as JSON.

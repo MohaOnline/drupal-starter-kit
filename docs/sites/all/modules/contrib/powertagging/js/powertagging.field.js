@@ -594,8 +594,8 @@ Drupal.behaviors.powertagging_field = {
 
     function addTagToResult(field_id, tag) {
       // Only add tags, that are not already inside the results area.
-      if ((tag.tid > 0 && $(field_id + ' .powertagging-tag-result .powertagging-tag[data-tid="' + tag.tid + '"]').length === 0) ||
-          (tag.tid == 0 && ($(field_id + ' .powertagging-tag-result .powertagging-tag[data-label="' + tag.label + '"]').length === 0 || tag.uri !== ""))) {
+      if ((parseInt(tag.tid) > 0 && $(field_id + ' .powertagging-tag-result .powertagging-tag[data-tid="' + tag.tid + '"]').length === 0) ||
+          (parseInt(tag.tid) === 0 && ($(field_id + ' .powertagging-tag-result .powertagging-tag[data-label="' + tag.label + '"]').length === 0 || tag.uri !== ""))) {
 
         // Add a new list if this is the first tag to add.
         if ($(field_id + " .powertagging-tag-result ul").length === 0) {
@@ -620,7 +620,7 @@ Drupal.behaviors.powertagging_field = {
       }
 
       // Disable already selected tags in the extraction area.
-      if (tag.tid > 0) {
+      if (parseInt(tag.tid) > 0) {
         $(field_id + ' .powertagging-extracted-tags .powertagging-tag[data-tid="' + tag.tid + '"]').addClass("disabled");
       }
       else {
@@ -633,7 +633,7 @@ Drupal.behaviors.powertagging_field = {
       settings = settings[Object.keys(settings)[0]];
 
       // Enable tags in the extraction area again and remove the list item.
-      if (tag.tid > 0) {
+      if (parseInt(tag.tid) > 0) {
         $(field_id + ' .powertagging-tag-result .powertagging-tag[data-tid="' + tag.tid + '"]').parent("li").remove();
         $(field_id + ' .powertagging-extracted-tags .powertagging-tag[data-tid="' + tag.tid + '"]').removeClass("disabled");
       }

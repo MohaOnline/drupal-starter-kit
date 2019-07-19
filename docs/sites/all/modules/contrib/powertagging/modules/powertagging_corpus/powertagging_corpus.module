@@ -5,6 +5,19 @@
  * The module-file of the PowerTagging Corpus Management module.
  */
 
+
+/**
+ * Implements hook_permission().
+ */
+function powertagging_corpus_permission() {
+  return array(
+    'administer corpus management' => array(
+      'title' => t('Administer Corpus Management'),
+      'description' => t('Perform administration tasks for the Corpus Management.'),
+    ),
+  );
+}
+
 /**
  * Implements hook_menu().
  */
@@ -17,7 +30,7 @@ function powertagging_corpus_menu() {
     'description' => 'Settings for PowerTagging Corpus Management',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('powertagging_corpus_list_corpora'),
-    'access arguments' => array('administer powertagging'),
+    'access arguments' => array('administer corpus management'),
     'file' => 'includes/powertagging_corpus.admin.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => 2,
@@ -27,7 +40,7 @@ function powertagging_corpus_menu() {
     'title' => 'Push content into a corpus',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('powertagging_corpus_add_content_form', 6, 7, 8),
-    'access arguments' => array('administer powertagging'),
+    'access arguments' => array('administer corpus management'),
     'file' => 'includes/powertagging_corpus.admin.inc',
     'type' => MENU_CALLBACK,
   );
@@ -36,7 +49,7 @@ function powertagging_corpus_menu() {
     'title' => 'Perform an analysis on a corpus',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('powertagging_corpus_analyze_corpus_form', 6, 7, 8),
-    'access arguments' => array('administer powertagging'),
+    'access arguments' => array('administer corpus management'),
     'file' => 'includes/powertagging_corpus.admin.inc',
     'type' => MENU_CALLBACK,
   );

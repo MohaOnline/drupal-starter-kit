@@ -842,7 +842,7 @@ function powertagging_corpus_analyze_corpus_form_submit($form, &$form_state) {
       drupal_set_message(t('Successfully started an analysis for corpus "%corpusname".', array('%corpusname' => $form_state['values']['corpus_label'])));
     }
     else {
-      drupal_set_message(t('An error occurred while starting the analysis of corpus "%corpusname".', array('@corpusname' => $form_state['values']['corpus_label']) . (isset($result['message']) && !empty($result['message'])) ? ' message: ' . $result['message'] : ''), 'error');
+      drupal_set_message(t('An error occurred while starting the analysis of corpus "%corpusname".', array('%corpusname' => $form_state['values']['corpus_label'])) . ((isset($result['message']) && !empty($result['message'])) ? ' Message: ' . $result['message'] : ''), 'error');
     }
   }
   else {

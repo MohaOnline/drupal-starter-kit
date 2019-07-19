@@ -1879,19 +1879,25 @@ function powertagging_update_term_concept_details(&$term, $concept) {
   $term->description = empty($concept->definitions) ? '' : implode(' ', $concept->definitions);
 
   // Set the alternative labels.
-  $term->field_alt_labels[LANGUAGE_NONE][0]['value'] = '';
-  if (!empty($concept->altLabels)) {
-    $alt_labels = implode(',', $concept->altLabels);
-    // Remove multibyte-characters.
-    $term->field_alt_labels[LANGUAGE_NONE][0]['value'] = preg_replace('/[[:^print:]]/', "", $alt_labels);
+  if (empty($concept->altLabels)) {
+    $term->field_alt_labels = [];
+  }
+  elseif (!isset($term->field_alt_labels) || !_powertagging_compare_concept_details($term->field_alt_labels, $concept->altLabels)) {
+    $term->field_alt_labels[LANGUAGE_NONE] = [];
+    foreach ($concept->altLabels as $alt_label) {
+      $term->field_alt_labels[LANGUAGE_NONE][] = ['value' => preg_replace('/[[:^print:]]/', '', $alt_label)];
+    }
   }
 
   // Set the hidden labels.
-  $term->field_hidden_labels[LANGUAGE_NONE][0]['value'] = '';
-  if (!empty($concept->hiddenLabels)) {
-    $hidden_labels = implode(',', $concept->hiddenLabels);
-    // Remove multibyte-characters.
-    $term->field_hidden_labels[LANGUAGE_NONE][0]['value'] = preg_replace('/[[:^print:]]/', "", $hidden_labels);
+  if (empty($concept->hiddenLabels)) {
+    $term->field_hidden_labels = [];
+  }
+  elseif (!isset($term->field_hidden_labels) || !_powertagging_compare_concept_details($term->field_hidden_labels, $concept->hiddenLabels)) {
+    $term->field_hidden_labels[LANGUAGE_NONE] = [];
+    foreach ($concept->hiddenLabels as $hidden_label) {
+      $term->field_hidden_labels[LANGUAGE_NONE][] = ['value' => preg_replace('/[[:^print:]]/', '', $hidden_label)];
+    }
   }
 
   // Set the scope notes.

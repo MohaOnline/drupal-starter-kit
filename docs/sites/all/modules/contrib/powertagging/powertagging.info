@@ -11,8 +11,8 @@ dependencies[] = semantic_connector (>= 2.10)
 
 stylesheets[all][] = css/powertagging.css
 scripts[] = js/powertagging.js
-; Information added by Drupal.org packaging script on 2019-01-11
-version = "7.x-2.8"
+; Information added by Drupal.org packaging script on 2019-07-17
+version = "7.x-2.9"
 core = "7.x"
 project = "powertagging"
-datestamp = "1547205788"
+datestamp = "1563353288"
