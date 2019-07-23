@@ -31,12 +31,14 @@ class UuidUserServicesTest extends ServicesWebTestCase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  public function setUp(array $modules = array()) {
     parent::setUp(
-      'ctools',
-      'services',
-      'rest_server',
-      'uuid_services'
+      array(
+        'ctools',
+        'services',
+        'rest_server',
+        'uuid_services',
+      )
     );
     $this->endpoint = $this->saveNewEndpoint();
   }

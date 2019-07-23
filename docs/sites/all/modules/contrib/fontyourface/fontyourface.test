@@ -7,7 +7,7 @@
 
 class FontyourfaceSaveFontTestCase extends DrupalWebTestCase {
 
-  public function getInfo() {
+  public static function getInfo() {
 
     return array(
       'name' => t('Save font'),

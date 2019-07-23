@@ -10,7 +10,7 @@ class SignupTestCase extends DrupalWebTestCase {
     parent::setUp('signup');
   }
 
-  public function getInfo() {
+  public static function getInfo() {
     return array(
       'name' => 'Signup stub functionality',
       'description' => 'Stub for testing functionality of the Signup module.',
