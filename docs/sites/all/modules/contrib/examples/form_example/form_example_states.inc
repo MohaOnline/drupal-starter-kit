@@ -85,7 +85,10 @@ function form_example_states_form($form, &$form_state) {
   // High school information.
   $form['high_school']['tests_taken'] = array(
     '#type' => 'checkboxes',
-    '#options' => drupal_map_assoc(array(t('SAT'), t('ACT'))),
+    '#options' => array(
+      'SAT' => t('SAT'),
+      'ACT' => t('ACT')
+    ),
     '#title' => t('What standardized tests did you take?'),
     // This #states rule says that this checkboxes array will be visible only
     // when $form['student_type'] is set to t('High School').
@@ -173,7 +176,10 @@ function form_example_states_form($form, &$form_state) {
   );
   $form['undergraduate']['school_country'] = array(
     '#type' => 'select',
-    '#options' => drupal_map_assoc(array(t('UK'), t('Other'))),
+    '#options' => array(
+      'UK' => t('UK'),
+      'other' t('Other'),
+    ),
     '#title' => t('In what country is your college or university located?'),
   );
   $form['undergraduate']['country_writein'] = array(
