@@ -1,0 +1,141 @@
+<?php
+
+/**
+ * @file
+ *  Link ShURLy functionalities to services module.
+ * @todo
+ *  - add option to rate limit requests
+ *  - add option for user api keys
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function shurly_service_permission() {
+  return array(
+    'administer short URL services' => array(
+      'title' => t('Administer short URL services'),
+    ),
+    'Expand short URLs' => array(
+      'title' => t('Expand short URLs'),
+    ),
+    'Request custom short URL' => array(
+      'title' => t('Request custom short URL'),
+      'description' => t('Allow users to pass a desired custom short URL to the shURLy service.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function shurly_service_menu() {
+  $items = array();
+  $items['shurly/api/shorten'] = array(
+    'file' => 'shurly_service.inc',
+    'page callback' => 'shurly_service_shorten',
+    'access callback' => 'shurly_service_access_api_key',
+    'type' => MENU_CALLBACK,
+  );
+  $items['shurly/api/expand'] = array(
+    'file' => 'shurly_service.inc',
+    'page callback' => 'shurly_service_expand',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function shurly_service_access_api_key() {
+  if ($_REQUEST['apiKey']) {
+    module_load_include('inc', 'shurly_service', 'shurly_api_keys');
+    $api_validation = (is_numeric(shurly_get_uid($_REQUEST['apiKey']))) ? TRUE : FALSE;
+  }
+    
+  return user_access('Create short URLs') && $api_validation;
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function shurly_service_block_info() {
+  $blocks['api_key'] = array(
+    'info' => t('Short URL API key'),
+  );
+  return $blocks;
+}
+
+
+/**
+ * Implements hook_block_view().
+ */
+function shurly_service_block_view($delta = '') {
+  $block = array();
+  // don't show the block when user is on the callback page
+  switch ($delta) {
+    case 'api_key':
+      global $user;
+      if ($user->uid > 0 && user_access('Create short URLs')) {
+        $block['subject'] = t('API key');
+        $block['content'] = drupal_get_form('shurly_api_key_form');
+      }
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Form callback; Display a form with a textfield containing a user's API key.
+ */
+function shurly_api_key_form($form, &$form_state) {
+  global $user;
+  module_load_include('inc', 'shurly_service', 'shurly_api_keys');
+  $key = shurly_get_api_key($user->uid);
+
+  $form = array();
+  if ($key) {
+    $form['key'] = array(
+      '#type' => 'textfield',
+      '#title' => t('API key'),
+      '#default_value' => $key,
+      '#description' => t('You can provide this key to 3rd party apps rather than sharing your password.'),
+    );
+    $form['reset'] = array(
+      '#type' => 'submit',
+      '#value' => t('Reset'),
+      '#suffix' => t('If a 3rd party is misusing your API key, you can generate a new one.'),
+    );
+
+  }
+  else {
+    $form['new'] = array(
+      '#type' => 'submit',
+      '#value' => t('Create'),
+      '#suffix' =>  t('Create an API key to use with 3rd party applications.'),
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Submit handler for shurly_api_key_form(). Regenerate a user API key.
+ */
+function shurly_api_key_form_submit($form, &$form_state) {
+  // we don't need to do anything with the submitted form...
+  // just generate a new API key
+  global $user;
+  shurly_generate_new_api_key($user->uid);
+}
+
+/**
+ * Implementation of hook_views_api.
+ * Notifies the Views module that we're compatible with a particular API revision.
+ */
+function shurly_service_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'shurly_service') . '/views',
+  );
+}

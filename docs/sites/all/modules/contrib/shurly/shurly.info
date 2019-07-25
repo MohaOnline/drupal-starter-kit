@@ -1,0 +1,20 @@
+name = ShURLy
+package = ShURLy
+description = A complete short URL service.
+dependencies[] = views
+configure = admin/config/system/shurly
+core = 7.x
+project = "shurly"
+
+; Views Handlers
+files[] = views/shurly_handler_field_short_url.inc
+files[] = views/shurly_handler_field_shurly_link_edit.inc
+files[] = views/shurly_handler_field_shurly_link_delete.inc
+files[] = views/shurly.views.inc
+files[] = views/shurly.views_default.inc
+; Information added by Drupal.org packaging script on 2017-04-16
+version = "7.x-1.4"
+core = "7.x"
+project = "shurly"
+datestamp = "1492302844"
+

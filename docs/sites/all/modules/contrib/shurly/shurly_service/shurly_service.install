@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * @file
+ */
+
+/**
+ * Implement hook_schema().
+ */
+function shurly_service_schema() {
+  $schema['shurly_keys'] = array(
+    'description' => t('API keys for use with the Shurly module'),
+    'fields' => array(
+      'uid' => array(
+        'description' => t('User ID'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'apikey' => array(
+        'description' => t('API key for user'),
+        'type' => 'varchar',
+        'length' => '35',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('apikey'),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+  );
+  return $schema;
+}

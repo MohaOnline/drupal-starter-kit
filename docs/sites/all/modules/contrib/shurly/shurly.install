@@ -1,0 +1,280 @@
+<?php
+
+/**
+ * @file
+ * Shurly install file
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function shurly_schema() {
+  $schema = array();
+  $schema['shurly'] = array(
+    'description' => t('URL redirects for the Shurly module.'),
+    'fields' => array(
+      'rid' => array(
+        'description' => t('Unique redirect id.'),
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => t('User id of owner.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'source' => array(
+        'description' => t('Source path.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'binary' => TRUE,
+        'not null' => TRUE,
+      ),
+      'destination' => array(
+        'description' => t('Redirect URL.'),
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'hash' => array(
+        'description' => t('The hash of the redirect URL.'),
+        'type' => 'varchar',
+        'length' => '32',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'created' => array(
+        'description' => t('Datestamp of creation.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'count' => array(
+        'description' => t('Usage count.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'last_used' => array(
+        'description' => t('Datestamp of last use.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'custom' => array(
+        'description' => t('Flag for custom path.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'active' => array(
+        'description' => t('Allows links to be deactivated.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+      ),
+    ),
+    'primary key' => array('rid'),
+    'indexes' => array(
+      'source' => array('source'),
+      'hash' => array('hash'),
+    ),
+  );
+
+  // History table to shurly to allow editing of short urls
+  $schema['shurly_history'] = array(
+    'description' => t('Stores a history of the various shortlinks.  Rows are created when they are edited, so we can see what a row once was.'),
+    'fields' => array(
+      'hid' => array(
+        'description' => t('Unique history ID.'),
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'rid' => array(
+        'description' => t('The redirect ID.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'vid' => array(
+        'description' => t('The version for the change made.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'source' => array(
+        'description' => t('Source path.'),
+        'type' => 'varchar',
+        'length' => '255',
+        'binary' => TRUE,
+        'not null' => TRUE,
+      ),
+      'destination' => array(
+        'description' => t('Redirect URL.'),
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'last_date' => array(
+        'description' => t('Datestamp that this link was edited from the value in this row.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'count' => array(
+        'description' => t('Usage count.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('hid'),
+    'indexes' => array(
+      'source' => array('rid', 'vid'),
+    ),
+  );
+
+  $schema['shurly_flood'] = array(
+    'description' => t('Flood controls the threshold of events, such as the number of contact attempts.'),
+    'fields' => array(
+      'fid' => array(
+        'description' => t('Unique flood event ID.'),
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'event' => array(
+        'description' => t('Name of event (e.g. contact).'),
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'identifier' => array(
+        'description' => t('Identifier of the visitor, such as an IP address or hostname.'),
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'timestamp' => array(
+        'description' => t('Timestamp of the event.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'expiration' => array(
+        'description' => t('Expiration timestamp. Expired events are purged on cron run.'),
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('fid'),
+    'indexes' => array(
+      'allow' => array('event', 'identifier', 'timestamp'),
+      //'purge' => array('expiration'),
+    ),
+  );
+
+  return $schema;
+}
+
+
+/**
+ * Implement hook_uninstall().
+ */
+function shurly_uninstall() {
+
+  // Remove variables.
+  variable_del('shurly_throttle');
+  variable_del('shurly_length');
+  variable_del('shurly_counter');
+  variable_del('shurly_index');
+  variable_del('shurly_base');
+}
+
+/**
+ * Convert destination field to text.
+ */
+function shurly_update_7100() {
+  db_change_field('shurly', 'destination', 'destination', array(
+    'description' => t('redirect URL'),
+    'type' => 'text',
+    'not null' => TRUE)
+  );
+}
+
+/**
+ * Make the source field case-sensitive.
+ */
+function shurly_update_7101() {
+  db_drop_index('shurly', 'source'); 
+  db_change_field('shurly', 'source', 'source', array(
+    'description' => t('source path'),
+    'type' => 'varchar',
+    'length' => '255',
+    'binary' => TRUE,
+    'not null' => TRUE),
+  array('indexes' => array('source' => array('source')))
+  );
+}
+/**
+ * Add hash to destination field for indexing.
+ */
+function shurly_update_7102() {
+  db_add_field('shurly', 'hash', array(
+    'description' => t('The hash of the redirect URL'),
+    'type' => 'varchar',
+    'length' => '32',
+    'not null' => TRUE,
+    'default' => ''),
+  array('indexes' => array('hash' => array('hash')))
+  );
+
+  db_query('UPDATE {shurly} SET hash = MD5(destination)');
+}
+
+/**
+ * Adding the new history table to shurly to allow editing of short urls.
+ */
+function shurly_update_7103() {
+  $schema['shurly_history'] = array(
+    'description' => t('Stores a history of the various shortlinks.  Rows are created when they are edited, so we can see what a row once was.'),
+    'fields' => array(
+      'hid' => array(
+        'description' => t('Unique history ID.'),
+        'type' => 'serial',
+        'not null' => TRUE,
+      ),
+      'rid' => array(
+        'description' => t('The redirect ID.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'vid' => array(
+        'description' => t('The version for the change made.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'source' => array(
+        'description' => t('Source path.'),
+        'type' => 'varchar',
+        'length' => '2048',
+        'binary' => TRUE,
+        'not null' => TRUE,
+      ),
+      'destination' => array(
+        'description' => t('Redirect URL.'),
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'last_date' => array(
+        'description' => t('Datestamp that this link was edited from the value in this row.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'count' => array(
+        'description' => t('Usage count.'),
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('hid'),
+    'indexes' => array(
+      'source' => array('rid', 'vid'),
+    ),
+  );
+  db_create_table('shurly_history', $schema['shurly_history']);
+}
