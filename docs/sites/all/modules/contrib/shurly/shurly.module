@@ -46,7 +46,7 @@ function shurly_help($path, $arg) {
   $output = '';
   switch ($path) {
     case "admin/help#shurly":
-      $output = '<div style="white-space:pre-wrap">' . htmlentities(file_get_contents('README.markdown', FILE_USE_INCLUDE_PATH)) . '</div>';
+      $output = '<div style="white-space:pre-wrap">' . htmlentities(file_get_contents('README.txt', FILE_USE_INCLUDE_PATH)) . '</div>';
       break;
   }
   return $output;
