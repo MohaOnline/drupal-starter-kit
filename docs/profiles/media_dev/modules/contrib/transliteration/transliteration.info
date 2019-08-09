@@ -1,9 +1,0 @@
-name = Transliteration
-description = Converts non-latin text to US-ASCII and sanitizes file names.
-core = 7.x
-configure = admin/config/media/file-system
-
-; Information added by drush on 2019-01-09
-version = "7.x-3.2+9-dev"
-project = "transliteration"
-datestamp = "1547031071"

@@ -1,6 +1,0 @@
-<?php
-/**
- * @file
- * Code for the dvg_webform_component_collections feature (content-type "webform_collection").
- * Also: provides reuse existing collections in webforms.
- */

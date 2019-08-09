@@ -1,9 +1,0 @@
-name = Token
-description = Provides a user interface for the Token API and some missing core tokens.
-core = 7.x
-files[] = token.test
-
-; Information added by drush on 2017-04-27
-version = "7.x-1.7+1-dev"
-project = "token"
-datestamp = "1493329821"

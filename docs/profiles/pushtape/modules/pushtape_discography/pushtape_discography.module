@@ -1,7 +1,0 @@
-<?php
-/**
- * @file
- * Code for the pushtape_discography feature.
- */
-
-include_once('pushtape_discography.features.inc');

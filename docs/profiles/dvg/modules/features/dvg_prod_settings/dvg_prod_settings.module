@@ -1,7 +1,0 @@
-<?php
-/**
- * @file
- * Code for the Production settings feature.
- */
-
-include_once 'dvg_prod_settings.features.inc';

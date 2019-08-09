@@ -1,7 +1,0 @@
-<?php
-/**
- * @file
- * Code for the Pushtape Admin feature.
- */
-
-include_once 'pushtape_admin.features.inc';

@@ -1,8 +1,0 @@
-.*
-!.travis.yml
-!.gitignore
-!.gitmodules
-!.htaccess
-nbproject/
-*.kpf
-tests/behat/failures

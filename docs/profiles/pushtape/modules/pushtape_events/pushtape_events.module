@@ -1,7 +1,0 @@
-<?php
-/**
- * @file
- * Code for the Pushtape Events feature.
- */
-
-include_once 'pushtape_events.features.inc';
