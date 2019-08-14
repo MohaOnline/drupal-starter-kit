@@ -16,8 +16,8 @@ files[] = src/SearchApiFederatedSolrRemap.php
 files[] = src/SearchApiFederatedSolrSiteName.php
 files[] = src/SearchApiFederatedSolrUrls.php
 
-; Information added by Drupal.org packaging script on 2019-07-15
-version = "7.x-2.2"
+; Information added by Drupal.org packaging script on 2019-08-06
+version = "7.x-2.3"
 core = "7.x"
 project = "search_api_federated_solr"
-datestamp = "1563218587"
+datestamp = "1565116093"
