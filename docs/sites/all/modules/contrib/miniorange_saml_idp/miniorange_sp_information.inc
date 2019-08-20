@@ -15,31 +15,30 @@ function miniorange_sp_information($form, &$form_state) {
   global $base_url;
 
   $issue1 = variable_get('miniorange_saml_idp_issuerID','');
-  $issuer = $issue1 !='' ? $issue1 : $base_url . '/?q=admin/config/people/miniorange_saml_idp/';
-
+  $issuer = $issue1 != '' ? $issue1 : $base_url . '/?q=admin/config/people/miniorange_saml_idp/';
  
   $url = $base_url . '/';
   $login_url = $url . '?q=initiatelogon';
   $module_path = drupal_get_path('module', 'miniorange_saml_idp');
 
-  global $base_url;
-
-  $form['header_top_style_1'] = array('#markup' => '<div class="mo_saml_table_layout_1">',);
+  variable_set('miniorange_saml_issuer_id', $issuer);
+  variable_set('miniorange_saml_login_url', $login_url);
 
   $form['markup_idp_header_1'] = array(
-      '#markup' => '<div class="mo_saml_table_layout mo_saml_container"><b><span style="font-size: 17px;">IDP METADATA</span></b>
+      '#markup' => '<div class="mo_saml_table_layout_1"><div class="mo_saml_table_layout mo_saml_container"><b><span style="font-size: 17px;">IDP METADATA</span></b>
                     <a class="btn btn-primary btn-large restart_button" id="restart_tour_button">'
                     . 'Take a Tour</a><br><br><hr><br/>',
   );
 
-    $form['markup_idp_sp_1'] = array(
-        '#markup' => 'You can provide this metadata URL to your Service Provider.<br />',
+    $form['mo_saml_metadata_option'] = array(
+        '#markup' => '<div style="color: #d9534f;"><b>Provide this module information to your Service Provider team. You can choose any one of the below options:</b></div>',
     );
 
     $form['markup_idp_sp_2'] = array(
-        '#markup' => '<div>
-                        <div class="mo_saml_highlight_background_url_note" ">
-                            <code id="mo_saml_idp_vt_metadata"><b>
+        '#markup' => '<div id="mo_saml_idp_vt_metadata">
+                        <br><b>a) Provide this metadata URL to your Service Provider:</b><br>
+                        <div class="mo_saml_highlight_background_url_note" >
+                            <code><b>
                                 <span id="idp_metadata_url">
                                     <a target="_blank" href="' . $base_url . '/?q=moidp_metadata">' . $base_url . '/?q=moidp_metadata</a>
                                 </span></b>
@@ -48,19 +47,14 @@ function miniorange_sp_information($form, &$form_state) {
                         <img class ="fa fa-fw fa-lg fa-copy mo_copy" style="margin-left: 10px;" onclick="copyToClipboard(\'#idp_metadata_url\');" src="'. $base_url.'/'.$module_path . '/includes/images/copy-regular.svg"></div>',
     );
 
-    $form['markup_idp_sp'] = array(
-        '#markup' => '<center><h3>OR</h3></center>',
+    $form['mo_saml_download_btn_title'] = array(
+        '#markup' => '<br><div id="visual_tour_download_metadataXMLFile"><b>b) Download the Module XML metadata and upload it on your Service Provider : </b>
+                        <span><a href="' . $base_url . '/?q=moidp_download_metadata"  class="btn btn-primary btn-large mo_saml_btn" style="padding: 4px 10px;">Download XML Metadata</a></span></div>',
     );
 
-  $form['header'] = array(
-    '#markup' => '<br><div style="font-size: 13px;"><center><h3>You will need the following information to configure your Service Provider. Copy it and keep it handy.</h3></center></div>',
-  );
-
-  $header = array(
-    'attribute' => array('data' => t('Attribute')),
-    'value' => array('data' => t('Value')),
-  );
-
+    $form['header'] = array(
+        '#markup' => '<br><br><div><b>c) Provide the following information to your Service Provider. Copy it and keep it handy.</b></div><br>',
+    );
 
     $form['mo_saml_attrs_list_idp'] = array(
         '#markup' => '<div class="table-responsive" style="font-family: sans-serif;font-size: 12px;" id="mo_idp_vt_conf_table">   
@@ -87,19 +81,19 @@ function miniorange_sp_information($form, &$form_state) {
                                 <tr>
                                     <td style="font-weight:bold;padding: 15px;">SAML Logout URL</td>
                                     <td>						               
-						               <span id="base_url">Available in </b><a href="' . $base_url . '/admin/config/people/miniorange_saml_idp/licensing"> <b>Premium</b></a> version of the module.</span>						                      
+						               <span id="base_url">Available in </b><a href="' . Utilities::getLicensingPageURL() . '"> Premium</a> version of the module.</span>						                      
 						            </td>                                  
                                 </tr>
                                 <tr>
                                     <td style="font-weight:bold;padding: 15px;">Certificate (Optional)</td>
                                      <td>						               
-						               <span id="bacs_url"><a href="' . $base_url . '/' . $module_path . '/resources/idp-signing.crt">Download</a></span>
+						               <span id="bacs_url"><a href="' . $base_url . '/' . $module_path . '/resources/idp-signing.crt" download="idp-signing.crt">Download</a> X509 Certificate.</span>
 						                      
 						            </td>                                    
                                 </tr><tr>
                                     <td style="font-weight:bold;padding: 15px;">Response Signed</td>
                                     <td>						               
-						               <span id="base_url">Available in </b><a href="' . $base_url . '/admin/config/people/miniorange_saml_idp/licensing"> <b>Premium</b></a> version of the module.</span>						                      
+						               <span id="base_url">Available in </b><a href="' . Utilities::getLicensingPageURL() . '"> Premium</a> version of the module.</span>						                      
 						            </td>   
                                 </tr>
                                 <tr>
@@ -128,41 +122,14 @@ function miniorange_sp_information($form, &$form_state) {
           </script>'
     );
 
-    $form['markup_idp_div_end'] = array(
-        '#markup' => '</div>',
-    );
-
-
-
-  $form['markup_idp_attr_header_top_div_close'] = array('#markup' => '</div>');
-
     $form['miniorange_idp_guide_link'] = array(
-        '#markup' => '<div class="mo_saml_table_layout mo_saml_container_2">',
-    );
-
-    $form['miniorange_idp_guide_link1'] = array(
-        '#markup' => '<div style="font-size: 15px;"><b>To see detailed documentation of how to configure Drupal 7 SAML IdP with any Service Provider</b></div></br>',
+        '#markup' => '</div></div>',
     );
 
     Utilities::spConfigGuide($form, $form_state);
 
+    Utilities::AddSupportButton($form, $form_state);
 
-    $form['miniorange_idp_guide_link_end'] = array(
-        '#markup' => '</div>',
-    );
-
-  Utilities::AddSupportButton($form, $form_state);
-
-  return $form;
+    return $form;
  }
 
-/**
- * Send support query.
- */
-function send_support_query(&$form, $form_state)
-{
-    $email = $form['miniorange_saml_email_address_support']['#value'];
-    $phone = $form['miniorange_saml_phone_number_support']['#value'];
-    $query = $form['miniorange_saml_support_query_support']['#value'];
-    Utilities::send_query($email, $phone, $query);
-}

@@ -109,24 +109,13 @@ function addID()
 function getTourData($pageID,$Tour_Taken)
 {
     $tourData = array();
-
     if($Tour_Taken == FALSE)
         $tab_index = 'miniorange_saml_idp';
-    else $tab_index = 'idp_tab';
+    else 
+        $tab_index = 'idp_tab';
 
     $tourData['miniorange_saml_idp'] = array(
         0 =>    array(
-            'targetE'       =>  'mo_idp_vt_conf_table',
-            'pointToSide'   =>  'left',
-            'titleHTML'     =>  '<h1>Identity Provider metadata URLs</h1>',
-            'contentHTML'   =>  'You can manually configure your Service Provider using the information given here.',
-            'ifNext'        =>  true,
-            'buttonText'    =>  'Next',
-            'img'           =>  array(),
-            'cardSize'      =>  'largemedium',
-            'action'        =>  '',
-        ),
-        1 =>    array(
             'targetE'       =>  'mo_saml_idp_vt_metadata',
             'pointToSide'   =>  'left',
             'titleHTML'     =>  '<h1>Identity Provider metadata URL</h1>',
@@ -137,7 +126,29 @@ function getTourData($pageID,$Tour_Taken)
             'cardSize'      =>  'medium',
             'action'        =>  '',
         ),
+        1 =>    array(
+            'targetE'       =>  'visual_tour_download_metadataXMLFile',
+            'pointToSide'   =>  'left',
+            'titleHTML'     =>  '<h1>Identity Provider metadata File</h1>',
+            'contentHTML'   =>  'Provide this Metadata File to configure your Service Provider.',
+            'ifNext'        =>  true,
+            'buttonText'    =>  'Next',
+            'img'           =>  array(),
+            'cardSize'      =>  'medium',
+            'action'        =>  '',
+        ),
         2 =>    array(
+            'targetE'       =>  'mo_idp_vt_conf_table',
+            'pointToSide'   =>  'left',
+            'titleHTML'     =>  '<h1>Identity Provider metadata URLs</h1>',
+            'contentHTML'   =>  'You can manually configure your Service Provider using the information given here.',
+            'ifNext'        =>  true,
+            'buttonText'    =>  'Next',
+            'img'           =>  array(),
+            'cardSize'      =>  'largemedium',
+            'action'        =>  '',
+        ),
+        3 =>    array(
             'targetE'       =>  'mosaml-feedback-form',
             'pointToSide'   =>  'right',
             'titleHTML'     =>  '<h1>Need Help ?</h1>',
@@ -156,7 +167,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mosaml-feedback-form',
             'pointToSide'   =>  'right',
             'titleHTML'     =>  '<h1>Need help?</h1>',
-            'contentHTML'   =>  'Get in touch with us and we will help you setup the plugin in no time.',
+            'contentHTML'   =>  'Get in touch with us and we will help you setup the module in no time.',
             'ifNext'        =>  true,
             'buttonText'    =>  'Next',
             'img'           =>  array(),
@@ -200,7 +211,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mo_saml_idp_vt_import',
             'pointToSide'   =>  'up',
             'titleHTML'     =>  '<h1>Import/Export</h1>',
-            'contentHTML'   =>  'This tab will help you to transfer your plugin configurations when you change your Drupal instance.',
+            'contentHTML'   =>  'This tab will help you to transfer your module configurations when you change your Drupal instance.',
             'ifNext'        =>  true,
             'buttonText'    =>  'Next',
             'img'           =>  array(),
@@ -315,7 +326,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mosaml-feedback-form',
             'pointToSide'   =>  'right',
             'titleHTML'     =>  '<h1>Need help?</h1>',
-            'contentHTML'   =>  'Get in touch with us and we will help you setup the plugin in no time.',
+            'contentHTML'   =>  'Get in touch with us and we will help you setup the module in no time.',
             'ifNext'        =>  true,
             'buttonText'    =>  'End Tour',
             'img'           =>  array(),
@@ -345,7 +356,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mosaml_vt_impexp',
             'pointToSide'   =>  'left',
             'titleHTML'     =>  '<h1>Download Configuration</h1>',
-            'contentHTML'   =>  'If you are having trouble setting up the plugin, Export the configurations and mail us at info@xecurify.com.',
+            'contentHTML'   =>  'If you are having trouble setting up the module, Export the configurations and mail us at info@xecurify.com.',
             'ifNext'        =>  true,
             'buttonText'    =>  'End Tour',
             'img'           =>  array(),
@@ -361,7 +372,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mosaml-feedback-form',
             'pointToSide'   =>  'right',
             'titleHTML'     =>  '<h1>Need help?</h1>',
-            'contentHTML'   =>  'Get in touch with us and we will help you setup the plugin in no time.',
+            'contentHTML'   =>  'Get in touch with us and we will help you setup the module in no time.',
             'ifNext'        =>  true,
             'buttonText'    =>  'End Tour',
             'img'           =>  array(),
@@ -377,7 +388,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mosaml-feedback-form',
             'pointToSide'   =>  'right',
             'titleHTML'     =>  '<h1>Need help?</h1>',
-            'contentHTML'   =>  'Get in touch with us and we will help you setup the plugin in no time.',
+            'contentHTML'   =>  'Get in touch with us and we will help you setup the module in no time.',
             'ifNext'        =>  true,
             'buttonText'    =>  'End Tour',
             'img'           =>  array(),
@@ -387,7 +398,7 @@ function getTourData($pageID,$Tour_Taken)
         ),
 
     );
-    return $tourData[$pageID];
+    return isset($tourData[$pageID]) ? $tourData[$pageID] : 0;
 }
 
 /*

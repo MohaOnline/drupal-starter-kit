@@ -100,7 +100,7 @@ class MiniorangeSAMLIdpCustomer {
 
     $fields = array(
       'companyName' => $_SERVER['SERVER_NAME'],
-      'areaOfInterest' => 'DRUPAL IDP Plugin',
+      'areaOfInterest' => 'DRUPAL IDP Module',
       'email' => $this->email,
       'phone' => $this->phone,
       'password' => $this->password,

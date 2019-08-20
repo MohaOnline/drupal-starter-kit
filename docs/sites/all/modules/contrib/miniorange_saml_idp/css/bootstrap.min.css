@@ -4,9 +4,6 @@
     width: 90% !important;
 }
 
-
-
-
 .btn {
     display: inline-block;
     /*padding: 6px 12px;*/
@@ -98,11 +95,15 @@
 }
 
 .btn_faq_buttons{
-	padding:5px 10px;
+	padding:5px 7px;
 	float:right;
 	border-color: #0073aa #006799 #006799;
 	color: #fff;
 	text-decoration: none;
+}
+
+.btn_faq_buttons:hover{
+	transform: scale(1.1);
 }
 
 .btn-primary {
@@ -478,4 +479,3 @@ input[type=submit].btn-block,input[type=reset].btn-block,input[type=button].btn-
 	border-top-right-radius: 0
 }
 
-	

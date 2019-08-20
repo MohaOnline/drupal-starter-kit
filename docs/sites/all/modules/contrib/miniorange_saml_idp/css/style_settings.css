@@ -5,19 +5,6 @@
 	right: -391px;
 }
 
-
-.mo_saml_register_message{
-	display: block;
-	margin-top: 15px;
-	text-align: center;
-	font-size: 15px;
-	border-radius: 10px;
-	border: 1px solid #fb9a9a;
-	color: red;
-	background-color: rgba(255,0,0,0.1);
-	padding: 15px;
-}
-
 #mosaml-feedback-overlay{
 	background: rgba(11, 13, 13, 0.44);
 	top: 0;
@@ -43,7 +30,7 @@
 	background-color: #e0e0e0;
 	border-radius: 4px;
 	padding: 0.55em;
-	width: 90%;
+	width: 83%;
 }
 .mo_saml_highlight_background_url_note{
 	background-color: #e0e0e0;
@@ -146,33 +133,23 @@
 }
 
 .mo_saml_container {
-	width: 59%;
-	padding: 25px;
-	border-radius: 4px; !important;
-	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-	margin-left: auto;
-	margin-right: auto;
-	float: left;
-}
-
-.mo_saml_container_register {
 	width: 60%;
 	padding: 25px;
 	border-radius: 4px; !important;
 	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 	margin-left: auto;
 	margin-right: auto;
-	float: none;
+	float: left;
 }
 
 .mo_saml_container_2{
-	width: 27%;
-	padding: 33px;
+	width: 29%;
+	padding: 30px;
 	border-radius: 4px;!important: ;
 	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 	margin-right: auto;
 	float: left;
-	margin-left: 22px;
+	margin-left: 18px;
 }
 
 .mo_saml_container_3{
@@ -352,6 +329,30 @@
 }
 .mo_saml_space{
 	margin-left: 33px;
+}
+
+/* FAQ button and Ask question on forum button*/
+.mo_faq_button_left{
+	float: inherit;
+	color: #48a0dc;
+	border: 2px solid #48a0dc;
+	padding: 5px;
+	margin-left: 80px;
+}
+
+.mo_faq_button_left:hover{
+	transform: scale(1.1);
+}
+.mo_faq_button_right{
+	float: inherit;
+	color: #48a0dc;
+	border: 2px solid #48a0dc;
+	padding: 5px;
+	margin-left: 20px;
+}
+
+.mo_faq_button_right:hover{
+	transform: scale(1.1);
 }
 
 
@@ -591,4 +592,45 @@ p.pricing-rate{
 .selected-text, .selected-text>*{
 	background: #2196f3;
 	color: #ffffff;
+}
+
+.miniorange_class_color_red{
+	color: red;
+}
+
+/* Configure message of import/export page */
+.mo_saml_configure_message{
+	display: block;
+	text-align: center;
+	font-size: 14px;
+	border-radius: 10px;
+	border: 1px solid #fb9a9a;
+	color: red;
+	background-color: rgba(255,0,0,0.1);
+	padding: 8px;
+}
+
+.mo_saml_register_message{
+	display: block;
+	margin-top: 15px;
+	text-align: center;
+	font-size: 14px;
+	border-radius: 10px;
+	border: 1px solid #fb9a9a;
+	color: red;
+	background-color: rgba(255,0,0,0.1);
+	padding: 10px;
+}
+
+/* Welcome message of registration page */
+.mo_saml_welcome_message{
+	display: block;
+	margin-top: 10px;
+	text-align: center;
+	font-size: 15px;
+	color: rgba(0, 128, 0, 0.70);
+	background-color: rgba(0, 255, 0, 0.15);
+	padding: 5px;
+	border: 1px solid rgba(0, 128, 0, 0.15);
+	border-radius: 4px;
 }

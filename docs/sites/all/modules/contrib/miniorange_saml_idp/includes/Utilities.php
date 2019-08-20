@@ -12,7 +12,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * miniOrange Joomla IDP plugin is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -27,42 +27,55 @@ class Utilities {
 
     public static function faq(&$form, &$form_state){
 
-        $form['miniorange_idp_guide_linkw'] = array(
-            '#markup' => '<div class="mo_saml_table_layout mo_saml_container_2" style="margin-top: -15px;">',
-        );
-
         $form['miniorange_faq'] = array(
-            '#markup' => '<b></b><a class="btn btn-primary-faq btn-large btn_faq_buttons" style="float: left;color: #48a0dc;border: 2px solid #48a0dc;" href="https://faq.miniorange.com/kb/drupal/" target="_blank">'
-                . 'Frequently asked questions</a>',
+            '#markup' => '<div ><b></b>
+                          <a class="btn btn-primary-faq btn-large mo_faq_button_left" href="https://faq.miniorange.com/kb/drupal/" target="_blank">FAQs</a>
+                          <b></b><a class="btn btn-primary-faq btn-large mo_faq_button_right"  href="https://forum.miniorange.com/" target="_blank">Ask questions on forum</a></div>',
         );
-
-        $form['miniorange_forum'] = array(
-            '#markup' => '<b></b><a class="btn btn-primary-faq btn-large btn_faq_buttons" style="float: right;color: #48a0dc;border: 2px solid #48a0dc;" href="https://forum.miniorange.com/" target="_blank">'
-                . 'Ask questions on forum</a>',
-        );
-
-        $form['markup_test_div']=array('#markup'=>'</div>');
     }
-
+ 
     public static function spConfigGuide(&$form, &$form_state){
+
+        $form['miniorange_idp_guide_link1'] = array(
+            '#markup' => '<div class="mo_saml_table_layout mo_saml_container_2">
+                        <div style="font-size: 15px; text-align: justify">To see detailed documentation of how to configure 
+                        Drupal SAML IdP with any Service Provider</div></br>',
+        );
+
         $form['miniorange_saml_guide_table_list'] = array(
             '#markup' => '<div class="table-responsive mo_guide_text-center" style="font-family: sans-serif;font-size: 15px;">          
                 <table class="mo_guide_table mo_guide_table-striped mo_guide_table-bordered" style="border: 1px solid #ddd;max-width: 100%;border-collapse: collapse;">
                     <thead>
-                        <tr><th class="mo_guide_text-center" style="">SP</th><th class="mo_guide_text-center">Links</th></tr>
+                        <tr><th class="mo_guide_text-center" style="font-weight:bold;">Service Providers</th><th class="mo_guide_text-center" style="font-weight:bold;">Links</th></tr>
                     </thead>
-                    <tbody style="font-weight:bold;color:gray;">
+                    <tbody style="color:gray;">
                         <tr><td>Tableau</td><td><strong><a href="https://plugins.miniorange.com/configure-tableau-as-sp-in-drupal-7-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Zendesk	</td><td><strong><a href="https://plugins.miniorange.com/zendesk-sso-single-sign-on-for-drupal-7-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Owncloud</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-owncloud-sp-and-drupal-as-idp" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Inkling</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-inkling-sso-as-sp-for-drupal-7-idp" target="_blank">Click Here</a></strong></td></tr>
-                    <tr><td>Workplace by Facebook</td><td><strong><a href="https://plugins.miniorange.com/guide-drupal-idp-workplace-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Workplace by Facebook</td><td><strong><a href="https://plugins.miniorange.com/guide-drupal-idp-workplace-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Other</td><td><strong><a href="https://www.miniorange.com/contact" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                     </tbody>
-                </table>
-            </div>',
-
+                </table></div>',
         );
 
+        self::faq($form, $form_state);
+
+        $form['miniorange_end_of_guide'] = array(
+            '#markup' => '</div>',
+        );
+    }
+
+    public static function getLicensingPageURL(){
+        global $base_url;
+        return $base_url . '/admin/config/people/miniorange_saml_idp/licensing';
+    }
+
+    public static function isModuleConfigured(){
+        $SP_name   = variable_get('miniorange_saml_idp_sp_name', '');
+        $entity_id = variable_get('miniorange_saml_idp_sp_entity_id', '');
+        $acs_url   = variable_get('miniorange_saml_idp_acs_url', '');
+        return ( empty( $SP_name ) || empty( $acs_url ) || empty( $entity_id ) ) ? TRUE : FALSE;
     }
 
     public static function AddSupportButton(&$form, &$form_state)
@@ -93,12 +106,12 @@ class Utilities {
             '#attributes' => array('style' => 'width:100%','placeholder' => 'Enter your Email'),
             '#default_value' => variable_get('miniorange_saml_idp_customer_admin_email', ''),
         );
+
         $form['miniorange_saml_phone_number_support'] = array(
             '#type' => 'textfield',
             '#attributes' => array('style' => 'width:100%','placeholder' => 'Enter your Phone Number'),
             '#default_value' => variable_get('miniorange_saml_idp_customer_admin_phone', ''),
         );
-
 
         $form['miniorange_saml_support_query_support'] = array(
             '#type' => 'textarea',
@@ -110,73 +123,139 @@ class Utilities {
         $form['miniorange_saml_support_submit_click'] = array(
             '#type' => 'submit',
             '#value' => t('Submit Query'),
-            '#submit' => array('send_support_query'),
+            '#submit' => array('Utilities::send_support_query'),
             '#attributes' => array('style' => 'background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;display:block;margin-left:auto;margin-right:auto;'),
         );
 
         $form['miniorange_saml_support_note'] = array(
-            '#markup' => '<div><br/>If you want custom features in the plugin, just drop an email to <a href="mailto:info@xecurify.com">info@xecurify.com</a></div>'
+            '#markup' => '<div><br/>If you want custom features in the module, just drop an email to <a href="mailto:info@xecurify.com">info@xecurify.com</a></div>'
         );
 
         $form['miniorange_saml_support_div_cust'] = array(
             '#markup' => '</div></div><div hidden id="mosaml-feedback-overlay"></div>'
         );
-
     }
-    public static function isCustomerRegistered()
-    {
+
+    /*
+     * Get Support form data
+     */
+    public static function send_support_query(&$form, $form_state) {
+        $email = $form['miniorange_saml_email_address_support']['#value'];
+        $phone = $form['miniorange_saml_phone_number_support']['#value'];
+        $query = $form['miniorange_saml_support_query_support']['#value'];
+        Utilities::send_query( $email, $phone, $query );
+    }
+    /*
+     * Send Support query
+     */
+    public static function send_query( $email, $phone, $query ) {
+        if( empty( $email ) || empty( $query ) ){
+            drupal_set_message(t('The <b>Email Address</b> and <b>Query</b> fields are mandatory.'), 'error');
+            return;
+        }
+        if ( !valid_email_address( $email ) ) {
+            drupal_set_message(t('The email address <b><u>' . $email . '</u></b> is not valid.'), 'error');
+            return;
+        }
+        $support = new MiniOrangeSamlIdpSupport($email, $phone, $query);
+        $support_response = $support->sendSupportQuery();
+        if($support_response) {
+            drupal_set_message(t('Your support query has been sent successfully. We will get back to you soon.'));
+        }else {
+            drupal_set_message(t('Error sending support query. Please try again.'), 'error');
+        }
+    }
+
+    public static function isCustomerRegistered() {
         if (variable_get('miniorange_saml_idp_customer_admin_email', NULL) == NULL||
             variable_get('miniorange_saml_idp_customer_id', NULL) == NULL ||
             variable_get('miniorange_saml_idp_customer_admin_token', NULL) == NULL ||
             variable_get('miniorange_saml_idp_customer_api_key', NULL) == NULL)
         {
             return TRUE;
-        }
-        else
-        {
+        }else {
             return FALSE;
         }
     }
 
-    public static function send_query($email, $phone, $query)
-    {
-        if(empty($email)||empty($query)){
-            if(empty($email)) {
-                drupal_set_message(t('The <b>Email Address</b> field is required.'), 'error');
-            }
-            if(empty($query)) {
-                drupal_set_message(t('The <b>Query</b> field is required.'), 'error');
-            }
-            return;
-        }
-        if (!valid_email_address($email)) {
-            drupal_set_message(t('The email address <b><u>' . $email . '</u></b> is not valid.'), 'error');
-            return;
-        }
-        $support = new MiniOrangeSamlIdpSupport($email, $phone, $query);
+   public static function upload_metadata( $file ){
 
-        $support_response = $support->sendSupportQuery();
-        if($support_response) {
-            drupal_set_message(t('Your support query has been sent successfully. We will get back to you soon.'));
+        if(empty(variable_get('miniorange_saml_idp_sp_name'))){
+            variable_set('miniorange_saml_idp_sp_name', 'Service Provider');
+        }
+        require_once drupal_get_path('module', 'miniorange_saml_idp') . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'MetadataReader.php';
+        $document = new DOMDocument();
+        $document->loadXML($file);
+        restore_error_handler();
+        $first_child = $document->firstChild;
+
+        if( !empty( $first_child ) ) {
+            $metadata = new MetadataReader($document);
+            $service_providers = $metadata->getServiceProviders();
+            if( empty( $service_providers ) ) {
+                drupal_set_message(t('<b>Please provide a valid metadata file.</b>'),'error');
+                return;
+            }
+            foreach($service_providers as $key => $sp) {
+                $entityID_issuer = $sp->getEntityID();
+                $acs_url = $sp->getAcsURL();
+                $is_assertion_signed = $sp->getAssertionsSigned() == 'true' ? TRUE : FALSE;
+
+                variable_set('miniorange_saml_idp_sp_entity_id', $entityID_issuer);
+                variable_set('miniorange_saml_idp_acs_url', $acs_url);
+                variable_set('miniorange_saml_idp_assertion_signed', $is_assertion_signed);
+            }
+            drupal_set_message(t('Identity Provider Configuration successfully saved.'));
+            return;
         }
         else {
-            drupal_set_message(t('Error sending support query. Please try again.'), 'error');
+            drupal_set_message(t('<b>Please provide a valid metadata file.</b>'),'error');
+            return;
         }
     }
 
-	public static function isCurlInstalled() {
-      if (in_array('curl', get_loaded_extensions())) {
-        return 1;
-      }
-      else {
-        return 0;
-      }
+    public static function getVariableNames($class_name) {
+        if($class_name == "mo_options_enum_identity_provider") {
+            $class_object = array (
+                'IdP_Entity_ID' => 'miniorange_saml_issuer_id',
+                'IdP_Login_URL' => 'miniorange_saml_login_url',
+            );
+        }
+        else if($class_name == "mo_options_enum_service_provider") {
+            $class_object = array(
+                'Service_Provider_Name' => 'miniorange_saml_idp_sp_name',
+                'ACS_URL'               => 'miniorange_saml_idp_acs_url',
+                'Issuer'                => 'miniorange_saml_idp_sp_entity_id',
+                'NameId_Format'         => 'miniorange_saml_idp_nameid_format',
+                'Relay_State'           => 'miniorange_saml_idp_relay_state',
+                'Assertion_Signed'      => 'miniorange_saml_idp_assertion_signed',
+            );
+        }
+        return $class_object;
     }
-	
+
+    public static function miniorange_saml_is_sp_configured() {
+        $saml_login_url  = variable_get( 'miniorange_saml_idp_acs_url' );
+        $saml_idp_issuer = variable_get( 'miniorange_saml_idp_sp_entity_id' );
+        if ( ! empty( $saml_login_url ) && ! empty( $saml_idp_issuer ) ) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
+    public static function isCurlInstalled() {
+        if ( in_array( 'curl', get_loaded_extensions() ) ) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+
 	public static function generateID() {
 		return '_' . self::stringToHex(self::generateRandomBytes(21));
 	}
-	
+
 	public static function stringToHex($bytes) {
 		$ret = '';
 		for($i = 0; $i < strlen($bytes); $i++) {
@@ -184,33 +263,18 @@ class Utilities {
 		}
 		return $ret;
 	}
-	
+
 	public static function generateRandomBytes($length, $fallback = TRUE) {
         return openssl_random_pseudo_bytes($length);
 	}
-	
-	public static function createAuthnRequest($acsUrl, $issuer, $force_authn = 'false') {
-		$requestXmlStr = '<?xml version="1.0" encoding="UTF-8"?>' .
-						'<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="' . self::generateID() . 
-						'" Version="2.0" IssueInstant="' . self::generateTimestamp() . '"';
-		if( $force_authn == 'true') {
-			$requestXmlStr .= ' ForceAuthn="true"';
-		}
-		$requestXmlStr .= ' ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="' . $acsUrl . 
-						'" ><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">' . $issuer . '</saml:Issuer></samlp:AuthnRequest>';
-		$deflatedStr = gzdeflate($requestXmlStr);
-		$base64EncodedStr = base64_encode($deflatedStr);
-		$urlEncoded = urlencode($base64EncodedStr);
-		return $urlEncoded;
-	}
-	
+
 	public static function generateTimestamp($instant = NULL) {
 		if($instant === NULL) {
 			$instant = time();
 		}
 		return gmdate('Y-m-d\TH:i:s\Z', $instant);
 	}
-	
+
 	public static function xpQuery(DOMNode $node, $query){
         static $xpCache = NULL;
 
@@ -237,7 +301,7 @@ class Utilities {
         }
 		return $ret;
     }
-	
+
 	public static function parseNameId(DOMElement $xml)
     {
         $ret = array('Value' => trim($xml->textContent));
@@ -250,7 +314,7 @@ class Utilities {
 
         return $ret;
     }
-	
+
 	public static function xsDateTimeToTimestamp($time)
     {
         $matches = array();
@@ -277,7 +341,7 @@ class Utilities {
 
         return $ts;
     }
-	
+
 	public static function extractStrings(DOMElement $parent, $namespaceURI, $localName)
     {
         $ret = array();
@@ -290,17 +354,17 @@ class Utilities {
 
         return $ret;
     }
-	
+
 	public static function validateElement(DOMElement $root)
     {
-    	
+
         /* Create an XML security object. */
         $objXMLSecDSig = new XMLSecurityDSig();
 
         /* Both SAML messages and SAML assertions use the 'ID' attribute. */
         $objXMLSecDSig->idKeys[] = 'ID';
-		
-       
+
+
         /* Locate the XMLDSig Signature element to be used. */
         $signatureElement = self::xpQuery($root, './ds:Signature');
 
@@ -311,19 +375,19 @@ class Utilities {
         	echo sprintf("XMLSec: more than one signature element in root.");
         	exit;
         }
-       
+
         $signatureElement = $signatureElement[0];
         $objXMLSecDSig->sigNode = $signatureElement;
-		
+
         /* Canonicalize the XMLDSig SignedInfo element in the message. */
         $objXMLSecDSig->canonicalizeSignedInfo();
-		
+
        /* Validate referenced xml nodes. */
-        if (!$objXMLSecDSig->validateReference()) { 
+        if (!$objXMLSecDSig->validateReference()) {
         	echo sprintf("XMLsec: digest validation failed");
         	exit;
         }
-		
+
 		/* Check that $root is one of the signed nodes. */
         $rootSigned = FALSE;
         /** @var DOMNode $signedNode */
@@ -337,7 +401,7 @@ class Utilities {
                 break;
             }
         }
-		
+
 		if (!$rootSigned) {
 			echo sprintf("XMLSec: The root element is not signed.");
 			exit;
@@ -350,18 +414,16 @@ class Utilities {
             $certData = str_replace(array("\r", "\n", "\t", ' '), '', $certData);
             $certificates[] = $certData;
         }
-	
+
         $ret = array(
             'Signature' => $objXMLSecDSig,
             'Certificates' => $certificates,
             );
-			
-			
+
+
         return $ret;
     }
-	
 
-	
 	public static function validateSignature(array $info, XMLSecurityKey $key)
     {
         /** @var XMLSecurityDSig $objXMLSecDSig */
@@ -382,21 +444,21 @@ class Utilities {
         if ($key->type === XMLSecurityKey::RSA_SHA1 && $algo !== $key->type) {
             $key = self::castKey($key, $algo);
         }
-		
+
         /* Check the signature. */
         if (! $objXMLSecDSig->verify($key)) {
         	echo sprintf('Unable to validate Sgnature');
         	exit;
         }
     }
-	
+
     public static function castKey(XMLSecurityKey $key, $algorithm, $type = 'public')
-    {    
+    {
     	// do nothing if algorithm is already the type of the key
     	if ($key->type === $algorithm) {
     		return $key;
     	}
-    
+
     	$keyInfo = openssl_pkey_get_details($key->key);
     	if ($keyInfo === FALSE) {
     		echo sprintf('Unable to get key details from XMLSecurityKey.');
@@ -406,113 +468,13 @@ class Utilities {
     		echo sprintf('Missing key in public key details.');
     		exit;
     	}
-    
+
     	$newKey = new XMLSecurityKey($algorithm, array('type'=>$type));
     	$newKey->loadKey($keyInfo['key']);
-    
+
     	return $newKey;
     }
-    
-	public static function processResponse($currentURL, $certFingerprint, $signatureData,
-		SAML2_Response $response) {
-		
-		/* Validate Response-element destination. */
-		$msgDestination = $response->getDestination();
-		if ($msgDestination !== NULL && $msgDestination !== $currentURL) {
-			echo sprintf('Destination in response doesn\'t match the current URL. Destination is "' .
-				$msgDestination . '", current URL is "' . $currentURL . '".');
-			exit;
-		}
-		
-		$responseSigned = self::checkSign($certFingerprint, $signatureData);
-		
-		/* Returning boolean $responseSigned */
-		return $responseSigned;
-	}
 
-    public static function processRequest($certFingerprint, $signatureData) {
-        
-        $responseSigned = self::checkSign($certFingerprint, $signatureData);
-        
-        /* Returning boolean $responseSigned */
-        return $responseSigned;
-    }
-	
-	public static function checkSign($certFingerprint, $signatureData) {
-		$certificates = $signatureData['Certificates'];	
-
-		if (count($certificates) === 0) {
-			return FALSE;
-		} 
-
-		$fpArray = array();
-		$fpArray[] = $certFingerprint;
-		$pemCert = self::findCertificate($fpArray, $certificates);
-		
-		$lastException = NULL;
-		
-		$key = new XMLSecurityKey(XMLSecurityKey::RSA_SHA1, array('type'=>'public'));
-		$key->loadKey($pemCert);
-				
-		try {
-			/*
-			 * Make sure that we have a valid signature
-			 */
-			self::validateSignature($signatureData, $key);			
-			return TRUE;
-		} catch (Exception $e) {
-			$lastException = $e;
-		}
-		
-		
-		/* We were unable to validate the signature with any of our keys. */
-		if ($lastException !== NULL) {
-			throw $lastException;
-		} else {
-			return FALSE;
-		}
-	
-	}
-	
-	public static function validateIssuerAndAudience($samlResponse, $spEntityId, $issuerToValidateAgainst) {
-		$issuer = current($samlResponse->getAssertions())->getIssuer();
-		$audience = current(current($samlResponse->getAssertions())->getValidAudiences());
-		if(strcmp($issuerToValidateAgainst, $issuer) === 0) {
-			if(strcmp($audience, $spEntityId) === 0) {
-				return TRUE;
-			} else {
-				echo sprintf('Invalid audience');
-				exit;
-			}
-		} else {
-			echo sprintf('Issuer cannot be verified.');
-			exit;
-		}
-	}
-	
-	private static function findCertificate(array $certFingerprints, array $certificates) {
-
-		$candidates = array();
-		
-		foreach ($certificates as $cert) {
-			$fp = strtolower(sha1(base64_decode($cert)));
-			if (!in_array($fp, $certFingerprints, TRUE)) {
-				$candidates[] = $fp;
-				continue;
-			}
-
-			/* We have found a matching fingerprint. */
-			$pem = "-----BEGIN CERTIFICATE-----\n" .
-				chunk_split($cert, 64) .
-				"-----END CERTIFICATE-----\n";
-			
-			return $pem;
-		}
-
-		echo sprintf('Unable to find a certificate matching the configured fingerprint.');
-		exit;
-	}
-	
 	    /**
      * Decrypt an encrypted element.
      *
@@ -525,17 +487,17 @@ class Utilities {
      * @throws Exception
      */
     private static function doDecryptElement(DOMElement $encryptedData, XMLSecurityKey $inputKey, array &$blacklist)
-    {	
+    {
         $enc = new XMLSecEnc();
         $enc->setNode($encryptedData);
-		
+
         $enc->type = $encryptedData->getAttribute("Type");
         $symmetricKey = $enc->locateKey($encryptedData);
         if (!$symmetricKey) {
         	echo sprintf('Could not locate key algorithm in encrypted data.');
-        	exit;     
+        	exit;
         }
-		
+
         $symmetricKeyInfo = $enc->locateKeyInfo($symmetricKey);
         if (!$symmetricKeyInfo) {
 			echo sprintf('Could not locate <dsig:KeyInfo> for the encrypted key.');
@@ -585,7 +547,7 @@ class Utilities {
                 }
             } catch (Exception $e) {
                 /* We failed to decrypt this key. Log it, and substitute a "random" key. */
-                
+
                 /* Create a replacement key, so that it looks like we fail in the same way as if the key was correctly padded. */
                 /* We base the symmetric key on the encrypted key and private key, so that we always behave the
                  * same way for a given input key.
@@ -656,7 +618,7 @@ class Utilities {
      * @throws Exception
      */
     public static function decryptElement(DOMElement $encryptedData, XMLSecurityKey $inputKey, array $blacklist = array(), XMLSecurityKey $alternateKey = NULL)
-    {	
+    {
         try {
         	echo "trying primary";
             return self::doDecryptElement($encryptedData, $inputKey, $blacklist);
@@ -666,7 +628,7 @@ class Utilities {
         		echo "trying secondary";
         		return self::doDecryptElement($encryptedData, $alternateKey, $blacklist);
         	} catch(Exception $t) {
-        		
+
         	}
         	/*
         	 * Something went wrong during decryption, but for security
@@ -703,104 +665,32 @@ class Utilities {
                 throw new Exception('Invalid value of boolean attribute ' . var_export($attributeName, true) . ': ' . var_export($value, true));
         }
     }
-	
-	 /**
-     * Generates the metadata of the SP based on the settings
-     *
-     * @param string    $sp            The SP data
-     * @param string    $authnsign     authnRequestsSigned attribute
-     * @param string    $wsign         wantAssertionsSigned attribute 
-     * @param DateTime  $validUntil    Metadata's valid time
-     * @param Timestamp $cacheDuration Duration of the cache in seconds
-     * @param array     $contacts      Contacts info
-     * @param array     $organization  Organization ingo
-     *
-     * @return string SAML Metadata XML
-     */
-    public static function metadata_builder($siteUrl)
-    {
-		$xml = new DOMDocument();
-		$url = plugins_url().'/miniorange-saml-20-single-sign-on/sp-metadata.xml';
-		
-		$xml->load($url);
-		
-		$xpath = new DOMXPath($xml);
-		$elements = $xpath->query('//md:EntityDescriptor[@entityID="http://{path-to-your-site}/wp-content/plugins/miniorange-saml-20-single-sign-on/"]');
-		
-		 if ($elements->length >= 1) {
-		    $element = $elements->item(0);
-		    $element->setAttribute('entityID', $siteUrl.'/wp-content/plugins/miniorange-saml-20-single-sign-on/');
-		}
-		
-		$elements = $xpath->query('//md:AssertionConsumerService[@Location="http://{path-to-your-site}"]');
-		if ($elements->length >= 1) {
-		    $element = $elements->item(0);
-		    $element->setAttribute('Location', $siteUrl.'/');
-		}
-		 
-		//re-save
-		$xml->save(plugins_url()."/miniorange-saml-20-single-sign-on/sp-metadata.xml");
-    }
-	
-	public static function get_mapped_groups($saml_params, $saml_groups)
-	{
-			$groups = array();
-
-		if (!empty($saml_groups)) {
-			$saml_mapped_groups = array();
-			$i=1;
-			while ($i < 10) {
-				$saml_mapped_groups_value = $saml_params->get('group'.$i.'_map');
-				
-				$saml_mapped_groups[$i] = explode(';', $saml_mapped_groups_value);
-				$i++;
-			}
-		}
-
-		foreach ($saml_groups as $saml_group) {
-			if (!empty($saml_group)) {
-				$i = 0;
-				$found = false;
-				
-				while ($i < 9 && !$found) {
-					if (!empty($saml_mapped_groups[$i]) && in_array($saml_group, $saml_mapped_groups[$i])) {
-						$groups[] = $saml_params->get('group'.$i);
-						$found = true;
-					}
-					$i++;
-				}
-			}
-		}
-		
-		return array_unique($groups);
-	}
-
 
 	public static function getEncryptionAlgorithm($method){
 		switch($method){
 			case 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc':
 				return XMLSecurityKey::TRIPLEDES_CBC;
 				break;
-			
+
 			case 'http://www.w3.org/2001/04/xmlenc#aes128-cbc':
 				return XMLSecurityKey::AES128_CBC;
-				
+
 			case 'http://www.w3.org/2001/04/xmlenc#aes192-cbc':
 				return XMLSecurityKey::AES192_CBC;
 				break;
-			
+
 			case 'http://www.w3.org/2001/04/xmlenc#aes256-cbc':
 				return XMLSecurityKey::AES256_CBC;
 				break;
-				
+
 			case 'http://www.w3.org/2001/04/xmlenc#rsa-1_5':
 				return XMLSecurityKey::RSA_1_5;
 				break;
-			
+
 			case 'http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p':
 				return XMLSecurityKey::RSA_OAEP_MGF1P;
 				break;
-				
+
 			case 'http://www.w3.org/2000/09/xmldsig#dsa-sha1':
 				return XMLSecurityKey::DSA_SHA1;
 				break;
@@ -808,26 +698,26 @@ class Utilities {
 			case 'http://www.w3.org/2000/09/xmldsig#rsa-sha1':
 				return XMLSecurityKey::RSA_SHA1;
 				break;
-			
+
 			case 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256':
 				return XMLSecurityKey::RSA_SHA256;
 				break;
-				
+
 			case 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384':
 				return XMLSecurityKey::RSA_SHA384;
 				break;
-			
+
 			case 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512':
 				return XMLSecurityKey::RSA_SHA512;
 				break;
-			
+
 			default:
 				echo sprintf('Invalid Encryption Method: '.$method);
 				exit;
 				break;
 		}
 	}
-	
+
 	public static function sanitize_certificate( $certificate ) {
 		$certificate = preg_replace("/[\r\n]+/", "", $certificate);
 		$certificate = str_replace( "-", "", $certificate );
@@ -838,7 +728,7 @@ class Utilities {
 		$certificate = "-----BEGIN CERTIFICATE-----\r\n" . $certificate . "-----END CERTIFICATE-----";
 		return $certificate;
 	}
-	
+
 	public static function desanitize_certificate( $certificate ) {
 		$certificate = preg_replace("/[\r\n]+/", "", $certificate);
 		$certificate = str_replace( "-----BEGIN CERTIFICATE-----", "", $certificate );
