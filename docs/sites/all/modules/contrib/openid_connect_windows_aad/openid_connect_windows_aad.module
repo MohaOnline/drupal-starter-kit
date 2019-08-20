@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * CTools plugin for OpenID Connect, Windows Azure AD.
+ */
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function openid_connect_windows_aad_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'openid_connect') {
+    return "plugins/$plugin";
+  }
+}

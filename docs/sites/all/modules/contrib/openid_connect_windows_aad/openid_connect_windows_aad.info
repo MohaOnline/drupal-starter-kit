@@ -1,0 +1,14 @@
+name = OpenID Connect Windows Azure Active Directory
+description = "A CTools plugin that adds a Windows Azure AD client to OpenID Connect."
+
+dependencies[] = ctools
+dependencies[] = openid_connect
+
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2016-12-07
+version = "7.x-1.0"
+core = "7.x"
+project = "openid_connect_windows_aad"
+datestamp = "1481095987"
+
