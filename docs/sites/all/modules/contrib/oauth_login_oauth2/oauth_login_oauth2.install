@@ -1,0 +1,56 @@
+<?php
+/**
+ * @file
+ * Installation file for miniOrange Oauth Client Module.
+ */
+
+include 'miniorange_oauth_client_feedback.php';
+
+/**
+ * Implements hook_install().
+ */
+function oauth_login_oauth2_install() {
+  variable_set('miniorange_oauth_client_free_users', '0');
+  user_save(user_load(1), array('data' => array('overlay' => 0)));
+}
+
+
+/**
+ * Implements hook_uninstall().
+ */
+ function oauth_login_oauth2_uninstall() {
+      variable_del('miniorange_oauth_client_status');
+      variable_del('miniorange_oauth_client_customer_admin_email');
+      variable_del('miniorange_oauth_client_customer_admin_phone');
+      variable_del('miniorange_oauth_client_customer_api_key');
+      variable_del('miniorange_oauth_client_status');
+      variable_del('miniorange_oauth_client_customer_admin_token');
+      variable_del('miniorange_oauth_client_customer_id');
+      variable_del('miniorange_oauth_client_app');
+      variable_del('miniorange_oauth_client_appval');
+      variable_del('miniorange_auth_client_client_id');
+      variable_del('miniorange_auth_client_app_name');
+      variable_del('miniorange_auth_client_display_name');
+      variable_del('miniorange_auth_client_client_secret');
+      variable_del('miniorange_auth_client_scope');
+      variable_del('miniorange_auth_client_authorize_endpoint');
+      variable_del('miniorange_auth_client_access_token_ep');
+      variable_del('miniorange_auth_client_user_info_ep');
+      variable_del('miniorange_auth_client_callback_uri');
+      variable_del('miniorange_oauth_client_email_attr_val');
+      variable_del('miniorange_oauth_client_name_attr_val');
+      variable_del('miniorange_oauth_client_free_users');
+      variable_del('mo_saml_tourTaken_configure_oauth');
+      variable_del('mo_saml_tourTaken_attr_mapping');
+      variable_del('mo_saml_tourTaken_miniorange_oauth_client');
+      variable_del('miniorange_oauth_client_attr_list_from_server');
+ }
+
+ /**
+ * Implements hook_disable().
+ */
+ function oauth_login_oauth2_disable()
+ {
+		miniorange_oauth_client_feedback();
+ }
+ ?>

@@ -1,0 +1,338 @@
+/* this is for tour button */
+.mo-otp-help-button.fixed#restart_tour_button{
+    /* right:5.6em; */
+    position:relative;
+}
+
+.mo-tour-backdrop {
+    opacity: 1;
+    z-index: 2;
+}
+
+.mo-tour-overlay {
+    top: 0;
+    left: 0;
+    position: fixed;
+    width: 100%!important;
+    background-color: #000000a1!important;
+    height: 100%!important;
+    z-index: 999991;
+    display:block;
+}
+
+.mo-card {
+    top: 50%;
+    left: 50%;
+    width: 24em;
+    margin-left: -12em;
+    /*set to a negative number 1/2 of your width*/
+    /* border: 1px solid #ccc; */
+    background-color: #ffffff00;
+    position: fixed;
+    z-index : 999991;
+    border-radius: 4px;
+    /* transform: scale(0.8); */
+}
+
+.mo-card h1 {     font-size: 20px; margin:0;}
+.mo-card h2 {     font-size: 17px; margin:0;}
+.mo-card {     font-size: 14px;margin:0;}
+
+
+/* when no side, centre */
+.mo-tour-content-area{
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    /* border: 1px solid #b8acee; */
+    background-color: rgb(255, 255, 255);
+    text-align: center;
+    border-radius: 4px;
+
+}
+
+.mo-tour-arrow{
+    /* border: 1px solid #bcda18; */
+    text-align: center;
+    height: 0;
+    font-size: 5em;
+}
+
+.mo-tour-arrow>i {
+    position: relative;
+    top: calc(50% - 0.6em);
+}
+
+
+/* when pointing left */
+.mo-point-left.mo-tour-arrow{
+    height: 100%;
+    width: 5%;
+    position: relative;
+    left : 0;
+    float: left;
+
+}
+
+.mo-point-left.mo-tour-content-area {
+    width: 95%;
+    left : 5%;
+    float: left;
+    padding-left:10px;
+}
+
+/* when pointing right */
+.mo-point-right.mo-tour-arrow{
+    height: 100%;
+    width: 5%;
+    position: relative;
+    float: left;
+    margin-left: -27px;
+}
+.mo-point-right.mo-tour-content-area {
+    width: 95%;
+    float: left;
+
+}
+.mo-point-center > .mo-saml-header
+{
+    margin:0;
+}
+.mo-point-right > .mo-saml-header{
+    margin:0;
+}
+.mo-point-up > .mo-saml-header{
+    margin:0;
+}
+/* when pointing top */
+.mo-point-up.mo-tour-arrow{
+    height: 8%;
+    margin-bottom: 9px;
+}
+
+.mo-point-up.mo-tour-content-area {
+    height: 92%;
+}
+
+.mo-point-up #mo-card {
+ margin-top:    15px;
+}
+/* when pointing bottom */
+.mo-point-down.mo-tour-arrow{
+    height: 7%;
+    top: 94%;
+    position: relative;
+    margin-top: -5px;
+
+}
+
+.mo-point-down.mo-tour-content-area {
+    height: 92%;
+    top: 0;
+}
+
+.mo-tour-content-area>img {
+    padding-top: 25px;
+    width:auto;     /*maintain aspect ratio*/
+}
+.mo-tour-title>h1 , .mo-tour-content{
+    padding: 15px 15px 10px 25px;
+
+}
+
+.mo-tour-button-area{
+    position: absolute;
+    bottom: 0;
+    margin: 25px auto;
+    text-align: center;
+    width: inherit;
+    border-radius: 7px;
+}
+
+.mo-tour-button {
+    line-height: 1.4;
+    font-weight: 600;
+    margin:auto 15px;
+    height: 35px;
+    width: 110px;
+    padding: 0 20px;
+    border: none;
+    transition-timing-function: cubic-bezier(0.075, 0.82, 0.165, 1);
+    transition: background-color 0.3s ease-in-out;
+    transition: color 0.3s ease-in-out;
+}
+
+.mo-point-left.mo-tour-button {
+    margin:auto 10px;
+}
+
+.mo-skip-btn:hover {
+    background-color: #f61717d9;
+    color: #ffffff;
+    /* box-shadow: 0px 4px 10px 0px #32373c; */
+}
+
+.mo-skip-btn {
+    background-color: #ffffff00;
+    border: 2px solid #f61717d9;
+    color: #f61717d9;
+    cursor: pointer;
+}
+
+.mo-tour-primary-btn {
+    color : #48a0dc;
+    background-color: #ffffff00;
+    border: 2px solid #48a0dc;
+    cursor:pointer;
+}
+
+.mo-tour-primary-btn:hover {
+    color : #ffffff;
+    background-color:  #48a0dc;
+    /* border: 2px solid #48a0dc; */
+}
+
+.mo-target-index {
+    z-index: 999992 !important;
+}
+.mo-target-position {
+    position: relative !important;
+    background-color: #ffffff;
+}
+
+.mo-big {
+    height: 20em;
+    margin-top: -10em;
+    /*set to a negative number 1/2 of your height*/
+}
+
+.mo-medium {
+    height: 14em;
+    margin-top: -7em;
+    /*set to a negative number 1/2 of your height*/
+}
+.mo-largemedium {
+    height: 15.4em;
+    margin-top: -7em;
+    /*set to a negative number 1/2 of your height*/
+}
+
+.mo-small {
+    height: 10em;
+    margin-top: -5em;
+    /*set to a negative number 1/2 of your height*/
+}
+
+.mo-big img {
+    height:80px;
+}
+
+.mo-medium img {
+    height:60px;
+    padding-top:10px;
+}
+
+.mo-small img {
+    height:40px;
+}
+
+.mo-saml-header{
+    margin: 0px 0px 0px -10px;
+    padding: 1px 5px 5px 2px;
+    border: 1px solid #3592b6;
+    border-bottom: none;
+    line-height: 1.4em;
+    font-size: 14px;
+    color: #fff;
+    background: #00a0d2;
+    border-radius: 1px;
+}
+.mo-saml-arrow
+{
+    margin-left: -9px;
+    border: 13px solid transparent;
+    border-right-color: #fff;
+    display: block;
+    content: " ";
+    position: initial;
+    width: 0;
+    height: 0;
+}
+.mo-saml-arrow
+{
+    border: 13px solid transparent;
+}
+/*arrow when pointing to top*/
+.mo-saml-arrow-up
+{
+    margin-left: 165px;
+    margin-top: -26px;
+    border-bottom-color: #3eb0e4;
+}
+/*arrow when pointing to bottom*/
+.mo-saml-arrow-down
+{
+    margin-left: 170px;
+    margin-top: 196px;
+    border-top-color: #fff;
+}
+/*arrow when pointing to left side*/
+    .mo-saml-arrow-left
+{
+    margin-left: -9px;
+    margin-top: 85px;
+    border-right-color: #fff;
+}
+/*arrow when pointing to right side*/
+.mo-saml-arrow-right
+{
+    margin-left: 346px;
+    margin-top: 86px;
+    border-left-color: #fff;
+}
+
+.next_button{
+    padding:5px 10px;
+    float:right;
+    border-color: #0073aa #006799 #006799;
+    box-shadow: 0 1px 0 #006799;
+    color: #fff;
+    text-decoration: none;
+    text-shadow: 0 -1px 1px #006799, 1px 0 1px #006799, 0 1px 1px #006799, -1px 0 1px #006799;
+    position: relative;
+    bottom:-70px;
+    right: 17px;
+}
+.mo_saml_vt_h3
+{
+    height: 30px;
+    position: relative;
+    margin: -1px -1px 5px;
+    padding: 15px 18px 14px 60px;
+    border: 1px solid #3592b6;
+    border-bottom: none;
+    line-height: 1.4em;
+    font-size: 14px;
+    color: #fff;
+    background: #00a0d2;
+}
+.mo_visual_tour_box
+{
+    position: absolute;
+    width: 320px;
+    height: 180px;
+    top: 0px;
+    left: 100px;
+    z-index: 9999;
+    background-color: #ffffff!important;
+
+}
+.restart_button{
+    padding:5px 10px;
+    float:right;
+    border-color: #0073aa #006799 #006799;
+    box-shadow: 0 1px 0 #006799;
+    color: #fff;
+    text-decoration: none;
+    text-shadow: 0 -1px 1px #006799, 1px 0 1px #006799, 0 1px 1px #006799, -1px 0 1px #006799;
+}
