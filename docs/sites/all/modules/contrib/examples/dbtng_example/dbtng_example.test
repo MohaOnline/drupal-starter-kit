@@ -86,6 +86,21 @@ class DBTNGExampleUnitTestCase extends DrupalWebTestCase {
     $rows = $this->xpath("//*[@id='block-system-main']/div/table[1]/tbody/tr");
     $this->assertEqual(count($rows), 1, "One row found in advanced view");
     $this->assertFieldByXPath("//*[@id='block-system-main']/div/table[1]/tbody/tr/td[4]", "Roe", "Name 'Roe' Exists in advanced list");
+
+   //Test the grouping tab
+   $this->drupalGet('examples/dbtng/grouping_list');
+   $this->assertPattern("/John[td\/<>\w]+2/", "Text 'John' found in table with 2 count");
+   //Now add new entry
+   $this->drupalPost('examples/dbtng/add',
+      array(
+        'name'  => 'Some',
+        'surname' => 'Anonymous',
+        'age' => 31,
+      ),
+      t('Add')
+    );
+   $this->drupalGet('examples/dbtng/grouping_list');
+   $this->assertPattern("/Some[td\/<>\w]+1/", "Text 'Some' found in table with 1 count");
   }
 
   /**

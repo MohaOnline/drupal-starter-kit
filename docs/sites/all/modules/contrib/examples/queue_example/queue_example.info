@@ -4,8 +4,8 @@ package = Example modules
 core = 7.x
 files[] = queue_example.test
 
-; Information added by Drupal.org packaging script on 2019-07-23
+; Information added by Drupal.org packaging script on 2019-07-25
 version = "7.x-1.x-dev"
 core = "7.x"
 project = "examples"
-datestamp = "1563871988"
+datestamp = "1564036988"

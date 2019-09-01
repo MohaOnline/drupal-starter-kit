@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * This is an example outlining how a module can make use of the new DBTNG
@@ -257,6 +258,33 @@ function dbtng_example_entry_load($entry = array()) {
 }
 
 /**
+ * Select only certain fields from the database
+ *
+ * As with any database query we should only bring in the data we need.
+ * DBTNG gives us the field method that expects the table name followed by an
+ * array of the fields we want, in this case the table dbtng_example and
+ * the fields name and age.
+ *
+ */
+function dbtng_example_selective_list() {
+  $output = '';
+  // Bring in two fields from the dbtng_example table for the uid 1.
+  $select = db_select('dbtng_example')
+    ->fields('dbtng_example', array('name', 'age'))
+    ->condition('uid', 1)
+    ->execute();
+  $rows = array();
+  foreach ($select as $entry) {
+    // Sanitize the data before handing it off to the theme layer.
+    $rows[] = array_map('check_plain', (array) $entry);
+    // Make a table for them.
+    $header = array(t('Name'), t('Age'));
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
+  }
+  return $output;
+}
+
+/**
  * Render a filtered list of entries in the database.
  *
  * DBTNG also helps processing queries that return several rows, providing the
@@ -332,6 +360,11 @@ function dbtng_example_help($path) {
       $output = t('Generate a list of all entries in the database. There is no filter in the query.');
       break;
 
+    case 'examples/dbtng/selectivelist':
+      $output  = t('Only bring in certain fields with your select query.') . ' ';
+      $output .= t('Only the name and age are brought in with this query. We should only bring in the fields we need rather than always using *');
+      break;
+
     case 'examples/dbtng/advanced':
       $output  = t('A more complex list of entries in the database.') . ' ';
       $output .= t('Only the entries with name = "John" and age older than 18 years are shown, the username of the person who created the entry is also shown.');
@@ -343,6 +376,10 @@ function dbtng_example_help($path) {
 
     case 'examples/dbtng/add':
       $output = t('Add an entry to the dbtng_example table.');
+      break;
+
+    case 'examples/dbtng/grouping_list':
+      $output = t('Groups the result set by the specified field and render a list of entries in the database. e.g The records will be displayed in grouping format for column "name" and COUNT("name") is used as aggregate function');
       break;
   }
   return $output;
@@ -366,13 +403,20 @@ function dbtng_example_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
+  $items['examples/dbtng/selectivelist'] = array(
+    'title' => 'Selective List',
+    'page callback' => 'dbtng_example_selective_list',
+    'access callback' => TRUE,
+    'type' => MENU_LOCAL_TASK,
+    'weight' => -9,
+  );
   $items['examples/dbtng/add'] = array(
     'title' => 'Add entry',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('dbtng_example_form_add'),
     'access callback' => TRUE,
     'type' => MENU_LOCAL_TASK,
-    'weight' => -9,
+    'weight' => -4,
   );
   $items['examples/dbtng/update'] = array(
     'title' => 'Update entry',
@@ -385,6 +429,12 @@ function dbtng_example_menu() {
   $items['examples/dbtng/advanced'] = array(
     'title' => 'Advanced list',
     'page callback' => 'dbtng_example_advanced_list',
+    'access callback' => TRUE,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['examples/dbtng/grouping_list'] = array(
+    'title' => 'Grouping list',
+    'page callback' => 'dbtng_example_grouping_list',
     'access callback' => TRUE,
     'type' => MENU_LOCAL_TASK,
   );
@@ -573,6 +623,56 @@ function dbtng_example_form_update_submit($form, &$form_state) {
   $count = dbtng_example_entry_update($entry);
   drupal_set_message(t("Updated entry @entry (@count row updated)",
     array('@count' => $count, '@entry' => print_r($entry, TRUE))));
+}
+
+/**
+ * This function groups the result set by the specified field and render a
+ * list of entries in the database
+ */
+function dbtng_example_grouping_list() {
+  $result = dbtng_example_execute_group_by_select_query();
+  return dbtng_example_render_resultset_as_table($result);
+}
+
+/**
+ * The code below will result in the following query
+ * SELECT ex.pid AS pid, ex.uid AS uid, ex.name AS name, ex.surname AS surname,
+ * ex.age AS age FROM {dbtng_example} ex GROUP BY ex.age
+ */
+function dbtng_example_execute_group_by_select_query() {
+
+  $select = db_select('dbtng_example', 'ex');
+   // Select these specific fields for the output.
+  $select->fields('ex', array('name'));
+  // Count('name') how many times same name comes in table .
+  $select->addExpression('COUNT(ex.name)', 'count');
+  // 'n.name' is used for groupBy clause.
+  $select->groupBy("ex.name");
+  $output = $select->execute()->fetchAll();
+  return $output;
+}
+
+/**
+ * This function renders a resultset as table
+ */
+function dbtng_example_render_resultset_as_table($result) {
+  $rows = array();
+  if ($result) {
+    foreach ($result as $row) {
+      // Sanitize the data before handing it off to the theme layer.
+      $rows[] = array_map('check_plain', (array) $row);
+    }
+  }
+  return dbtng_example_convert_resultset_to_table_render_array($rows);
+}
+
+/**
+ * This function renders array for table 'dbtng_example'
+ */
+function dbtng_example_convert_resultset_to_table_render_array($rows = array()) {
+  $header = array(t('Name'), t('Count'));
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'empty' => t('No records found')));
+  return $output;
 }
 /**
  * @} End of "defgroup dbtng_example".
