@@ -1,0 +1,115 @@
+<?php
+
+/*************************************************************
+        DRUPAL HOOKS
+*************************************************************/
+
+/**
+ * Implementation of hook_menu();
+ */
+function tableform_example_menu() {
+  $items['tableform_example'] = array(
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('tableform_example_form'),
+    'access arguments'  => array('access content'),
+    'title'             => 'Tableform Example Form',
+  );
+  
+  return $items;
+}
+
+/*************************************************************
+        FORMS
+*************************************************************/
+
+/**
+ * Callback for /tableform_example
+ */
+function tableform_example_form() {
+  $form = array();
+
+  $form['my_table'] = array(
+    '#type'     => 'tableform', 
+    '#header'   => array(
+      t('Column 1'),
+      t('Column 2'),
+      t('Column 3'),
+      t('Column 4'),
+      t('Column 5'),
+    ),
+    '#options'  => array(
+      array(
+        t('Some text'),
+        'my_text' => array(
+          '#type'           => 'textfield',
+          '#title'          => t('Textfield'),
+          '#size'           => 10,  
+          '#required'       => TRUE,
+          '#default_value'  => t('Default text'),
+        ),
+        'my_text2' => array(
+          '#type'           => 'textfield',
+          '#title'          => t('Textfield 2'),
+        ),
+        'my_select' => array(
+          '#type'           => 'select',
+          '#title'          => t('Select'),
+          '#options'        => array(
+            t('Apple'),
+            t('Orange'),
+            t('Banana'),  
+          ),
+          '#default_value'  => array(1),
+        ),
+        'my_checkboxes' => array(
+          '#type'           => 'checkboxes',
+          '#title'          => t('Checkboxes'),
+          '#options'        => array(
+            t('Apple'),
+            t('Orange'),
+            t('Banana'),  
+          ),
+          '#default_value'  => array(2),
+        ),
+      ),
+      array(
+        t('Some text'),
+        'my_text22' => array(
+          '#type'           => 'textfield',
+          '#title'          => t('Textfield 3'),
+          '#required'       => TRUE,
+          '#default_value'  => t('Default text'),
+        ),
+        t('More Text!'),
+        'my_radios' => array(
+          '#type'           => 'radios',
+          '#title'          => t('Radios'),
+          '#options'        => array(
+            t('Apple'),
+            t('Orange'),
+            t('Banana'),  
+          ),
+          '#default_value'  => array(2),
+        ),
+        'my_select2' => array(
+          '#type'           => 'select',
+          '#title'          => t('Select'),
+          '#multiple'       => TRUE,
+          '#required'       => TRUE,
+          '#options'        => array(
+            t('Apple'),
+            t('Orange'),
+            t('Banana'),  
+          ),
+        ),
+      ), 
+    ),  
+  );
+
+  $form['submit'] = array(
+    '#type'     => 'submit',
+    '#value'    => t('Submit'),
+  );
+  
+  return $form;
+}

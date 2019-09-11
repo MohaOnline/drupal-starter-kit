@@ -1,0 +1,13 @@
+name = Tableform Example
+description = An example implementation of the tableform element.
+php = 5.2
+files[] = tableform_example.module
+dependencies[] = tableform
+version = "7.x-1.0"
+core = "7.x"
+; Information added by drupal.org packaging script on 2012-02-17
+version = "7.x-1.2"
+core = "7.x"
+project = "tableform"
+datestamp = "1329502242"
+

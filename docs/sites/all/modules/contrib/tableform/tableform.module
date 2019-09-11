@@ -1,0 +1,128 @@
+<?php
+
+/*************************************************************
+        MODULE HOOKS
+*************************************************************/
+
+/**
+ * Implementation of hook_theme();
+ */
+function tableform_theme() {
+  return array(
+    'tableform' => array(
+      'render element'  => 'element',
+    ), 
+  );
+}
+
+/**
+ * Implementation of hook_element_info();
+ */
+function tableform_element_info() {
+  $types['tableform'] = array(
+    '#input'          => TRUE,
+    '#process'        => array('form_process_tableform'),
+    '#options'        => array(),
+    '#empty'          => '',
+    '#theme'          => 'tableform',
+    '#theme_wrappers' => array('form_element'),
+  );
+  
+  return $types; 
+}
+
+/*************************************************************
+        FORMS
+*************************************************************/
+
+/**
+ * Process the elements to populate the table.
+ *
+ * @param $element
+ *   An associative array containing the properties and children of the
+ *   tableform element.
+ * @return
+ *   The processed element.
+ */
+function form_process_tableform($element) {
+  // process header cells
+  $header_field = isset($element['#tf_header']) ? '#tf_header' : '#header';
+  
+  foreach ($element[$header_field] as $key => $cell) {
+    if (is_array($cell)) {
+      $element[$key] = $cell;
+    }
+  }
+    
+  // process rows  
+  $rows_field = isset($element['#tf_rows']) ? '#tf_rows' : '#options';
+  
+  foreach ($element[$rows_field] as $row_key => $row) {
+    foreach ($row as $key => $cell) {
+      if (is_array($cell)) {
+        $element[$key] = $cell;
+      }
+    }
+  }
+ 
+  return $element;
+}
+
+/*************************************************************
+        THEMING
+*************************************************************/
+
+/**
+ * Returns HTML for a tableform form element.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - element: An associative array containing the properties of the element.
+ *     Properties used: #title, #header, #options, #attributes
+ *
+ * @ingroup themeable
+ */
+function theme_tableform($variables) {
+  $element = $variables['element'];
+  $rows = array();
+  $header = array();
+  
+  // process header cells
+  $header_field = isset($element['#tf_header']) ? '#tf_header' : '#header';
+  
+  if (!empty($element[$header_field])) {
+    foreach ($element[$header_field] as $key => $cell) {
+      $header[] = tableform_render_cell($element, $cell, $key);  
+    }
+  }
+
+  // process rows
+  $rows_field = isset($element['#tf_rows']) ? '#tf_rows' : '#options';
+  
+  if (!empty($element[$rows_field])) {
+    foreach ($element[$rows_field] as $row) {
+      $rendered = array(
+        'data' => array(),  
+      );
+      
+      foreach ($row as $key => $cell) {
+        $rendered['data'][] = tableform_render_cell($element, $cell, $key);
+      }
+      
+      $rows[] = $rendered;
+    }
+  }
+  
+  return theme('table', array('header' => $header, 'rows' => $rows, 'empty' => $element['#empty'], 'attributes' => $element['#attributes']));
+}
+
+/*************************************************************
+        INTERNAL
+*************************************************************/
+
+/**
+ * Helper to render a header/row cell.
+ */
+function tableform_render_cell($element, $cell, $key) {
+  return is_array($cell) ? drupal_render($element[$key]) : $cell;
+}
