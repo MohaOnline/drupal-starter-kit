@@ -1,4 +1,6 @@
 <?php
+
+include "mo_saml_visualTour.php";
 function miniorange_oauth_client_reports($form,$form_state)
 {
     drupal_add_css( drupal_get_path('module', 'oauth_login_oauth2'). '/css/bootstrap.min.css' , array('group' => CSS_DEFAULT, 'every_page' => FALSE));
@@ -31,7 +33,18 @@ function miniorange_oauth_client_reports($form,$form_state)
     );
 
     $form['mo_header_style_end'] = array('#markup' => '</div></div>');
-
+    Utilities::AddSupportButton($form, $form_state);
     return $form;
+}
+
+/**
+ * Send support query.
+ */
+function send_support_query(&$form, $form_state)
+{
+    $email = $form['miniorange_oauth_email_address_support']['#value'];
+    $phone = $form['miniorange_oauth_phone_number_support']['#value'];
+    $query = $form['miniorange_oauth_support_query_support']['#value'];
+    Utilities::send_query($email, $phone, $query);
 }
  ?>

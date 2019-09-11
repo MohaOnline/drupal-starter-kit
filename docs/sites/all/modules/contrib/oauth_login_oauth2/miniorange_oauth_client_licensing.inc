@@ -1,4 +1,7 @@
 <?php
+
+include "mo_saml_visualTour.php";
+include_once('includes/Utilities.php');
 function miniorange_oauth_client_license($form, $form_state)
 {
 
@@ -12,7 +15,7 @@ function miniorange_oauth_client_license($form, $form_state)
       );
 
     $form['markup_1'] = array(
-        '#markup' =>'<br><h3>LICENSING PLANS</h3><hr>'
+        '#markup' =>'<br><h3>&nbsp;&nbsp;&nbsp;UPGRADE PLANS</h3><hr>'
     );
 
     $form['markup_free'] = array(
@@ -58,7 +61,7 @@ function miniorange_oauth_client_license($form, $form_state)
                                 <p class="pricing-title">Free</p>
                                 <p class="pricing-rate"><sup>$</sup> 0</p>
                                 <div class="filler-class"></div>
-                                    <a class="btn btn-primary">You are here</a>
+                                    <a class="btn btn-primary">You are on this plan</a>
                                 </div>
                             <div class="pricing-list">
                                 <ul>
@@ -83,7 +86,7 @@ function miniorange_oauth_client_license($form, $form_state)
 
                         <div class="pricing-table class_inline">
                             <div class="pricing-header">
-                                <p class="pricing-title">Standard</p>
+                                <p class="pricing-title">Standard<br><span>(Role and Attribute mapping)</span></p>
                                 <p class="pricing-rate"><sup>$</sup> 99<sup>*</sup></p>
                                 <div class="filler-class"></div>
                                  <a href="https://www.miniorange.com/contact" target="_blank" class="btn btn-primary">Contact Us</a>
@@ -111,7 +114,7 @@ function miniorange_oauth_client_license($form, $form_state)
                         </div>
                         <div class="pricing-table class_inline">
                             <div class="pricing-header">
-                                <p class="pricing-title">Premium</p>
+                                <p class="pricing-title">Premium<br><span>(OpenID support)</span></p>
                                 <p class="pricing-rate"><sup>$</sup> 199<sup>*</sup></p>
                                  <a href="https://www.miniorange.com/contact" target="_blank" class="btn btn-primary">Contact Us</a>
                             </div>
@@ -138,14 +141,14 @@ function miniorange_oauth_client_license($form, $form_state)
                         </div>
                         <div class="pricing-table class_inline">
                             <div class="pricing-header">
-                                <p class="pricing-title">Enterprise</p>
+                                <p class="pricing-title">Enterprise<br><span>(Domain Page restriction support)</span></p>
                                 <p class="pricing-rate"><sup>$</sup> 249<sup>*</sup></p>
                                  <a href="https://www.miniorange.com/contact" target="_blank" class="btn btn-primary">Contact Us</a>
                             </div>
 
                             <div class="pricing-list">
                                 <ul>
-                                    <li>1*</li>
+                                    <li>1**</li>
                                     <li>&#x2714;</li>
                                     <li>&#x2714;</li>
                                     <li>&#x2714;</li>
@@ -169,12 +172,25 @@ function miniorange_oauth_client_license($form, $form_state)
         </div>
     </section>
     <!-- Pricing Table Section End -->
-    <h3>* If you want support for multiple OAuth Providers, please contact us at <a href="mailto:info@xecurify.com">info@xecurify.com</a></h3>
+    <h3>* One Time Payment<br><br>
+    ** If you want support for multiple OAuth Providers, please contact us at <a href="mailto:info@xecurify.com">info@xecurify.com</a></h3>
     </body>
     </html>',
     );
 
-
+    Utilities::AddSupportButton($form, $form_state);
     return $form;
 }
-    ?>
+
+/**
+ * Send support query.
+ */
+function send_support_query(&$form, $form_state)
+{
+    $email = $form['miniorange_oauth_email_address_support']['#value'];
+    $phone = $form['miniorange_oauth_phone_number_support']['#value'];
+    $query = $form['miniorange_oauth_support_query_support']['#value'];
+    Utilities::send_query($email, $phone, $query);
+}
+
+?>

@@ -474,7 +474,7 @@
 	font-weight: 500;
 }
 #pricing-table .pricing .pricing-table .pricing-header .pricing-rate {
-	font-size: 60px;
+	font-size: 50px;
 	font-weight: 600;
 	color: #ffffff;
 	position: relative;
@@ -508,7 +508,7 @@
 	border-bottom: 1px solid #EAECEB;
 	color: black;
 	font-size: 15px;
-	line-height: 42px;
+	padding: 15px;
 }
 #pricing-table .pricing .pricing-list ul li:last-child {
 	border: none;
@@ -546,4 +546,28 @@ p.pricing-rate{
 }
 .pricing-list li:nth-of-type(2n+1) {
 	background-color: rgba(23, 61, 80, 0.06);
+}
+
+/* FAQ button and Ask question on forum button*/
+.mo_faq_button_left{
+	float: inherit;
+	color: #48a0dc;
+	border: 2px solid #48a0dc;
+	padding: 5px;
+	margin-left: 50px;
+}
+
+.mo_faq_button_left:hover{
+	transform: scale(1.1);
+}
+.mo_faq_button_right{
+	float: inherit;
+	color: #48a0dc;
+	border: 2px solid #48a0dc;
+	padding: 5px;
+	margin-left: 10px;
+}
+
+.mo_faq_button_right:hover{
+	transform: scale(1.1);
 }

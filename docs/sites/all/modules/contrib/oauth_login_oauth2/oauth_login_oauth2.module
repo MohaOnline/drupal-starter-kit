@@ -52,17 +52,8 @@ function oauth_login_oauth2_menu()
         'file' => 'miniorange_oauth_client_reports.inc',
       );
 
-      $items['admin/config/people/oauth_login_oauth2/faq'] = array(
-        'title' => 'FAQ',
-        'weight' => -4,
-        'type' => MENU_LOCAL_TASK,
-        'access arguments' => array('administer site configuration'),
-        'page arguments' => array('mo_oauth_faq'),
-        'file' => 'miniorange_oauth_client_faq.inc',
-      );
-
       $items['admin/config/people/oauth_login_oauth2/licensing'] = array(
-        'title' => 'Licensing Plan',
+        'title' => 'Upgrade Plan',
         'weight' => -3,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
@@ -77,15 +68,6 @@ function oauth_login_oauth2_menu()
           'access arguments' => array('administer site configuration'),
           'page arguments' => array('miniorange_oauth_client_customer_setup'),
           'file' => 'miniorange_oauth_client_customer_setup.inc',
-      );
-
-      $items['admin/config/people/oauth_login_oauth2/support'] = array(
-        'title' => 'Support',
-        'weight' => -1,
-        'type' => MENU_LOCAL_TASK,
-        'access arguments' => array('administer site configuration'),
-        'page arguments' => array('miniorange_oauth_client_support'),
-        'file' => 'miniorange_oauth_client_support.inc',
       );
 
       $items['testConfig'] = array(

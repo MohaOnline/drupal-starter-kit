@@ -57,7 +57,7 @@ function miniorange_config($form, &$formstate)
     );
 
     $form['miniorange_oauth_client_app'] = array(
-        '#title' => t('Select Application: *'),
+        '#title' => t('Select Application:<span class="form-required"> *</span>'),
         '#id' => 'miniorange_oauth_client_app',
         '#type' => 'select',
         '#description' => "Select an OAuth Server",
@@ -89,7 +89,7 @@ function miniorange_config($form, &$formstate)
         '#type' => 'textfield',
         '#default_value' => variable_get('miniorange_auth_client_app_name',NULL),
         '#id'  => 'miniorange_oauth_client_app_name',
-        '#title' => t('Custom App Name:*'),
+        '#title' => t('Custom App Name:<span class="form-required"> *</span>'),
         '#disabled' => $disabled,
         '#attributes' => $attributes_arr,
     );
@@ -106,7 +106,7 @@ function miniorange_config($form, &$formstate)
         '#type' => 'textfield',
         '#id'  => 'miniorange_oauth_client_client_id',
         '#default_value' => variable_get('miniorange_auth_client_client_id',NULL),
-        '#title' => t('Client Id:*'),
+        '#title' => t('Client Id:<span class="form-required"> *</span>'),
         '#description' => "You will get this value from your OAuth Server",
         '#attributes' => array('style' => 'width:73%'),
     );
@@ -116,7 +116,7 @@ function miniorange_config($form, &$formstate)
         '#default_value' => variable_get('miniorange_auth_client_client_secret',NULL),
         '#description' => "You will get this value from your OAuth Server",
         '#id'  => 'miniorange_oauth_client_client_secret',
-        '#title' => t('Client Secret:*'),
+        '#title' => t('Client Secret:<span class="form-required"> *</span>'),
         '#attributes' => array('style' => 'width:73%'),
     );
 
@@ -133,7 +133,7 @@ function miniorange_config($form, &$formstate)
         '#type' => 'textfield',
         '#default_value' => variable_get('miniorange_auth_client_authorize_endpoint',NULL),
         '#id'  => 'miniorange_oauth_client_auth_ep',
-        '#title' => t('Authorize Endpoint:*'),
+        '#title' => t('Authorize Endpoint:<span class="form-required"> *</span>'),
         '#attributes' => array('style' => 'width:73%'),
     );
 
@@ -141,7 +141,7 @@ function miniorange_config($form, &$formstate)
         '#type' => 'textfield',
         '#default_value' => variable_get('miniorange_auth_client_access_token_ep',NULL),
         '#id'  => 'miniorange_oauth_client_access_token_ep',
-        '#title' => t('Access Token Endpoint:*'),
+        '#title' => t('Access Token Endpoint:<span class="form-required"> *</span>'),
         '#attributes' => array('style' => 'width:73%'),
     );
 
@@ -149,7 +149,7 @@ function miniorange_config($form, &$formstate)
         '#type' => 'textfield',
         '#default_value' => variable_get('miniorange_auth_client_user_info_ep',NULL),
         '#id'  => 'miniorange_oauth_client_user_info_ep',
-        '#title' => t('Get User Info Endpoint:*'),
+        '#title' => t('Get User Info Endpoint:<span class="form-required"> *</span>'),
         '#attributes' => array('style' => 'width:73%'),
     );
 

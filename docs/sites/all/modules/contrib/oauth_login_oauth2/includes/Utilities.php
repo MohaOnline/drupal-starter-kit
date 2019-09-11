@@ -24,7 +24,7 @@ class Utilities {
 
 
         $form['markup_support_1'] = array(
-            '#markup' => '<h3><b>Feature Request/Contact Us:</b></h3><div>Need any help? We can help you with configuring your Service Provider. Just send us a query and we will get back to you soon.<br /></div><br>',
+            '#markup' => '<h3><b>Feature Request/Contact Us:</b></h3><div>Need any help? We can help you with configuring your OAuth Provider. Just send us a query and we will get back to you soon.</div>',
         );
 
         $form['miniorange_oauth_email_address_support'] = array(
@@ -52,7 +52,7 @@ class Utilities {
         );
 
         $form['miniorange_oauth_support_note'] = array(
-            '#markup' => '<div><br/>If you want custom features in the plugin, just drop an email to <a href="mailto:info@xecurify.com">info@xecurify.com</a></div>'
+            '#markup' => '<div>If you want custom features in the plugin, just drop an email to <a href="mailto:info@xecurify.com">info@xecurify.com</a></div>'
         );
 
         $form['miniorange_oauth_support_div_cust'] = array(
@@ -99,6 +99,15 @@ class Utilities {
         }
     }
 
+    public static function faq(&$form, &$form_state){
+
+        $form['miniorange_faq'] = array(
+            '#markup' => '<br><div class="mo_saml_text_center"><b></b>
+                          <a class="btn1 btn-primary-faq btn-large mo_faq_button_left" href="https://faq.miniorange.com/kb/oauth-openid-connect/" target="_blank">FAQs</a>
+                          <b></b><a class="btn1 btn-primary-faq btn-large mo_faq_button_right" href="https://forum.miniorange.com/" target="_blank">Ask questions on forum</a></div>',
+        );
+    }
+
     /**
      * OAuth Provider Guide block
      */
@@ -118,13 +127,14 @@ class Utilities {
                         <tr><th class="mo_guide_text-center" style="font-weight:bold;">Providers</th><th class="mo_guide_text-center" style="font-weight:bold;">Links</th></tr>
                     </thead>
                     <tbody style="color:gray;">
-                        <tr><td>AWS Cognito</td><td><strong><a href="https://plugins.miniorange.com/configure-aws-cognito-oauthopenid-connect-server-drupal" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Reddit</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-reddit-oauthopenid-connect-server-drupal" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Google</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-google-apps-oauth-server-drupal" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Facebook</td><td><strong><a href="https://plugins.miniorange.com/configure-facebook-oauth-server-drupal" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>FitBit</td><td><strong><a href="https://plugins.miniorange.com/configuring-fitbit-oauth-server-drupal" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Instagram</td><td><strong><a href="https://plugins.miniorange.com/configure-instagram-oauth-openid-connect-server-drupal-client" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>linkedin</td><td><strong><a href="https://plugins.miniorange.com/configure-linkedin-oauth-openid-connect-server-drupal-client" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center">AWS Cognito</td><td><strong><a href="https://plugins.miniorange.com/configure-aws-cognito-oauthopenid-connect-server-drupal" class="mo_guide_text-color mo_guide_text-center" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center">Reddit</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-reddit-oauthopenid-connect-server-drupal" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center">Google</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-google-apps-oauth-server-drupal" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center">Facebook</td><td><strong><a href="https://plugins.miniorange.com/configure-facebook-oauth-server-drupal" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center">FitBit</td><td><strong><a href="https://plugins.miniorange.com/configuring-fitbit-oauth-server-drupal" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center">Instagram</td><td><strong><a href="https://plugins.miniorange.com/configure-instagram-oauth-openid-connect-server-drupal-client" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center">linkedin</td><td><strong><a href="https://plugins.miniorange.com/configure-linkedin-oauth-openid-connect-server-drupal-client" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td class="mo_guide_text-center" >Other provider</td><td><strong><a href="https://www.miniorange.com/contact" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                     </tbody>
                 </table>
                 <div>In case you do not find your desired OAuth Provider listed here, please mail us on <a href="mailto:info@xecurify.com">info@xecurify.com</a>
@@ -132,6 +142,7 @@ class Utilities {
             </div>',
 
         );
+        self::faq($form, $form_state);
     }
 
     /**

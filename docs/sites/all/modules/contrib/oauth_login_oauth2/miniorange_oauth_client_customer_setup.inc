@@ -1,7 +1,7 @@
 
 <?php
 require_once 'includes/customer_setup.php';
-
+include "mo_saml_visualTour.php";
 /**
  * Customer setup form().
  */

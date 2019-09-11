@@ -5,7 +5,7 @@
      */
     function miniorange_attr_mapping($form, $form_state)
     {
-
+        global $base_url;
         drupal_add_css( drupal_get_path('module', 'oauth_login_oauth2'). '/css/bootstrap.min.css' , array('group' => CSS_DEFAULT, 'every_page' => FALSE));
         drupal_add_css( drupal_get_path('module', 'oauth_login_oauth2'). '/css/style_settings.css' , array('group' => CSS_DEFAULT, 'every_page' => FALSE));
 
@@ -31,13 +31,13 @@
 
         $form['miniorange_oauth_client_name_attr'] = array(
             '#type' => 'textfield',
-            '#title' => t('Name Attribute: '),
+            '#title' => t('Username Attribute: '),
             '#default_value' => $name_attr,
             '#attributes' => array('id'=>'mo_oauth_vt_attre','style' => 'width:73%;','placeholder' => 'Enter Name Attribute'),
         );
 
         $form['markup_cam'] = array(
-            '#markup' => '<br><h3>Custom Attribute Mapping [PREMIUM]</h3><hr><br><div class="mo_saml_highlight_background_note_1">Add the Drupal field attributes in the Attribute Name textfield and add the OAuth Server attributes that you need to map with the drupal attributes in the OAuth Server Attribute Name textfield. Drupal Field Attributes will be of type text. Add the machine name of the attribute in the Drupal Attribute textfield. 
+            '#markup' => '<br><h3>Custom Attribute Mapping <a href="' . $base_url . '/admin/config/people/oauth_login_oauth2/licensing"><b>[Premium]</b></a></h3><hr><br><div class="mo_saml_highlight_background_note_1">Add the Drupal field attributes in the Attribute Name textfield and add the OAuth Server attributes that you need to map with the drupal attributes in the OAuth Server Attribute Name textfield. Drupal Field Attributes will be of type text. Add the machine name of the attribute in the Drupal Attribute textfield. 
                             <br><b>For example:</b> If the attribute name in the drupal is name then its machine name will be field_name.</div><br>',
         );
 
@@ -111,19 +111,19 @@
 
         $form['miniorange_disable_attribute'] = array(
             '#type' => 'checkbox',
-            '#title' => t('Do not update existing user&#39;s role <b>[PREMIUM]</b>'),
+            '#title' => t('Do not update existing user&#39;s role <a href="' . $base_url . '/admin/config/people/oauth_login_oauth2/licensing"><b>[Premium]</b></a>'),
 	        '#disabled' => TRUE,
         );
 
         $form['miniorange_oauth_disable_role_update'] = array(
             '#type' => 'checkbox',
-            '#title' => t('Check this option if you do not want to update user role if roles not mapped. <b>[PREMIUM]</b>'),
+            '#title' => t('Check this option if you do not want to update user role if roles not mapped. <a href="' . $base_url . '/admin/config/people/oauth_login_oauth2/licensing"><b>[Premium]</b></a>'),
 	        '#disabled' => TRUE,
         );
 
         $form['miniorange_oauth_disable_autocreate_users'] = array(
             '#type' => 'checkbox',
-            '#title' => t('Check this option if you want to disable <b>auto creation</b> of users if user does not exist. <b>[PREMIUM]</b>'),
+            '#title' => t('Check this option if you want to disable <b>auto creation</b> of users if user does not exist. <a href="' . $base_url . '/admin/config/people/oauth_login_oauth2/licensing"><b>[Premium]</b></a>'),
             '#default_value' => variable_get('miniorange_oauth_disable_autocreate_users', ''),
 	        '#disabled' => TRUE,
         );
@@ -153,7 +153,7 @@
         }
 
         $form['markup_role_signin'] = array(
-            '#markup' => '<h3>Custom Login/Logout (Optional) [PREMIUM]</h3>'
+            '#markup' => '<br><h3>Custom Login/Logout (Optional) <a href="' . $base_url . '/admin/config/people/oauth_login_oauth2/licensing"><b>[Premium]</b></a></h3><hr>'
         );
 
 	    foreach($mrole as $drupalKey=>$drupalRoles) {

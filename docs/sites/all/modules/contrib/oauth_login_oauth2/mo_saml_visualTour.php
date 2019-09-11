@@ -69,10 +69,6 @@ function addID()
             'newID'     =>'mo_vt_reports',
         ),
         array(
-            'selector'  =>'.tabs li:nth-of-type(5)>a',
-            'newID'     =>'mo_vt_faq',
-        ),
-        array(
             'selector'  =>'.tabs li:nth-of-type(6)>a',
             'newID'     =>'mo_vt_licensing_plans',
         ),
@@ -123,17 +119,6 @@ function getTourData($pageID,$Tour_Taken)
                 'action'        => '',
             ),
             2 => array(
-                'targetE'       => 'mo_vt_faq',
-                'pointToSide'   => 'up',
-                'titleHTML'     => '<h1>FAQs</h1>',
-                'contentHTML'   => 'You can find the solutions for the most asked queries here.',
-                'ifNext'        => true,
-                'buttonText'    => 'Next',
-                'img'           => array(),
-                'cardSize'      => 'largemedium',
-                'action'        => '',
-            ),
-            3 => array(
                 'targetE'       => 'mo_vt_licensing_plans',
                 'pointToSide'   => 'up',
                 'titleHTML'     => '<h1>Upgrade here</h1>',
@@ -144,7 +129,7 @@ function getTourData($pageID,$Tour_Taken)
                 'cardSize'      => 'largemedium',
                 'action'        => '',
             ),
-            4 => array(
+            3 => array(
                 'targetE'       => 'mo_configure_selectapp_vt',
                 'pointToSide'   => 'left',
                 'titleHTML'     => '<h1>Select Application</h1>',
@@ -155,7 +140,7 @@ function getTourData($pageID,$Tour_Taken)
                 'cardSize'      => 'medium',
                 'action'        => '',
             ),
-            5 => array(
+            4 => array(
                 'targetE'       => 'mo_oauth_callback_vt',
                 'pointToSide'   => 'left',
                 'titleHTML'     => '<h1>Callback/Redirect URL</h1>',
@@ -166,7 +151,7 @@ function getTourData($pageID,$Tour_Taken)
                 'cardSize'      => 'medium',
                 'action'        => '',
             ),
-            6 => array(
+            5 => array(
                 'targetE'       => 'mo_select_app_config_vt',
                 'pointToSide'   => 'left',
                 'titleHTML'     => '<h1>Confiugre OAuth Server</h1>',
@@ -177,7 +162,7 @@ function getTourData($pageID,$Tour_Taken)
                 'cardSize'      => 'medium',
                 'action'        => '',
             ),
-            7 => array(
+            6 => array(
                 'targetE'       => 'button_config',
                 'pointToSide'   => 'left',
                 'titleHTML'     => '<h1>Save Settings</h1>',
@@ -188,7 +173,7 @@ function getTourData($pageID,$Tour_Taken)
                 'cardSize'      => 'medium',
                 'action'        => '',
             ),
-            8 => array(
+            7 => array(
                 'targetE'       => 'mo_oauth_guide_vt',
                 'pointToSide'   => 'right',
                 'titleHTML'     => '<h1>Documentaion</h1>',
@@ -199,7 +184,7 @@ function getTourData($pageID,$Tour_Taken)
                 'cardSize'      => 'medium',
                 'action'        => '',
             ),
-            9 =>    array(
+            8 =>    array(
                 'targetE'       =>  'mosaml-feedback-form',
                 'pointToSide'   =>  'right',
                 'titleHTML'     =>  '<h1>Need Help?</h1>',
@@ -319,7 +304,7 @@ function getTourData($pageID,$Tour_Taken)
             'ifskip'        =>  'hidden',
         ),
     );
-    return $tourData[$pageID];
+    return isset($tourData[$pageID]) ? $tourData[$pageID] : '';
 }
 
 /*
