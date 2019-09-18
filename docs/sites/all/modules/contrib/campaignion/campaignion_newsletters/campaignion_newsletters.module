@@ -7,7 +7,6 @@
 
 use Drupal\campaignion_newsletters\Component;
 use Drupal\campaignion_newsletters\CronRunner;
-use Drupal\campaignion_newsletters\FormBuilderElementNewsletter;
 use Drupal\campaignion_newsletters\NewsletterList;
 use Drupal\campaignion_newsletters\ProviderFactory;
 use Drupal\campaignion_newsletters\QueueItem;
@@ -83,11 +82,13 @@ function campaignion_newsletters_webform_submission_confirmed(Submission $submis
   if (!($email = $s->value('email'))) {
     return;
   }
+  $subscriptions = new Subscriptions(NewsletterList::listAll(), [$email], []);
   foreach ($s->webform->componentsByType('opt_in') as $component) {
     if ($component['extra']['channel'] == 'email') {
-      Component::fromComponent($component)->submit($email, $s);
+      $subscriptions->merge(Component::fromComponent($component)->getSubscriptions($email, $s));
     }
   }
+  $subscriptions->save();
 }
 
 /**
@@ -128,6 +129,7 @@ function campaignion_newsletters_form_webform_component_edit_form_alter(&$elemen
   ];
 
   natcasesort($newsletters);
+  $lists_id = drupal_html_id('newsletter-lists');
   $element['list_management']['lists'] = [
     '#type' => module_exists('select2') && count($newsletters) > 5 ? 'select' : 'checkboxes',
     '#title' => t('Newsletter'),
@@ -139,6 +141,7 @@ function campaignion_newsletters_form_webform_component_edit_form_alter(&$elemen
     '#multiple' => 1,
     '#select2' => [],
     '#parents' => ['extra', 'lists'],
+    '#id' => $lists_id,
   ];
 
   $element['list_management']['opt_in_implied'] = [
@@ -182,8 +185,7 @@ function campaignion_newsletters_form_webform_component_edit_form_alter(&$elemen
   ];
 
   if (empty($component['extra']['fixed_channel'])) {
-    $channel_id = drupal_html_id('opt-in-channel');
-    $element['extra']['channel']['#id'] = $channel_id;
+    $channel_id = $element['extra']['channel']['#id'];
     $element['list_management']['#states']['visible']["#$channel_id"]['value'] = 'email';
     $element['behavior']['optout_all_lists']['#states']['visible']["#$channel_id"]['value'] = 'email';
   }

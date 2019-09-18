@@ -142,3 +142,19 @@ function campaignion_email_protest_form_builder_element_types_alter(&$types, $fo
     $types['protest_target']['addable'] = TRUE;
   }
 }
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Disable menu links for creating new email protest nodes.
+ * Campaignion_email_to_target should be used instead.
+ */
+function campaignion_email_protest_menu_alter(&$items) {
+  $loader = Loader::instance();
+  foreach ($loader->allTypes() as $type_name => $type) {
+    if ($type->isEmailProtest()) {
+      $url_type = str_replace('_', '-', $type_name);
+      $items["wizard/$url_type"]['access callback'] = FALSE;
+    }
+  }
+}

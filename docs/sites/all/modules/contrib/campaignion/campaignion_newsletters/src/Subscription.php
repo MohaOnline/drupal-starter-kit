@@ -16,10 +16,7 @@ class Subscription extends Model {
 
   public $delete = FALSE;
   public $source = NULL;
-  public $needs_opt_in = FALSE;
-  public $send_welcome = FALSE;
-  public $optin_statement = '';
-  public $optin_info = NULL;
+  public $components = [];
 
   public static $lists = array();
 
@@ -137,25 +134,9 @@ class Subscription extends Model {
       return $this->delete($from_provider);
     }
     if (!$from_provider && ($provider = $this->provider())) {
-      $item = QueueItem::byData(array(
-        'list_id' => $this->list_id,
-        'email' => $this->email,
-      ));
-      list($data, $fingerprint) = $provider->data($this, $item->data);
-      if ($fingerprint != $this->fingerprint) {
-        $this->fingerprint = $fingerprint;
-        $item->data = $data;
-
-        if ($this->new) {
-          $item->action = QueueItem::SUBSCRIBE;
-          $item->args['send_welcome'] = $this->send_welcome;
-          $item->args['send_optin'] = $this->needs_opt_in;
-          $item->optin_info = $this->optin_info;
-        }
-        else {
-          $item->action = QueueItem::UPDATE;
-        }
-
+      $item = QueueItem::fromSubscription($this, $provider);
+      if ($item->fingerprint != $this->fingerprint) {
+        $this->fingerprint = $item->fingerprint;
         $item->save();
       }
     }
@@ -181,6 +162,21 @@ class Subscription extends Model {
   }
 
   /**
+   * Merge data from another subscription into this subscription.
+   *
+   * Assumes list_id, email and source are the same.
+   * Ignores last_sync and updated timestamps.
+   *
+   * @param Subscription $subscription
+   *   Another subscription for the same email address and list.
+   */
+  public function merge(Subscription $subscription) {
+    $this->components = array_merge($this->components, $subscription->components);
+    $this->delete = $this->delete && $subscription->delete;
+    $this->fingerprint = '';
+  }
+
+  /**
    * Delete the subscription from the database.
    *
    * @param bool $from_provider
@@ -188,11 +184,9 @@ class Subscription extends Model {
    *   forwarded to provider again.
    */
   public function delete($from_provider = FALSE) {
-    if ($this->isNew()) {
-      return;
-    }
+    $this->delete = TRUE;
     if (!$from_provider) {
-      $this->queueUnsubscribe();
+      QueueItem::fromSubscription($this)->save();
     }
     parent::delete();
     module_invoke_all('campaignion_newsletters_subscription_deleted', $this, $from_provider);
@@ -200,15 +194,16 @@ class Subscription extends Model {
   }
 
   /**
-   * Queue an unsubscribe request for this subscription.
+   * Calculate the arguments for a queue item.
    */
-  public function queueUnsubscribe() {
-    QueueItem::byData(array(
-      'list_id' => $this->list_id,
-      'email' => $this->email,
-      'action' => QueueItem::UNSUBSCRIBE,
-      'data' => NULL,
-    ))->save();
+  public function queueItemArgs() {
+    $args['send_welcome'] = FALSE;
+    $args['send_optin'] = FALSE;
+    foreach ($this->components as $component) {
+      $args['send_welcome'] = $args['send_welcome'] || !empty($component['extra']['send_welcome']);
+      $args['send_optin'] = $args['send_optin'] || empty($component['extra']['opt_in_implied']);
+    }
+    return $args;
   }
 
 }

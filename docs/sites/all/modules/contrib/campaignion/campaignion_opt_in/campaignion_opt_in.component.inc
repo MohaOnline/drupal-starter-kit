@@ -54,6 +54,7 @@ function _webform_edit_opt_in($component) {
   );
 
   $channels = campaignion_opt_in_channel_info();
+  $channel_id = drupal_html_id('opt-in-channel');
   $form['extra']['channel'] = array(
     '#type' => 'select',
     '#title' => t('Channel'),
@@ -65,6 +66,8 @@ function _webform_edit_opt_in($component) {
     '#default_value' => $component['extra']['channel'],
     '#access' => empty($component['extra']['fixed_channel']) || empty($component['extra']['channel']),
     '#parents' => ['extra', 'channel'],
+    // Set a fixed HTML ID so other modules can easier use #states.
+    '#id' => $channel_id,
   );
 
   $form['behavior']['value'] = array(
@@ -197,7 +200,7 @@ function _webform_render_opt_in($component, $value = NULL, $filter = TRUE) {
       $options = [Values::OPT_IN => $l[1], $no_value => $l[0]];
       $element += [
         '#type' => 'radios',
-        '#default_value' => isset($options[$value]) ? $value : FALSE,
+        '#default_value' => isset($options[$value]) ? $value : '',
         '#options' => $options,
       ];
   }

@@ -16,7 +16,6 @@ class NewsletterSubscription extends ActivityBase {
   public $list_id;
   public $action;
   public $from_provider;
-  public $optin_statement;
   public $remote_addr;
 
   /**
@@ -40,7 +39,6 @@ class NewsletterSubscription extends ActivityBase {
       'list_id' => $subscription->list_id,
       'action' => $action,
       'from_provider' => (int) $from_provider,
-      'optin_statement' => $subscription->optin_statement,
       'remote_addr' => self::getRemoteAddr(),
     ]);
   }
@@ -89,7 +87,6 @@ class NewsletterSubscription extends ActivityBase {
         'list_id',
         'action',
         'from_provider',
-        'optin_statement',
         'remote_addr',
       ]))
       ->execute();
@@ -100,8 +97,8 @@ class NewsletterSubscription extends ActivityBase {
    */
   protected function update() {
     parent::update();
-    // `optin_statement` and `remote_addr` intentionally left out, as
-    // these are not supposed to be changed.
+    // `remote_addr` is intentionally left out, as it is not supposed to be
+    // changed.
     db_update('campaignion_activity_newsletter_subscription')
       ->fields($this->values(['list_id', 'action', 'from_provider']))
       ->condition('activity_id', $this->activity_id)

@@ -67,6 +67,14 @@ class FormBuilderElementOptIn extends Element {
       $form['lists']['#form_builder']['property_group'] = 'lists';
       $form['optout_all_lists'] = $edit['behavior']['optout_all_lists'];
     }
+    if (module_exists('campaignion_newsletters_mailchimp_interests') && isset($edit['mc_groups'])) {
+      $form['#property_groups']['groups'] = [
+        'title' => t('Groups'),
+        'weight' => 3,
+      ];
+      $form['groups'] = ['#type' => NULL] + $edit['mc_groups'];
+      $form['groups']['#form_builder']['property_group'] = 'groups';
+    }
 
     return $form;
   }

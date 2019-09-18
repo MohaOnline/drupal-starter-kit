@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for the Campaignion Tracking module for GTM.
+ */
+
+/**
+ * Implements hook_page_build().
+ */
+function campaignion_tracking_gtm_page_build(&$page) {
+  $module_path = drupal_get_path('module', 'campaignion_tracking_gtm');
+
+  // Add javascript.
+  $page['content']['#attached']['js'][$module_path . '/js/campaignion_tracking_gtm.min.js'] = [
+    'scope' => 'header',
+    'group' => JS_LIBRARY - 100,
+    'preprocess' => FALSE,
+  ];
+}

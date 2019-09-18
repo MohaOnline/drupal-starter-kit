@@ -83,7 +83,7 @@ function campaignion_bar_page_build(&$page) {
     $build_aebar = TRUE;
     if(function_exists('context_active_contexts')) {
       $loaded_contexts = array_keys(context_active_contexts());
-      foreach (array('no_aebar', 'current_webform_embedded', 'colorbox_embedded') as $context) {
+      foreach (array('no_aebar', 'embedded', 'current_webform_embedded', 'colorbox_embedded') as $context) {
         if (in_array($context, $loaded_contexts)) {
           $build_aebar = FALSE;
           break;

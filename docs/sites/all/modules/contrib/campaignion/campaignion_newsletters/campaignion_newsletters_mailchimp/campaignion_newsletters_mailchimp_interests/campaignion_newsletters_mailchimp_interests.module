@@ -9,7 +9,31 @@
  *   hook_campaignion_newsletters_mailchimp_data_alter().
  */
 
-use \Drupal\campaignion\CRM\Import\Source\WebformSubmission;
+use Drupal\campaignion\CRM\Import\Source\WebformSubmission;
+use Drupal\campaignion_newsletters\NewsletterList;
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Add this module’s form alter *after* the campaignion_newsletters form alter.
+ */
+function campaignion_newsletters_mailchimp_interests_module_implements_alter(array &$impl, $hook) {
+  // hook_form_FORM_ID_alter() calls still have $hook == 'form_alter' here.
+  if ($hook == 'form_alter' && isset($impl['campaignion_newsletters']) && isset($impl['campaignion_newsletters_mailchimp_interests'])) {
+    $new_impl = [];
+    $my_module = 'campaignion_newsletters_mailchimp_interests';
+    $my_group = $impl[$my_module];
+    unset($impl[$my_module]);
+    foreach ($impl as $module => $group) {
+      $new_impl[$module] = $group;
+      // Add our implementation right after campaignion_newsletters.
+      if ($module == 'campaignion_newsletters') {
+        $new_impl[$my_module] = $my_group;
+      }
+    }
+    $impl = $new_impl;
+  }
+}
 
 /**
  * Implements hook_webform_component_info().
@@ -33,13 +57,23 @@ function campaignion_newsletters_mailchimp_interests_webform_component_info() {
  * component on the same form.
  */
 function campaignion_newsletters_mailchimp_interests_campaignion_newsletters_mailchimp_data_alter(array &$data, $subscription) {
+  $list = $subscription->newsletterList();
   if (!empty($subscription->source) && $subscription->source instanceof WebformSubmission) {
     $s = $subscription->source;
-    $list_groups = $subscription->newsletterList()->data->groups;
+    $list_groups = $list->data->groups;
     foreach ($s->webform->componentsByType('mc_interests') as $cid => $c) {
       foreach ($s->valuesByCid($cid) as $key) {
         if (isset($list_groups[$key])) {
           $data['interests'][$key] = TRUE;
+        }
+      }
+    }
+  }
+  if (!empty($subscription->components)) {
+    foreach ($subscription->components as $component) {
+      if (isset($component['extra']['mc_groups'][$list->list_id])) {
+        foreach (array_filter($component['extra']['mc_groups'][$list->list_id]) as $group) {
+          $data['interests'][$group] = TRUE;
         }
       }
     }
@@ -83,4 +117,44 @@ function campaignion_newsletters_mailchimp_interests_form_builder_element_types(
     ) + _form_builder_webform_default('mc_interests'),
   );
   return $fields;
+}
+
+/**
+ * Implements hook_form_webform_component_edit_form_alter().
+ */
+function campaignion_newsletters_mailchimp_interests_form_webform_component_edit_form_alter(&$element, &$form_state) {
+  $component = $form_state['build_info']['args'][1];
+  if ($component['type'] != 'opt_in') {
+    return;
+  }
+  if (!empty($component['extra']['fixed_channel']) && $component['extra']['channel'] != 'email') {
+    return;
+  }
+
+  $element['mc_groups'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Interest groups'),
+    '#description' => t('When users are subscribed to a list they are also subscribed to these interest groups.'),
+    '#parents' => ['extra', 'mc_groups'],
+  ];
+
+  $lists_id = $element['list_management']['lists']['#id'];
+  foreach (NewsletterList::listAll() as $l) {
+    if (!empty($l->data->groups)) {
+      $element['mc_groups'][$l->list_id] = [
+        '#type' => 'checkboxes',
+        '#title' => $l->title,
+        '#options' => $l->data->groups,
+        '#default_value' => $component['extra']['mc_groups'][$l->list_id] ?? [],
+        '#parents' => ['extra', 'mc_groups', $l->list_id],
+      ];
+      $selector = "#$lists_id input[value=\"{$l->list_id}\"]";
+      $element['mc_groups'][$l->list_id]['#states']['visible'][$selector]['checked'] = TRUE;
+    }
+  }
+
+  if (empty($component['extra']['fixed_channel'])) {
+    $channel_id = $element['extra']['channel']['#id'];
+    $element['mc_groups']['#states']['visible']["#$channel_id"]['value'] = 'email';
+  }
 }

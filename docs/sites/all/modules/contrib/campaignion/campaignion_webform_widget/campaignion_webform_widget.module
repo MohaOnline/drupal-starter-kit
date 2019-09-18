@@ -24,8 +24,6 @@ function campaignion_webform_widget_form_webform_client_form_alter(&$form, &$for
   // TODO make this optional:
   if (campaignion_webform_widget_context_is_active('embedded') || campaignion_webform_widget_context_is_active('current_webform_embedded')) {
     $form['#attributes']['target'] = '_blank';
-    // Override the X-Frame-Options header for this request.
-    drupal_add_http_header('X-Frame-Options', 'allowall');
     // if user wants, open the redirected page in same iframe with qurey paramter embed=1
     /* $form['#submit'][] = '_campaignion_webform_widget_redirect'; */
   }
@@ -195,15 +193,12 @@ function campaignion_webform_widget_permission() {
 }
 
 function campaignion_webform_widget_preprocess_page(&$vars) {
-  // generic context: embedded
-  if (campaignion_webform_widget_context_is_active('embedded')) {
-    $vars['theme_hook_suggestions'][] = 'page__embedded';
-    drupal_add_js(drupal_get_path('module', 'campaignion_webform_widget') . '/js/widget.js');
-  }
-  // more specific context: current_webform_embedded
-  if (campaignion_webform_widget_context_is_active('current_webform_embedded')) {
-    $vars['theme_hook_suggestions'][] = 'page__current_webform_embedded';
-    drupal_add_js(drupal_get_path('module', 'campaignion_webform_widget') . '/js/widget.js');
+  foreach (['embedded', 'current_webform_embedded'] as $context) {
+    if (campaignion_webform_widget_context_is_active($context)) {
+      $vars['theme_hook_suggestions'][] = "page__$context";
+      drupal_add_js(drupal_get_path('module', 'campaignion_webform_widget') . '/js/widget.js');
+      // Override the X-Frame-Options header for this request.
+      drupal_add_http_header('X-Frame-Options', 'allowall');
+    }
   }
 }
-

@@ -1,0 +1,10 @@
+name = Campaignion Tracking
+description = Common tracking functionality.
+core = 7.x
+package = Campaignion
+
+; Information added by Drupal.org packaging script on 2019-09-03
+version = "7.x-2.5"
+core = "7.x"
+project = "campaignion"
+datestamp = "1567530789"

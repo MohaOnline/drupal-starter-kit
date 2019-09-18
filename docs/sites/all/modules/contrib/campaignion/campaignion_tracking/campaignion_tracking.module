@@ -1,0 +1,123 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for the Campaignion Tracking module.
+ */
+
+use Drupal\campaignion_action\Loader;
+use Drupal\little_helpers\Webform\Webform;
+
+/**
+ * Implements hook_page_build().
+ */
+function campaignion_tracking_page_build(&$page) {
+  // Add javascript which triggers messages to the tracker.
+  $module_path = drupal_get_path('module', 'campaignion_tracking');
+  // This should be loaded really early.
+  // NB: needs to be loaded before specific tracker JS, so this has -101 on the
+  // weight.
+  $page['content']['#attached']['js'][$module_path . '/js/campaignion_tracking_common.min.js'] = [
+    'scope' => 'header',
+    'group' => JS_LIBRARY - 101,
+    'preprocess' => FALSE,
+  ];
+  $page['content']['#attached']['js'][] = $module_path . '/js/campaignion_tracking.js';
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function campaignion_tracking_node_view($node, $view_mode, $langcode) {
+  $type = Loader::instance()->type($node->type);
+  $is_donation = $type && $type->isDonation();
+
+  if ($view_mode !== 'full') {
+    return;
+  }
+
+  // General information about the node.
+  $settings['campaignion_tracking']['context']['node'] = [
+    'nid' => $node->nid,
+    'type' => $node->type,
+    'language' => $node->language,
+    'title' => $node->title,
+    'view_mode' => $view_mode,
+    'is_donation' => $is_donation,
+  ];
+  $node->content['#attached']['js'][] = ['data' => $settings, 'type' => 'setting'];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for webform_client_form().
+ *
+ * We augment the Drupal.campaignion_tracking.context object with information
+ * as we get it submitted.
+ * Drupal will managed the JS object for us, i.e. paging back and forth in the
+ * webform will not delete information once submitted, only update it when
+ * changed. Thus we "track" the current form_state in our context.
+ *
+ * A submit handler is added to deal with redirects.
+ */
+function campaignion_tracking_form_webform_client_form_alter(&$form, &$form_state, $form_id) {
+  $node = $form['#node'];
+  $type = Loader::instance()->type($node->type);
+  $is_donation = $type && $type->isDonation();
+  $webform = Webform::fromNode($form['#node']);
+
+  // Information about the current webform.
+  $webform_settings['campaignion_tracking']['context']['webform'] = [
+    'total_steps' => $form_state['webform']['page_count'],
+    'current_step' => $form_state['webform']['page_num'],
+    'last_completed_step' => isset($form_state['webform']['page_visited']) ? $form_state['webform']['page_visited'] : 0,
+  ];
+  $form['#attached']['js'][] = ['data' => $webform_settings, 'type' => 'setting'];
+
+  // Information about a donation (in case the node is one).
+  if ($is_donation) {
+    $paymethod = $webform->componentByKey('paymethod_select');
+    $currency_code = isset($paymethod['extra']['currency_code']) ? $paymethod['extra']['currency_code'] : 'EUR';
+    $submission = $webform->formStateToSubmission($form_state);
+
+    // NB: Only after the first step submit we get values.
+    // Thus `interval` and `amount` might be "null" in JS (in case no values
+    // have been submitted so far)
+    $donation_settings['campaignion_tracking']['context']['donation'] = [
+      'currency_code' => $currency_code,
+      'interval' => $submission->valueByKey('donation_interval'),
+      'amount' => $submission->valueByKey('donation_amount'),
+    ];
+    $form['#attached']['js'][] = ['data' => $donation_settings, 'type' => 'setting'];
+  }
+}
+
+/**
+ * Implements hook_webform_redirect_alter().
+ *
+ * Add webform tracking data to the URL-fragment of the redirect.
+ *
+ * We want the SID and optionally donation specific information appended to the
+ * URL so that trackers can pick it up.
+ */
+function campaignion_tracking_webform_redirect_alter($redirect, $submission) {
+  $type = Loader::instance()->type($submission->node->type);
+  $is_donation = $type && $type->isDonation();
+
+  $fragment = 'w:sid=' . $submission->sid;
+
+  if ($is_donation) {
+    // Load the payments into submission objects.
+    // We want the used paymethods name and maybe the pid.
+    $submission->payments = [];
+    $submissions[$submission->sid] = $submission->unwrap();
+    webform_paymethod_select_webform_submission_load($submissions);
+
+    $fragment = 't=ds';
+    foreach ($submissions[$submission->sid]->payments as $payment) {
+      // Prefix `dm` for donation method.
+      $fragment .= ";d:m=" . $payment->method->name;
+    }
+  }
+
+  $redirect->fragment = empty($redirect->fragment) ? $fragment : $redirect->fragment . ';' . $fragment;
+}

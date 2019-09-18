@@ -8,11 +8,9 @@ use Drupal\little_helpers\ArrayConfig;
 function _campaignion_form_builder_form_builder_types_opt_in() {
   $fields = [];
 
-  $opt_in = function($component, $weight) {
-    $element = [
+  $opt_in = function($component, $element) {
+    $element += [
       'title' => $component['name'],
-      'weight' => $weight,
-      'unique' => TRUE,
       'palette_group' => 'supporter_data',
     ];
     $element['default']['#webform_component'] = $component;
@@ -28,7 +26,9 @@ function _campaignion_form_builder_form_builder_types_opt_in() {
       'channel' => 'email',
       'fixed_channel' => TRUE,
     ],
-  ], 49);
+  ], [
+    'weight' => 49,
+  ]);
   $fields['post_opt_in'] = $opt_in([
     'name' => 'Post Opt-In',
     'form_key' => 'post_opt_in',
@@ -36,7 +36,10 @@ function _campaignion_form_builder_form_builder_types_opt_in() {
       'channel' => 'post',
       'fixed_channel' => TRUE,
     ],
-  ], 50);
+  ], [
+    'weight' => 50,
+    'unique' => TRUE,
+  ]);
   $fields['phone_opt_in'] = $opt_in([
     'name' => 'Phone Opt-In',
     'form_key' => 'phone_opt_in',
@@ -44,7 +47,10 @@ function _campaignion_form_builder_form_builder_types_opt_in() {
       'channel' => 'phone',
       'fixed_channel' => TRUE,
     ],
-  ], 51);
+  ], [
+    'weight' => 51,
+    'unique' => TRUE,
+  ]);
 
   return $fields;
 }

@@ -33,6 +33,10 @@
           });
         });
       }
+      else {
+        // hide any uninitialized ae bars
+        $('#ae-bar', context).hide();
+      }
     }
   };
 

@@ -1,6 +1,7 @@
 <?php
 
-use \Drupal\little_helpers\Webform\Submission;
+use Drupal\little_helpers\System\FormRedirect;
+use Drupal\little_helpers\Webform\Submission;
 
 /**
  * Implements hook_token_info().
@@ -8,14 +9,6 @@ use \Drupal\little_helpers\Webform\Submission;
 function campaignion_webform_tokens_token_info() {
   $types = [];
   $submission = [];
-
-  // Only webform3.
-  if (!function_exists('webform_token_info')) {
-    $types['submission'] = [
-      'name' => t('Webform submission data'),
-      'description' => t('Tokens related to data submitted by webforms.'),
-    ];
-  }
 
   // Also don't advertise our own token syntax in webform4.
   $submission['{component}'] = [
@@ -50,30 +43,13 @@ function campaignion_webform_tokens_token_info_alter(&$info) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter().
+ * Implements hook_webform_redirect_alter().
  */
-function campaignion_webform_tokens_form_webform_client_form_alter(&$form, &$form_state) {
-  $form['#submit'][] = 'campaignion_webform_tokens_redirect';
-}
-
-/**
- * Submit-callback for webform_client_form().
- * 
- * Add hash to the redirect if sid is set.
- */
-function campaignion_webform_tokens_redirect($form, &$form_state) {
-  if (empty($form_state['webform_completed'])) {
-    return;
-  }
-  if (!is_array($form_state['redirect'])) {
-    $form_state['redirect'] = array($form_state['redirect'], array('query' => array()));
-  }
-  $sid = $form_state['values']['details']['sid'];
-  $form_state['redirect'][1] += array('query' => array());
-  $form_state['redirect'][1]['query'] += array(
-    'sid' => $sid,
-    'hash' => campaignion_webform_tokens_hash_sid($sid),
-  );
+function campaignion_webform_tokens_webform_redirect_alter(FormRedirect &$redirect, Submission $submission) {
+  $redirect->query += [
+    'sid' => $submission->sid,
+    'hash' => campaignion_webform_tokens_hash_sid($submission->sid),
+  ];
 }
 
 /**

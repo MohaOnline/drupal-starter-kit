@@ -97,6 +97,26 @@ class Subscriptions {
   }
 
   /**
+   * Update the subscription matrix by merging a list of subscriptons.
+   *
+   * In case there are opt-ins and opt-outs for the same email and list,
+   * the opt-outs will be ignored and the opt-ins merged.
+   *
+   * @param \Drupal\campaignion_newsletters\Subscription[] $subscriptions
+   *   A list of subscriptions.
+   */
+  public function merge(array $subscriptions) {
+    foreach ($subscriptions as $subscription) {
+      if ($existing = &$this->subscriptions[$subscription->email][$subscription->list_id]) {
+        $existing->merge($subscription);
+      }
+      else {
+        $this->subscriptions[$subscription->email][$subscription->list_id] = $subscription;
+      }
+    }
+  }
+
+  /**
    * Make all changes to the matrix persistent.
    */
   public function save() {

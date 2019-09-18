@@ -12,6 +12,7 @@ use Drupal\campaignion_action\Redirects\Endpoint;
 use Drupal\campaignion_action\Redirects\Redirect;
 use Drupal\campaignion_action\SignedLink;
 use Drupal\campaignion\CRM\Import\Source\WebformSubmission;
+use Drupal\little_helpers\System\FormRedirect;
 use Drupal\little_helpers\Webform\Submission;
 
 /**
@@ -65,6 +66,14 @@ function campaignion_action_module_implements_alter(&$impl, $hook) {
       }
       $new_impl[$module] = $group;
     }
+    $impl = $new_impl;
+  }
+  if ($hook == 'webform_redirect_alter') {
+    // Add our implemetation first.
+    $ours = $impl['campaignion_action'];
+    unset($impl['campaignion_action']);
+    $new_impl['campaignion_action'] = $ours;
+    $new_impl += $impl;
     $impl = $new_impl;
   }
 }
@@ -174,80 +183,24 @@ function campaignion_action_form_webform_client_form_alter(&$form, &$form_state)
   if ($link->checkHash() && !empty($link->query['test-mode'])) {
     $form_state['test_mode'] = TRUE;
   }
-  $submit = [];
-  foreach ($form['#submit'] as $handler) {
-    $submit[] = $handler;
-    if ($handler == 'webform_client_form_submit') {
-      $submit[] = '_campaignion_action_custom_redirect';
-    }
-  }
-  $form['#submit'] = $submit;
-  $form['#submit'][] = '_campaignion_action_webform_share_redirect';
 }
 
 /**
- * Form submission handler for webform_client_form().
+ * Implements hook_webform_redirect_alter().
  *
- * @see campaignion_action_form_webform_client_form_alter()
+ * Execute custom redirects. Always set the share and sid query-parameters.
  */
-function _campaignion_action_custom_redirect($form, &$form_state) {
-  if (!$form_state['webform_completed'] || !$form_state['redirect']) {
-    return;
-  }
-
-  if ($action = Loader::instance()->actionFromNode($form['#node'])) {
-    $sid = $form_state['values']['details']['sid'];
-    $submission = Submission::load($form['#node']->nid, $sid);
-    $delta = $submission->webform->needsConfirmation() ? Redirect::CONFIRMATION_PAGE : Redirect::THANK_YOU_PAGE;
-    if ($redirect = $action->redirect($submission, $delta)) {
-      $form_state['redirect'] = $redirect;
-    }
-  }
-}
-
-/**
- * Form-submit callback for webform_client_form.
- *
- * Always set the share and sid query-parameters.
- */
-function _campaignion_action_webform_share_redirect($form, &$form_state) {
-  if (!$form_state['webform_completed'] || !$form_state['redirect']) {
-    return;
-  }
-
-  $redirect = Redirect::normalizeRedirect($form_state['redirect']);
-  $action_path = 'node/' . $form['#node']->nid;
-  $redirect[1]['query']['share'] = $action_path;
-  $redirect[1]['query']['sid'] = $form_state['values']['details']['sid'];
-  $form_state['redirect'] = $redirect;
-}
-
-/**
- * Implements hook_webform_confirm_email_confirmation_redirect_alter().
- */
-function campaignion_action_webform_confirm_email_confirmation_redirect_alter(&$redirect, $node, $submission) {
-  if ($action = Loader::instance()->actionFromNode($node)) {
-    $submission_o = new Submission($node, $submission);
-    if ($r = $action->redirect($submission_o, Redirect::THANK_YOU_PAGE)) {
-      $redirect = ['path' => $r[0]] + $r[1];
-    }
-  }
-  $redirect['query']['share'] = "node/{$node->nid}";
-  $redirect['query']['sid'] = $submission->sid;
-}
-
-/**
- * Implements hook_webform_paymethod_select_redirect_alter().
- */
-function campaignion_action_webform_paymethod_select_redirect_alter(&$redirect, $submission) {
+function campaignion_action_webform_redirect_alter(FormRedirect &$redirect, Submission $submission) {
   if ($action = Loader::instance()->actionFromNode($submission->node)) {
-    $delta = $submission->webform->needsConfirmation() ? Redirect::CONFIRMATION_PAGE : Redirect::THANK_YOU_PAGE;
-    if ($r = $action->redirect($submission, $delta)) {
-      $redirect = $r;
-      $redirect[1]['query']['share'] = "node/{$submission->node->nid}";
-      $redirect[1]['query']['sid'] = $submission->sid;
+    $delta = $submission->webform->needsConfirmation() && !$submission->confirmed ? Redirect::CONFIRMATION_PAGE : Redirect::THANK_YOU_PAGE;
+    if ($action_redirect = $action->redirect($submission, $delta)) {
+      $redirect = FormRedirect::fromFormStateRedirect($action_redirect);
     }
   }
+
+  $action_path = 'node/' . $submission->nid;
+  $redirect->query['share'] = $action_path;
+  $redirect->query['sid'] = $submission->sid;
 }
 
 /**

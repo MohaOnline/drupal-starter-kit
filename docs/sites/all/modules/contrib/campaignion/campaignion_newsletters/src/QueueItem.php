@@ -3,6 +3,7 @@
 namespace Drupal\campaignion_newsletters;
 
 use Drupal\little_helpers\DB\Model;
+use Drupal\little_helpers\Webform\Submission;
 
 /**
  * Model class for newsletter queue items.
@@ -77,6 +78,44 @@ class QueueItem extends Model {
     }
     else {
       $item = new static($data);
+    }
+    return $item;
+  }
+
+  /**
+   * Load or create a queue item with additional data from a subscription.
+   *
+   * @param \Drupal\campaignion_newsletters\Subscription $subscription
+   *   Subscription providing the data for the QueueItem.
+   * @param \Drupal\campaignion_newsletters\ProviderInterface $provider
+   *   Provider matching the subscription.
+   *
+   * @return \Drupal\campaignion_newsletters\QueueItem
+   *   A queue item.
+   */
+  public static function fromSubscription(Subscription $subscription, ProviderInterface $provider = NULL) {
+    $item = static::byData(array(
+      'list_id' => $subscription->list_id,
+      'email' => $subscription->email,
+    ));
+    if ($provider) {
+      list($data, $fingerprint) = $provider->data($subscription, $item->data);
+      $item->fingerprint = $fingerprint;
+      $item->data = $data;
+    }
+    if ($subscription->delete) {
+      $item->action = static::UNSUBSCRIBE;
+      $item->data = NULL;
+    }
+    elseif ($subscription->new) {
+      $item->action = static::SUBSCRIBE;
+      $item->args = $subscription->queueItemArgs();
+      if (!empty($subscription->source) && $subscription->source instanceof Submission) {
+        $item->optin_info = FormSubmission::fromWebformSubmission($subscription->source);
+      }
+    }
+    else {
+      $item->action = static::UPDATE;
     }
     return $item;
   }

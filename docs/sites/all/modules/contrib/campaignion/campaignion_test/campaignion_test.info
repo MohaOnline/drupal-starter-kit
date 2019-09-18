@@ -14,10 +14,13 @@ dependencies[] = campaignion_manage
 dependencies[] = campaignion_mp_fields
 dependencies[] = campaignion_newsletters
 dependencies[] = campaignion_newsletters_mailchimp
+dependencies[] = campaignion_newsletters_mailchimp_interests
 dependencies[] = campaignion_opt_in
 dependencies[] = campaignion_overlay
 dependencies[] = campaignion_source_tags
 dependencies[] = campaignion_supporter_tags
+dependencies[] = campaignion_tracking
+dependencies[] = campaignion_tracking_gtm
 dependencies[] = campaignion_webform_tokens
 dependencies[] = campaignion_wizard
 dependencies[] = ctools
@@ -89,8 +92,8 @@ features[taxonomy][] = supporter_tags
 features[variable][] = webform_node_email_to_target
 features[variable][] = webform_node_petition
 
-; Information added by Drupal.org packaging script on 2019-07-02
-version = "7.x-2.4"
+; Information added by Drupal.org packaging script on 2019-09-03
+version = "7.x-2.5"
 core = "7.x"
 project = "campaignion"
-datestamp = "1562077995"
+datestamp = "1567530789"
