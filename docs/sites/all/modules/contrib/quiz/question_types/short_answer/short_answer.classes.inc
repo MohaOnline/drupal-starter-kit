@@ -268,6 +268,7 @@ class ShortAnswerQuestion extends QuizQuestion {
  * Extension of QuizQuestionResponse.
  */
 class ShortAnswerResponse extends QuizQuestionResponse {
+
   /**
    * ID of the answer.
    */
@@ -382,13 +383,31 @@ class ShortAnswerResponse extends QuizQuestionResponse {
    */
   public function getFeedbackValues() {
     $data = array();
+    $score = $this->score();
+    $max = $this->getMaxScore(FALSE);
+
+    if ($this->evaluated) {
+      // Question has been graded.
+      if ($score == 0) {
+        $icon = quiz_icon('incorrect');
+      }
+      if ($score > 0) {
+        $icon = quiz_icon('almost');
+      }
+      if ($score == $max) {
+        $icon = quiz_icon('correct');
+      }
+    }
+    else {
+      $icon = quiz_icon('unknown');
+    }
 
     $data[] = array(
       // Hide this column. Does not make sense for short answer as there are no
       // choices.
       'choice' => NULL,
       'attempt' => $this->answer,
-      'correct' => $this->question->answers[0]['is_correct'] ? quiz_icon('correct') : '',
+      'correct' => $icon,
       'score' => !$this->evaluated ? t('This answer has not yet been scored.') : $this->getScore(),
       'answer_feedback' => check_markup($this->answer_feedback, $this->answer_feedback_format),
       'solution' => $this->question->correct_answer,

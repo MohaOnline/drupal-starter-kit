@@ -305,13 +305,31 @@ class LongAnswerResponse extends QuizQuestionResponse {
    */
   public function getFeedbackValues() {
     $data = array();
+    $score = $this->score();
+    $max = $this->getMaxScore(FALSE);
+
+    if ($this->evaluated) {
+      // Question has been graded.
+      if ($score == 0) {
+        $icon = quiz_icon('incorrect');
+      }
+      if ($score > 0) {
+        $icon = quiz_icon('almost');
+      }
+      if ($score == $max) {
+        $icon = quiz_icon('correct');
+      }
+    }
+    else {
+      $icon = quiz_icon('unknown');
+    }
 
     $data[] = array(
       // Hide this column. Does not make sense for long answer as there are no
       // choices.
       'choice' => NULL,
       'attempt' => check_markup($this->answer, $this->answer_format),
-      'correct' => $this->question->answers[0]['is_correct'] ? quiz_icon('correct') : '',
+      'correct' => $icon,
       'score' => !$this->evaluated ? t('This answer has not yet been scored.') : $this->getScore(),
       'answer_feedback' => check_markup($this->answer_feedback, $this->answer_feedback_format),
       'solution' => check_markup($this->question->rubric['value'], $this->question->rubric['format']),

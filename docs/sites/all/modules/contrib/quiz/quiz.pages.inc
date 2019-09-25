@@ -15,7 +15,7 @@ function quiz_user_results($result_id) {
   $quiz_result = quiz_result_load($result_id);
   $view = entity_view('quiz_result', array($quiz_result));
   if ($quiz_result->is_invalid) {
-    drupal_set_message(t('This result can only be viewed temporarly and will be deleted in the near future.'), 'warning');
+    drupal_set_message(t('Your previous score on this @quiz was equal or better. This result will not be saved.', array('@quiz' => QUIZ_NAME)), 'warning');
   }
   return $view;
 }
