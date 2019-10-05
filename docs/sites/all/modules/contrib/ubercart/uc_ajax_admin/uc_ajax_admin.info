@@ -4,8 +4,8 @@ dependencies[] = uc_cart
 package = Ubercart - extra
 core = 7.x
 
-; Information added by Drupal.org packaging script on 2019-03-06
-version = "7.x-3.12"
+; Information added by Drupal.org packaging script on 2019-10-01
+version = "7.x-3.13"
 core = "7.x"
 project = "ubercart"
-datestamp = "1551862392"
+datestamp = "1569942207"
