@@ -1,11 +1,11 @@
-name = Nagios monitoring
+name = Nagios Monitoring
 description = Exposes a page that Nagios can monitor and drush hooks for NRPE.
 core = 7.x
 package = "Monitoring"
 configure = admin/config/system/nagios
 
-; Information added by Drupal.org packaging script on 2019-05-18
-version = "7.x-1.5"
+; Information added by Drupal.org packaging script on 2019-09-01
+version = "7.x-1.6"
 core = "7.x"
 project = "nagios"
-datestamp = "1558165086"
+datestamp = "1567352888"

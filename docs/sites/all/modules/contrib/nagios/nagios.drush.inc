@@ -8,21 +8,24 @@
  * Implements hook_drush_command().
  */
 function nagios_drush_command() {
-  $items['nagios-list'] = array(
+  $items['nagios-list'] = [
     'description' => dt('List all available nagios commands.'),
-    'arguments' => array(),
-    'aliases' => array('nagios-ls'),
-  );
-  $items['nagios-check'] = array(
+    'arguments' => [],
+    'aliases' => ['nagios-ls'],
+  ];
+  $items['nagios-check'] = [
     'description' => dt('Run a nagios command.'),
-    'arguments' => array('command' => 'The command to run'),
-    'aliases' => array('nagios'),
-  );
-  $items['nagios-updates'] = array(
+    'arguments' => ['command' => 'The command to run'],
+    'aliases' => ['nagios'],
+  ];
+  $items['nagios-updates'] = [
     'description' => dt('Return a space delimited string of all monitored projects with available updates.'),
-    'arguments' => array('update type' => 'Type of update available, accepts either all or security.', 'nagios flag' => 'Send \'nagios\' as a flag to enable Nagios prefixes to the output.'),
-    'aliases' => array('nagios-up'),
-  );
+    'arguments' => [
+      'update type' => 'Type of update available, accepts either all or security.',
+      'nagios flag' => 'Send \'nagios\' as a flag to enable Nagios prefixes to the output.',
+    ],
+    'aliases' => ['nagios-up'],
+  ];
   return $items;
 }
 
@@ -34,7 +37,7 @@ function drush_nagios_list() {
   $commands = array_merge(module_invoke_all('nagios_checks'), drush_command_invoke_all('nagios_checks'));
   $rows = [];
   foreach ($commands as $cmd => $desc) {
-    $rows[] = array($cmd, $desc);
+    $rows[] = [$cmd, $desc];
   }
   return drush_print_table($rows);
 }
@@ -58,12 +61,12 @@ function drush_nagios_check($check = NULL) {
         return;
       }
     }
-    drush_set_error(dt('The requested nagios check does not exist: !check.', array('!check' => $check)));
-    drush_set_error(dt('Run `drush nagios-list` for valid checks.'));
+    drush_set_error(dt('The requested nagios check does not exist: !check.', ['!check' => $check]));
   }
   else {
     drush_set_error(dt('Missing argument for nagios-check'));
   }
+  drush_set_error(dt('Run `drush nagios-list` for valid checks.'));
 }
 
 /**
@@ -112,8 +115,8 @@ function drush_nagios_updates($update_type = NULL, $nagios_flag = NULL) {
       module_load_include('inc', 'update', 'update.compare');
       $data = update_calculate_project_data($available);
       // Unset any data referencing projects we're not interested in.
-      $nagios_ignored_modules = variable_get('nagios_ignored_modules', array());
-      $nagios_ignored_themes = variable_get('nagios_ignored_themes', array());
+      $nagios_ignored_modules = variable_get('nagios_ignored_modules', []);
+      $nagios_ignored_themes = variable_get('nagios_ignored_themes', []);
       $nagios_ignored_projects = $nagios_ignored_modules + $nagios_ignored_themes;
       foreach ($nagios_ignored_projects as $key => $value) {
         if ($value == TRUE && isset($data[$key])) {
@@ -121,7 +124,7 @@ function drush_nagios_updates($update_type = NULL, $nagios_flag = NULL) {
         }
       }
 
-      $module_list = array();
+      $module_list = [];
 
       $updates = nagios_updates($data);
       if (count($updates)) {
@@ -159,7 +162,7 @@ function drush_nagios_updates($update_type = NULL, $nagios_flag = NULL) {
         }
       }
     }
-    if ($nagios_flag == 'nagios' && is_null($exit_status)) {
+    if ($nagios_flag == 'nagios' && $exit_status === NULL) {
       $message = 'OK - No updates';
     }
   }
@@ -170,7 +173,7 @@ function drush_nagios_updates($update_type = NULL, $nagios_flag = NULL) {
   }
 
   drush_set_context('DRUSH_EXECUTION_COMPLETED', TRUE);
-  if (!is_null($exit_status) || $nagios_flag == 'nagios') {
+  if ($exit_status !== NULL || $nagios_flag == 'nagios') {
     drush_print($message);
   }
   exit($exit_status);
@@ -184,7 +187,7 @@ function nagios_updates($data) {
     return NULL;
   }
 
-  $updates = array();
+  $updates = [];
 
   // Create an array of status values keyed by module or theme name, since
   // we'll need this while generating the report if we have to cross reference
@@ -197,42 +200,9 @@ function nagios_updates($data) {
 
   foreach ($data as $project) {
     if ($project['status'] == UPDATE_NOT_SECURE || $project['status'] == UPDATE_NOT_CURRENT) {
-
-      $security_class = array();
-      $version_class = array();
-      if (isset($project['recommended'])) {
-        if ($project['status'] != UPDATE_CURRENT || $project['existing_version'] !== $project['recommended']) {
-
-          // First, figure out what to recommend.
-          // If there's only 1 security update and it has the same version we're
-          // recommending, give it the same CSS class as if it was recommended,
-          // but don't print out a separate "Recommended" line for this project.
-          if (!empty($project['security updates']) && count($project['security updates']) == 1 && $project['security updates'][0]['version'] === $project['recommended']) {
-            $security_class[] = 'version-recommended';
-            $security_class[] = 'version-recommended-strong';
-          }
-          else {
-            $version_class[] = 'version-recommended';
-            // Apply an extra class if we're displaying both a recommended
-            // version and anything else for an extra visual hint.
-            if ($project['recommended'] !== $project['latest_version']
-                || !empty($project['also'])
-                || ($project['install_type'] == 'dev'
-                  && isset($project['dev_version'])
-                  && $project['latest_version'] !== $project['dev_version']
-                  && $project['recommended'] !== $project['dev_version'])
-                || (isset($project['security updates'][0])
-                  && $project['recommended'] !== $project['security updates'][0])
-                ) {
-              $version_class[] = 'version-recommended-strong';
-            }
-          }
-        }
-      }
-
       $row_key = drupal_strtolower($project['name']);
       if (!isset($updates[$row_key])) {
-        $updates[$row_key] = array();
+        $updates[$row_key] = [];
       }
       $updates[$row_key]['type'] = $project['project_type'];
       $updates[$row_key]['status'] = $project['status'];

@@ -6,7 +6,7 @@ Maintained by Code Enigma https://www.codeenigma.com
 
 Description
 -----------
-The Nagios monitoring module intergrates your Drupal site with with the Nagios.
+The Nagios Monitoring module intergrates your Drupal site with with the Nagios.
 
 Nagios is a network and host monitoring application. For more information about
 Nagios, see http://www.nagios.org
@@ -41,8 +41,8 @@ To mitigate the security risks involve, make sure you use a unique ID. However, 
 not a fool proof solution. If you are concerned about this information being publicly
 accessible, then don't use this module.
 
-For additional security, you may also put the Nagios module status page behind http 
-authentication, which is recommended. If you do this, we recommend it is done via a 
+For additional security, you may also put the Nagios module status page behind http
+authentication, which is recommended. If you do this, we recommend it is done via a
 HTTPS connection. While plain HTTP will work, plaintext credentials are never advisable.
 
 If you can run NRPE then it is recommended you disable Nagios checks via Drupal and only
@@ -57,7 +57,7 @@ To install this module, do the following:
 
 2. Upload the nagios directory that you extracted to your sites/all/modules
    directory.
-   
+
 3. Optional, to enable Nagios NRPE download and read the documentation at
    http://nagios.sourceforge.net/docs/nrpe/NRPE.pdf
 
@@ -69,7 +69,7 @@ To enable this module do the following:
 1. Go to Admin -> Build -> Modules
    Enable the module.
 
-2. Go to Admin -> Settings -> Nagios monitoring.
+2. Go to Admin -> Settings -> Nagios Monitoring.
    Enter a unique ID. This must match what you configure Nagios for.
    See below for more details.
 
@@ -87,7 +87,7 @@ being run for each site.
 
 1. Copy the check_drupal script in the nagios-plugin directory to your Nagios plugins
    directory (e.g. /usr/lib/nagios/plugins).
-   
+
    Depending on your Linux distribution, you may need to alter the PROGPATH variable
    in check_drupal to the correct location for Nagios utils.sh script.
 
@@ -200,7 +200,7 @@ files directory. To resolve this, we recommend the following steps:
 
 3. Add your NRPE user to the www-data group
 
-As a more secure alternative, it should be possible for the nrpe/nagios 
+As a more secure alternative, it should be possible for the nrpe/nagios
 user to sudo su  to become the www-data user to run the check, but we had a
 lot of issues making this work.
 
