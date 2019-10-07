@@ -52,36 +52,36 @@ function webform_confirm_email_get_email_type($nid, $eid) {
 }
 
 /**
- * generate a hash for a new email submission, or get an existing hash
+ * Generate a hash for a new email submission, or get an existing hash.
  *
  * @param $nid
  *   node id of the submitted form
  * @param $sid
  *   submission id of the submitted form
- * @param $email
- *   email address of the submitter; if empty, it's assumed that the submission
- *   has already happened and the webform_confirm_email_code table is searched
- *   for a hash
+ * @param $eid
+ *   The email ID of the email that is being confirmed.
+ *
+ * @return string
+ *   The hash for this submission / email.
  */
-function webform_confirm_email_generate_key($nid, $sid, $eid, $email = NULL) {
-  if (isset($email)) {
-    return hash_hmac('md5', serialize(array($nid, $sid, $eid, $email)), drupal_get_private_key());
+function webform_confirm_email_generate_key($nid, $sid, $eid) {
+  $result = db_query(
+    'SELECT code ' .
+    '  FROM {webform_confirm_email_code} ' .
+    '    WHERE nid = :nid ' .
+    '    AND   sid = :sid ' .
+    '    AND   eid = :eid ',
+    array(
+      ':nid' => $nid,
+      ':sid' => $sid,
+      ':eid' => $eid,
+    )
+  );
+  if ($code = $result->fetchField()) {
+    return $code;
   }
-  else {
-    $result = db_query(
-      'SELECT code ' .
-      '  FROM {webform_confirm_email_code} ' .
-      '    WHERE nid = :nid ' .
-      '    AND   sid = :sid ' .
-      '    AND   eid = :eid ',
-      array(
-        ':nid' => $nid,
-        ':sid' => $sid,
-        ':eid' => $eid,
-      )
-    );
-    return $result->fetchField();
-  }
+  $data = "webform-confirm-email-code:$nid:$sid:$eid";
+  return drupal_hmac_base64($data, drupal_get_private_key());
 }
 
 /**
@@ -144,6 +144,7 @@ function webform_confirm_email_confirmation($node,
       '  AND   sid = :sid ',
       array(':nid' => $node->nid, ':sid' => $submission->sid)
     );
+    $submission->confirmed = 1;
     $email_messages = db_query(
       'SELECT email_message ' .
       '  FROM {webform_confirm_email_confirmation_emails} ' .
@@ -441,16 +442,17 @@ function webform_confirm_email_tokens($type, $tokens, array $data = array(), arr
     $sid = (int) ($submission->sid);
     $eid = (int) $data['webform-email']['eid'];
     if (webform_confirm_email_get_email_type($nid, $eid) == WEBFORM_CONFIRM_EMAIL_CONFIRMATION_REQUEST) {
+      $code = webform_confirm_email_generate_key($nid, $sid, $eid);
       $obj = array(
         'nid'   => $nid,
         'sid'   => $sid,
         'eid'   => $eid,
         'email' => $data['webform-email']['email'],
       );
-      $obj['code']     = webform_confirm_email_generate_key($nid, $sid, $eid, $obj['email']);
+      $obj['code']     = '';
       $obj['datetime'] = REQUEST_TIME;
       $confirm_url = url(
-        "node/$nid/sid/$sid/eid/$eid/confirm_email/" . $obj['code'],
+        "node/$nid/sid/$sid/eid/$eid/confirm_email/$code",
         array(
           'absolute' => TRUE,
           'external' => FALSE,
