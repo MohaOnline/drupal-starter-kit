@@ -38,6 +38,21 @@ class NewsletterList extends Model {
   }
 
   /**
+   * Get a sorted array of all list titles keyed by list ID.
+   */
+  public static function options() {
+    $result = db_select(static::$table, 'l')
+      ->fields('l', ['list_id', 'title'])
+      ->orderBy('l.title')
+      ->execute();
+    $options = [];
+    foreach ($result as $row) {
+      $options[$row->list_id] = $row->title;
+    }
+    return $options;
+  }
+
+  /**
    * Generic function to load using conditions and order criteria.
    */
   protected static function loadQuery($conditions = [], $order_by = []) {

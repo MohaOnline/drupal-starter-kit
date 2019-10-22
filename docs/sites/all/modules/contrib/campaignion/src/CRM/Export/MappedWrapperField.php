@@ -12,8 +12,8 @@ class MappedWrapperField extends WrapperField {
     $this->filter = $filter_unmapped;
   }
 
-  public function value() {
-    $value = parent::value();
+  public function value($delta = 0) {
+    $value = parent::value($delta);
     if (isset($this->map[$value])) {
       return $this->map[$value];
     }

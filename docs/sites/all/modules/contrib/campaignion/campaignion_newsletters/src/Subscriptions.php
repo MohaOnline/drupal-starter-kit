@@ -40,8 +40,8 @@ class Subscriptions {
   /**
    * Construct a new subscription matrix.
    *
-   * @param \Drupal\campaignion_newsletters\NewsletterList[] $lists
-   *   Array of all available newsletter lists.
+   * @param string[] $lists
+   *   Associative array of all list titles keyed by list ID.
    * @param string[] $addresses
    *   Array of email addresses that may be subscribed.
    * @param \Drupal\campaignion_newsletters\Subscription[] $stored_subscriptions
@@ -51,7 +51,7 @@ class Subscriptions {
     $subscriptions = array();
     foreach ($addresses as $email) {
       $subscriptions[$email] = array();
-      foreach ($lists as $list_id => $list) {
+      foreach (array_keys($lists) as $list_id) {
         $subscriptions[$email][$list_id] = NULL;
       }
     }
@@ -65,12 +65,12 @@ class Subscriptions {
   /**
    * Get an array of all newsletter lists.
    *
-   * @return \Drupal\campaignion_newsletters\NewsletterList[]
-   *   All currently known newsletter lists.
+   * @return string[]
+   *   Associative array of all list titles keyed by list ID.
    */
   public static function lists() {
     if (!isset(static::$lists)) {
-      static::$lists = NewsletterList::listAll();
+      static::$lists = NewsletterList::options();
     }
     return static::$lists;
   }
@@ -140,20 +140,6 @@ class Subscriptions {
         }
       }
     }
-  }
-
-  /**
-   * Generate an options array suitable for the form-API #options parameter.
-   *
-   * @return string[]
-   *   List titles keyed by list_id.
-   */
-  public function optionsArray() {
-    $options = array();
-    foreach (static::lists() as $list_id => $list) {
-      $options[$list_id] = $list->title;
-    }
-    return $options;
   }
 
   /**

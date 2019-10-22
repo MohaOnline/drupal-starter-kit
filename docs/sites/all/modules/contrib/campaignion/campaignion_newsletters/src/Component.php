@@ -159,8 +159,8 @@ class Component {
   public function getAllListIds() {
     if (is_null($this->allListIds)) {
       $list_ids = [];
-      foreach (NewsletterList::listAll() as $l) {
-        $list_ids[] = $l->list_id;
+      foreach (array_keys(NewsletterList::options()) as $list_id) {
+        $list_ids[] = $list_id;
       }
       $this->setAllListIds($list_ids);
     }

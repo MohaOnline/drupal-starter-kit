@@ -18,7 +18,7 @@ class Contact extends \RedhenContact {
     if (!$this->type) {
       $this->type = static::defaultType();
     }
-    if (!$this->created) {
+    if (!isset($this->created)) {
       $this->created = REQUEST_TIME;
     }
     // Make sure all fields are represented as properties on the object.

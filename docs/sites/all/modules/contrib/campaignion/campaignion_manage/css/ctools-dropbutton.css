@@ -1,3 +1,4 @@
+.manage-links .ctools-button,
 .manage-links .ctools-dropbutton {
   width: 12em;
   position: absolute;
@@ -12,20 +13,28 @@
   font-size: 13px;
   margin: 0;  
 }
+.manage-links .ctools-button a,
 .manage-links .ctools-dropbutton a,
+.manage-links .ctools-button a:hover,
 .manage-links .ctools-dropbutton a:hover,
+.manage-links .ctools-button a:link,
 .manage-links .ctools-dropbutton a:link,
 .manage-links .ctools-dropbutton a:focus,
+.manage-links .ctools-button a:focus,
 .manage-links .ctools-dropbutton a:visited,
+.manage-links .ctools-button a:visited,
+.manage-links .ctools-button a:active,
 .manage-links .ctools-dropbutton a:active {
   text-decoration: none;
   color: #a29f98;
   padding: 1.1em 0 1.1em 1.3em;
 }
+.manage-links .ctools-button a:hover,
 .manage-links .ctools-dropbutton a:hover {
   color: #8b8882;
-	background: #faf7f1;
+  background: #faf7f1;
 }
+.manage-links .ctools-button a:active,
 .manage-links .ctools-dropbutton a:active {
   color: #b03F08;
 }
@@ -57,26 +66,24 @@
   border-bottom: 1px solid #e3dfd7;
 }
 
- .manage-links .ctools-dropbutton-processed {
-   padding-right: 0;
- }
- 
+.manage-links .ctools-dropbutton-processed {
+  padding-right: 0;
+} 
 
- .manage-links .ctools-dropbutton-processed li a {
-   background-color: #F5F1E8;
- }
- 
-  .manage-links .ctools-dropbutton-processed.open li a {
-   background-color: #fff;
-   margin: 0;
-   width: 100%;
+.manage-links .ctools-dropbutton-processed li a {
+  background-color: #F5F1E8;
 }
  
- .manage-links .ctools-dropbutton-processed li a:hover { 
+.manage-links .ctools-dropbutton-processed.open li a {
+  background-color: #fff;
+  margin: 0;
+  width: 100%;
+}
+ 
+.manage-links .ctools-dropbutton-processed li a:hover { 
   background-color: #FAF7F1;
- }
+}
 
- .manage-links .ctools-dropbutton-processed.open li {
+.manage-links .ctools-dropbutton-processed.open li {
   padding: 0;
 }
-

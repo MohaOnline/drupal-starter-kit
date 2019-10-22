@@ -65,9 +65,8 @@ function campaignion_email_protest_theme_registry_alter(&$theme_registry) {
 }
 
 function campaignion_email_protest_webform_mail_headers($variables) {
-  $headers = array(
-    'X-Mailer' => 'Drupal Webform (PHP/' . phpversion() . ')',
-  );
+  $headers = [];
+
   if (!empty($variables['email']['headers']['X-Mail-Domain'])) {
     $headers['X-Mail-Domain'] = $variables['email']['headers']['X-Mail-Domain'];
   }

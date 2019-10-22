@@ -3,6 +3,7 @@
 namespace Drupal\campaignion\CRM\Export;
 
 class AddressField extends WrapperField {
+
   protected $mappedSubkeys;
 
   public function __construct($key, $subkeys_map = NULL) {
@@ -10,24 +11,16 @@ class AddressField extends WrapperField {
     $this->mappedSubkeys = (isset($subkeys_map) && is_array($subkeys_map)) ? $subkeys_map : NULL;
   }
 
-  public function value() {
-    $all_values = parent::value();
-    unset($all_values['data']);
-    unset($all_values['first_name']);
-    unset($all_values['last_name']);
-    unset($all_values['organisation_name']);
-    unset($all_values['name_line']);
-
-    $values = array();
+  /**
+   * Create an array based on a field item and the mapping config.
+   */
+  protected function map(array $item) {
+    $values = [];
     if (!empty($this->mappedSubkeys)) {
       foreach ($this->mappedSubkeys as $mapped_key => $key) {
-        if (isset($all_values[$key])) {
-          if (!is_numeric($mapped_key)) {
-            $values[$mapped_key] = $all_values[$key];
-          }
-          else {
-            $values[$key] = $all_values[$key];
-          }
+        if (isset($item[$key])) {
+          $mapped_key = is_numeric($mapped_key) ? $key : $mapped_key;
+          $values[$mapped_key] = $item[$key];
         }
         else {
           $values[$key] = '';
@@ -35,9 +28,25 @@ class AddressField extends WrapperField {
       }
     }
     else {
-      $values = $all_values;
+      $values = $item;
+      unset($values['data']);
+      unset($values['first_name']);
+      unset($values['last_name']);
+      unset($values['organisation_name']);
+      unset($values['name_line']);
     }
-
     return $values;
   }
+
+  /**
+   * Get mapped value for one or multiple address field items.
+   */
+  public function value($delta = 0) {
+    $items = parent::value($delta);
+    if ($items) {
+      return is_null($delta) ? array_map([$this, 'map'], $items) : $this->map($items);
+    }
+    return is_null($delta) ? [] : NULL;
+  }
+
 }

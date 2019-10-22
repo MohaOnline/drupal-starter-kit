@@ -2,7 +2,8 @@
 
 namespace Drupal\campaignion_manage\BulkOp;
 
-use \Drupal\campaignion_manage\BatchJob;
+use Drupal\campaignion_manage\BatchJob;
+use Drupal\campaignion_newsletters\NewsletterList;
 
 class SupporterNewsletter implements BatchInterface {
   public function title() {
@@ -14,14 +15,10 @@ class SupporterNewsletter implements BatchInterface {
   }
 
   public function formElement(&$element, &$form_state) {
-    $options = array();
-    foreach (\Drupal\campaignion_newsletters\NewsletterList::listAll() as $list) {
-      $options[$list->list_id] = $list->title;
-    }
     $element['lists'] = array(
       '#type'    => 'checkboxes',
       '#title'   => t('Select one or lists'),
-      '#options' => $options,
+      '#options' => NewsletterList::options(),
     );
   }
 

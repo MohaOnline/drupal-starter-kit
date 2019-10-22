@@ -45,7 +45,7 @@ function _campaignion_newsletters_form_redhen_contact_contact_form_alter(&$form,
   $subscriptions = Subscriptions::byContact($form_state['redhen_contact']);
   $form_state['redhen_contact']->newsletters = $subscriptions;
 
-  $options = $subscriptions->optionsArray();
+  $options = Subscriptions::lists();
 
   $fieldset = array(
     '#type' => 'fieldset',

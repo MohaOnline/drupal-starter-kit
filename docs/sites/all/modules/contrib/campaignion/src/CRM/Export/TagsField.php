@@ -3,17 +3,29 @@
 namespace Drupal\campaignion\CRM\Export;
 
 class TagsField extends WrapperField {
+
   protected $filterable;
+
+  /**
+   * Create a new instance of this exporter.
+   */
   public function __construct($key, $filterable = FALSE) {
     parent::__construct($key);
     $this->filterable = $filterable;
   }
 
-  public function value() {
-    $w = $this->exporter->getWrappedContact();
-    $tags = $w->{$this->key}->value();
+  /**
+   * Get all tags in this field as comma separated string.
+   *
+   * @param int|null $delta
+   *   This parameter is ignored for this exporter.
+   *
+   * @return string
+   *   Comma separated tags.
+   */
+  public function value($delta = 0) {
     $names = array();
-    foreach ($tags as $tag) {
+    foreach (parent::value(NULL) as $tag) {
       $names[] = str_replace(',', '', $tag->name);
     }
     $result = implode(',', $names);
@@ -22,4 +34,5 @@ class TagsField extends WrapperField {
     }
     return $result;
   }
+
 }

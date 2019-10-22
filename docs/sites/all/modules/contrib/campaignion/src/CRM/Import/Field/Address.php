@@ -4,6 +4,9 @@ namespace Drupal\campaignion\CRM\Import\Field;
 
 use Drupal\campaignion\CRM\Import\Source\SourceInterface;
 
+/**
+ * Importer for address fields.
+ */
 class Address extends Field {
 
   public function __construct($field, $mapping) {
@@ -50,11 +53,11 @@ class Address extends Field {
       if (($value = $this->getValue($source)) && ($value = $this->preprocessField($value))) {
         if ($this->storeValue($entity, $value)) {
           return $this->setValue($entity, $value);
-        } else {
-          return FALSE;
         }
+        return FALSE;
       }
-    } catch (\EntityMetadataWrapperException $e) {
+    }
+    catch (\EntityMetadataWrapperException $e) {
       watchdog('campaignion', 'Tried to import into a non-existing field "!field".', array('!field' => $this->field), WATCHDOG_WARNING);
     }
     return FALSE;
@@ -73,18 +76,21 @@ class Address extends Field {
   /**
    * Merges a new address into an existing single-value address field.
    *
-   * @param \EntityListWrapper $item
-   *   The metadata wrapper for the singe-value address field.
+   * @param \EntityStructureWrapper $item
+   *   The metadata wrapper for the single-value address field.
    * @param array $address
    *   Associative array representing the address to be merged.
    *
-   * @param bool
+   * @return bool
    *   TRUE if any field value has been changed, FALSE if no changes were made.
    */
   protected function setValueSingle(\EntityStructureWrapper $item, array $address) {
     $stored = $item->value();
     if ($stored && $this->addressIsMergeable($stored, $address)) {
-      return $this->mergeAddress($item, $address);
+      if ($changed = $this->mergeAddress($stored, $address)) {
+        $item->set($stored);
+      }
+      return $changed;
     }
     // Existing address contradicts the new one. So just set the new one.
     $item->set($address);
@@ -94,22 +100,35 @@ class Address extends Field {
   /**
    * Merges a new address into a multi-address field.
    *
-   * @param \EntityListWrapper $items
+   * @param \EntityListWrapper $list
    *   The metadata wrapper for the multi-value address field.
    * @param array $address
    *   Associative array representing the address to be merged.
    *
-   * @param bool
+   * @return bool
    *   TRUE if any field value has been changed, FALSE if no changes were made.
    */
-  protected function setValueMultiple(\EntityListWrapper $items, array $address) {
-    foreach($items as $item) {
-      if ($this->addressIsMergeable($item->value(), $address)) {
-        return $this->mergeAddress($item, $address);
+  protected function setValueMultiple(\EntityListWrapper $list, array $address) {
+    $items = $list->value();
+    $first = TRUE;
+    foreach ($items as $delta => $item) {
+      $item_array = $item instanceof \EntityStructureWrapper ? $item->value : $item;
+      if ($this->addressIsMergeable($item_array, $address)) {
+        if ($this->mergeAddress($item_array, $address) || !$first) {
+          // Modified or confirmed addresses bubble to the top of the list.
+          unset($items[$delta]);
+          array_unshift($items, $item_array);
+          $list->set(array_values($items));
+          return TRUE;
+        }
+        // No new data and the matching address was already at the top.
+        return FALSE;
       }
+      $first = FALSE;
     }
     // We found no matching address so we add it as a new one.
-    $items[] = $address;
+    array_unshift($items, $address);
+    $list->set(array_values($items));
     return TRUE;
   }
 
@@ -125,7 +144,7 @@ class Address extends Field {
    *   TRUE when the first address contains no non-NULL values that differ from
    *   the second address.
    */
-  protected function addressIsMergeable($a1, $a2) {
+  protected function addressIsMergeable(array $a1, array $a2) {
     foreach ($a2 as $key => $value) {
       if (isset($a1[$key]) && $a1[$key] != $value) {
         return FALSE;
@@ -137,21 +156,20 @@ class Address extends Field {
   /**
    * Merges a new address into an existing address field item.
    *
-   * @param \EntityListWrapper $item
-   *   The metadata wrapper for the address field item.
+   * @param array $item
+   *   An address field item.
    * @param array $address
    *   Associative array representing the address to be merged.
    *
-   * @param bool
+   * @return bool
    *   TRUE if any field value has been changed, FALSE if no changes were made.
    */
-  protected function mergeAddress(\EntityStructureWrapper $item, $address) {
-    $stored = $item->value();
-    if (!array_diff($address, $stored)) {
+  protected function mergeAddress(array &$item, array $address) {
+    if (!array_diff($address, $item)) {
       // New address doesn’t add new information. Nothing to do.
       return FALSE;
     }
-    $item->set(array_merge($stored, $address));
+    $item = array_merge($item, $address);
     return TRUE;
   }
 

@@ -30,16 +30,20 @@ class BooleanField extends WrapperField {
   }
 
   /**
-   * Get the value for the field.
+   * Get the value(s) for the field.
    *
-   * @param int $delta
+   * @param int|null $delta
    *   Delta for multi-value fields.
    *
    * @return mixed
    *   Value representing the current state of boolean field.
    */
   public function value($delta = 0) {
-    return parent::value($delta) ? $this->values[0] : $this->values[1];
+    $map = function ($value) {
+      return $value ? $this->values[0] : $this->values[1];
+    };
+    $value = parent::value($delta);
+    return is_null($delta) ? array_map($map, $value) : $map($value);
   }
 
 }

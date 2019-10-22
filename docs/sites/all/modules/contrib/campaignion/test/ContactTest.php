@@ -52,4 +52,12 @@ class ContactTest extends \DrupalUnitTestCase {
     $this->assertEmpty($stored_contact->wrap()->field_title->value());
   }
 
+  /**
+   * Test zero creation time is left as is.
+   */
+  public function testZeroCreationTime() {
+    $contact = new Contact(['created' => 0]);
+    $this->assertEqual(0, $contact->created);
+  }
+
 }
