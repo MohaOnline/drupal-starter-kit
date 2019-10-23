@@ -6,8 +6,8 @@ core = 7.x
 hidden = TRUE
 files[] = includes/PayPalPaymentIPNTestPaymentMethodController.inc
 
-; Information added by Drupal.org packaging script on 2018-07-17
-version = "7.x-1.4"
+; Information added by Drupal.org packaging script on 2019-09-03
+version = "7.x-1.5"
 core = "7.x"
 project = "paypal_payment"
-datestamp = "1531844325"
+datestamp = "1567529888"

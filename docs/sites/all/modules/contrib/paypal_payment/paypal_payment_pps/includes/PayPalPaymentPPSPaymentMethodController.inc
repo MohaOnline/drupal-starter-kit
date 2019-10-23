@@ -64,7 +64,14 @@ class PayPalPaymentPPSPaymentMethodController extends PaymentMethodController im
   public function execute(Payment $payment) {
     entity_save('payment', $payment);
     $_SESSION['paypal_payment_pps_pid'] = $payment->pid;
-    drupal_goto('paypal_payment_pps/redirect/' . $payment->pid);
+    $url = 'paypal_payment_pps/redirect/' . $payment->pid;
+    if (!empty($payment->contextObj)) {
+      // Support for payment_context.
+      $payment->contextObj->redirect($url);
+    }
+    else {
+      drupal_goto($url);
+    }
   }
 
   /**

@@ -95,7 +95,14 @@ class PayPalPaymentECPaymentMethodController extends PayPalPaymentNVPAPIPaymentM
 
     // Start checkout.
     if ($authentication) {
-      drupal_goto($this->checkoutURL($payment->method->controller_data['server'], $authentication->token));
+      $url = $this->checkoutURL($payment->method->controller_data['server'], $authentication->token);
+      if (!empty($payment->contextObj)) {
+        // Support for payment_context.
+        $payment->contextObj->redirect($url);
+      }
+      else {
+        drupal_goto($url);
+      }
     }
     else {
       $payment->setStatus(new PaymentStatusItem(PAYMENT_STATUS_FAILED));
