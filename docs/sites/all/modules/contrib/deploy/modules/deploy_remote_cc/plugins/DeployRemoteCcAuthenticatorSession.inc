@@ -2,13 +2,15 @@
 
 /**
  * @file
- * Session based authentication plugin.
+ * Authenticator for clearing caches.
  */
 
+module_load_include('inc', 'deploy', 'includes/DeployAuthenticator');
+
 /**
- * Authentication class that uses session authentication.
+ * Authenticator for Cache clear service.
  */
-class DeployAuthenticatorSession implements DeployAuthenticator {
+class DeployRemoteCcAuthenticatorSession implements \DeployAuthenticator {
 
   /**
    * Configuration options.
@@ -20,34 +22,59 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
   /**
    * {@inheritdoc}
    */
-  public function __construct(DeployService $service, array $config = array()) {
+  public function __construct(\DeployService $service, array $config = array()) {
     $this->service = $service;
     $this->config += array(
-      'debug' => FALSE,
       'username' => '',
       'password' => '',
     );
-    if (!empty($config['username']) && !empty($config['password'])) {
-      $config['username'] = _deploy_decrypt($config['username']);
-      $config['password'] = _deploy_decrypt($config['password']);
-    }
     $this->config = array_merge($this->config, $config);
+    $this->context = $this->service->getContext();
   }
 
   /**
    * {@inheritdoc}
    */
-  public function deploy(Traversable $iterator) {
+  public function deploy(\Traversable $iterator) {
+    list($response, $token) = $this->logIn();
 
-    $verify_ssl = variable_get('deploy_verify_ssl', TRUE);
-    $context_options = array(
-      'ssl' => array(
-        'verify_peer' => $verify_ssl,
-        'verify_peer_name' => $verify_ssl,
-        'allow_self_signed' => !$verify_ssl,
+    // Deploy the plan.
+    $this->service->deploy($iterator);
+
+    $this->logOut($response, $token);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function configForm(&$form_state) {
+    return array(
+      'username' => array(
+        '#type' => 'textfield',
+        '#title' => t('Username'),
+        '#description' => t('Enter the username that you want to authenticate with on this endpoint.'),
+        '#default_value' => $this->config['username'],
+      ),
+      'password' => array(
+        '#type' => 'password',
+        '#title' => t('Password'),
+        '#description' => t('Enter the password that you want to authenticate with on this endpoint.'),
+        '#default_value' => $this->config['password'],
       ),
     );
-    $context = stream_context_create($context_options);
+  }
+
+  /**
+   * Login to the target environment to create a valid session.
+   *
+   * @return array
+   *   Returns an array of the result of the login request.
+   *
+   * @throws \DeployAuthenticationException
+   */
+  public function logIn() {
+    $response = new \stdClass();
+    $token = array();
 
     // Only authenticate if we've got a username and password. This allows for
     // deployment as an anonymous user. There are usecases for that.
@@ -55,7 +82,6 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
       // TODO: Consider making the resource/action path configurable. For now,
       // the default Services path is OK, since it covers 99% of the use cases.
       $login_url = $this->service->config['url'] . '/user/login';
-      $logout_url = $this->service->config['url'] . '/user/logout';
 
       $options = array(
         'method' => 'POST',
@@ -64,11 +90,15 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
           'username' => $this->config['username'],
           'password' => $this->config['password'],
         )),
-        'context' => $context,
+        'context' => $this->context,
       );
 
       if ($this->config['debug']) {
-        watchdog('deploy', 'Authentication request: %url <pre>@options</pre>', array('%url' => $login_url, '@options' => print_r($options, TRUE)), WATCHDOG_DEBUG);
+        watchdog('deploy', 'Authentication request: %url <pre>@options</pre>', array(
+          '%url' => $login_url,
+          '@options' => print_r($options, TRUE),
+        ),
+          WATCHDOG_DEBUG);
       }
 
       // Login on the endpoint.
@@ -78,7 +108,7 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
         watchdog('deploy', 'Authentication response: <pre>@response</pre>', array('@response' => print_r($response, TRUE)), WATCHDOG_DEBUG);
       }
       if (isset($response->error) || !in_array($response->code, array(200, 304))) {
-        throw new DeployAuthenticationException(t('Authentication error: @code @error', array('@code' => $response->code, '@error' => $response->error)));
+        throw new \DeployAuthenticationException(t('Authentication error: @code @error', array('@code' => $response->code, '@error' => $response->error)));
       }
 
       $response_data = drupal_json_decode($response->data);
@@ -113,12 +143,12 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
           $options = array(
             'method' => 'GET',
             'headers' => $this->service->config['headers'],
-            'context' => $context,
+            'context' => $this->context,
           );
 
           $token_response = drupal_http_request($token_url, $options);
           if (isset($token_response->error) || !in_array($token_response->code, array(200, 304))) {
-            throw new DeployAuthenticationException(t('Authentication error: @code @error', array('@code' => $token_response->code, '@error' => t('Failed to retrieve CSRF token.'))));
+            throw new \DeployAuthenticationException(t('Authentication error: @code @error', array('@code' => $token_response->code, '@error' => t('Failed to retrieve CSRF token.'))));
           }
 
           if ($this->config['debug']) {
@@ -127,18 +157,33 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
 
           $token = trim($token_response->data);
         }
+
         $this->service->config['headers']['X-CSRF-Token'] = $token;
       }
       else {
-        throw new DeployAuthenticationException(t("No session was returned from the authentication request."));
+        throw new \DeployAuthenticationException(t("No session was returned from the authentication request."));
       }
     }
     else {
       watchdog('deploy', 'Deployment authentication was done without user credentials.', array(), WATCHDOG_WARNING);
     }
 
-    // Deploy the plan.
-    $this->service->deploy($iterator);
+    return array(
+      $response,
+      $token,
+    );
+  }
+
+  /**
+   * Logout of the target environment.
+   *
+   * @param object $response
+   *   The response object from the initial login request.
+   * @param string $token
+   *   The token that created during login.
+   */
+  public function logOut($response, $token) {
+    $logout_url = $this->service->config['url'] . '/user/logout';
 
     // We only need to log out if we logged in and got a session cookie.
     if (!empty($this->service->config['headers']['Cookie'])) {
@@ -149,7 +194,7 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
           'Cookie' => $response->headers['set-cookie'],
           'X-CSRF-Token' => $token,
         ),
-        'context' => $context,
+        'context' => $this->context,
       );
       $response = drupal_http_request($logout_url, $options);
 
@@ -157,26 +202,6 @@ class DeployAuthenticatorSession implements DeployAuthenticator {
         watchdog('deploy', 'Logout response: <pre>@response</pre>', array('@response' => print_r($response, TRUE)), WATCHDOG_DEBUG);
       }
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function configForm(&$form_state) {
-    return array(
-      'username' => array(
-        '#type' => 'textfield',
-        '#title' => t('Username'),
-        '#description' => t('Enter the username that you want to authenticate with on this endpoint.'),
-        '#default_value' => $this->config['username'],
-      ),
-      'password' => array(
-        '#type' => 'password',
-        '#title' => t('Password'),
-        '#description' => t('Enter the password that you want to authenticate with on this endpoint.'),
-        '#default_value' => $this->config['password'],
-      ),
-    );
   }
 
 }
