@@ -29,14 +29,19 @@ dependencies[] = entity
 dependencies[] = features
 dependencies[] = field_reference_or_redirect
 dependencies[] = field_type_language
+dependencies[] = file
+dependencies[] = file_entity
 dependencies[] = form_builder_webform
 dependencies[] = i18n_taxonomy
+dependencies[] = image
 dependencies[] = list
+dependencies[] = media
 dependencies[] = options
 dependencies[] = paypal_payment_ec
 dependencies[] = paypal_payment_pps
 dependencies[] = redhen_contact
 dependencies[] = redhen_fields
+dependencies[] = save_draft:save_draft (>=1.4)
 dependencies[] = strongarm
 dependencies[] = taxonomy
 dependencies[] = uuid
@@ -51,6 +56,7 @@ features[field_base][] = field_direct_mail_newsletter
 features[field_base][] = field_email_to_target_options
 features[field_base][] = field_gender
 features[field_base][] = field_ip_adress
+features[field_base][] = field_main_image
 features[field_base][] = field_no_target_message
 features[field_base][] = field_opt_in_phone
 features[field_base][] = field_phone_number
@@ -66,6 +72,7 @@ features[field_group][] = group_overlay|node|thank_you_page|form
 features[field_instance][] = node-email_to_target-field_email_to_target_options
 features[field_instance][] = node-email_to_target-field_no_target_message
 features[field_instance][] = node-email_to_target-field_thank_you_pages
+features[field_instance][] = node-petition-field_main_image
 features[field_instance][] = node-petition-field_thank_you_pages
 features[field_instance][] = node-thank_you_page-campaignion_overlay_options
 features[field_instance][] = redhen_contact-contact-campaign_tag
@@ -92,8 +99,8 @@ features[taxonomy][] = supporter_tags
 features[variable][] = webform_node_email_to_target
 features[variable][] = webform_node_petition
 
-; Information added by Drupal.org packaging script on 2019-10-05
-version = "7.x-2.6"
+; Information added by Drupal.org packaging script on 2019-11-04
+version = "7.x-2.7"
 core = "7.x"
 project = "campaignion"
-datestamp = "1570281499"
+datestamp = "1572898388"

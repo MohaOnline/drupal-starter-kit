@@ -36,7 +36,7 @@ before_script:
   - php -d include_path=`pwd` -d sendmail_path=`which true` ~/.composer/vendor/bin/drush.php --yes core-quick-drupal --core=drupal-7.x --profile=testing --no-server --db-url=mysql://root:@127.0.0.1/drupal --root=$root
   - ln -s $repo $root/sites/all/modules/campaignion
   - cd $root
-  - drush dl addressfield ctools date entity features field_type_language form_builder-7.x-2.0-alpha2 i18n little_helpers-2.0-alpha2 oowizard paypal_payment psr0 redhen references webform webform_confirm_email webform_template ultimate_cron
+  - drush dl addressfield ctools date entity features field_type_language file_entity form_builder-7.x-2.0-alpha2 i18n little_helpers-2.0-alpha2 media oowizard paypal_payment psr0 redhen references webform webform_confirm_email webform_template ultimate_cron
   - drush --yes pm-enable campaignion_test
 
 script:

@@ -152,6 +152,30 @@ function campaignion_test_field_default_field_bases() {
     'type' => 'text',
   );
 
+  // Exported field_base: 'field_main_image'.
+  $field_bases['field_main_image'] = array(
+    'active' => 1,
+    'cardinality' => 1,
+    'deleted' => 0,
+    'entity_types' => array(),
+    'field_name' => 'field_main_image',
+    'global_block_settings' => 2,
+    'indexes' => array(
+      'fid' => array(
+        0 => 'fid',
+      ),
+    ),
+    'locked' => 0,
+    'module' => 'image',
+    'settings' => array(
+      'default_image' => 0,
+      'profile2_private' => FALSE,
+      'uri_scheme' => 'public',
+    ),
+    'translatable' => 0,
+    'type' => 'image',
+  );
+
   // Exported field_base: 'field_no_target_message'.
   $field_bases['field_no_target_message'] = array(
     'active' => 1,

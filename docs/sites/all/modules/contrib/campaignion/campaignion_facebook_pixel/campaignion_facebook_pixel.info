@@ -6,8 +6,8 @@ dependencies[] = campaignion_newsletters
 dependencies[] = little_helpers
 dependencies[] = psr0
 
-; Information added by Drupal.org packaging script on 2019-10-05
-version = "7.x-2.6"
+; Information added by Drupal.org packaging script on 2019-11-04
+version = "7.x-2.7"
 core = "7.x"
 project = "campaignion"
-datestamp = "1570281499"
+datestamp = "1572898388"

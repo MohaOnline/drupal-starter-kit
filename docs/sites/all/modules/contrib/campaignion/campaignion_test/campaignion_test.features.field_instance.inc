@@ -209,6 +209,84 @@ function campaignion_test_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-petition-field_main_image'.
+  $field_instances['node-petition-field_main_image'] = array(
+    'bundle' => 'petition',
+    'deleted' => 0,
+    'description' => 'Add a large main image or a video to your petition.',
+    'display' => array(
+      'cck_blocks' => array(
+        'label' => 'hidden',
+        'module' => 'file_entity',
+        'settings' => array(
+          'file_view_mode' => 'default',
+        ),
+        'type' => 'file_rendered',
+        'weight' => 0,
+      ),
+      'default' => array(
+        'label' => 'hidden',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 2,
+      ),
+      'teaser' => array(
+        'label' => 'hidden',
+        'module' => 'file_entity',
+        'settings' => array(
+          'file_view_mode' => 'teaser',
+        ),
+        'type' => 'file_rendered',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'exclude_cv' => 0,
+    'field_name' => 'field_main_image',
+    'label' => 'Large image or video',
+    'required' => 0,
+    'settings' => array(
+      'alt_field' => 1,
+      'custom_add_another' => '',
+      'custom_remove' => '',
+      'default_image' => 0,
+      'exclude_cv' => FALSE,
+      'file_directory' => '',
+      'file_extensions' => 'png gif jpg jpeg mp4 mpeg flv mov wma',
+      'max_filesize' => '',
+      'max_resolution' => '',
+      'min_resolution' => '',
+      'title_field' => 1,
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'media',
+      'settings' => array(
+        'allowed_schemes' => array(
+          'public' => 'public',
+          'vimeo' => 'vimeo',
+          'youtube' => 'youtube',
+        ),
+        'allowed_types' => array(
+          'audio' => 0,
+          'default' => 0,
+          'image' => 'image',
+          'video' => 'video',
+        ),
+        'browser_plugins' => array(
+          'media_default--media_browser_1' => 'media_default--media_browser_1',
+          'media_default--media_browser_my_files' => 'media_default--media_browser_my_files',
+          'media_internet' => 'media_internet',
+          'upload' => 'upload',
+        ),
+        'progress_indicator' => 'throbber',
+      ),
+      'type' => 'media_generic',
+      'weight' => 4,
+    ),
+  );
+
   // Exported field_instance: 'node-petition-field_thank_you_pages'.
   $field_instances['node-petition-field_thank_you_pages'] = array(
     'bundle' => 'petition',
@@ -952,6 +1030,7 @@ function campaignion_test_field_default_field_instances() {
 
   // Translatables
   // Included for use with string extractors like potx.
+  t('Add a large main image or a video to your petition.');
   t('Address');
   t('Date of birth');
   t('Direct Mail Newsletter');
@@ -959,6 +1038,7 @@ function campaignion_test_field_default_field_instances() {
   t('Gender');
   t('IP-Adress');
   t('It’s helpful if you add to this message a way for supporters to get in touch with you. That way if they don’t have a target they can bring this to your attention.');
+  t('Large image or video');
   t('Options');
   t('Phone number');
   t('Phone opt-in');

@@ -8,6 +8,16 @@
 use Drupal\campaignion_action\Loader;
 
 /**
+ * Implements hook_module_implements_alter().
+ */
+function campaignion_wizard_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'form_node_form_alter') {
+    // We replace this with our own alter function.
+    unset($implementations['save_draft']);
+  }
+}
+
+/**
  * Implements hook_menu().
  */
 function campaignion_wizard_menu() {
@@ -56,6 +66,16 @@ function campaignion_wizard_menu_alter(&$info) {
   }
   $info['node/%node/edit']['page callback'] = 'campaignion_wizard_redirect_edit';
   $info['node/%node/webform']['type'] = MENU_LOCAL_TASK;
+}
+
+/**
+ * Implements hook_form_node_form_alter().
+ */
+function campaignion_wizard_form_node_form_alter(array &$form, array &$form_state) {
+  // Only use save_draft if the node-type is not handled in a wizard.
+  if (module_exists('save_draft') && !Loader::instance()->isActionType($form['#node']->type)) {
+    save_draft_form_node_form_alter($form, $form_state);
+  }
 }
 
 /**
@@ -183,4 +203,37 @@ function campaignion_wizard_theme() {
   ];
 
   return $items;
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function campaignion_wizard_node_delete($node) {
+  db_delete('campaignion_wizard_status')
+    ->condition('nid', $node->nid)
+    ->execute();
+}
+
+/**
+ * Hide the alt/title fields on media widget.
+ *
+ * These were added with media 7.x-2.22.
+ */
+function _campaignion_wizard_field_main_image_widget_form_process($element, &$form_state, $form) {
+  if (!empty($element['alt']) && !empty($element['title'])) {
+    $element['alt']['#access'] = FALSE;
+    $element['title']['#access'] = FALSE;
+  }
+  return $element;
+}
+
+/**
+ * Implements hook_FORM_ID_alter().
+ *
+ * Add a process function to deal with unwanted alt/title fields .
+ */
+function campaignion_wizard_field_widget_form_alter(&$element, &$form_state, $context) {
+  if ($context['instance']['field_name'] == 'field_main_image') {
+    $element[0]['#process'][] = '_campaignion_wizard_field_main_image_widget_form_process';
+  }
 }
