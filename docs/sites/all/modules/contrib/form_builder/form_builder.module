@@ -7,7 +7,6 @@
 
 use Drupal\form_builder\FormBase;
 use Drupal\form_builder\Loader;
-use Drupal\form_builder_webform\PropertyOptions;
 
 define('FORM_BUILDER_ROOT', 0);
 
@@ -187,76 +186,6 @@ function form_builder_menu_field_access($op, $form_type, $form_id, $element_id) 
 
 }
 
-/**
- * Implementation of hook_form_builder_properties().
- */
-function form_builder_form_builder_properties($form_type) {
-  module_load_include('inc', 'form_builder', 'includes/form_builder.properties');
-
-  $properties = array(
-    'key' => array(
-      'form' => 'form_builder_property_key_form',
-    ),
-    'title' => array(
-      'form' => 'form_builder_property_title_form',
-    ),
-    'title_display' => array(
-      'form' => 'form_builder_property_title_display_form',
-    ),
-    'description' => array(
-      'form' => 'form_builder_property_description_form',
-    ),
-    'disabled' => array(
-      'form' => 'form_builder_property_disabled_form',
-    ),
-    'weight' => array(
-      'form' => 'form_builder_property_weight_form',
-    ),
-    'default_value' => array(
-      'form' => 'form_builder_property_default_value_form',
-    ),
-    'markup' => array(
-      'form' => 'form_builder_property_markup_form',
-      'submit' => array('form_builder_property_markup_form_submit'),
-    ),
-    'maxlength' => array(
-      'form' => 'form_builder_property_maxlength_form',
-    ),
-    'required' => array(
-      'form' => 'form_builder_property_required_form',
-    ),
-    'options' => array(
-      'form' => 'form_builder_property_options_form',
-      'submit' => array('form_builder_property_options_form_submit'),
-    ),
-    'size' => array(
-      'form' => 'form_builder_property_size_form',
-    ),
-    'rows' => array(
-      'form' => 'form_builder_property_rows_form',
-    ),
-    'cols' => array(
-      'form' => 'form_builder_property_cols_form',
-    ),
-    'field_prefix' => array(
-      'form' => 'form_builder_property_field_prefix_form',
-    ),
-    'field_suffix' => array(
-      'form' => 'form_builder_property_field_suffix_form',
-    ),
-    'collapsible' => array(
-      'form' => 'form_builder_property_collapsible_form',
-    ),
-    'collapsed' => array(
-      'form' => 'form_builder_property_collapsed_form',
-    ),
-  );
-
-  if ($form_type == 'webform') {
-    $properties['options']['class'] = PropertyOptions::class;
-  }
-  return $properties;
-}
 
 /**
  * Implementation of hook_form_builder_property_groups().

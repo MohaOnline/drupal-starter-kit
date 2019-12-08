@@ -590,7 +590,7 @@ function form_builder_after_build($element) {
 /**
  * Form for editing a field.
  */
-function form_builder_field_configure($form, $form_state, $form_type, $form_id, $element_id) {
+function form_builder_field_configure($form, &$form_state, $form_type, $form_id, $element_id) {
   module_load_include('inc', 'form_builder', 'includes/form_builder.api');
   module_load_include('inc', 'form_builder', 'includes/form_builder.cache');
   $form_obj = Loader::instance()->fromCache($form_type, $form_id);

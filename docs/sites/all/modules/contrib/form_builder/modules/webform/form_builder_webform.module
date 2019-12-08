@@ -9,6 +9,7 @@ use Drupal\form_builder\Loader;
 use Drupal\form_builder_webform\Element;
 use Drupal\form_builder_webform\Form;
 use Drupal\form_builder_webform\Property;
+use Drupal\form_builder_webform\PropertyOptions;
 use Drupal\form_builder_webform\PropertyRequired;
 use Drupal\form_builder_webform\PropertyValue;
 
@@ -208,27 +209,87 @@ function form_builder_webform_form_builder_element_types($form_type, $form_id) {
  * Implements hook_form_builder_properties().
  */
 function form_builder_webform_form_builder_properties($form_type) {
-  $properties = array();
+  if ($form_type != 'webform') {
+    return [];
+  }
 
-  if ($form_type == 'webform') {
-    $components = webform_components();
-    foreach ($components as $component_type => $component) {
-      // Components providing a map to automatically list properties.
-      if ($map = _form_builder_webform_property_map($component_type)) {
-        foreach ($map['properties'] as $name => $property_map) {
-          if (isset($property_map['form_parents'])) {
-            $property_map['form'] = '_form_builder_webform_mapped_form';
-          }
-          $properties[$name] = $property_map;
+  module_load_include('properties.inc', 'form_builder_webform');
+
+  $properties = array(
+    'key' => array(
+      'form' => 'form_builder_webform_property_key_form',
+    ),
+    'title' => array(
+      'form' => 'form_builder_webform_property_title_form',
+    ),
+    'description' => array(
+      'form' => 'form_builder_webform_property_description_form',
+    ),
+    'disabled' => array(
+      'form' => 'form_builder_webform_property_disabled_form',
+    ),
+    'weight' => array(
+      'form' => 'form_builder_webform_property_weight_form',
+    ),
+    'default_value' => array(
+      'form' => 'form_builder_webform_property_default_value_form',
+    ),
+    'markup' => array(
+      'form' => 'form_builder_webform_property_markup_form',
+      'submit' => array('form_builder_webform_property_markup_form_submit'),
+    ),
+    'maxlength' => array(
+      'form' => 'form_builder_webform_property_maxlength_form',
+    ),
+    'required' => array(
+      'form' => 'form_builder_webform_property_required_form',
+    ),
+    'options' => array(
+      'class' => PropertyOptions::class,
+      'form' => 'form_builder_webform_property_options_form',
+      'submit' => array('form_builder_webform_property_options_form_submit'),
+    ),
+    'size' => array(
+      'form' => 'form_builder_webform_property_size_form',
+    ),
+    'rows' => array(
+      'form' => 'form_builder_webform_property_rows_form',
+    ),
+    'cols' => array(
+      'form' => 'form_builder_webform_property_cols_form',
+    ),
+    'field_prefix' => array(
+      'form' => 'form_builder_webform_property_field_prefix_form',
+    ),
+    'field_suffix' => array(
+      'form' => 'form_builder_webform_property_field_suffix_form',
+    ),
+    'collapsible' => array(
+      'form' => 'form_builder_webform_property_collapsible_form',
+    ),
+    'collapsed' => array(
+      'form' => 'form_builder_webform_property_collapsed_form',
+    ),
+  );
+
+  $components = webform_components();
+  foreach ($components as $component_type => $component) {
+    // Components providing a map to automatically list properties.
+    if ($map = _form_builder_webform_property_map($component_type)) {
+      foreach ($map['properties'] as $name => $property_map) {
+        if (isset($property_map['form_parents'])) {
+          $property_map['form'] = '_form_builder_webform_mapped_form';
         }
+        $properties += [$name => []];
+        $properties[$name] += $property_map;
       }
+    }
 
-      // Individual components manually providing properties.
-      if ($additional_properties = form_builder_webform_component_invoke($component_type, 'form_builder_properties')) {
-        foreach ($additional_properties as $name => $property) {
-          $properties += array($name => array());
-          $properties[$name] = array_merge($properties[$name], $property);
-        }
+    // Individual components manually providing properties.
+    if ($additional_properties = form_builder_webform_component_invoke($component_type, 'form_builder_properties')) {
+      foreach ($additional_properties as $name => $property) {
+        $properties += [$name => []];
+        $properties[$name] += $property;
       }
     }
   }
@@ -383,6 +444,7 @@ function _form_builder_webform_property_map($component_type) {
       $map['properties']['title_display'] = array(
         'form_parents' => array('display', 'title_display'),
         'storage_parents' => array('extra', 'title_display'),
+        'weight' => -10,
       );
     }
 

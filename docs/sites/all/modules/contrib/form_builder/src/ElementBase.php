@@ -2,7 +2,7 @@
 
 namespace Drupal\form_builder;
 
-class ElementBase implements ElementInterface {
+abstract class ElementBase implements ElementInterface {
 
   protected $form;
   protected $params;
@@ -74,17 +74,6 @@ class ElementBase implements ElementInterface {
 
   public function getSaveableProperties() {
     return $this->params['properties'];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function configurationForm($form, &$form_state) {
-    $form['#_edit_element'] = $this->element;
-    foreach ($this->getProperties() as $property) {
-      $form = array_merge($form, $property->form($form_state, $this));
-    }
-    return $form;
   }
 
   /**

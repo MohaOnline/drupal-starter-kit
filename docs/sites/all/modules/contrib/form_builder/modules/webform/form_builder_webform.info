@@ -6,8 +6,8 @@ dependencies[] = form_builder
 dependencies[] = psr0:psr0
 dependencies[] = webform (>=4.0)
 
-; Information added by Drupal.org packaging script on 2019-03-19
-version = "7.x-2.0-alpha4"
+; Information added by Drupal.org packaging script on 2019-12-02
+version = "7.x-2.0-alpha6"
 core = "7.x"
 project = "form_builder"
-datestamp = "1553023090"
+datestamp = "1575298688"

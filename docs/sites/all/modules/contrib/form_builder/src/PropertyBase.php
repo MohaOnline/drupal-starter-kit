@@ -20,21 +20,6 @@ class PropertyBase implements PropertyInterface {
   /**
    * {@inheritdoc}
    */
-  public function form(&$form_state, $element) {
-    $e = $element->render();
-    if (isset($this->params['form']) && function_exists($this->params['form'])) {
-      $function = $this->params['form'];
-      $p = $this->property;
-      // Set a default value on the property to avoid notices.
-      $e['#' . $p] = isset($e['#' . $p]) ? $e['#' . $p] : NULL;
-      return $function($form_state, $this->formTypeName, $e, $p);
-    }
-    return array();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function submit($form, &$form_state) {
     if (isset($this->params['submit'])) {
       foreach ($this->params['submit'] as $function) {
