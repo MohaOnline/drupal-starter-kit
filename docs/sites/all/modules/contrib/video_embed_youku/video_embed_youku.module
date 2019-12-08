@@ -91,7 +91,7 @@ function video_embed_youku_handle_video($url, $settings) {
 
   if ($id) {
     // Our embed code.
-    $embed = '<iframe src="http://player.youku.com/embed/!id" width="!width" height="!height" frameborder=0 allowfullscreen></iframe> ';
+    $embed = '<iframe src="https://player.youku.com/embed/!id" width="!width" height="!height" frameborder=0 allowfullscreen></iframe> ';
     // Use format_string to replace our placeholders with the settings values.
     $embed = format_string($embed, array(
       '!id' => $id,
