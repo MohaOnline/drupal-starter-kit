@@ -37,8 +37,8 @@ function youtube_colorbox_form_youtube_settings_form_alter(&$form, &$form_state)
   // Colorbox module settings. Otherwise links provided by YouTube Colorbox will
   // not work as expected. This warning appears in the YouTube module settings.
   if (!variable_get('colorbox_load', FALSE)) {
-    $args = array('!colorbox_settings' => l('Colorbox module settings', 'admin/config/media/colorbox'));
-    $message = t('Please enable \'Enable Colorbox load\' in the !colorbox_settings for thumbnails linked by YouTube Field Colorbox to work as expected.', $args);
+    $args = array('!colorbox_settings' => l(t('Colorbox module settings'), 'admin/config/media/colorbox'));
+    $message = t("Please enable 'Enable Colorbox load' in the !colorbox_settings for thumbnails linked by YouTube Field Colorbox to work as expected.", $args);
     drupal_set_message($message, 'warning');
   }
 }
@@ -59,7 +59,7 @@ function youtube_colorbox_youtube_thumbnail_field_formatter_settings_alter(&$ele
     '#type' => 'fieldset',
     '#title' => t('Colorbox Settings'),
     '#states' => array(
-     'visible' => array(
+      'visible' => array(
         ':input[name="' . $input_name . '"]' => array('value' => YOUTUBE_COLORBOX_LINK_TYPE),
       ),
     ),
@@ -95,16 +95,16 @@ function youtube_colorbox_youtube_thumbnail_field_formatter_settings_alter(&$ele
     '#default_value' => $colorbox['parameters']['autoplay'],
     '#return_value' => 1,
   );
+  $element[YOUTUBE_COLORBOX_LINK_TYPE]['parameters']['mute'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Mute video by default when loaded (mute).'),
+    '#default_value' => $colorbox['parameters']['mute'],
+    '#return_value' => 1,
+  );
   $element[YOUTUBE_COLORBOX_LINK_TYPE]['parameters']['loop'] = array(
     '#type' => 'checkbox',
     '#title' => t('Loop the playback of the video (loop).'),
     '#default_value' => $colorbox['parameters']['loop'],
-    '#return_value' => 1,
-  );
-  $element[YOUTUBE_COLORBOX_LINK_TYPE]['parameters']['showinfo'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Hide video title and uploader info (showinfo).'),
-    '#default_value' => $colorbox['parameters']['showinfo'],
     '#return_value' => 1,
   );
   $element[YOUTUBE_COLORBOX_LINK_TYPE]['parameters']['controls'] = array(
@@ -157,7 +157,7 @@ function youtube_colorbox_youtube_thumbnail_link_uri_alter(&$uri, &$settings, $i
   $parameters = $settings[YOUTUBE_COLORBOX_LINK_TYPE]['parameters'];
 
   // Invert parameters that should be 0 when their options are selected.
-  $invert_parameters = array('showinfo', 'controls');
+  $invert_parameters = array('controls');
   foreach ($invert_parameters as $parameter) {
     if (isset($parameters[$parameter])) {
       $parameters[$parameter] = $parameters[$parameter] ? 0 : 1;

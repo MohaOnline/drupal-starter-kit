@@ -15,7 +15,7 @@
  *   An array of options to link a thumbnail to. The array items' keys are the
  *   machine names and values are the readable names.
  */
-function hook_youtube_thumbnail_link_types_alter(&$link_types) {
+function hook_youtube_thumbnail_link_types_alter(array &$link_types) {
   // See youtube_colorbox_youtube_thumbnail_link_types_alter() within the
   // YouTube Colorbox module for example usage.
 }
@@ -35,7 +35,7 @@ function hook_youtube_thumbnail_link_types_alter(&$link_types) {
  * @param string $field_name
  *   The machine name of the field.
  */
-function hook_youtube_thumbnail_field_formatter_settings_alter(&$element, $instance, $settings, $field_name) {
+function hook_youtube_thumbnail_field_formatter_settings_alter(array &$element, array $instance, array $settings, $field_name) {
   // See youtube_colorbox_youtube_thumbnail_field_formatter_settings_alter()
   // within the YouTube Colorbox module for example usage.
 }
@@ -55,7 +55,7 @@ function hook_youtube_thumbnail_field_formatter_settings_alter(&$element, $insta
  * @param array $item
  *   The field item to provide the link for.
  */
-function hook_youtube_thumbnail_link_uri_alter(&$uri, &$settings, $item) {
+function hook_youtube_thumbnail_link_uri_alter(array &$uri, array &$settings, array $item) {
   // See youtube_colorbox_youtube_thumbnail_link_uri_alter() within the
   // YouTube Colorbox module for example usage.
 }

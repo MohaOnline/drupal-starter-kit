@@ -16,6 +16,9 @@ function youtube_migrate_api() {
   return $api;
 }
 
+/**
+ * Extend MigrateFieldHandler for YouTube fields.
+ */
 class MigrateYoutubeFieldHandler extends MigrateFieldHandler {
 
   /**
@@ -35,23 +38,25 @@ class MigrateYoutubeFieldHandler extends MigrateFieldHandler {
    * @return array
    *   An array of the defined variables in this scope.
    */
-  static function arguments($input = NULL) {
+  public static function arguments($input = NULL) {
     return get_defined_vars();
   }
 
   /**
    * Implementation of MigrateFieldHandler::fields().
    *
-   * @param $type
+   * @param string $type
    *   The field type.
-   * @param $instance
+   * @param array $instance
    *   Instance info for the field.
-   * @param Migration $migration
+   * @param Migration|null $migration
    *   The migration context for the parent field. We can look at the mappings
    *   and determine which subfields are relevant.
+   *
    * @return array
+   *   Detail on the fields.
    */
-  public function fields($type, $instance, $migration = NULL) {
+  public function fields($type, array $instance, $migration = NULL) {
     return array(
       'input' => t('Subfield: The full YouTube video URL'),
     );
@@ -98,4 +103,5 @@ class MigrateYoutubeFieldHandler extends MigrateFieldHandler {
 
     return isset($return) ? $return : NULL;
   }
+
 }

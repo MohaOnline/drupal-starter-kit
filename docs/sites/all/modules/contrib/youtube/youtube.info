@@ -9,9 +9,8 @@ files[] = youtube.migrate.inc
 stylesheets[all][] = css/youtube.css
 configure = admin/config/media/youtube
 
-; Information added by Drupal.org packaging script on 2016-03-31
-version = "7.x-1.7"
+; Information added by Drupal.org packaging script on 2019-11-12
+version = "7.x-1.8"
 core = "7.x"
 project = "youtube"
-datestamp = "1459452545"
-
+datestamp = "1573591329"

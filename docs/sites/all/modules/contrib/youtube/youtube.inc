@@ -1,17 +1,17 @@
 <?php
 
 /**
- * @ file
+ * @file
  * YouTube field helper functions.
  */
 
 /**
  * Extracts the video_id from the submitted field value.
  *
- * @param $input
+ * @param string $input
  *   The input submitted to the field.
  *
- * @return
+ * @return string|bool
  *   Returns the video_id if available, or FALSE if not.
  */
 function youtube_get_video_id($input) {
@@ -122,7 +122,7 @@ function youtube_build_thumbnail_uri($video_id = NULL) {
 /**
  * Retrieves the thumbnail image for a given video from YouTube.
  *
- * @param integer $video_id
+ * @param int|null $video_id
  *   The video ID of the particular YouTube video.
  * @param bool $force_small
  *   (optional) When TRUE, this function should return the standard size image
@@ -130,7 +130,7 @@ function youtube_build_thumbnail_uri($video_id = NULL) {
  *   should the high resolution image be found to not exist for a particular
  *   video.
  *
- * @return bool|stdClass
+ * @return bool|object
  *   Either the Drupal $file object of saved image, or FALSE if the save failed.
  */
 function youtube_get_remote_image($video_id = NULL, $force_small = FALSE) {
@@ -159,7 +159,7 @@ function youtube_get_remote_image($video_id = NULL, $force_small = FALSE) {
     }
     watchdog('youtube',
       'HTTP request for video ID %id failed (error code: %err).',
-      array('%id', $video_id, '%err', $image->code),
+      array('%id' => $video_id, '%err' => $image->code),
       WATCHDOG_ERROR);
     return FALSE;
   }
@@ -222,11 +222,7 @@ function youtube_thumb_delete_all($form, &$form_state) {
   }
 
   if ($legacy_files) {
-    drupal_set_message(t('Note: Some unmanaged files from an older version of
-      the module were deleted. Their associated image style derivatives were not
-      deleted. <a href="@imagestyleflush">Image style flush</a> or
-      `drush image-flush` can be used for that. New thumbnails will be managed
-      files and will not have this issue.',
+    drupal_set_message(t('Note: Some unmanaged files from an older version of the module were deleted. Their associated image style derivatives were not deleted. <a href="@imagestyleflush">Image style flush</a> or `drush image-flush` can be used for that. New thumbnails will be managed files and will not have this issue.',
       array('@imagestyleflush' => 'https://www.drupal.org/project/imagestyleflush')));
   }
 }
@@ -234,12 +230,12 @@ function youtube_thumb_delete_all($form, &$form_state) {
 /**
  * Get YouTube image path by building correctly formed URL.
  *
- * @param $video_id
+ * @param string|null $video_id
  *   (optional) The ID of the video to grab the thumbnail from.
- * @param $version
+ * @param string|null $version
  *   (optional) Which version of the thumbnail to grab.
  *
- * @return string
+ * @return string|null
  *   The youtube.com image path to the specified version/video.
  */
 function youtube_build_remote_image_path($video_id = NULL, $version = '0') {
@@ -286,19 +282,19 @@ function youtube_feeds_processor_targets_alter(&$targets, $entity_type, $bundle_
 /**
  * Callback to set the Feeds target for a YouTube field.
  *
- * @param $source
+ * @param FeedsSource $source
  *   Field mapper source settings.
- * @param $entity
+ * @param object $entity
  *   An entity object, for instance a node object.
- * @param $target
+ * @param string $target
  *   A string identifying the target on the node.
- * @param $value
+ * @param string|array $value
  *   The value to populate the target with.
- * @param $mapping
+ * @param array $mapping
  *   Associative array of the mapping settings from the per mapping
  *   configuration form.
  */
-function youtube_set_target($source, $entity, $target, $value, $mapping) {
+function youtube_set_target(FeedsSource $source, $entity, $target, $value, array $mapping) {
   if (empty($value)) {
     return;
   }
@@ -434,7 +430,7 @@ function youtube_tokens($type, $tokens, array $data = array(), array $options = 
             $video_id = $field_value[0]['video_id'];
             $file_uri = youtube_build_thumbnail_uri($video_id);
             $file_url = file_create_url($file_uri);
-            if (file_exists($file_url) || youtube_get_remote_image($video_id)) {
+            if (file_exists($file_uri) || youtube_get_remote_image($video_id)) {
               $replacements[$original] = $file_url;
 
               if ($style_name = variable_get('youtube_thumb_token_image_style', NULL)) {

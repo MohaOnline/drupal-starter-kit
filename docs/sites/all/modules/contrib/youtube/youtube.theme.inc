@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Theme functions for the YouTube field module.
@@ -8,6 +9,8 @@
  * Theme function for videos.
  */
 function theme_youtube_video($variables) {
+  global $base_root;
+
   $video_id = $variables['video_id'];
 
   // Get field display settings.
@@ -15,15 +18,23 @@ function theme_youtube_video($variables) {
   $width = array_key_exists('width', $variables) ? $variables['width'] : NULL;
   $height = array_key_exists('height', $variables) ? $variables['height'] : NULL;
   $autoplay = array_key_exists('autoplay', $variables) ? $variables['autoplay'] : FALSE;
+  $mute = array_key_exists('mute', $variables) ? $variables['mute'] : FALSE;
   $loop = array_key_exists('loop', $variables) ? $variables['loop'] : FALSE;
-  $showinfo = array_key_exists('showinfo', $variables) ? $variables['showinfo'] : FALSE;
   $controls = array_key_exists('controls', $variables) ? $variables['controls'] : FALSE;
   $autohide = array_key_exists('autohide', $variables) ? $variables['autohide'] : FALSE;
   $iv_load_policy = array_key_exists('iv_load_policy', $variables) ? $variables['iv_load_policy'] : FALSE;
+  $playsinline = array_key_exists('playsinline', $variables) ? $variables['playsinline'] : FALSE;
+
+  $allow = array();
+  if (array_key_exists('allow_autoplay', $variables)) {
+    $allow[] = 'autoplay';
+  }
+  if (array_key_exists('allow_fullscreen', $variables)) {
+    $allow[] = 'fullscreen';
+  }
 
   // Get YouTube settings.
   $suggest = variable_get('youtube_suggest', TRUE);
-  $privacy = variable_get('youtube_privacy', FALSE);
   $modestbranding = variable_get('youtube_modestbranding', FALSE);
   $theme = variable_get('youtube_theme', FALSE);
   $color = variable_get('youtube_color', FALSE);
@@ -33,7 +44,7 @@ function theme_youtube_video($variables) {
   $privacy = variable_get('youtube_privacy', FALSE);
   $dimensions = youtube_get_dimensions($size, $width, $height);
 
-  // Query string changes based on setings.
+  // Query string changes based on settings.
   $query = array();
   if (!$suggest) {
     $query['rel'] = '0';
@@ -48,7 +59,6 @@ function theme_youtube_video($variables) {
     $query['color'] = 'white';
   }
   if ($enablejsapi) {
-    global $base_root;
     $query['enablejsapi'] = '1';
     $query['origin'] = $base_root;
   }
@@ -58,12 +68,12 @@ function theme_youtube_video($variables) {
   if ($autoplay) {
     $query['autoplay'] = '1';
   }
+  if ($mute) {
+    $query['mute'] = '1';
+  }
   if ($loop) {
     $query['loop'] = '1';
     $query['playlist'] = $video_id;
-  }
-  if ($showinfo) {
-    $query['showinfo'] = '0';
   }
   if ($controls) {
     $query['controls'] = '0';
@@ -74,6 +84,23 @@ function theme_youtube_video($variables) {
   if ($iv_load_policy) {
     $query['iv_load_policy'] = '3';
   }
+  if ($playsinline) {
+    $query['playsinline'] = '1';
+  }
+
+  // If the override setting is enabled, add any additional parameters provided
+  // in the initial field value to the query of the embedded video.
+  if (variable_get('youtube_override')) {
+    if ($url_parts = drupal_parse_url($variables['input'])) {
+      foreach ($url_parts['query'] as $key => $value) {
+        if ($key == 'v') {
+          continue;
+        }
+
+        $query[$key] = $value;
+      }
+    }
+  }
 
   // Domain changes based on settings.
   $domain = ($privacy) ? 'youtube-nocookie.com' : 'youtube.com';
@@ -83,7 +110,7 @@ function theme_youtube_video($variables) {
 
   $player_title = t('Embedded video');
   if (!empty($variables['entity_title'])) {
-    $player_title .= t(' for @entity_title', array(
+    $player_title .= ' ' . t('for @entity_title', array(
       '@entity_title' => $variables['entity_title'],
     ));
   }
@@ -91,10 +118,19 @@ function theme_youtube_video($variables) {
   // Alternative content for browsers that don't understand iframes (WCAG).
   $alternative_content = l($player_title, $src);
 
-  $output = '<iframe id="' . drupal_html_id($player_class) . '" class="' . $player_class . '"
-    width="' . $dimensions['width'] . '" height="' . $dimensions['height'] . '"
-    src="' . $src . '" title="' . $player_title . '" frameborder="0"
-    allowfullscreen>' . $alternative_content . '</iframe>';
+  $attributes = array(
+    'id' => drupal_html_id($player_class),
+    'class' => $player_class,
+    'width' => $dimensions['width'],
+    'height' => $dimensions['height'],
+    'src' => $src,
+    'title' => $player_title,
+    'frameborder' => "0",
+    'allowfullscreen' => "",
+    "allow" => implode('; ', $allow),
+  );
+
+  $output = '<iframe ' . drupal_attributes($attributes) . '>' . $alternative_content . '</iframe>';
 
   if ($size == 'responsive') {
     $output = '<div class="youtube-container--responsive">' . $output . '</div>';
@@ -102,7 +138,6 @@ function theme_youtube_video($variables) {
 
   return $output;
 }
-
 
 /**
  * Theme function for thumbnails.
@@ -124,7 +159,7 @@ function theme_youtube_thumbnail($variables) {
 
   $alt = t('Embedded thumbnail');
   if (!empty($variables['entity_title'])) {
-    $alt .= t(' for @entity_title', array(
+    $alt .= ' ' . t('for @entity_title', array(
       '@entity_title' => $variables['entity_title'],
     ));
   }
@@ -139,11 +174,11 @@ function theme_youtube_thumbnail($variables) {
   else {
     $image = theme('image', array(
       'path' => $uri,
-      'alt' => $alt
+      'alt' => $alt,
     ));
   }
 
-  // Check if an url path is provided
+  // Check if a URL path is provided.
   if ($variables['image_link'] != NULL) {
     $url_path = $variables['image_link']['path'];
     $options = $variables['image_link']['options'];
