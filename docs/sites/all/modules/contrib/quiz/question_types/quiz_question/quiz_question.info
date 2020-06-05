@@ -6,8 +6,8 @@ dependencies[] = quiz
 files[] = quiz_question.core.inc
 files[] = QuizQuestionTestCase.test
 
-; Information added by Drupal.org packaging script on 2019-09-20
-version = "7.x-5.6"
+; Information added by Drupal.org packaging script on 2020-03-10
+version = "7.x-5.7"
 core = "7.x"
 project = "quiz"
-datestamp = "1569004396"
+datestamp = "1583861062"

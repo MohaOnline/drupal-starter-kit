@@ -2104,7 +2104,7 @@ function quiz_update_total_score($quiz, $result_id) {
 function quiz_update_max_score_properties(array $quizzes) {
   foreach ($quizzes as $vid) {
     $max_score = 0;
-    $questions = entity_load('quiz_question_relationship');
+    $questions = entity_load('quiz_question_relationship', FALSE, array('parent_vid' => $vid));
     $quiz_entities = entity_load('quiz', FALSE, array('vid' => $vid));
     if ($quiz = reset($quiz_entities)) {
       if ($quiz->randomization == 3) {

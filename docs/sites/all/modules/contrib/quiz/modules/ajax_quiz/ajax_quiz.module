@@ -48,7 +48,7 @@ function ajax_quiz_form_alter(&$form, &$form_state, $form_id) {
     // Add ajax to each submit button.
     $nav_children = element_children($form['navigation']);
     foreach ($nav_children as $nav_child) {
-      if ($form['navigation'][$nav_child]['#type'] == 'submit') {
+      if (isset($form['navigation'][$nav_child]['#type']) && $form['navigation'][$nav_child]['#type'] == 'submit') {
         $form['navigation'][$nav_child]['#ajax'] = $ajax;
       }
     }
