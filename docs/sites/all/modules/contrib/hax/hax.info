@@ -5,8 +5,8 @@ package = Webcomponents
 dependencies[] = webcomponents
 configure = admin/config/content/hax
 
-; Information added by Drupal.org packaging script on 2019-08-02
-version = "7.x-3.1"
+; Information added by Drupal.org packaging script on 2020-04-28
+version = "7.x-3.10"
 core = "7.x"
 project = "hax"
-datestamp = "1564768119"
+datestamp = "1588100118"
