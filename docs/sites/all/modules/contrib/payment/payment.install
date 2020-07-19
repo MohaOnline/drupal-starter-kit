@@ -152,7 +152,7 @@ function payment_schema() {
         ),
       ),
       'uid' => array(
-        'table' => 'user',
+        'table' => 'users',
         'columns' => array(
           'uid' => 'uid',
         ),
@@ -247,10 +247,16 @@ function payment_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'controller_data' => array(
+        'description' => 'Serialized controller data',
+        'type' => 'text',
+        'serialize' => TRUE,
+        'not null' => TRUE,
+      ),
     ),
     'foreign keys' => array(
       'uid' => array(
-        'table' => 'user',
+        'table' => 'users',
         'columns' => array(
           'uid' => 'uid',
         ),
@@ -448,6 +454,29 @@ function payment_update_7106(array &$sandbox) {
     'type' => 'float',
     'size' => 'big',
     'default' => 1.0,
+    'not null' => TRUE,
+  ));
+}
+
+/**
+ * Make payment_method.controller_data persistent.
+ */
+function payment_update_7107() {
+  if (db_field_exists('payment_method', 'controller_data')) {
+    return;
+  }
+  db_add_field('payment_method', 'controller_data', array(
+    'description' => 'Serialized controller data',
+    'type' => 'text',
+    'serialize' => TRUE,
+  ));
+  db_update('payment_method')->fields(array(
+    'controller_data' => serialize(array()),
+  ))->isNull('controller_data')->execute();
+  db_change_field('payment_method', 'controller_data', 'controller_data', array(
+    'description' => 'Serialized controller data',
+    'type' => 'text',
+    'serialize' => TRUE,
     'not null' => TRUE,
   ));
 }

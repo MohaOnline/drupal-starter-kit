@@ -3,6 +3,7 @@ description = "Allows payments to be made using any of the available payment met
 core = 7.x
 configure = admin/config/services/payment
 dependencies[] = entity
+test_dependencies[] = views:views
 package = Payment
 files[] = payment.classes.inc
 files[] = payment.generate.inc
@@ -18,9 +19,9 @@ files[] = views/PaymentViewsHandlerFilterPaymentMethodControllerTitle.inc
 files[] = views/PaymentViewsHandlerFilterPaymentMethodTitle.inc
 files[] = views/PaymentViewsHandlerFilterPaymentStatusItemStatus.inc
 files[] = tests/PaymentWebTestCase.test
-; Information added by Drupal.org packaging script on 2018-02-14
-version = "7.x-1.17"
+
+; Information added by Drupal.org packaging script on 2020-03-04
+version = "7.x-1.20"
 core = "7.x"
 project = "payment"
-datestamp = "1518596889"
-
+datestamp = "1583303661"

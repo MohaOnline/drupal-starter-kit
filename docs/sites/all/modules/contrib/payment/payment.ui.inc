@@ -723,8 +723,6 @@ function payment_form_process_amount_validate(array $element, array &$form_state
  * Implements form process callback for a payment_line_item element.
  */
 function payment_form_process_line_item(array $element, array &$form_state, array $form) {
-  $form_state[drupal_clean_css_identifier('payment_' . $element['#name'])] = $element['#parents'];
-
   // Fetch all line items to display elements for.
   $line_items = array();
   if (isset($element['#default_value'])) {
@@ -886,7 +884,8 @@ function payment_form_process_line_item_submit(array $form, array &$form_state) 
  * Implements form AJAX callback for payment_line_item elements.
  */
 function payment_form_process_line_item_submit_ajax_callback(array $form, array &$form_state) {
-  $element = drupal_array_get_nested_value($form, $form_state[$form_state['triggering_element']['#name']]);
+  $items_parents = array_slice($form_state['triggering_element']['#array_parents'], 0, -1);
+  $element = drupal_array_get_nested_value($form, $items_parents);
   $container_key = 'container_' . ($form_state['payment_line_item_count'] - 1);
 
   return array(

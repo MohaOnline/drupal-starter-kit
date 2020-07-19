@@ -257,16 +257,13 @@ class Payment extends PaymentCommon {
   function setStatus(PaymentStatusItem $status_item) {
     $previous_status_item = $this->getStatus();
     $status_item->pid = $this->pid;
-    // Prevent duplicate status items.
-    if ($this->getStatus()->status != $status_item->status) {
-      $this->statuses[] = $status_item;
-    }
+    $this->statuses[] = $status_item;
     foreach (module_implements('payment_status_change') as $module_name) {
       call_user_func($module_name . '_payment_status_change', $this, $previous_status_item);
       // If a hook invocation has added another log item, a new loop with
       // invocations has already been executed and we don't need to continue
       // with this one.
-      if ($this->getStatus()->status != $status_item->status) {
+      if ($this->getStatus() !== $status_item) {
         return $this;
       }
     }
@@ -406,21 +403,26 @@ class PaymentEntityController extends EntityAPIController {
   function saveAttachedData($payment) {
     // Save line items.
     foreach ($payment->line_items as $line_item) {
+      $schema = drupal_get_schema('payment_line_item');
+      $fields = $schema['fields'];
+      $data = array();
+      foreach ($fields as $column => $spec) {
+        if (property_exists($line_item, $column)) {
+          $data[$column] = $line_item->$column;
+          if (!empty($spec['serialize'])) {
+            $data[$column] = serialize($data[$column]);
+          }
+        }
+      }
+      unset($data['pid']);
+      unset($data['name']);
+      $data['amount_total'] = $line_item->amount * $line_item->quantity * ($line_item->tax_rate + 1);
       db_merge('payment_line_item')
         ->key(array(
           'name' => $line_item->name,
           'pid' => $payment->pid,
         ))
-        ->fields(array(
-          'amount' => $line_item->amount,
-          'amount_total' => $line_item->amount * $line_item->quantity * ($line_item->tax_rate + 1),
-          'description' => $line_item->description,
-          'description_arguments' => serialize($line_item->description_arguments),
-          'name' => $line_item->name,
-          'pid' => $payment->pid,
-          'quantity' => $line_item->quantity,
-          'tax_rate' => $line_item->tax_rate,
-        ))
+        ->fields($data)
         ->execute();
     }
 
