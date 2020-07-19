@@ -7,6 +7,9 @@
 /**
 * Implements hook_menu().
 */
+
+include 'miniorange_saml_registration.php';
+
 function miniorange_saml_idp_menu() {
     $items['admin/config/people/miniorange_saml_idp'] = array(
         'title' => 'Drupal SAML IDP Configuration',
@@ -27,7 +30,7 @@ function miniorange_saml_idp_menu() {
     );
 
     $items['admin/config/people/miniorange_saml_idp/idp_setup'] = array(
-        'title' => 'Service Provider',
+        'title' => 'Service Provider Setup',
         'weight' => -6,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('miniorange_saml_idp_setup'),
@@ -45,7 +48,7 @@ function miniorange_saml_idp_menu() {
     );
 
     $items['admin/config/people/miniorange_saml_idp/attr_mapping'] = array(
-        'title' => 'Attribute/Role Mapping',
+        'title' => 'Mapping',
         'weight' => -5,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
@@ -63,7 +66,7 @@ function miniorange_saml_idp_menu() {
     );
 
     $items['admin/config/people/miniorange_saml_idp/custom_certificate'] = array(
-        'title' => 'Custom Certificate',
+        'title' => 'Certificate',
         'weight' => -3,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
@@ -104,8 +107,38 @@ function miniorange_saml_idp_menu() {
         'type' => MENU_CALLBACK
     );
 
+    $items['register_user'] = array(
+        'access callback' => TRUE,
+        'page callback' => 'register_user',
+        'type' => MENU_CALLBACK,
+    );
+
+    $items['close_registration'] = array(
+        'access callback' => TRUE,
+        'page callback' => 'close_registration',
+        'type' => MENU_CALLBACK,
+    );
+
     return $items;
 
+}
+
+function register_user(){
+    $payment_plan = isset($_GET['payment_plan']) ? $_GET['payment_plan'] : '';
+    //echo 'here';var_dump($payment_plan);exit;
+    miniorange_saml_registration($payment_plan);
+}
+
+function close_registration(){
+    global $base_url;
+    $requestUrl = $base_url . '/admin/config/people/miniorange_saml_idp/licensing';
+    if (Utilities::isCustomerRegistered()) {
+        variable_set('miniorange_saml_idp_status', 'MOIDP_CUSTOMER_SETUP');
+        variable_del('miniorange_saml_idp_customer_admin_email');
+        variable_del('miniorange_saml_idp_customer_admin_phone');
+        variable_del('miniorange_saml_idp_tx_id');
+    }
+    drupal_goto($requestUrl);
 }
 
 /**
@@ -306,7 +339,7 @@ function mo_idp_send_reponse($acs_url,$audience,$relayState, $inResponseTo=null)
 		$relayState = $state;
 	}
 
-	miniorange_saml_idp_load_xmlseclib();
+	//miniorange_saml_idp_load_xmlseclib();
 
 	$saml_response_obj = new GenerateResponse($email,$username, $acs_url, $issuer, $audience,$inResponseTo, $name_id_attr,$name_id_attr_format,$idp_assertion_signed);
 	$saml_response = $saml_response_obj->createSamlResponse();
@@ -333,42 +366,42 @@ function _send_response($saml_response, $ssoUrl,$acs_url){
 /**
 * Implements hook_libraries_info().
 */
-function miniorange_saml_idp_libraries_info() {
-    $libraries['xmlseclibs'] = array(
-        'name' => 'XML Encryption and Signatures',
-        'vendor url' => 'https://code.google.com/p/xmlseclibs/',
-        'download url' => 'https://xmlseclibs.googlecode.com/files/xmlseclibs-1.3.1.tar.gz',
-        'version arguments' => array(
-            'file'    => 'xmlseclibs.php',
-            'pattern' => '/@version\s*(.*)$/',
-            'lines'   => 100,
-        ),
-        'files' => array(
-            'php' => array(
-                'xmlseclibs.php',
-            ),
-        ),
-    );
-    return $libraries;
-}
+// function miniorange_saml_idp_libraries_info() {
+//     $libraries['xmlseclibs'] = array(
+//         'name' => 'XML Encryption and Signatures',
+//         'vendor url' => 'https://code.google.com/p/xmlseclibs/',
+//         'download url' => 'https://xmlseclibs.googlecode.com/files/xmlseclibs-1.3.1.tar.gz',
+//         'version arguments' => array(
+//             'file'    => 'xmlseclibs.php',
+//             'pattern' => '/@version\s*(.*)$/',
+//             'lines'   => 100,
+//         ),
+//         'files' => array(
+//             'php' => array(
+//                 'xmlseclibs.php',
+//             ),
+//         ),
+//     );
+//     return $libraries;
+// }
 
-function miniorange_saml_idp_load_xmlseclib(){
-	// Try main library path.
-    if (libraries_get_path('xmlseclibs')) {
-        $xmlseclibs_file = libraries_get_path('xmlseclibs') . '/xmlseclibs.php';
-    }
-    else {
-        // Trying alternate library path.
-        $xmlseclibs_file = libraries_get_path('xmlseclibs-master') . '/xmlseclibs.php';
-    }
+// function miniorange_saml_idp_load_xmlseclib(){
+// 	// Try main library path.
+//     if (libraries_get_path('xmlseclibs')) {
+//         $xmlseclibs_file = libraries_get_path('xmlseclibs') . '/xmlseclibs.php';
+//     }
+//     else {
+//         // Trying alternate library path.
+//         $xmlseclibs_file = libraries_get_path('xmlseclibs-master') . '/xmlseclibs.php';
+//     }
 
-    libraries_load('xmlseclibs');
-    if (!class_exists('XMLSecurityKey') && !@include($xmlseclibs_file)) {
-        echo "<div>
-                <p><font class='alert' background-color='crimson' color='red'>Error: xmlseclibs not loaded properly</font></p>
-	            <p>You can download xmlseclibs from <a href='https://github.com/robrichards/xmlseclibs/tree/1.4' target='_blank'>here</a>.
-	            <br>Extract the archive and place it under <b>sites/all/libraries/</b> in your Drupal directory.</p>
-	        <div>";
-        exit();
-    }
-}
+//     libraries_load('xmlseclibs');
+//     if (!class_exists('XMLSecurityKey') && !@include($xmlseclibs_file)) {
+//         echo "<div>
+//                 <p><font class='alert' background-color='crimson' color='red'>Error: xmlseclibs not loaded properly</font></p>
+// 	            <p>You can download xmlseclibs from <a href='https://github.com/robrichards/xmlseclibs/tree/1.4' target='_blank'>here</a>.
+// 	            <br>Extract the archive and place it under <b>sites/all/libraries/</b> in your Drupal directory.</p>
+// 	        <div>";
+//         exit();
+//     }
+// }

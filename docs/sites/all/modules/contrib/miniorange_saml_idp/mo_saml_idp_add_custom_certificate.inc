@@ -14,7 +14,7 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
         '#markup' =>'<div border="1" id="generate_certificate_form" style="background-color:#FFFFFF; border:0px solid #CCCCCC; padding:1px 1px 1px 10px; display:none;" >
                     <table style="width:100%;">
                         <h4>GENERATE CUSTOM CERTIFICATE<span style="float:right;margin-right:25px;">
-            				<input type="button" class="btn btn-sm btn-danger" value="Back" onclick = "hide_gen_cert_form()"/></a><br>
+            				<input type="button" class="mo_saml_btn mo_saml_btn-sm mo_saml_btn-danger" value="Back" onclick = "hide_gen_cert_form()"/></a><br>
            				    </span><br><br><b><hr></b><br></h4>',
     );
 
@@ -68,7 +68,10 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
     $form['mo_saml_select_digest_algo'] = array(
         '#type' => 'select',
         '#options' => array(
-            'sha512' => t('SHA512'),
+             'sha512' => t('SHA512'),
+             'sha384' => t('SHA384'),
+             'sha256' => t('SHA256'),
+             'sha1' => t('SHA1'),
         ),
         '#attributes' => array('style' => 'width:80%'),
         '#disabled' => FALSE,
@@ -81,6 +84,7 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
         '#type' => 'select',
         '#options' => array(
             '2048' => t('2048 bits'),
+            '1024' => t('1024 bits'),
         ),
         '#attributes' => array('style' => 'width:80%'),
         '#disabled' => FALSE,
@@ -93,6 +97,12 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
         '#type' => 'select',
         '#options' => array(
             '365' => t('365 days'),
+            '180' => t('180 days'),
+            '90' => t('90 days'),
+            '45' => t('45 days'),
+            '30' => t('30 days'),
+            '15' => t('15 days'),
+            '7' => t('7 days'),
         ),
         '#attributes' => array('style' => 'width:80%'),
         '#disabled' => FALSE,
@@ -111,7 +121,7 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
         '#prefix' => '<td>',
         '#suffix' => '</td>',
         '#submit' => array('miniorange_saml_generate_custom_certificate'),
-        '#attributes' => array('style' => 'display:block;margin-left:auto;margin-right:auto;border-radius:4px;background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;'),
+        //'#attributes' => array('style' => 'display:block;margin-left:auto;margin-right:auto;border-radius:4px;background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;'),
         '#disabled' => TRUE,
     );
 
@@ -120,7 +130,7 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
     );
 
     $form['markup_1'] = array(
-        '#markup' => '<h3>ADD CUSTOM CERTIFICATE </h3><a class="btn btn-primary btn-large" id="mosaml_upload" style="background-color:#12b233;box-shadow: 0 1px 0 #12b233;text-decoration: none;border-color: #00ba26;
+        '#markup' => '<h3>ADD CUSTOM CERTIFICATE </h3><a class="mo_saml_btn mo_saml_btn-primary mo_saml_btn-large" id="mosaml_upload" style="background-color:#12b233;box-shadow: 0 1px 0 #12b233;text-decoration: none;border-color: #00ba26;
             text-shadow: 0 -1px 1px #12b233, 1px 0 1px #12b233, 0 1px 1px #12b233, -1px 0 1px #12b233;padding:5px 10px;float: right;margin-top: -37px;" onclick="show_gen_cert_form()">'
             . 'Generate</a><hr><br/>',
     );
@@ -174,7 +184,7 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
         '#suffix' => '</td></div></div>',
     );
 
-    Utilities::spConfigGuide($form, $form_state);
+    Utilities::spConfigGuide($form, $form_state,'AD');
 
     Utilities::AddSupportButton($form, $form_state);
 

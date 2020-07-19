@@ -32,13 +32,14 @@ function miniorange_saml_idp_uninstall() {
   variable_del('mo_saml_tourTaken_idp_setup');
   variable_del('mo_saml_tourTaken_attr_mapping');
   variable_del('mo_saml_tourTaken_customer_setup');
-  unset($_SESSION['mo_other']);
+  variable_set('mo_feedback_given', 1);
 }
 /**
  * Implements hook_install().
  */
 function miniorange_saml_idp_install() {
   user_save(user_load(1), array('data' => array('overlay' => 0)));
+  variable_set('mo_feedback_given', 0);
 }
 
 
@@ -47,10 +48,9 @@ function miniorange_saml_idp_install() {
  */
 
 function miniorange_saml_idp_disable() {
-
-    if(!isset($_SESSION['mo_other']))
-        $_SESSION['mo_other'] = "False";
+    if(variable_get('mo_feedback_given',0) == 0){
         miniorange_idp_feedback();
-
+        variable_set('mo_feedback_given', 1);
+    }
 }
  

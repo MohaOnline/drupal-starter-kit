@@ -12,9 +12,12 @@ class MetadataReader
 
     public function __construct(\DOMNode $xml = NULL) {
         $this->serviceProviders = array();
+
         $entityDescriptors = Utilities::xpQuery($xml, './saml_metadata:EntityDescriptor');
+
         foreach ($entityDescriptors as $entityDescriptor) {
             $SPSSODescriptor = Utilities::xpQuery($entityDescriptor, './saml_metadata:SPSSODescriptor');
+
             if(isset($SPSSODescriptor) && !empty($SPSSODescriptor)){
                 array_push($this->serviceProviders, new ServiceProviders($entityDescriptor));
             }

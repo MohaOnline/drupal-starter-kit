@@ -33,10 +33,10 @@ function tryHere(moTour)
 
     $mo =jQuery;
     addIDs();
-    $mo("#restart_tour_button").insertAfter($mo(".otp-header").find(".mo-otp-help-button"));
+    $mo("#mo_saml_restart_tour_button").insertAfter($mo(".otp-header").find(".mo-otp-help-button"));
     if(!moTour.tourTaken)
         startTour(pointerNumber);
-    $mo("#restart_tour_button").click( function() {
+    $mo("#mo_saml_restart_tour_button").click( function() {
         resetTour();
         startTour(pointerNumber);
     });

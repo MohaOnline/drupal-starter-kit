@@ -29,21 +29,22 @@ class Utilities {
 
         $form['miniorange_faq'] = array(
             '#markup' => '<div ><b></b>
-                          <a class="btn btn-primary-faq btn-large mo_faq_button_left" href="https://faq.miniorange.com/kb/drupal/" target="_blank">FAQs</a>
-                          <b></b><a class="btn btn-primary-faq btn-large mo_faq_button_right"  href="https://forum.miniorange.com/" target="_blank">Ask questions on forum</a></div>',
+                          <a style="margin-left: 25%" class="mo_saml_btn mo_saml_btn-primary-faq mo_saml_btn-large mo_faq_button_left" href="https://faq.miniorange.com/kb/drupal/saml-drupal/" target="_blank">FAQs</a>
+                          <b></b><a class="mo_saml_btn mo_saml_btn-primary-faq mo_saml_btn-large mo_faq_button_right"  href="https://forum.miniorange.com/" target="_blank">Ask questions on forum</a></div>',
         );
     }
- 
-    public static function spConfigGuide(&$form, &$form_state){
 
-        $form['miniorange_idp_guide_link1'] = array(
+    public static function spConfigGuide(&$form, &$form_state,$ad_or_guide){
+
+        if($ad_or_guide=='GUIDE') {
+          $form['miniorange_idp_guide_link1'] = array(
             '#markup' => '<div class="mo_saml_table_layout mo_saml_container_2">
-                        <div style="font-size: 15px; text-align: justify">To see detailed documentation of how to configure 
+                        <div style="font-size: 15px; text-align: justify">To see detailed documentation of how to configure
                         Drupal SAML IdP with any Service Provider</div></br>',
-        );
+          );
 
-        $form['miniorange_saml_guide_table_list'] = array(
-            '#markup' => '<div class="table-responsive mo_guide_text-center" style="font-family: sans-serif;font-size: 15px;">          
+          $form['miniorange_saml_guide_table_list'] = array(
+            '#markup' => '<div class="table-responsive mo_guide_text-center" style="font-family: sans-serif;font-size: 15px;">
                 <table class="mo_guide_table mo_guide_table-striped mo_guide_table-bordered" style="border: 1px solid #ddd;max-width: 100%;border-collapse: collapse;">
                     <thead>
                         <tr><th class="mo_guide_text-center" style="font-weight:bold;">Service Providers</th><th class="mo_guide_text-center" style="font-weight:bold;">Links</th></tr>
@@ -51,19 +52,190 @@ class Utilities {
                     <tbody style="color:gray;">
                         <tr><td>Tableau</td><td><strong><a href="https://plugins.miniorange.com/configure-tableau-as-sp-in-drupal-7-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Zendesk	</td><td><strong><a href="https://plugins.miniorange.com/zendesk-sso-single-sign-on-for-drupal-7-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Workplace by Facebook</td><td><strong><a href="https://plugins.miniorange.com/guide-drupal-idp-workplace-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Canvas LMS</td><td><strong><a href="https://plugins.miniorange.com/guide-to-configure-canvas-lms-as-sp-and-drupal-as-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Owncloud</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-owncloud-sp-and-drupal-as-idp" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Inkling</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-inkling-sso-as-sp-for-drupal-7-idp" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Workplace by Facebook</td><td><strong><a href="https://plugins.miniorange.com/guide-drupal-idp-workplace-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Other</td><td><strong><a href="https://www.miniorange.com/contact" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>AppStream2</td><td><strong><a href="https://plugins.miniorange.com/guide-to-setup-drupal-as-idp-and-aws-appstream2-as-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>For any other SP</td><td><strong><a href="https://www.miniorange.com/contact" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                     </tbody>
+
                 </table></div>',
-        );
+          );
 
-        self::faq($form, $form_state);
-
-        $form['miniorange_end_of_guide'] = array(
+          self::faq($form, $form_state);
+          $form['miniorange_end_of_guide0'] = array(
             '#markup' => '</div>',
+          );
+        }
+        else{
+          if(rand(1,2)==1){
+            self::advertiseNetworkSecurity($form, $form_state);
+          }
+          else{
+            self::advertise2FA($form, $form_state);
+          }
+
+
+          $form['miniorange_end_of_guide'] = array(
+            '#markup' => '</div>',
+          );
+        }
+
+    }
+
+    public static function advertise2FA(&$form,&$form_state){
+        global $base_url;
+
+
+        $form['miniorange_idp_guide_link2'] = array(
+            '#markup' => '<div class="mo_saml_table_layout mo_saml_container_2">
+                        ',
         );
+
+        $form['miniorangerr_otp_email_address'] = array(
+            '#markup' => '<div><h3 class="mo_otp_h_3"  >Checkout our Drupal <br>Two-Factor Authentication(2FA) module<br></h3></div>
+                        <div class="mo_otp_adv_tfa"><img src="'.$base_url . '/' . drupal_get_path("module", "miniorange_saml_idp") . '/includes/images/miniorange_i.png" alt="miniOrange icon" height="80px" width="80px" class="mo_otp_img_adv"><h3 class="mo_otp_txt_h3">Two-Factor Authentication (2FA)</h3></div>',
+
+        );
+        $form['minioranqege_otp_phone_number'] = array(
+            '#markup' => '<div class="mo_otp_paragraph"><p>Two Factor Authentication (TFA) for your Drupal site is highly secure and easy to setup. Adds a second layer of security to your Drupal accounts. It protects your site from hacks and unauthorized login attempts.</p></div>',
+        );
+
+        $form['miniorange_otp_2fa_button'] = array(
+            '#markup' => '<div style="align:center;margin-left:15px;"> <a href="https://www.drupal.org/project/miniorange_2fa" class="mo_otp_btn1 mo_saml_btn mo_saml_btn-success" target="_blank" id="tfa_btn_download">Download Module</a>
+      <a href="https://plugins.miniorange.com/drupal-two-factor-authentication-2fa" class="mo_otp_btn2 mo_saml_btn mo_saml_btn-primary" target="_blank" id="tfa_btn_know">Know More</a><br><br></div></div>'
+
+        );
+    }
+	public static function AddrfdButton(&$form, &$form_state)
+    {
+        $form['markup_idp_attr_header_top_support_btn'] = array(
+            '#markup' => '<div id="mosaml-feedback-form" class="mo_saml_table_layout_support_btn">',
+        );
+
+        $form['miniorange_saml_idp_support_side_button'] = array(
+            '#type' => 'button',
+            '#value' => t('Request for Demo'),
+            '#attributes' => array('style' => 'font-size: 15px;cursor: pointer;width: 170px;height: 35px;
+                background: rgba(43, 141, 65, 0.93);color: #ffffff;border-radius: 3px;transform: rotate(90deg);text-shadow: none;
+                position: relative;margin-left: -102px;top: 115px;'),
+        );
+
+        $form['markup_idp_attr_header_top_support'] = array(
+            '#markup' => '<div id="Support_Section" class="mo_saml_table_layout_support_1">',
+        );
+
+
+        $form['markup_2'] = array(
+            '#markup' => '<b>Want to test  the Premium module before purchasing?</b> <br>Just send us a request, We will setup a demo site for you on our cloud and provide you with the administrator credentials.
+                So that you can test all the premium features as per your requirement.
+        <br>',
+        );
+
+        $form['customer_email'] = array(
+            '#type' => 'textfield',
+			'#default_value'=>variable_get('miniorange_saml_idp_customer_admin_email',''),
+            '#attributes' => array('style' => 'width:100%','placeholder' => 'Enter your Email'),
+        );
+
+        $form['description_doubt'] = array(
+            '#type' => 'textarea',
+            '#clos' => '10',
+            '#rows' => '5',
+            '#attributes' => array('style' => 'width:100%','placeholder' => 'Write your query here'),
+        );
+        $form['markup_div'] = array(
+            '#markup' => '<div>'
+        );
+
+        $form['miniorange_oauth_support_submit_click'] = array(
+            '#type' => 'submit',
+            '#value' => t('Submit Query'),
+            '#submit' => array('send_rfd_query'),
+            '#limit_validation_errors' => array(),
+            '#attributes' => array('style' => 'background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;display:block;float:left'),
+        );
+
+        $form['markup_div_end'] = array(
+            '#markup' => '</div>'
+        );
+
+        $form['miniorange_oauth_support_note'] = array(
+            '#markup' => '<br><br><br><div>If you want custom features in the module, just drop an email to <a href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a></div>'
+        );
+
+        $form['miniorange_oauth_support_div_cust'] = array(
+            '#markup' => '</div></div><div hidden id="mosaml-feedback-overlay">'
+        );
+    }
+	public static function send_demo_query($email, $query, $description)
+    {
+        if(empty($email)||empty($description)){
+            if(empty($email)) {
+                drupal_set_message(t('The <b>Email Address</b> field is required.'), 'error');
+            }
+            if(empty($description)) {
+                drupal_set_message(t('The <b>Description</b> field is required.'), 'error');
+            }
+            return;
+        }
+        if (!valid_email_address($email)) {
+            drupal_set_message(t('The email address <b><u>' . $email . '</u></b> is not valid.'), 'error');
+            return;
+        }
+
+        $phone = variable_get('miniorange_saml_idp_customer_admin_phone');
+        $support = new MiniOrangeSamlIdpSupport($email, $phone, $query,'demo');
+        $support_response = $support->sendSupportQuery();
+        if($support_response) {
+            drupal_set_message(t('Your demo request has been sent successfully. We will get back to you soon.'));
+        }else {
+            drupal_set_message(t('Error sending support query. Please try again.'), 'error');
+        }
+    }
+
+    public static function advertiseNetworkSecurity(&$form,&$form_state){
+        global $base_url;
+        $form['miniorange_idp_guide_link3'] = array(
+            '#markup' => '<div class="mo_saml_table_layout mo_saml_container_2">
+                        ',
+        );
+        $form['mo_idp_net_adv']=array(
+            '#markup'=>'<form name="f1">
+        <table id="idp_support" class="idp-table" style="border: none;">
+        <h4 style="text-align: center;">Looking for a Drupal Web Security module?</h4>
+            <tr>
+                <th class="" style="border: none; padding-bottom: 4%; background-color: white; text-align: center;"><img
+                            src="'.$base_url . '/' . drupal_get_path("module", "miniorange_saml_idp") . '/includes/images/security.jpg"
+                            alt="miniOrange icon" height=150px width=44%>
+		<br>
+                        <img src="'.$base_url . '/' . drupal_get_path("module", "miniorange_saml_idp") . '/includes/images/miniorange_i.png"
+                             alt="miniOrange icon" height=50px width=50px style="float: left; margin-left: 44px; margin-right: -76px;"><h3 style="margin-top: 16px;">&nbsp;&nbsp;&nbsp;Drupal Website Security</h3>
+                </th>
+            </tr>
+
+            <tr style="border-right: hidden;">
+                <td style="text-align: center">
+                    Building a website is a time-consuming process that requires tremendous efforts. For smooth
+                    functioning and protection from any sort of web attack appropriate security is essential and we
+                    ensure to provide the best website security solutions available in the market.
+                    We provide you enterprise-level security, protecting your Drupal site from hackers and malware.
+                </td>
+            </tr>
+            <tr style="border-right: hidden;">
+                <td style="padding-left: 15%"><br>
+                    <a href="https://www.drupal.org/project/security_login_secure" target="_blank"
+                       class="mo_saml_btn mo_saml_btn-primary" style="padding: 4px 10px;">Download Module</a>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a
+                            href="https://plugins.miniorange.com/drupal-web-security-pro" class="mo_saml_btn mo_saml_btn-success"
+                            style="padding: 4px 10px;" target="_blank">Know More</a>
+                </td>
+            </tr>
+        </table>
+    </form>'
+        );
+        return $form;
     }
 
     public static function getLicensingPageURL(){
@@ -109,7 +281,7 @@ class Utilities {
 
         $form['miniorange_saml_phone_number_support'] = array(
             '#type' => 'textfield',
-            '#attributes' => array('style' => 'width:100%','placeholder' => 'Enter your Phone Number'),
+            '#attributes' => array('style' => 'width:100%','pattern' => '[\+][0-9]{1,4}\s?[0-9]{7,12}','placeholder' => 'Enter your Phone Number'),
             '#default_value' => variable_get('miniorange_saml_idp_customer_admin_phone', ''),
         );
 
@@ -128,7 +300,7 @@ class Utilities {
         );
 
         $form['miniorange_saml_support_note'] = array(
-            '#markup' => '<div><br/>If you want custom features in the module, just drop an email to <a href="mailto:info@xecurify.com">info@xecurify.com</a></div>'
+            '#markup' => '<div><br/>If you want custom features in the module, just drop an email to <a href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a></div>'
         );
 
         $form['miniorange_saml_support_div_cust'] = array(
@@ -140,9 +312,9 @@ class Utilities {
      * Get Support form data
      */
     public static function send_support_query(&$form, $form_state) {
-        $email = $form['miniorange_saml_email_address_support']['#value'];
-        $phone = $form['miniorange_saml_phone_number_support']['#value'];
-        $query = $form['miniorange_saml_support_query_support']['#value'];
+        $email = trim($form['miniorange_saml_email_address_support']['#value']);
+        $phone = trim($form['miniorange_saml_phone_number_support']['#value']);
+        $query = trim($form['miniorange_saml_support_query_support']['#value']);
         Utilities::send_query( $email, $phone, $query );
     }
     /*
@@ -178,25 +350,198 @@ class Utilities {
         }
     }
 
+    public static function customer_setup_submit($username, $phone, $password, $called_from_popup=false, $payment_plan=NULL){
+        $customer_config = new MiniorangeSAMLIdpCustomer($username, $phone, $password, NULL);
+        $check_customer_response = json_decode($customer_config->checkCustomer());
+
+        if ($check_customer_response->status == 'CUSTOMER_NOT_FOUND') {
+            // Create customer.
+            // Store email and phone.
+            variable_set('miniorange_saml_idp_customer_admin_email', $username);
+            variable_set('miniorange_saml_idp_customer_admin_phone', $phone);
+            variable_set('miniorange_saml_idp_customer_admin_password', $password);
+
+            $send_otp_response = json_decode($customer_config->sendOtp());
+
+            if ($send_otp_response->status == 'SUCCESS') {
+                // Store txID.
+                variable_set('miniorange_saml_idp_tx_id', $send_otp_response->txId);
+                variable_set('miniorange_saml_idp_status', 'MOIDP_VALIDATE_OTP');
+                if ($called_from_popup == true) {
+                    miniorange_otp(false,false,false);
+                }else{
+                    drupal_set_message(t('Verify email address by entering the passcode sent to @username', array('@username' => $username)));
+                }
+            }else{
+                if ($called_from_popup == true) {
+                    register_data(true);
+                }else{
+                    drupal_set_message(t('An error has been occured. Please try after some time.'),'error');
+                }
+            }
+        }
+        elseif ($check_customer_response->status == 'CURL_ERROR') {
+
+            if ($called_from_popup == true) {
+                register_data(true);
+            }else{
+                drupal_set_message(t('cURL is not enabled. Please enable cURL'), 'error');
+            }
+        }
+        else {
+            // Customer exists. Retrieve keys.
+            $customer_keys_response = json_decode($customer_config->getCustomerKeys());
+            if (json_last_error() == JSON_ERROR_NONE) {
+                variable_set('miniorange_saml_idp_customer_id', $customer_keys_response->id);
+                variable_set('miniorange_saml_idp_customer_admin_token', $customer_keys_response->token);
+                variable_set('miniorange_saml_idp_customer_admin_email', $username);
+                variable_set('miniorange_saml_idp_customer_admin_phone', $phone);
+                variable_set('miniorange_saml_idp_customer_api_key', $customer_keys_response->apiKey);
+                variable_set('miniorange_saml_idp_status', 'MOIDP_PLUGIN_CONFIGURATION');
+
+                if ($called_from_popup == true) {
+                    $payment_page_url = variable_get('redirect_plan_after_registration_' . $payment_plan,'');
+                    $payment_page_url = str_replace('none', $username, $payment_page_url);
+                    drupal_goto($payment_page_url);
+                }else{
+                    drupal_set_message(t('Successfully retrieved your account.'));
+                    self::redirect_to_licensing();
+                }
+
+            }else if($check_customer_response->status=='TRANSACTION_LIMIT_EXCEEDED') {
+
+                if ($called_from_popup == true) {
+                    register_data(true);
+                }else{
+                    drupal_set_message(t('An error has been occured. Please try after some time.'), 'error');
+                }
+            }
+            else {
+                if ($called_from_popup == true) {
+                    register_data(false, true);
+                }else{
+                    drupal_set_message(t('Invalid credentials'), 'error');
+                }
+            }
+        }
+    }
+
+
+    public static function validate_otp_submit($otp_token, $called_from_popup=false, $payment_plan=NULL){
+        $username = variable_get('miniorange_saml_idp_customer_admin_email', NULL);
+        $phone = variable_get('miniorange_saml_idp_customer_admin_phone', NULL);
+        $tx_id = variable_get('miniorange_saml_idp_tx_id', NULL);
+        $customer_config = new MiniorangeSAMLIdpCustomer($username, $phone, NULL, $otp_token);
+        // Validate OTP.
+        $validate_otp_response = json_decode($customer_config->validateOtp($tx_id));
+        if ($validate_otp_response->status == 'SUCCESS') {
+            // OTP Validated. Show Configuration page.
+            //variable_set('miniorange_saml_idp_status', 'MOIDP_PLUGIN_CONFIGURATION');
+            variable_del('miniorange_saml_idp_tx_id');
+
+            // OTP Validated. Create customer.
+            $password = variable_get('miniorange_saml_idp_customer_admin_password', '');
+            $customer_config = new MiniorangeSAMLIdpCustomer($username, $phone, $password, NULL);
+            $create_customer_response = json_decode($customer_config->createCustomer());
+
+            if ($create_customer_response->status == 'SUCCESS') {
+                // Customer created.
+                $current_status = 'MOIDP_PLUGIN_CONFIGURATION';
+                variable_set('miniorange_saml_idp_status', $current_status);
+                variable_set('miniorange_saml_idp_customer_admin_email', $username);
+                variable_set('miniorange_saml_idp_customer_admin_phone', $phone);
+                variable_set('miniorange_saml_idp_customer_admin_token', $create_customer_response->token);
+                variable_set('miniorange_saml_idp_customer_id', $create_customer_response->id);
+                variable_set('miniorange_saml_idp_customer_api_key', $create_customer_response->apiKey);
+                drupal_set_message(t('Customer account created successfully. Now you can upgrade to the premium version of the module.'));
+
+                if ($called_from_popup == true) {
+                    $payment_page_url = variable_get('redirect_plan_after_registration_' . $payment_plan,'');
+                    $payment_page_url = str_replace('none', $username, $payment_page_url);
+                    miniorange_redirect_successfull($payment_page_url);
+                    /*drupal_goto($payment_page_url);*/
+                }else{
+                    self::redirect_to_licensing();
+                }
+            }
+            else if(trim($create_customer_response->message) == 'Email is not enterprise email.' || trim($create_customer_response->message)=='This is not a valid email. please enter a valid email.' || $create_customer_response->status=='INVALID_EMAIL_QUICK_EMAIL') {
+              drupal_set_message(t('There was an error in creating an account for you.<br> You may have entered an invalid Email-Id
+                            <strong>(We discourage the use of disposable emails) </strong>
+                            <br>Please try again with a valid email.'), 'error');
+              if ($called_from_popup == true) {
+                    self::redirect_to_licensing();
+                }
+            }else {
+
+              drupal_set_message(t('Error while creating a account for you. You may create a account from <a href="https://www.miniorange.com/businessfreetrial" target="_blank">here</a>'), 'error');
+                if ($called_from_popup == true) {
+                    self::redirect_to_licensing();
+                }
+            }
+        } else {
+            if ($called_from_popup == true) {
+                miniorange_otp(true,false,false);
+            }else{
+                drupal_set_message(t('Error validating OTP'), 'error');
+            }
+        }
+    }
+
+    public static function saml_resend_otp($called_from_popup=false){
+        variable_del('miniorange_saml_idp_tx_id');
+        $username = variable_get('miniorange_saml_idp_customer_admin_email', NULL);
+        $phone = variable_get('miniorange_saml_idp_customer_admin_phone', NULL);
+        $customer_config = new MiniorangeSAMLIdpCustomer($username, $phone, NULL, NULL);
+        $send_otp_response = json_decode($customer_config->sendOtp());
+        if ($send_otp_response->status == 'SUCCESS') {
+            // Store txID.
+            variable_set('miniorange_saml_idp_tx_id', $send_otp_response->txId);
+            variable_set('miniorange_saml_idp_status', 'MOIDP_VALIDATE_OTP');
+
+            if ($called_from_popup == true) {
+                miniorange_otp(false,true,false);
+            }else{
+                drupal_set_message(t('Verify email address by entering the passcode sent to @username', array('@username' => $username)));
+            }
+        }else{
+            if ($called_from_popup == true) {
+                miniorange_otp(false,false,true);
+            }else{
+                drupal_set_message(t('An error has been occured. Please try after some time'),'error');
+            }
+        }
+    }
+
+    public static function redirect_to_licensing(){
+        $redirect = self::getLicensePageURL();
+        drupal_goto($redirect);
+    }
+
+    public static function getLicensePageURL(){
+        global $base_url;
+        return $base_url.'/admin/config/people/miniorange_saml_idp/licensing';
+    }
+
    public static function upload_metadata( $file ){
 
-        if(empty(variable_get('miniorange_saml_idp_sp_name'))){
+        if( empty( variable_get('miniorange_saml_idp_sp_name' ) ) ) {
             variable_set('miniorange_saml_idp_sp_name', 'Service Provider');
         }
         require_once drupal_get_path('module', 'miniorange_saml_idp') . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'MetadataReader.php';
         $document = new DOMDocument();
-        $document->loadXML($file);
+        $document->loadXML( $file );
         restore_error_handler();
         $first_child = $document->firstChild;
 
         if( !empty( $first_child ) ) {
             $metadata = new MetadataReader($document);
             $service_providers = $metadata->getServiceProviders();
+
             if( empty( $service_providers ) ) {
                 drupal_set_message(t('<b>Please provide a valid metadata file.</b>'),'error');
                 return;
             }
-            foreach($service_providers as $key => $sp) {
+            foreach( $service_providers as $key => $sp ) {
                 $entityID_issuer = $sp->getEntityID();
                 $acs_url = $sp->getAcsURL();
                 $is_assertion_signed = $sp->getAssertionsSigned() == 'true' ? TRUE : FALSE;
@@ -205,7 +550,7 @@ class Utilities {
                 variable_set('miniorange_saml_idp_acs_url', $acs_url);
                 variable_set('miniorange_saml_idp_assertion_signed', $is_assertion_signed);
             }
-            drupal_set_message(t('Identity Provider Configuration successfully saved.'));
+            drupal_set_message( t('Service Provider Configuration successfully saved.') );
             return;
         }
         else {
@@ -737,4 +1082,3 @@ class Utilities {
 		return $certificate;
 	}
 }
-?>

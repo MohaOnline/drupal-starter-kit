@@ -111,7 +111,7 @@ function getTourData($pageID,$Tour_Taken)
     $tourData = array();
     if($Tour_Taken == FALSE)
         $tab_index = 'miniorange_saml_idp';
-    else 
+    else
         $tab_index = 'idp_tab';
 
     $tourData['miniorange_saml_idp'] = array(
@@ -230,25 +230,36 @@ function getTourData($pageID,$Tour_Taken)
             'action'        =>  '',
         ),
         6 =>    array(
-            'targetE'       =>  'mo_idp_vt_conf_table',
-            'pointToSide'   =>  'left',
-            'titleHTML'     =>  '<h1>Identity Provider metadata URLs</h1>',
-            'contentHTML'   =>  'You can manually configure your Service Provider using the information given here.',
-            'ifNext'        =>  true,
-            'buttonText'    =>  'Next',
-            'img'           =>  array(),
-            'cardSize'      =>  'largemedium',
-            'action'        =>  '',
-        ),
-        7 =>    array(
             'targetE'       =>  'mo_saml_idp_vt_metadata',
             'pointToSide'   =>  'left',
             'titleHTML'     =>  '<h1>Identity Provider metadata URL</h1>',
             'contentHTML'   =>  'Provide this Metadata URL to configure your Service Provider.',
             'ifNext'        =>  true,
-            'buttonText'    =>  'End Tour',
+            'buttonText'    =>  'Next',
             'img'           =>  array(),
             'cardSize'      =>  'medium',
+            'action'        =>  '',
+        ),
+        7 =>    array(
+            'targetE'       =>  'visual_tour_download_metadataXMLFile',
+            'pointToSide'   =>  'left',
+            'titleHTML'     =>  '<h1>Identity Provider metadata File</h1>',
+            'contentHTML'   =>  'Provide this Metadata File to configure your Service Provider.',
+            'ifNext'        =>  true,
+            'buttonText'    =>  'Next',
+            'img'           =>  array(),
+            'cardSize'      =>  'medium',
+            'action'        =>  '',
+        ),
+        8 =>    array(
+            'targetE'       =>  'mo_idp_vt_conf_table',
+            'pointToSide'   =>  'left',
+            'titleHTML'     =>  '<h1>Identity Provider metadata URLs</h1>',
+            'contentHTML'   =>  'You can manually configure your Service Provider using the information given here.',
+            'ifNext'        =>  true,
+            'buttonText'    =>  'End Tour',
+            'img'           =>  array(),
+            'cardSize'      =>  'largemedium',
             'action'        =>  '',
             'ifskip'        =>  'hidden',
         ),
@@ -271,7 +282,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'edit-miniorange-saml-idp-sp-name',
             'pointToSide'   =>  'left',
             'titleHTML'     =>  '<h1>Service Provider name</h1>',
-            'contentHTML'   =>  'Enter your service provider name.(you can enter any name)',
+            'contentHTML'   =>  'Enter your service provider name.',
             'ifNext'        =>  true,
             'buttonText'    =>  'Next',
             'img'           =>  array(),
@@ -293,7 +304,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'edit-miniorange-saml-idp-acs-url',
             'pointToSide'   =>  'left',
             'titleHTML'     =>  '<h1>ACS URL</h1>',
-            'contentHTML'   =>  'You can find the SAML Login URL in Your SP-Metadata XML file enclosed in AssertionConsumerService tag having attribute as Location.',
+            'contentHTML'   =>  'You can find the ACS URL in Your SP-Metadata XML file enclosed in AssertionConsumerService tag having attribute as Location.',
             'ifNext'        =>  true,
             'buttonText'    =>  'Next',
             'img'           =>  array(),
@@ -356,7 +367,7 @@ function getTourData($pageID,$Tour_Taken)
             'targetE'       =>  'mosaml_vt_impexp',
             'pointToSide'   =>  'left',
             'titleHTML'     =>  '<h1>Download Configuration</h1>',
-            'contentHTML'   =>  'If you are having trouble setting up the module, Export the configurations and mail us at info@xecurify.com.',
+            'contentHTML'   =>  'If you are having trouble setting up the module, Export the configurations and mail us at <a href="mailto:drupalsupport@xecurify.com" >drupalsupport@xecurify.com</a>.',
             'ifNext'        =>  true,
             'buttonText'    =>  'End Tour',
             'img'           =>  array(),

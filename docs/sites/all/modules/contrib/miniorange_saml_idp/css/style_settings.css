@@ -108,9 +108,16 @@
 }
 .mo_saml_support_layout{
        width: 93%;
-       background-color:#FFFFFF; 
-       border:1px solid #CCCCCC; 
-       padding-left:20px; 
+       background-color:#FFFFFF;
+       border:1px solid #CCCCCC;
+       padding-left:20px;
+}
+.idp-table {
+  width: 100%;
+}
+
+.idp-table-td {
+  width: 25%;
 }
 .mo_saml_table_layout {
 	border-radius: 1px;
@@ -153,7 +160,7 @@
 }
 
 .mo_saml_container_3{
-	width: 40%;
+	width: 37%;
 	padding: 33px;
 	border-radius: 4px; !important;
 	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
@@ -178,8 +185,9 @@
 	padding: 15px 20px 17px 20px;
 	background-color: white;
 }
+
 .mo_saml_table_layout td {
-	
+
 }
 .mo_saml_table_layout input[type=text] {
 	width: 80%;
@@ -205,47 +213,6 @@
 .mo_saml_heading_margin {
 	margin-left: 0px;
 }
-.error_wid_login {
-    background-color: #FFEBE8;
-    border: 1px dashed #FF0000;
-    color: #FF0000;
-    float: left;
-    font-family: Verdana,Arial,Helvetica,sans-serif;
-    font-weight: 500;
-    padding: 6px;
-	margin-left: 200px;
-    width: 80%;
-	clear:both !important;
-}
-
-.login_wid li{
-	margin:5px;
-}
-
-.login_wid{
-		list-style-type:none;
-		border: 1px dashed #999999;
-		width:98%;
-		float:left;
-		padding:5%;
-
-	}
-.login_wid li{
-	width:48%;
-	float:left;
-	margin:2px;
-}
-.openid_social_login{
-	padding:5px 0px 0px 0px;
-	clear:both;
-	width:100% !important;
-}
-
-.login_wid li input{
-	width:85%;
-	float:left;
-	margin:2px;
-}
 .mo_saml_local_pricing_free_tab{
 	background-color: rgba(34, 153, 221, 0.82)!important;
 }
@@ -258,7 +225,7 @@
 	color: #fff !important;
 	font-weight: 100 !important;
 	margin-left: 6%;
-	
+
 }
 .mo_saml_local_pricing_sub_header{
 	margin: 2px !important;
@@ -276,6 +243,7 @@
 	background-color:#FFFFFF;
 	width:100%;
 }
+
 
 .mo_saml_local_thumbnail{
 	/*width: 250px;*/
@@ -393,170 +361,29 @@
 
 /*licensing page UI*/
 
-.btn-custom {
-	color: #ffffff;
-	font-size: 14px;
-}
-.btn-custom:hover {
-	color: #ffffff;
-	border: 1px solid #ffffff;
-}
-.container_1{
-	width: 100%;
-}
-#pricing-table {
-	padding-top: 30px;
-}
-#pricing-table li{
-	height: 40px;
-	color: black;
-	text-align: center;
-	overflow: hidden;
-}
-.cross_mark_h{
-	font-size: 22px !important;
-}
-.support_styles2{
-	width: 93%;
-	margin-left: 14px;
-}
-
-.class_inline_1{
-	width: 29%;
-	display: inline-block;
-	padding-top: 198px;
-}
-
-.class_inline{
-	width: 23%;
-	display: inline-block;
-	vertical-align: top;
-}
-#pricing-table .pricing {
-	margin: 0;
-	padding: 0;
-	font-family: 'Robot', sans-serif;
-}
-#pricing-table .pricing .pricing-table {
-	padding-bottom: 15px;
-}
-#pricing-table .pricing .pricing-table .pricing-header {
-	position: relative;
-	background: #34495e;
-	padding: 6px 18px;
-	text-align: center;
-	border-top-right-radius: 4px;
-	border-top-left-radius: 4px;
-}
-#pricing-table .pricing .pricing-table .pricing-header .pricing-title {
-	color: #ffffff;
-	text-transform: uppercase;
-	letter-spacing: 2px;
-	font-size: 18px;
-	text-align: center;
-	font-weight: 500;
-}
-#pricing-table .pricing .pricing-table .pricing-header .pricing-rate {
-	font-size: 12px;
-	font-weight: 600;
-	color: #ffffff;
-	position: relative;
-	text-align: center;
-}
-#pricing-table .pricing .pricing-table .pricing-header .pricing-rate sup {
-	font-size: 24px;
-	position: relative;
-	top: -30px;
-	color: #bdc3c7;
-}
-#pricing-table .pricing .pricing-table .pricing-header .pricing-rate span {
-	font-size: 13px;
-	color: #bdc3c7;
-	text-transform: uppercase;
-}
-#pricing-table .pricing .pricing-list {
-	padding: 20px 0 40px 0;
-	background: #c4baba1c;
-	border: 1px solid #e3e3e3;
-}
-#pricing-table .pricing .pricing-list ul {
-	padding: 0px;
-	display: table;
-	margin: 0px auto;
-	width: 100%;
-	text-align: center;
-}
-#pricing-table .pricing .pricing-list ul li {
-	list-style: none;
-	border-bottom: 1px solid #EAECEB;
-	color: black;
-	font-size: 15px;
-	line-height: 42px;
-}
-#pricing-table .pricing .pricing-list ul li:last-child {
-	border: none;
-}
-#pricing-table .pricing .pricing-list ul li i {
-	margin-right: 12px;
-	color: #bdc3c7;
-}
-#pricing-table .pricing .pricing-list ul li span {
-	color: #34495e;
-}
-
-.pricing-rate:last-of-type {
-	margin-top:36px;
-}
-
-.pricing-title>span{
-	font-size: 12px;
-	letter-spacing: 1px;
-}
-p.pricing-title{
-	height: 7px;
-}
-p.pricing-rate{
-	margin-bottom: 25px;
-}
-.filler-class{
-	height: 0px;
-}
-
-.mo_btn_note{
-	font-size: 14px;
-	cursor: default;
-	border-color:#337ab7;
-}
-.pricing-list li:nth-of-type(2n+1) {
-	background-color: rgba(23, 61, 80, 0.06);
-}
-
-#mo_saml_margin{
-	margin-bottom: 22px;
-}
 
 /*******CSS for copy IDP METADATA*******/
 
-.fa.fa-pull-right {
+.mo_saml_fa.mo_saml_fa-pull-right {
 	margin-left: .3em;
 }
-.fa-pull-right {
+.mo_saml_fa-pull-right {
 	float: right;
 }
-.fa-fw {
+.mo_saml_fa-fw {
 	width: 1.28571429em;
 	text-align: center;
 }
-.fa-lg {
+.mo_saml_fa-lg {
 	font-size: 1.33333333em;
 	line-height: .75em;
 	vertical-align: -15%;
-}.fa-lg {
+}.mo_saml_fa-lg {
 	 font-size: 1.33333333em;
 	 line-height: .75em;
 	 vertical-align: -15%;
  }
-.fa {
+.mo_saml_fa {
 	display: inline-block;
 	font: normal normal normal 14px/1 FontAwesome;
 	font-style: normal;
@@ -572,24 +399,24 @@ p.pricing-rate{
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
-.mo_copy {
+.mo_saml_mo_copy {
 	border: 1px solid #CCCCCC;
 	padding: 8px;
 	background-color: #FBFBFB;
 	cursor: pointer;
 }
 
-.mo_copy:active {
+.mo_saml_mo_copy:active {
     background: gray;
 }
 
-.mo_td_values{
+.mo_saml_mo_td_values{
 	font-size: 1.3em;
 	font-weight: 600;
 	font-family: sans-serif;
 }
 
-.selected-text, .selected-text>*{
+.mo_saml_selected-text, .mo_saml_selected-text>*{
 	background: #2196f3;
 	color: #ffffff;
 }
@@ -633,4 +460,257 @@ p.pricing-rate{
 	padding: 5px;
 	border: 1px solid rgba(0, 128, 0, 0.15);
 	border-radius: 4px;
+}
+
+/**/
+
+.mo_otp_h_3 {
+    text-align: center;
+    padding: 0px 28px 6px 3em;
+    color: #34495e;
+}
+
+.mo_otp_adv_tfa {
+    background: #e1e2dc;
+    height: 7em;
+}
+
+.mo_otp_txt_h3 {
+    text-align: center;
+    margin-left: 5em;
+    margin-top: -5em;
+}
+
+.mo_otp_img_adv {
+    margin: 1em 1em 1em 1em;
+}
+
+.mo_otp_paragraph {
+    font-family: sans-serif;
+    font-size: 13px;
+    text-align: -webkit-center;
+}
+
+.mo_otp_btn1 {
+    margin-left: 1em;
+    background: #32b42e !important;
+    cursor: pointer;
+    width: 12em;
+    height: 2em;
+    color: white;
+    border: none !important;
+    line-height: 2em;
+    margin-top: 1em;
+}
+
+.mo_otp_btn2 {
+    margin-top: 1em;
+    margin-left: 1em;
+    width: 10em;
+    height: 2.3em;
+    margin-right: 1em !important;
+    background: #5771be !important;
+    padding-top: 2px;
+    color: white;
+    border: none !important;
+    line-height: 2em;
+
+}
+
+
+
+/*--------------------------------------------*/
+/* Licencing tab */
+
+.mo_saml_space{
+  margin-left: 33px;
+}
+
+.mo_idp_btn-custom {
+  color: #ffffff;
+  font-size: 14px;
+}
+.mo_idp_btn-custom:hover {
+  color: #ffffff;
+  border: 1px solid #ffffff;
+}
+.mo_idp_container_1{
+  width: 100%;
+}
+#mo_idp_pricing-table {
+  padding-top: 30px;
+}
+#mo_idp_pricing-table li{
+  height: 40px;
+  color: black;
+  text-align: center;
+  overflow: hidden;
+}
+.mo_idp_cross_mark_h{
+  font-size: 22px !important;
+}
+.mo_idp_support_styles2{
+  width: 93%;
+  margin-left: 14px;
+}
+
+.mo_idp_class_inline_1{
+  width: 32%;
+  display: inline-block;
+  padding-top: 198px;
+}
+.mo_idp_class_inline{
+  width: 32.5%;
+  display: inline-block;
+  vertical-align: top;
+}
+#mo_idp_pricing-table .mo_idp_pricing {
+  margin-left: 1.5%;
+  font-family: 'Robot', sans-serif;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-table {
+  padding-bottom: 2%;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-table .mo_idp_pricing-header {
+  position: relative;
+  background: #34495e;
+  padding: 3% 5%;
+  text-align: center;
+  border-top-right-radius: 10px;
+  border-top-left-radius: 10px;
+  height: 150px;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-table .mo_idp_pricing-header_2 {
+  position: relative;
+  background: #34495e;
+  padding: 3% 5%;
+  text-align: center;
+  height: 115px;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-table .mo_idp_pricing-header .mo_idp_pricing-title {
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-size: 18px;
+  text-align: center;
+  font-weight: 700;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-table .mo_idp_pricing-header .mo_idp_pricing-rate {
+  font-size: 13px;
+  font-weight: 200;
+  color: #ffffff;
+  position: relative;
+  text-align: center;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-table .mo_idp_pricing-header .mo_idp_pricing-rate sup {
+  font-size: 24px;
+  position: relative;
+  top: -30px;
+  color: #bdc3c7;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-table .mo_idp_pricing-header .mo_idp_pricing-rate span {
+  font-size: 13px;
+  color: #bdc3c7;
+  text-transform: uppercase;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-list {
+  padding: 20px 0 40px 0;
+  background: #c4baba1c;
+  border: 1px solid #e3e3e3;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-list ul {
+  padding: 0px;
+  display: table;
+  margin: 0px auto;
+  width: 100%;
+  text-align: center;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-list ul li {
+  list-style: none;
+  border-bottom: 1px solid #e6e4df !important;
+  color: black;
+  font-size: 1.1em;
+  line-height: 25px;
+  height: fit-content;
+  padding: 2%;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-list ul li:last-child {
+  border: none;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-list ul li i {
+  margin-right: 12px;
+  color: #bdc3c7;
+}
+#mo_idp_pricing-table .mo_idp_pricing .mo_idp_pricing-list ul li span {
+  color: #34495e;
+}
+
+.mo_idp_pricing-rate:last-of-type {
+  margin-top:36px;
+}
+
+.mo_idp_pricing-title>span{
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+p.mo_idp_pricing-title{
+  height: 7px;
+}
+p.mo_idp_pricing-rate{
+  margin-bottom: 25px;
+}
+.mo_idp_filler-class{
+  height: 0px;
+}
+
+.mo_idp_mo_btn_note{
+  font-size: 14px;
+  cursor: default;
+  border-color:#337ab7;
+}
+.mo_idp_pricing-list li:nth-of-type(2n+1) {
+  background-color: rgba(23, 61, 80, 0.06);
+
+}
+
+#mo_saml_margin{
+  margin-bottom: 22px;
+}
+
+#miniOrange_IDP_Pricing td, #miniOrange_IDP_Pricing th {
+  padding: 2%;
+  text-align: center;
+  color: white;
+  background-color: #34495e !important;
+  border: none !important;
+
+}
+
+#miniOrange_IDP_Pricing tr:hover{
+  background-color: #34495e !important;
+}
+
+.miniOrange_pricing_table {
+  margin: 0px;
+  table-layout: fixed;
+  border: none !important;
+}
+
+.miniOrange_pricing_table td {
+  padding-left: 25px;
+  min-width:50px;
+
+}
+#miniOrange_IDP_Pricing{
+  border: none !important;
+}
+#miniOrange_IDP_Pricing tr{
+ border-bottom: 1.5px solid white;
+}
+
+tr td:last-child{
+  border-right: none !important;
+}
+tr:hover{
+  background: white !important;
 }

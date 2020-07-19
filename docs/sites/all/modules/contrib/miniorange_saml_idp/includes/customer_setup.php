@@ -203,14 +203,14 @@ class MiniorangeSAMLIdpCustomer {
     $username = variable_get('miniorange_saml_idp_customer_admin_email', NULL);
 
     /* Current time in milliseconds since midnight, January 1, 1970 UTC. */
-    $current_time_in_millis = self::get_timestamp();
+    $currentTimeInMillis = round(microtime(TRUE) * 1000);
 
     /* Creating the Hash using SHA-512 algorithm */
-    $string_to_hash = $customer_key . $current_time_in_millis . $api_key;
+    $string_to_hash = $customer_key . number_format($currentTimeInMillis, 0, '', '' ) . $api_key;
     $hash_value = hash("sha512", $string_to_hash);
 
     $customer_key_header = "Customer-Key: " . $customer_key;
-    $timestamp_header = "Timestamp: " . $current_time_in_millis;
+    $timestamp_header = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
     $authorization_header = "Authorization: " . $hash_value;
 
     $fields = array(
@@ -263,13 +263,13 @@ class MiniorangeSAMLIdpCustomer {
     $customer_key = $this->defaultCustomerId;
     $api_key = $this->defaultCustomerApiKey;
 
-    $current_time_in_millis = self::get_timestamp();
+    $currentTimeInMillis = round(microtime(TRUE) * 1000);
 
-    $string_to_hash = $customer_key . $current_time_in_millis . $api_key;
+    $string_to_hash = $customer_key . number_format($currentTimeInMillis, 0, '', '' ) . $api_key;
     $hash_value = hash("sha512", $string_to_hash);
 
     $customer_key_header = "Customer-Key: " . $customer_key;
-    $timestamp_header = "Timestamp: " . $current_time_in_millis;
+    $timestamp_header = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
     $authorization_header = "Authorization: " . $hash_value;
 
     $fields = array(
@@ -304,30 +304,4 @@ class MiniorangeSAMLIdpCustomer {
     curl_close($ch);
     return $content;
   }
-  
-  function get_timestamp() {
-    $url = MiniorangeSAMLIdpConstants::BASE_URL . '/moas/rest/mobile/get-timestamp';
-    $ch = curl_init ( $url );
-
-    curl_setopt ( $ch, CURLOPT_FOLLOWLOCATION, true );
-    curl_setopt ( $ch, CURLOPT_ENCODING, "" );
-    curl_setopt ( $ch, CURLOPT_RETURNTRANSFER, true );
-    curl_setopt ( $ch, CURLOPT_AUTOREFERER, true );
-    curl_setopt ( $ch, CURLOPT_SSL_VERIFYPEER, false );
-    curl_setopt ( $ch, CURLOPT_SSL_VERIFYHOST, false ); // required for https urls
-
-    curl_setopt ( $ch, CURLOPT_MAXREDIRS, 10 );
-
-    curl_setopt ( $ch, CURLOPT_POST, true );
-
-    $content = curl_exec ( $ch );
-
-    if (curl_errno ( $ch )) {
-        echo 'Error in sending curl Request';
-        exit ();
-    }
-    curl_close ( $ch );
-    return $content;
-	}
-
 }

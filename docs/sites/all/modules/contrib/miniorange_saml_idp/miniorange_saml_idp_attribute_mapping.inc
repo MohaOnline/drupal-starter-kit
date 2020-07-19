@@ -17,14 +17,14 @@ function miniorange_saml_idp_attribute_mapping($form, &$form_state) {
     $form['markup_idp_attr_header'] = array(
         '#markup' => '<div class="mo_saml_table_layout_1">
                         <div class="mo_saml_table_layout mo_saml_container"><b><span style="font-size: 17px;">ATTRIBUTE MAPPING (OPTIONAL)</span></b>
-                        <a class="btn btn-primary btn-large restart_button" id="restart_tour_button" onclick="show_visual_tour_form()">Take a Tour</a>
+                        <a class="mo_saml_btn mo_saml_btn-primary mo_saml_btn-large mo_saml_restart_button" id="mo_saml_restart_tour_button" onclick="show_visual_tour_form()">Take a Tour</a>
                         <br><br><hr><br/>',
     );
 
     $form['markup_idp_nameid_attr_map_note'] = array(
         '#markup' => '<div style="background-color: #e0e0e0; border-radius: 4px; padding: 0.55em; width: 78%">'
-            . '<span class="miniorange_class_color_red"><b>Note:</b></span> NameID attribute value is sent in SAML Response. 
-            Users in your Service Provider will be searched (existing users) or created (new users) based on this attribute. 
+            . '<span class="miniorange_class_color_red"><b>Note:</b></span> NameID attribute value is sent in SAML Response.
+            Users in your Service Provider will be searched (existing users) or created (new users) based on this attribute.
             Use <b><code><u>EmailAddress</u></code></b> by default.</b></div>',
     );
 
@@ -62,8 +62,8 @@ function miniorange_saml_idp_attribute_mapping($form, &$form_state) {
 
      $form['markup_idp_user_attr_header'] = array(
          '#markup' => '</div><div id="mo_saml_vt_add_attr"><br/><h4>ADDITIONAL USER ATTRIBUTES (OPTIONAL)
-                        <input type="button" class="btn btn-primary" style="width:3%;margin-left:2%;margin-right:2%;" value="+" onclick="add_user_attibute();" /> 
-                        <input type="button" class="btn btn-danger" style="width:3%;" value="-" onclick="remove_user_attibute();" /></b><a href="' . $base_url . '/admin/config/people/miniorange_saml_idp/licensing"> &nbsp;&nbsp;[Premium]</a></h4>',
+                        <input type="button" class="mo_saml_btn mo_saml_btn-primary" style="width:3%;margin-left:2%;margin-right:2%;" value="+" onclick="add_user_attibute();" />
+                        <input type="button" class="mo_saml_btn mo_saml_btn-danger" style="width:3%;" value="-" onclick="remove_user_attibute();" /></b><a href="' . $base_url . '/admin/config/people/miniorange_saml_idp/licensing"> &nbsp;&nbsp;[Premium]</a></h4>',
          '#disabled' => TRUE,
          );
 
@@ -76,11 +76,11 @@ function miniorange_saml_idp_attribute_mapping($form, &$form_state) {
     '#type' => 'submit',
     '#value' => t('Save Configuration'),
     '#submit' => array('miniorange_saml_idp_save_attribute_mapping'),
-    '#attributes' => array('style' => 'border-radius:4px; background: #337ab7; color: #ffffff; text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;display:block;margin-left:auto;  margin-right:auto;'),
+    //'#attributes' => array('style' => 'border-radius:4px; background: #337ab7; color: #ffffff; text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;display:block;margin-left:auto;  margin-right:auto;'),
     '#suffix' => '</div>',
   );
 
-    Utilities::spConfigGuide($form, $form_state);
+    Utilities::spConfigGuide($form, $form_state,'AD');
 
     Utilities::AddSupportButton($form, $form_state);
 

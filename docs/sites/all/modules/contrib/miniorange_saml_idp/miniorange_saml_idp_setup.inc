@@ -19,9 +19,9 @@ include "mo_saml_visualTour.php";
 
      $form['miniorange_saml_IDP_tab'] = array(
          '#markup' => '<div class="mo_saml_table_layout_1"><div class="mo_saml_table_layout mo_saml_container">
-                    <div id="tabhead"><h5> Enter the information gathered from your Service Provider &nbsp; OR &nbsp;<a class="btn btn-primary btn-large" 
+                    <div id="tabhead"><h5> Enter the information gathered from your Service Provider &nbsp; OR &nbsp;<a class="mo_saml_btn mo_saml_btn-primary mo_saml_btn-large"
                   id="mosaml_upload" style="padding:5px 10px;margin-left: 0px;box-shadow: 0 1px 0 #006799;" onclick="show_metadata_form()">Upload SP Metadata</a>
-                 <a class="btn btn-primary btn-large restart_button" id="restart_tour_button" style="margin-right: 0px;" >Take a Tour</a></h5></div><hr>',
+                 <a class="mo_saml_btn mo_saml_btn-primary mo_saml_btn-large mo_saml_restart_button" id="mo_saml_restart_tour_button" style="margin-right: 0px;" >Take a Tour</a></h5></div><hr>',
      );
 
      $form['metadata_1'] = array(
@@ -30,7 +30,7 @@ include "mo_saml_visualTour.php";
              .'		        <tr> <td colspan="3">'
              .'				<h3>UPLOAD SP METADATA'
              .'					<span style="float:right;margin-right:25px;">'
-             .'						<input type="button" class="btn btn-sm btn-danger" value="Cancel" onclick = "hide_metadata_form()"/></a><br>'
+             .'						<input type="button" class="mo_saml_btn mo_saml_btn-sm mo_saml_btn-danger" value="Cancel" onclick = "hide_metadata_form()"/></a><br>'
              .'					</span>',
      );
      $form['metadata_2'] = array(
@@ -46,7 +46,7 @@ include "mo_saml_visualTour.php";
          '#type' => 'submit',
          '#value' => t('Upload'),
          '#submit' => array('miniorange_saml_upload_file'),
-         '#attributes' => array('style' => 'background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;border-radius: 4px;'),
+         //'#attributes' => array('style' => 'background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;border-radius: 4px;'),
      );
 
      $form['metadata_3'] = array(
@@ -67,7 +67,7 @@ include "mo_saml_visualTour.php";
          '#type' => 'submit',
          '#value' => t('Fetch Metadata'),
          '#submit' => array('miniorange_saml_fetch_metadata'),
-         '#attributes' => array('style' => 'background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;border-radius: 4px;'),
+         //'#attributes' => array('style' => 'background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;border-radius: 4px;'),
      );
 
      $form['metadata_4'] = array(
@@ -126,7 +126,7 @@ include "mo_saml_visualTour.php";
      $form['miniorange_saml_idp_acs_url'] = array(
         '#type' => 'textfield',
         '#title' => t('ACS URL<span class="miniorange_class_color_red">*</span>'),
-        '#description' => t('<b>Note:</b> You can find the SAML Login URL in Your SP-Metadata XML file enclosed in <code>AssertionConsumerService </code> tag <br/>having attribute as <code>Location</code>.'),
+        '#description' => t('<b>Note:</b> You can find the ACS URL in Your SP-Metadata XML file enclosed in <code>AssertionConsumerService </code> tag <br/>having attribute as <code>Location</code>.'),
         '#default_value' => variable_get('miniorange_saml_idp_acs_url', ''),
         '#attributes' => array('style' => 'width:85%','placeholder' => 'ACS URL'),
      );
@@ -141,8 +141,8 @@ include "mo_saml_visualTour.php";
 
      $form['miniorange_saml_idp_single_logout_url'] = array(
          '#type' => 'textfield',
-         '#title' => t('Single Logot URL (optional):<a href="' . Utilities::getLicensingPageURL() . '"> [Premium]</a>'),
-         '#attributes' => array('style' => 'width:85%;background-color: hsla(0,0%,0%,0.08) !important;','placeholder' => 'Sinle Logout URL'),
+         '#title' => t('Single Logout URL (optional):<a href="' . Utilities::getLicensingPageURL() . '"> [Premium]</a>'),
+         '#attributes' => array('style' => 'width:85%;background-color: hsla(0,0%,0%,0.08) !important;','placeholder' => 'Single Logout URL'),
          '#disabled' => TRUE,
      );
 
@@ -201,12 +201,12 @@ include "mo_saml_visualTour.php";
         '#type' => 'submit',
         '#value' => t('Save Configuration'),
         '#submit' => array('miniorange_saml_idp_save_idp_config'),
-        '#attributes' => array('style' => 'background: #337ab7;border-radius: 4px;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;'),
+        //'#attributes' => array('style' => 'background: #337ab7;border-radius: 4px;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;'),
      );
 
 
      $form['miniorange_saml_idp_test_config_button'] = array(
-        '#markup' => '<a class="btn btn-success btn-large" style="padding:3px 7px;  margin-right: 14px;" onclick="testIdpConfig(\'' . getTestUrl() . '\');">'
+        '#markup' => '<a class="mo_saml_btn mo_saml_btn-success mo_saml_btn-large" onclick="testIdpConfig(\'' . getTestUrl() . '\');">'
         . 'Test Configuration</a>'
      );
 
@@ -215,12 +215,18 @@ include "mo_saml_visualTour.php";
         '#value' => t('Delete Configuration'),
         '#submit' => array('miniorange_saml_idp_delete_idp_config'),
         '#disabled' => $disable,
-        '#attributes' => array('style' => 'background: #be4e34;border-radius: 4px;color: #ffffff;text-shadow: 0 -1px 1px #be4e34, 1px 0 1px #be4e34, 0 1px 1px #be4e34, -1px 0 1px #be4e34;box-shadow: 0 1px 0 #be4e34;border-color: #be4e34 #be4e34 #be4e34;'),
+        //'#attributes' => array('style' => 'background: #be4e34;border-radius: 4px;color: #ffffff;text-shadow: 0 -1px 1px #be4e34, 1px 0 1px #be4e34, 0 1px 1px #be4e34, -1px 0 1px #be4e34;box-shadow: 0 1px 0 #be4e34;border-color: #be4e34 #be4e34 #be4e34;'),
         '#suffix' => '</div></div>'
      );
 
-     Utilities::spConfigGuide($form, $form_state);
-
+     Utilities::spConfigGuide($form, $form_state,'GUIDE');
+     $form['spConfigGuideEnd']=array(
+        '#markup'=>'</div>',
+     );
+     //Utilities::advertiseNetworkSecurity($form, $form_state);
+    // $form['tfaAdEnd']=array(
+    //     '#markup'=>'</div></div>',
+    //  );
      Utilities::AddSupportButton($form, $form_state);
 
      return $form;
@@ -228,26 +234,37 @@ include "mo_saml_visualTour.php";
 
 function miniorange_saml_upload_file($form, &$form_state) {
     $file_name = $_FILES['files']['tmp_name']['metadata_file'];
+    if( !isset( $file_name ) || empty( $file_name ) || $_FILES['files']['type']['metadata_file'] != 'text/xml' ) {
+        drupal_set_message(t('Invalid file. Please provide valid metadata file.'), 'error');
+        return;
+    }
     $file      = file_get_contents( $file_name );
     Utilities::upload_metadata( $file );
 }
 
 function miniorange_saml_fetch_metadata($form, &$form_state) {
-    $url=filter_var($form['metadata_URL']['#value'],FILTER_SANITIZE_URL);
+    if( !isset( $form['metadata_URL']['#value'] ) || empty( $form['metadata_URL']['#value'] ) ) {
+        drupal_set_message(t('Invalid file. Please provide valid metadata file.'), 'error');
+        return;
+    }
+    $url = filter_var( $form['metadata_URL']['#value'],FILTER_VALIDATE_URL );
     $arrContextOptions=array(
         "ssl"=>array(
             "verify_peer"=>false,
             "verify_peer_name"=>false,
         ),
     );
+
     $file = file_get_contents( $url, false, stream_context_create( $arrContextOptions ) );
+    if( !isset( $file ) || empty( $file ) ) {
+        drupal_set_message(t('Invalid file/URL. Please provide valid file/URL'), 'error');
+        return;
+    }
     Utilities::upload_metadata( $file );
 }
 
  function getTestUrl() {
   global $base_url;
-  //$issuer = variable_get('miniorange_saml_idp_sp_entity_id');
-  //$acs = variable_get('miniorange_saml_idp_acs_url');
   $testUrl = $base_url . '/?q=mo_testIdpConfig';
   return $testUrl;
  }

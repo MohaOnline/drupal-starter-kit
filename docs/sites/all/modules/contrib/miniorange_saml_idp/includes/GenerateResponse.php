@@ -75,7 +75,8 @@
 			//Sign Assertion
 			if($this->mo_idp_assertion_signed){
 				$private_key = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'idp-signing.key';
-				$this->signNode($private_key, $assertion, $this->subject,$response_params);
+				$subject_node_in_assertion = $assertion->getElementsByTagName('saml:Subject')->item(0);
+-               $this->signNode($private_key, $assertion, $subject_node_in_assertion, $response_params);
 			}
 
 			
