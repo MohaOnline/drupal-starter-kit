@@ -10,22 +10,11 @@ module_load_include('test', 'salesforce', 'tests/salesforce');
 /**
  * Sets up basic tools for the testing of mapping Drupal to Salesforce.
  */
-class SalesforceMappingTestCase extends SalesforceTestCase {
+abstract class SalesforceMappingTestCase extends DrupalWebTestCase {
 
   protected $adminPath = 'admin/structure/salesforce/mappings';
   protected $addMapPath = 'admin/structure/salesforce/mappings/add';
   protected $manageMapPrefix = 'admin/structure/salesforce/mappings/manage/';
-
-  /**
-   * Implementation of getInfo().
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Salesforce Mapping',
-      'description' => 'Sets up basic tools for the testing of mapping Drupal to Salesforce.',
-      'group' => 'Salesforce',
-    );
-  }
 
   /**
    * Implementation of setUp().
@@ -33,19 +22,25 @@ class SalesforceMappingTestCase extends SalesforceTestCase {
   public function setUp($modules = array(), $permissions = array()) {
     $modules = array_merge($modules, array(
       'entity',
+      'salesforce',
       'salesforce_mapping',
     ));
+    parent::setUp($modules);
+
     $permissions = array_merge($permissions, array(
+      'administer salesforce',
       'administer salesforce mapping',
       'view salesforce mapping object',
     ));
-    parent::setUp($modules, $permissions);
+    $this->admin_user = $this->drupalCreateUser($permissions);
+    $this->drupalLogin($this->admin_user);
   }
 
   /**
    * Implementation of tearDown().
    */
   public function tearDown() {
+    user_cancel(array(), $this->admin_user->uid, 'user_cancel_delete');
     parent::tearDown();
   }
 

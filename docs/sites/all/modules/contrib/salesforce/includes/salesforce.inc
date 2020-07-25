@@ -22,7 +22,7 @@ class Salesforce {
   public function __construct($consumer_key, $consumer_secret = '') {
     $this->consumer_key = $consumer_key;
     $this->consumer_secret = $consumer_secret;
-    $this->login_url = variable_get('salesforce_endpoint', 'https://login.salesforce.com');
+    $this->login_url = variable_get('salesforce_endpoint', SALESFORCE_DEFAULT_ENDPOINT);
 
     $this->rest_api_version = variable_get('salesforce_api_version', array(
       "label" => "Winter '14",
@@ -145,11 +145,32 @@ class Salesforce {
     }
 
     $data = drupal_json_decode($this->response->data);
-    if (!empty($data[0]) && count($data) == 1) {
-      $data = $data[0];
-    }
+     
+     if (empty($data[0])) {
+       $this->checkResponseDataForApiError($data);
+     }
+     else {
+       foreach ($data as $item) {
+         $this->checkResponseDataForApiError($item);
+       }
+ 
+       if (count($data) == 1) {
+         $data = $data[0];
+       }
+     }
 
-    if (is_array($data) && isset($data['error'])) {
+    return $data;
+  }
+
+  /**
+   * Private helper that throws an exception if a API error is found in the response data.
+   *
+   * @param array $data
+   *   Array of salesforce api response data.
+   * @throws SalesforceException
+   */
+  private function checkResponseDataForApiError($data) {
+    if (isset($data['error'])) {
       throw new SalesforceException($data['error_description'], $data['error']);
     }
 
@@ -157,7 +178,6 @@ class Salesforce {
       throw new SalesforceException($data['message'], $this->response->code);
     }
 
-    return $data;
   }
 
   /**
@@ -265,7 +285,7 @@ class Salesforce {
    * Get the access token.
    */
   public function getAccessToken() {
-    return isset($_SESSION['salesforce_access_token']) ? $_SESSION['salesforce_access_token'] : FALSE;
+    return variable_get('salesforce_access_token', FALSE);
   }
 
   /**
@@ -277,7 +297,7 @@ class Salesforce {
    *   Access token from Salesforce.
    */
   protected function setAccessToken($token) {
-    $_SESSION['salesforce_access_token'] = $token;
+    variable_set('salesforce_access_token', $token);
   }
 
   /**
@@ -302,7 +322,7 @@ class Salesforce {
    *
    * @throws SalesforceException
    */
-  protected function refreshToken() {
+  public function refreshToken() {
     $refresh_token = $this->getRefreshToken();
     if (empty($refresh_token)) {
       throw new SalesforceException(t('There is no refresh token.'));
@@ -329,9 +349,7 @@ class Salesforce {
 
     $data = drupal_json_decode($response->data);
 
-    if (isset($data['error'])) {
-      throw new SalesforceException($data['error_description'], $data['error']);
-    }
+    $this->checkResponseDataForApiError($data);
 
     $this->setAccessToken($data['access_token']);
     $this->setIdentity($data['id']);
@@ -364,9 +382,20 @@ class Salesforce {
    *
    * @return array
    *   Returns FALSE is no identity has been stored.
+   *
+   * @throws SalesforceException
    */
   public function getIdentity() {
-    return variable_get('salesforce_identity', FALSE);
+    $identity = variable_get('salesforce_identity', FALSE);
+    if ($identity) {
+      $id_url_scheme = parse_url($identity['id']);
+      $allowed_endpoint = variable_get('salesforce_endpoint', NULL);
+      $allowed_endpoint_url_scheme = parse_url($allowed_endpoint);
+      if ($id_url_scheme['host'] != $allowed_endpoint_url_scheme['host']) {
+        throw new SalesforceException(t('Salesforce identity does not match salesforce endpoint: you need to re-authenticate.'));
+      }
+    }
+    return $identity;
   }
 
   /**
@@ -438,6 +467,7 @@ class Salesforce {
   protected function redirectUrl() {
     return url('salesforce/oauth_callback', array(
       'absolute' => TRUE,
+      'language' => (object)array('language' => FALSE),
       'https' => TRUE,
     ));
   }
@@ -504,6 +534,24 @@ class Salesforce {
   }
 
   /**
+   * Same as ::query() but also returns deleted or archived records.
+   *
+   * @param SalesforceSelectQuery $query
+   *   The constructed SOQL query.
+   *
+   * @return array
+   *   Array of Salesforce objects that match the query.
+   *
+   * @addtogroup salesforce_apicalls
+   */
+  public function queryAll(SalesforceSelectQuery $query) {
+    drupal_alter('salesforce_query', $query);
+    // Casting $query as a string calls SalesforceSelectQuery::__toString().
+    $result = $this->apiCall('queryAll?q=' . (string) $query);
+    return $result;
+  }
+
+  /**
    * Retreieve all the metadata for an object.
    *
    * @param string $name
@@ -531,15 +579,18 @@ class Salesforce {
       // Sort field properties, because salesforce API always provides them in a
       // random order. We sort them so that stored and exported data are
       // standardized and predictable.
-      foreach($object['fields'] as &$field) {
+      $fields = array();
+      foreach($object['fields'] as $field) {
         ksort($field);
         if (!empty($field['picklistValues'])) {
           foreach($field['picklistValues'] as &$picklist_value) {
             ksort($picklist_value);
           }
         }
+        $fields[$field['name']] = $field;
       }
-
+      ksort($fields);
+      $object['fields'] = $fields;
       // Allow the cache to clear at any time by not setting an expire time.
       cache_set($name, $object, 'cache_salesforce_object', CACHE_TEMPORARY);
       return $object;
@@ -741,6 +792,41 @@ class Salesforce {
     $end = urlencode(gmdate(DATE_ATOM, $end));
   
     return $this->apiCall("sobjects/{$name}/updated/?start=$start&end=$end");
+  }
+
+  /**
+   * Given a DeveloperName and SObject Name, return the SFID of the
+   * corresponding RecordType. DeveloperName doesn't change between Salesforce
+   * environments, so it's safer to rely on compared to SFID.
+   *
+   * @param string $name
+   *   Object type name, E.g., Contact, Account.
+   *
+   * @param string $devname 
+   *   RecordType DeveloperName, e.g. Donation, Membership, etc.
+   *
+   * @return string SFID
+   *   The Salesforce ID of the given Record Type, or null.
+   */
+  public function getRecordTypeIdByDeveloperName($name, $devname, $reset = FALSE) {
+    $cache = cache_get('salesforce_record_types');
+    // Force the recreation of the cache when it is older than 5 minutes.
+    if ($cache && REQUEST_TIME < ($cache->created + 300) && !$reset) {
+      return !empty($cache->data[$name][$devname])
+        ? $cache->data[$name][$devname]['Id']
+        : NULL;
+    }
+    $query = new SalesforceSelectQuery('RecordType');
+    $query->fields = array('Id', 'Name', 'DeveloperName', 'SobjectType');
+    $result = $this->query($query);
+    $record_types = array();
+    foreach ($result['records'] as $rt) {
+      $record_types[$rt['SobjectType']][$rt['DeveloperName']] = $rt;
+    }
+    cache_set('salesforce_record_types', $record_types, 'cache', CACHE_TEMPORARY);
+    return !empty($record_types[$name][$devname])
+      ? $record_types[$name][$devname]['Id']
+      : NULL;
   }
 }
 

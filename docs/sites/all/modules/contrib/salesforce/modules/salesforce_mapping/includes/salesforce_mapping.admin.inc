@@ -103,7 +103,7 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
     '#title' => t('Salesforce object'),
     '#id' => 'edit-salesforce-object-type',
     '#type' => 'select',
-    '#description' => t('Select a Salesforce object to map.'),
+    '#description' => t('Select a Salesforce object to map. Not seeing an object? !settings_link', array('!settings_link' => l(t('Check your Salesforce object filters settings.'), 'admin/config/salesforce/settings', array('fragment' => 'sf_object_filters_anchor')))),
     '#default_value' => $salesforce_object_type,
     '#options' => _salesforce_mapping_get_salesforce_object_type_options($form_state),
     '#ajax' => array(
@@ -175,7 +175,12 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
     '#title' => t('Field map'),
     '#type' => 'fieldset',
     '#id' => 'edit-salesforce-field-mappings-wrapper',
-    '#description' => '* Key refers to an property mapped to a Salesforce external ID. if specified an UPSERT will be used to avoid duplicate data when possible.',
+    '#description' => '* Key refers to an property mapped to a Salesforce external ID. if specified an UPSERT will be used to avoid duplicate data when possible. <a href="javascript:;" id="salesforce-field-mappings-reset-key">Reset key</a>',
+  );
+  $form['#attached'] = array(
+    'js' => array(
+      drupal_get_path('module', 'salesforce_mapping') . '/includes/salesforce_mapping_admin.js',
+    )
   );
 
   // Check to see if we have enough information to allow mapping fields.  If
@@ -360,25 +365,6 @@ function salesforce_mapping_form($form, &$form_state, SalesforceMapping $mapping
     '#description' => t('If selected, push data will be queued for processing and synchronized when cron is run. This may increase site performance, but changes will not be reflected in real time.'),
     '#default_value' => _salesforce_mapping_get_default_value('push_async', $form_state),
   );
-  $form['push_batch'] = array(
-    '#title' => t('Batch records'),
-    '#type' => 'checkbox',
-    '#default_value' => _salesforce_mapping_get_default_value('push_batch', $form_state),
-  );
-  if (module_exists('salesforce_soap')) {
-    $requirements_description = t('Requires "Process asynchronously" option to be enabled.');
-    $form['push_batch']['#states'] = array(
-      'enabled' => array(
-        ':input[name="push_async"]' => array('checked' => TRUE),
-      ),
-    );
-  }
-  else {
-    $requirements_description = t('Requires the "Salesforce SOAP (salesforce_soap)" module to be enabled, and the "Process asynchronously" option to be checked.');
-    $form['push_batch']['#disabled'] = TRUE;
-  }
-  $push_batch_description = t('Push items will be processed in a single batch to the Salesforce API rather than one at a time. This may be preferable if API limits are of concern, although changes are not reflected immediately in Salesforce.');
-  $form['push_batch']['#description'] = $requirements_description . ' ' . $push_batch_description;
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['submit'] = array(
@@ -648,7 +634,7 @@ function salesforce_mapping_form_validate($form, &$form_state) {
           call_user_func($field_map['validation_callback'], $drupal_field, $sf_field, $mapping['direction'], $key);
         }
         // Ensure valid SF external ID field.
-        if ($key_delta !== FALSE && $key === (int) $key_delta && !$sf_field['externalId']) {
+        if ($key_delta !== FALSE && $key === (int) $key_delta && !($sf_field['externalId'] || $sf_field['idLookup'])) {
           form_set_error('salesforce_field_mappings][' . $key . '][salesforce_field', t('Salesforce field %name is not configured as an external id.',
             array(
               '%name' => $mapping['salesforce_field'],
@@ -681,6 +667,7 @@ function salesforce_mapping_form_submit($form, &$form_state) {
   $mappings = array();
   if (isset($values['key'])) {
     $key_delta = isset($values['key']) ? $values['key'] : FALSE;
+    $dedupe_key = FALSE;
     $sfobject = _salesforce_mapping_get_salesforce_object($values['salesforce_object_type'], $form_state);
     $sf_fields = isset($sfobject['fields']) ? $sfobject['fields'] : array();
     foreach ($values['salesforce_field_mappings'] as $key => $mapping) {
@@ -705,6 +692,9 @@ function salesforce_mapping_form_submit($form, &$form_state) {
           && ($key === (int) $key_delta),
           'direction' => $mapping['direction'],
         );
+        if ($key_delta !== FALSE && $key_delta != "" && ($key === (int) $key_delta)) {
+          $dedupe_key = $sf_field['name'];
+        }
       }
     }
   }
@@ -727,7 +717,6 @@ function salesforce_mapping_form_submit($form, &$form_state) {
     'sync_triggers' => $sync_triggers,
     'pull_trigger_date' => $values['pull_trigger_date'],
     'push_async' => $values['push_async'],
-    'push_batch' => $values['push_batch'],
   );
 
   if ($form_state['salesforce_mapping']->name) {
@@ -739,6 +728,10 @@ function salesforce_mapping_form_submit($form, &$form_state) {
   else {
     $params['name'] = $values['name'];
     $mapping = entity_create('salesforce_mapping', $params);
+  }
+
+  if (!empty($dedupe_key)) {
+    $mapping->dedupe_key = $dedupe_key;
   }
 
   $mapping->save();
@@ -787,7 +780,7 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
       $value = &$form_state['input'][$field];
     }
     elseif (!empty($mapping)) {
-      $value = &$mapping->$field;
+      $value = &$mapping->{$field};
     }
 
     // Special case for drupal bundle.
@@ -825,12 +818,6 @@ function _salesforce_mapping_get_default_value($field, &$form_state, $delta = NU
         }
       }
       $value = $breakup;
-    }
-
-    // Special case for push_batch.
-    if ($field == 'push_batch' && !module_exists('salesforce_soap')) {
-      // Enforce this to be disabled when salesforce_soap is disabled.
-      $value = 0;
     }
   }
   else {
@@ -1012,16 +999,16 @@ function _salesforce_mapping_get_salesforce_object_type_options(&$form_state, $i
   }
   else {
     $sfapi = salesforce_get_api();
-    // Note that we're filtering SF object types to a reasonable subset.
-    $sf_object_filter = array(
-      'triggerable' => TRUE,
-    );
 
-    //TODO: Handle this somewhere else to validate we can push to this object.
-    // if (module_exists('salesforce_push')) {
-    //   $sf_object_filter['updateable'] = TRUE;
-    // }
-    
+    // Note that we're filtering SF object types to a reasonable subset.
+    $sf_object_filter = array();
+    if (variable_get('salesforce_limit_to_updateable', TRUE)) {
+      $sf_object_filter['updateable'] = TRUE;
+    }
+    if (variable_get('salesforce_limit_to_triggerable', TRUE)) {
+      $sf_object_filter['triggerable'] = TRUE;
+    }
+
     $sfobjects = $sfapi->objects($sf_object_filter);
     $form_state['sfm_storage']['salesforce_object_type'] = $sfobjects;
   }
@@ -1033,6 +1020,7 @@ function _salesforce_mapping_get_salesforce_object_type_options(&$form_state, $i
   foreach ($sfobjects as $object) {
     $sfobject_options[$object['name']] = $object['label'];
   }
+  natsort($sfobject_options);
   return $sfobject_options;
 }
 
@@ -1121,6 +1109,9 @@ function _salesforce_mapping_get_salesforce_field_options($salesforce_object_typ
     foreach ($sfobject['fields'] as $sf_field) {
       if ($type == NULL || $type == $sf_field['type']) {
         $sf_fields[$sf_field['name']] = $sf_field['label'] . ' - (' . $sf_field['name'] . ')';
+        if (!$sf_field['nillable'] && $sf_field['updateable'] && $sf_field['type'] != 'boolean') {
+          $sf_fields[$sf_field['name']] .= '*';
+        }
       }
     }
   }
@@ -1250,10 +1241,11 @@ function _salesforce_mapping_get_required_mapping_fields(&$form, &$form_state) {
  *   An empty field mapping array.
  */
 function _salesforce_mapping_get_empty_field_map_row() {
+  $direction_options_keys = array_keys(_salesforce_mapping_get_direction_options());
   return array(
     'drupal_field' => '',
     'salesforce_field' => '',
     'key' => '',
-    'direction' => end(array_keys(_salesforce_mapping_get_direction_options())),
+    'direction' => end($direction_options_keys),
   );
 }

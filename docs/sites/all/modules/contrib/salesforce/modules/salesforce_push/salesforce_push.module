@@ -140,9 +140,16 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
       try {
         $sfapi->objectDelete($mapping->salesforce_object_type, $mapping_object->salesforce_id);
       }
-      catch(SalesforceException $e) {
-        watchdog_exception('salesforce_push', $e);
-        salesforce_set_message($e->getMessage(), 'error');
+      catch (SalesforceException $e) {
+        $exception_message = t('Salesforce Exception during @event attempting @op : @exception');
+        $message_vars = array(
+          '@event' => 'push',
+          '@op' => $op,
+          '@exception' => $e->getMessage(),
+        );
+        watchdog_exception('salesforce_push', $e, $exception_message, $message_vars);
+        salesforce_set_message(format_string($exception_message, $message_vars), 'error');
+
         module_invoke_all('salesforce_push_fail', $op, $sfapi->response, $synced_entity);
       }
 
@@ -157,7 +164,8 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
   }
 
   // Generate parameter array from field mappings.
-  $params = salesforce_push_map_params($mapping, $entity_wrapper, $key_field, $key_value, FALSE, !$mapping_object);
+  $key_field = $key_value = NULL;
+  $params = salesforce_push_map_params($mapping, $entity_wrapper, FALSE, !$mapping_object);
 
   // Entity is not linked to an SF object.
   if (!$mapping_object) {
@@ -170,7 +178,8 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
 
     try {
       // An external key has been specified, attempt an upsert().
-      if (!empty($key_field)) {
+      if (!empty($mapping->dedupe_key) && !empty($params[$mapping->dedupe_key])) {
+        $key_value = $params[$mapping->dedupe_key];
 
         // External key values with punctuation need to be escaped.
         $encoded_value = urlencode($key_value);
@@ -179,19 +188,19 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
         $encoded_value = str_replace('.', '%2E', $encoded_value);
 
         $op = 'Upsert';
-        $data = $sfapi->objectUpsert($mapping->salesforce_object_type, $key_field, $encoded_value, $params);
+        $data = $sfapi->objectUpsert($mapping->salesforce_object_type, $mapping->dedupe_key, $encoded_value, $params);
         // Handle upsert responses.
         switch ($sfapi->response->code) {
           // On Upsert:update retrieve object.
           case '204':
-            $sf_object = $sfapi->objectReadbyExternalId($mapping->salesforce_object_type, $key_field, $encoded_value);
+            $sf_object = $sfapi->objectReadbyExternalId($mapping->salesforce_object_type, $mapping->dedupe_key, $encoded_value);
             $data['id'] = $sf_object['Id'];
             break;
 
           // Handle duplicate records.
           case '300':
             $data['errorCode'] = $sfapi->response->error .
-              ' (' . $key_field . ':' . $key_value . ')';
+              ' (' . $mapping->dedupe_key . ':' . $key_value . ')';
             break;
         }
       }
@@ -201,9 +210,16 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
         $data = $sfapi->objectCreate($mapping->salesforce_object_type, $params);
       }
     }
-    catch(SalesforceException $e) {
-      watchdog_exception('salesforce_push', $e);
-      salesforce_set_message($e->getMessage(), 'error');
+    catch (SalesforceException $e) {
+      $exception_message = t('Salesforce Exception during @event attempting @op : @exception');
+      $message_vars = array(
+        '@event' => 'push',
+        '@op' => $op,
+        '@exception' => $e->getMessage(),
+      );
+      watchdog_exception('salesforce_push', $e, $exception_message, $message_vars);
+      salesforce_set_message(format_string($exception_message, $message_vars), 'error');
+
       module_invoke_all('salesforce_push_fail', $op, $sfapi->response, $synced_entity);
       return;
     }
@@ -255,15 +271,22 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
       )));
       module_invoke_all('salesforce_push_success', $op, $sfapi->response, $synced_entity);
     }
-    catch(SalesforceException $e) {
-      watchdog_exception('salesforce_push', $e);
-      salesforce_set_message(t('Error syncing @type @id to Salesforce record @sfid. Error message: "@msg".', array(
+    catch (SalesforceException $e) {
+      $exception_message = t('Error syncing @type @id to Salesforce record @sfid. Error message: "@msg". @extra');
+      $message_vars = array(
         '@type' => $mapping_object->entity_type,
         '@id' => $mapping_object->entity_id,
         '@sfid' => $mapping_object->salesforce_id,
         '@msg' => $e->getMessage(),
-      )), 'error');
-      $mapping_object->last_sync_message = $e->getMessage();
+        '@extra' => '',
+      );
+      if (in_array($e->getMessage(), array("invalid cross reference id", "Not Found"))) {
+        $message_vars['@extra'] = "Are you trying to sync with an object from a different Salesforce instance?";
+      }
+      watchdog_exception('salesforce_push', $e, $exception_message, $message_vars);
+      salesforce_set_message(format_string($exception_message, $message_vars), 'error');
+
+      $mapping_object->last_sync_message = truncate_utf8($e->getMessage(), 255, FALSE, TRUE);
       $mapping_object->last_sync_status = SALESFORCE_MAPPING_STATUS_ERROR;
       module_invoke_all('salesforce_push_fail', $op, $sfapi->response, $synced_entity);
     }
@@ -272,6 +295,19 @@ function salesforce_push_sync_rest($entity_type, $entity, $mapping, $sf_sync_tri
   $mapping_object->last_sync_action = 'push';
   $mapping_object->last_sync = REQUEST_TIME;
   $mapping_object->save();
+}
+
+/**
+ * Implements hook_queue_info().
+ *
+ * Provided for integration with 3rd party queue-monitoring tools (Drush,
+ * Queue UI, etc.)
+ */
+function salesforce_push_queue_info() {
+  $queues[SALESFORCE_PUSH_QUEUE] = array(
+    'title' => t('Salesforce push queue'),
+  );
+  return $queues;
 }
 
 /**
@@ -285,7 +321,7 @@ function salesforce_push_cron() {
 
   $queue = DrupalQueue::get(SALESFORCE_PUSH_QUEUE);
   $limit = variable_get('salesforce_push_limit', 50);
-  $use_soap = module_exists('salesforce_soap');
+  $use_soap = module_exists('salesforce_soap') && variable_get('salesforce_soap_batch_enable', TRUE);
   $entity_ids = array();
 
   $delta = 0;
@@ -342,7 +378,7 @@ function salesforce_push_cron() {
     }
     $wrapper = entity_metadata_wrapper($item->data['entity_type'], $entity);
     $key_field = $key_value = NULL;
-    $params = salesforce_push_map_params($mapping, $wrapper, $key_field, $key_value, $use_soap, !$mapping_object);
+    $params = salesforce_push_map_params($mapping, $wrapper, $use_soap, !$mapping_object);
 
     $synced_entities[$delta] = array(
       'entity_wrapper' => $wrapper,
@@ -374,8 +410,8 @@ function salesforce_push_cron() {
     }
 
     // If we have a dedupe key, prefer upsert.
-    if ($key_field && $key_value) {
-      $upsert_list[$key_field][$delta] = $sobject;
+    if ($mapping->dedupe_key && !empty($params[$mapping->dedupe_key])) {
+      $upsert_list[$mapping->dedupe_key][$delta] = $sobject;
     }
     else {
       // Otherwise create.
@@ -394,23 +430,23 @@ function salesforce_push_cron() {
   // Use soap API to batch process records.
   $soap = new SalesforceSoapPartner($sfapi, variable_get('salesforce_partner_wsdl', libraries_get_path('salesforce') . '/soapclient/partner.wsdl.xml'));
   if (!empty($delete_list)) {
-    $results = $soap->delete($delete_list);
+    $results = $soap-trySoap('delete', $delete_list);
     salesforce_push_process_soap_results('Delete', $results, $synced_entities);
   }
 
   if (!empty($create_list)) {
-    $results = $soap->create($create_list);
+    $results = $soap->trySoap('create', $create_list);
     salesforce_push_process_soap_results('Create', $results, $synced_entities);
   }
 
   if (!empty($update_list)) {
-    $results = $soap->update($update_list);
+    $results = $soap->trySoap('update', $update_list);
     salesforce_push_process_soap_results('Update', $results, $synced_entities);
   }
 
   if (!empty($upsert_list)) {
     foreach ($upsert_list as $key => $upsert_item) {
-      $results = $soap->upsert($key, $upsert_item);
+      $results = $soap->trySoap('upsert', $key, $upsert_item);
       salesforce_push_process_soap_results('Upsert', $results, $synced_entities);
     }
   }
@@ -483,10 +519,10 @@ function salesforce_push_process_soap_results($op, $results, $synced_entities) {
         $mapping_object->last_sync = REQUEST_TIME;
         $mapping_object->last_sync_action = 'push';
         $mapping_object->last_sync_status = SALESFORCE_MAPPING_STATUS_ERROR;
-        $mapping_object->last_sync_message = t('Push error via %function with the following messages: @message.', array(
+        $mapping_object->last_sync_message = truncate_utf8(t('Push error via %function. Message: @message', array(
           '%function' => __FUNCTION__,
           '@message' => implode(' | ', $error_messages),
-        ));
+        )), 255, FALSE, TRUE);
         $mapping_object->save();
       }
 
@@ -502,10 +538,6 @@ function salesforce_push_process_soap_results($op, $results, $synced_entities) {
  *   Mapping object.
  * @param object $entity_wrapper
  *   Entity wrapper object.
- * @param string $key_field
- *   Unique identifier field.
- * @param string $key_value
- *   Value of the unique identifier field.
  * @param bool $use_soap
  *   Flag to enforce use of the SOAP API.
  * @param bool $is_new
@@ -514,7 +546,7 @@ function salesforce_push_process_soap_results($op, $results, $synced_entities) {
  * @return array
  *   Associative array of key value pairs.
  */
-function salesforce_push_map_params($mapping, $entity_wrapper, &$key_field, &$key_value, $use_soap = FALSE, $is_new = TRUE) {
+function salesforce_push_map_params($mapping, $entity_wrapper, $use_soap = FALSE, $is_new = TRUE) {
   foreach ($mapping->field_mappings as $fieldmap) {
     // Skip fields that aren't being pushed to Salesforce.
     if (!in_array($fieldmap['direction'], array(SALESFORCE_MAPPING_DIRECTION_DRUPAL_SF, SALESFORCE_MAPPING_DIRECTION_SYNC))) {
@@ -530,15 +562,6 @@ function salesforce_push_map_params($mapping, $entity_wrapper, &$key_field, &$ke
 
     $value = call_user_func($fieldmap_type['push_value_callback'], $fieldmap, $entity_wrapper);
     $params[$fieldmap['salesforce_field']['name']] = $value;
-
-    if ($fieldmap['key']) {
-      $key_field = $fieldmap['salesforce_field']['name'];
-      $key_value = $value;
-      // If key is set, remove from $params to avoid UPSERT errors.
-      if (!$use_soap) {
-        unset($params[$key_field]);
-      }
-    }
   }
 
   drupal_alter('salesforce_push_params', $params, $mapping, $entity_wrapper);

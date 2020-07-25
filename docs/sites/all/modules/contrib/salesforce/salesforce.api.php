@@ -155,6 +155,22 @@ function hook_salesforce_push_entity_allowed($entity_type, $entity, $sf_sync_tri
 }
 
 /**
+ * Prevent a pull from updating/creating an entity.
+ *
+ * @param array $sf_object
+ *   A Salesforce object array loaded during a pull.
+ * @param object $mapping_object
+ *   The mapping object for this SF Object, or FALSE if none exists.
+ * @param object $sf_mapping
+ *   The mapping that pulled this object in the first place.
+ *
+ * @return bool
+ *   FALSE if the entity should be ignored.
+ */
+function hook_salesforce_pull_allow_sf_object($sf_object, $mapping_object, $sf_mapping) {
+}
+
+/**
  * Alter the value being mapped to an entity property from a Salesforce object.
  *
  * @param string $value
@@ -281,10 +297,10 @@ function hook_salesforce_push_fail($op, $result, $synced_entity) {
     $mapping_object->last_sync = REQUEST_TIME;
     $mapping_object->last_sync_action = 'push';
     $mapping_object->last_sync_status = SALESFORCE_MAPPING_STATUS_ERROR;
-    $mapping_object->last_sync_message = t('Push error via %function with the following messages: @message.', array(
+    $mapping_object->last_sync_message = truncate_utf8(t('Push error via %function. Message: @message', array(
       '%function' => __FUNCTION__,
       '@message' => implode(' | ', $error_messages),
-    ));
+    )), 255, FALSE, TRUE);
     $mapping_object->save();
   }
 }
@@ -369,6 +385,19 @@ function hook_salesforce_pull_entity_update($entity, $sf_object, $sf_mapping) {
     ->condition('type', $type)
     ->condition('id', $id)
     ->execute();
+}
+
+/**
+ * Change Salesforce merge object name / field names before sync.
+ *
+ * @param array $merge_fields
+ *   Array of Salesforce merge fields.
+ */
+function hook_salesforce_pull_entity_merge_fields_alter(&$merge_fields) {
+  $merge_fields['old_contact_key'] = 'Old_Contact__c';
+  $merge_fields['merged_contact_key'] = 'Contact__c';
+  $merge_fields['type'] = 'Merged_Contact__c';
+  $merge_fields['modified_date'] = 'LastModifiedDate';
 }
 
 /**

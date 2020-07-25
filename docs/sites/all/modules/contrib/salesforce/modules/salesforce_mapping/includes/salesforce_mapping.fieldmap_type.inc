@@ -90,10 +90,16 @@ function salesforce_mapping_property_fieldmap_options($entity_type, $entity_bund
       if (isset($property['field']) && $property['field'] && !empty($property['property info'])) {
         foreach ($property['property info'] as $sub_key => $sub_prop) {
           $options[$property['label']][$key . ':' . $sub_key] = $sub_prop['label'];
+          if (isset($sub_prop['required']) && $sub_prop['required']) {
+            $options[$property['label']][$key . ':' . $sub_key] .= '*';
+          }
         }
       }
       else {
         $options[$key] = $property['label'];
+        if (isset($property['required']) && $property['required']) {
+          $options[$key] .= '*';
+        }
       }
     }
   }
@@ -127,11 +133,11 @@ function salesforce_mapping_related_entity_fieldmap_options($entity_type, $entit
  */
 function salesforce_mapping_related_entity_fieldmap_push_value($fieldmap, $entity_wrapper) {
   $value = NULL;
-  if (property_exists($entity_wrapper->$fieldmap['drupal_field']['fieldmap_value'], 'isEntityList')) {
-    $related_wrapper = $entity_wrapper->$fieldmap['drupal_field']['fieldmap_value']->get(0);
+  if (property_exists($entity_wrapper->{$fieldmap['drupal_field']['fieldmap_value']}, 'isEntityList')) {
+    $related_wrapper = $entity_wrapper->{$fieldmap['drupal_field']['fieldmap_value']}->get(0);
   }
   else {
-    $related_wrapper = $entity_wrapper->$fieldmap['drupal_field']['fieldmap_value'];
+    $related_wrapper = $entity_wrapper->{$fieldmap['drupal_field']['fieldmap_value']};
   }
   if ($related_entity = $related_wrapper->value()) {
     list($related_entity_id) = entity_extract_ids($related_wrapper->type(), $related_entity);
@@ -357,41 +363,43 @@ function salesforce_mapping_property_fieldmap_pull_value($entity_wrapper, $sf_ob
     $value = $sf_object[$field_map['salesforce_field']['name']];
   }
 
-  // Salesforce provides multipicklist values as a delimited string. If the
-  // destination field in Drupal accepts multiple values, explode the string
-  // into an array.
-  if ($entity_wrapper instanceof EntityListWrapper) {
-    $value = explode(SALESFORCE_MAPPING_ARRAY_DELIMITER, $value);
-  }
+  if (isset($value)) {
+    // Salesforce provides multipicklist values as a delimited string. If the
+    // destination field in Drupal accepts multiple values, explode the string
+    // into an array.
+    if ($entity_wrapper instanceof EntityListWrapper) {
+      $value = explode(SALESFORCE_MAPPING_ARRAY_DELIMITER, $value);
+    }
 
-  // Marshalling for data types that are formatted differently on Salesforce.
-  switch ($entity_wrapper->type()) {
-    case 'date':
-      if (isset($value) && ($field_map['salesforce_field']['type'] == 'date' || $field_map['salesforce_field']['type'] == 'datetime')) {
-        $value = strtotime($value);
-      }
-      break;
-
-    case 'integer':
-    case 'boolean':
-      $value = isset($value) ? (int) $value : 0;
-      break;
-
-    case 'text':
-      $value = (string) $value;
-      break;
-
-    case 'uri':
-      if (!empty($value) &&!valid_url($value, TRUE)) {
-        $parsed_value = parse_url($value);
-        // Salesforce tacks on an http:// to the front of URLs as necessary, but
-        // it still passes the naked version to the API, so we correct it.
-        if (!isset($parsed_value['scheme'])) {
-          $value = 'http://' . $value;
+    // Marshalling for data types that are formatted differently on Salesforce.
+    switch ($entity_wrapper->type()) {
+      case 'date':
+        if ($field_map['salesforce_field']['type'] == 'date' || $field_map['salesforce_field']['type'] == 'datetime') {
+          $value = strtotime($value);
         }
-      }
+        break;
 
-      break;
+      case 'integer':
+      case 'boolean':
+        $value = (int) $value;
+        break;
+
+      case 'text':
+        $value = (string) $value;
+        break;
+
+      case 'uri':
+        if (!empty($value) && !valid_url($value, TRUE)) {
+          $parsed_value = parse_url($value);
+          // Salesforce tacks on an http:// to the front of URLs as necessary,
+          // but it still passes the naked version to the API, so we correct it.
+          if (!isset($parsed_value['scheme'])) {
+            $value = 'http://' . $value;
+          }
+        }
+
+        break;
+    }
   }
 
   return $value;
