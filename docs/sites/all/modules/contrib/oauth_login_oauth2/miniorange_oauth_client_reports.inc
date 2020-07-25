@@ -1,17 +1,17 @@
 <?php
 
-include "mo_saml_visualTour.php";
 function miniorange_oauth_client_reports($form,$form_state)
 {
     drupal_add_css( drupal_get_path('module', 'oauth_login_oauth2'). '/css/bootstrap.min.css' , array('group' => CSS_DEFAULT, 'every_page' => FALSE));
     drupal_add_css( drupal_get_path('module', 'oauth_login_oauth2'). '/css/style_settings.css' , array('group' => CSS_DEFAULT, 'every_page' => FALSE));
+    drupal_add_js(drupal_get_path('module', 'oauth_login_oauth2') . '/js/slide_support_button.js');
 
     global $base_url;
 
     $form['mo_header_style'] = array('#markup' => '<div class="mo_oauth_table_layout_1">');
 
     $form['mo_top_div'] = array(
-        '#markup' => '<div class="mo_oauth_table_layout mo_oauth_container">',
+        '#markup' => '<div class="mo_oauth_table_layout mo_oauth_container_2">',
     );
 
     $form['miniorange_oauth_client_report'] = array(
@@ -42,9 +42,14 @@ function miniorange_oauth_client_reports($form,$form_state)
  */
 function send_support_query(&$form, $form_state)
 {
-    $email = $form['miniorange_oauth_email_address_support']['#value'];
+    $email = trim($form['miniorange_oauth_email_address_support']['#value']);
     $phone = $form['miniorange_oauth_phone_number_support']['#value'];
-    $query = $form['miniorange_oauth_support_query_support']['#value'];
-    Utilities::send_query($email, $phone, $query);
+    $query = trim($form['miniorange_oauth_support_query_support']['#value']);
+    Utilities::send_query($email, $phone, $query, null);
+}
+function rfd(&$form, $form_state) {
+
+    global $base_url;
+    drupal_goto($base_url.'/admin/config/people/oauth_login_oauth2/request_for_demo');
 }
  ?>

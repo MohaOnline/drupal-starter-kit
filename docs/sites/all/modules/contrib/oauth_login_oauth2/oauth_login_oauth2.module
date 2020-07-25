@@ -2,219 +2,250 @@
 include 'includes/Handler.php';
 
 /**
-* Implements hook_menu().
-*/
+ * Implements hook_menu().
+ */
 
 function oauth_login_oauth2_menu()
 {
-      $items['admin/config/people/oauth_login_oauth2'] = array(
-        'title' => 'miniOrange OAuth Client Login Configuration',
-        'description' => 'miniOrange OAuth Client Login Configuration',
+    $items['admin/config/people/oauth_login_oauth2'] = array(
+        'title' => 'miniOrange OAuth/OpenID Connect Login Configuration',
+        'description' => 'miniOrange OAuth/OpenID Connect Login Configuration',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('miniorange_oauth_client_config'),
         'access arguments' => array('administer site configuration'),
         'file' => 'miniorange_oauth_client_config.inc',
-      );
+    );
 
-      $items['admin/config/people/oauth_login_oauth2/configure_oauth'] = array(
+    $items['admin/config/people/oauth_login_oauth2/configure_oauth'] = array(
         'title' => 'Configure OAuth',
         'weight' => -8,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('miniorange_oauth_client_config'),
         'file' => 'miniorange_oauth_client_config.inc',
         'type' => MENU_DEFAULT_LOCAL_TASK,
-      );
+    );
 
-      $items['admin/config/people/oauth_login_oauth2/attr_mapping'] = array(
+    $items['admin/config/people/oauth_login_oauth2/attr_mapping'] = array(
         'title' => 'Attribute & Role Mapping',
         'weight' => -7,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('miniorange_attr_mapping'),
         'file' => 'miniorange_oauth_client_attr_mapping.inc',
         'type' => MENU_LOCAL_TASK,
-      );
+    );
 
-      $items['admin/config/people/oauth_login_oauth2/login_settings'] = array(
-          'title' => 'Sign In Settings',
-          'weight' => -6,
-          'access arguments' => array('administer site configuration'),
-          'page arguments' => array('miniorange_oauth_login_options'),
-          'file' => 'miniorange_oauth_login_options.inc',
-          'type' => MENU_LOCAL_TASK,
-      );
+    $items['admin/config/people/oauth_login_oauth2/login_settings'] = array(
+        'title' => 'Sign In Settings',
+        'weight' => -6,
+        'access arguments' => array('administer site configuration'),
+        'page arguments' => array('miniorange_oauth_login_options'),
+        'file' => 'miniorange_oauth_login_options.inc',
+        'type' => MENU_LOCAL_TASK,
+    );
 
-       $items['admin/config/people/oauth_login_oauth2/reports'] = array(
+    $items['admin/config/people/oauth_login_oauth2/reports'] = array(
         'title' => 'Reports',
         'weight' => -5,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('miniorange_oauth_client_reports'),
         'file' => 'miniorange_oauth_client_reports.inc',
-      );
+    );
 
-      $items['admin/config/people/oauth_login_oauth2/licensing'] = array(
+    $items['admin/config/people/oauth_login_oauth2/licensing'] = array(
         'title' => 'Upgrade Plan',
-        'weight' => -3,
+        'weight' => -4,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('miniorange_oauth_client_license'),
         'file' => 'miniorange_oauth_client_licensing.inc',
-      );
+    );
 
-      $items['admin/config/people/oauth_login_oauth2/customer_setup'] = array(
-          'title' => 'Register/Login',
-          'weight' => -2,
-          'type' => MENU_LOCAL_TASK,
-          'access arguments' => array('administer site configuration'),
-          'page arguments' => array('miniorange_oauth_client_customer_setup'),
-          'file' => 'miniorange_oauth_client_customer_setup.inc',
-      );
+    $items['admin/config/people/oauth_login_oauth2/request_for_demo'] = array(
+        'title' => 'Request For Demo',
+        'weight' => -3,
+        'type' => MENU_LOCAL_TASK,
+        'access arguments' => array('administer site configuration'),
+        'page arguments' => array('miniorange_oauth_client_request_for_demo'),
+        'file' => 'miniorange_oauth_client_rfd.inc',
+    );
 
-      $items['testConfig'] = array(
+    $items['admin/config/people/oauth_login_oauth2/customer_setup'] = array(
+        'title' => 'Register/Login',
+        'weight' => -2,
+        'type' => MENU_LOCAL_TASK,
+        'access arguments' => array('administer site configuration'),
+        'page arguments' => array('miniorange_oauth_client_customer_setup'),
+        'file' => 'miniorange_oauth_client_customer_setup.inc',
+    );
+
+    $items['testConfig'] = array(
         'access arguments' => array('administer site configuration'),
         'page callback' => 'test_mo_config',
         'type' => MENU_CALLBACK
-      );
+    );
 
-      $items['mo_login'] = array(
+    $items['mo_login'] = array(
         'access callback' => TRUE,
         'page callback' => 'test_config',
         'type' => MENU_CALLBACK
-      );
+    );
 
-      $items['moLogin'] = array(
+    $items['moLogin'] = array(
         'access callback' => TRUE,
         'page callback' => 'miniorange_oauth_client_mologin',
         'type' => MENU_CALLBACK
-      );
+    );
 
-      return $items;
+    return $items;
 }
 
-    function test_mo_config()
-    {
-        user_cookie_save(array("mo_oauth_test" => true));
-        mo_oauth_client_initiateLogin();
-    }
+function test_mo_config()
+{
+    user_cookie_save(array("mo_oauth_test" => true));
+    mo_oauth_client_initiateLogin();
+}
 
-    function miniorange_oauth_client_mologin()
-    {
+function miniorange_oauth_client_mologin()
+{
+    global $base_url;
+    $enable_login_with_oauth = variable_get('miniorange_oauth_enable_login_with_oauth');
+    if ($enable_login_with_oauth)
         mo_oauth_client_initiateLogin();
-    }
+    else
+        drupal_set_message('Please enable <b>Login with OAuth</b> to initiate the SSO.','error');
+    drupal_goto($base_url);
+}
 
-    function oauth_login_oauth2_form_alter(&$form, &$form_state, $form_id) {
-        global $base_url;
-        if(($form_id == 'user_login_block') || ($form_id == 'user-login'))
+function oauth_login_oauth2_form_alter(&$form, &$form_state, $form_id) {
+    global $base_url;
+    $enable_login_with_oauth = variable_get('miniorange_oauth_enable_login_with_oauth','');
+    if(($form_id == 'user_login_block') || ($form_id == 'user_login'))
+    {
+        if(!empty(variable_get('miniorange_auth_client_app_name')) && $enable_login_with_oauth)
         {
-            if(!empty(variable_get('miniorange_auth_client_app_name')))
-            {
-                  $oauth_login_url = $base_url . '/?q=moLogin';
-                $server_name = variable_get('miniorange_auth_client_app_name', '');
-                $form['loginurl']= array(array(
-                    '#markup' => '<a href="'. $oauth_login_url .'">Login using ' . $server_name . '</a>'
+            $oauth_login_url = $base_url . '/?q=moLogin';
+            $server_name = variable_get('miniorange_auth_client_app_name', '');
+            $display_link = variable_get('miniorange_auth_client_display_name');
+            if(!strcmp($display_link,'Login using ##app_name##') || empty($display_link)) {
+                $form['loginurl'] = array(array(
+                    '#markup' => '<a href="' . $oauth_login_url . '">Login using ' . $server_name . '</a>'
+                ));
+            }
+            else {
+                $form['loginurl'] = array(array(
+                    '#markup' => '<a href="' . $oauth_login_url . '">' . $display_link . '</a>'
                 ));
             }
         }
     }
+}
 
 
-    function test_config()
+function test_config()
+{
+    $code = isset($_GET['code']) ? $_GET['code'] : '';
+    $state = isset($_GET['state']) ? $_GET['state'] : '';
+    $code = isset($code) ? check_plain($code) : '';
+    $state = isset($state) ? check_plain($state) : '';
+    if( isset( $code) && isset($state ) )
     {
-        $code = $_GET['code'];
-        $state = $_GET['state'];
-        $code = check_plain($code);
-        $state = check_plain($state);
-        if( isset( $code) && isset($state ) )
+        if(session_id() == '' || !isset($_SESSION))
+            session_start();
+        if (!isset($code))
         {
-              if(session_id() == '' || !isset($_SESSION))
-                  session_start();
-              if (!isset($code))
-              {
-                     if(isset($_GET['error_description']))
-                         exit($_GET['error_description']);
-                     else if(isset($_GET['error']))
-                         exit($_GET['error']);
-                     exit('Invalid response');
-              }
-              else
-              {
-                   $currentappname = "";
-                   if (isset($_SESSION['appname']) && !empty($_SESSION['appname']))
-                       $currentappname = $_SESSION['appname'];
-                   else if (isset($state) && !empty($state))
-                   {
-                       $currentappname = base64_decode($state);
-                   }
-                   if (empty($currentappname)) {
-                       exit('No request found for this application.');
-                   }
-              }
+            if(isset($_GET['error_description']))
+                exit($_GET['error_description']);
+            else if(isset($_GET['error']))
+                exit($_GET['error']);
+            exit('Invalid response');
         }
-
-            // Getting Access Token
-            $app = array();
-            $app = variable_get('miniorange_oauth_client_appval');
-
-            $name_attr = "";
-            $email_attr = "";
-            $name = "";
-            $email ="";
-
-            if(isset($app['miniorange_oauth_client_email_attr'])){
-              $email_attr = $app['miniorange_oauth_client_email_attr'];
-            }
-            if(isset($app['miniorange_oauth_client_name_attr']))
+        else
+        {
+            $currentappname = "";
+            if (isset($_SESSION['appname']) && !empty($_SESSION['appname']))
+                $currentappname = $_SESSION['appname'];
+            else if (isset($state) && !empty($state))
             {
-                $name_attr = $app['miniorange_oauth_client_name_attr'];
+                $currentappname = base64_decode($state);
             }
-
-            $accessToken = getAccessToken($app['access_token_ep'], 'authorization_code',
-
-            $app['client_id'], $app['client_secret'], $code, $app['callback_uri']);
-
-            if(!$accessToken)
-            {
-                print_r('Invalid token received.');
-                exit;
+            if (empty($currentappname)) {
+                exit('No request found for this application.');
             }
+        }
+    }
 
-            $resourceownerdetailsurl = $app['user_info_ep'];
-            if (substr($resourceownerdetailsurl, -1) == "=") {
-                    $resourceownerdetailsurl .= $accessToken;
-            }
+    // Getting Access Token
+    $app = array();
+    $app = variable_get('miniorange_oauth_client_appval');
 
-            $resourceOwner = getResourceOwner($resourceownerdetailsurl, $accessToken);
+    $name_attr = "";
+    $email_attr = "";
+    $name = "";
+    $email ="";
+    $account = "";
+    if(isset($app['miniorange_oauth_client_email_attr'])){
+        $email_attr = $app['miniorange_oauth_client_email_attr'];
+    }
+    if(isset($app['miniorange_oauth_client_name_attr']))
+    {
+        $name_attr = $app['miniorange_oauth_client_name_attr'];
+    }
+    $parse_from_header = variable_get('miniorange_oauth_send_with_header_oauth');
+    $parse_from_body = variable_get('miniorange_oauth_send_with_body_oauth');
 
-            /*
-            *   Test Configuration
-            */
-            if (isset($_COOKIE['Drupal_visitor_mo_oauth_test']) && ($_COOKIE['Drupal_visitor_mo_oauth_test'] == true))
-            {
-                $module_path = drupal_get_path('module', 'oauth_login_oauth2');
-                user_cookie_save(array("mo_oauth_test" => false));
-                $username = isset($resourceOwner['email'])?$resourceOwner['email']:'User';
-                variable_set('miniorange_oauth_client_attr_list_from_server', $resourceOwner);
+    if (!$parse_from_header == TRUE || !$parse_from_header == 1)
+        $parse_from_header = false;
+    if (!$parse_from_body == TRUE || !$parse_from_body == 1)
+        $parse_from_body = false;
 
-                echo '<div style="font-family:Calibri;padding:0 3%;">';
-                echo '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center; border:1px solid #AEDB9A;
+    $accessToken = getAccessToken($app['access_token_ep'], 'authorization_code',
+        $app['client_id'], $app['client_secret'], $code, $app['callback_uri'], $parse_from_header, $parse_from_body);
+
+    if(!$accessToken)
+    {
+        print_r('Invalid token received.');
+        exit;
+    }
+
+    $resourceownerdetailsurl = $app['user_info_ep'];
+    if (substr($resourceownerdetailsurl, -1) == "=") {
+        $resourceownerdetailsurl .= $accessToken;
+    }
+
+    $resourceOwner = getResourceOwner($resourceownerdetailsurl, $accessToken);
+
+    /*
+    *   Test Configuration
+    */
+    if (isset($_COOKIE['Drupal_visitor_mo_oauth_test']) && ($_COOKIE['Drupal_visitor_mo_oauth_test'] == true))
+    {
+        $module_path = drupal_get_path('module', 'oauth_login_oauth2');
+        user_cookie_save(array("mo_oauth_test" => false));
+        $username = isset($resourceOwner['email'])?$resourceOwner['email']:'User';
+        variable_set('miniorange_oauth_client_attr_list_from_server', $resourceOwner);
+
+        echo '<div style="font-family:Calibri;padding:0 3%;">';
+        echo '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center; border:1px solid #AEDB9A;
                         font-size:15pt;">
                         TEST SUCCESSFUL
                       </div>
                       <div style="display:block;text-align:center;margin-bottom:4%;">
                         <img style="width:15%;"src="'. $module_path . '/includes/images/green_check.png">
                       </div>';
-                echo '<span style="font-size:13pt;"><b>Hello</b>, '.$username.'</span><br/>
+        echo '<span style="font-size:13pt;"><b>Hello</b>, '.$username.'</span><br/>
                       <p style="font-weight:bold;font-size:13pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>
                       <table style="border-collapse:collapse;border-spacing:0; display:table;width:100%; font-size:13pt;background-color:#EDEDED;">
                           <tr style="text-align:center;">
                               <td style="font-weight:bold;border:2px solid #949090;padding:2%;">ATTRIBUTE NAME</td>
                               <td style="font-weight:bold;padding:2%;border:2px solid #949090; word-wrap:break-word;">ATTRIBUTE VALUE</td>
                           </tr>';
-                testattrmappingconfig("",$resourceOwner);
+        testattrmappingconfig("",$resourceOwner);
 
-                echo '</table></div>';
+        echo '</table>';
+        echo '<span style="font-size:13pt;"><br><b>Note: </b>Please copy the Attribute Name of <b>email</b> and <b>username</b> to configure in the <b>Attribute Mapping</b> tab for the successful SSO.</span></div>';
 
-                echo '<div style="margin:3%;display:block;text-align:center;">
+        echo '<div style="margin:3%;display:block;text-align:center;">
                         <input style="padding:1%;width:37%;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;font-size:15px;
                             border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;box-sizing: border-box;border-color: #0073AA;
                             box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;color: #FFF;"type="button" value="Configure Attribute/Role Mapping"
@@ -226,109 +257,130 @@ function oauth_login_oauth2_menu()
                     </div>
                     <script>
                         function close_and_redirect(){
-                            window.opener.redirect_to_attribute_mapping();
+                            window.opener.location.href = "admin/config/people/oauth_login_oauth2/attr_mapping";
                             self.close();
                         }
                     </script>';
-                exit();
-            }
-            if(!empty($email_attr))
-                $email = getnestedattribute($resourceOwner, $email_attr); //$resourceOwner[$email_attr];
-            if(!empty($name_attr))
-                $name = getnestedattribute($resourceOwner, $name_attr); //$resourceOwner[$name_attr];
+        exit();
+    }
+    if(!empty($email_attr))
+        $email = getnestedattribute($resourceOwner, $email_attr); //$resourceOwner[$email_attr];
+    if(!empty($name_attr))
+        $name = getnestedattribute($resourceOwner, $name_attr); //$resourceOwner[$name_attr];
 
-            //Attributes not mapped check
-            if(empty($email))
-            {
-                echo "Email address not received. Check your <b>Attribute Mapping<b> configuration.";
-            }
-            if(!empty($email))
-                $account = user_load_by_mail($email);
-            if($account == null)
-            {
-                if(!empty($name) && isset($name))
-                    $account = user_load_by_name($name);
-            }
-            global $base_url;
-            global $user;
-            $mo_count = "";
-            $mo_count = variable_get('miniorange_oauth_client_free_users');
+    //Attributes not mapped check
+    global $base_url;
+    if(empty($email))
+    {
+        echo '<div style="font-family:Calibri;padding:0 3%;">';
+        echo '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center;border:1px solid #E6B3B2;font-size:18pt;"> ERROR</div>
+                                <div style="color: #a94442;font-size:14pt; margin-bottom:20px;"><p><strong>Error: </strong>Email address not found.</p>
+                                    <p>Check your <b>Attribute Mapping</b> configuration.</p>
+                                    <p><strong>Possible Cause: </strong>Email Attribute field is not configured.</p>
+                                </div>
+                                <div style="margin:3%;display:block;text-align:center;"></div>
+                                <div style="margin:3%;display:block;text-align:center;">
+                                    <form action="'.$base_url.'" method ="post">
+                                        <input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;box-sizing: border-box;border-color: #0073AA;box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;color: #FFF;"type="submit" value="Done">
+                                    </form>
+                                </div>';
+        exit;
+    }
 
-            /*************=================== Create user if not already present. ====================*********/
+    if(!empty($name) && isset($name))
+        $account = user_load_by_name($name);
+    else if(!empty($email) && isset($email))
+        $account = user_load_by_mail($email);
 
-            if (!isset($account->uid)) {
-                // Check for number of auto-created users
-                if($mo_count <= 10)
-                {
-                    $mo_count = $mo_count + 1;
-                    variable_set('miniorange_oauth_client_free_users',$mo_count);
-                    $default_role = 'authenticated user';
-                    $random_password = user_password(8);
-                    $result = db_select('role', 'rid')
-                        ->fields('rid')
-                        ->condition('name', $default_role,'=')
-                        ->execute()
-                        ->fetchAssoc();
-                    $dc[$result['rid']]=$default_role;
-                    $new_user = array(
-                        'name' => $name,
-                        'mail' => $email,
-                        'pass' => $random_password,
-                        'status' => 1,
-                        'roles' =>  $dc
-                    );
-                    $account = user_save(NULL, $new_user);
-                }
-                else{
-                    echo '<br><br><br><br><br><div style="color: #111010;background-color: #fadbdb; padding:2%;margin-bottom:20px;text-align:center;
+    global $user;
+    $mo_count = "";
+    $mo_count = variable_get('miniorange_oauth_client_free_users');
+
+    /*************=================== Create user if not already present. ====================*********/
+
+    if (!isset($account->uid)) {
+        // Check for number of auto-created users
+        if($mo_count <= 10)
+        {
+            $mo_count = $mo_count + 1;
+            variable_set('miniorange_oauth_client_free_users',$mo_count);
+            $default_role = 'authenticated user';
+            $random_password = user_password(8);
+            $result = db_select('role', 'rid')
+                ->fields('rid')
+                ->condition('name', $default_role,'=')
+                ->execute()
+                ->fetchAssoc();
+            $dc[$result['rid']]=$default_role;
+            $new_user = array(
+                'name' => $name,
+                'mail' => $email,
+                'pass' => $random_password,
+                'status' => 1,
+                'roles' =>  $dc
+            );
+            $account = user_save(NULL, $new_user);
+        }
+        else{
+            echo '<br><br><br><br><br><div style="color: #111010;background-color: #fadbdb; padding:2%;margin-bottom:20px;text-align:center;
                         border:1px solid #fadbdb;font-size:15pt;">
                         You can create only 10 new users in this version of the plugin/module. <br>Please upgrade to the enterprise version of the plugin in order to create unlimited new users.</div>';
-                    exit;
-                }
-            }
-            // Flood control check and check if user is blocked.
-            $redirect_url ='';
-            flood_clear_event($account->name);
-            $user = user_load($account->uid);
-            $edit = array();
-            if(!empty($redirect_url))
-              $edit['redirect'] = $redirect_url;
-            else
-              $edit['redirect'] = $base_url;
-            user_login_finalize($edit);
-            drupal_goto($edit['redirect']);
-    }
-
-    function testattrmappingconfig($nestedprefix, $resourceOwnerDetails){
-         foreach($resourceOwnerDetails as $key => $resource){
-                if(is_array($resource) || is_object($resource)){
-                    if(!empty($nestedprefix))
-                        $nestedprefix .= ".";
-                    testattrmappingconfig($nestedprefix.$key,$resource);
-                } else {
-                    echo "<tr style='text-align:center;'><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>";
-                    if(!empty($nestedprefix))
-                        echo $nestedprefix.".";
-                    echo $key."</td><td style='font-weight:bold;padding:2%;border:2px solid #949090; word-wrap:break-word;'>".$resource."</td></tr>";
-                }
-         }
-    }
-
-    /**
-     * This function gets the value of an attribute from the user resource
-     */
-    function getnestedattribute($resource, $key){
-        if(empty($key))
-            return "";
-        $keys = explode(".",$key);
-        if(sizeof($keys)>1){
-             $current_key = $keys[0];
-             if(isset($resource[$current_key]))
-                 return getnestedattribute($resource[$current_key], str_replace($current_key.".","",$key));
-        } else {
-             $current_key = $keys[0];
-             if(isset($resource[$current_key]))
-                 return $resource[$current_key];
+            exit;
         }
     }
+    // Flood control check and check if user is blocked.
+    $redirect_url ='';
+    flood_clear_event($account->name);
+    $user = user_load($account->uid);
+    $edit = array();
+    if(!empty($redirect_url))
+        $edit['redirect'] = $redirect_url;
+    else
+        $edit['redirect'] = $base_url;
+    user_login_finalize($edit);
+    drupal_goto($_SESSION['redirect_url']);
+}
+
+function testattrmappingconfig($nestedprefix, $resourceOwnerDetails){
+    foreach($resourceOwnerDetails as $key => $resource){
+        if(is_array($resource) || is_object($resource)){
+            if(!empty($nestedprefix))
+                $nestedprefix .= ".";
+            testattrmappingconfig($nestedprefix.$key,$resource);
+        } else {
+            echo "<tr style='text-align:center;'><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>";
+            if(!empty($nestedprefix))
+                echo $nestedprefix.".";
+            echo $key."</td><td style='font-weight:bold;padding:2%;border:2px solid #949090; word-wrap:break-word;'>".$resource."</td></tr>";
+        }
+    }
+}
+
+/**
+ * This function gets the value of an attribute from the user resource
+ */
+function getnestedattribute($resource, $key){
+    if(empty($key))
+        return "";
+    $keys = explode(".",$key);
+    $currentkey = "";
+    if(sizeof($keys)>1){
+        $currentkey = $keys[0];
+        if(isset($resource[$currentkey]))
+            return getnestedattribute($resource[$currentkey], str_replace($currentkey.".","",$key));
+    } else {
+        $currentkey = $keys[0];
+        if(isset($resource[$currentkey]))
+        {
+            if(is_array($resource[$currentkey]))
+            {
+                $resource = $resource[$currentkey];
+                return $resource[0];
+            }
+            else{
+                return $resource[$currentkey];
+            }
+        }
+    }
+}
 ?>

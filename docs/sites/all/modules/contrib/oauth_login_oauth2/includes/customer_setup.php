@@ -78,7 +78,7 @@ class MiniorangeOAuthCustomer {
         '%file' => 'customer_setup.php',
         '%error' => curl_error($ch),
       );
-      watchdog('miniorange_oauth', 'Error at %method of %file: %error', $error);
+      watchdog('oauth_login_oauth2', 'Error at %method of %file: %error', $error);
     }
     curl_close($ch);
 
@@ -100,7 +100,7 @@ class MiniorangeOAuthCustomer {
 
     $fields = array(
       'companyName' => $_SERVER['SERVER_NAME'],
-      'areaOfInterest' => 'Drupal OAuth Client Plugin ',
+      'areaOfInterest' => 'Drupal 7 OAuth Client Module ',
       'email' => $this->email,
       'phone' => $this->phone,
       'password' => $this->password,
@@ -129,7 +129,7 @@ class MiniorangeOAuthCustomer {
         '%file' => 'customer_setup.php',
         '%error' => curl_error($ch),
       );
-      watchdog('miniorange_oauth', 'Error at %method of %file: %error', $error);
+      watchdog('oauth_login_oauth2', 'Error at %method of %file: %error', $error);
     }
     curl_close($ch);
     return $content;
@@ -178,7 +178,7 @@ class MiniorangeOAuthCustomer {
         '%file' => 'customer_setup.php',
         '%error' => curl_error($ch),
       );
-      watchdog('miniorange_oauth', 'Error at %method of %file: %error', $error);
+      watchdog('oauth_login_oauth2', 'Error at %method of %file: %error', $error);
     }
     curl_close($ch);
 
@@ -189,7 +189,7 @@ class MiniorangeOAuthCustomer {
    * Send OTP.
    */
   public function sendOtp() {
-    echo "here";
+    $currentTimeInMillis = '';
     if (!Utilities::isCurlInstalled()) {
       return json_encode(array(
         "status" => 'CURL_ERROR',
@@ -205,14 +205,14 @@ class MiniorangeOAuthCustomer {
     $username = variable_get('miniorange_oauth_client_customer_admin_email',NULL);
    
     /* Current time in milliseconds since midnight, January 1, 1970 UTC. */
-    $current_time_in_millis = round(microtime(TRUE) * 1000);
+    $currentTimeInMillis = round(microtime(TRUE) * 1000);
     
     /* Creating the Hash using SHA-512 algorithm */
-    $string_to_hash = $customer_key . $current_time_in_millis . $api_key;
+    $string_to_hash = $customer_key . number_format($currentTimeInMillis, 0, '', '' ) . $api_key;
     $hash_value = hash("sha512", $string_to_hash);
 
     $customer_key_header = "Customer-Key: " . $customer_key;
-    $timestamp_header = "Timestamp: " . $current_time_in_millis;
+    $timestamp_header = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
     $authorization_header = "Authorization: " . $hash_value;
    
     $fields = array(
@@ -229,7 +229,7 @@ class MiniorangeOAuthCustomer {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 
     curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", $customer_key_header,
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $customer_key_header,
       $timestamp_header, $authorization_header,
     ));
     curl_setopt($ch, CURLOPT_POST, TRUE);
@@ -241,7 +241,7 @@ class MiniorangeOAuthCustomer {
         '%file' => 'customer_setup.php',
         '%error' => curl_error($ch),
       );
-      watchdog('miniorange_oauth', 'Error at %method of %file: %error', $error);
+      watchdog('oauth_login_oauth2', 'Error at %method of %file: %error', $error);
     }
     curl_close($ch);
     
@@ -252,6 +252,7 @@ class MiniorangeOAuthCustomer {
    * Validate OTP.
    */
   public function validateOtp($transaction_id) {
+    $currentTimeInMillis = '';
     if (!Utilities::isCurlInstalled()) {
       return json_encode(array(
         "status" => 'CURL_ERROR',
@@ -265,13 +266,13 @@ class MiniorangeOAuthCustomer {
     $customer_key = $this->defaultCustomerId;
     $api_key = $this->defaultCustomerApiKey;
 
-    $current_time_in_millis =  self::get_timestamp();
+    $currentTimeInMillis =  round(microtime(TRUE) * 1000);
 
-    $string_to_hash = $customer_key . $current_time_in_millis . $api_key;
+    $string_to_hash = $customer_key . number_format($currentTimeInMillis, 0, '', '' ) . $api_key;
     $hash_value = hash("sha512", $string_to_hash);
 
     $customer_key_header = "Customer-Key: " . $customer_key;
-    $timestamp_header = "Timestamp: " . $current_time_in_millis;
+    $timestamp_header = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
     $authorization_header = "Authorization: " . $hash_value;
 
     $fields = array(
@@ -288,7 +289,7 @@ class MiniorangeOAuthCustomer {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 
     curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", $customer_key_header,
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', $customer_key_header,
       $timestamp_header, $authorization_header,
     ));
     curl_setopt($ch, CURLOPT_POST, TRUE);
@@ -301,7 +302,7 @@ class MiniorangeOAuthCustomer {
         '%file' => 'customer_setup.php',
         '%error' => curl_error($ch),
       );
-      watchdog('miniorange_oauth', 'Error at %method of %file: %error', $error);
+      watchdog('oauth_login_oauth2', 'Error at %method of %file: %error', $error);
     }
     curl_close($ch);
     return $content;
@@ -320,14 +321,14 @@ class MiniorangeOAuthCustomer {
 		Global $base_url;
 		
 		/* Current time in milliseconds since midnight, January 1, 1970 UTC. */
-		$currentTimeInMillis = self::get_timestamp();
+		$currentTimeInMillis = round(microtime(TRUE) * 1000);
 		
 		/* Creating the Hash using SHA-512 algorithm */
-		$stringToHash = $customerKey . $currentTimeInMillis . $apiKey;
+		$stringToHash = $customerKey . number_format($currentTimeInMillis, 0, '', '' ) . $apiKey;
 		$hashValue = hash ( "sha512", $stringToHash );
 		
 		$customerKeyHeader = "Customer-Key: " . $customerKey;
-		$timestampHeader = "Timestamp: " . $currentTimeInMillis;
+		$timestampHeader = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
 		$authorizationHeader = "Authorization: " . $hashValue;
 		
 		$fields = '';
@@ -353,7 +354,7 @@ class MiniorangeOAuthCustomer {
 		
 		curl_setopt ( $ch, CURLOPT_MAXREDIRS, 10 );
 		curl_setopt ( $ch, CURLOPT_HTTPHEADER, array (
-				"Content-Type: application/json",
+				'Content-Type: application/json',
 				$customerKeyHeader,
 				$timestampHeader,
 				$authorizationHeader 
@@ -380,11 +381,13 @@ class MiniorangeOAuthCustomer {
 		$ch = curl_init ( $url );
 		$customerKey = variable_get( 'miniorange_oauth_client_customer_id' );
 		$apiKey = variable_get( 'miniorange_oauth_client_customer_api_key' );
-		$currentTimeInMillis = self::get_timestamp();
-		$stringToHash = $customerKey . $currentTimeInMillis . $apiKey;
+		$currentTimeInMillis = round(microtime(TRUE) * 1000);
+		$stringToHash = $customerKey . number_format($currentTimeInMillis, 0, '', '' ) . $apiKey;
 		$hashValue = hash ( "sha512", $stringToHash );
-		$customerKeyHeader = "Customer-Key: " . $customerKey;$timestampHeader = "Timestamp: " . $currentTimeInMillis;
-		$authorizationHeader = "Authorization: " . $hashValue;$key = variable_get('miniorange_oauth_client_customer_admin_token');
+		$customerKeyHeader = "Customer-Key: " . $customerKey;
+		$timestampHeader = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
+		$authorizationHeader = "Authorization: " . $hashValue;
+		$key = variable_get('miniorange_oauth_client_customer_admin_token');
 		$code = AESEncryption::decrypt_data(variable_get('miniorange_oauth_client_license_key'),$key);
 		$fields = array ( 'code' => $code , 'customerKey' => $customerKey);
 		$field_string = json_encode ( $fields );
@@ -395,7 +398,7 @@ class MiniorangeOAuthCustomer {
 		curl_setopt ( $ch, CURLOPT_SSL_VERIFYPEER, false ); // required for https urls
 		curl_setopt ( $ch, CURLOPT_MAXREDIRS, 10 );
 		curl_setopt ( $ch, CURLOPT_HTTPHEADER, array (
-				"Content-Type: application/json",
+				'Content-Type: application/json',
 				$customerKeyHeader,
 				$timestampHeader,
 				$authorizationHeader 
@@ -412,30 +415,4 @@ class MiniorangeOAuthCustomer {
 		curl_close ( $ch );
 		return $content;
 	}
-	
-	function get_timestamp() {
-    $url = MiniorangeOAuthConstants::BASE_URL . '/moas/rest/mobile/get-timestamp';
-    $ch = curl_init ( $url );
-
-    curl_setopt ( $ch, CURLOPT_FOLLOWLOCATION, true );
-    curl_setopt ( $ch, CURLOPT_ENCODING, "" );
-    curl_setopt ( $ch, CURLOPT_RETURNTRANSFER, true );
-    curl_setopt ( $ch, CURLOPT_AUTOREFERER, true );
-    curl_setopt ( $ch, CURLOPT_SSL_VERIFYPEER, false );
-    curl_setopt ( $ch, CURLOPT_SSL_VERIFYHOST, false ); // required for https urls
-
-    curl_setopt ( $ch, CURLOPT_MAXREDIRS, 10 );
-
-    curl_setopt ( $ch, CURLOPT_POST, true );
-
-    $content = curl_exec ( $ch );
-
-    if (curl_errno ( $ch )) {
-        echo 'Error in sending curl Request';
-        exit ();
-    }
-    curl_close ( $ch );
-    return $content;
-	}
-
 }

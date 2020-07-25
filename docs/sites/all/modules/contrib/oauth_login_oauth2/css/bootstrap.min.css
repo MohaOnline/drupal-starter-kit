@@ -918,6 +918,7 @@ input[type=submit].btn1-block,input[type=reset].btn1-block,input[type=button].bt
 	color: #48a0dc;
 	border: 2px solid #48a0dc;
 	padding: 5px;
+    margin-left: 80px;
 }
 
 .mo_faq_button_left:hover{

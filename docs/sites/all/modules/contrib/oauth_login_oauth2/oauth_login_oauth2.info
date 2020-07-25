@@ -1,21 +1,17 @@
-name = OAuth 2.0 Client Login
-description = Login to Drupal site through an external Authentication Server using the OAuth Protocol
+name = OAuth 2.0 & OpenID Connect Login
+description = Login to Drupal site through an external Authentication Server using the OAuth or OpenID Protocol
 core = 7.x
 configure = admin/config/people/oauth_login_oauth2
+package = OAuth / OpenID Connect
 files[] = includes/Handler.php
 files[] = includes/customer_setup.php
 files[] = includes/constants.php
 files[] = includes/Utilities.php
 files[] = includes/miniorange_support.php
 scripts[] = js/testconfig.js
-; Information added by Drupal.org packaging script on 2019-07-16
-version = "7.x-1.1"
-core = "7.x"
-project = "oauth_login_oauth2"
-datestamp = "1563274090"
 
-; Information added by Drupal.org packaging script on 2019-09-10
-version = "7.x-1.11"
+; Information added by Drupal.org packaging script on 2020-07-01
+version = "7.x-1.17"
 core = "7.x"
 project = "oauth_login_oauth2"
-datestamp = "1568100186"
+datestamp = "1593588538"

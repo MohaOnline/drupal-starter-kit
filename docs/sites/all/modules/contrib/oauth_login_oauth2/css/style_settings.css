@@ -36,16 +36,130 @@
        border:1px solid #CCCCCC; 
        padding-left:20px; 
 }
+/*CSS for switch button*/
+
+.switch {
+	position: relative;
+	display: inline-block;
+	width: 60px;
+	height: 28px;
+}
+
+.switch input {display:none;}
+
+.slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #ca2222;
+	-webkit-transition: .4s;
+	transition: .4s;
+}
+
+.slider:before {
+	position: absolute;
+	content: "";
+	height: 25px;
+	width: 27px;
+	left: 2px;
+	bottom: 2px;
+	background-color: white;
+	transition: .4s;
+}
+
+input:checked + .slider {
+	background-color: #2ab934;
+}
+
+input:focus + .slider {
+	box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+	-webkit-transform: translateX(28px);
+	-ms-transform: translateX(28px);
+	transform: translateX(28px);
+}
+
+/*------ ADDED CSS ---------*/
+.on
+{
+	display: none;
+}
+
+.on, .off
+{
+	color: white;
+	position: absolute;
+	transform: translate(-50%,-50%);
+	top: 50%;
+	left: 50%;
+	font-size: 10px;
+	font-family: Verdana, sans-serif;
+}
+
+input:checked+ .slider .on
+{display: block;}
+
+input:checked + .slider .off
+{display: none;}
+
+/*--------- END --------*/
+
+/* Rounded sliders */
+.slider.round {
+	border-radius: 34px;
+}
+
+.slider.round:before {
+	border-radius: 50%;}
+/* END*/
+.mo_oauth_tooltip {
+	position: relative;
+	display: inline-block;
+}
+
+.mo_oauth_tooltiptext {
+	visibility: hidden;
+	width: 350px;
+	background-color: #737373;
+	color: white;
+	text-align: center;
+	border-radius: 6px;
+	padding: 5px 0;
+
+	/* Position the tooltip */
+	position: absolute;
+	z-index: 1;
+
+	opacity: 0;
+	transition: opacity 1s;
+}
+
+.mo_oauth_tooltip:hover + .mo_oauth_tooltiptext {
+	visibility: visible;
+	opacity: 1;
+}
+
+.mo_oauth_info_icon{
+	margin-top: 2px;
+}
 .mo_oauth_table_layout {
 	background-color:#FFFFFF; 
 	border:1px solid #CCCCCC; 
 	padding:0px 10px 10px 10px;
 	margin-bottom: 10px;
 }
-.mo_oauth_table_layout td {
-	
+.mo_oauth_highlight_background_note_export{
+	background-color: #e0e0e0;
+	border-radius: 4px;
+	padding: 0.55em;
+	width: 98%;
 }
-.mo_oauth_table_layout input['type=text'] {
+.mo_oauth_table_layout input[type=text] {
 	width: 80%;
 }
 .mo_oauth_table_layout td strong {
@@ -173,7 +287,7 @@
 .mo_oauth_container {
 	width: 59%;
 	padding: 25px;
-	border-radius: 4px; !important;
+	border-radius: 4px !important;
 	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 	margin-left: auto;
 	margin-right: auto;
@@ -237,11 +351,31 @@
 .mo_saml_container_center {
 	width: 60%;
 	padding: 25px;
-	border-radius: 4px;!important: ;
+	border-radius: 4px !important;
 	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 	margin-left: auto;
 	margin-right: auto;
 	float: none;
+}
+
+.mo_oauth_container_2 {
+	width: 95%;
+	padding: 25px;
+	border-radius: 4px !important;
+	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+	margin-left: auto;
+	margin-right: auto;
+	float: left;
+}
+
+.mo_oauth_container_3{
+	width: 40%;
+	padding: 33px;
+	border-radius: 4px !important;
+	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+	margin-left: auto;
+	margin-right: auto;
+	float: right;
 }
 
 /*marketing site setup guides table*/
@@ -363,7 +497,7 @@
 .mo_saml_container_2{
 	width: 29%;
 	padding: 33px;
-	border-radius: 4px;!important: ;
+	border-radius: 4px !important;
 	box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
 	margin-right: auto;
 	float: left;
@@ -441,7 +575,8 @@
 .class_inline_1{
 	width: 29%;
 	display: inline-block;
-	padding-top: 198px;
+	padding-top: 238px;
+	padding-left: 10px;
 }
 
 .class_inline{
@@ -554,7 +689,7 @@ p.pricing-rate{
 	color: #48a0dc;
 	border: 2px solid #48a0dc;
 	padding: 5px;
-	margin-left: 50px;
+	margin-left: 80px;
 }
 
 .mo_faq_button_left:hover{
@@ -570,4 +705,21 @@ p.pricing-rate{
 
 .mo_faq_button_right:hover{
 	transform: scale(1.1);
+}
+.mo_oauth_highlight_background_note_2{
+	background-color: #e0e0e0;
+	border-radius: 4px;
+	padding: 0.55em;
+	width: 71.7%;
+}
+#backup_import_form{
+	background-color:#FFFFFF;
+    padding:1px 1px 1px 10px !important; display:none;
+}
+.mo_oauth_backup_download{
+	display:none;
+}
+
+.mo_oauth_backup_cancel{
+	float:right;
 }

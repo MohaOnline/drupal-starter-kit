@@ -1,7 +1,6 @@
 
 <?php
 require_once 'includes/customer_setup.php';
-include "mo_saml_visualTour.php";
 /**
  * Customer setup form().
  */
@@ -10,6 +9,7 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
  {
      drupal_add_css( drupal_get_path('module', 'oauth_login_oauth2'). '/css/bootstrap.min.css' , array('group' => CSS_DEFAULT, 'every_page' => FALSE));
      drupal_add_css( drupal_get_path('module', 'oauth_login_oauth2'). '/css/style_settings.css' , array('group' => CSS_DEFAULT, 'every_page' => FALSE));
+     drupal_add_js( drupal_get_path('module', 'oauth_login_oauth2') . '/js/slide_support_button.js');
 
      $current_status = variable_get('miniorange_oauth_client_status', '');
 
@@ -18,12 +18,13 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
         $form['mo_header_style'] = array('#markup' => '<div class="mo_oauth_table_layout_1">');
 
         $form['mo_top_div'] = array(
-            '#markup' => '<div class="mo_oauth_table_layout mo_saml_container_center">',
+            '#markup' => '<div class="mo_oauth_table_layout mo_oauth_container">',
         );
 
         $form['miniorange_oauth_client_customer_otp_token'] = array(
           '#type' => 'textfield',
           '#title' => t('OTP'),
+          '#attributes' => array('style' => 'width:30%;'),
         );
 
         $form['miniorange_oauth_client_customer_validate_otp_button'] = array(
@@ -47,8 +48,8 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
           '#id' => 'button_config',
         );
 
-        $form['mo_header_style_end'] = array('#markup' => '</div></div>');
-
+        $form['mo_header_style_end'] = array('#markup' => '</div>');
+        Utilities::spConfigGuide($form, $form_state);
         Utilities::AddSupportButton($form, $form_state);
 
         return $form;
@@ -59,7 +60,7 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
         $form['mo_header_style'] = array('#markup' => '<div class="mo_oauth_table_layout_1">');
 
         $form['mo_top_div'] = array(
-            '#markup' => '<div class="mo_oauth_table_layout mo_saml_container_center">',
+            '#markup' => '<div class="mo_oauth_table_layout mo_oauth_container">',
         );
 
 
@@ -93,8 +94,7 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
 
         $form['mo_header_style_end'] = array('#markup' => '<br><br><br><br><br></div>');
 
-        $form['mo_markup_div_imp']=array('#markup'=>'</div>');
-
+        Utilities::spConfigGuide($form, $form_state);
         Utilities::AddSupportButton($form, $form_state);
 
         return $form;
@@ -103,30 +103,34 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
     $form['mo_header_style'] = array('#markup' => '<div class="mo_oauth_table_layout_1">');
 
     $form['mo_top_div'] = array(
-        '#markup' => '<div class="mo_oauth_table_layout mo_saml_container_center">',
+        '#markup' => '<div class="mo_oauth_table_layout mo_oauth_container">',
     );
 
     $form['markup_1'] = array(
-        '#markup' => '<h3>Register with miniOrange</h3>',
+        '#markup' => '<h3>Register/Login with miniOrange</h3>',
+        '#suffix' => '<hr><br>'
     );
 
-    $form['markup_2'] = array(
-        '#markup' => 'Just complete the short registration below to configure the OAuth Client Plugin. Please enter a valid email id <br>that you have
-                        access to. An OTP will be sent to this email address for verification purposes.',
-    );
+     $form['markup_2'] = array(
+         '#markup' => '<div class="mo_oauth_highlight_background_note_export"><p><h3>Why Should I register?</h3></p>
+           <b>You will be needing a miniOrange account to upgrade to the Standard, Premium or Enterprise versions of the modules.</b><br>
+             If you are facing any issues with registering from module, you can click <a href="https://www.miniorange.com/businessfreetrial" target="_blank"> here</a> to register.<br>
+             We do not store any information except the email that you will use to register with us.<br>             
+             </div>',
+     );
 
     $form['miniorange_oauth_client_customer_setup_username'] = array(
         '#type' => 'textfield',
         '#title' => t('Email'),
+        '#prefix' => '<br>',
+        '#attributes' => array('style' => 'width:50%;', 'placeholder' => 'Enter your email'),
     );
 
     $form['miniorange_oauth_client_customer_setup_phone'] = array(
         '#type' => 'textfield',
         '#title' => t('Phone'),
-    );
-
-    $form['markup_3'] = array(
-        '#markup' => '<b>NOTE:</b> We will only call if you need support.',
+        '#description' => '<b>NOTE:</b> We will only call if you need support.',
+        '#attributes' => array('style' => 'width:50%;'),
     );
 
     $form['miniorange_oauth_client_customer_setup_password'] = array(
@@ -135,7 +139,7 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
 
     $form['miniorange_oauth_client_customer_setup_button'] = array(
         '#type' => 'submit',
-        '#value' => t('Register'),
+        '#value' => t('Submit'),
         '#id' => 'button_config',
         '#submit' => array('miniorange_oauth_client_customer_setup_submit'),
     );
@@ -143,7 +147,7 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
      $form['markup_divEnd'] = array(
          '#markup' => '</div>'
      );
-
+     Utilities::spConfigGuide($form, $form_state);
      Utilities::AddSupportButton($form, $form_state);
 
 
@@ -155,7 +159,7 @@ function miniorange_oauth_client_customer_setup($form, &$form_state)
  */
 function miniorange_oauth_client_validate_otp_submit(&$form, $form_state) {
 
-  $otp_token = $form['miniorange_oauth_client_customer_otp_token']['#value'];
+  $otp_token = trim($form['miniorange_oauth_client_customer_otp_token']['#value']);
   $username = variable_get('miniorange_oauth_client_customer_admin_email', NULL);
   $phone = variable_get('miniorange_oauth_client_customer_admin_phone', NULL);
   $tx_id = variable_get('miniorange_oauth_client_tx_id', NULL);
@@ -185,18 +189,22 @@ function miniorange_oauth_client_validate_otp_submit(&$form, $form_state) {
 
       drupal_set_message(t('Customer account created.'));
     }
-    else if(trim($create_customer_response->message) == 'Email is not enterprise email.')
+    else if(trim($create_customer_response->message) == 'Email is not enterprise email.' || ($create_customer_response->status) == 'INVALID_EMAIL_QUICK_EMAIL')
     {
-            drupal_set_message(t('There was an error creating an account for you.<br> You may have entered an invalid Email-Id
+            drupal_set_message(t('There was an error creating an account for you. You may have entered an invalid Email-Id
             <strong>(We discourage the use of disposable emails) </strong>
             <br>Please try again with a valid email.'), 'error');
+            variable_set('miniorange_oauth_client_status', '');
+           return;
     }
     else {
       drupal_set_message(t('Error creating customer'), 'error');
+      return;
     }
   }
   else {
     drupal_set_message(t('Error validating OTP'), 'error');
+    return;
   }
 
 }
@@ -216,7 +224,7 @@ function miniorange_oauth_client_resend_otp(&$form, $form_state) {
     variable_set('miniorange_oauth_client_tx_id', $send_otp_response->txId);
     $current_status = 'VALIDATE_OTP';
     variable_set('miniorange_oauth_client_status', $current_status);
-    drupal_set_message(t('Verify email address by entering the passcode sent to @username', array('@username' => $username)));
+    drupal_set_message(t('The passcode has been resent to @username', array('@username' => $username)));
   }
 }
 
@@ -228,7 +236,7 @@ function miniorange_oauth_client_resend_otp(&$form, $form_state) {
 function miniorange_oauth_client_customer_setup_submit(&$form, $form_state)
 {
 
-  $username = $form['miniorange_oauth_client_customer_setup_username']['#value'];
+  $username = trim($form['miniorange_oauth_client_customer_setup_username']['#value']);
   $phone = $form['miniorange_oauth_client_customer_setup_phone']['#value'];
   $password = $form['miniorange_oauth_client_customer_setup_password']['#value']['pass1'];
     if(empty($username)||empty($password)){
@@ -268,6 +276,11 @@ function miniorange_oauth_client_customer_setup_submit(&$form, $form_state)
   }
   elseif ($check_customer_response->status == 'CURL_ERROR') {
     drupal_set_message(t('cURL is not enabled. Please enable cURL'), 'error');
+    return;
+  }
+  elseif ($check_customer_response->status == 'TRANSACTION_LIMIT_EXCEEDED') {
+      drupal_set_message(t('An error has been occured. Please try after sometime or contact us at <a href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a>'), 'error');
+      return;
   }
   else
   {
@@ -285,6 +298,7 @@ function miniorange_oauth_client_customer_setup_submit(&$form, $form_state)
     }
     else {
       drupal_set_message(t('Invalid credentials'), 'error');
+      return;
     }
             $current_status = 'PLUGIN_CONFIGURATION';
             variable_set('miniorange_oauth_client_status', $current_status);
@@ -308,10 +322,15 @@ function miniorange_oauth_client_back(&$form, $form_state) {
  */
 function send_support_query(&$form, $form_state)
 {
-    $email = $form['miniorange_oauth_email_address_support']['#value'];
+    $email = trim($form['miniorange_oauth_email_address_support']['#value']);
     $phone = $form['miniorange_oauth_phone_number_support']['#value'];
-    $query = $form['miniorange_oauth_support_query_support']['#value'];
-    Utilities::send_query($email, $phone, $query);
+    $query = trim($form['miniorange_oauth_support_query_support']['#value']);
+    Utilities::send_query($email, $phone, $query, null);
+}
+function rfd(&$form, $form_state) {
+
+    global $base_url;
+    drupal_goto($base_url.'/admin/config/people/oauth_login_oauth2/request_for_demo');
 }
 
 ?>
