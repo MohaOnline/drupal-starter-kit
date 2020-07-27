@@ -27,7 +27,6 @@ class FormTest extends \DrupalUnitTestCase {
           'conditional_values' => '',
         ),
         'required' => 0,
-        'page_num' => 1,
       ),
       3 => array(
         'nid' => 1,
@@ -43,7 +42,6 @@ class FormTest extends \DrupalUnitTestCase {
           'conditional_values' => '',
         ),
         'weight' => 2,
-        'page_num' => 1,
       ),
       2 => array(
         'nid' => 1,
@@ -66,11 +64,26 @@ class FormTest extends \DrupalUnitTestCase {
           'conditional_values' => '',
         ),
         'weight' => 1,
-        'page_num' => 1,
       ),
+      4 => [
+        'type' => 'grid',
+        'form_key' => 'grid',
+      ],
+      5 => [
+        'type' => 'select',
+        'form_key' => 'select',
+        'extra' => [
+          'items' => "1|one\n2|two\n3|three",
+        ],
+      ],
     );
-    foreach ($components as &$component) {
+    foreach ($components as $cid => &$component) {
       webform_component_defaults($component);
+      $component += [
+        'cid' => $cid,
+        'pid' => 0,
+        'nid' => 1,
+      ];
     }
     return $components;
   }
@@ -93,6 +106,8 @@ class FormTest extends \DrupalUnitTestCase {
     $form = new Form('webform', 0, 'the-sid', array(), array());
     $form->addComponents($this->components());
     $preview = $this->deleteComponentInfo($form->preview());
+    unset($preview['grid']);
+    unset($preview['select']);
     $this->assertEqual(array(
       '#tree' => TRUE,
       'fieldset1' => array(
@@ -408,6 +423,20 @@ class FormTest extends \DrupalUnitTestCase {
         '#form_builder' => array('property_group' => 'display'),
       ),
     ), $a);
+
+    // Render the configuration form of a grid component.
+    $element = $form->getElement('cid_4');
+    $config_form = $element->configurationForm([], $form_state);
+    $this->assertEqual('Questions', $config_form['grid_questions']['#title']);
+
+    // Render the configuration form of a grid component.
+    $element = $form->getElement('cid_5');
+    $config_form = $element->configurationForm([], $form_state);
+    $this->assertEqual([
+      '1' => 'one',
+      '2' => 'two',
+      '3' => 'three',
+    ], $config_form['options']['#options']);
   }
 
   /**

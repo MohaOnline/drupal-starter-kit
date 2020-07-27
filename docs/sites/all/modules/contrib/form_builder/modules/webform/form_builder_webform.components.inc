@@ -292,10 +292,14 @@ function _form_builder_webform_form_builder_map_grid() {
         'storage_parents' => array('extra', 'custom_question_keys'),
       ),
       'grid_options' => array(
-        'storage_parents' => array('extra', 'options'),
+        'storage_parents' => ['extra', 'options'],
+        'form_parents' => ['options'],
+        'property_group' => 'options',
       ),
       'grid_questions' => array(
-        'storage_parents' => array('extra', 'questions'),
+        'storage_parents' => ['extra', 'questions'],
+        'form_parents' => ['questions'],
+        'property_group' => 'options',
       ),
       'optrand' => array(
         'form_parents' => array('display', 'optrand'),
@@ -318,33 +322,15 @@ function _form_builder_webform_form_builder_map_grid() {
 function _form_builder_webform_form_builder_properties_grid() {
   return array(
     'grid_options' => array(
-      'form' => 'form_builder_webform_property_grid_options_form',
       'submit' => array('form_builder_webform_property_grid_form_submit'),
     ),
     'grid_questions' => array(
-      'form' => 'form_builder_webform_property_grid_questions_form',
       'submit' => array('form_builder_webform_property_grid_form_submit'),
     ),
     'unique' => array(
       'form' => 'form_builder_webform_property_unique_form',
     ),
   );
-}
-
-/**
- * Configuration form for the "grid_options" property.
- */
-function form_builder_webform_property_grid_options_form($component, $edit, &$form_state) {
-  $form = _form_builder_webform_build_edit_form($component, $edit, 'grid_options', 'options', array('options'));
-  return $form;
-}
-
-/**
- * Configuration form for the "grid_questions" property.
- */
-function form_builder_webform_property_grid_questions_form($component, $edit, &$form_state) {
-  $form = _form_builder_webform_build_edit_form($component, $edit, 'grid_questions', 'options', array('questions'));
-  return $form;
 }
 
 /**
@@ -933,20 +919,6 @@ function _form_builder_webform_form_builder_map_time() {
  */
 
 /**
- * Helper function; Generate a configuration form based on a map.
- */
-function _form_builder_webform_mapped_form($component, $edit, &$form_state, $property) {
-  $form = array();
-  if ($component_type = $component['type']) {
-    if ($map = _form_builder_webform_property_map($component_type)) {
-      $property_group = isset($map['properties'][$property]['property_group']) ? $map['properties'][$property]['property_group'] : reset($map['properties'][$property]['form_parents']);
-      $form = _form_builder_webform_build_edit_form($component, $edit, $property, $map['properties'][$property]);
-    }
-  }
-  return $form;
-}
-
-/**
  * Helper function; Alter a form element upon load based on a map.
  */
 function _form_builder_webform_set_mapped_type($element) {
@@ -986,7 +958,7 @@ function _form_builder_webform_default($component_type, $merge_extras = array(),
 }
 
 /**
- * Helper function; builds a form for editing part of a webform component.
+ * Helper function; Generate a configuration form based on a map.
  *
  * The returned form is derived from a subcomponent of the component form
  * provided by the Webform module.
@@ -1009,11 +981,16 @@ function _form_builder_webform_default($component_type, $merge_extras = array(),
  *     property will be shown.
  *   - weight: Override the #weight of the property form element.
  *
- * @return
- *   A form array that can be used to edit the specified part of the webform
- *   component represented by $element.
+ * @return array
+ *   Part of the webform component edit form as specified in
+ *   `$map['form_parents']` prepared for being used in a form_builder configure
+ *   form.
  */
-function _form_builder_webform_build_edit_form($component, $edit, $property, array $map) {
+function _form_builder_webform_mapped_form($component, $edit, &$form_state, $property) {
+  if (!(($component_type = $component['type']) && ($map = _form_builder_webform_property_map($component_type)))) {
+    return [];
+  }
+  $map = $map['properties'][$property];
   $map += [
     'property_group' => reset($map['form_parents']),
   ];
@@ -1036,7 +1013,7 @@ function _form_builder_webform_build_edit_form($component, $edit, $property, arr
 
   // Return the form, keyed by the name of the property that is being
   // configured.
-  return array($property => $form);
+  return [$property => $form];
 }
 
 /**

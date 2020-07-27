@@ -167,7 +167,7 @@ function form_builder_webform_property_options_form($component, $edit, &$form_st
     '#title' => t('Options'),
     '#type' => 'options',
     '#default_value' => $component['value'],
-    '#options' => $component['extra']['items'],
+    '#options' => _webform_select_options_from_text($component['extra']['items']),
     '#required' => TRUE,
     '#multiple' => $component['extra']['multiple'],
     '#multiple_toggle' => !empty($component['extra']['as_list']),
