@@ -265,7 +265,7 @@ function opigno_scorm_ui_opigno_scorm_ui_register_cmi_data($scorm, $scos, $scorm
         'cmi.core.student_name' => $learner_name,
         'cmi.student_preference._children' => "audio,language,speed,text",
         'cmi.student_preference.audio' => array(),
-        'cmi.student_preference.language' => array(),
+        'cmi.student_preference.language' => '',
         'cmi.student_preference.speed' => array(),
         'cmi.student_preference.text' => array(),
       );

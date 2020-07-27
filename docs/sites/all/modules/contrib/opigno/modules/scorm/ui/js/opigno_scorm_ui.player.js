@@ -68,20 +68,48 @@
           if (settings.scormVersion === '1.2') {
             eventName = 'commit12';
           }
+
           // Listen on commit event, and send the data to the server.
           scormAPIobject.bind(eventName, function(value, data, scoId) {
-            $.ajax({
-              url: Drupal.settings.basePath + '?q=opigno-scorm/ui/scorm/' + $element.data('scorm-id') + '/' + scoId + '/ajax/commit',
-              data: { data: JSON.stringify(data) },
-              async:   false,
-              dataType: 'json',
-              type: 'post',
-              success: function(json) {
-                if (alertDataStored) {
-                  alert(Drupal.t('We successfully stored your results. You can now proceed further.'));
-                }
+              if (!navigator.sendBeacon) {
+                  $.ajax({
+                      url: Drupal.settings.basePath + '?q=opigno-scorm/ui/scorm/' + $element.data('scorm-id') + '/' + scoId + '/ajax/commit',
+                      data: { data: JSON.stringify(data) },
+                      async: false,
+                      dataType: 'json',
+                      type: 'post',
+                      success: function (json) {
+                          if (alertDataStored) {
+                              //alert(Drupal.t('We successfully stored your results. You can now proceed further.'));
+                              console.log('We successfully stored your results. You can now proceed further.');
+                          }
+                      }
+                  });
               }
-            });
+              else {
+                  navigator.sendBeacon(Drupal.settings.basePath + '?q=opigno-scorm/ui/scorm/' + $element.data('scorm-id') + '/' + scoId + '/ajax/commit', JSON.stringify(data));
+              }
+          });
+
+          $("#edit-submit").bind("click", function () {
+              console.log("lolipopyy");
+              var $el = $(document),
+                  $iframe = $el.find('.scorm-ui-player-iframe-wrapper iframe');
+              iframe = $iframe[0];
+              var scoId = iframe.src.split('opigno-scorm/ui/player/sco/').pop();
+              var baseUrl = Drupal.settings.basePath  ? Drupal.settings.basePath  : '/';
+              $.ajax({
+                  url: baseUrl + '?q=opigno-scorm/ui/scorm/' + $element.data('scorm-id') + '/' + scoId + '/ajax/commit',
+                  data: { data: JSON.stringify(scormAPIobject.data) },
+                  async: false,
+                  dataType: 'json',
+                  type: 'post',
+                  success: function (json) {
+                      if (alertDataStored) {
+                          //alert(Drupal.t('We successfully stored your results. You can now proceed further.'));
+                      }
+                  }
+              });
           });
 
           // Listen to the unload event. Some users click "Next" or go to a different page, expecting
