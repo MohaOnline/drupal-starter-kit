@@ -23,12 +23,13 @@ use Drupal\campaignion_supporter_tags\Tagger;
 function campaignion_supporter_tags_form_node_form_alter(&$form, &$form_state) {
   $node = $form['#node'];
   if (isset($node) && field_read_instance('node', 'supporter_tags', $node->type)) {
-    $form['segmentation'] = array(
+    $form += ['segmentation' => []];
+    $form['segmentation'] += [
       '#type'  => 'fieldset',
       '#title' => t('Auto segmentation'),
       '#group' => 'additional_settings',
       '#tree'  => FALSE,
-    );
+    ];
     $form['segmentation']['supporter_tags'] = $form['supporter_tags'];
     hide($form['supporter_tags']);
   }

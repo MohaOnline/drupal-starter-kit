@@ -16,6 +16,17 @@ use Drupal\little_helpers\System\FormRedirect;
 use Drupal\little_helpers\Webform\Submission;
 
 /**
+ * Implements hook_little_helpers_services().
+ */
+function campaignion_action_little_helpers_services() {
+  $info['campaignion_action.loader'] = [
+    'class' => Loader::class,
+    'constructor' => 'fromGlobalInfo',
+  ];
+  return $info;
+}
+
+/**
  * Implements hook_menu().
  */
 function campaignion_action_menu() {
@@ -197,7 +208,20 @@ function campaignion_action_webform_redirect_alter(FormRedirect &$redirect, Subm
       $redirect = FormRedirect::fromFormStateRedirect($action_redirect);
     }
   }
+  _campaignion_action_redirect_add_get_parameters($redirect, $submission);
+}
 
+/**
+ * Implements hook_campaignion_email_to_target_redirect_alter().
+ */
+function campaignion_action_campaignion_email_to_target_redirect_alter(FormRedirect &$redirect, Submission $submission) {
+  _campaignion_action_redirect_add_get_parameters($redirect, $submission);
+}
+
+/**
+ * Helper function to add the share and sid parameter to a redirect.
+ */
+function _campaignion_action_redirect_add_get_parameters(FormRedirect &$redirect, Submission $submission) {
   $action_path = 'node/' . $submission->nid;
   $redirect->query['share'] = $action_path;
   $redirect->query['sid'] = $submission->sid;

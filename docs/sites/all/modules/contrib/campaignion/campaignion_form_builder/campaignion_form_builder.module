@@ -14,6 +14,7 @@ function campaignion_form_builder_webform_component_info() {
     'description' => t('Textfield for entering a phone number with additional opt-in options.'),
     'file' => 'components/phone_number.inc',
   ] + webform_webform_component_info()['textfield'];
+  $info['phone_number']['features']['opt_in'] = TRUE;
   return $info;
 }
 
@@ -27,31 +28,6 @@ function campaignion_form_builder_webform_validator_alter(&$validators) {
     }
   }
 }
-
-/**
- * Implements hook_campaignion_action_taken().
- */
-function campaignion_form_builder_campaignion_action_taken($node, Submission $submission) {
-  $activity = SubmissionActivity::byNidSid($node->nid, $submission->sid);
-  if (!$activity) {
-    watchdog('campaignion_form_builder', 'Can’t record opt-in without activity for submission [nid: %nid, sid: %sid].', ['%nid' => $node->nid, '%sid' => $submission->sid], WATCHDOG_ERROR);
-    return;
-  }
-  $factory = new OptInRecordFactory($activity);
-
-  $components = $submission->webform->componentsByType('phone_number');
-  foreach ($components as $cid => $component) {
-    if (!empty($component['extra']['implies_optin'])) {
-      $values = $submission->valuesByCid($cid);
-      $value = reset($values);
-      if ($value) {
-        $component['extra']['channel'] = 'phone';
-        $factory->recordOptIn($component, ['phone-number:opt-in']);
-      }
-    }
-  }
-}
-
 
 /**
  * Implements hook_form_builder_element_types_alter().

@@ -27,9 +27,9 @@ server.use(jsonServer.bodyParser)
 
 // Rewrite routes
 server.use(jsonServer.rewriter({
-  '/api/jwt': '/datasets',
-  '/api/jwt/:key': '/datasets/:key',
-  '/api/jwt/:key/contact': '/datasets/:key/contacts' // '/contacts?datasetKey=:key'
+  '/api': '/datasets',
+  '/api/:key': '/datasets/:key',
+  '/api/:key/contact': '/datasets/:key/contacts' // '/contacts?datasetKey=:key'
 }))
 
 // Process put request on a list of contacts
@@ -107,7 +107,7 @@ server.listen(8081, () => {
 // Helper Functions
 
 function isAuthorized (req) {
-  return req.headers.authorization === 'JWT xxx'
+  return req.headers.authorization === 'Bearer xxx'
 }
 
 function setContactIds (contacts) {

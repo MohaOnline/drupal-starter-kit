@@ -3,6 +3,7 @@
 namespace Drupal\campaignion_opt_in;
 
 use Drupal\campaignion_activity\WebformSubmission as SubmissionActivity;
+use Drupal\campaignion_opt_in\Values;
 use Drupal\little_helpers\Webform\Submission;
 
 /**
@@ -15,6 +16,7 @@ class OptInRecrodTest extends \DrupalUnitTestCase {
    */
   public function setUp() {
     parent::setUp();
+    module_load_include('components.inc', 'webform', 'includes/webform');
     $node_stub = (object) [
       'nid' => 1001,
       'webform' => [
@@ -50,6 +52,7 @@ class OptInRecrodTest extends \DrupalUnitTestCase {
       ],
     ];
     $this->submission = new Submission($node_stub, $submission_stub);
+    $this->submission->opt_in = new Values($this->submission);
 
     $this->activity = new SubmissionActivity([
       'contact_id' => 1001,

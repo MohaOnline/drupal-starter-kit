@@ -87,6 +87,38 @@ SQL;
     return $contact;
   }
 
+  /**
+   * Apply a function to every contact selected by a query.
+   *
+   * @param callable $func
+   *   A function taking one parameter: A $contact.
+   * @param string $sql
+   *   A SQL-query that selects contact_ids. The query must use:
+   *   - `WHERE contact_id>:last_id`
+   *   - No `LIMIT` clause
+   *   Defaults to a query that selects all redhen contacts.
+   * @param int $batch_size
+   *   The number of contacts to process in one batch.
+   */
+  public static function apply($func, $sql = NULL, $batch_size = 100) {
+    $sql = $sql ?? <<<SQL
+SELECT contact_id
+FROM {redhen_contact}
+WHERE contact_id>:last_id
+ORDER BY contact_id
+SQL;
+    $sql .= " LIMIT $batch_size";
+    $controller = entity_get_controller('redhen_contact');
+    $last_id = 0;
+    while ($contact_ids = db_query($sql, [':last_id' => $last_id])->fetchCol()) {
+      foreach ($controller->load($contact_ids) as $contact) {
+        $func($contact);
+        $last_id = $contact->contact_id;
+      }
+      $controller->resetCache();
+    }
+  }
+
   public function wrap() {
     return entity_metadata_wrapper('redhen_contact', $this);
   }

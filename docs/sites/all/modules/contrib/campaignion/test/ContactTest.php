@@ -60,4 +60,17 @@ class ContactTest extends \DrupalUnitTestCase {
     $this->assertEqual(0, $contact->created);
   }
 
+  /**
+   * Test looping over contacts.
+   */
+  public function testApply() {
+    Contact::fromBasicData('test@example.com', 'first', 'last')->save();
+    $emails = [];
+    // Take note of all contacts’ email addresses.
+    Contact::apply(function ($contact) use (&$emails) {
+      $emails[] = $contact->email();
+    });
+    $this->assertEqual('test@example.com', end($emails));
+  }
+
 }

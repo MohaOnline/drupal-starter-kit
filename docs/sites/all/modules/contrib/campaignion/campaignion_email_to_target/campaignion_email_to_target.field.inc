@@ -1,7 +1,6 @@
 <?php
 
-use Drupal\campaignion_email_to_target\Api\Client;
-use Drupal\campaignion_email_to_target\Loader;
+use Drupal\little_helpers\Services\Container;
 
 /**
  * Implements hook_field_info().
@@ -75,7 +74,7 @@ function _campaignion_email_to_target_options_field_widget_form($item) {
 
   $options = [];
   try {
-    $api = Client::fromConfig();
+    $api = Container::get()->loadService('campaignion_email_to_target.api.Client');
     foreach ($api->getDatasetList() as $ds) {
       $options[$ds->key] = $ds->title;
     }
@@ -102,7 +101,7 @@ function _campaignion_email_to_target_options_field_widget_form($item) {
     '#type' => 'radios',
     '#title' => t('Target selection mode'),
     '#default_value' => $item['selection_mode'],
-    '#options' => Loader::instance()->options(),
+    '#options' => Container::get()->loadService('campaignion_email_to_target.selection_mode.loader')->options(),
   ];
   return $element;
 }

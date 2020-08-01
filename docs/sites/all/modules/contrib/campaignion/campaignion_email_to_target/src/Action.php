@@ -3,8 +3,10 @@
 namespace Drupal\campaignion_email_to_target;
 
 use Drupal\campaignion_action\ActionBase;
-use Drupal\campaignion_action\TypeInterface;
+use Drupal\campaignion_action\ActionType;
 use Drupal\campaignion_email_to_target\Api\Client;
+use Drupal\campaignion_email_to_target\Channel\Email;
+use Drupal\little_helpers\Services\Container;
 use Drupal\little_helpers\Webform\Submission;
 
 /**
@@ -16,28 +18,24 @@ class Action extends ActionBase {
 
   protected $options;
   protected $api;
-
-  /**
-   * Create a new instance by reading the global Api\Client config.
-   */
-  public static function fromTypeAndNode(TypeInterface $type, $node) {
-    return new static($type, $node, Client::fromConfig());
-  }
+  protected $parameters;
 
   /**
    * Create a new action instance.
    *
-   * @param \Drupal\campaignion_action\TypeInterface $type
-   *   The action type of this action.
+   * @param array $parameters
+   *   Additional action parameters.
    * @param object $node
    *   The action’s node.
    * @param \Drupal\campaignion_email_to_target\Api\Client $api
    *   Api client for the e2t_api serivce.
    */
-  public function __construct(TypeInterface $type, $node, Client $api) {
-    parent::__construct($type, $node);
+  public function __construct(array $parameters, $node, Client $api = NULL) {
+    parent::__construct($parameters + [
+      'channel' => Email::class,
+    ], $node);
     $this->options = $this->getOptions();
-    $this->api = $api;
+    $this->api = $api ?? Container::get()->loadService('campaignion_email_to_target.api.Client');
   }
 
   /**
@@ -59,7 +57,7 @@ class Action extends ActionBase {
    * Get options for this action.
    */
   public function getOptions() {
-    $field = $this->type->parameters['email_to_target']['options_field'];
+    $field = $this->parameters['email_to_target']['options_field'];
     $items = field_get_items('node', $this->node, $field);
     return ($items ? $items[0] : []) + [
       'dataset_name' => 'mp',
@@ -72,7 +70,7 @@ class Action extends ActionBase {
    * Get configured no target message.
    */
   public function defaultExclusion() {
-    $field = $this->type->parameters['email_to_target']['no_target_message_field'];
+    $field = $this->parameters['email_to_target']['no_target_message_field'];
     $renderable = field_view_field('node', $this->node, $field, ['label' => 'hidden']);
     return new Exclusion(['message' => $renderable]);
   }
@@ -174,6 +172,31 @@ class Action extends ActionBase {
     }
 
     return $pairs;
+  }
+
+  /**
+   * Get the configured channel.
+   */
+  public function channel() {
+    return $this->pluginInstance($this->parameters['channel']);
+  }
+
+  /**
+   * Create a new plugin instance based on a specification.
+   *
+   * @param mixed $spec
+   *   A spec can either be a fully qualified class name or an array with at
+   *   least one member 'class' which must be a fully qualified class name.
+   *
+   * @return mixed
+   *   A new plugin instance.
+   */
+  protected function pluginInstance($spec) {
+    if (!is_array($spec)) {
+      $spec = ['class' => $spec];
+    }
+    $class = $spec['class'];
+    return $class::fromConfig($spec);
   }
 
 }

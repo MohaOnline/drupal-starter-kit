@@ -3,6 +3,7 @@
 namespace Drupal\campaignion_action;
 
 use Drupal\campaignion_action\Redirects\Redirect;
+use Drupal\campaignion_opt_in\Values;
 use Drupal\little_helpers\System\FormRedirect;
 use Drupal\little_helpers\Webform\Submission;
 use Drupal\little_helpers\Webform\Webform;
@@ -48,6 +49,7 @@ class ModuleTest extends DrupalUnitTestCase {
     }));
     $submission->node = $this->node;
     $submission->webform = new Webform($this->node);
+    $submission->opt_in = new Values($submission);
 
     // No redirect configured.
     campaignion_action_webform_redirect_alter($redirect, $submission);
@@ -94,11 +96,12 @@ class ModuleTest extends DrupalUnitTestCase {
     // Setting properties needs a bit of extra work because of magic methods.
     $data['nid'] = $this->node->nid;
     $data['sid'] = 4711;
-    $submission->method('__get')->will($this->returnCallback(function ($name) use ($data) {
+    $submission->method('__get')->will($this->returnCallback(function ($name) use (&$data) {
       return isset($data[$name]) ? $data[$name] : NULL;
     }));
     $submission->node = $this->node;
     $submission->webform = new Webform($this->node);
+    $data['opt_in'] = new Values($submission);
 
     // Redirects configured but field value not set.
     (new Redirect([

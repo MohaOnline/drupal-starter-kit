@@ -132,18 +132,12 @@ class Filter extends Model {
    *   otherwise FALSE.
    */
   protected function hasOptin(Submission $submission) {
-    // Check for opt-ins or opt-outs in this form.
-    $components = $submission->webform->componentsByType('opt_in');
-    foreach ($components as $cid => $component) {
-      if ($component['extra']['channel'] == 'email') {
-        $value = Values::removePrefix($submission->valuesByCid($cid));
-        if ($value == 'opt-in') {
-          return TRUE;
-        }
-        elseif ($value == 'opt-out') {
-          return FALSE;
-        }
-      }
+    $value = $submission->opt_in->canonicalValue('email', TRUE);
+    if ($value == Values::OPT_IN) {
+      return TRUE;
+    }
+    elseif ($value == Values::OPT_OUT) {
+      return FALSE;
     }
 
     // If there is at least one subscription then we assume we have an opt-in.

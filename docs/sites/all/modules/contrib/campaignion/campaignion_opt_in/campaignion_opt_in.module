@@ -15,6 +15,7 @@ function campaignion_opt_in_webform_component_info() {
     'description' => t('Offers a user to opt-in to future communication.'),
     'features' => [
       'conditional' => TRUE,
+      'opt_in' => TRUE,
     ],
     'file' => 'campaignion_opt_in.component.inc',
     'conditional_type' => 'opt_in',
@@ -123,12 +124,10 @@ function campaignion_opt_in_campaignion_action_taken($node, Submission $submissi
     watchdog('campaignion_opt_in', 'Can’t record opt-in without activity for submission [nid: %nid, sid: %sid].', ['%nid' => $node->nid, '%sid' => $submission->sid], WATCHDOG_ERROR);
     return;
   }
-  $factory = new OptInRecordFactory($activity);
 
-  $components = $submission->webform->componentsByType('opt_in');
-  foreach ($components as $cid => $component) {
-    $values = $submission->valuesByCid($cid);
-    $factory->recordOptIn($component, $values);
+  $factory = new OptInRecordFactory($activity);
+  foreach ($submission->opt_in->values() as $value) {
+    $factory->recordOptIn($value);
   }
 }
 
@@ -153,4 +152,16 @@ function campaignion_opt_in_channel_info() {
   $channels = module_invoke_all('campaignion_opt_in_channel_info');
   drupal_alter('campaignion_opt_in_channel_info', $channels);
   return $channels;
+}
+
+/**
+ * Implements hook_webform_submission_load().
+ *
+ * Add a opt-in values object to each submission.
+ */
+function campaignion_opt_in_webform_submission_load(&$submissions) {
+  foreach ($submissions as $sid => $submission) {
+    $node = node_load($submission->nid);
+    $submission->opt_in = new Values(new Submission($node, $submission));
+  }
 }

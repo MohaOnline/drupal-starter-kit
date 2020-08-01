@@ -2,6 +2,8 @@
 
 namespace Drupal\campaignion_mp_fields;
 
+use Drupal\little_helpers\Services\Container;
+
 use Drupal\campaignion_email_to_target\Api\Client;
 use Drupal\campaignion\Contact;
 
@@ -14,7 +16,9 @@ class MPDataLoaderTest extends \DrupalUnitTestCase {
    * Create a data loader with a mocked API-Client.
    */
   public function createDataLoader(&$output) {
+    $container = $this->createMock(Container::class);
     $api = $this->createMock(Client::class);
+    $container->method('loadService')->willReturn($api);
     $test_data[0] = [
       'last_name' => 'Test',
       'political_affiliation' => 'Labour',
@@ -41,7 +45,7 @@ class MPDataLoaderTest extends \DrupalUnitTestCase {
         $output = $constituency['name'];
       }
     };
-    return [$api, new MPDataLoader($api, $setters)];
+    return [$api, new MPDataLoader($container, $setters)];
   }
 
   /**

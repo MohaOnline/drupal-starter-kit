@@ -5,6 +5,7 @@ package = Campaignion
 dependencies[] = campaignion_email_to_target
 dependencies[] = ctools
 dependencies[] = features
+dependencies[] = little_helpers:little_helpers (>=2.0-alpha11)
 dependencies[] = postal_code_validation
 dependencies[] = psr0
 dependencies[] = strongarm
@@ -26,8 +27,8 @@ features[uuid_term][] = 48bba52f-836f-4ccf-afac-9944e9eaf599
 features[uuid_term][] = 578118e7-477e-44b7-85df-cd897437c91d
 features[uuid_term][] = 60c353e3-7079-40ff-9790-264bd1a19a1f
 
-; Information added by Drupal.org packaging script on 2019-11-04
-version = "7.x-2.7"
+; Information added by Drupal.org packaging script on 2020-07-01
+version = "7.x-2.14"
 core = "7.x"
 project = "campaignion"
-datestamp = "1572898388"
+datestamp = "1593586545"

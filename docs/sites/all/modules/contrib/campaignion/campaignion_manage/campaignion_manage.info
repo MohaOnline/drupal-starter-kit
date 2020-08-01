@@ -3,24 +3,24 @@ description = Listings and bulk-operations for content and contacts.
 core = 7.x
 package = Campaignion
 
-dependencies[] = campaignion
-dependencies[] = campaignion_activity
-dependencies[] = campaignion_ux
+dependencies[] = campaignion:campaignion
+dependencies[] = campaignion:campaignion_activity
+dependencies[] = campaignion:campaignion_ux
 ; for ctools dropbutton
-dependencies[] = ctools
-dependencies[] = date_popup
-dependencies[] = node
-dependencies[] = psr0
-dependencies[] = redhen_contact
-dependencies[] = select2
+dependencies[] = ctools:ctools
+dependencies[] = date:date_popup
+dependencies[] = drupal:node
+dependencies[] = psr0:psr0
+dependencies[] = redhen:redhen_contact
+dependencies[] = select2:select2
 
 scripts[] = "js/content_translations.js"
 
 stylesheets[all][] = "css/campaignion-manage.css"
 stylesheets[all][] = "css/ctools-dropbutton.css"
 
-; Information added by Drupal.org packaging script on 2019-11-04
-version = "7.x-2.7"
+; Information added by Drupal.org packaging script on 2020-07-01
+version = "7.x-2.14"
 core = "7.x"
 project = "campaignion"
-datestamp = "1572898388"
+datestamp = "1593586545"

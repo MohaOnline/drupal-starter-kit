@@ -94,3 +94,17 @@ function _webform_csv_headers_phone_number($component, $export_options) {
 function _webform_csv_data_phone_number($component, $export_options, $value) {
   return _webform_csv_data_textfield($component, $export_options, $value);
 }
+
+/**
+ * Implements _webform_opt_in_component().
+ */
+function _webform_opt_in_phone_number($component, $values) {
+  if (!empty($component['extra']['implies_optin']) && reset($values)) {
+    return [
+      'value' => 'opt-in',
+      'raw_value' => 'phone-number:opt-in',
+      'channel' => 'phone',
+      'statement' => $component['extra']['optin_statement'],
+    ];
+  }
+}

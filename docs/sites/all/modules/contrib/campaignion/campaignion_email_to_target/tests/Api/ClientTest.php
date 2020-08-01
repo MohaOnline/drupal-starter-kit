@@ -26,8 +26,9 @@ class ClientTest extends \DrupalUnitTestCase {
    * Create an instrumented Api object that doesn’t actually send requests.
    */
   protected function instrumentedApi() {
+    $auth = $this->createMock(AuthAppClient::class);
     $api = $this->getMockBuilder(Client::class)
-      ->setConstructorArgs(['http://mock', 'pk', 'sk'])
+      ->setConstructorArgs(['http://mock', $auth])
       ->setMethods(['send'])
       ->getMock();
     return $api;

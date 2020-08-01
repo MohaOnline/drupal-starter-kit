@@ -7,15 +7,20 @@ use Drupal\little_helpers\Webform\Webform;
 use Drupal\little_helpers\Webform\Submission;
 
 class ActionBase {
-  protected $type;
+
+  protected $parameters;
   protected $node;
 
-  public static function fromTypeAndNode(TypeInterface $type, $node) {
-    return new static($type, $node);
-  }
-
-  public function __construct(TypeInterface $type, $node) {
-    $this->type = $type;
+  /**
+   * Create a new instance by passing parameters and a node.
+   *
+   * @param array $parameters
+   *   Parameters for this node type.
+   * @param object $node
+   *   The action node.
+   */
+  public function __construct(array $parameters, $node) {
+    $this->parameters = $parameters;
     $this->node = $node;
   }
 
@@ -31,7 +36,7 @@ class ActionBase {
       $node->webform_template = $node->translation_source->nid;
     } else {
       if (!isset($node->nid) && empty($node->webform['components'])) {
-        if ($nid = $this->type->defaultTemplateNid($node)) {
+        if ($nid = $this->defaultTemplateNid($node)) {
           // webform_template-7.x-1.x
           $_SESSION['webform_template'] = $nid;
           // webform_template-7.x-4.x
@@ -56,7 +61,7 @@ class ActionBase {
    */
   public function save() {
     $status = $this->node->status;
-    $field = $this->type->parameters['thank_you_page']['reference'];
+    $field = $this->parameters['thank_you_page']['reference'];
     if ($items = field_get_items('node', $this->node, $field)) {
       foreach ($items as $item) {
         if ($nid = $item['node_reference_nid']) {
@@ -110,7 +115,7 @@ class ActionBase {
    * Evaluate the redirect logic.
    */
   public function redirect(Submission $submission, $delta) {
-    $field = $this->type->parameters['thank_you_page']['reference'];
+    $field = $this->parameters['thank_you_page']['reference'];
 
     $item = field_get_items('node', $this->node, $field)[$delta];
     switch ($item['type']) {
@@ -127,6 +132,30 @@ class ActionBase {
         }
         break;
     }
+  }
+
+  /**
+   * Get the default template node ID for the node.
+   *
+   * @param object $node
+   *   The node to get the template for.
+   *
+   * @return int|null
+   *   The node ID of the template node or NULL if no templates was found
+   */
+  public function defaultTemplateNid($node) {
+    $uuid = $this->parameters['template_node_uuid'];
+    $ids = \entity_get_id_by_uuid('node', [$uuid]);
+    if (($nid = array_shift($ids)) && ($template = node_load($nid))) {
+      if (module_exists('translation') && $template->tnid) {
+        $t = translation_node_get_translations($template->tnid);
+        if (isset($t[$node->language])) {
+          return $t[$node->language]->nid;
+        }
+      }
+      return $template->nid;
+    }
+    return NULL;
   }
 
 }

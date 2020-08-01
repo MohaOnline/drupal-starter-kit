@@ -35,7 +35,7 @@ class SupporterTag extends Base implements FilterInterface {
     );
   }
 
-  public function title() { return t('Is taged with'); }
+  public function title() { return t('Is tagged with'); }
 
   public function apply($query, array $values) {
     $inner = db_select('field_data_supporter_tags', 'st_inner')

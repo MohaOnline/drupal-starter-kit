@@ -2,6 +2,11 @@
 
 namespace Drupal\campaignion\CRM\Export;
 
+/**
+ * Wrapper field that allows mapping of values.
+ *
+ * @deprecated since 2.9. Use a WrapperField inside a Map instead.
+ */
 class MappedWrapperField extends WrapperField {
   protected $map;
   protected $filter;

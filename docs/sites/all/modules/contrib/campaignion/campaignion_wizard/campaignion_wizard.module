@@ -220,8 +220,10 @@ function campaignion_wizard_node_delete($node) {
  * These were added with media 7.x-2.22.
  */
 function _campaignion_wizard_field_main_image_widget_form_process($element, &$form_state, $form) {
-  if (!empty($element['alt']) && !empty($element['title'])) {
+  if (!empty($element['alt'])) {
     $element['alt']['#access'] = FALSE;
+  }
+  if (!empty($element['title'])) {
     $element['title']['#access'] = FALSE;
   }
   return $element;

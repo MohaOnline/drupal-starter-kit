@@ -93,6 +93,7 @@ class ValuesTest extends \DrupalUnitTestCase {
       3 => ['radios:opt-out'],
     ];
     $submission = new Submission($node, $submission);
+    $submission->opt_in = new Values($submission);
 
     $this->assertTrue(Values::submissionHasOptIn($submission, 'one'));
     $this->assertFalse(Values::submissionHasOptIn($submission, 'two'));

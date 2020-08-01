@@ -43,7 +43,7 @@ Use this component with the `.sync` modifier on the `filters` prop.
           :count="100"
           :lazy-load="true"
           page-mode="offset"
-          :headers="{'Authorization': 'JWT ' + e2tApi.token}"
+          :headers="{'Authorization': 'Bearer ' + e2tApi.token}"
           >
         </type-ahead>
         <template v-if="filter.operator == 'regexp'">&nbsp;/</template>

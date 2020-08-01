@@ -53,6 +53,13 @@ function campaignion_webform_tokens_webform_redirect_alter(FormRedirect &$redire
 }
 
 /**
+ * Implements hook_campaignion_email_to_target_redirect_alter().
+ */
+function campaignion_webform_tokens_campaignion_email_to_target_redirect_alter(FormRedirect &$redirect, Submission $submission) {
+  campaignion_webform_tokens_webform_redirect_alter($redirect, $submission);
+}
+
+/**
  * Returns a safe HMAC value for a submission ID used for authentication.
  *
  * @param int $sid

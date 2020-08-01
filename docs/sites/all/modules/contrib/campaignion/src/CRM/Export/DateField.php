@@ -2,6 +2,11 @@
 
 namespace Drupal\campaignion\CRM\Export;
 
+/**
+ * Get formated values from a date field.
+ *
+ * @deprecated since 2.9. Use the DateFormat wrapper instead.
+ */
 class DateField extends WrapperField {
 
   protected $format;

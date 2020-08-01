@@ -5,7 +5,8 @@ namespace Drupal\campaignion_newsletters;
 use \Drupal\little_helpers\Webform\Submission;
 
 class FormSubmissionTest extends \DrupalUnitTestCase {
-  public function testSaveAndLoad_withOptinInfo() {
+
+  public function testSaveAndLoadWithOptinInfo() {
     $mock_node = (object) [
       'webform' => [
         'components' => [
@@ -22,17 +23,14 @@ class FormSubmissionTest extends \DrupalUnitTestCase {
         ],
       ],
     ];
-    $m = $this->getMockBuilder('\\Drupal\\little_helpers\\Webform\\Submission')
-      ->setMethods(['valueByCid'])->disableOriginalConstructor()->getMock();
-    $m->node = $mock_node;
-    $m->nid = 1;
-    $m->remote_addr = '127.0.0.1';
-    $m->submitted = 4711;
-    $m->method('valueByCid')->will($this->returnValueMap([
-      [11, NULL],
-      [12, 'test'],
-    ]));
-
+    $s['nid'] = 1;
+    $s['data'] = [
+      11 => [NULL],
+      12 => ['test'],
+    ];
+    $s['remote_addr'] = '127.0.0.1';
+    $s['submitted'] = 4711;
+    $m = new Submission($mock_node, (object) $s);
     $fs = FormSubmission::fromWebformSubmission($m);
     $this->assertEquals('127.0.0.1', $fs->ip);
     $this->assertEquals(4711, $fs->date);

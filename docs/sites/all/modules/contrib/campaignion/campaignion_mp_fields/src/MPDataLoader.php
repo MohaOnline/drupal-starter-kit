@@ -2,8 +2,7 @@
 
 namespace Drupal\campaignion_mp_fields;
 
-use \Drupal\campaignion_email_to_target\Api\Client;
-use \Drupal\campaignion_email_to_target\Api\ConfigError;
+use Drupal\little_helpers\Services\Container;
 
 /**
  * Extract UK postcodes from address fields and add MP data to an entity.
@@ -11,11 +10,11 @@ use \Drupal\campaignion_email_to_target\Api\ConfigError;
 class MPDataLoader {
 
   /**
-   * API-Client for the e2t-api.
+   * Container used for lazy-loading the e2t API client.
    *
-   * @var \Drupal\campaignion_email_to_target\Api\Client
+   * @var \Drupal\little_helpers\Services\Container
    */
-  protected $api;
+  protected $container;
 
   /**
    * Generate new instance from hard-coded configuration.
@@ -23,13 +22,7 @@ class MPDataLoader {
    * @return static|null
    *   A new instance of this class or NULL if the API is not available.
    */
-  public static function fromConfig() {
-    try {
-      $api = Client::fromConfig();
-    }
-    catch (ConfigError $e) {
-      return NULL;
-    }
+  public static function fromConfig(Container $container) {
     $setters = [
       'mp_constituency' => function ($field, $constituency, $target) {
         if (!empty($constituency['name'])) {
@@ -54,7 +47,7 @@ class MPDataLoader {
         }
       },
     ];
-    return new static($api, $setters);
+    return new static($container, $setters);
   }
 
   /**
@@ -68,8 +61,8 @@ class MPDataLoader {
    *   - target: The target data from the API (or NULL).
    *   The functions should set their field’s value if available.
    */
-  public function __construct(Client $api, array $setters) {
-    $this->api = $api;
+  public function __construct(Container $container, array $setters) {
+    $this->container = $container;
     $this->setters = $setters;
   }
 
@@ -114,7 +107,8 @@ class MPDataLoader {
       }
     }
     if ($postcode) {
-      $data = $this->api->getTargets('mp', ['postcode' => $postcode]);
+      $api = $this->container->loadService('campaignion_email_to_target.api.Client');
+      $data = $api->getTargets('mp', ['postcode' => $postcode]);
       if ($data) {
         $target = !empty($data[0]) ? $data[0] : NULL;
         $constituency = !empty($target['constituency']) ? $target['constituency'] : NULL;

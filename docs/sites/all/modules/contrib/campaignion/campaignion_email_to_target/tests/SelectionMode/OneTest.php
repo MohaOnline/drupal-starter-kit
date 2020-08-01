@@ -3,6 +3,7 @@
 namespace Drupal\campaignion_email_to_target\SelectionMode;
 
 use Drupal\campaignion_email_to_target\Message;
+use Drupal\campaignion_email_to_target\Channel\Email;
 
 /**
  * Test the “One” selection plugin.
@@ -13,7 +14,7 @@ class OneTest extends \DrupalUnitTestcase {
    * Test run with two targets/messages.
    */
   public function testTwoTargets() {
-    $mode = new One(TRUE);
+    $mode = new One(TRUE, new Email());
     $pairs = [
       [['id' => 'target1'], new Message([])],
       [['id' => 'target2'], new Message([])],
@@ -39,12 +40,12 @@ class OneTest extends \DrupalUnitTestcase {
     $pairs = [
       [['id' => 'target1'], new Message([])],
     ];
-    $mode = new One(TRUE);
+    $mode = new One(TRUE, new Email());
     $element = $mode->formElement($pairs);
     $this->assertEmpty($element['target1']['subject']['#disabled']);
     $this->assertEmpty($element['target1']['message']['#disabled']);
 
-    $mode = new One(FALSE);
+    $mode = new One(FALSE, new Email());
     $element = $mode->formElement($pairs);
     $this->assertNotEmpty($element['target1']['subject']['#disabled']);
     $this->assertNotEmpty($element['target1']['message']['#disabled']);

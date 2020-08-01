@@ -5,8 +5,9 @@
  * campaignion_email_to_target.install
  */
 
-use Drupal\campaignion_email_to_target\Api\Client;
 use Drupal\campaignion_email_to_target\Api\ConfigError;
+use Drupal\campaignion_email_to_target\NullCacheBin;
+use Drupal\little_helpers\Services\Container;
 
 /**
  * Implements hook_schema()
@@ -138,7 +139,16 @@ function campaignion_email_to_target_field_schema($field) {
  * Implements hook_enable().
  */
 function campaignion_email_to_target_enable() {
-  variable_set('cache_class_cache_token', '\\Drupal\\campaignion_email_to_target\\NullCacheBin');
+  variable_set('cache_class_cache_token', NullCacheBin::class);
+}
+
+/**
+ * Implements hook_disable().
+ */
+function campaignion_email_to_target_disable() {
+  if (variable_get('cache_class_cache_token') == NullCacheBin::class) {
+    variable_del('cache_class_cache_token');
+  }
 }
 
 /**
@@ -148,7 +158,7 @@ function campaignion_email_to_target_requirements($phase) {
   if ($phase == 'runtime') {
     $requirements['e2t_api']['title'] = 'Email to target API connection.';
     try {
-      Client::fromConfig();
+      Container::get()->loadService('campaignion_email_to_target.api.Client');
       $requirements['e2t_api'] += [
         'severity' => REQUIREMENT_OK,
         'description' => t('e2t API connection is configured.'),

@@ -4,28 +4,28 @@ namespace Drupal\campaignion_email_to_target\Wizard;
 
 use Drupal\campaignion_action\Loader;
 use Drupal\campaignion_email_to_target\Api\Client;
+use Drupal\little_helpers\Services\Container;
+use Upal\DrupalUnitTestCase;
 
 /**
  * Test whether the wizard target step works.
  */
-class TargetStepTest extends \DrupalUnitTestCase {
+class TargetStepTest extends DrupalUnitTestCase {
 
   /**
    * Set some e2t-api connection data.
    */
   public function setUp() {
-    $GLOBALS['conf']['campaignion_email_to_target_credentials'] = [
-      'url' => 'http://mocked',
-      'public_key' => 'pk',
-      'secret_key' => 'sk',
-    ];
+    parent::setUp();
+    Container::get()->inject('campaignion_email_to_target.api.Client', $this->createMock(Client::class));
   }
 
   /**
    * Remove test API connection.
    */
   public function tearDown() {
-    unset($GLOBALS['conf']['campaignion_email_to_target_credentials']);
+    drupal_static_reset(Container::class);
+    parent::tearDown();
   }
 
   /**

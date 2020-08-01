@@ -6,6 +6,7 @@ use Drupal\campaignion_action\Loader;
 use Drupal\campaignion_email_to_target\Action;
 use Drupal\form_builder\Loader as FormBuilderLoader;
 use Drupal\little_helpers\Rest\HttpError;
+use Drupal\little_helpers\Services\Container;
 use Upal\DrupalUnitTestCase;
 
 /**
@@ -21,7 +22,7 @@ class FormSteptest extends DrupalUnitTestCase {
     $mock_loader = $this->getMockBuilder(Loader::class)
       ->disableOriginalConstructor()
       ->getMock();
-    Loader::injectInstance($mock_loader);
+    Container::get()->inject('campaignion_action.loader', $mock_loader);
     $mock_action = $this->getMockBuilder(Action::class)
       ->disableOriginalConstructor()
       ->getMock();
@@ -61,7 +62,7 @@ class FormSteptest extends DrupalUnitTestCase {
     node_delete($this->node->nid);
     drupal_static_reset('form_set_error');
     $_SESSION['messages'] = [];
-    Loader::injectInstance(NULL);
+    Container::get()->inject('campaignion_action.loader', NULL);
     parent::tearDown();
   }
 

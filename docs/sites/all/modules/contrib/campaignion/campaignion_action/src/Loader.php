@@ -2,6 +2,8 @@
 
 namespace Drupal\campaignion_action;
 
+use Drupal\little_helpers\Services\Container;
+
 /**
  * Class for loading Action-Type plugins and general dependency injection.
  */
@@ -11,22 +13,10 @@ class Loader {
   protected $types = [];
 
   /**
-   * Inject a custom loader instance.
-   *
-   * NOTE: Only for testing purposes.
-   */
-  public static function injectInstance($instance) {
-    static::$instance = $instance;
-  }
-
-  /**
    * Get a singleton instance of this class.
    */
   public static function instance() {
-    if (!static::$instance) {
-      static::$instance = static::fromGlobalInfo();
-    }
-    return static::$instance;
+    return Container::get()->loadService('campaignion_action.loader');
   }
 
   public static function fromGlobalInfo() {
@@ -36,7 +26,6 @@ class Loader {
   public function __construct($types_info) {
     foreach ($types_info as $type => &$info) {
       $info += [
-        'class' => '\\Drupal\\campaignion_action\\TypeBase',
         'action_class' => '\\Drupal\\campaignion_action\\ActionBase',
         'parameters' => [],
       ];
@@ -98,10 +87,8 @@ class Loader {
   public function type($type) {
     if (!isset($this->types[$type])) {
       $this->types[$type] = FALSE;
-      if (!empty($this->info[$type]['class'])) {
-        $info = $this->info[$type];
-        $class = $info['class'];
-        $this->types[$type] = new $class($type, $info + $info['parameters']);
+      if ($info = $this->info[$type] ?? NULL) {
+        $this->types[$type] = new ActionType($type, $info + $info['parameters']);
       }
     }
     return $this->types[$type];
@@ -113,9 +100,10 @@ class Loader {
   public function actionFromNode($node) {
     if (!isset($node->action)) {
       $node->action = NULL;
-      if ($type = $this->type($node->type)) {
-        $class = $this->info[$node->type]['action_class'];
-        $node->action = $class::fromTypeAndNode($type, $node);
+      if ($info = $this->info[$node->type] ?? NULL) {
+        $class = $info['action_class'];
+        $parameters = $info + $info['parameters'];
+        $node->action = new $class($parameters, $node);
       }
     }
     return $node->action;
@@ -133,8 +121,7 @@ class Loader {
    *  The wizard responsible for changing/adding actions of this type.
    */
   public function wizard($type, $node = NULL) {
-    if ($type_o = $this->type($type)) {
-      $info = $this->info[$type];
+    if ($info = $this->info[$type] ?? NULL) {
       $class = $info['wizard_class'];
       return new $class($info, $node, $type);
     }

@@ -2,11 +2,12 @@
 
 namespace Drupal\campaignion_email_to_target;
 
+use Drupal\little_helpers\Services\Container;
 use Drupal\little_helpers\Webform\Webform;
 use Drupal\little_helpers\Webform\Submission;
 use Drupal\campaignion_action\Loader;
 
-use Drupal\campaignion_email_to_target\Loader as ModeLoader;
+use Drupal\campaignion_email_to_target\Channel\Email;
 
 /**
  * Implement behavior for the email to target message webform component.
@@ -100,6 +101,7 @@ class Component {
     // Get list of targets for this node.
     $submission_o = $this->webform->formStateToSubmission($form_state);
     $options = $this->action->getOptions();
+    $channel = $this->action->channel();
 
     $test_mode = !empty($form_state['test_mode']);
     $email = $submission_o->valueByKey('email');
@@ -148,20 +150,25 @@ class Component {
       $this->disableSubmits($form);
       if ($redirect = $exclusion->redirect()) {
         $submission = $this->saveSubmission($form, $form_state);
-        drupal_alter('webform_redirect', $redirect, $submission);
+        drupal_alter('campaignion_email_to_target_redirect', $redirect, $submission);
         $this->redirect($redirect, $form, $form_state);
       }
       return;
     }
 
     $pairs = $pairs_or_exclusion;
-    $class = ModeLoader::instance()->getMode($options['selection_mode']);
-    $mode = new $class(!empty($options['users_may_edit']));
+    $mode = Container::get()
+      ->loadService('campaignion_email_to_target.selection_mode.loader')
+      ->getSpec($options['selection_mode'])
+      ->instantiate([
+        'editable' => !empty($options['users_may_edit']),
+        'channel' => $channel,
+      ]);
     if (count($pairs) == 1) {
       $mode = $mode->singleMode();
     }
     $form_state['selection_mode'] = $mode;
-    $element += $mode->formElement($pairs);
+    $element += $mode->formElement($pairs, $channel);
   }
 
   /**
@@ -175,63 +182,14 @@ class Component {
   /**
    * Send emails to all selected targets.
    */
-  public function sendEmails($data, Submission $submission) {
-    $nid = $submission->nid;
-    $node = $submission->webform->node;
-    $root_node = $node->tnid ? node_load($node->tnid) : $node;
+  public function sendEmails($data, Submission $submission, $channel) {
     $send_count = 0;
-
     foreach ($data as $serialized) {
       $m = unserialize($serialized);
-      $message = new Message($m['message']);
-      $message->replaceTokens(NULL, $submission);
-      unset($m);
-
-      // Set the HTML property based on availablity of MIME Mail.
-      $email['html'] = FALSE;
-      // Pass through the theme layer.
-      $t = 'campaignion_email_to_target_mail';
-      $theme_d = ['message' => $message, 'submission' => $submission];
-      $email['message'] = theme([$t, $t . '_' . $nid], $theme_d);
-
-      $email['from'] = $message->from;
-      $email['subject'] = $message->subject;
-
-      $email['headers'] = [
-        'X-Mail-Domain' => variable_get('site_mail_domain', 'supporter.campaignion.org'),
-        'X-Action-UUID' => $root_node->uuid,
-      ];
-
-      // Verify that this submission is not attempting to send any spam hacks.
-      if (_webform_submission_spam_check($message->to, $email['subject'], $email['from'], $email['headers'])) {
-        watchdog('campaignion_email_to_target', 'Possible spam attempt from @remote !message',
-                array('@remote' => ip_address(), '!message' => "<br />\n" . nl2br(htmlentities($email['message']))));
-        drupal_set_message(t('Illegal information. Data not submitted.'), 'error');
-        return FALSE;
-      }
-
-      $language = $GLOBALS['language'];
-      $mail_params = array(
-        'message' => $email['message'],
-        'subject' => $email['subject'],
-        'headers' => $email['headers'],
-        'submission' => $submission,
-        'email' => $email,
-      );
-
-      // Mail the submission.
-      $m = $this->mail($message->to, $language, $mail_params, $email['from']);
-      if ($m['result']) {
+      if ($channel->send($m, $submission)) {
         $send_count += 1;
       }
     }
-  }
-
-  /**
-   * Wrapper for drupal_mail().
-   */
-  protected function mail($to, $language, $mail_params, $from) {
-    return drupal_mail('campaignion_email_to_target', 'email_to_target', $to, $language, $mail_params, $from);
   }
 
 }

@@ -89,7 +89,7 @@ function _webform_render_protest_target($component, $value = NULL, $filter = TRU
 
   $node = _campaignion_protest_target_get_node($component);
   if (empty($node)) {
-    return NULL;
+    return [];
   }
   $protest_target_options = field_get_items('node', $node, 'field_protest_target_options');
 

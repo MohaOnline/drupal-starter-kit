@@ -2,6 +2,7 @@
 
 namespace Drupal\campaignion_facebook_pixel;
 
+use Drupal\campaignion_opt_in\Values;
 use Drupal\little_helpers\Webform\Submission;
 
 /**
@@ -35,10 +36,14 @@ class ConfigTest extends \DrupalUnitTestCase {
       'form_key' => 'newsletter',
       'type' => 'opt_in',
       'cid' => 1,
-      'extra' => ['channel' => 'email'],
+      'extra' => [
+        'channel' => 'email',
+        'optin_statement' => 'Opt-in statement',
+      ],
     ];
     $s_submission['data'][1] = ['radios:opt-in'];
     $submission = new Submission((object) $s_node, (object) $s_submission);
+    $submission->opt_in = new Values($submission);
 
     $config = new Config([1 => 'testcode']);
     $this->assertEqual('fbq:testcode=r,l', $config->submissionFragment($submission));

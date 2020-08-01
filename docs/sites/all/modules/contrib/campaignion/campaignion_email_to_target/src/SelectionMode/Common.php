@@ -8,54 +8,28 @@ namespace Drupal\campaignion_email_to_target\SelectionMode;
 abstract class Common {
 
   protected $editable;
+  protected $channel;
 
   /**
    * Construct a new selection mode plugin.
    */
-  public function __construct($editable) {
+  public function __construct($editable, $channel) {
     $this->editable = $editable;
+    $this->channel = $channel;
   }
 
   /**
    * Get selection mode plugin to use when only one target is found.
    */
   public function singleMode() {
-    return new Single($this->editable);
+    return new Single($this->editable, $this->channel);
   }
 
   /**
    * Get message editing form for a single message.
    */
   protected function messageForm($target, $message) {
-    $t = [
-      '#type' => 'container',
-      '#attributes' => ['class' => ['email-to-target-target']],
-      '#message' => $message->toArray(),
-      '#target' => $target,
-    ];
-    $t['subject'] = [
-      '#type' => 'textfield',
-      '#title' => t('Subject'),
-      '#default_value' => $message->subject,
-      '#disabled' => !$this->editable,
-    ];
-    $t['header'] = [
-      '#prefix' => '<pre class="email-to-target-header">',
-      '#markup' => check_plain($message->header),
-      '#suffix' => '</pre>',
-    ];
-    $t['message'] = [
-      '#type' => 'textarea',
-      '#title' => t('Message'),
-      '#default_value' => $message->message,
-      '#disabled' => !$this->editable,
-    ];
-    $t['footer'] = [
-      '#prefix' => '<pre class="email-to-target-footer">',
-      '#markup' => check_plain($message->footer),
-      '#suffix' => '</pre>',
-    ];
-    return $t;
+    return $this->channel->messageForm($target, $message, $this->editable);
   }
 
   /**
@@ -75,11 +49,7 @@ abstract class Common {
   public function getValues(array $element, $original_values) {
     $values = [];
     foreach ($original_values as $id => $edited_message) {
-      $e = $element[$id];
-      $values[] = serialize([
-        'message' => $edited_message + $e['#message'],
-        'target' => $e['#target'],
-      ]);
+      $values[] = serialize($this->channel->value($edited_message, $element[$id]));
     }
     return $values;
   }

@@ -30,20 +30,17 @@ class OptInRecordFactory {
   /**
    * Add a new opt-in record.
    *
-   * @param array $component
-   *   The webform component that is being processed.
-   * @param mixed $value
-   *   The submission value for the webform component.
+   * @param array $opt_in
+   *   Opt-in data as returned from the webform component.
    */
-  public function recordOptIn($component, $values) {
-    $value = Values::removePrefix($values);
-    if (in_array($value, [Values::OPT_IN, Values::OPT_OUT])) {
+  public function recordOptIn(array $opt_in) {
+    if (in_array($opt_in['value'], [Values::OPT_IN, Values::OPT_OUT])) {
       db_insert('campaignion_opt_in')->fields([
         'activity_id' => $this->activity->activity_id,
-        'operation' => $value == Values::OPT_IN ? 1 : 0,
-        'value' => reset($values),
-        'channel' => $component['extra']['channel'],
-        'statement' => $component['extra']['optin_statement'],
+        'operation' => $opt_in['value'] == Values::OPT_IN ? 1 : 0,
+        'value' => $opt_in['raw_value'],
+        'channel' => $opt_in['channel'],
+        'statement' => $opt_in['statement'],
         'ip_address' => $this->getIpAddress(),
       ])->execute();
     }

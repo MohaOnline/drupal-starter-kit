@@ -42,7 +42,7 @@ class ComponentIntegrationTest extends \DrupalUnitTestCase {
     $client = $this->createMock(Client::class);
     $type = Loader::instance()->type($node->type);
     $node->action = $this->getMockBuilder(Action::class)
-      ->setConstructorArgs([$type, $node, $client])
+      ->setConstructorArgs([$type->parameters, $node, $client])
       ->setMethods(['getOptions', 'targetMessagePairs'])
       ->getMock();
     node_object_prepare($node);

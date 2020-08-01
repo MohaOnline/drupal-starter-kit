@@ -2,29 +2,52 @@
 
 namespace Drupal\campaignion_email_to_target\Wizard;
 
-use \Drupal\campaignion\Forms\EntityFieldForm;
-use \Drupal\campaignion_email_to_target\Api\Client;
+use Drupal\campaignion\Forms\EntityFieldForm;
+use Drupal\campaignion_wizard\WizardStep;
+use Drupal\little_helpers\Services\Container;
 
-class TargetStep extends \Drupal\campaignion_wizard\WizardStep {
-  protected $step  = 'target';
+/**
+ * Wizard step for choosing the action’s targets.
+ */
+class TargetStep extends WizardStep {
+
+  /**
+   * The URL part used for this step.
+   *
+   * @var string
+   */
+  protected $step = 'target';
+
+  /**
+   * The menu title for this step.
+   *
+   * @var string
+   */
   protected $title = 'Target';
   protected $api;
 
+  /**
+   * Create a new step instance.
+   */
   public function __construct($wizard, $api = NULL) {
     parent::__construct($wizard);
-    $this->api = $api ? $api : Client::fromConfig();
+    $this->api = $api ? $api : Container::get()->loadService('campaignion_email_to_target.api.Client');
   }
 
+  /**
+   * Render the options form and the target configuration vue app.
+   */
   public function stepForm($form, &$form_state) {
     $form = parent::stepForm($form, $form_state);
     $field = $this->wizard->parameters['email_to_target']['options_field'];
     $this->fieldForm = new EntityFieldForm('node', $this->wizard->node, [$field]);
     $form += $this->fieldForm->formArray($form_state);
 
-
     $settings = [];
-    $settings['contactPrefix'] = 'contact.';  // identifies contact fields within a dataset’s attributes
-    $settings['standardColumns'] = [          // these are posted by the front end if a new dataset is added
+    // Identifies contact fields within a dataset’s attributes.
+    $settings['contactPrefix'] = 'contact.';
+    // These are posted by the front end if a new dataset is added.
+    $settings['standardColumns'] = [
       [
         'key' => 'email',
         'description' => '',
@@ -61,13 +84,16 @@ class TargetStep extends \Drupal\campaignion_wizard\WizardStep {
         'description' => 'Use this field to segment your list if you want to send different versions of the email to different people, e.g. ‘Chair’ vs ‘Member’. You can set these specific messages up on the next step of the page builder.',
       ],
     ];
-    $settings['validations'] = [              // used by the front end, a set of 'key' => 'regex' pairs
-      'email' => '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$', // backslashes have to be escaped so JS won’t interpret them as escape sequence.
+    // Used by the front end vue app. A set of 'key' => 'regex' pairs.
+    $settings['validations'] = [
+      // Escape backslashes so JS won’t interpret them as escape sequence.
+      'email' => '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
       'first_name' => '\\S+',
       'last_name' => '\\S+',
       'salutation' => '\\S+',
     ];
-    $settings['maxFieldLengths'] = [  // used by the front end to validate field max length.
+    // Used by the front end vue app to validate field max length.
+    $settings['maxFieldLengths'] = [
       'email' => 255,
       'title' => 255,
       'first_name' => 255,
@@ -97,10 +123,16 @@ class TargetStep extends \Drupal\campaignion_wizard\WizardStep {
     return $form;
   }
 
+  /**
+   * Validate the submitted values.
+   */
   public function validateStep($form, &$form_state) {
     $this->fieldForm->validate($form, $form_state);
   }
 
+  /**
+   * Save the submitted values.
+   */
   public function submitStep($form, &$form_state) {
     $this->fieldForm->submit($form, $form_state);
   }
@@ -108,4 +140,5 @@ class TargetStep extends \Drupal\campaignion_wizard\WizardStep {
   public function checkDependencies() {
     return isset($this->wizard->node->nid);
   }
+
 }

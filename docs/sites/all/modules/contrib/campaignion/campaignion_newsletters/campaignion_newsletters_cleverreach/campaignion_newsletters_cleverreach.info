@@ -8,8 +8,8 @@ dependencies[] = psr0
 
 
 
-; Information added by Drupal.org packaging script on 2019-11-04
-version = "7.x-2.7"
+; Information added by Drupal.org packaging script on 2020-07-01
+version = "7.x-2.14"
 core = "7.x"
 project = "campaignion"
-datestamp = "1572898388"
+datestamp = "1593586545"

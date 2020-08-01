@@ -1,12 +1,13 @@
-dist: trusty
 language: php
-sudo: false
+services:
+  - mysql
+language: php
 
 addons:
   chrome: stable
 
 php:
-  - 7.0
+  - 7.3
 
 mysql:
   database: drupal
@@ -25,7 +26,7 @@ cache:
 
 install:
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
-  - composer global require drush/drush:8.1.* dflydev/hawk phpunit/phpunit:6.4.* torotil/upal:1.1.3
+  - composer global require drush/drush:8.1.* phpunit/phpunit:6.4.* torotil/upal:1.2.0
   - nvm install 10.0.0
   - npm install -g yarn
 
@@ -33,10 +34,11 @@ before_script:
   - repo=`pwd`
   - root=$HOME/test-root
   - mysql -e 'create database drupal'
-  - php -d include_path=`pwd` -d sendmail_path=`which true` ~/.composer/vendor/bin/drush.php --yes core-quick-drupal --core=drupal-7.x --profile=testing --no-server --db-url=mysql://root:@127.0.0.1/drupal --root=$root
+  - php -d include_path=`pwd` -d sendmail_path=`which true` ~/.composer/vendor/bin/drush.php --yes core-quick-drupal --core=drupal-7.69 --profile=testing --no-server --db-url=mysql://root:@127.0.0.1/drupal --root=$root
   - ln -s $repo $root/sites/all/modules/campaignion
   - cd $root
-  - drush dl addressfield ctools date entity features field_type_language file_entity form_builder-7.x-2.0-alpha2 i18n little_helpers-2.0-alpha2 media oowizard paypal_payment psr0 redhen references webform webform_confirm_email webform_template ultimate_cron
+  - curl https://www.drupal.org/files/issues/1891356-drupal_static_reset-on-module-changes-30-D7.patch | patch -p1
+  - drush dl --cache-duration-releasexml=0 little_helpers-2.0-alpha12
   - drush --yes pm-enable campaignion_test
 
 script:

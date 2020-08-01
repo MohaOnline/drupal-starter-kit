@@ -5,22 +5,21 @@ namespace Drupal\campaignion\CRM\Export;
 /**
  * Proxy class to annotate exported fields with labels.
  */
-class Label {
+class Label extends Wrapper {
 
   protected $label;
-  protected $field;
 
   /**
    * Create a new instance.
    *
    * @param string $label
    *   The field’s label.
-   * @param object $field
+   * @param \Drupal\campaignion\CRM\Export\ExportMapperInterface $field
    *   The field that should be wrapped.
    */
-  public function __construct($label, $field) {
+  public function __construct($label, ExportMapperInterface $wrapped) {
+    parent::__construct($wrapped);
     $this->label = $label;
-    $this->field = $field;
   }
 
   /**
@@ -34,13 +33,6 @@ class Label {
       return $this->label;
     }
     return '';
-  }
-
-  /**
-   * Forward all other calls to the field.
-   */
-  public function __call($method, $params) {
-    return call_user_func_array([$this->field, $method], $params);
   }
 
 }

@@ -14,6 +14,10 @@ class Values {
   const NO_CHANGE = 'no-change';
   const NOT_SELECTED = 'not-selected';
 
+  protected $submission;
+  protected $_values;
+  protected $_valuesPerChannel;
+
   /**
    * Convert form API values to stored values.
    *
@@ -194,14 +198,98 @@ class Values {
    *   TRUE if the submitted values contain at least one opt-in for the channel.
    */
   public static function submissionHasOptIn(Submission $submission, $channel) {
-    foreach ($submission->webform->componentsByType('opt_in') as $cid => $component) {
-      if ($component['extra']['channel'] == $channel) {
-        if (($value = $submission->valueByCid($cid)) && static::removePrefix($value) == static::OPT_IN) {
-          return TRUE;
+    return $submission->opt_in->hasOptIn($channel);
+  }
+
+  /**
+   * Create a new values instance for a submission.
+   *
+   * Usually such an object is attached to a submission in $submission->opt_in.
+   */
+  public function __construct(Submission $submission) {
+    $this->submission = $submission;
+  }
+
+  /**
+   * Lazy load values for this submission.
+   */
+  public function values() {
+    if (!isset($this->_values)) {
+      module_load_include('components.inc', 'webform', 'includes/webform');
+      $submission = $this->submission;
+      $this->_values = [];
+      foreach ($submission->node->webform['components'] as $cid => $component) {
+        if (webform_component_feature($component['type'], 'opt_in')) {
+          $values = $submission->valuesByCid($cid);
+          if ($opt_in = webform_component_invoke($component['type'], 'opt_in', $component, $values)) {
+            $this->_values[] = $opt_in;
+          }
         }
       }
     }
+    return $this->_values;
+  }
+
+  /**
+   * Return all values keyed by channel.
+   */
+  public function valuesPerChannel($channel = NULL) {
+    if (!isset($this->_valuesPerChannel)) {
+      $this->_valuesPerChannel = [];
+      foreach ($this->values() as $v) {
+        $this->_valuesPerChannel[$v['channel']][] = $v;
+      }
+    }
+    if ($channel) {
+      return $this->_valuesPerChannel[$channel] ?? [];
+    }
+    return $this->_valuesPerChannel;
+  }
+
+  /**
+   * Check whether the submission has any matching value.
+   */
+  public function hasValue($channel, $value) {
+    foreach ($this->valuesPerChannel($channel) as $v) {
+      if ($v['value'] == $value) {
+        return TRUE;
+      }
+    }
     return FALSE;
+  }
+
+  /**
+   * Check whether a submission has any opt-in for a channel.
+   *
+   * @param string $channel
+   *   The channel we are looking for.
+   *
+   * @return bool
+   *   TRUE if the submitted values contain at least one opt-in for the channel.
+   */
+  public function hasOptIn($channel) {
+    return $this->hasValue($channel, static::OPT_IN);
+  }
+
+  /**
+   * Calculate the overall submission result for a channel.
+   */
+  public function canonicalValue($channel, $simple = FALSE) {
+    $value = NULL;
+
+    $priority = [
+      static::NOT_SELECTED => 0,
+      static::NO_CHANGE => 1,
+      static::OPT_OUT => 2,
+      static::OPT_IN => 3,
+    ];
+
+    foreach ($this->valuesPerChannel($channel) as $v) {
+      if (!$value || ($priority[$value['value']] ?? -1) < ($priority[$v['value']] ?? -1)) {
+        $value = $v;
+      }
+    }
+    return $simple && $value ? $value['value'] : $value;
   }
 
 }

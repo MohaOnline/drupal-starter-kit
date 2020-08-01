@@ -282,3 +282,18 @@ function _webform_conditional_comparison_opt_in_equal(array $input_values, $rule
 function _webform_conditional_comparison_opt_in_not_equal(array $input_values, $rule_value, array $component) {
   return !_webform_conditional_comparison_opt_in_equal($input_values, $rule_value, $component);
 }
+
+/**
+ * Implements _webform_opt_in_component().
+ */
+function _webform_opt_in_opt_in($component, $values) {
+  if (reset($values)) {
+    $value = Values::removePrefix($values);
+    return [
+      'value' => $value,
+      'raw_value' => reset($values),
+      'channel' => $component['extra']['channel'],
+      'statement' => $component['extra']['optin_statement'],
+    ];
+  }
+}

@@ -17,6 +17,7 @@ function campaignion_email_to_target_counter_schema() {
       'target_id' => [
         'description' => 'ID for this target.',
         'type' => 'varchar',
+        'not null' => TRUE,
         'length' => 64,
       ],
       'label' => [

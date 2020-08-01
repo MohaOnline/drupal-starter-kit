@@ -1,19 +1,19 @@
 <?php
-/**
- * @file
- * implements NewsletterProvider using the Dotmailer API.
- *
- * See http://api.dotmailer.com for documentation.
- */
 
 namespace Drupal\campaignion_newsletters_dotmailer;
 
-use \Drupal\campaignion_newsletters\NewsletterList;
-use \Drupal\campaignion_newsletters\ProviderBase;
-use \Drupal\campaignion_newsletters\QueueItem;
-use \Drupal\campaignion_newsletters\Subscription;
+use Drupal\campaignion_newsletters\ApiError;
+use Drupal\campaignion_newsletters\NewsletterList;
+use Drupal\campaignion_newsletters\ProviderBase;
+use Drupal\campaignion_newsletters\QueueItem;
+use Drupal\campaignion_newsletters\Subscription;
+use Drupal\campaignion_newsletters_dotmailer\Api\Client;
 
-
+/**
+ * Newsletter provider plugin for dotmailer.
+ *
+ * See http://api.dotmailer.com for documentation.
+ */
 class Provider extends ProviderBase {
   public $api;
   protected $account;
@@ -22,14 +22,14 @@ class Provider extends ProviderBase {
    * Construct a new instance from config parameters.
    */
   public static function fromParameters(array $params) {
-    $api = new Api\Client($params['username'], $params['password']);
+    $api = new Client($params['username'], $params['password']);
     return new static($api, $params['name']);
   }
 
   /**
    * Constructor.
    */
-  public function __construct(Api\Client $api, $name) {
+  public function __construct(Client $api, $name) {
     $this->api = $api;
     $this->account = $name;
   }
@@ -109,7 +109,7 @@ class Provider extends ProviderBase {
   }
 
   /**
-   * {@inheritdocs}
+   * {@inheritdoc}
    */
   public function data(Subscription $subscription, $old_data) {
     $data = $this->attributeData($subscription, $old_data ? $old_data : []);
@@ -146,9 +146,17 @@ class Provider extends ProviderBase {
    */
   public function unsubscribe(NewsletterList $list, QueueItem $item) {
     if ($contact = $this->api->get('contacts/' . $item->email)) {
-      $this->api->delete("address-books/{$list->identifier}/contacts/{$contact['id']}");
+      try {
+        $this->api->delete("address-books/{$list->identifier}/contacts/{$contact['id']}");
+      }
+      catch (ApiError $e) {
+        // Ignore 404 errors. It means we tried to delete a non-existent
+        // subscription. That’s fine.
+        if ($e->getCode() != 404) {
+          throw $e;
+        }
+      }
     }
   }
 
 }
-

@@ -12,7 +12,7 @@ class All extends Common {
    */
   protected function messageForm($target, $message) {
     $t = parent::messageForm($target, $message);
-    $t['#attributes']['class'][] = 'email-to-target-single';
+    $t['#attributes']['class'][] = 'email-to-target-all';
     $t['send'] = [
       '#type' => 'markup',
       '#markup' => "<p class=\"target\">{$message->display} </p>",

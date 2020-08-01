@@ -3,7 +3,6 @@
 namespace Drupal\campaignion_email_to_target\Wizard;
 
 use \Drupal\campaignion_wizard\ConfirmStep;
-use \Drupal\campaignion_action\ActionBase;
 
 class ConfirmationStep extends ConfirmStep {
   protected $step = 'confirm';

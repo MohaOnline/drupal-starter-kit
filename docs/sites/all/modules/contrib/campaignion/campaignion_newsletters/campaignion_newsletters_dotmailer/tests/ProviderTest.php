@@ -2,20 +2,25 @@
 
 namespace Drupal\campaignion_newsletters_dotmailer;
 
-use \Drupal\campaignion\CRM\Import\Source\ArraySource;
-use \Drupal\campaignion_newsletters\NewsletterList;
-use \Drupal\campaignion_newsletters\Subscription;
+use Drupal\campaignion\CRM\Import\Source\ArraySource;
+use Drupal\campaignion_newsletters\ApiError;
+use Drupal\campaignion_newsletters\NewsletterList;
+use Drupal\campaignion_newsletters\Subscription;
+use Drupal\campaignion_newsletters\QueueItem;
+use Drupal\campaignion_newsletters_dotmailer\Api\Client;
+use Drupal\little_helpers\Rest\HttpError;
+use Upal\DrupalUnitTestCase;
 
 /**
  * Test the Provider implementation.
  */
-class ProviderTest extends \DrupalUnitTestCase {
+class ProviderTest extends DrupalUnitTestCase {
 
   /**
    * Construct a partially stubbed Provider object using a mock Api object.
    */
   protected function mockProvider() {
-    $api = $this->getMockBuilder(Api\Client::class)
+    $api = $this->getMockBuilder(Client::class)
       ->setMethods([
       ])
       ->disableOriginalConstructor()
@@ -84,6 +89,24 @@ class ProviderTest extends \DrupalUnitTestCase {
       'FIRSTNAME' => 'test',
       'LASTNAME' => 'test',
     ], $data);
+  }
+
+  /**
+   * Test errors while unsubscribing.
+   */
+  public function testUnsubscribeError() {
+    $list = new NewsletterList(['identifier' => 'mock_list']);
+    $item = new QueueItem(['email' => 'test@example.com']);
+    list($provider, $api) = $this->mockProvider();
+    $api->method('get')->willReturn(TRUE);
+    $api->method('delete')->will($this->throwException(new ApiError('dotmailer', 'Contact not found', [], 404)));
+    // No exception thrown.
+    $provider->unsubscribe($list, $item);
+
+    $this->expectException(ApiError::class);
+    $api->method('delete')->will($this->throwException(new ApiError('dotmailer', 'Access denied', [], 401)));
+    // Throw exception.
+    $provider->unsubscribe($list, $item);
   }
 
 }

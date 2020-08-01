@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * campaignion_test.features.field_instance.inc
@@ -209,6 +210,53 @@ function campaignion_test_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-email_to_target-supporter_tags'.
+  $field_instances['node-email_to_target-supporter_tags'] = array(
+    'bundle' => 'email_to_target',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'i18n_taxonomy',
+        'settings' => array(),
+        'type' => 'i18n_taxonomy_term_reference_link',
+        'weight' => 14,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'supporter_tags',
+    'label' => 'Supporter tags',
+    'required' => 0,
+    'settings' => array(
+      'select2_integration' => array(
+        'styling' => array(
+          'dropdownAutoWidth' => 0,
+          'placeholder' => '',
+        ),
+        'use_select2' => 0,
+      ),
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'taxonomy',
+      'settings' => array(
+        'autocomplete_path' => 'taxonomy/autocomplete',
+        'size' => 60,
+      ),
+      'type' => 'taxonomy_autocomplete',
+      'weight' => 17,
+    ),
+  );
+
   // Exported field_instance: 'node-petition-field_main_image'.
   $field_instances['node-petition-field_main_image'] = array(
     'bundle' => 'petition',
@@ -333,23 +381,62 @@ function campaignion_test_field_default_field_instances() {
     ),
   );
 
-  // Exported field_instance: 'node-thank_you_page-campaignion_overlay_options'.
-  $field_instances['node-thank_you_page-campaignion_overlay_options'] = array(
-    'bundle' => 'thank_you_page',
-    'custom_add_another' => '',
-    'custom_remove' => '',
+  // Exported field_instance: 'node-petition-supporter_tags'.
+  $field_instances['node-petition-supporter_tags'] = array(
+    'bundle' => 'petition',
     'default_value' => NULL,
     'deleted' => 0,
     'description' => '',
     'display' => array(
-      'cck_blocks' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'i18n_taxonomy',
+        'settings' => array(),
+        'type' => 'i18n_taxonomy_term_reference_link',
+        'weight' => 8,
+      ),
+      'teaser' => array(
         'label' => 'above',
         'settings' => array(),
         'type' => 'hidden',
         'weight' => 0,
       ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'supporter_tags',
+    'label' => 'Supporter tags',
+    'required' => 0,
+    'settings' => array(
+      'select2_integration' => array(
+        'styling' => array(
+          'dropdownAutoWidth' => 0,
+          'placeholder' => '',
+        ),
+        'use_select2' => 0,
+      ),
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'taxonomy',
+      'settings' => array(
+        'autocomplete_path' => 'taxonomy/autocomplete',
+        'size' => 60,
+      ),
+      'type' => 'taxonomy_autocomplete',
+      'weight' => 13,
+    ),
+  );
+
+  // Exported field_instance: 'node-thank_you_page-campaignion_overlay_options'.
+  $field_instances['node-thank_you_page-campaignion_overlay_options'] = array(
+    'bundle' => 'thank_you_page',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
       'default' => array(
-        'label' => 'hidden',
+        'label' => 'above',
         'module' => 'field_collection',
         'settings' => array(
           'add' => 'Add',
@@ -360,7 +447,7 @@ function campaignion_test_field_default_field_instances() {
           'view_mode' => 'full',
         ),
         'type' => 'field_collection_view',
-        'weight' => 7,
+        'weight' => 0,
       ),
       'teaser' => array(
         'label' => 'above',
@@ -374,8 +461,6 @@ function campaignion_test_field_default_field_instances() {
     'label' => 'Overlay options',
     'required' => 0,
     'settings' => array(
-      'custom_add_another' => '',
-      'custom_remove' => '',
       'user_register_form' => FALSE,
     ),
     'widget' => array(
@@ -383,7 +468,7 @@ function campaignion_test_field_default_field_instances() {
       'module' => 'field_collection',
       'settings' => array(),
       'type' => 'field_collection_embed',
-      'weight' => 13,
+      'weight' => -3,
     ),
   );
 
@@ -1040,6 +1125,7 @@ function campaignion_test_field_default_field_instances() {
   t('It’s helpful if you add to this message a way for supporters to get in touch with you. That way if they don’t have a target they can bring this to your attention.');
   t('Large image or video');
   t('Options');
+  t('Overlay options');
   t('Phone number');
   t('Phone opt-in');
   t('Preferred language');
@@ -1047,6 +1133,7 @@ function campaignion_test_field_default_field_instances() {
   t('Set this if the contact wants to receive direct mails');
   t('Social Network Links');
   t('Source tag');
+  t('Supporter tags');
   t('Tags');
   t('Thank you pages');
   t('This message is shown to supporters if we can’t find a target for them to email.');

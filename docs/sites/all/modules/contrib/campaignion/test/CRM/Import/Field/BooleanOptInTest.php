@@ -15,6 +15,7 @@ class BooleanOptInTest extends RedhenEntityTest {
    * Prepare importer and redhen contact.
    */
   public function setUp() {
+    parent::setUp();
     $this->importer = new BooleanOptIn('field_opt_in_phone', 'phone_opt_in');
     $this->entity = $this->newRedhenContact();
   }

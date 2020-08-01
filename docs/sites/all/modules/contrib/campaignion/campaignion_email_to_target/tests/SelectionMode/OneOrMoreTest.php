@@ -3,6 +3,7 @@
 namespace Drupal\campaignion_email_to_target\SelectionMode;
 
 use Drupal\campaignion_email_to_target\Message;
+use Drupal\campaignion_email_to_target\Channel\Email;
 
 /**
  * Test the “OneOrMore” selection plugin.
@@ -13,7 +14,7 @@ class OneOrMoreTest extends \DrupalUnitTestcase {
    * Test run with two of targets/messages selected.
    */
   public function testTwoOfThreeTargets() {
-    $mode = new OneOrMore(TRUE);
+    $mode = new OneOrMore(TRUE, new Email());
     $pairs = [
       [['id' => 'target1'], new Message([])],
       [['id' => 'target2'], new Message([])],

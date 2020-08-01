@@ -1,0 +1,16 @@
+name = Campaignion giftaid token
+description = Define a webform submission token for giftaid donations.
+core = 7.x
+php = 7.0
+
+dependencies[] = campaignion:campaignion_donation
+dependencies[] = drupal:node
+dependencies[] = little_helpers:little_helpers
+dependencies[] = token:token
+dependencies[] = webform:webform
+
+; Information added by Drupal.org packaging script on 2020-07-01
+version = "7.x-2.14"
+core = "7.x"
+project = "campaignion"
+datestamp = "1593586545"

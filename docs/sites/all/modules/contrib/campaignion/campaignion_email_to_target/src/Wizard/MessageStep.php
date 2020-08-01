@@ -2,16 +2,40 @@
 
 namespace Drupal\campaignion_email_to_target\Wizard;
 
-use \Drupal\campaignion\Forms\EntityFieldForm;
-use \Drupal\campaignion_email_to_target\MessageEndpoint;
-use \Drupal\campaignion_email_to_target\Api\Client;
+use Drupal\campaignion\Forms\EntityFieldForm;
+use Drupal\campaignion_email_to_target\MessageEndpoint;
+use Drupal\campaignion_wizard\WizardStep;
+use Drupal\little_helpers\Services\Container;
 
+/**
+ * Wizard step for configuring the email to target messages.
+ */
+class MessageStep extends WizardStep {
 
-class MessageStep extends \Drupal\campaignion_wizard\WizardStep {
-  protected $step  = 'message';
+  /**
+   * The URL part used for this step.
+   *
+   * @var string
+   */
+  protected $step = 'message';
+
+  /**
+   * The menu title for this step.
+   *
+   * @var string
+   */
   protected $title = 'Message';
+
+  /**
+   * The entity field form for the no target message.
+   *
+   * @var \Drupal\campaignion\Forms\EntityFieldForm
+   */
   protected $fieldForm;
 
+  /**
+   * Render the message configuration form.
+   */
   public function stepForm($form, &$form_state) {
     $node = $this->wizard->node;
 
@@ -25,7 +49,7 @@ class MessageStep extends \Drupal\campaignion_wizard\WizardStep {
 
     $info = token_get_info();
     $tokens = [];
-    foreach(['email-to-target', 'webform-tokens', 'submission'] as $type) {
+    foreach (['email-to-target', 'webform-tokens', 'submission'] as $type) {
       if (!isset($info['types'][$type])) {
         continue;
       }
@@ -61,11 +85,10 @@ class MessageStep extends \Drupal\campaignion_wizard\WizardStep {
     $settings['endpoints']['messages'] = url("node/{$node->nid}/email-to-target-messages");
     $settings['endpoints']['nodes'] = url('wizard/nodes');
 
-    $client = Client::fromConfig();
-    $token = $client->getAccessToken();
+    $client = Container::get()->loadService('campaignion_email_to_target.api.Client');
     $settings['endpoints']['e2t-api'] = [
       'url' => $client->getEndpoint(),
-      'token' => $token,
+      'token' => $client->getAccessToken(),
       'dataset' => $dataset->key,
     ];
 
@@ -96,10 +119,16 @@ class MessageStep extends \Drupal\campaignion_wizard\WizardStep {
     return $form;
   }
 
+  /**
+   * Validate the submitted values.
+   */
   public function validateStep($form, &$form_state) {
     $this->fieldForm->validate($form['advanced'], $form_state);
   }
 
+  /**
+   * Store the submitted values.
+   */
   public function submitStep($form, &$form_state) {
     $this->fieldForm->submit($form['advanced'], $form_state);
   }
@@ -107,4 +136,5 @@ class MessageStep extends \Drupal\campaignion_wizard\WizardStep {
   public function checkDependencies() {
     return isset($this->wizard->node->nid);
   }
+
 }

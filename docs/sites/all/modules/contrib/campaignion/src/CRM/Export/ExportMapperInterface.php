@@ -20,7 +20,7 @@ interface ExportMapperInterface {
    *   - A single field value if $delta is given and not NULL.
    *   - All values as an array if $delta is NULL.
    */
-  public function value($delta = NULL);
+  public function value($delta = 0);
 
   /**
    * Set the reference to the exporter object.

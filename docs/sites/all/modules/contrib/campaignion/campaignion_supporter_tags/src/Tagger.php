@@ -109,26 +109,9 @@ class Tagger {
     }
 
     foreach ($tags as $tag) {
-      // Normalize tags before searching for them:
-      // - Make tags case-insensitive. MySQL is set to be case-insensitive by
-      //   default.
-      // - Trim tags as they are trimmed by taxonomy_term_save().
-      $ltag = strtolower(trim($tag));
-      if (!isset($this->map[$ltag])) {
-        if ($add) {
-          $term = entity_create('taxonomy_term', [
-            'name' => $tag,
-            'vid' => $this->vid,
-            'parent' => $this->parentTid,
-          ]);
-          entity_save('taxonomy_term', $term);
-          $this->map[$ltag] = $term->tid;
-        }
-        else {
-          continue;
-        }
+      if (!($tid = $this->resolveTag($tag, $add))) {
+        continue;
       }
-      $tid = $this->map[$ltag];
       if (!isset($items[$tid])) {
         $changed = TRUE;
         $items[$tid] = ['tid' => $tid];
@@ -139,6 +122,35 @@ class Tagger {
       $field[LANGUAGE_NONE] = $items;
     }
     return $changed;
+  }
+
+  /**
+   * Resolve a tag name to its tid.
+   *
+   * @param string $tag
+   *   The tag name.
+   * @param bool $add
+   *   Whether or not to create not (yet) existing tags.
+   *
+   * @return null|int
+   *   The term ID if it a tag was found or created, otherwise NULL.
+   */
+  public function resolveTag($tag, $add = FALSE) {
+    // Normalize tags before searching for them:
+    // - Make tags case-insensitive. MySQL is set to be case-insensitive by
+    //   default.
+    // - Trim tags as they are trimmed by taxonomy_term_save().
+    $ltag = strtolower(trim($tag));
+    if (!isset($this->map[$ltag]) && $add) {
+      $term = entity_create('taxonomy_term', [
+        'name' => $tag,
+        'vid' => $this->vid,
+        'parent' => $this->parentTid,
+      ]);
+      entity_save('taxonomy_term', $term);
+      $this->map[$ltag] = $term->tid;
+    }
+    return $this->map[$ltag] ?? NULL;
   }
 
 }

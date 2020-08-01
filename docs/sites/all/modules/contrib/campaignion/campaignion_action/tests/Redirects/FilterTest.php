@@ -3,6 +3,7 @@
 namespace Drupal\campaignion_action\Redirects;
 
 use Drupal\little_helpers\Webform\Submission;
+use Drupal\campaignion_opt_in\Values;
 use Drupal\campaignion_newsletters\Subscription;
 
 /**
@@ -41,9 +42,13 @@ class FilterTest extends \DrupalWebTestCase {
       'cid' => 1,
       'form_key' => 'emailopt',
       'type' => 'opt_in',
-      'extra' => ['channel' => 'email'],
+      'extra' => [
+        'channel' => 'email',
+        'optin_statement' => 'Opt-in statement',
+      ],
     ];
     $submission = new Submission((object) $stub_n, (object) $stub_s);
+    $submission->opt_in = new Values($submission);
 
     $fs = Filter::fromArray(['type' => 'opt-in', 'value' => TRUE]);
     $this->assertTrue($fs->match($submission));
@@ -59,6 +64,7 @@ class FilterTest extends \DrupalWebTestCase {
     $stub_s['data'] = [];
     $stub_n['webform']['components'] = [];
     $submission = new Submission((object) $stub_n, (object) $stub_s);
+    $submission->opt_in = new Values($submission);
 
     $fs = Filter::fromArray(['type' => 'opt-in', 'value' => TRUE]);
     $this->assertFalse($fs->match($submission));
@@ -79,6 +85,7 @@ class FilterTest extends \DrupalWebTestCase {
       'type' => 'email',
     ];
     $submission = new Submission((object) $stub_n, (object) $stub_s);
+    $submission->opt_in = new Values($submission);
     $subscription = Subscription::fromData(4711, $email);
     $subscription->save(TRUE);
 
@@ -99,16 +106,23 @@ class FilterTest extends \DrupalWebTestCase {
       'cid' => 1,
       'form_key' => 'email',
       'type' => 'email',
-      'extra' => ['channel' => 'email'],
+      'extra' => [
+        'channel' => 'email',
+        'optin_statement' => 'Opt-in statement',
+      ],
     ];
     $stub_s['data'][2][0] = 'radios:opt-out';
     $stub_n['webform']['components'][2] = [
       'cid' => 2,
       'form_key' => 'emailopt',
       'type' => 'opt_in',
-      'extra' => ['channel' => 'email'],
+      'extra' => [
+        'channel' => 'email',
+        'optin_statement' => 'Opt-in statement',
+      ],
     ];
     $submission = new Submission((object) $stub_n, (object) $stub_s);
+    $submission->opt_in = new Values($submission);
     $subscription = Subscription::fromData(4711, $email);
     $subscription->save(TRUE);
 
@@ -127,6 +141,7 @@ class FilterTest extends \DrupalWebTestCase {
       'type' => 'textfield',
     ];
     $submission = new Submission((object) $stub_n, (object) $stub_s);
+    $submission->opt_in = new Values($submission);
 
     $filter = [
       'type' => 'submission-field',
