@@ -7,9 +7,8 @@ dependencies[] = block
 
 configure = admin/structure/ultimenu
 
-; Information added by Drupal.org packaging script on 2015-06-18
-version = "7.x-1.2"
+; Information added by Drupal.org packaging script on 2020-01-11
+version = "7.x-1.3"
 core = "7.x"
 project = "ultimenu"
-datestamp = "1434648181"
-
+datestamp = "1578761889"

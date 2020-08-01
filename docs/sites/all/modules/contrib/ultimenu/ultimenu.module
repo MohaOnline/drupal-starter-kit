@@ -154,6 +154,9 @@ function ultimenu_block_view($delta = '') {
   // or use menu_build_tree() for future exploration.
   // @see toolbar_get_menu_tree().
   $tree = menu_tree_all_data($config['menu_name']);
+  
+  // And add the active trail data to the full tree.
+  ultimenu_tree_add_active_path($tree);
 
   // Allow alteration of the tree and config before we begin operations on it.
   drupal_alter('ultimenu_tree', $tree, $config);

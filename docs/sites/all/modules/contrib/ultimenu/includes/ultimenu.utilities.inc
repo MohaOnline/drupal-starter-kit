@@ -214,8 +214,9 @@ function ultimenu_remove_ultimenu_theme_info() {
  */
 function ultimenu_truncate_menu_property($property, $max_length = 60) {
   // If multilingual site and transliteration enabled, support transliteration.
+  $default_language = language_default();
   if (function_exists('locale') && function_exists('transliteration_clean_filename')) {
-    $property = transliteration_clean_filename($property);
+    $property = transliteration_clean_filename($property, $default_language->language);
   }
 
   $property = decode_entities($property);
@@ -387,4 +388,45 @@ function ultimenu_block_get_blocks_by_region($region) {
     }
   }
   return $build;
+}
+
+/**
+ * Add the active trail indicators into the tree.
+ *
+ * The data returned by menu_tree_page_data() has link['in_active_trail'] set to
+ * TRUE for each menu item in the active trail. The data returned from
+ * menu_tree_all_data() does not contain the active trail indicators. This is a
+ * helper function that adds it back in.
+ *
+ * Function copy of menu_tree_add_active_path() from menu_block 7.x-2.3.
+ *
+ * @param $tree
+ *   array The menu tree.
+ * @return
+ *   void
+ */
+function ultimenu_tree_add_active_path(&$tree) {
+  // Grab any menu item to find the menu_name for this tree.
+  $menu_item = current($tree);
+  $tree_with_trail = menu_tree_page_data($menu_item['link']['menu_name']);
+
+  // To traverse the original tree down the active trail, we use a pointer.
+  $subtree_pointer =& $tree;
+
+  // Find each key in the active trail.
+  while ($tree_with_trail) {
+    foreach ($tree_with_trail AS $key => &$value) {
+      if ($tree_with_trail[$key]['link']['in_active_trail']) {
+        // Set the active trail info in the original tree.
+        $subtree_pointer[$key]['link']['in_active_trail'] = TRUE;
+        // Continue in the subtree, if it exists.
+        $tree_with_trail =& $tree_with_trail[$key]['below'];
+        $subtree_pointer =& $subtree_pointer[$key]['below'];
+        break;
+      }
+      else {
+        unset($tree_with_trail[$key]);
+      }
+    }
+  }
 }

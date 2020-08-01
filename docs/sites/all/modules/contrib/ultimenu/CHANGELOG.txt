@@ -1,4 +1,9 @@
 
+Ultimenu 7.x-1.0-dev, 2020-01-11
+--------------------------------
+- Issue #2786629 by illeace: Ultimenu menu links don'\''t have active-trail
+  class.
+- Issue #2878676 by 0: utf-8 support for menu titles would be nice.
 
 Ultimenu 7.x-1.0-dev, 2015-6-18
 -------------------------------
