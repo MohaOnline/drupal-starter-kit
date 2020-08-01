@@ -63,6 +63,10 @@ function smart_paging_uninstall() {
   variable_del('smart_paging_word_count');
   variable_del('smart_paging_title_display_suffix');
   variable_del('smart_paging_title_suffix');
+  $entities = smart_paging_entities();
+  foreach ($entities as $entity_name) {
+    variable_del("smart_paging_allowed_view_modes_$entity_name");
+  }
 }
 
 /**

@@ -115,6 +115,22 @@ function smart_paging_admin_settings($form, &$form_state) {
       ),
     ),
   );
+  // List of view modes.
+  $entities    = smart_paging_entities();
+  $entity_info = entity_get_info();
+  $allowed_view_modes = unserialize(variable_get('smart_paging_allowed_view_modes', ''));
+  foreach ($entities as $entity_name) {
+    $options = array();
+    foreach ($entity_info[$entity_name]['view modes'] as $name => $info) {
+      $options[$name] = $info['label'];
+    }
+    $form["smart_paging_allowed_view_modes_$entity_name"] = array(
+      '#type'          => 'checkboxes',
+      '#title'         => t('Show smart paging on these view modes of %entity:', array('%entity' => $entity_name)),
+      '#options'       => $options,
+      '#default_value' => variable_get("smart_paging_allowed_view_modes_$entity_name", array('full' => 'full')),
+    );
+  }
   $form['#validate'][] = 'smart_paging_admin_settings_validate';
   return system_settings_form($form);
 }

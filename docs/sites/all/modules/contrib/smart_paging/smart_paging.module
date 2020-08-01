@@ -615,8 +615,15 @@ function smart_paging_url_outbound_alter(&$path, &$options, $original_path) {
  * Implements hook_field_attach_view_alter().
  */
 function smart_paging_field_attach_view_alter(&$build, $context) {
-  // Teaser view and comment entity type (it has its own pagination) are not included
-  if ($context['entity_type'] != 'comment' && isset($build['#entity_type']) && $context['view_mode'] == 'full') {
+  $view_modes = array('full' => 'full');
+  if (isset($build['#entity_type'])) {
+    $entities = smart_paging_entities();
+    if (in_array($build['#entity_type'] ,$entities)) {
+      $view_modes = variable_get('smart_paging_allowed_view_modes_' . $build['#entity_type'], array('full' => 'full'));
+    }
+  }
+  // Comment entity type (it has its own pagination) is not included. Only show smart paging on configured view modes.
+  if ($context['entity_type'] != 'comment' && isset($build['#entity_type']) && !empty($view_modes[$context['view_mode']])) {
     global $pager_page_array, $pager_total;
     $suffix;
     $display_suffix;
@@ -1113,6 +1120,9 @@ function smart_paging_field_attach_view_alter(&$build, $context) {
       $variables['tags']     = array();
       $variables['element']  = $pager_element;
       $variables['quantity'] = 10;
+      if (!isset($pager_page_array[$pager_element])) {
+        $pager_page_array[$pager_element] = 0;
+      }
       $build['smart_paging']['#markup'] = '<div class="smart-paging-pager">' . theme('pager', $variables) . '</div>';
       $build['smart_paging']['#weight'] = isset($display_settings['weight']) ? $display_settings['weight'] : 0;
       $build['smart_paging']['#access'] = isset($display_settings['visible']) ? $display_settings['visible'] : TRUE;
