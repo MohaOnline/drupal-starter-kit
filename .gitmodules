@@ -1,0 +1,3 @@
+[submodule "docs/sites/all/modules/custom/moha"]
+	path = docs/sites/all/modules/custom/moha
+	url = https://github.com/MohaOnline/moha.git
