@@ -117,8 +117,6 @@
             map.addControl(new BMap.MapTypeControl({mapTypes: [BMAP_NORMAL_MAP, BMAP_HYBRID_MAP, BMAP_PERSPECTIVE_MAP]}));
           }
 
-          // Store a reference to the map object to allow further interactions.
-          Drupal.geoField.maps[elemID] = map;
           // The Bounds of the geometries are required for centering the map.
           var range = new BMap.Bounds();
           // Instantiate an empty InfoWindow to be attached to Markers.
@@ -128,6 +126,8 @@
 
           // Store all points to be displayed with automatic zoom and center.
           var all_points = [];
+          var markers = [];
+          var infos = [];
           // Attach all geometries to the Baidu Map instance.
           if (features.getMap) {
             // Currently, there is no support for better handling of the zoom.
@@ -161,6 +161,12 @@
             // Set the default center and zoom value.
             map.centerAndZoom(range.getCenter(), new Number(map_settings.zoom));
           }
+          // Store a reference to the map object to allow further interactions.
+          Drupal.geoField.maps[elemID] = {
+              'map':map,
+              'markers': markers,
+              'infos': infos,
+          };
         }
 
         /**
@@ -198,6 +204,8 @@
               });
             }
           }
+          infos.push(properties.description);
+          markers.push(feature);
         }
       });
     }

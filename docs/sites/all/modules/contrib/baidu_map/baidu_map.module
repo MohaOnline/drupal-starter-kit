@@ -6,11 +6,6 @@
  */
 
 /**
- * Declare a constant regular expression used for the API Key validation.
- */
-define('BAIDU_MAP_API_KEY_VALIDATE_REGEX', '/(^([a-zA-Z0-9]){24}$)|(^([a-fA-F0-9]){32}$)/');
-
-/**
  * Implements hook_help().
  */
 function baidu_map_help($path, $arg) {

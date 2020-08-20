@@ -174,6 +174,10 @@ class baidu_map_geofield_plugin_style_map extends views_plugin_style {
       if ($style_options['baidu_map_geofield_height']) {
         $height = $style_options['baidu_map_geofield_height'];
       }
+ 
+      if (empty($this->view->result)) {
+        return parent::render();
+      }
 
       return format_string('<div style="width: @width; height: @height" id="@container_id" class="geofieldBaiduMap">@alt_text</div>', array(
         '@width' => $width,

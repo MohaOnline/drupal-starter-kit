@@ -3,9 +3,8 @@ description = Enables display of geographic and location data through the Baidu 
 core = 7.x
 configure = admin/config/services/baidu_map
 
-; Information added by Drupal.org packaging script on 2013-12-17
-version = "7.x-1.0"
+; Information added by Drupal.org packaging script on 2020-02-10
+version = "7.x-1.1"
 core = "7.x"
 project = "baidu_map"
-datestamp = "1387277007"
-
+datestamp = "1581317480"

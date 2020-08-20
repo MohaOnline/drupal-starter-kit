@@ -51,8 +51,4 @@ function baidu_map_variable_group_info() {
  */
 function baidu_map_validate_baidu_map_api_key($variable) {
   $variable['value'] = trim($variable['value']);
-  // Ensure the tracker Key contains exactly 24 or 32 alphanumeric characters.
-  if (!preg_match(BAIDU_MAP_API_KEY_VALIDATE_REGEX, $variable['value'])) {
-    return t('The value provided for the <em>Baidu Map API Key</em> is <strong>incorrect</strong>.<br/>Please provide a valid API Key which should contain exactly 24 or 32 alphanumeric characters (only allowed: 0 to 9 and a to z lower or upper case).');
-  }
 }

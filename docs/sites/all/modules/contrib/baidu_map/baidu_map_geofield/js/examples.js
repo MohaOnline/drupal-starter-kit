@@ -21,8 +21,8 @@ jQuery(function($) {
     if ((typeof BaiduMapAPI !== 'undefined') && BaiduMapAPI[elemID]) {
       // Get the data, map settings and map objects for the map ID.
       var data = Drupal.settings.geofieldBaiduMap[elemID].data,
-        map_settings = Drupal.settings.geofieldBaiduMap[elemID].map_settings,
-        map = BaiduMapAPI[elemID],
+        map_settings = Drupal.geoField.maps[elemID].map_settings,
+        map = BaiduMapAPI[elemID].map,
         markers = BaiduMapAPI[elemID].markers;
 
       /**
@@ -35,8 +35,8 @@ jQuery(function($) {
       });
 
       // Execute a local search.
-      $("#header").bind("click", function() {
-         local.search("上海南京路");
+      $("body").bind("click", function() {
+         local.search("上海");
       });
       // Execute a local search restricted to map bounds.
       $("#page-title").bind("click", function() {
@@ -109,10 +109,19 @@ jQuery(function($) {
        * http://developer.baidu.com/map/jsdevelop-3.htm
        * http://developer.baidu.com/map/reference/index.php?title=Class:%E6%80%BB%E7%B1%BB/%E6%A0%B8%E5%BF%83%E7%B1%BB
        * */
-      map.disableDragging();
-      map.enableScrollWheelZoom();
+//      map.disableDragging();
+//      map.enableScrollWheelZoom();
       var opts = {type: BMAP_NAVIGATION_CONTROL_LARGE}
       map.addControl(new BMap.NavigationControl(opts));
+      
+      // get marker and info(window info).
+      var map = BaiduMapAPI[elemID].map,
+          markers = BaiduMapAPI[elemID].markers;
+          infos = BaiduMapAPI[elemID].infos;
+
+      // pop window info.
+      var infoWindow = new BMap.InfoWindow('test');
+      markers[0].openInfoWindow(infoWindow, map.getCenter());
     }
   })($);
 });
