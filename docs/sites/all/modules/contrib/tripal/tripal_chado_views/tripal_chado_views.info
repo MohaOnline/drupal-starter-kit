@@ -19,8 +19,8 @@ files[] = views/handlers/tripal_views_handler_field_aggregate.inc
 dependencies[] = views
 dependencies[] = tripal
 
-; Information added by Drupal.org packaging script on 2019-06-26
-version = "7.x-3.2"
+; Information added by Drupal.org packaging script on 2020-04-06
+version = "7.x-3.3"
 core = "7.x"
 project = "tripal"
-datestamp = "1561520293"
+datestamp = "1586137671"

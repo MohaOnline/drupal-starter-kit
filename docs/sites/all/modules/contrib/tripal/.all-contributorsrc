@@ -12,9 +12,10 @@
       "profile": "https://github.com/spficklin",
       "contributions": [
         "code",
+        "eventOrganizing",
         "doc",
         "projectManagement",
-        "fundingFinding"
+        "review"
       ]
     },
     {
@@ -25,7 +26,9 @@
       "contributions": [
         "code",
         "doc",
-        "projectManagement"
+        "projectManagement",
+        "eventOrganizing",
+        "review"
       ]
     },
     {
@@ -36,7 +39,9 @@
       "contributions": [
         "code",
         "doc",
-        "projectManagement"
+        "projectManagement",
+        "eventOrganizing",
+        "review"
       ]
     },
     {
@@ -54,7 +59,10 @@
       "avatar_url": "https://avatars1.githubusercontent.com/u/24374002?v=4",
       "profile": "https://github.com/shawnawsu",
       "contributions": [
-        "code"
+        "code",
+        "content",
+        "doc",
+        "review"
       ]
     },
     {
@@ -81,7 +89,8 @@
       "avatar_url": "https://avatars1.githubusercontent.com/u/508122?v=4",
       "profile": "https://github.com/mestato",
       "contributions": [
-        "fundingFinding"
+        "fundingFinding",
+        "eventOrganizing"
       ]
     },
     {
@@ -108,7 +117,36 @@
       "avatar_url": "https://avatars2.githubusercontent.com/u/1512664?v=4",
       "profile": "http://almsaeedstudio.com",
       "contributions": [
-        "code"
+        "code",
+        "review"
+      ]
+    },
+    {
+      "login": "btski",
+      "name": "btski",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/32686196?v=4",
+      "profile": "https://github.com/btski",
+      "contributions": [
+        "question"
+      ]
+    },
+    {
+      "login": "ekcannon",
+      "name": "ekcannon",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/3409057?v=4",
+      "profile": "https://github.com/ekcannon",
+      "contributions": [
+        "ideas",
+        "eventOrganizing"
+      ]
+    },
+    {
+      "login": "jlwegrzyn",
+      "name": "jlwegrzyn",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/50996590?v=4",
+      "profile": "https://github.com/jlwegrzyn",
+      "contributions": [
+        "fundingFinding"
       ]
     }
   ],

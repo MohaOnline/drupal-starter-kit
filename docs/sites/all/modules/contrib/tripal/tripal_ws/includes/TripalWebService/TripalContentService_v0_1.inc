@@ -110,7 +110,7 @@ class TripalContentService_v0_1 extends TripalWebService {
    * Creates a resource for an expanded field of an entity.
    */
   private function doExpandedField($ctype, $entity_id, $expfield) {
-    $service_path = $this->getServicePath() . '/' . urlencode($ctype) . '/' . $entity_id;
+    $service_path = $this->getServicePath() . '/' . preg_replace('/[^\w]/', '_', $ctype) . '/' . $entity_id;
     $this->resource = new TripalWebServiceResource($service_path);
 
     // Get the TripalBundle, TripalTerm and TripalVocab for this type.
@@ -193,7 +193,7 @@ class TripalContentService_v0_1 extends TripalWebService {
    * Creates a resource for a single entity.
    */
   private function doEntity($ctype, $entity_id) {
-    $service_path = $this->getServicePath() . '/' . urlencode($ctype);
+    $service_path = $this->getServicePath() . '/' . preg_replace('/[^\w]/', '_', $ctype);
     $this->resource = new TripalWebServiceResource($service_path);
 
     // Get the TripalBundle, TripalTerm and TripalVocab type for this type.
@@ -514,7 +514,11 @@ class TripalContentService_v0_1 extends TripalWebService {
             $temp[$key] = $v;
           }
           $term['name'] = $key;
-
+        }
+        elseif (is_numeric($k)) {
+          // Key is non-vocabulary term:
+          // Index number (0, 1, 2...) of a hydra:member array.
+          $temp[$k] = $this->sanitizeFieldKeys($resource, $v, $bundle, $service_path);
         }
         else {
           // TODO: this is an error, if we get here then we have
@@ -875,6 +879,13 @@ class TripalContentService_v0_1 extends TripalWebService {
 
     // Get the TripalBundle, TripalTerm and TripalVocab type for this type.
     $bundle = tripal_load_bundle_entity(['label' => $ctype]);
+    
+    // Check that the user has access to this bundle.  If not then the
+    // function call will throw an error.
+    if (!user_access('view ' . $bundle->name)) {
+      throw new Exception("Permission Denied.");
+    }
+        
     $term = entity_load('TripalTerm', ['id' => $bundle->term_id]);
     $term = reset($term);
 
@@ -1043,6 +1054,11 @@ class TripalContentService_v0_1 extends TripalWebService {
     // Iterate through the terms and add an entry in the collection.
     $i = 0;
     while ($bundle = $bundles->fetchObject()) {
+      if (!user_access('view ' . $bundle->name)) {
+        // Show only content types users have access to and skip the rest.
+        continue;
+      }
+      
       $entity = entity_load('TripalTerm', ['id' => $bundle->term_id]);
       $term = reset($entity);
       $vocab = $term->vocab;
