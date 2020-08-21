@@ -10,8 +10,8 @@ files[] = tests/imagefield_tokens.test
 test_dependencies[] = token:token
 testing_api = 2.x
 
-; Information added by Drupal.org packaging script on 2019-04-16
-version = "7.x-1.11"
+; Information added by Drupal.org packaging script on 2020-02-08
+version = "7.x-1.12"
 core = "7.x"
 project = "imagefield_tokens"
-datestamp = "1555421389"
+datestamp = "1581148285"
