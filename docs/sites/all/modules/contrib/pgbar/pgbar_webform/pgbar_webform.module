@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations of the pgbar_webform module.
+ */
+
+/**
+ * Implements hook_pgbar_source_plugin_info().
+ */
+function pgbar_webform_pgbar_source_plugin_info() {
+  $p['webform_submission_count'] = '\\Drupal\\pgbar_webform\\Source\\WebformSubmissionCount';
+  $p['webform_component_sum'] = '\\Drupal\\pgbar_webform\\Source\\WebformComponentSum';
+  return $p;
+}

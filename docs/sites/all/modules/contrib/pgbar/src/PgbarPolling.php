@@ -24,7 +24,7 @@ class PgbarPolling implements \Drupal\polling\FieldTypePluginInterface {
     $data['pgbar'] = [];
     foreach ($this->items as $delta => $item) {
       $item = _pgbar_add_item_defaults($item);
-      $offset = isset($item['options']['target']['offset']) ? $item['options']['target']['offset'] : 0;
+      $offset = !empty($item['options']['target']['offset']) ? $item['options']['target']['offset'] : 0;
       $data['pgbar'][$this->name][$delta] = $this->source->getValue($item) + $offset;
     }
     return $data;

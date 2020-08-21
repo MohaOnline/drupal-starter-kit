@@ -1,14 +1,13 @@
 <?php
 
-namespace Drupal\pgbar\Source;
+namespace Drupal\pgbar_webform\Source;
+
+use Drupal\pgbar\Source\AddNids;
+use Drupal\pgbar\Source\PluginInterface;
 
 /**
- * @file
- * Implement the webform_field_sum source plugin.
- *
- * Sums up all values submitted for a certain webform component.
+ * Pgbar source plugin to sum up all values submitted for one webform component.
  */
-
 class WebformComponentSum implements PluginInterface {
   protected $entity;
   protected $instance;

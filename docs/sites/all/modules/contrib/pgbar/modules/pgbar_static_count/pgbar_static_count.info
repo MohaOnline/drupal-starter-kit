@@ -8,8 +8,8 @@ dependencies[] = webform
 
 
 files[] = plugin/webform_submissions_static.inc.php
-; Information added by Drupal.org packaging script on 2019-07-02
-version = "7.x-2.6"
+; Information added by Drupal.org packaging script on 2020-06-09
+version = "7.x-2.8"
 core = "7.x"
 project = "pgbar"
-datestamp = "1562078310"
+datestamp = "1591713316"

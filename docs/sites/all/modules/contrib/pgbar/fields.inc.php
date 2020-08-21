@@ -270,7 +270,7 @@ function pgbar_field_formatter_view($entity_type, $entity, $field, $instance, $l
       $theme[] = 'pgbar__' . $item['options']['display']['template'];
     }
     $theme[] = 'pgbar';
-    $current += isset($item['options']['target']['offset']) ? $item['options']['target']['offset'] : 0;
+    $current += !empty($item['options']['target']['offset']) ? $item['options']['target']['offset'] : 0;
     $target = _pgbar_select_target($item['options']['target']['target'], $current, $item['options']['target']['threshold']);
     $d = array(
       '#theme' => $theme,

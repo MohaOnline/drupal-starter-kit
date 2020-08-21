@@ -1,12 +1,13 @@
 <?php
 
-namespace Drupal\pgbar\Source;
+namespace Drupal\pgbar_webform\Source;
+
+use Drupal\pgbar\Source\AddNids;
+use Drupal\pgbar\Source\PluginInterface;
 
 /**
- * @file
- * Define the webform submission source plugin.
+ * Pgbar source plugin that counts webform submissions.
  */
-
 class WebformSubmissionCount implements PluginInterface {
   protected $entity;
 

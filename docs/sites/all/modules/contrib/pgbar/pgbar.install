@@ -34,6 +34,15 @@ function pgbar_field_schema($field) {
 }
 
 /**
+ * Enable webform sub-module to keep existing webform integrations working.
+ */
+function pgbar_update_7201() {
+  if (module_exists('webform')) {
+    module_enable(['pgbar_webform'], TRUE);
+  }
+}
+
+/**
  * Migrate plugin names.
  */
 function pgbar_update_7200() {

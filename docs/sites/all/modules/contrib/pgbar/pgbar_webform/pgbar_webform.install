@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * @file
+ * Installation-time hook implementations for the pgbar_webform module.
+ */
+
+/**
+ * Implements hook_schema_alter().
+ */
+function pgbar_webform_schema_alter(&$schema) {
+  $schema['webform_submissions']['indexes']['pgbar_nid_draft'] = ['nid', 'is_draft'];
+}
+
+/**
+ * Implements hook_install().
+ */
+function pgbar_webform_install() {
+  $tables = [];
+  pgbar_webform_schema_alter($tables);
+  foreach ($tables as $table => $schema) {
+    foreach (($schema['indexes'] ?? []) as $name => $fields) {
+      if (!db_index_exists($table, $name)) {
+        db_add_index($table, $name, $fields);
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_install().
+ */
+function pgbar_webform_uninstall() {
+  $tables = [];
+  pgbar_webform_schema_alter($tables);
+  foreach ($tables as $table => $schema) {
+    foreach (($schema['indexes'] ?? []) as $name => $fields) {
+      if (db_index_exists($table, $name)) {
+        db_drop_index($table, $name, $fields);
+      }
+    }
+  }
+}

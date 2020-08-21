@@ -53,9 +53,5 @@ function pgbar_polling_field_type_plugin_info() {
  */
 function pgbar_pgbar_source_plugin_info() {
   $p['null'] = '\\Drupal\\pgbar\\Source\\StaticCount';
-  if (module_exists('webform')) {
-    $p['webform_submission_count'] = '\\Drupal\\pgbar\\Source\\WebformSubmissionCount';
-    $p['webform_component_sum'] = '\\Drupal\\pgbar\\Source\\WebformComponentSum';
-  }
   return $p;
 }
