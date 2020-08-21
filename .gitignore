@@ -1,0 +1,4 @@
+/docs/vendor/
+/docs/web/sites/*/files
+/docs/web/sites/*/settings.php
+/docs/web/sites/*/services*.yml
