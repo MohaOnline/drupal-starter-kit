@@ -450,11 +450,12 @@ function nagios_nagios_settings() {
     ];
   }
 
+  $states_without_ok = array_diff_key(nagios_status(), [NAGIOS_STATUS_OK => 'OK']);
   $form[$group]['nagios_min_report_severity'] = [
     '#type' => 'select',
     '#title' => t('Minimum report severity'),
     '#default_value' => variable_get('nagios_min_report_severity', NAGIOS_STATUS_WARNING),
-    '#options' => nagios_status(),
+    '#options' => $states_without_ok,
     '#description' => t('Issue an alert only for this minimum severity, not for lower severities.'),
   ];
 
@@ -484,11 +485,13 @@ function nagios_form_system_modules_alter(&$form) {
     if ($package_name[0] != '#') {
       foreach ($package as $module_name => &$module) {
         if ($module_name[0] != '#') {
-          if (array_key_exists($module_name, $projects_data) && isset($module['enable']['#default_value']) && $module['enable']['#default_value'] == TRUE) {
+          if (array_key_exists($module_name, $projects_data) && !empty($module['enable']['#default_value'])) {
+            $tooltip = ['title' => t('If checked, this module’s update status and hook_requirements() implementation is ignored.')];
             $module['links']['nagios_ignore'] = [
               '#type' => 'checkbox',
               '#title' => t('Ignore from Nagios'),
               '#default_value' => !empty($nagios_ignored_modules[$module_name]),
+              '#attributes' => $tooltip,
             ];
             if (!module_exists('coder_review')) {
               $package['#theme'] = 'nagios_modules_fieldset';
@@ -505,6 +508,8 @@ function nagios_form_system_modules_alter(&$form) {
 
 /**
  * Additional system modules form submit handler.
+ *
+ * This is for Drupal core's regular modules page, /admin/modules.
  *
  * Saves the modules that have been selected to be ignored from Nagios
  * reporting to the 'nagios_ignored_modules' variable.
