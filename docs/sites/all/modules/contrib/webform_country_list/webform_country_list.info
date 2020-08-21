@@ -5,9 +5,8 @@ package = Webform
 
 dependencies[] = webform
 
-; Information added by Drupal.org packaging script on 2017-08-23
-version = "7.x-1.4"
+; Information added by Drupal.org packaging script on 2020-02-04
+version = "7.x-1.5"
 core = "7.x"
 project = "webform_country_list"
-datestamp = "1503491350"
-
+datestamp = "1580833343"
