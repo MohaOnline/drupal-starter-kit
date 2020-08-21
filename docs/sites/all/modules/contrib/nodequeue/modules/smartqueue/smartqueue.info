@@ -5,8 +5,8 @@ core = 7.x
 dependencies[] = nodequeue 
 dependencies[] = taxonomy
 
-; Information added by Drupal.org packaging script on 2019-11-22
-version = "7.x-2.2"
+; Information added by Drupal.org packaging script on 2020-07-31
+version = "7.x-2.3"
 core = "7.x"
 project = "nodequeue"
-datestamp = "1574395688"
+datestamp = "1596221684"

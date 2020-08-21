@@ -245,7 +245,6 @@ function nodequeue_view_queues() {
   }
 
   $header = array(
-    array('data' => t('Queue ID'), 'field' => 'qid'),
     array('data' => t('Title'), 'field' => 'title', 'sort' => 'asc'),
     array('data' => t('Queue ID'), 'field' => 'qid'),
     array('data' => t('Max nodes'), 'field' => 'size'),
@@ -320,7 +319,6 @@ function nodequeue_view_queues() {
     }
 
     $rows[] = array(
-      array('class' => array('nodequeue-id'), 'data' => $queue->qid),
       array('class' => array('nodequeue-title'), 'data' => check_plain($queue->title)),
       array('class' => array('nodequeue-id'), 'data' => $queue->qid),
       array('class' => array('nodequeue-max-nodes'), 'data' => $queue->size == 0 ? t('Infinite') : $queue->size),
@@ -447,7 +445,7 @@ function nodequeue_edit_queue_form($form, &$form_state, $queue) {
     '#title' => t('Queue size'),
     '#default_value' => $queue->size,
     '#size' => 2,
-    '#maxlength' => 2,
+    '#maxlength' => 3,
     '#required' => TRUE,
     '#description' => t('The maximum number of nodes will appear in the queue. Enter 0 for no limit'),
   );
