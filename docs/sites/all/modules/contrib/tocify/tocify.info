@@ -4,9 +4,8 @@ core = 7.x
 dependencies[] = block
 dependencies[] = jquery_update
 
-; Information added by Drupal.org packaging script on 2014-10-14
-version = "7.x-1.0"
+; Information added by Drupal.org packaging script on 2020-06-29
+version = "7.x-1.1"
 core = "7.x"
 project = "tocify"
-datestamp = "1413281631"
-
+datestamp = "1593418151"
