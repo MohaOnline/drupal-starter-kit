@@ -7,11 +7,14 @@
  * Implements hook_schema().
  */
 function webform_confirm_email_schema() {
-  $schema = array();
-
-  $schema['webform_confirm_email_code'] = array(
-    'description' => 'Table for storing email confirmation codes.',
-    'fields'      => array(
+  $schema['webform_confirm_email_queued_emails'] = array(
+    'description' => 'Emails waiting for a submission to be confirmed',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
       'nid' => array(
         'description' => 'The node ID of a webform submission to be confirmed.',
         'type'        => 'int',
@@ -24,52 +27,23 @@ function webform_confirm_email_schema() {
         'unsigned'    => TRUE,
         'not null'    => TRUE,
       ),
-      'eid' => array(
-        'description' => 'The e-mail ID of a webform submission to be confirmed.',
-        'type'        => 'int',
-        'unsigned'    => TRUE,
-        'not null'    => TRUE,
+      'email' => array(
+        'description' => 'The confirmation email that will be send once the confirmation URL is used',
+        'type'        => 'text',
+        'size'        => 'medium',
+        'serialize'   => TRUE,
       ),
-      'code' => array(
-        'description' => 'The hash code used for the confirmation link of a webform submission to be confirmed.',
-        'type'        => 'char',
-        'length'      => 32,
-        'not null'    => TRUE,
-      ),
-      'datetime' => array(
+      'created' => array(
         'description' => 'Creation timestamp used for cron job cleanup of confirmation mails that exceeded their storage lifetime set by the admin',
         'type'        => 'int',
         'not null'    => TRUE,
       ),
     ),
-    'primary key' => array('nid', 'sid', 'eid'),
-  );
-
-  $schema['webform_confirm_email_confirmation_emails'] = array(
-    'description' => 'Confirmation emails are stored here to be send once the user used the confirmation URL',
-    'fields' => array(
-      'nid' => array(
-        'description' => 'The node ID of a webform submission to be confirmed.',
-        'type'        => 'int',
-        'unsigned'    => TRUE,
-        'not null'    => TRUE,
-      ),
-      'sid' => array(
-        'description' => 'Submission ID of a webform submission to be confirmed.',
-        'type'        => 'int',
-        'unsigned'    => TRUE,
-        'not null'    => TRUE,
-      ),
-      'email_message' => array(
-        'description' => 'The confirmation email that will be send once th confirmation URL is used',
-        'type'        => 'text',
-        'size'        => 'medium',
-        'serialize'   => TRUE,
-      ),
-    ),
+    'primary key' => array('id'),
     'indexes' => array(
-      'webform_confirm_email_confirmation_emails_nidsid_index'   => array('nid', 'sid'),
-   ),
+      'webform_confirm_email_submission' => array('nid', 'sid'),
+      'webform_confirm_email_email_created' => array('created'),
+    ),
   );
 
   $schema['webform_confirm_email'] = array(
@@ -186,6 +160,84 @@ function webform_confirm_email_uninstall() {
 // *****************************************
 // **************** UPDATES ****************
 // *****************************************
+
+/**
+ * Completely redo email and code storage.
+ */
+function webform_confirm_email_update_7207() {
+  db_create_table('webform_confirm_email_queued_emails', array(
+    'description' => 'Emails waiting for a submission to be confirmed',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'description' => 'The node ID of a webform submission to be confirmed.',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'sid' => array(
+        'description' => 'Submission ID of a webform submission to be confirmed.',
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'email' => array(
+        'description' => 'The confirmation email that will be send once the confirmation URL is used',
+        'type'        => 'text',
+        'size'        => 'medium',
+        'serialize'   => TRUE,
+      ),
+      'created' => array(
+        'description' => 'Creation timestamp used for cron job cleanup of confirmation mails that exceeded their storage lifetime set by the admin',
+        'type'        => 'int',
+        'not null'    => FALSE,
+      ),
+    ),
+    'primary key' => array('id'),
+    'indexes' => array(
+      'webform_confirm_email_submission' => array('nid', 'sid'),
+      'webform_confirm_email_email_created' => array('created'),
+    ),
+  ));
+
+  $sql = <<<SQL
+INSERT INTO {webform_confirm_email_queued_emails} (nid, sid, email, created)
+SELECT nid, sid, e.email_message, NULL
+FROM {webform_confirm_email_confirmation_emails} e
+SQL;
+  db_query($sql);
+
+  $sql = <<<SQL
+UPDATE {webform_confirm_email_queued_emails} e
+  INNER JOIN (
+    SELECT nid, sid, MAX(datetime) AS created
+    FROM {webform_confirm_email_code}
+    GROUP BY nid, sid
+  ) c USING(nid, sid)
+SET e.created=c.created
+SQL;
+  db_query($sql);
+
+  db_change_field('webform_confirm_email_queued_emails', 'created', 'created', array(
+    'description' => 'Creation timestamp used for cron job cleanup of confirmation mails that exceeded their storage lifetime set by the admin',
+    'type'        => 'int',
+    'not null'    => FALSE,
+  ));
+
+  db_drop_table('webform_confirm_email_code');
+  db_drop_table('webform_confirm_email_confirmation_emails');
+}
+
+/**
+ * Drop {webform_confirm_email_code}.code.
+ */
+function webform_confirm_email_update_7206() {
+  db_drop_field('webform_confirm_email_code', 'code');
+}
 
 /**
  * Migrate to expiration config columns in {webform}.
