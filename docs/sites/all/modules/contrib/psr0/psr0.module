@@ -33,10 +33,10 @@ function _psr0_paths_for_name($name, $tests) {
     return $paths[$cname];
   }
 
-  $paths[$cname] = array();
-
-  if (($path = DRUPAL_ROOT . '/' . drupal_get_path('module', $name)) || ($path = DRUPAL_ROOT . '/' . drupal_get_path('profile', $name))) {
-    $module_path = $path;
+  $modules = system_list('module_enabled');
+  if (isset($modules[$name])) {
+    $paths[$cname] = array();
+    $module_path = DRUPAL_ROOT . '/' . dirname($modules[$name]->filename);
     if ($tests) {
       if (file_exists($module_path . '/lib/Tests/')) {
         $paths[$cname][] = $module_path . '/lib/Tests/';
@@ -52,8 +52,9 @@ function _psr0_paths_for_name($name, $tests) {
     if (file_exists($module_path . '/src/')) {
       $paths[$cname][] = $module_path . '/src/';
     }
+    return $paths[$cname];
   }
-  return $paths[$cname];
+  return array();
 }
 
 /**
