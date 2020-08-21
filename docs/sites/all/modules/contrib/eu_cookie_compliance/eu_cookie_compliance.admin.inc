@@ -351,10 +351,24 @@ function eu_cookie_compliance_admin_form(array $form, array $form_state) {
     '#size' => 30,
     '#states' => array(
       'visible' => array(
-        "input[name='eu_cookie_compliance[enable_save_preferences_button]']" => array('!checked' => TRUE),
+          array(
+          "input[name='eu_cookie_compliance[enable_save_preferences_button]']" => array('checked' => FALSE),
+          "input[name='eu_cookie_compliance[method]']" => array('value' => 'categories'),
+        ),
+        array(
+          "input[name='eu_cookie_compliance[method]']" => array('!value' => 'categories'),
+        ),
+      ),
+      'required' => array(
+        array(
+          ":input[name='eu_cookie_compliance[enable_save_preferences_button]']" => array('checked' => FALSE),
+          ":input[name='eu_cookie_compliance[method]']" => array('value' => 'categories'),
+        ),
+        array(
+          "input[name='eu_cookie_compliance[method]']" => array('!value' => 'categories'),
+        ),
       ),
     ),
-    '#required' => TRUE,
   );
 
   $form['popup_message']['eu_cookie_compliance']['show_disagree_button'] = array(

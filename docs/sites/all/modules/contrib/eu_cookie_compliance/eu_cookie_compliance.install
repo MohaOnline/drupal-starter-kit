@@ -282,7 +282,7 @@ function eu_cookie_compliance_update_7001(&$sandbox) {
           if ($langcode == $default_language) {
             $default_value = $value;
           }
-          i18n_variable_set('eu_cookie_compliance', $value, $langcode);
+          variable_realm_set('language', $langcode, 'eu_cookie_compliance', $value, FALSE);
           variable_del($name);
         }
       }
@@ -465,7 +465,7 @@ function eu_cookie_compliance_update_7010() {
       $settings = i18n_variable_get('eu_cookie_compliance', $langcode);
       if (!empty($settings)) {
         $updated_setting = $settings + _eu_cookie_compliance_get_popup_default_setting();
-        i18n_variable_set('eu_cookie_compliance', $updated_setting, $langcode);
+        variable_realm_set('language', $langcode, 'eu_cookie_compliance', $updated_setting, FALSE);
       }
     }
   }
@@ -481,7 +481,7 @@ function eu_cookie_compliance_update_7011() {
       $eu_cookie_language_settings = i18n_variable_get('eu_cookie_compliance', $language);
       if ($eu_cookie_language_settings && !array_key_exists('info_template', $eu_cookie_language_settings)) {
         $eu_cookie_language_settings['info_template'] = 'legacy';
-        i18n_variable_set('eu_cookie_compliance',$eu_cookie_language_settings, $language);
+        variable_realm_set('language', $language, 'eu_cookie_compliance', $eu_cookie_language_settings, FALSE);
       }
     }
   }
@@ -509,7 +509,7 @@ function eu_cookie_compliance_update_7012() {
       $settings = i18n_variable_get('eu_cookie_compliance', $langcode);
       if (!empty($settings)) {
         $updated_setting = $settings + $new_settings;
-        i18n_variable_set('eu_cookie_compliance', $updated_setting, $langcode);
+        variable_realm_set('language', $langcode, 'eu_cookie_compliance', $updated_setting, FALSE);
       }
     }
   }
@@ -533,7 +533,7 @@ function eu_cookie_compliance_update_7013() {
       $settings = i18n_variable_get('eu_cookie_compliance', $langcode);
       if (!empty($settings)) {
         $updated_settings = $settings + $default_settings;
-        i18n_variable_set('eu_cookie_compliance', $updated_settings, $langcode);
+        variable_realm_set('language', $langcode, 'eu_cookie_compliance', $updated_settings, FALSE);
       }
     }
   }

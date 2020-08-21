@@ -523,7 +523,7 @@
   Drupal.eu_cookie_compliance.setAcceptedCategories = function (categories) {
     var date = new Date();
     var domain = Drupal.settings.eu_cookie_compliance.domain ? Drupal.settings.eu_cookie_compliance.domain : '';
-    var path = Drupal.settings.basePath;
+    var path = Drupal.settings.eu_cookie_compliance.domain_all_sites ? '/' : Drupal.settings.basePath;
     var cookieName = (typeof eu_cookie_compliance_cookie_name === 'undefined' || eu_cookie_compliance_cookie_name === '') ? 'cookie-agreed-categories' : Drupal.settings.eu_cookie_compliance.cookie_name + '-categories';
     if (path.length > 1) {
       var pathEnd = path.length - 1;

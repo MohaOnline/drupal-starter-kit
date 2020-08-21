@@ -352,6 +352,7 @@ function eu_cookie_compliance_page_build(&$page) {
         'enable_save_preferences_button' => $popup_settings['enable_save_preferences_button'],
         'fix_first_cookie_category' => $popup_settings['fix_first_cookie_category'],
         'select_all_categories_by_default' => $popup_settings['select_all_categories_by_default'],
+        'cookie_name' => !empty($popup_settings['cookie_name']) ? $popup_settings['cookie_name'] : '',
       );
       // For some reason, we're getting the wrong language when editing the
       // localized form, so we shouldn't cache.
@@ -487,6 +488,9 @@ function eu_cookie_compliance_theme() {
         'secondary_button_label' => NULL,
         'primary_button_class' => NULL,
         'secondary_button_class' => NULL,
+        'privacy_settings_tab_label' => NULL,
+        'cookie_categories' => NULL,
+        'method' => 'default',
       ),
       'path' => $path,
     ),
@@ -745,17 +749,17 @@ function _eu_cookie_compliance_find_privacy_policy() {
 
   if ($database_type === 'sqlsrv') {
     $query = db_query(
-      "select nid from {node} where 
-      title LIKE 'Privacy%' OR 
-      title LIKE 'Privacy policy%' OR 
-      title LIKE 'Privacy Policy%' OR 
-      title LIKE 'Cookie policy%' OR 
-      title LIKE 'Cookie Policy%' OR 
-      title LIKE 'Terms of use%' OR 
-      title LIKE 'Terms of Use%' OR 
-      title LIKE 'Terms of service%' OR 
-      title LIKE 'Terms of Service%' OR 
-      title LIKE 'Terms and conditions%' OR 
+      "select nid from {node} where
+      title LIKE 'Privacy%' OR
+      title LIKE 'Privacy policy%' OR
+      title LIKE 'Privacy Policy%' OR
+      title LIKE 'Cookie policy%' OR
+      title LIKE 'Cookie Policy%' OR
+      title LIKE 'Terms of use%' OR
+      title LIKE 'Terms of Use%' OR
+      title LIKE 'Terms of service%' OR
+      title LIKE 'Terms of Service%' OR
+      title LIKE 'Terms and conditions%' OR
       title LIKE 'Terms and Conditions%'
       "
     );
@@ -875,4 +879,14 @@ function eu_cookie_compliance_store_consent($type) {
  */
 function _eu_cookie_compliance_convert_relative_uri(&$element) {
   $element = preg_replace('/^\//', '', file_create_url($element));
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function eu_cookie_compliance_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'eu_cookie_compliance') . '/includes/views',
+  );
 }
