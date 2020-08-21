@@ -1,7 +1,7 @@
 /*
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
 
 #finder .elfinder-statusbar {
@@ -45,4 +45,8 @@ body.elfinder .elfinder-statusbar {
 
 #elfinder-messages.legacy {
     display: block;
+}
+
+.elfinder-button-icon-chown {
+  background-image: url('/misc/permissions.png')!important;
 }

@@ -1,38 +1,36 @@
 /*
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
 
-var elfinder_tinymce_callback = function(arg1) {
-  var url = arg1;
+var elfinder_tinymce_callback = function(params) {
+  var url = params;
 
-  if (typeof arg1 == 'object') {
-    url = arg1.url;
+  if (typeof params == 'object') {
+    url = params.url;
   }
-  /* window.tinymceFileWin.document.forms[0].elements[window.tinymceFileField].value = url;
-   window.tinymceFileWin.focus();
-   window.close();*/
 
-  //make inline popup work
+  var win;
 
-  var win = tinyMCEPopup.getWindowArg("window");
+  if (typeof tinyMCEPopup == 'object') {
+    win = tinyMCEPopup.getWindowArg("window");
+    win.document.getElementById(tinyMCEPopup.getWindowArg("input")).value = url;
 
-  // insert information now
-  win.document.getElementById(tinyMCEPopup.getWindowArg("input")).value = url;
-
-  // are we an image browser
-  if (typeof (win.ImageDialog) != "undefined") {
+    // are we an image browser
+    if (typeof (win.ImageDialog) != "undefined") {
     // we are, so update image dimensions...
-    if (win.ImageDialog.getImageData)
-      win.ImageDialog.getImageData();
+      if (win.ImageDialog.getImageData)
+        win.ImageDialog.getImageData();
 
-    // ... and preview if necessary
-    if (win.ImageDialog.showPreviewImage)
-      win.ImageDialog.showPreviewImage(url);
+      // ... and preview if necessary
+      if (win.ImageDialog.showPreviewImage) {
+        win.ImageDialog.showPreviewImage(url);
+      }
+    }
+
+    tinyMCEPopup.close();
+  } else {
+    window.parent.postMessage({'selectedFile': params},"*");
   }
-
-  // close popup window
-  tinyMCEPopup.close();
-
 }

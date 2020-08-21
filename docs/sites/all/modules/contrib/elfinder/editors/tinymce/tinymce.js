@@ -1,18 +1,8 @@
 /*
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
-
-// $Id$
-
-/*function elfinder_tinymce_browse_callback(field_name, url, type, win) {
- var w = window.open(tinymce.settings.file_browser_url, null, 'toolbar=yes,menubar=yes,width=600,height=500, inline=yes');
- w.tinymceFileField = field_name;
- w.tinymceFileWin = win;
- }*/
-
-// MAKE INLINE POPUP WORK
 
 function elfinder_tinymce_browse_callback(field_name, url, type, win) {
   /*var w = window.open(tinymce.settings.file_browser_url, null, 'toolbar=yes,menubar=yes,width=600,height=500, inline=yes');
@@ -42,5 +32,16 @@ function elfinder_tinymce_browse_callback(field_name, url, type, win) {
     window: win,
     input: field_name
   });
+
+  window.addEventListener("message", function(e) {
+    console.log('received: ', e);
+    if (typeof e.data.selectedFile == 'object') {
+      var selectedFile = e.data.selectedFile;
+      document.getElementById(field_name).value = selectedFile.url;
+      tinyMCE.activeEditor.windowManager.close();
+    }
+
+  }, false);
+
   return false;
 }

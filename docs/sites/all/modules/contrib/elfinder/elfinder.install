@@ -2,7 +2,7 @@
 /**
  * elFinder Integration
  *
- * Copyright (c) 2010-2019, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
 
 /**
@@ -14,7 +14,7 @@
  * Implements hook_requirements().
  */
 function elfinder_requirements($phase) {
-  require_once drupal_get_path('module', 'elfinder') . "/elfinder.module";
+  require_once DRUPAL_ROOT . DIRECTORY_SEPARATOR . drupal_get_path('module', 'elfinder') . "/elfinder.module";
 
   $requirements = array();
 
@@ -26,7 +26,7 @@ function elfinder_requirements($phase) {
 
   $min_ver = "$min_major.$min_minor";
 
-  $libpath = elfinder_lib_path();
+  $libpath = elfinder_lib_path('elfinder', TRUE);
   $ver = '';
 
 
@@ -62,7 +62,7 @@ function elfinder_requirements($phase) {
       }
 
 
-      if (($ver_major < $min_major) || ($ver_major == 2 && $ver_minor == '1' && $ver_release < 38)) {
+      if (($ver_major < $min_major) || ($ver_major == 2 && $ver_minor == '1' && $ver_release < 49)) {
         $description = t('Not supported elFinder library. Please upgrade to @minver.', array('@ver' => $ver, '@minver' => $min_ver)) . ' ' . $install_t;
         $severity = REQUIREMENT_ERROR;
       } else {

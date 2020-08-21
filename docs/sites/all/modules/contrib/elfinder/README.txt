@@ -4,9 +4,9 @@ elFinder file manager integration module for Drupal
 System Requirements:
 
  - Drupal 7.x
- - elFinder 2.0.9+ or 2.1.38+
+ - elFinder 2.0.9+ or 2.1.49+
 
-   Note: elFinder 2.0rc1 no more supported - use 2.0.9+ or 2.1.38+ dev build from 
+   Note: elFinder 2.0rc1 no more supported - use 2.0.9+ or 2.1.49+ dev build from 
          http://elfinder.org 
          or use production version if it is available
 
@@ -47,7 +47,7 @@ Usage:
   2.1. Open Image Properties dialog in editor
   2.2. Click Browse Server button near image url
 
- 3. Inside TinyMCE
+ 3. Inside TinyMCE (3.x or 4.x)
   3.1. Open Insert/edit image dialog
   3.2. Click Browse button near image url
 

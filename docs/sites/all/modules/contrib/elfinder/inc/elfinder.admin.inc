@@ -2,7 +2,7 @@
 /**
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
 
 /**
@@ -233,6 +233,15 @@ function elfinder_admin_form(&$form_state) {
     '#weight' => 5,
   );
 
+  $form['filesystem_settings']['max_archivesize'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Maximum archive size'),
+    '#default_value' => variable_get('elfinder_settings_filesystem_maxarchivesize', ''),
+    '#description' => t('Enter a value like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes) in order to restrict the allowed file size. If left empty the archive file file sizes will not be checked during extraction.'),
+    '#size' => 10,
+    '#weight' => 5,
+  );
+
   $form['filesystem_settings']['max_filecount'] = array(
     '#type' => 'textfield',
     '#title' => t('Maximum folder size'),
@@ -376,6 +385,7 @@ function elfinder_admin_submit($form, &$form_state) {
   variable_set('elfinder_settings_misc_usesystemjquery', $form_state['values']['usesystemjquery']);
   variable_set('elfinder_settings_thumbnail_tmbcrop', $form_state['values']['tmbcrop']);
   variable_set('elfinder_settings_filesystem_maxfilesize', $form_state['values']['max_filesize']);
+  variable_set('elfinder_settings_filesystem_maxarchivesize', $form_state['values']['max_archivesize']);
   variable_set('elfinder_settings_filesystem_maxfilecount', $form_state['values']['max_filecount']);
   variable_set('elfinder_settings_filesystem_handleprivate', $form_state['values']['handleprivate']);
   variable_set('elfinder_settings_filesystem_public_root_label', $form_state['values']['filesystem_public_root_label']);
@@ -436,6 +446,10 @@ function elfinder_admin_form_validate($form, &$form_state) {
 
   if (!empty($form_state['values']['max_filesize']) && !is_numeric(parse_size($form_state['values']['max_filesize']))) {
     form_set_error('max_filesize', t('The file size option must contain a valid value. You may either leave the text field empty or enter a string like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes).'));
+  }
+
+  if (!empty($form_state['values']['max_archivesize']) && !is_numeric(parse_size($form_state['values']['max_archivesize']))) {
+    form_set_error('max_archivesize', t('The file size option must contain a valid value. You may either leave the text field empty or enter a string like "512" (bytes), "80 KB" (kilobytes) or "50 MB" (megabytes).'));
   }
 
   if ($mwidth && !is_numeric($mwidth)) {

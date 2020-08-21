@@ -2,7 +2,7 @@
 /**
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
 
 /**
@@ -387,7 +387,6 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
   public function owner($target) {
     $path = $this->decode($target);
 
-
     $file = $this->_drupalfileobject($path);
 
     if ($file->fid) {
@@ -405,6 +404,28 @@ class elFinderVolumeDrupal extends elFinderVolumeLocalFileSystem {
       return $owner;
     }
     return FALSE;
+  }
+
+  public function chown($target) {
+    global $user;
+    $path = $this->decode($target);
+    $file = $this->_drupalfileobject($path);
+
+    $file->uid = $user->uid;
+
+    $newfile = FALSE;
+
+    if (!$file->fid) {
+      $newfile = TRUE;
+    }
+
+    @file_save($file);
+
+    if ($newfile) {
+      $this->FileUsageAdd($file);
+    }
+
+    return TRUE;
   }
 
   public static function stat_corrector(&$stat, $path, $statOwner, $volumeDriveInstance) {

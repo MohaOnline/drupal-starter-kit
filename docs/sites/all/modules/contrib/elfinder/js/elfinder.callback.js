@@ -1,10 +1,8 @@
 /*
  * elFinder Integration
  *
- * Copyright (c) 2010-2018, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
-
-// $Id: elfinder.callback.js 106 2011-02-26 08:19:56Z ph0enix $
 
 (function($) {
 
@@ -51,9 +49,9 @@
 
   }
 
-  elFinder.prototype.commands.test134 = function() {
-    this.title = 'Test Command';
-    //this.options        = {ui : 'uploadbutton'}
+  elFinder.prototype.i18.en.messages['cmdchown'] = 'Take Ownership';
+
+  elFinder.prototype.commands.chown = function() {
     this.alwaysEnabled = true;
     this.updateOnSelect = false;
     this.state = 0;
@@ -62,22 +60,52 @@
       return 0;
     }
 
-    /**
-     * Send search request to backend.
-     *
-     * @param  String  search string
-     * @return $.Deferred
-     **/
-    this.exec = function(q) {
+    this.exec = function(hashes, opts) {
       var fm = this.fm;
+      var files = this.files(hashes),
+          dfrd     = $.Deferred(),
+          cnt      = files.length,
+          makedir  = opts && opts.makedir ? 1 : 0,
+          i, error,
+          decision;
+      var file = files[0];
 
-      alert(Drupal.t('test command. arg=') + q);
+      fm.confirm({
+        title  : 'Take Ownership',
+        text   : ['Are you sure to take ownership of "'+file.name+'"'],
+        accept : {
+          label : 'btnYes',
+          callback : function (all) {
+            fm.request({
+              data: {
+                cmd: 'owner',
+                target: file.hash,
+                owner: Drupal.settings.elfinder.uid
+              },
+              notify: {
+                type: 'owner',
+                cnt: 1
+              }
+            })
+            .always(function() {
+            });
+
+          }
+        },
+        cancel : {
+          label : 'btnNo',
+          callback : function () {
+            dfrd.resolve();
+          }
+        },
+        all : ((i+1) < cnt)
+      });
 
       return $.Deferred().reject();
     }
 
-  }
 
+  }
 
   $().ready(function() {
     var uiopts = elFinder.prototype._options.uiOptions.toolbar;
@@ -212,7 +240,6 @@
       }
 
       if (elfinderOpts.api21) {
-        console.log('2.1 api');
         elfinderOpts['commandsOptions']['info'] = {
           custom: {}
 
@@ -226,8 +253,13 @@
           viewDesc = $.inArray('desc', disabledCommands) == -1 ? true : false,
           editDesc = $.inArray('editdesc', disabledCommands) == -1 ? true : false,
           viewOwner = $.inArray('owner', disabledCommands) == -1 ? true : false,
+          changeOwner = $.inArray('chown', disabledCommands) == -1 ? true : false,
           viewDownloads = $.inArray('downloadcount', disabledCommands) == -1 ? true : false;
 
+        if (changeOwner) {
+          elFinder.prototype._options.commands.push('chown');
+          elFinder.prototype._options.contextmenu.files.push('chown');
+        }
 
         if (viewDesc || editDesc) {
 
@@ -288,44 +320,6 @@
                 });
             }
           };
-
-        }
-
-
-        if (viewOwner) {
-          // Key is the same as your command name
-          elfinderOpts['commandsOptions']['info']['custom']['owner'] = {
-            // Field label
-            label: Drupal.t('Owner'),
-
-            // HTML Template
-            tpl: '<div class="elfinder-info-owner"><span class="elfinder-info-spinner"></span></div>',
-
-            // Action that sends the request to the server and get the description
-            action: function(file, filemanager, dialog) {
-              console.log('owner action');
-
-              // Use the @filemanager object to issue a request
-              filemanager.request({
-                // Issuing the custom 'desc' command, targetting the selected file
-                data: {cmd: 'owner', target: file.hash,},
-                preventDefault: true,
-              })
-              // If the request fails, populate the field with 'Unknown'
-                .fail(function() {
-                  console.log('owner fail');
-                  dialog.find('.elfinder-info-owner').html(filemanager.i18n('unknown'));
-                })
-                // When the request is successful, show the description
-                .done(function(data) {
-                  console.log('owner done');
-                  dialog.find('.elfinder-info-owner').html(data.owner);
-                });
-            }
-          };
-
-          elFinder.prototype._options.uiOptions.cwd.listView.columns.push('owner');
-          elFinder.prototype._options.uiOptions.cwd.listView.columnsCustomName['owner'] = Drupal.t('Owner');
 
         }
 

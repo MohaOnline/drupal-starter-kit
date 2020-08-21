@@ -2,7 +2,7 @@
 /**
  * elFinder Integration
  *
- * Copyright (c) 2010-2019, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
 
 /**
@@ -28,14 +28,14 @@ class elFinderDrupal extends elFinder {
         $this->elFinderDrupalLibRevision = $this->revision();
       }
 
-      if ($this->elFinderDrupalLibVersion == 2.1 && is_callable(array($this, 'revision')) && $this->revision() < 37) {
+      if ($this->elFinderDrupalLibVersion == 2.1 && is_callable(array($this, 'revision')) && $this->revision() < 49) {
         $this->connector_unsupported_error();
       }
 
       parent::__construct($opts);
 
       $this->commands['desc'] = array('target' => TRUE, 'content' => FALSE);
-      $this->commands['owner'] = array('target' => TRUE, 'content' => FALSE);
+      $this->commands['owner'] = array('target' => TRUE, 'owner' => FALSE);
       $this->commands['downloadcount'] = array('target' => TRUE);
 
     } else {
@@ -126,11 +126,11 @@ class elFinderDrupal extends elFinder {
 
   protected function owner($args) {
     $target = $args['target'];
+    $newowner = (int)$args['owner'];
 
     $error = array(self::ERROR_UNKNOWN, '#' . $target);
 
-    if (($volume = $this->volume($target)) == FALSE
-      || ($file = $volume->file($target)) == FALSE) {
+    if (($volume = $this->volume($target)) == FALSE || ($file = $volume->file($target)) == FALSE) {
       return array('error' => $this->error($error, self::ERROR_FILE_NOT_FOUND));
     }
 
@@ -142,6 +142,12 @@ class elFinderDrupal extends elFinder {
 
     if ($volume->commandDisabled('owner')) {
       return array('error' => $this->error($error, self::ERROR_ACCESS_DENIED));
+    }
+
+    if ($newowner && user_access('administer file manager')) {
+      if (is_callable(array($volume, 'chown'))) {
+        $volume->chown($target);
+      }
     }
 
     if (($owner = $volume->owner($target)) == FALSE) {

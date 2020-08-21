@@ -2,7 +2,7 @@
 /**
  * elFinder Integration
  *
- * Copyright (c) 2010-2019, Alexey Sukhotin. All rights reserved.
+ * Copyright (c) 2010-2020, Alexey Sukhotin. All rights reserved.
  */
 
 define('ELFINDER_POPUP_WIDTH', 700);
@@ -10,12 +10,12 @@ define('ELFINDER_POPUP_HEIGHT', 400);
 
 include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinder.class.php';
 if (class_exists('elFinder')) {
-  include_once drupal_get_path('module', 'elfinder') . DIRECTORY_SEPARATOR . 'inc' . DIRECTORY_SEPARATOR . 'elfinder.drupal.inc';
+  include_once DRUPAL_ROOT . DIRECTORY_SEPARATOR . drupal_get_path('module', 'elfinder') . DIRECTORY_SEPARATOR . 'inc' . DIRECTORY_SEPARATOR . 'elfinder.drupal.inc';
 }
 
 function elfinder_check_badpaths() {
   $ret = array('result' => TRUE, 'message' => '');
-  $libpath = elfinder_lib_path();
+  $libpath = elfinder_lib_path('elfinder', TRUE);
   $badfiles = array('connectors/php/connector.php', 'php/connector.php', 'php/connector.minimal.php');
 
   $badpaths = array();
@@ -178,7 +178,7 @@ function elfinder_file_browser($browser_mode = 'default') {
   $p = elfinder_get_user_profile();
 
   if (is_readable(elfinder_connector_path())) {
-    global $language;
+    global $language, $user;
 
     $path = drupal_get_path('module', 'elfinder');
     $editorApp = '';
@@ -209,8 +209,10 @@ function elfinder_file_browser($browser_mode = 'default') {
       'requestType' => variable_get('elfinder_settings_misc_requesttype', 'get') == 'get' ? 'get' : 'post',
       'browserMode' => $browser_mode,
       'token' => drupal_get_token('elFinder'),
+      'baseUrl' => base_path() . elfinder_lib_path() . '/',
       'soundPath' => base_path() . elfinder_lib_path() . '/sounds',
       'commandsOptions' => array('dummy' => array()),
+      'uid' => (int)$user->uid,
     );
 
     if (variable_get('elfinder_settings_filesystem_external_preview', 'disabled') != 'disabled') {
@@ -429,13 +431,16 @@ function elfinder_file_browser($browser_mode = 'default') {
     //drupal_add_js(array('elfinder' => $elfinder_js_settings), 'setting');
 
 
-    $libs = elfinder_get_libraries('tinymce');
+    $libs = elfinder_get_libraries();
 
     if (count($libs) > 0 && !empty($libs['tinymce'])) {
 
       $path = $libs['tinymce'] . '/jscripts/tiny_mce/tiny_mce_popup.js';
-      $abspath = base_path() . "/$path";
-      drupal_add_js($path);
+      $abspath = DRUPAL_ROOT . base_path() . "/$path";
+
+      if (is_readable($abspath)) {
+        drupal_add_js($path);
+      }
     }
 
   } else {
@@ -466,6 +471,10 @@ function elfinder_get_disabled_commands() {
     if (array_key_exists($perm_name, $commands) && !user_access($perm_name)) {
       array_push($disabled_commands, $commands[$perm_name]);
     }
+  }
+
+  if (!user_access('administer file manager')) {
+    array_push($disabled_commands, 'chown');
   }
 
   /*  if (!user_access('download own uploaded files') && !user_access('download all uploaded files')) {
@@ -532,7 +541,7 @@ function elfinder_filesystemconnector($mode = 'default') {
 
   $p = elfinder_get_user_profile();
 
-  $path = drupal_get_path('module', 'elfinder');
+  $path = DRUPAL_ROOT . DIRECTORY_SEPARATOR . drupal_get_path('module', 'elfinder');
 
   include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinderConnector.class.php';
   include_once dirname(elfinder_connector_path()) . DIRECTORY_SEPARATOR . 'elFinderVolumeDriver.class.php';
@@ -613,6 +622,7 @@ function elfinder_filesystemconnector($mode = 'default') {
     'userProfile' => $p,
     'jpgQuality' => variable_get('image_jpeg_quality', 75),
     'dispInlineRegex' => variable_get('elfinder_settings_filesystem_inlinepreviewregex', '^$'),
+    'maxArcFilesSize' => parse_size(variable_get('elfinder_settings_filesystem_maxarchivesize', '')),
     'statCorrector' => 'elFinderVolumeDrupal::stat_corrector',
   );
 
@@ -1055,14 +1065,22 @@ function elfinder_download_url() {
 }
 
 /**
- * library files path
+ *  Returns the path to the requested library.
+ *
+ * @param string $name
+ *   Library name.
+ * @param bool $absolute
+ *   Set true if absolute path (for include/require) is needed.
+ *
+ * @return bool|string
+ *   Path to requested library or FALSE if not found.
  */
-function elfinder_lib_path($name = 'elfinder') {
+function elfinder_lib_path($name = 'elfinder', $absolute = FALSE) {
 
-  $libraries = &drupal_static(__FUNCTION__);
+  $libraries = &drupal_static(__FUNCTION__ . $absolute);
 
   if (!isset($libraries)) {
-    $libraries = elfinder_get_libraries();
+    $libraries = elfinder_get_libraries($absolute);
   }
 
   $path = '';
@@ -1076,7 +1094,17 @@ function elfinder_lib_path($name = 'elfinder') {
   return $path;
 }
 
-function elfinder_get_libraries() {
+/**
+ * Returns a list of available libraries.
+ *
+ * @param bool $is_absolute
+ * Set true if absolute paths (for include/require) are needed.
+ *
+ * @return array
+ *   A list of paths to libraries.
+ */
+function elfinder_get_libraries($is_absolute = FALSE) {
+  $drupal_root = DRUPAL_ROOT . DIRECTORY_SEPARATOR;
   $directory = 'libraries';
   $searchdir = array();
   $profile = drupal_get_profile();
@@ -1091,15 +1119,15 @@ function elfinder_get_libraries() {
   // themes as organized by a distribution.  It is pristine in the same way
   // that /modules is pristine for core; users should avoid changing anything
   // there in favor of sites/all or sites/<domain> directories.
-  if (file_exists("profiles/$profile/$directory")) {
+  if (file_exists($drupal_root . "profiles/$profile/$directory")) {
     $searchdir[] = "profiles/$profile/$directory";
   }
 
   // Always search sites/all/*.
-  $searchdir[] = 'sites/all/' . $directory;
+  $searchdir[] = "sites/all/" . $directory;
 
   // Also search sites/<domain>/*.
-  if (file_exists("$config/$directory")) {
+  if (file_exists($drupal_root . "$config/$directory")) {
     $searchdir[] = "$config/$directory";
   }
 
@@ -1108,11 +1136,14 @@ function elfinder_get_libraries() {
   $directories = array();
   $nomask = array('CVS');
   foreach ($searchdir as $dir) {
-    if (is_dir($dir) && $handle = opendir($dir)) {
+    $absolute_path = $drupal_root . $dir;
+    $absolute_prefix = $is_absolute ? $drupal_root : '';
+
+    if (is_dir($absolute_path) && $handle = opendir($absolute_path)) {
       while (FALSE !== ($file = readdir($handle))) {
         if (!in_array($file, $nomask) && $file[0] != '.') {
-          if (is_dir("$dir/$file")) {
-            $directories[$file] = "$dir/$file";
+          if (is_dir("$absolute_path/$file")) {
+            $directories[$file] = $absolute_prefix . "$dir/$file";
           }
         }
       }
@@ -1127,7 +1158,7 @@ function elfinder_get_libraries() {
  * library to filesystem connector path
  */
 function elfinder_connector_path() {
-  return elfinder_lib_path() . '/php/elFinder.class.php';
+  return elfinder_lib_path('elfinder', TRUE) . '/php/elFinder.class.php';
 }
 
 /**
@@ -1426,8 +1457,8 @@ function elfinder_ckeditor_settings_alter(&$settings, $conf) {
   if (!$height) {
     $height = ELFINDER_POPUP_HEIGHT;
   }
-  $settings['js_conf']['filebrowserWindowWidth'] = $width;
-  $settings['js_conf']['filebrowserWindowHeight'] = $height;
+  /*$settings['js_conf']['filebrowserWindowWidth'] = $width;
+  $settings['js_conf']['filebrowserWindowHeight'] = $height;*/
 }
 
 
@@ -1435,7 +1466,7 @@ function elfinder_libraries_info() {
   $libraries['elfinder'] = array(
     'name' => 'elFinder File Manager',
     'vendor url' => elfinder_homepage_url(),
-    'download url' => 'https://github.com/Studio-42/elFinder/archive/2.1.38.zip',
+    'download url' => 'https://github.com/Studio-42/elFinder/archive/2.1.49.zip',
     'version arguments' => array(
       'file' => 'js/elfinder.min.js',
       'pattern' => '@ \* Version\s+([0-9\.]+)@',

@@ -1,6 +1,6 @@
 2.x-dev
 -------
-  - Now requires elFinder 2.0.9+ or 2.1.38+
+  - Now requires elFinder 2.1.49+
   - Added multiple root directories support
   - Added Drupal file_managed table synchronization
   - Added per-role configurable profiles support
@@ -11,4 +11,7 @@
   - Inline preview support for PSD, md, html, office docs (by Google/Microsoft online tools), CAD (by sharecad.org online tools),  etc (disabled by default, be careful)
   - Auto fit window
   - File owner available in list view
+  - new chown 'Take Ownership' command allowing to set file owner to current logged in user - useful for files uploaded before Drupal install.
+  - new configuration option allowing to set maximum allowed archive size limit.
+
 
