@@ -220,13 +220,13 @@ function powertagging_connection_form($form, &$form_state, $config = NULL) {
   if (!$is_configuration_new && isset($connection_overrides[$config->powertagging_id])) {
     $overridden_values = $connection_overrides[$config->powertagging_id];
   }
-  
+
   // Container: Server settings.
   $form['server_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('1. Select the PoolParty server to use'),
   );
-  
+
   if (isset($overridden_values['connection_id'])) {
     $form['server_settings']['overridden_connection'] = array(
       '#type' => 'markup',
@@ -411,7 +411,7 @@ function powertagging_connection_form($form, &$form_state, $config = NULL) {
       'effect' => 'fade',
     ),
   );
-  
+
   if (isset($overridden_values['project_id'])) {
     $form['project_select']['project']['#description'] = '<span class="semantic-connector-overridden-value">' . t('Warning: overridden by variable') . '</span>';
   }
@@ -824,7 +824,7 @@ function powertagging_form($form, &$form_state, $config = NULL) {
           'disabled' => $states,
         ),
       );
-      
+
       if (isset($overridden_values['taxonomy_id'])) {
         $form['project_settings']['taxonomy_name']['#description'] = ' <span class="semantic-connector-overridden-value">' . t('Warning: overridden by variable') . '</span>';
       }
@@ -874,7 +874,7 @@ function powertagging_form($form, &$form_state, $config = NULL) {
           'visible' => array(':input[name="project_settings[mode]"]' => array('value' => 'annotation')),
         ),
       );
-      
+
       if (isset($overridden_values['corpus_id'])) {
         $form['project_settings']['corpus_id']['#description'] = '<span class="semantic-connector-overridden-value">' . t('Warning: overridden by variable') . '</span>';
       }
@@ -1638,6 +1638,35 @@ function powertagging_index_form($form, &$form_state, $powertagging_config) {
       '#default_value' => TRUE,
     );
 
+    // Date selection.
+    $form['use_date'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Restrict the content on time basis'),
+      '#default_value' => FALSE,
+    );
+
+    $form['created_date_select'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Date restriction'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="use_date"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+
+    $form['created_date_select']['date_from'] = array(
+      '#type' => 'date',
+      '#title' => t('Created - From'),
+      '#description' => t('Only tag content created from this day on. (start of day)'),
+    );
+
+    $form['created_date_select']['date_to'] = array(
+      '#type' => 'date',
+      '#title' => t('Created - To'),
+      '#description' => t('Only tag content created to this day. (end of day)'),
+    );
+
     $form['entities_per_request'] = array(
       '#type' => 'textfield',
       '#title' => t('Entities per request'),
@@ -1712,6 +1741,15 @@ function powertagging_index_form_validate($form, &$form_state) {
   if (isset($values['inform_user']) && !empty($values['inform_user']) && !empty($values['inform_user_email']) && !valid_email_address($values['inform_user_email'])) {
     form_set_error('inform_user_email', t('Please enter a valid email address.'));
   }
+
+  if ($values['use_date']) {
+    $from = strtotime($values['date_from']['year'] . '-' . $values['date_from']['month'] . '-' . $values['date_from']['day']);
+    $to = strtotime($values['date_to']['year'] . '-' . $values['date_to']['month'] . '-' . $values['date_to']['day']);
+
+    if ($from > $to) {
+      form_set_error('created-date-select', t('Please use a valid date range.'));
+    }
+  }
 }
 
 /**
@@ -1720,6 +1758,18 @@ function powertagging_index_form_validate($form, &$form_state) {
 function powertagging_index_form_submit($form, &$form_state) {
   $values = $form_state['values'];
 
+  // Set the date filter.
+  $date_filter = [
+    'from' => NULL,
+    'to' => NULL,
+  ];
+  if ($values['use_date']) {
+    $date_filter['from'] = strtotime($values['date_from']['year'] . '-' . $values['date_from']['month'] . '-' . $values['date_from']['day']);
+    // To = selected date + 1 day to simulate until the end of the selected day.
+    $date_filter['to'] = strtotime($values['date_to']['year'] . '-' . $values['date_to']['month'] . '-' . $values['date_to']['day']) + 86400;
+  }
+
+  // Set the content types.
   $content_types = array();
   foreach ($values['content_types'] as $content_type_id => $value) {
     if (!empty($value)) {
@@ -1730,6 +1780,7 @@ function powertagging_index_form_submit($form, &$form_state) {
   powertagging_index($values['powertagging_config'], array(
     'content_types' => $content_types,
     'skip_tagged_content' => $values['skip_tagged_content'],
+    'date_filter' => $date_filter,
     'entities_per_request' => $values['entities_per_request'],
     'inform_user_email' => (isset($values['inform_user']) && !empty($values['inform_user']) && !empty($values['inform_user_email'])) ? $values['inform_user_email'] : '',
   ));

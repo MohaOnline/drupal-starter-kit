@@ -1247,7 +1247,10 @@ function powertagging_extract($content = "", array $files = [], array $entities 
     }
   }
   if (isset($settings['concept_scheme_restriction']) && !empty($settings['concept_scheme_restriction'])) {
-    $param['conceptSchemeFilters'] = $settings['concept_scheme_restriction'];
+    $i = 0;
+    foreach ($settings['concept_scheme_restriction'] as $restriction) {
+      $param['conceptSchemeFilters[' . $i++ . ']'] = $restriction;
+    }
   }
   $tags = array(
     'content' => array(

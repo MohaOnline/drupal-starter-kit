@@ -677,19 +677,35 @@ function powertagging_index($powertagging_config, array $settings, $batch_finish
     // Get all entities for the given content type.
     switch ($entity_type) {
       case 'node':
-        $result = db_select('node', 'n')
+        $query = db_select('node', 'n')
           ->fields('n', array('nid'))
-          ->condition('n.type', $bundle)
-          ->execute();
+          ->condition('n.type', $bundle);
+
+        if ($settings['date_filter']['from']) {
+          $query->condition('created', $settings['date_filter']['from'], '>=');
+        }
+        if ($settings['date_filter']['to']) {
+          $query->condition('created', $settings['date_filter']['to'], '<=');
+        }
+
+        $result = $query->execute();
         $count = $result->rowCount();
         $entity_ids = $result->fetchCol();
         break;
 
       case 'user':
-        $result = db_select('users', 'u')
+        $query = db_select('users', 'u')
           ->fields('u', array('uid'))
-          ->condition('u.status', 0, '>')
-          ->execute();
+          ->condition('u.status', 0, '>');
+
+        if ($settings['date_filter']['from']) {
+          $query->condition('created', $settings['date_filter']['from'], '>=');
+        }
+        if ($settings['date_filter']['to']) {
+          $query->condition('created', $settings['date_filter']['to'], '<=');
+        }
+
+        $result = $query->execute();
         $count = $result->rowCount();
         $entity_ids = $result->fetchCol();
         break;
@@ -719,17 +735,22 @@ function powertagging_index($powertagging_config, array $settings, $batch_finish
     }
   }
 
-  // Add for each operation some info data.
-  $batch_info = array(
-    'total' => $total,
-    'start_time' => $start_time,
-    'inform_user_email' => $settings['inform_user_email'],
-  );
-  foreach ($batch['operations'] as &$operation) {
-    $operation[1][] = $batch_info;
-  }
+  if ($total > 0) {
+    // Add for each operation some info data.
+    $batch_info = array(
+      'total' => $total,
+      'start_time' => $start_time,
+      'inform_user_email' => $settings['inform_user_email'],
+    );
+    foreach ($batch['operations'] as &$operation) {
+      $operation[1][] = $batch_info;
+    }
 
-  batch_set($batch);
+    batch_set($batch);
+  }
+  else {
+    drupal_set_message(t('There are no entities matching your filters.'), 'error');
+  }
 
   return TRUE;
 }
@@ -1602,7 +1623,7 @@ function powertagging_get_tagging_field_options_list($field_instances, $add_fiel
         default:
           // If the entity type is not supported, throw an error and continue.
           drupal_set_message(t('Entity type "%entitytype" is not supported.', array('%entitytype' => $field_instance['entity_type'])), 'warning');
-          continue;
+          continue 2;
       }
 
       // Add the option.

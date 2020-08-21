@@ -6,8 +6,8 @@ core = 7.x
 configure = admin/config/semantic-drupal/powertagging/powertagging-corpus
 
 dependencies[] = powertagging
-; Information added by Drupal.org packaging script on 2019-07-17
-version = "7.x-2.9"
+; Information added by Drupal.org packaging script on 2020-02-24
+version = "7.x-2.10"
 core = "7.x"
 project = "powertagging"
-datestamp = "1563353288"
+datestamp = "1582559623"
