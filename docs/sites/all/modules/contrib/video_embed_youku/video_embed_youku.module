@@ -120,7 +120,7 @@ function video_embed_youku_handle_video($url, $settings) {
 function video_embed_youku_handle_thumbnail($url) {
   $id = _video_embed_youku_get_video_id($url);
   $id = str_replace('.html', '', $id);
-  $link = 'https://openapi.youku.com/v2/videos/show_basic.json?client_id=' .
+  $link = 'https://api.youku.com/videos/show.json?client_id=' .
     variable_get('video_embed_field_youku_client_id', '8d025b9c897b22a8') . '&video_id=' . $id;
 
   $http = drupal_http_request($link);
@@ -128,7 +128,7 @@ function video_embed_youku_handle_thumbnail($url) {
 
   return array(
     'id' => $json['id'],
-    'url' => $json['thumbnail'],
+    'url' => $json['bigThumbnail'],
   );
 }
 

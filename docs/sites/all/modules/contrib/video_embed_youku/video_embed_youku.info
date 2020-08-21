@@ -6,8 +6,8 @@ configure = admin/config/media/vef_video_styles
 
 dependencies[] = "video_embed_field"
 
-; Information added by Drupal.org packaging script on 2019-11-23
-version = "7.x-1.4"
+; Information added by Drupal.org packaging script on 2020-05-14
+version = "7.x-1.5"
 core = "7.x"
 project = "video_embed_youku"
-datestamp = "1574499487"
+datestamp = "1589450959"
