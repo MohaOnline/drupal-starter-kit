@@ -486,17 +486,17 @@
     },
     {
         "name": "drupal/core",
-        "version": "9.0.3",
-        "version_normalized": "9.0.3.0",
+        "version": "9.0.5",
+        "version_normalized": "9.0.5.0",
         "source": {
             "type": "git",
             "url": "https://github.com/drupal/core.git",
-            "reference": "883018fe0aa16cee450bb043fcb4893c05438283"
+            "reference": "145671b8ac88322c43c8415cf287b76dfe45ad38"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/drupal/core/zipball/883018fe0aa16cee450bb043fcb4893c05438283",
-            "reference": "883018fe0aa16cee450bb043fcb4893c05438283",
+            "url": "https://api.github.com/repos/drupal/core/zipball/145671b8ac88322c43c8415cf287b76dfe45ad38",
+            "reference": "145671b8ac88322c43c8415cf287b76dfe45ad38",
             "shasum": ""
         },
         "require": {
@@ -658,6 +658,7 @@
             "drupal/workflows": "self.version",
             "drupal/workspaces": "self.version"
         },
+        "time": "2020-09-03T21:05:44+00:00",
         "type": "drupal-core",
         "extra": {
             "drupal-scaffold": {
@@ -723,14 +724,7 @@
                 "lib/Drupal/Core/Site/Settings.php"
             ]
         },
-        "scripts": {
-            "pre-autoload-dump": [
-                "Drupal\\Core\\Composer\\Composer::preAutoloadDump"
-            ],
-            "post-autoload-dump": [
-                "Drupal\\Core\\Composer\\Composer::ensureHtaccess"
-            ]
-        },
+        "notification-url": "https://packagist.org/downloads/",
         "license": [
             "GPL-2.0-or-later"
         ],
@@ -823,17 +817,17 @@
     },
     {
         "name": "drupal/core-recommended",
-        "version": "9.0.3",
-        "version_normalized": "9.0.3.0",
+        "version": "9.0.5",
+        "version_normalized": "9.0.5.0",
         "source": {
             "type": "git",
             "url": "https://github.com/drupal/core-recommended.git",
-            "reference": "50da17643f7192fb2771f9fbb7b55fc2b22d8be1"
+            "reference": "b78dd90192e614eeb1d3cd484ca2dd85c7a4cf03"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/drupal/core-recommended/zipball/50da17643f7192fb2771f9fbb7b55fc2b22d8be1",
-            "reference": "50da17643f7192fb2771f9fbb7b55fc2b22d8be1",
+            "url": "https://api.github.com/repos/drupal/core-recommended/zipball/b78dd90192e614eeb1d3cd484ca2dd85c7a4cf03",
+            "reference": "b78dd90192e614eeb1d3cd484ca2dd85c7a4cf03",
             "shasum": ""
         },
         "require": {
@@ -842,7 +836,7 @@
             "doctrine/annotations": "1.10.3",
             "doctrine/lexer": "1.2.1",
             "doctrine/reflection": "1.2.1",
-            "drupal/core": "9.0.3",
+            "drupal/core": "9.0.5",
             "egulias/email-validator": "2.1.17",
             "guzzlehttp/guzzle": "6.5.4",
             "guzzlehttp/promises": "v1.3.1",
@@ -871,7 +865,7 @@
             "symfony/event-dispatcher": "v4.4.9",
             "symfony/event-dispatcher-contracts": "v1.1.7",
             "symfony/http-foundation": "v4.4.9",
-            "symfony/http-kernel": "v4.4.9",
+            "symfony/http-kernel": "v4.4.13",
             "symfony/mime": "v5.1.0",
             "symfony/polyfill-ctype": "v1.17.0",
             "symfony/polyfill-iconv": "v1.17.0",
@@ -896,7 +890,9 @@
         "conflict": {
             "webflo/drupal-core-strict": "*"
         },
+        "time": "2020-09-03T21:05:44+00:00",
         "type": "metapackage",
+        "notification-url": "https://packagist.org/downloads/",
         "license": [
             "GPL-2.0-or-later"
         ],
@@ -3036,17 +3032,17 @@
     },
     {
         "name": "symfony/http-kernel",
-        "version": "v4.4.9",
-        "version_normalized": "4.4.9.0",
+        "version": "v4.4.13",
+        "version_normalized": "4.4.13.0",
         "source": {
             "type": "git",
             "url": "https://github.com/symfony/http-kernel.git",
-            "reference": "54526b598d7fc86a67850488b194a88a79ab8467"
+            "reference": "2bb7b90ecdc79813c0bf237b7ff20e79062b5188"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/symfony/http-kernel/zipball/54526b598d7fc86a67850488b194a88a79ab8467",
-            "reference": "54526b598d7fc86a67850488b194a88a79ab8467",
+            "url": "https://api.github.com/repos/symfony/http-kernel/zipball/2bb7b90ecdc79813c0bf237b7ff20e79062b5188",
+            "reference": "2bb7b90ecdc79813c0bf237b7ff20e79062b5188",
             "shasum": ""
         },
         "require": {
@@ -3094,7 +3090,7 @@
             "symfony/console": "",
             "symfony/dependency-injection": ""
         },
-        "time": "2020-05-31T05:25:51+00:00",
+        "time": "2020-09-02T08:09:29+00:00",
         "type": "library",
         "extra": {
             "branch-alias": {
