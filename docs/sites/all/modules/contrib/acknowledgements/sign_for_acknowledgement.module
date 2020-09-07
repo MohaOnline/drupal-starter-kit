@@ -468,7 +468,7 @@ function _sign_for_acknowledgement_node_email($node) {
   if (property_exists($node, 'email_users') && $node->email_users['und'][0]['value']) {
     _sign_for_acknowledgement_email_from_users($emails, $node->enable_users, $node->nid);
   }
-  if (empty($emails)) {
+  if (empty($emails) && property_exists($node, 'enable_roles_nosign')) {
     _sign_for_acknowledgement_email_from_roles($emails, $node->enable_roles_nosign, $node->nid);
     $no_signature = TRUE;
   }
@@ -797,7 +797,7 @@ function sign_for_acknowledgement_alternate_form_submit($form, $form_state) {
   if (is_array($select_val)) { // multiselect
     $selection = '';
     foreach($select_val as $k => $val) {
-      if ($k !== $val) {
+      if ((string)$k !== (string)$val) {
         continue;
       }
       if (strlen($selection)) {
@@ -856,6 +856,9 @@ function _sign_for_acknowledgement_applies_to($node, $_user = NULL) {
   global $user;
   if ($_user == NULL) {
     $_user = $user;
+  }
+  if (!(is_object($node)) || !(property_exists($node, 'type'))) {
+    return FALSE;
   }
   if (!(_sign_for_acknowledgement_applies_to_bundle($node->type))) {
     return FALSE;
