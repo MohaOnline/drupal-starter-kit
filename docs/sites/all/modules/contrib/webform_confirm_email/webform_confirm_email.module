@@ -280,39 +280,21 @@ function webform_confirm_email_menu() {
  * Implements hook_menu_alter().
  */
 function webform_confirm_email_menu_alter(&$items) {
-  if (isset($items['node/%webform_menu/webform-results']) == TRUE) {
-    $items['node/%webform_menu/webform-results'] = array(
-      'title'            => 'Results',
-      'page callback'    => 'webform_confirm_email_results_submissions',
-      'page arguments'   => array(1, FALSE, '50'),
-      'access callback'  => 'webform_results_access',
-      'access arguments' => array(1),
-      'file'             => drupal_get_path('module', 'webform_confirm_email') . '/webform_confirm_email.report.inc',
-      'weight'           => 2,
-      'type'             => MENU_LOCAL_TASK,
-      'context'          => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
-    );
-    $items['node/%webform_menu/webform-results/submissions'] = array(
-      'title'            => 'Submissions',
-      'page callback'    => 'webform_confirm_email_results_submissions',
-      'page arguments'   => array(1, FALSE, '50'),
-      'access callback'  => 'webform_results_access',
-      'access arguments' => array(1),
-      'file'             => drupal_get_path('module', 'webform_confirm_email') . '/webform_confirm_email.report.inc',
-      'weight'           => 4,
-      'type'             => MENU_DEFAULT_LOCAL_TASK,
-    );
-    $items['node/%webform_menu/webform-results/table'] = array(
-      'title'            => 'Table',
-      'page callback'    => 'webform_confirm_email_results_table',
-      'page arguments'   => array(1, '50'),
-      'access callback'  => 'webform_results_access',
-      'access arguments' => array(1),
-      'file'             => drupal_get_path('module', 'webform_confirm_email') . '/webform_confirm_email.report.inc',
-      'weight'           => 6,
-      'type'             => MENU_LOCAL_TASK,
-    );
-  }
+  $items['node/%webform_menu/webform-results'] = array(
+    'page callback'    => 'webform_confirm_email_results_submissions',
+    'file path'        => drupal_get_path('module', 'webform_confirm_email'),
+    'file'             => 'webform_confirm_email.report.inc',
+  ) + $items['node/%webform_menu/webform-results'];
+  $items['node/%webform_menu/webform-results/submissions'] = array(
+    'page callback'    => 'webform_confirm_email_results_submissions',
+    'file path'        => drupal_get_path('module', 'webform_confirm_email'),
+    'file'             => 'webform_confirm_email.report.inc',
+  ) + $items['node/%webform_menu/webform-results/submissions'];
+  $items['node/%webform_menu/webform-results/table'] = array(
+    'page callback'    => 'webform_confirm_email_results_table',
+    'file path'        => drupal_get_path('module', 'webform_confirm_email'),
+    'file'             => 'webform_confirm_email.report.inc',
+  ) + $items['node/%webform_menu/webform-results/table'];
 }
 
 /**
