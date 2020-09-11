@@ -14,7 +14,12 @@ class TrackerTest extends \DrupalWebTestCase {
     parent::setUp();
     $this->petition = entity_create('node', ['type' => 'petition']);
     $this->petition->webform = webform_node_defaults();
-    $component = ['type' => 'email', 'form_key' => 'email', 'cid' => 1, 'page_num' => 1];
+    $component = [
+      'type' => 'email',
+      'form_key' => 'email',
+      'cid' => 1,
+      'page_num' => 1,
+    ];
     webform_component_defaults($component);
     $this->petition->webform['webform_ajax'] = WEBFORM_AJAX_NO_CONFIRM;
     $this->petition->webform['components'][1] = $component;
@@ -80,11 +85,13 @@ class TrackerTest extends \DrupalWebTestCase {
     }
     $this->assertTrue($found);
     $this->assertArraySubset(['type' => 'setting'], $form['#attached']['js'][$found_key]);
-    $this->assertArraySubset(['webform' => [
-      'total_steps' => 1,
-      'current_step' => 1,
-      'last_completed_step' => 0,
-    ]], $form['#attached']['js'][$found_key]['data']['campaignion_tracking']['context']);
+    $this->assertArraySubset([
+      'webform' => [
+        'total_steps' => 1,
+        'current_step' => 1,
+        'last_completed_step' => 0,
+      ],
+    ], $form['#attached']['js'][$found_key]['data']['campaignion_tracking']['context']);
   }
 
   /**
@@ -105,13 +112,15 @@ class TrackerTest extends \DrupalWebTestCase {
     $redirect->fragment = '';
     $submission = new stdClass();
     $submission->node = $this->petition;
+    $submission->node->title = "Donation test & stuff";
     $submission->sid = 1;
+    $nid = $submission->node->nid;
     campaignion_tracking_webform_redirect_alter($redirect, $submission);
-    $this->assertEqual('w:sid=1', $redirect->fragment);
+    $this->assertEqual('t:t=s;w:nid=' . $nid . '&sid=1&title=Donation%20test%20%26%20stuff', $redirect->fragment);
 
     $redirect->fragment = 'something';
     campaignion_tracking_webform_redirect_alter($redirect, $submission);
-    $this->assertEqual('something;w:sid=1', $redirect->fragment);
+    $this->assertEqual('something;t:t=s;w:nid=' . $nid . '&sid=1&title=Donation%20test%20%26%20stuff', $redirect->fragment);
   }
 
 }

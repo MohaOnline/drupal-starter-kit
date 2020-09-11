@@ -42,9 +42,9 @@ export class TrackerManager {
     if (!this.topics[topic]) {
       this.topics[topic] = []
     }
-    let subscribers = this.topics[topic]
-    let subscriberCount = subscribers.push(handler)
-    let subscriberIndex = subscriberCount - 1
+    const subscribers = this.topics[topic]
+    const subscriberCount = subscribers.push(handler)
+    const subscriberIndex = subscriberCount - 1
 
     /**
      * Subscription object.
@@ -52,7 +52,7 @@ export class TrackerManager {
      * This objects captures the `subscriberIndex` which acts like an
      * internal id for the subscribers.
      */
-    let subscription = {
+    const subscription = {
       remove: () => {
         delete this.topics[subscriberIndex]
       }
@@ -74,7 +74,7 @@ export class TrackerManager {
       return
     }
 
-    for (let subscriber of this.topics[topic]) {
+    for (const subscriber of this.topics[topic]) {
       subscriber(data)
     }
   }
@@ -85,7 +85,7 @@ export class TrackerManager {
    * TODO: test if storage is available
    */
   saveToStorage (prefix = 'campaignion_tracking:', key = 'default', data) {
-    let storageKey = prefix + key
+    const storageKey = prefix + key
     window.sessionStorage.setItem(storageKey, JSON.stringify(data))
   }
 
@@ -95,7 +95,7 @@ export class TrackerManager {
    * TODO: test if storage is available
    */
   loadFromStorage (prefix = 'campaignion_tracking:', key = 'default') {
-    let storageKey = prefix + key
+    const storageKey = prefix + key
     return JSON.parse(window.sessionStorage.getItem(storageKey))
   }
 
@@ -105,7 +105,7 @@ export class TrackerManager {
    * TODO: test if storage is available
    */
   removeFromStorage (prefix = 'campaignion_tracking:', key = 'default') {
-    let storageKey = prefix + key
+    const storageKey = prefix + key
     window.sessionStorage.removeItem(storageKey)
   }
 }

@@ -1,6 +1,58 @@
 <?php
 
 /**
+ * Delete variable campaignion_protest_target_contact_type.
+ */
+function campaignion_protest_target_update_4() {
+  variable_del('campaignion_protest_target_contact_type');
+}
+
+/**
+ * Remove protest target and protest target options field instances.
+ */
+function campaignion_protest_target_update_3() {
+  foreach (field_read_instances(['field_name' => 'field_protest_target']) as $instance) {
+    field_delete_instance($instance);
+  }
+  foreach (field_read_instances(['field_name' => 'field_protest_target_options']) as $instance) {
+    field_delete_instance($instance);
+  }
+}
+
+/**
+ * Helper function: Get target options for a node.
+ */
+function _campaignion_protest_target_options($node) {
+  $contact_ids = array_map(function ($item) {
+    return $item['target_id'];
+  }, field_get_items('node', $node, 'field_protest_target') ?: []);
+  $options = [];
+  foreach (entity_load('redhen_contact', $contact_ids) as $contact_id => $contact) {
+    $options[$contact_id] = $contact->first_name . " " . $contact->last_name;
+  }
+  return $options;
+}
+
+/**
+ * Turn protest_target webform components into simple selects.
+ */
+function campaignion_protest_target_update_2() {
+  // Make webform include select.inc.
+  webform_component_invoke('select', 'defaults');
+
+  $sql = <<<SQL
+SELECT nid, cid FROM {webform_component} WHERE type='protest_target';
+SQL;
+  foreach (db_query($sql) as $row) {
+    $node = node_load($row->nid, NULL, TRUE);
+    $component = &$node->webform['components'][$row->cid];
+    $component['type'] = 'select';
+    $component['extra']['items'] = _webform_select_options_to_text(_campaignion_protest_target_options($node));
+    webform_component_update($component);
+  }
+}
+
+/**
  * Enable campaignion_protest_target_contact_type.
  */
 function campaignion_protest_target_update_1() {

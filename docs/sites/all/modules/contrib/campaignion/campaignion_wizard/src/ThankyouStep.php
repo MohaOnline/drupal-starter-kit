@@ -72,6 +72,7 @@ class ThankyouStep extends WizardStep {
     if (!$node) {
       $node = $this->wizard->prepareNode($this->contentType);
     }
+    $node->wizard_parent = $this->wizard->node;
 
     $form = array(
       '#type'  => 'fieldset',

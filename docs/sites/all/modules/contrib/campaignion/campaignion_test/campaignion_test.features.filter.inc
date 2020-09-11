@@ -19,11 +19,6 @@ function campaignion_test_filter_default_formats() {
     'status' => 1,
     'weight' => -42,
     'filters' => array(
-      'media_filter' => array(
-        'weight' => -50,
-        'status' => 1,
-        'settings' => array(),
-      ),
       'filter_htmlcorrector' => array(
         'weight' => -49,
         'status' => 1,

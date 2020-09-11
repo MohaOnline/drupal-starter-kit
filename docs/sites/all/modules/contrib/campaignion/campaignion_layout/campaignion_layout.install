@@ -1,0 +1,29 @@
+<?php
+
+/**
+ * @file
+ * Schema definitions for the campaignion_layout module.
+ */
+
+/**
+ * Implements hook_field_schema().
+ */
+function campaignion_layout_field_schema($field) {
+  $schema['columns'] = [
+    'theme' => [
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => TRUE,
+    ],
+    'layout' => [
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+    ],
+  ];
+  $schema['foreign keys']['theme'] = [
+    'table' => 'system',
+    'columns' => ['theme' => 'name'],
+  ];
+  return $schema;
+}

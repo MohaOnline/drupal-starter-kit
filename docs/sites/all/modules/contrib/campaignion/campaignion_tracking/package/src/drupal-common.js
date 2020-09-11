@@ -8,7 +8,8 @@ import * as listener from './listener'
  * codes.
  */
 export const trackingCodes = {
-  ds: 'donationSuccess'
+  ds: 'donationSuccess',
+  s: 'submission'
 }
 
 /**
@@ -18,9 +19,9 @@ export const trackingCodes = {
  * `sessionStorage` only stores strings.
  */
 // eslint-disable-next-line no-unneeded-ternary
-var debug = parseInt(sessionStorage.getItem('campaignion_debug')) ? true : false
+var debug = !!parseInt(sessionStorage.getItem('campaignion_debug'))
 
-let printDebug = (...args) => {
+const printDebug = (...args) => {
   if (debug) {
     console.debug('[campaignion_tracking]', '(drupal)', ...args)
   }
@@ -41,41 +42,62 @@ fragmentListener.setup()
  * The tracker listens for specific parts in the URL fragment and
  * published messages on this channel with event codes to trigger.
  */
-export let codeSubscription = tracker.subscribe('code', (e) => {
+export const codeSubscription = tracker.subscribe('code', e => {
   printDebug('handle_code', e)
 
-  // map event codes to event names
-  let events = e.items.reduce((acc, item) => {
-    if (item.prefix === 't') {
-      item.codes.forEach((code) => {
-        if (trackingCodes[code]) {
-          acc.tracking.events.push(trackingCodes[code])
+  // Map codes to tracking data.
+  const events = e.items.reduce(
+    (acc, item) => {
+      // Code to tracking events.
+      if (item.prefix === 't' && item.id === 't') {
+        item.codes.forEach(code => {
+          if (trackingCodes[code]) {
+            acc.tracking.events.push(trackingCodes[code])
+          }
+        })
+      }
+      // Code to tracking context/data for 'webform'.
+      if (item.prefix === 'w') {
+        if (item.id === 'nid') {
+          acc.webform.nid = item.codes[0]
         }
-      })
-    }
-    if (item.prefix === 'w') {
-      if (item['id'] === 'sid') {
-        acc.webform['sid'] = item.codes[0]
+        if (item.id === 'sid') {
+          acc.webform.sid = item.codes[0]
+        }
+        if (item.id === 'title') {
+          acc.webform.title = item.codes[0]
+        }
       }
-    }
-    if (item.prefix === 'd') {
-      if (item['id'] === 'm') {
-        acc.donation['method'] = item.codes[0]
+      // Code to tracking context/data for 'donation'.
+      if (item.prefix === 'd') {
+        if (item.id === 'm') {
+          acc.donation.method = item.codes[0]
+        }
       }
-    }
-    return acc
-  }, { tracking: { events: [] }, webform: {}, donation: {} })
+      return acc
+    },
+    { tracking: { events: [] }, webform: {}, donation: {} }
+  )
 
   printDebug('handle_events', events)
 
-  let data = { tid: events.webform['sid'] || null }
-  let context = {
-    webform: { sid: events.webform['sid'] || null },
-    donation: { 'paymethod': events.donation['method'] || 'unknown' }
+  const context = {
+    webform: { sid: events.webform.sid || null },
+    donation: { paymethod: events.donation.method || 'unknown' }
   }
 
   if (events.tracking.events.includes('donationSuccess')) {
+    const data = { tid: events.webform.sid || null }
     tracker.publish('donation', { name: 'donationSuccess', data: data, context: context })
+  }
+
+  if (events.tracking.events.includes('submission')) {
+    const data = {
+      nid: events.webform.nid || null,
+      sid: events.webform.sid || null,
+      title: events.webform.title || null
+    }
+    tracker.publish('webform', { name: 'submission', data: data, context: context })
   }
 })
 

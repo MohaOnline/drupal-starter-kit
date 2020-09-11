@@ -1,0 +1,16 @@
+name = campaignion_layout
+description = Layout variations selectable from the content.
+core = 7.x
+package = Campaignion
+dependencies[] = features
+dependencies[] = image
+dependencies[] = little_helpers:little_helpers (>=2.0-alpha10)
+features[features_api][] = api:2
+features[field_base][] = layout
+features[field_base][] = layout_background_image
+
+; Information added by Drupal.org packaging script on 2020-09-08
+version = "7.x-2.15"
+core = "7.x"
+project = "campaignion"
+datestamp = "1599580450"

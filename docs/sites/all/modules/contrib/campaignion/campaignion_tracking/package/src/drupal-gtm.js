@@ -13,11 +13,12 @@ var debug = parseInt(sessionStorage.getItem('campaignion_debug')) ? true : false
 window.dataLayer = window.dataLayer || []
 
 // common tracker manager, listener, gtm
-let tracker = window['campaignion_tracking']['tracker']
+const tracker = window.campaignion_tracking.tracker
 let gtmTracker = null
 if (typeof tracker === 'undefined') {
   console.log('No Tracker found')
-} else {
+}
+else {
   gtmTracker = new gtm.GTMTracker(tracker, window.dataLayer, debug)
 }
 

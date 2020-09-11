@@ -46,10 +46,13 @@ class ContentStep extends WizardStep {
 
     $wizard_secondary_used = false;
     // move specific items to secondary container
-    foreach (array('field_main_image') as $field_name) {
-      if (isset($form[$field_name])) {
-        $form['wizard_secondary'][$field_name] = $form[$field_name];
-        hide($form[$field_name]);
+    if (isset($form['field_main_image'])) {
+      $form['field_main_image']['#wizard_secondary'] = TRUE;
+    }
+    foreach (element_children($form) as $key) {
+      if (!empty($form[$key]['#wizard_secondary'])) {
+        $form['wizard_secondary'][$key] = $form[$key];
+        hide($form[$key]);
         $wizard_secondary_used = true;
       }
     }

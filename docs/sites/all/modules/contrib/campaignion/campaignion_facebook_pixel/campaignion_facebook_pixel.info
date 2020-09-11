@@ -2,12 +2,12 @@ name = Campaignion FB pixel
 description = FB pixel handling for Campaignion
 core = 7.x
 
-dependencies[] = campaignion_newsletters
-dependencies[] = little_helpers
-dependencies[] = psr0
+dependencies[] = campaignion:campaignion_opt_in
+dependencies[] = little_helpers:little_helpers (>=2.0-alpha7)
+dependencies[] = psr0:psr0
 
-; Information added by Drupal.org packaging script on 2020-07-01
-version = "7.x-2.14"
+; Information added by Drupal.org packaging script on 2020-09-08
+version = "7.x-2.15"
 core = "7.x"
 project = "campaignion"
-datestamp = "1593586545"
+datestamp = "1599580450"

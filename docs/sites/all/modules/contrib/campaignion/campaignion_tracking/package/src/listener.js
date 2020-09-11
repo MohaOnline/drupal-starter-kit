@@ -41,12 +41,13 @@ export class FragmentListener {
    */
   setup () {
     window.addEventListener('load', (e) => {
-      let hash = window.location.hash.substr(1)
-      let items = fragment.consumeLocationHashForPrefixes(this.prefixes, hash)
-      if (items['locationHash'] !== hash) {
-        if (items['locationHash'].length) {
-          window.location.hash = '#' + items['locationHash']
-        } else {
+      const hash = window.location.hash.substr(1)
+      const items = fragment.consumeLocationHashForPrefixes(this.prefixes, hash)
+      if (items.locationHash !== hash) {
+        if (items.locationHash.length) {
+          window.location.hash = '#' + items.locationHash
+        }
+        else {
           // use replaceState so we get rid of the superfluouse '#' when setting
           // window.location.hash to ''
           window.history.replaceState(

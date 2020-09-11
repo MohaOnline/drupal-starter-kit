@@ -196,6 +196,16 @@ function campaignion_newsletters_uninstall() {
 }
 
 /**
+ * Rename variable.
+ */
+function campaignion_newsletters_update_21() {
+  if ($old_value = variable_get_value('campaignion_newsletters_opt_out_unknown')) {
+    variable_set_value('campaignion_newsletters_unsubscribe_unknown', $old_value);
+  }
+  variable_del('campaignion_newsletters_opt_out_unknown');
+}
+
+/**
  * Migrate to using opt_in components.
  */
 function campaignion_newsletters_update_20() {

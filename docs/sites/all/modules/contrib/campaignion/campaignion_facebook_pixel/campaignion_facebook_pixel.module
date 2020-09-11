@@ -6,6 +6,7 @@
  */
 
 use Drupal\campaignion_facebook_pixel\Config;
+use Drupal\little_helpers\System\FormRedirect;
 use Drupal\little_helpers\Webform\Submission;
 
 /**
@@ -31,29 +32,17 @@ function campaignion_facebook_pixel_node_view($node, $view_mode, $langcode) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for webform_client_form().
- */
-function campaignion_facebook_pixel_form_webform_client_form_alter(&$form, &$form_state) {
-  $form['#submit'][] = 'campaignion_facebook_pixel_add_fragment';
-}
-
-/**
- * Submit-callback for webform_client_form().
+ * Implements hook_webform_redirect_alter().
  *
  * Add fb-pixel tracking data to the URL-fragment of the redirect.
  */
-function campaignion_facebook_pixel_add_fragment($form, &$form_state) {
-  if (empty($form_state['webform_completed'])) {
-    return;
-  }
-  $sid = $form_state['values']['details']['sid'];
-  $submission = Submission::load($form['#node']->nid, $sid);
+function campaignion_facebook_pixel_webform_redirect_alter(FormRedirect &$redirect, Submission $submission) {
   if ($fragment = Config::fromConfig()->submissionFragment($submission)) {
-    if (!empty($form_state['redirect'][1]['fragment'])) {
-      $form_state['redirect'][1]['fragment'] .= ';' . $fragment;
+    if ($redirect->fragment) {
+      $redirect->fragment .= ';' . $fragment;
     }
     else {
-      $form_state['redirect'][1]['fragment'] = $fragment;
+      $redirect->fragment = $fragment;
     }
   }
 }

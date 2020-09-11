@@ -11,7 +11,7 @@
  * @param {String} queueArrayName the name of the array (for debugging output)
  */
 export const debugProxy = (queueArray, queueArrayName = '') => {
-  let proxy = new Proxy(queueArray, {
+  const proxy = new Proxy(queueArray, {
     get (target, prop) {
       const val = target[prop]
       if (typeof val === 'function') {
@@ -41,7 +41,7 @@ export const setupDebugProxy = (queueArrayName) => {
     console.warn("Your browser doesn't support Proxies.")
     return false
   }
-  let queueArray = queueArrayName in window ? window[queueArrayName] : []
+  const queueArray = queueArrayName in window ? window[queueArrayName] : []
   window[queueArrayName] = debugProxy(queueArray, queueArrayName)
   return true
 }

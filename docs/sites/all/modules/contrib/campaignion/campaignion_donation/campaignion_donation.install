@@ -2,9 +2,26 @@
 
 /**
  * @file
- *
  * Database updates for the campaignion donation module.
  */
+
+/**
+ * Enable date, features, field_collection, number and payment_recurrence.
+ */
+function campaignion_donation_update_3() {
+  $modules = [
+    'date',
+    'features',
+    'field_collection',
+    'number',
+    'payment_recurrence',
+  ];
+  foreach ($modules as $module) {
+    if (!module_enable([$module], TRUE)) {
+      throw new DrupalUpdateException(t('Could not enable %module.', ['%module' => $module]));
+    }
+  }
+}
 
 /**
  * Introduce a variable.

@@ -11,54 +11,6 @@
 function campaignion_test_field_default_field_instances() {
   $field_instances = array();
 
-  // Exported field_instance: 'redhen_contact-contact-campaign_tag'.
-  $field_instances['redhen_contact-contact-campaign_tag'] = array(
-    'bundle' => 'contact',
-    'custom_add_another' => '',
-    'custom_remove' => '',
-    'default_value' => array(
-      0 => array(
-        'tid' => NULL,
-      ),
-    ),
-    'deleted' => 0,
-    'description' => '',
-    'display' => array(
-      'default' => array(
-        'label' => 'above',
-        'module' => 'i18n_taxonomy',
-        'settings' => array(),
-        'type' => 'i18n_taxonomy_term_reference_link',
-        'weight' => 17,
-      ),
-      'teaser' => array(
-        'label' => 'above',
-        'settings' => array(),
-        'type' => 'hidden',
-        'weight' => 0,
-      ),
-    ),
-    'entity_type' => 'redhen_contact',
-    'field_name' => 'campaign_tag',
-    'label' => 'Campaign tag',
-    'required' => 0,
-    'settings' => array(
-      'custom_add_another' => '',
-      'custom_remove' => '',
-      'user_register_form' => FALSE,
-    ),
-    'widget' => array(
-      'active' => 1,
-      'module' => 'taxonomy',
-      'settings' => array(
-        'autocomplete_path' => 'taxonomy/autocomplete',
-        'size' => 60,
-      ),
-      'type' => 'taxonomy_autocomplete',
-      'weight' => 14,
-    ),
-  );
-
   // Exported field_instance:
   // 'node-email_to_target-field_email_to_target_options'.
   $field_instances['node-email_to_target-field_email_to_target_options'] = array(
@@ -381,6 +333,58 @@ function campaignion_test_field_default_field_instances() {
     ),
   );
 
+  // Exported field_instance: 'node-petition-layout'.
+  $field_instances['node-petition-layout'] = array(
+    'bundle' => 'petition',
+    'custom_add_another' => '',
+    'custom_remove' => '',
+    'default_value' => array(
+      0 => array(
+        'theme' => '',
+        'layout' => NULL,
+        'layout_simplicity' => '',
+      ),
+    ),
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'cck_blocks' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+      'default' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 14,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'node',
+    'field_name' => 'layout',
+    'label' => 'Theme & layout',
+    'required' => 0,
+    'settings' => array(
+      'custom_add_another' => '',
+      'custom_remove' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'campaignion_layout',
+      'settings' => array(),
+      'type' => 'layout_selector',
+      'weight' => 17,
+    ),
+  );
+
   // Exported field_instance: 'node-petition-supporter_tags'.
   $field_instances['node-petition-supporter_tags'] = array(
     'bundle' => 'petition',
@@ -469,6 +473,150 @@ function campaignion_test_field_default_field_instances() {
       'settings' => array(),
       'type' => 'field_collection_embed',
       'weight' => -3,
+    ),
+  );
+
+  // Exported field_instance: 'redhen_contact-contact-campaign_tag'.
+  $field_instances['redhen_contact-contact-campaign_tag'] = array(
+    'bundle' => 'contact',
+    'custom_add_another' => '',
+    'custom_remove' => '',
+    'default_value' => array(
+      0 => array(
+        'tid' => NULL,
+      ),
+    ),
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'i18n_taxonomy',
+        'settings' => array(),
+        'type' => 'i18n_taxonomy_term_reference_link',
+        'weight' => 17,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'redhen_contact',
+    'field_name' => 'campaign_tag',
+    'label' => 'Campaign tag',
+    'required' => 0,
+    'settings' => array(
+      'custom_add_another' => '',
+      'custom_remove' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 1,
+      'module' => 'taxonomy',
+      'settings' => array(
+        'autocomplete_path' => 'taxonomy/autocomplete',
+        'size' => 60,
+      ),
+      'type' => 'taxonomy_autocomplete',
+      'weight' => 14,
+    ),
+  );
+
+  // Exported field_instance: 'redhen_contact-contact-donation_latest_one_off'.
+  $field_instances['redhen_contact-contact-donation_latest_one_off'] = array(
+    'bundle' => 'contact',
+    'custom_add_another' => '',
+    'custom_remove' => '',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'field_collection',
+        'settings' => array(
+          'add' => 'Add',
+          'delete' => 'Delete',
+          'description' => TRUE,
+          'edit' => 'Edit',
+          'translate' => 'Translate',
+          'view_mode' => 'full',
+        ),
+        'type' => 'field_collection_view',
+        'weight' => 23,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'redhen_contact',
+    'field_name' => 'donation_latest_one_off',
+    'label' => 'Most recent one-off donation',
+    'required' => 0,
+    'settings' => array(
+      'custom_add_another' => '',
+      'custom_remove' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'field_collection',
+      'settings' => array(),
+      'type' => 'field_collection_embed',
+      'weight' => 37,
+    ),
+  );
+
+  // Exported field_instance: 'redhen_contact-contact-donation_latest_regular'.
+  $field_instances['redhen_contact-contact-donation_latest_regular'] = array(
+    'bundle' => 'contact',
+    'custom_add_another' => '',
+    'custom_remove' => '',
+    'default_value' => NULL,
+    'deleted' => 0,
+    'description' => '',
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'module' => 'field_collection',
+        'settings' => array(
+          'add' => 'Add',
+          'delete' => 'Delete',
+          'description' => TRUE,
+          'edit' => 'Edit',
+          'translate' => 'Translate',
+          'view_mode' => 'full',
+        ),
+        'type' => 'field_collection_view',
+        'weight' => 24,
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'settings' => array(),
+        'type' => 'hidden',
+        'weight' => 0,
+      ),
+    ),
+    'entity_type' => 'redhen_contact',
+    'field_name' => 'donation_latest_regular',
+    'label' => 'Most recent regular donation',
+    'required' => 0,
+    'settings' => array(
+      'custom_add_another' => '',
+      'custom_remove' => '',
+      'user_register_form' => FALSE,
+    ),
+    'widget' => array(
+      'active' => 0,
+      'module' => 'field_collection',
+      'settings' => array(),
+      'type' => 'field_collection_embed',
+      'weight' => 39,
     ),
   );
 
@@ -673,7 +821,9 @@ function campaignion_test_field_default_field_instances() {
     'widget' => array(
       'active' => 1,
       'module' => 'options',
-      'settings' => array(),
+      'settings' => array(
+        'use_select2' => FALSE,
+      ),
       'type' => 'options_select',
       'weight' => 1,
     ),
@@ -849,7 +999,9 @@ function campaignion_test_field_default_field_instances() {
     'widget' => array(
       'active' => 0,
       'module' => 'options',
-      'settings' => array(),
+      'settings' => array(
+        'use_select2' => FALSE,
+      ),
       'type' => 'options_select',
       'weight' => 9,
     ),
@@ -890,7 +1042,9 @@ function campaignion_test_field_default_field_instances() {
     'widget' => array(
       'active' => 1,
       'module' => 'options',
-      'settings' => array(),
+      'settings' => array(
+        'use_select2' => FALSE,
+      ),
       'type' => 'options_select',
       'weight' => 2,
     ),
@@ -1117,6 +1271,7 @@ function campaignion_test_field_default_field_instances() {
   // Included for use with string extractors like potx.
   t('Add a large main image or a video to your petition.');
   t('Address');
+  t('Campaign tag');
   t('Date of birth');
   t('Direct Mail Newsletter');
   t('Email');
@@ -1124,6 +1279,8 @@ function campaignion_test_field_default_field_instances() {
   t('IP-Adress');
   t('It’s helpful if you add to this message a way for supporters to get in touch with you. That way if they don’t have a target they can bring this to your attention.');
   t('Large image or video');
+  t('Most recent one-off donation');
+  t('Most recent regular donation');
   t('Options');
   t('Overlay options');
   t('Phone number');

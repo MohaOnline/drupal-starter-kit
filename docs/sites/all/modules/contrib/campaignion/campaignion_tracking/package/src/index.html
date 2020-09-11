@@ -2,6 +2,23 @@
 <body>
   <h1>campaignion_tracking</h1>
   <p>Open the web console to use <code>campaignion_tracking</code>...</p>
-  <script src="./main.js"></script>
+  <p>Try yourself and type this into the webconsole:</p>
+  <pre>
+window.campaignion_tracking.tracker.publish('hello', {message: "this is an arbitrary message object"})
+  </pre>
+  <p>You should see your <code>msg</code> object feed back to you via the tracker PubSub mechanism.</p>
+  <p>(This test page works best in browsers with support for <code>&lt;script type="module"&gt;&lt;/script&gt;</code>, ie. modern browsers ie. not IE 11.)</p>
+  <script src="./drupal-common.js"></script>
+  <script type="module">
+    import { setupDebugProxy } from './debug.js'
+
+    // setup a verbose dataLayer for GTM
+    setupDebugProxy('dataLayer')
+
+    // the global window.campaignion_tracking is set by `parcel --global`
+    window.campaignion_tracking.tracker.subscribe('hello', (msg = {}) => {
+      console.log('hello', msg)
+    })
+  </script>
 </body>
 </html>

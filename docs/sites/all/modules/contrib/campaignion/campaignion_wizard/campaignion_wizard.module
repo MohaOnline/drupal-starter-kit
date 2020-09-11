@@ -65,7 +65,7 @@ function campaignion_wizard_menu_alter(&$info) {
     $info['node/add/' . $url_type]['page callback'] = 'campaignion_wizard_redirect_add';
   }
   $info['node/%node/edit']['page callback'] = 'campaignion_wizard_redirect_edit';
-  $info['node/%node/webform']['type'] = MENU_LOCAL_TASK;
+  $info['node/%webform_menu/webform']['type'] = MENU_LOCAL_TASK;
 }
 
 /**

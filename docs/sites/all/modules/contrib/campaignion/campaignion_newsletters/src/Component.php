@@ -38,7 +38,7 @@ class Component {
    *   Component array as stored in `$node->webform['components']`.
    */
   public static function fromComponent(array $component) {
-    $unsubscribe_unknown = variable_get_value('campaignion_newsletters_opt_out_unknown');
+    $unsubscribe_unknown = variable_get_value('campaignion_newsletters_unsubscribe_unknown');
     return new static($component, $unsubscribe_unknown);
   }
 

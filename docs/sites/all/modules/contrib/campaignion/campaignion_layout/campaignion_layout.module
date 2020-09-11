@@ -1,0 +1,180 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations and callbacks for the campaignion layouts module.
+ */
+
+use Drupal\campaignion_layout\Entity;
+use Drupal\campaignion_layout\Lookup;
+use Drupal\campaignion_layout\Themes;
+use Drupal\little_helpers\Services\Container;
+
+// The field.module does not group its hooks so we have to include this here.
+require_once 'campaignion_layout.field.inc';
+
+/**
+ * Implements hook_menu_alter().
+ *
+ * Enable theme-switching on all relevant paths.
+ */
+function campaignion_layout_menu_alter(&$items) {
+  $callback = [
+    'theme callback' => 'campaignion_layout_get_theme_for_entity',
+    'theme arguments' => ['node', 1],
+  ];
+  $no_callback = [
+    'theme callback' => '',
+    'theme arguments' => [],
+  ];
+  $set_theme = [
+    'view' => TRUE,
+    'share' => TRUE,
+    'webform-continue' => TRUE,
+  ];
+  foreach ($items as $path => &$item) {
+    if (substr($path, 0, 6) == 'node/%') {
+      $args = explode('/', $path, 4);
+      $third_arg = $args[2] ?? NULL;
+      if (!$third_arg || ($set_theme[$third_arg] ?? FALSE)) {
+        $item = $callback + $item;
+      }
+      else {
+        $item = $no_callback + $item;
+      }
+    }
+  }
+}
+
+/**
+ * Menu theme callback: Set the theme based on layout variation fields.
+ *
+ * @see campaignion_layout_menu_alter()
+ */
+function campaignion_layout_get_theme_for_entity($entity_type, $entity) {
+  return Lookup::fromEntity($entity_type, $entity)->getTheme();
+}
+
+/**
+ * Implements hook_little_helpers_services().
+ */
+function campaignion_layout_little_helpers_services() {
+  $info['campaignion_layout.themes'] = [
+    'class' => Themes::class,
+    'constructor' => 'fromConfig',
+  ];
+  return $info;
+}
+
+/**
+ * Prepare variables for page templates.
+ */
+function campaignion_layout_preprocess_page(array &$vars) {
+  $vars['layout'] = NULL;
+  if (($node = $vars['node'] ?? NULL) && ($layout = Lookup::fromEntity('node', $node)->getLayout())) {
+    $vars['layout'] = $layout['name'];
+    array_unshift($vars['theme_hook_suggestions'], "page__layout__{$layout['name']}");
+
+    foreach ($layout['fields'] as $field_name => $settings) {
+      $vars[$settings['variable']] = field_view_field('node', $node, $field_name, $settings['display']);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for system_theme_settings().
+ */
+function campaignion_layout_form_system_theme_settings_alter(&$form, $form_state) {
+  if (!($theme_name = $form_state['build_info']['args'][0] ?? NULL)) {
+    return;
+  }
+  $theme = Container::get()->loadService('campaignion_layout.themes')->getTheme($theme_name);
+  if (!$theme->hasFeature()) {
+    return;
+  }
+  $form['layout_variations'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Layout variations'),
+  ];
+  $form['layout_variations']['toggle_layout_variations'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Make this theme and its layout variations available.'),
+    '#default_value' => $theme->setting('toggle_layout_variations'),
+  ];
+  $states['visible'][':input[name="toggle_layout_variations"]']['checked'] = TRUE;
+  $form['layout_variations']['layout_variations'] = [
+    '#type' => 'checkboxes',
+    '#title' => t('Enabled layout variations.'),
+    '#options' => $theme->layoutOptions(TRUE),
+    '#default_value' => $theme->setting('layout_variations') ?? [],
+    '#states' => $states,
+  ];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_form().
+ *
+ * Hide other fields on node forms.
+ */
+function campaignion_layout_form_node_form_alter(&$form, &$form_state) {
+  $hidden_fields = module_invoke_all('campaignion_layout_hidden_fields');
+  drupal_alter('campaignion_layout_hidden_fields', $hidden_fields);
+  foreach (array_keys(array_filter($hidden_fields)) as $field_name) {
+    if (!isset($form[$field_name])) {
+      // Skip fields if they don’t appear in the form anyway.
+      continue;
+    }
+    $activating_selectors = $form_state['campaignion_layout_fields'][$field_name] ?? [];
+    foreach ($activating_selectors as $selector => $values) {
+      foreach ($values as $value) {
+        $states['visible'][$selector]['value'] = $value;
+        $form[$field_name]['#states'] = $states;
+      }
+    }
+    if (!$activating_selectors) {
+      $form[$field_name]['#access'] = FALSE;
+    }
+  }
+
+  $instances = field_info_instances('node', $form['#node']->type);
+  if (isset($instances['layout'])) {
+    $form['layout'] = [
+      '#type' => 'fieldset',
+      '#title' => $form['layout'][LANGUAGE_NONE][0]['#title'],
+      '#group' => 'additional_settings',
+      '#weight' => -10,
+      '#access' => $form['layout'][LANGUAGE_NONE][0]['#access'] ?? TRUE,
+    ] + $form['layout'];
+    $form['layout'][LANGUAGE_NONE][0]['#type'] = 'container';
+  }
+
+  if (isset($form['layout_background_image'])) {
+    $form['layout_background_image']['#wizard_secondary'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_campaignion_layout_hidden_fields().
+ */
+function campaignion_layout_campaignion_layout_hidden_fields() {
+  $hidden_fields['layout_background_image'] = TRUE;
+  return $hidden_fields;
+}
+
+/**
+ * Implements hook_node_prepare().
+ *
+ * Wizard child nodes (eg. thank you pages) should get the same layout as their
+ * parents (eg. actions) by default.
+ */
+function campaignion_layout_node_prepare($node) {
+  if (empty($node->nid) && !empty($node->wizard_parent)) {
+    $parent = new Entity('node', $node->wizard_parent);
+    $child = new Entity('node', $node);
+    foreach (array_intersect($parent->fieldsOfType('layout_selection'), $child->fieldsOfType('layout_selection')) as $field) {
+      if (empty($node->{$field})) {
+        $node->{$field} = $node->wizard_parent->{$field} ?? NULL;
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@
 
 use \Drupal\campaignion_action\Loader;
 use \Drupal\little_helpers\Webform\Webform;
+use \Drupal\little_helpers\Webform\Submission;
 
 /**
  * Helper function to check whether a node is a donation node.
@@ -124,4 +125,48 @@ function campaignion_donation_form_builder_element_types_alter(&$types, $form_ty
   else {
     $types['paymethod_select']['addable'] = FALSE;
   }
+}
+
+/**
+ * Implements hook_campaignion_action_contact_alter().
+ */
+function campaignion_donation_campaignion_action_contact_alter(\RedhenContact $contact, Submission $submission, $node) {
+  $changed = FALSE;
+  foreach ($submission->payments ?? [] as $payment) {
+    $status = $payment->getStatus();
+    if (!payment_status_is_or_has_ancestor($status->status, PAYMENT_STATUS_SUCCESS)) {
+      continue;
+    }
+    $amounts = [0, 0];
+    foreach ($payment->line_items as $item) {
+      $recurrent = !empty($item->recurrence->interval_unit) ? 1 : 0;
+      $amounts[$recurrent] += $item->totalAmount(TRUE);
+    }
+    foreach ($amounts as $recurrent => $amount) {
+      if ($amount <= 0) {
+        continue;
+      }
+      $field_name = $recurrent ? 'donation_latest_regular' : 'donation_latest_one_off';
+      if (isset($contact->{$field_name})) {
+        $field = $contact->wrap()->{$field_name};
+        // If there is no field_collection_item yet, we need to create one.
+        if (!$field->value()) {
+          entity_create('field_collection_item', ['field_name' => $field_name])
+            ->setHostEntity('redhen_contact', $contact);
+          // $field->set() does not add the host entity field.
+          $changed = TRUE;
+        }
+        $data = [
+          'donation_value' => $amount,
+          'donation_date' => $payment->getStatus()->created,
+        ];
+        foreach ($data as $f => $new_value) {
+          $old_value = $field->{$f}->value();
+          $field->{$f}->set($new_value);
+          $changed = $old_value != $field->{$f}->value() || $changed;
+        }
+      }
+    }
+  }
+  return $changed;
 }

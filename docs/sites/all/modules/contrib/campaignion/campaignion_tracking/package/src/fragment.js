@@ -6,10 +6,16 @@
  * @returns {Object[]} A list of matched items.
  */
 export function parseLocationHash (locationHash = '') {
-  let parts = locationHash.split(';')
+  const parts = locationHash.split(';')
   // only consider "truthy" values
-  let filtered = parts.filter(Boolean)
-  let items = filtered.map(item => parsePart(item))
+  const filtered = parts.filter(Boolean)
+  const items = filtered.reduce((acc, item) => {
+    const _pos1 = item.indexOf(':')
+    const prefix = item.substring(0, _pos1)
+    // TODO sanitize prefix
+    const partsString = item.substring(_pos1 + 1)
+    return acc.concat(parsePartsWithPrefix(partsString, prefix))
+  }, [])
   return items
 }
 
@@ -22,8 +28,8 @@ export function parseLocationHash (locationHash = '') {
  * @returns {Object[]} A list of matched items.
  */
 export function parseLocationHashForPrefixes (prefixes = [], locationHash = '') {
-  let allItems = parseLocationHash(locationHash)
-  let filtered = allItems.filter(item => prefixes.includes(item['prefix']))
+  const allItems = parseLocationHash(locationHash)
+  const filtered = allItems.filter(item => prefixes.includes(item.prefix))
   return filtered
 }
 
@@ -37,54 +43,60 @@ export function parseLocationHashForPrefixes (prefixes = [], locationHash = '') 
  * remaining string in "locationHash".
  */
 export function consumeLocationHashForPrefixes (prefixes = [], locationHash = '') {
-  let allItems = parseLocationHash(locationHash)
-  let initialValue = { items: [], rest: [] }
-  let result = allItems.reduce((acc, item) => {
-    if (prefixes.includes(item['prefix'])) {
+  const allItems = parseLocationHash(locationHash)
+  const initialValue = { items: [], rest: [] }
+  const result = allItems.reduce((acc, item) => {
+    if (prefixes.includes(item.prefix)) {
       acc.items.push(item)
-    } else {
-      acc.rest.push(item['origPart'])
+    }
+    else {
+      acc.rest.push(item.origPart)
     }
     return acc
   }, initialValue)
 
-  result['origLocationHash'] = locationHash
+  result.origLocationHash = locationHash
   // re-join not consumed parts
-  result['locationHash'] = result.rest.join(';')
+  result.locationHash = result.rest.join(';')
 
   return result
 }
 
 /**
- * Parse a part from the URL fragment.
- *
- * The optional "id" in the match item is the empty string if no id was given.
- *
- * TODO: optional multiple ids
- * TODO: whitespace trimming?
+ * Parse a single key-value part from the URL fragment.
  *
  * @param {String} part A part from the URL fragment.
  *
- * @returns {Object} A match item with the keys "prefix", "id", "codes", "origParts".
+ * @returns {Object} A match item with the keys "id", "codes", "origPart".
  */
 export function parsePart (part) {
-  let _pos1 = part.indexOf('=')
-  let value1 = part.substring(0, _pos1)
-  let value2 = part.substring(_pos1 + 1)
-  let id = ''
-  let prefix = value1
-  // if there is a ':' we extract the id
-  let _pos2 = value1.indexOf(':')
-  if (_pos2 >= 0) {
-    prefix = value1.substring(0, _pos2)
-    id = value1.substring(_pos2 + 1)
-  }
-  let codes = value2.split(',')
-
+  const _pos1 = part.indexOf('=')
+  const value1 = part.substring(0, _pos1)
+  const value2 = decodeURIComponent(part.substring(_pos1 + 1))
+  const codes = value2.split(',')
   return {
-    prefix: prefix,
-    id: id,
+    id: value1,
     codes: codes,
     origPart: part
   }
+}
+
+/**
+ * Parse a possible multiple parts from the URL fragment.
+ *
+ * Optionally tag all parts with a commong prefix.
+ *
+ * @param {String} part Parts from the URL fragment, delimited with `&`.
+ * @param {String} prefix A prefix to tag the parts with
+ *
+ * @returns {Array} A list of match objects
+ */
+export function parsePartsWithPrefix (partsString, prefix = '') {
+  const split = partsString.split('&')
+  const parts = split.map(part => {
+    const _p = parsePart(part)
+    _p.prefix = prefix
+    return _p
+  })
+  return parts
 }

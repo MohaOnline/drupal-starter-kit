@@ -1,7 +1,24 @@
 <?php
+
 /**
  * @file
+ * Hook implementations and callbacks for the campaignion_language_switcher.
  */
+
+/**
+ * Implements hook_theme().
+ */
+function campaignion_language_switcher_theme() {
+  $theme['campaignion_language_switcher'] = [
+    'variables' => [
+      'links' => [],
+      'provider' => 'default',
+    ],
+    'file' => 'campaignion_language_switcher.theme.inc',
+    'template' => 'campaignion-language-switcher',
+  ];
+  return $theme;
+}
 
 /**
  * Implements hook_block_info().
@@ -20,7 +37,7 @@ function campaignion_language_switcher_block_info() {
  */
 function campaignion_language_switcher_block_view($delta = '') {
   if (!drupal_multilingual()) {
-    return array();
+    return [];
   }
   $links = language_negotiation_get_switch_links('language', current_path());
 
@@ -31,15 +48,13 @@ function campaignion_language_switcher_block_view($delta = '') {
         $link['attributes']['class'][] = 'locale-untranslated';
       }
     }
-    drupal_add_css(drupal_get_path('module', 'locale') . '/locale.css');
-    $class     = "campaignion-language-switcher-{$links->provider}";
-    $variables = array(
-      'links'      => $links->links,
-      'attributes' => array('class' => array($class))
-    );
-    $block['content'] = theme('links__locale_block', $variables);
+    $block['content'] = [
+      '#theme' => 'campaignion_language_switcher',
+      '#links' => $links->links,
+      '#provider' => $links->provider,
+    ];
+    $block['content']['#attached']['css'][] = drupal_get_path('module', 'locale') . '/locale.css';
     $block['subject'] = '<none>';
-
     return $block;
   }
 }
@@ -52,9 +67,10 @@ function _campaignion_language_switcher_check_access($path) {
 }
 
 /**
- * implements hook_module_implements_alter().
- * we copy and change the core language_switch_links_alter hook to add links for
- * yet unpublished nodes
+ * Implements hook_module_implements_alter().
+ *
+ * Override the hook_language_switch_links_alter() implementation from the
+ * translation module.
  */
 function campaignion_language_switcher_module_implements_alter(&$implementations, $hook) {
   if ($hook !== 'language_switch_links_alter') {
@@ -66,7 +82,10 @@ function campaignion_language_switcher_module_implements_alter(&$implementations
 /**
  * Implements hook_language_switch_links_alter().
  *
- * copied from core/translation module; we don't check the $node-status.
+ * This is copied from the transalation module in order to remove the check for
+ * $node->status.
+ *
+ * @see translation_language_switch_links_alter()
  */
 function campaignion_language_switcher_language_switch_links_alter(array &$links, $type, $path) {
   $language_type = variable_get('translation_language_type', LANGUAGE_TYPE_INTERFACE);
@@ -83,7 +102,7 @@ function campaignion_language_switcher_language_switch_links_alter(array &$links
         return;
       }
       $langcode = entity_language('node', $node);
-      $translations = array($langcode => $node);
+      $translations = [$langcode => $node];
     }
     else {
       $translations = translation_node_get_translations($node->tnid);

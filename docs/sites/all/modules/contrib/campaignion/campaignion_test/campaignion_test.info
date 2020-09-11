@@ -12,6 +12,8 @@ dependencies[] = campaignion:campaignion_email_to_target_counter
 dependencies[] = campaignion:campaignion_facebook_pixel
 dependencies[] = campaignion:campaignion_form_builder
 dependencies[] = campaignion:campaignion_giftaid
+dependencies[] = campaignion:campaignion_language_switcher
+dependencies[] = campaignion:campaignion_layout
 dependencies[] = campaignion:campaignion_manage
 dependencies[] = campaignion:campaignion_mp_fields
 dependencies[] = campaignion:campaignion_newsletters
@@ -80,9 +82,12 @@ features[field_instance][] = node-email_to_target-field_thank_you_pages
 features[field_instance][] = node-email_to_target-supporter_tags
 features[field_instance][] = node-petition-field_main_image
 features[field_instance][] = node-petition-field_thank_you_pages
+features[field_instance][] = node-petition-layout
 features[field_instance][] = node-petition-supporter_tags
 features[field_instance][] = node-thank_you_page-campaignion_overlay_options
 features[field_instance][] = redhen_contact-contact-campaign_tag
+features[field_instance][] = redhen_contact-contact-donation_latest_one_off
+features[field_instance][] = redhen_contact-contact-donation_latest_regular
 features[field_instance][] = redhen_contact-contact-field_address
 features[field_instance][] = redhen_contact-contact-field_date_of_birth
 features[field_instance][] = redhen_contact-contact-field_direct_mail_newsletter
@@ -109,8 +114,8 @@ features[variable][] = field_bundle_settings_node__thank_you_page
 features[variable][] = webform_node_email_to_target
 features[variable][] = webform_node_petition
 
-; Information added by Drupal.org packaging script on 2020-07-01
-version = "7.x-2.14"
+; Information added by Drupal.org packaging script on 2020-09-08
+version = "7.x-2.15"
 core = "7.x"
 project = "campaignion"
-datestamp = "1593586545"
+datestamp = "1599580450"

@@ -12,7 +12,8 @@ export const name = 'gtm'
  * codes.
  */
 export const codes = {
-  ds: 'donationSuccess'
+  ds: 'donationSuccess',
+  s: 'submission',
 }
 
 /**
@@ -28,10 +29,10 @@ export const codes = {
  * @returns {Boolean}
  */
 export const productIsEqual = (product1, product2) => {
-  for (let key of ['name', 'price', 'id', 'quantity']) {
+  for (const key of ['name', 'price', 'id', 'quantity']) {
     // If at least one product has the property and their values differ
     // they are NOT equal. They are otherwise.
-    if ((product1.hasOwnProperty(key) || product2.hasOwnProperty(key)) &&
+    if ((Object.prototype.hasOwnProperty.call(product1, key) || Object.prototype.hasOwnProperty.call(product2, key)) &&
         product1[key] !== product2[key]
     ) {
       return false
@@ -59,8 +60,10 @@ export class GTMTracker {
     this.tracker = tracker
 
     // load from session, set defaults
-    let defaultContext = {
+    const defaultContext = {
+      node: {},
       donation: { currencyCode: null, product: null },
+      webform: { sid: null }
     }
     this._context = this.loadFromStorage('context') || defaultContext
 
@@ -76,19 +79,33 @@ export class GTMTracker {
     }
 
     /**
-     * Subscribe to messages of the `donation` tracking channel.
+     * Callback for subscribed events.
+     *
+     * This handles incoming data/events.
      *
      * TODO: validate event
      * TODO: sanitize data
+     *
+     * @param {object} e Tracking event
      */
-    this.donationSubscription = this.tracker.subscribe('donation', (e) => {
-      this.printDebug('campaignion_tracking_gtm', 'handle_donation', e)
+    this._dispatch = e => {
+      this.printDebug('campaignion_tracking_gtm', 'handle_form', e)
 
       this.printDebug('campaignion_tracking_gtm', 'handle_event', e.name, e.data, e.context)
 
       // dispatch to my handlers
       this.dispatch(e.name, e.data, e.context)
-    })
+    }
+
+    /**
+     * Subscribe to messages of the `webform` tracking channel.
+     */
+    this.webformSubscription = this.tracker.subscribe('webform', this._dispatch)
+
+    /**
+     * Subscribe to messages of the `donation` tracking channel.
+     */
+    this.donationSubscription = this.tracker.subscribe('donation', this._dispatch)
   }
 
   /**
@@ -107,9 +124,11 @@ export class GTMTracker {
   saveToStorage (key = 'default', data) {
     this.tracker.saveToStorage('campaignion_tracking:gtm:', key, data)
   }
+
   loadFromStorage (key = 'default') {
     return this.tracker.loadFromStorage('campaignion_tracking:gtm:', key)
   }
+
   removeFromStorage (key = 'default') {
     return this.tracker.removeFromStorage('campaignion_tracking:gtm:', key)
   }
@@ -128,7 +147,8 @@ export class GTMTracker {
   dispatch (eventName = '', eventData = {}, context = {}) {
     if (typeof this['handle_' + eventName] === 'function') {
       this['handle_' + eventName](eventName, eventData, context)
-    } else {
+    }
+    else {
       this.printDebug('no handler for event name:', eventName)
     }
   }
@@ -145,15 +165,63 @@ export class GTMTracker {
    */
   callChangeHook (eventName, gtmData, context) {
     // maybe also inject tracker
-    if (typeof window['campaignion_tracking_change_msg'] === 'function') {
+    if (typeof window.campaignion_tracking_change_msg === 'function') {
       gtmData = window.campaignion_tracking_change_msg('gtm', eventName, gtmData, context)
     }
     return gtmData
   }
 
-  updateContext (context) {
-    Object.assign(this._context.donation, context['node'], context['donation'], context['webform'])
+  /**
+   * Maintains a context between event handling.
+   *
+   * You can provide context with a first event and call this method during
+   * handling.
+   * When another event arrives it can also enrich this context and read former
+   * context data as well.
+   *
+   * This context is saved in the browser storage to persist between page
+   * loads. It is reset on donationSuccess.
+   *
+   * @param {context} context Tracking context data.
+   */
+  updateContext (context = {}) {
+    // Check if context exists
+    if (context.donation) {
+      Object.assign(this._context.donation, context.donation)
+    }
+    if (context.node) {
+      Object.assign(this._context.node, context.node)
+    }
+    if (context.webform) {
+      Object.assign(this._context.webform, context.webform)
+    }
     this.saveToStorage('context', this._context)
+  }
+
+  /**
+   * Handle "submission".
+   *
+   * Event data: { nid, sid, title }
+   *
+   * @param {String} eventName the event name
+   * @param {object} eventData data of the event
+   * @param {object} context context of the event
+   */
+  handle_submission (eventName, eventData, context) { // eslint-disable-line camelcase
+    this.printDebug('(handle)', eventName, eventData, context)
+    this.updateContext(context)
+
+    let data = {
+      event: 'submission',
+      webform: {
+        nid: eventData.nid || null,
+        sid: eventData.sid || null,
+        title: eventData.title || null,
+      }
+    }
+    // Allow others to modify the data being sent to GTM.
+    data = this.callChangeHook(eventName, data, this._context)
+    this.dataLayer.push(data)
   }
 
   /**
@@ -171,35 +239,35 @@ export class GTMTracker {
   handle_setDonationProduct (eventName, eventData, context) { // eslint-disable-line camelcase
     this.printDebug('(handle)', eventName, eventData, context)
     this.updateContext(context)
-    if (eventData['currencyCode']) {
-      this._context.donation.currencyCode = eventData['currencyCode']
+    if (eventData.currencyCode) {
+      this._context.donation.currencyCode = eventData.currencyCode
     }
-    let currencyCode = this._context.donation.currencyCode || null
-    let currentProduct = this._context.donation.product || {}
-    let newProduct = eventData['product'] || {}
+    const currencyCode = this._context.donation.currencyCode || null
+    const currentProduct = this._context.donation.product || {}
+    const newProduct = eventData.product || {}
 
-    let addData = {
-      'event': 'addToCart',
-      'ecommerce': {
-        'currencyCode': currencyCode,
-        'add': {
-          'products': [newProduct]
+    const addData = {
+      event: 'addToCart',
+      ecommerce: {
+        currencyCode: currencyCode,
+        add: {
+          products: [newProduct]
         }
       }
     }
     if (currencyCode) {
-      addData.ecommerce['currencyCode'] = currencyCode
+      addData.ecommerce.currencyCode = currencyCode
     }
-    let removeData = {
-      'event': 'removeFromCart',
-      'ecommerce': {
-        'remove': {
-          'products': [currentProduct]
+    const removeData = {
+      event: 'removeFromCart',
+      ecommerce: {
+        remove: {
+          products: [currentProduct]
         }
       }
     }
     // Only push a remove if we can assume we have pushed a valid product before.
-    let pushRemove = currentProduct.hasOwnProperty('price')
+    const pushRemove = Object.prototype.hasOwnProperty.call(currentProduct, 'price')
     let data = {
       addData: addData,
       removeData: removeData,
@@ -208,8 +276,8 @@ export class GTMTracker {
     // Allow others to modify the data being sent to GTM.
     data = this.callChangeHook(eventName, data, this._context)
 
-    let changedNewProduct = data['addData']['ecommerce']['add']['products'][0]
-    let changedCurrentProduct = data['removeData']['ecommerce']['remove']['products'][0]
+    const changedNewProduct = data.addData.ecommerce.add.products[0]
+    const changedCurrentProduct = data.removeData.ecommerce.remove.products[0]
 
     // Only change something or send a GTM event if the donation products differ.
     // Compare *after* any changes.
@@ -239,19 +307,19 @@ export class GTMTracker {
   handle_checkoutBegin (eventName, eventData, context) { // eslint-disable-line camelcase
     this.printDebug('(handle)', eventName, eventData, context)
     this.updateContext(context)
-    let product = eventData['product'] || this._context.donation.product || {}
-    let currencyCode = eventData['currencyCode'] || this._context.donation.currencyCode || null
+    const product = eventData.product || this._context.donation.product || {}
+    const currencyCode = eventData.currencyCode || this._context.donation.currencyCode || null
     let data = {
-      'event': 'checkoutBegin',
-      'ecommerce': {
-        'checkout': {
-          'actionField': { 'step': 1 }, // begin == 1
-          'products': [product]
+      event: 'checkoutBegin',
+      ecommerce: {
+        checkout: {
+          actionField: { step: 1 }, // begin == 1
+          products: [product]
         }
       }
     }
     if (currencyCode) {
-      data.ecommerce['currencyCode'] = currencyCode
+      data.ecommerce.currencyCode = currencyCode
     }
     // Allow others to modify the data being sent to GTM.
     data = this.callChangeHook(eventName, data, this._context)
@@ -270,19 +338,19 @@ export class GTMTracker {
   handle_checkoutEnd (eventName, eventData, context) { // eslint-disable-line camelcase
     this.printDebug('(handle)', eventName, eventData, context)
     this.updateContext(context)
-    let product = eventData['product'] || this._context.donation.product || {}
-    let currencyCode = eventData['currencyCode'] || this._context.donation.currencyCode || null
+    const product = eventData.product || this._context.donation.product || {}
+    const currencyCode = eventData.currencyCode || this._context.donation.currencyCode || null
     let data = {
-      'event': 'checkoutEnd',
-      'ecommerce': {
-        'checkout': {
-          'actionField': { 'step': 2 }, // end == 2
-          'products': [product]
+      event: 'checkoutEnd',
+      ecommerce: {
+        checkout: {
+          actionField: { step: 2 }, // end == 2
+          products: [product]
         }
       }
     }
     if (currencyCode) {
-      data.ecommerce['currencyCode'] = currencyCode
+      data.ecommerce.currencyCode = currencyCode
     }
     // Allow others to modify the data being sent to GTM.
     data = this.callChangeHook(eventName, data, this._context)
@@ -304,34 +372,34 @@ export class GTMTracker {
   handle_donationSuccess (eventName, eventData, context) { // eslint-disable-line camelcase
     this.printDebug('(handle)', eventName, eventData, context)
     this.updateContext(context)
-    let product = eventData['product'] || this._context.donation.product || {}
-    let currencyCode = eventData['currencyCode'] || this._context.donation.currencyCode || null
+    const product = eventData.product || this._context.donation.product || {}
+    const currencyCode = eventData.currencyCode || this._context.donation.currencyCode || null
     // Ensure a transaction id.
-    let transactionID = eventData['tid'] || Math.floor(Math.random() * 2 ** 64)
-    let sentTransactionIDs = this.loadFromStorage('sentTransactionIDs') || []
+    const transactionID = eventData.tid || Math.floor(Math.random() * 2 ** 64)
+    const sentTransactionIDs = this.loadFromStorage('sentTransactionIDs') || []
     // Do nothing if the transaction was already sent.
     if (sentTransactionIDs.indexOf(transactionID) >= 0) {
       this.printDebug('(handle)', 'already sent TID', eventName, eventData, context)
       return
     }
-    let revenue = eventData['revenue'] || null
+    let revenue = eventData.revenue || null
     if (revenue === null) {
-      revenue = parseFloat(product['price'] || 0) * parseInt(product['quantity'] || 1)
+      revenue = parseFloat(product.price || 0) * parseInt(product.quantity || 1)
     }
     let data = {
-      'event': 'purchase',
-      'ecommerce': {
-        'purchase': {
-          'actionField': {
-            'id': transactionID, // required
-            'revenue': String(revenue)
+      event: 'purchase',
+      ecommerce: {
+        purchase: {
+          actionField: {
+            id: transactionID, // required
+            revenue: String(revenue)
           },
-          'products': [product]
+          products: [product]
         }
       }
     }
     if (currencyCode) {
-      data.ecommerce['currencyCode'] = currencyCode
+      data.ecommerce.currencyCode = currencyCode
     }
     // Allow others to modify the data being sent to GTM.
     data = this.callChangeHook(eventName, data, this._context)

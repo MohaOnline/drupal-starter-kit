@@ -13,7 +13,7 @@ We recommend using [polyfill.io](https://polyfill.io) or something similar, for 
 if ($polyfill_url = variable_get('polyfill_url', 'https://polyfill.io/v3/polyfill.min.js?flags=gated')) {
   drupal_add_js($polyfill_url, [
     'type' => 'external',
-    'group' => 'library',
+    'group' => JS_LIBRARY,
     'every_page' => TRUE,
     'weight' => -50,
   ]);
