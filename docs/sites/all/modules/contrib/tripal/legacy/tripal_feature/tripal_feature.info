@@ -16,8 +16,8 @@ dependencies[] = tripal_organism
 dependencies[] = tripal_analysis
 
 
-; Information added by Drupal.org packaging script on 2020-04-06
-version = "7.x-3.3"
+; Information added by Drupal.org packaging script on 2020-09-13
+version = "7.x-3.4"
 core = "7.x"
 project = "tripal"
-datestamp = "1586137671"
+datestamp = "1599961626"
