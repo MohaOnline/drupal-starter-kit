@@ -13,12 +13,14 @@ Contents:
 
    api
    language-guide
-   reference
+   mode-reference
    css-classes-reference
    style-guide
+   plugin-api
+   plugin-recipes
    language-contribution
    building-testing
-   release-process
+   maintainers-guide
 
 Miscellaneous:
 
@@ -30,9 +32,9 @@ Miscellaneous:
 
 Links:
 
-- Code: https://github.com/isagalaev/highlight.js
+- Code: https://github.com/highlightjs/highlight.js
 - Discussion: http://groups.google.com/group/highlightjs
-- Bug tracking: https://github.com/isagalaev/highlight.js/issues
+- Bug tracking: https://github.com/highlightjs/highlight.js/issues
 
 
 Indices and tables

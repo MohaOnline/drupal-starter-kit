@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>highlight.js developer</title>
+
+  <link rel="stylesheet" href="../src/styles/default.css">
+
+  <style>
+    body { padding: 20px;
+    font-family: sans-serif;
+     }
+    .editor textarea {
+      display: block; width: 100%;
+      height: 15em;
+    }
+    h3 {
+      margin:0 0 0.5em;
+      font-size:1.1em;
+    }
+
+    pre code,
+    pre output {
+      display: block;
+      padding:20px !important;
+    }
+
+    pre output {
+      display: block; overflow: auto;
+      padding: 0.5em;
+      background: #F0F0F0;
+    }
+
+    .hljs-debug {
+      color: red; font-weight: bold;
+    }
+
+    .visible-structure pre code span {
+      display: inline-block;
+      padding:2px;
+      margin: 3px 0;
+      border: 1px dashed #777;
+      border-radius: 5px;
+      white-space: pre;
+    }
+
+    .visible-structure pre code span:before {
+      display: inline-block;
+      content: attr(data-klass);
+      font-size: 70%;
+      background: #693;
+      padding:1px 5px;
+      border-radius: 3px;
+      color:white;
+      margin-right:0.5em;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body id>
+  <div class="editor" id="app">
+    <h3>Code</h3>
+    <div>
+      <textarea>Put code here…</textarea>
+      <p>
+        <button id="update-highlighting">Update highlighting</button>
+        <button id="show-structure">Show/hide structure</button>
+        Language: <select class="languages"><option value="">(Auto)</option></select>
+      </p>
+    </div>
+    <div>
+      <h3>Rendered in <span class="rendering_time">...</span> ms [<span class="rendering_stats">...</span>]</h3>
+      <highlightjs :language="language" :code="code" />
+    </div>
+    <div>
+      <h3>Markup</h3>
+      <pre><output>...</output></pre>
+    </div>
+  </div>
+
+  <script src="../build/highlight.js"></script>
+  <script src="../demo/jquery-2.1.1.min.js"></script>
+  <script src="../demo/vue.js"></script>
+
+  <script>
+    hljs.debugMode();
+
+    $(document).ready(function() {
+      var select = $('.languages');
+      hljs.listLanguages().forEach(function(l) {
+        select.append('<option>' + l + '</option>');
+      });
+
+      $('.editor button#update-highlighting').click(function(e) {
+        var editor = $(this).parents('.editor');
+        var language = editor.find('.languages').val();
+        var source = editor.find('textarea').val();
+        var start_time = +new Date();
+        var result = hljs.getLanguage(language) ? hljs.highlight(language, source, true) : hljs.highlightAuto(source);
+        var rendering_time = +new Date() - start_time;
+        vue.code = source;
+        vue.language = hljs.getLanguage(language) ? language : '';
+
+        var rendering_stats = result.language + ': relevance ' + (result.relevance );
+        if (result.second_best) {
+            rendering_stats += ', ' + result.second_best.language + ': ' + (result.second_best.relevance || result.second_best.r);
+        }
+        editor.find('.rendering_stats').text(rendering_stats);
+        editor.find('.rendering_time').text(rendering_time);
+        editor.find('output').text(result.value);
+        SourceStore.save(source, language);
+      });
+
+      $('.editor button#show-structure').click(function(e) {
+        var editor = $(this).parents('.editor');
+        editor.toggleClass('visible-structure');
+      });
+    });
+
+    var SourceStore;
+    (function(){
+      SourceStore = {
+        save: function(source, lang){
+          localStorage.setItem(key_SOURCE, source);
+          localStorage.setItem(key_LANG, lang);
+        },
+        resolve: function(){
+          return [
+            localStorage.getItem(key_SOURCE),
+            localStorage.getItem(key_LANG)
+          ];
+        }
+      };
+      var key_SOURCE = 'hljs-source';
+      var key_LANG = 'hljs-lang';
+      $(function(){
+        var data = SourceStore.resolve();
+        if (data == null) return;
+        $('.editor textarea').val(data[0]);
+        $('.editor .languages').val(data[1]);
+        $('.editor button').click();
+      });
+    }());
+
+    Vue.use(hljs.vuePlugin);
+    let vue = new Vue({
+      el: '#app',
+      data: { code: "", language: "" },
+      methods: {
+        refreshKlass: function() {
+          // update data-klass post-render for cool class previews
+          this.$nextTick(() => {
+            $(".hljs span").each((_,el) => {
+              $(el).attr("data-klass", el.className.replace("hljs-",""))
+            })
+          })
+        }
+      },
+      watch: {
+        code: function(){
+          this.refreshKlass();
+        },
+        language: function(){
+          this.refreshKlass();
+        }
+      }
+    })
+  </script>
+</body>
+</html>

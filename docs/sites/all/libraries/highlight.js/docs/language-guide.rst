@@ -64,7 +64,7 @@ and most interesting parsing happens inside tags.
 Keywords
 --------
 
-In the simple case language keywords are defined in a string, separated by space:
+In the simple case language keywords can be defined with a string, separated by space:
 
 ::
 
@@ -72,9 +72,11 @@ In the simple case language keywords are defined in a string, separated by space
     keywords: 'else for if while'
   }
 
-Some languages have different kinds of "keywords" that might not be called as such by the language spec
-but are very close to them from the point of view of a syntax highlighter. These are all sorts of "literals", "built-ins", "symbols" and such.
-To define such keyword groups the attribute ``keywords`` becomes an object each property of which defines its own group of keywords:
+Some languages have different kinds of "keywords" that might not be called as
+such by the language spec but are very close to them from the point of view of a
+syntax highlighter. These are all sorts of "literals", "built-ins", "symbols"
+and such. To define such keyword groups the attribute ``keywords`` becomes an
+object each property of which defines its own group of keywords:
 
 ::
 
@@ -85,19 +87,25 @@ To define such keyword groups the attribute ``keywords`` becomes an object each 
     }
   }
 
-The group name becomes then a class name in a generated markup enabling different styling for different kinds of keywords.
+The group name becomes the class name in the generated markup enabling different
+themeing for different kinds of keywords.
 
-To detect keywords highlight.js breaks the processed chunk of code into separate words — a process called lexing.
-The "word" here is defined by the regexp ``[a-zA-Z][a-zA-Z0-9_]*`` that works for keywords in most languages.
-Different lexing rules can be defined by the ``lexemes`` attribute:
+To detect keywords highlight.js breaks the processed chunk of code into separate
+words — a process called lexing. By default "words" are matched with the regexp
+``\w+``, and that works well for many languages. Different lexing rules can be
+defined by the magic ``$pattern`` attribute:
 
 ::
 
   {
-    lexemes '-[a-z]+',
-    keywords: '-import -export'
+    keywords: {
+      $pattern: /-[a-z]+/,        // allow keywords to begin with dash
+      keyword: '-import -export'
+    }
   }
 
+Note: The older ``lexemes`` setting has been deprecated in favor of using
+``keywords.$pattern``. They are functionally identical.
 
 Sub-modes
 ---------
@@ -125,6 +133,8 @@ This is commonly used to define nested modes:
     begin: '{', end: '}',
     contains: [hljs.QUOTE_STRING_MODE, 'self']
   }
+
+Note: ``self`` may not be used in the root level ``contains`` of a language.  The root level mode is special and may not be self-referential.
 
 
 Comments
@@ -184,7 +194,7 @@ For such modes ``className`` attribute should be omitted so they won't generate 
 Mode attributes
 ---------------
 
-Other useful attributes are defined in the :doc:`mode reference </reference>`.
+Other useful attributes are defined in the :doc:`mode reference </mode-reference>`.
 
 
 .. _relevance:
@@ -256,6 +266,24 @@ Pre-defined modes and regular expressions
 
 Many languages share common modes and regular expressions. Such expressions are defined in core highlight.js code
 at the end under "Common regexps" and "Common modes" titles. Use them when possible.
+
+
+Regular Expression Features
+---------------------------
+
+The goal of Highlight.js is to support whatever regex features Javascript itself supports.  You're using real regular expressions, use them responsibly.  That said, due to the design of the parser, there are some caveats.  These are addressed below.
+
+Things we support now that we did not always:
+
+* look-ahead regex matching for `begin` (#2135)
+* look-ahead regex matching for `end` (#2237)
+* look-ahead regex matching for `illegal` (#2135)
+* back-references within your regex matches (#1897)
+* look-behind matching (when JS supports it) for `begin` (#2135)
+
+Things we currently know are still issues:
+
+* look-behind matching (when JS supports it) for `end` matchers
 
 
 Contributing
