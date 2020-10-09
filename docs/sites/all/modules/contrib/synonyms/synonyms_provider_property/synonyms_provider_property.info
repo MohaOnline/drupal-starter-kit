@@ -1,0 +1,18 @@
+name = Entity Property Synonyms Provider
+description = "Provides synonyms from entity properties."
+package = Synonyms
+core = 7.x
+dependencies[] = synonyms
+
+files[] = includes/AbstractPropertySynonymsBehavior.class.inc
+files[] = includes/PropertySynonymsBehavior.class.inc
+files[] = includes/SearchPropertySynonymsBehavior.class.inc
+
+files[] = synonyms_provider_property.test
+
+; Information added by Drupal.org packaging script on 2017-06-30
+version = "7.x-1.6"
+core = "7.x"
+project = "synonyms"
+datestamp = "1498833845"
+

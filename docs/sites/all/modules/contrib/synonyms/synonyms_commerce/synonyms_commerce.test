@@ -1,0 +1,1094 @@
+<?php
+
+/**
+ * @file
+ * Tests for the Synonyms Commerce module.
+ */
+
+/**
+ * Test synonyms autocomplete widget for commerce product reference field type.
+ */
+class CommerceProductReferenceAutocompleteSynonymsWebTestCase extends AbstractAutocompleteSynonymsWebTestCase {
+
+  /**
+   * GetInfo method.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Commerce product reference synonyms autocomplete',
+      'description' => 'Ensure that the "synonym friendly autocomplete" widget works correctly with commerce product reference field type.',
+      'group' => 'Synonyms',
+    );
+  }
+
+  public function setUp($modules = array()) {
+    $modules[] = 'commerce_product_reference';
+    $modules[] = 'commerce_product_ui';
+    $modules[] = 'synonyms_commerce';
+
+    $this->fields['enabled']['instance']['entity_type'] = 'commerce_product';
+    $this->fields['enabled']['instance']['bundle'] = 'product';
+    $this->fields['disabled']['instance']['entity_type'] = 'commerce_product';
+    $this->fields['disabled']['instance']['bundle'] = 'product';
+
+    $this->behavior_implementation['entity_type'] = $this->fields['enabled']['instance']['entity_type'];
+
+    parent::setUp($modules);
+
+    $this->reference_field = array(
+      'type' => 'commerce_product_reference',
+      'field_name' => 'synonyms_commerce',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(),
+    );
+    $this->reference_field = field_create_field($this->reference_field);
+
+    $this->reference_instance = array(
+      'field_name' => $this->reference_field['field_name'],
+      'entity_type' => $this->entity_type,
+      'bundle' => $this->bundle,
+      'label' => 'Synonym Commerce Autocomplete',
+      'settings' => array(
+        'referenceable_types' => drupal_map_assoc(array('product')),
+      ),
+      'widget' => array(
+        'type' => 'synonyms_commerce_autocomplete',
+      ),
+    );
+    $this->reference_instance = field_create_instance($this->reference_instance);
+    $this->reference_instance = field_info_instance($this->reference_instance['entity_type'], $this->reference_instance['field_name'], $this->reference_instance['bundle']);
+  }
+
+  protected function createTerms() {
+    $name = $this->randomName();
+
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $name,
+      'sku' => 'a' . drupal_strtolower($this->randomName()),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['term1'] = $product;
+
+    $name .= $this->randomName();
+
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $name,
+      'sku' => 'z' . drupal_strtolower($this->randomName()),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['term1_longer_name'] = $product;
+
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['no_synonyms'] = $product;
+
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['one_synonym'] = $product;
+
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+          array('value' => $this->randomName()),
+        ),
+      ),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['two_synonyms'] = $product;
+
+    $name = $this->randomName();
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $name,
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $name . $this->randomName()),
+        ),
+      ),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['name_similar_synonym'] = $product;
+
+    $name = 'similar_synonyms_';
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $name . $this->randomName()),
+          array('value' => $name . $this->randomName()),
+        ),
+      ),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['similar_synonyms'] = $product;
+
+    $name = 'one_term_name_another_synonym_';
+
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $name . $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['name_another_synonym'] = $product;
+
+    $product = (object) array(
+      'type' => 'product',
+      'title' => $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $name . $this->randomName()),
+        ),
+      ),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($product);
+    $this->terms['synonym_another_name'] = $product;
+
+    $another_product_type = commerce_product_ui_product_type_new();
+    $another_product_type['type'] = 'another_vocabulary';
+    $another_product_type['name'] = $this->randomName();
+    commerce_product_ui_product_type_save($another_product_type);
+
+    $product_similar_product = (object) array(
+      'type' => $another_product_type['type'],
+      'title' => $this->entityLabel($this->terms['no_synonyms']),
+      'sku' => drupal_strtolower($this->randomName()),
+    );
+    commerce_product_save($product_similar_product);
+
+    $product_similar_synonym = (object) array(
+      'type' => $another_product_type['type'],
+      'title' => $this->terms['one_synonym']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+      'sku' => drupal_strtolower($this->randomName()),
+    );
+    commerce_product_save($product_similar_synonym);
+
+    $synonym_similar_product = (object) array(
+      'type' => $another_product_type['type'],
+      'title' => $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(LANGUAGE_NONE => array(
+        $this->entityLabel($this->terms['no_synonyms']),
+      )),
+    );
+    commerce_product_save($synonym_similar_product);
+
+    $synonym_similar_synonym = (object) array(
+      'type' => $another_product_type['type'],
+      'title' => $this->randomName(),
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(LANGUAGE_NONE => array(
+        $this->terms['one_synonym']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+      )),
+    );
+    commerce_product_save($synonym_similar_synonym);
+  }
+}
+
+
+/**
+ * Test synonyms-friendly select widget for commerce product reference field.
+ */
+class CommerceProductReferenceSelectSynonymsWebTestCase extends AbstractSelectSynonymsWebTestCase {
+
+  /**
+   * Array of products on which the testing is held.
+   *
+   * @var array
+   */
+  protected $products = array();
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Commerce product reference synonyms select',
+      'description' => 'Ensure that the "synonym friendly select" widget works correctly with commerce product reference field.',
+      'group' => 'Synonyms',
+    );
+  }
+
+  public function setUp($modules = array()) {
+    $modules[] = 'commerce_product_reference';
+    $modules[] = 'synonyms_commerce';
+
+    $this->fields['enabled']['instance']['entity_type'] = 'commerce_product';
+    $this->fields['enabled']['instance']['bundle'] = 'product';
+    $this->fields['disabled']['instance']['entity_type'] = 'commerce_product';
+    $this->fields['disabled']['instance']['bundle'] = 'product';
+
+    $this->behavior_implementation['entity_type'] = $this->fields['enabled']['instance']['entity_type'];
+
+    parent::setUp($modules);
+
+    $this->reference_field = array(
+      'type' => 'commerce_product_reference',
+      'field_name' => 'synonyms_commerce',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(),
+    );
+    $this->reference_field = field_create_field($this->reference_field);
+
+    $this->reference_instance = array(
+      'field_name' => $this->reference_field['field_name'],
+      'entity_type' => $this->entity_type,
+      'bundle' => $this->bundle,
+      'label' => 'Synonym Commerce Select',
+      'widget' => array(
+        'type' => 'synonyms_commerce_select',
+      ),
+    );
+    $this->reference_instance = field_create_instance($this->reference_instance);
+  }
+
+  public function testWidgetSorting() {
+    $cardinality = array(
+      1 => 1,
+      FIELD_CARDINALITY_UNLIMITED => 'unlimited',
+    );
+    $required = array(
+      TRUE => 'required',
+      FALSE => 'not required',
+    );
+
+    foreach ($cardinality as $cardinality_k => $cardinality_v) {
+      foreach ($required as $required_k => $required_v) {
+        $this->reference_field['cardinality'] = $cardinality_k;
+        field_update_field($this->reference_field);
+
+        $this->reference_instance['required'] = $required_k;
+        field_update_instance($this->reference_instance);
+
+        $options = array();
+        $options[] = array(
+          'entity' => $this->terms['product3'],
+          'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product3'],
+          'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product1'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product1'],
+          'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product1'],
+          'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product2'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product2'],
+          'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product2'],
+          'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+        );
+        $options[] = array(
+          'entity' => $this->terms['product3'],
+        );
+
+        $this->drupalGet('node/add/synonyms-test-content');
+        $this->assertSynonymsSelect($options, 'Synonyms select sorting by name works for the cardinality of ' . $cardinality_v . ' and ' . $required_v);
+      }
+    }
+  }
+
+  public function testWidget() {
+    $name = $this->randomName();
+    $this->drupalPost('node/add/synonyms-test-content', array(
+      'title' => $name,
+      $this->reference_field['field_name'] . '[' . LANGUAGE_NONE . '][]' => array(
+        $this->synonymSelectKey($this->terms['product1'], $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value']),
+        $this->terms['product2']->product_id,
+        $this->terms['product3']->product_id,
+        $this->synonymSelectKey($this->terms['product3'], $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value']),
+      ),
+    ), 'Save');
+
+    $node = $this->drupalGetNodeByTitle($name);
+    $this->drupalGet('node/' . $node->nid);
+    $this->assertText($this->terms['product1']->title, 'Product is saved when its synonym is submitted through synonyms friendly select for the unlimited cardinality.');
+    $this->assertText($this->terms['product2']->title, 'Product is saved when it is submitted through synonyms friendly select for the unlimited cardinality.');
+    $this->assertText($this->terms['product3']->title, 'Product is saved only once when the term and its synonym are submitted through synonyms friendly select for the unlimited cardinality.');
+
+    $options = array();
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+      'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+      'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'selected' => TRUE,
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'selected' => TRUE,
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+      'selected' => TRUE,
+    );
+    $this->drupalGet('node/' . $node->nid . '/edit');
+    $this->assertSynonymsSelect($options, 'Default values are set correctly in the synonyms friendly select widget when working with field cardinality more than 1.');
+
+    $this->reference_field['cardinality'] = 2;
+    field_update_field($this->reference_field);
+    $name = $this->randomName();
+    $this->drupalPost('node/add/synonyms-test-content', array(
+      'title' => $name,
+      $this->reference_field['field_name'] . '[' . LANGUAGE_NONE . '][]' => array(
+        $this->synonymSelectKey($this->terms['product1'], $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value']),
+        $this->terms['product2']->product_id,
+        $this->terms['product3']->product_id,
+      ),
+    ), 'Save');
+    $this->assertText('this field cannot hold more than 2 values.', 'Submitting 3 entries into a field with cardinality of 2, that refer to 3 products, results in a form error.');
+
+    $this->drupalPost('node/add/synonyms-test-content', array(
+      'title' => $name,
+      $this->reference_field['field_name'] . '[' . LANGUAGE_NONE . '][]' => array(
+        $this->synonymSelectKey($this->terms['product1'], $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value']),
+        $this->terms['product2']->product_id,
+        $this->synonymSelectKey($this->terms['product2'], $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value']),
+      ),
+    ), 'Save');
+    $node = $this->drupalGetNodeByTitle($name);
+    $this->drupalGet('node/' .  $node->nid);
+    $this->assertText($this->terms['product1']->title, 'Submitting 3 entries into a field with cardinality of 2, that refer to only 2 products, results in form getting submitted. Product #1 is saved.');
+    $this->assertText($this->terms['product2']->title, 'Product #2 is saved.');
+
+    $this->reference_field['cardinality'] = 1;
+    field_update_field($this->reference_field);
+    // We need to invoke this one. Without it some caching within Entity
+    // metadata wrappers interferes. See https://www.drupal.org/node/2717019 for
+    // details.
+    entity_flush_caches();
+
+    $name = $this->randomName();
+    $this->drupalPost('node/add/synonyms-test-content', array(
+      'title' => $name,
+      $this->reference_field['field_name'] . '[' . LANGUAGE_NONE . ']' => $this->synonymSelectKey($this->terms['product1'], $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value']),
+    ), 'Save');
+    $node = $this->drupalGetNodeByTitle($name);
+
+    $this->drupalGet('node/' . $node->nid);
+    $this->assertText($this->terms['product1']->title, 'Product is saved when its synonym is submitted through synonyms friendly select for the cardinality of 1.');
+
+    $options = array();
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+      'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+      'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'selected' => TRUE,
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+    );
+    $this->drupalGet('node/' .  $node->nid . '/edit');
+    $this->assertSynonymsSelect($options, 'Default values are set correctly in the synonyms friendly select widget when working with the field cardinality of 1.');
+
+    $this->drupalPost('node/' . $node->nid . '/edit', array(
+      $this->reference_field['field_name'] . '[' . LANGUAGE_NONE . ']' => $this->terms['product2']->product_id,
+    ), 'Save');
+    $this->drupalGet('node/' . $node->nid);
+    $this->assertNoText($this->terms['product1']->title, 'After updating entity the old product is removed.');
+    $this->assertText($this->terms['product2']->title, 'Product is saved when it is submitted through synonyms friendly select for the cardinality of 1.');
+
+    $options = array();
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+      'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+      'synonym' => $this->terms['product3']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product1'],
+      'synonym' => $this->terms['product1']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'selected' => TRUE,
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][1]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product2'],
+      'synonym' => $this->terms['product2']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'],
+    );
+    $options[] = array(
+      'entity' => $this->terms['product3'],
+    );
+    $this->drupalGet('node/' .  $node->nid . '/edit');
+    $this->assertSynonymsSelect($options, 'Default values are set correctly in the synonyms friendly select widget when working with the field cardinality of 1.');
+  }
+
+  protected function createTerms() {
+    $this->terms['product1'] = (object) array(
+      'type' => $this->behavior_implementation['bundle'],
+      'title' => 'Product 1',
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => 'Product 1A' . $this->randomName()),
+          array('value' => 'Product 1Z' . $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($this->terms['product1']);
+
+    $this->terms['product2'] = (object) array(
+      'type' => $this->behavior_implementation['bundle'],
+      'title' => 'Product 2',
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => 'Product 2Z' . $this->randomName()),
+          array('value' => 'Product 2A' . $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($this->terms['product2']);
+
+    $this->terms['product3'] = (object) array(
+      'type' => $this->behavior_implementation['bundle'],
+      'title' => 'Product 3',
+      'sku' => drupal_strtolower($this->randomName()),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => 'Another Product 3A' . $this->randomName()),
+          array('value' => 'Another Product 3Z' . $this->randomName()),
+        ),
+      ),
+    );
+    commerce_product_save($this->terms['product3']);
+  }
+}
+
+/**
+ * Test CommerceProductReferenceSynonymsBehavior class.
+ */
+class CommerceProductReferenceSynonymsBehaviorWebTestCase extends AbstractSynonymsProviderFieldWebTestCase {
+
+  /**
+   * GetInfo method.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'CommerceProductReferenceSynonymsBehavior',
+      'description' => 'Ensure that the synonyms module extracts synonyms from commerce product reference fields correctly.',
+      'group' => 'Synonyms',
+    );
+  }
+
+  /**
+   * SetUp method.
+   */
+  public function setUp($modules = array()) {
+    $modules[] = 'commerce_product_reference';
+    $modules[] = 'commerce_product_ui';
+    $modules[] = 'synonyms_commerce';
+
+    $this->fields['enabled']['field'] = array(
+      'field_name' => 'reference',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'type' => 'commerce_product_reference',
+    );
+
+    parent::setUp($modules);
+  }
+
+  /**
+   * Test synonyms extraction for 'commerce_product_reference' field type.
+   */
+  public function testCommerceProductReference() {
+    // Testing synonymsExtract().
+    $this->assertSynonymsExtract(array(), array(), 'on empty field.');
+
+    $synonym_entity = $this->createProduct();
+    $this->assertSynonymsExtract(array(
+      LANGUAGE_NONE => array(
+        0 => array(
+          'product_id' => entity_id('commerce_product', $synonym_entity),
+        ),
+      ),
+    ), array(entity_label('commerce_product', $synonym_entity)), 'on a field that holds one value.');
+
+    // Testing mergeEntityAsSynonym() method.
+    $product = $this->createProduct();
+    $this->assertMergeEntityAsSynonym(array(), $product, 'commerce_product', array(array('product_id' => $product->product_id)), 'on a product.');
+
+    // Testing synonymFind() method.
+    $this->assertSynonymsFind(array(), db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $this->randomName()), 'on empty field');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(),
+      'found_synonyms' => array(),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $this->randomName()), 'on a field without values');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $this->createProduct())),
+        ),
+      ),
+      'found_synonyms' => array(),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $this->randomName()), 'on a field with a value but searching for another string');
+
+    $meta_data = array();
+    $synonym_entity = $this->createProduct();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity)),
+        ),
+      ),
+      'found_synonyms' => array(entity_label('commerce_product', $synonym_entity)),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity)), 'on a field with a single value searching for that string');
+
+    $meta_data = array();
+    $synonym_entity = $this->createProduct();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity)),
+          array('product_id' => entity_id('commerce_product', $this->createProduct())),
+        ),
+      ),
+      'found_synonyms' => array(entity_label('commerce_product', $synonym_entity)),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity)), 'on a field with 2 values searching for one of those 2 values');
+
+    $meta_data = array();
+    $synonym_entity = $this->createProduct();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity)),
+          array('product_id' => entity_id('commerce_product', $this->createProduct())),
+        ),
+      ),
+      'found_synonyms' => array(entity_label('commerce_product', $synonym_entity)),
+    );
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $this->createProduct())),
+          array('product_id' => entity_id('commerce_product', $this->createProduct())),
+        ),
+      ),
+      'found_synonyms' => array(),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity)), 'on 2 fields with 2 values each searching for one of those values');
+
+    $meta_data = array();
+    $synonym_entity = $this->createProduct();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity)),
+        ),
+      ),
+      'found_synonyms' => array(entity_label('commerce_product', $synonym_entity)),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, '%' . db_like(drupal_substr(entity_label('commerce_product', $synonym_entity), 1, -1)) . '%', 'LIKE'), 'on a field with a value searching for a string LIKE the %value%');
+
+    $meta_data = array();
+    $tag = $this->randomName();
+    $synonym_entity1 = $this->createProduct($tag . $this->randomName());
+    $synonym_entity2 = $this->createProduct($tag . $this->randomName());
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity1)),
+          array('product_id' => entity_id('commerce_product', $synonym_entity2)),
+        ),
+      ),
+      'found_synonyms' => array(
+        entity_label('commerce_product', $synonym_entity1),
+        entity_label('commerce_product', $synonym_entity2),
+      ),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, db_like($tag) . '%', 'LIKE'), 'on a field with 2 similar values searching a string like %both values%');
+
+    $meta_data = array();
+    $synonym_entity1 = $this->createProduct();
+    $synonym_entity2 = $this->createProduct();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity1)),
+          array('product_id' => entity_id('commerce_product', $synonym_entity2)),
+        ),
+      ),
+      'found_synonyms' => array(
+        entity_label('commerce_product', $synonym_entity1),
+        entity_label('commerce_product', $synonym_entity2),
+      ),
+    );
+    $condition = db_or()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity1))
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity2));
+    $this->assertSynonymsFind($meta_data, $condition, 'on a field with 2 values searching for value1 or value2');
+
+    $meta_data = array();
+    $synonym_entity = $this->createProduct();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity)),
+          array('product_id' => entity_id('commerce_product', $this->createProduct())),
+        ),
+      ),
+      'found_synonyms' => array(entity_label('commerce_product', $synonym_entity)),
+    );
+    $condition = db_and()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity))
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, '%' . db_like(drupal_substr(entity_label('commerce_product', $synonym_entity), 1, -1)) . '%', 'LIKE');
+    $this->assertSynonymsFind($meta_data, $condition, 'on a field with 2 values searching for value1 and LIKE value1%');
+
+    $meta_data = array();
+    $synonym_entity1 = $this->createProduct();
+    $synonym_entity2 = $this->createProduct();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity1)),
+          array('product_id' => entity_id('commerce_product', $synonym_entity2)),
+        ),
+      ),
+      'found_synonyms' => array(
+        entity_label('commerce_product', $synonym_entity1),
+        entity_label('commerce_product', $synonym_entity2),
+      ),
+    );
+    $condition = db_or()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity1))
+      ->condition(db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, entity_label('commerce_product', $synonym_entity2))->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, '%' . db_like(drupal_substr(entity_label('commerce_product', $synonym_entity2), 1, -1)) . '%', 'LIKE'));
+    $this->assertSynonymsFind($meta_data, $condition, 'on a field with 2 values searching for (value1 or (value2 AND value2%))');
+
+    $meta_data = array();
+    $synonym_entity1 = $this->createProduct($this->randomName() . ' ' . $this->randomName() . ' ' . $this->randomName());
+    $synonym_entity2 = $this->createProduct(str_replace(' ', '-', entity_label('commerce_product', $synonym_entity1)));
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array('product_id' => entity_id('commerce_product', $synonym_entity1)),
+          array('product_id' => entity_id('commerce_product', $synonym_entity2)),
+        ),
+      ),
+      'found_synonyms' => array(
+        entity_label('commerce_product', $synonym_entity1),
+        entity_label('commerce_product', $synonym_entity2),
+      ),
+    );
+    $condition = db_and()
+      ->where("REPLACE(" . AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER . ", ' ', '-') = :synonym", array(
+        ':synonym' => entity_label('commerce_product', $synonym_entity2),
+      ));
+    $this->assertSynonymsFind($meta_data, $condition, "on a field with 2 values, where 2nd value replaces spaces with dashes in the 1st value, searching for REPLACE(column, ' ', '-') = value2");
+  }
+
+  /**
+   * Supportive function.
+   *
+   * Create an entity of necessary entity type (in our test it's commerce
+   * product).
+   *
+   * @param string $label
+   *   Label to use for the entity that is about to be created
+   * @param string $bundle
+   *   Bundle to use for the entity that is about to be created
+   *
+   * @return object
+   *   Fully loaded entity object of the just created entity
+   */
+  protected function createProduct($label = NULL, $bundle = 'product') {
+    if (is_null($label)) {
+      $label = $this->randomName();
+    }
+    $entity = commerce_product_new($bundle);
+    $entity->title = $label;
+    $entity->sku = drupal_html_id($label);
+    commerce_product_save($entity);
+    return $entity;
+  }
+}
+
+/**
+ * Test CommercePriceSynonymsBehavior class.
+ */
+class CommercePriceSynonymsBehaviorWebTestCase extends AbstractSynonymsProviderFieldWebTestCase {
+
+  /**
+   * GetInfo method.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'CommercePriceSynonymsBehavior',
+      'description' => 'Ensure that the synonyms module extracts synonyms from commerce price fields correctly.',
+      'group' => 'Synonyms',
+    );
+  }
+
+  /**
+   * SetUp method.
+   */
+  public function setUp($modules = array()) {
+    $modules[] = 'commerce_price';
+    $modules[] = 'commerce_product_reference';
+    $modules[] = 'commerce_product_ui';
+    $modules[] = 'synonyms_commerce';
+
+    $this->fields['enabled']['field'] = array(
+      'field_name' => 'synonyms_commerce_price',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'type' => 'commerce_price',
+    );
+
+    parent::setUp($modules);
+  }
+
+  /**
+   * Test synonyms extraction for 'commerce_price' field type.
+   */
+  public function testCommercePrice() {
+    // Testing synonymsExtract().
+    $this->assertSynonymsExtract(array(), array(), 'on empty field.');
+
+    $this->assertSynonymsExtract(array(
+      LANGUAGE_NONE => array(
+        0 => array(
+          'amount' => 1000,
+          'currency_code' => 'USD',
+        ),
+      ),
+    ), array(commerce_currency_format(1000, 'USD')), 'on a field that holds one value.');
+
+    // Testing synonymFind() method.
+    $this->assertSynonymsFind(array(), db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $this->randomName()), 'on empty field');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(),
+      'found_synonyms' => array(),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $this->randomName()), 'on a field without values');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $this->randomName()), 'on a field with a value but searching for another string');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(commerce_currency_format(1000, 'USD')),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 1000), 'on a field with a single value searching for that string');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+          array(
+            'amount' => 2000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(commerce_currency_format(1000, 'USD')),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 1000), 'on a field with 2 values searching for one of those 2 values');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+          array(
+            'amount' => 2000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(commerce_currency_format(1000, 'USD')),
+    );
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 100,
+            'currency_code' => 'USD',
+          ),
+          array(
+            'amount' => 200,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 1000), 'on 2 fields with 2 values each searching for one of those values');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(commerce_currency_format(1000, 'USD')),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, '%' . db_like(10) . '%', 'LIKE'), 'on a field with a value searching for a string LIKE the %value%');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+          array(
+            'amount' => 100,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(
+        commerce_currency_format(1000, 'USD'),
+        commerce_currency_format(100, 'USD'),
+      ),
+    );
+    $this->assertSynonymsFind($meta_data, db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, db_like(100) . '%', 'LIKE'), 'on a field with 2 similar values searching a string like %both values%');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+          array(
+            'amount' => 2000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(
+        commerce_currency_format(1000, 'USD'),
+        commerce_currency_format(2000, 'USD'),
+      ),
+    );
+    $condition = db_or()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 1000)
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 2000);
+    $this->assertSynonymsFind($meta_data, $condition, 'on a field with 2 values searching for value1 or value2');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+          array(
+            'amount' => 2000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(commerce_currency_format(1000, 'USD')),
+    );
+    $condition = db_and()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 1000)
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, '%' . db_like(10) . '%', 'LIKE');
+    $this->assertSynonymsFind($meta_data, $condition, 'on a field with 2 values searching for value1 and LIKE value1%');
+
+    $meta_data = array();
+    $meta_data[] = array(
+      'items' => array(
+        LANGUAGE_NONE => array(
+          array(
+            'amount' => 1000,
+            'currency_code' => 'USD',
+          ),
+          array(
+            'amount' => 2000,
+            'currency_code' => 'USD',
+          ),
+        ),
+      ),
+      'found_synonyms' => array(
+        commerce_currency_format(1000, 'USD'),
+        commerce_currency_format(2000, 'USD'),
+      ),
+    );
+    $condition = db_or()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 1000)
+      ->condition(db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 2000)->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, '%' . db_like(20) . '%', 'LIKE'));
+    $this->assertSynonymsFind($meta_data, $condition, 'on a field with 2 values searching for (value1 or (value2 AND value2%))');
+  }
+}

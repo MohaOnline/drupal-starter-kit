@@ -1,0 +1,29 @@
+name = Synonyms
+description = "Provides synonyms feature for Drupal entities."
+package = Synonyms
+core = 7.x
+dependencies[] = ctools
+dependencies[] = entity
+configure = admin/structure/synonyms
+
+test_dependencies[] = entityreference:entityreference
+
+files[] = synonyms.test
+
+files[] = includes/SynonymsBehavior.interface.inc
+files[] = includes/TextSynonymsBehavior.class.inc
+files[] = includes/TaxonomySynonymsBehavior.class.inc
+files[] = includes/EntityReferenceSynonymsBehavior.class.inc
+
+files[] = views/synonyms.views.inc
+files[] = views/synonyms_views_plugin_argument_validate_taxonomy_term.inc
+files[] = views/synonyms_views_handler_filter_term_tid.inc
+files[] = views/synonyms_views_handler_field_synonyms.inc
+files[] = views/synonyms_views_handler_filter_entityreference_synonyms.inc
+
+; Information added by Drupal.org packaging script on 2017-06-30
+version = "7.x-1.6"
+core = "7.x"
+project = "synonyms"
+datestamp = "1498833845"
+

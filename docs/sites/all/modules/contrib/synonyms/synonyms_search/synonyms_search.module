@@ -1,0 +1,126 @@
+<?php
+
+/**
+ * @file
+ * Provides synonyms integration with searching.
+ */
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function synonyms_search_ctools_plugin_directory($owner, $plugin_type) {
+  switch ($owner) {
+    case 'synonyms':
+      switch ($plugin_type) {
+        case 'behavior':
+          return 'plugins/' . $plugin_type;
+      }
+      break;
+  }
+}
+
+/**
+ * Implements hook_taxonomy_term_update().
+ */
+function synonyms_search_taxonomy_term_update($term) {
+  // If we notice at least some change in synonyms of this term, we want to
+  // trigger search re-indexing of nodes, where this term is referenced, since
+  // change in term synonyms affects nodes ranking in the search.
+  if (isset($term->original)) {
+    $bundle = field_extract_bundle('taxonomy_term', $term);
+    $behavior_implementations = synonyms_behavior_get('search', 'taxonomy_term', $bundle, TRUE);
+
+    $current_search_synonyms = array();
+    $previous_search_synonyms = array();
+
+    foreach  ($behavior_implementations as $behavior_implementation) {
+      $current_search_synonyms = array_merge($current_search_synonyms, $behavior_implementation['object']->extractSynonyms($term));
+      $previous_search_synonyms = array_merge($previous_search_synonyms, $behavior_implementation['object']->extractSynonyms($term->original));
+    }
+    $diff = array_diff($current_search_synonyms, $previous_search_synonyms);
+    if (!empty($diff) || count($current_search_synonyms) != count($previous_search_synonyms)) {
+      module_load_include('inc', 'synonyms_search', 'synonyms_search.pages');
+      synonyms_search_reindex_nodes_by_terms(array($term->tid));
+    }
+  }
+}
+
+/**
+ * Implements hook_node_update_index().
+ */
+function synonyms_search_node_update_index($node) {
+  $output = array();
+  foreach (field_info_instances('node', $node->type) as $instance) {
+    // We go a field by field looking for taxonomy term reference or entity
+    // reference of taxonomy term type and if that vocabulary has enabled search
+    // synonyms, we add them to the search index.
+    // TODO: implement this through foreign keys information. See
+    // term_merge_fields_with_foreign_key() function.
+    $field_info = field_info_field($instance['field_name']);
+    if ($field_info['type'] == 'taxonomy_term_reference') {
+      $terms = field_get_items('node', $node, $instance['field_name']);
+      if (is_array($terms) && !empty($terms)) {
+        foreach ($terms as $v) {
+          $output[] = $v['tid'];
+        }
+      }
+    }
+    if ($field_info['type'] == 'entityreference' && $field_info['settings']['target_type'] == 'taxonomy_term') {
+      $terms = field_get_items('node', $node, $instance['field_name']);
+      if (is_array($terms) && !empty($terms)) {
+        foreach ($terms as $v) {
+          $output[] = $v['target_id'];
+        }
+      }
+    }
+  }
+
+  if (!empty($output)) {
+    $terms = taxonomy_term_load_multiple($output);
+    $output = array();
+    foreach ($terms as $term) {
+      $bundle = field_extract_bundle('taxonomy_term', $term);
+      $behavior_implementations = synonyms_behavior_get('search', 'taxonomy_term', $bundle, TRUE);
+      foreach ($behavior_implementations as $implementation) {
+        $output = array_merge($output, $implementation['object']->extractSynonyms($term));
+      }
+    }
+  }
+
+  return empty($output) ? '' : '<strong>' . implode($output, ', ') . '</strong>';
+}
+
+/**
+ * Implements hook_term_update_index().
+ */
+function synonyms_search_term_update_index($term) {
+  $bundle = taxonomy_vocabulary_load($term->vid);
+  $bundle = field_extract_bundle('taxonomy_term', $bundle);
+  $behavior_implementations = synonyms_behavior_get('search', 'taxonomy_term', $bundle, TRUE);
+
+  $synonyms = array();
+  foreach ($behavior_implementations as $implementation) {
+    $synonyms = array_merge($synonyms, $implementation['object']->extractSynonyms($term));
+  }
+  return implode(', ', $synonyms);
+}
+
+/**
+ * Implements hook_synonyms_provider_field_behavior_implementation_info().
+ */
+function synonyms_search_synonyms_provider_field_behavior_implementation_info($behavior) {
+  switch ($behavior) {
+    case 'search':
+      return array(
+        'number_integer' => 'SearchTextSynonymsBehavior',
+        'number_decimal' => 'SearchTextSynonymsBehavior',
+        'number_float' => 'SearchTextSynonymsBehavior',
+        'text' => 'SearchTextSynonymsBehavior',
+        'taxonomy_term_reference' => 'SearchTaxonomySynonymsBehavior',
+        'entityreference' => 'SearchEntityReferenceSynonymsBehavior',
+        'commerce_product_reference' => 'SearchCommerceProductReferenceSynonymsBehavior',
+      );
+      break;
+  }
+  return array();
+}

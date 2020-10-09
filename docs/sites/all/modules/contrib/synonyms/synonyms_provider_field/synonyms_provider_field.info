@@ -1,0 +1,20 @@
+name = Field Synonyms Provider
+description = "Provides synonyms from entity fields."
+package = Synonyms
+core = 7.x
+dependencies[] = synonyms
+dependencies[] = field
+
+files[] = includes/AbstractFieldSynonymsBehavior.class.inc
+files[] = includes/EntityReferenceSynonymsBehavior.class.inc
+files[] = includes/TaxonomySynonymsBehavior.class.inc
+files[] = includes/TextSynonymsBehavior.class.inc
+
+files[] = synonyms_provider_field.test
+
+; Information added by Drupal.org packaging script on 2017-06-30
+version = "7.x-1.6"
+core = "7.x"
+project = "synonyms"
+datestamp = "1498833845"
+

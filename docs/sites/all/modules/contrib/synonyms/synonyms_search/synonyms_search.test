@@ -1,0 +1,457 @@
+<?php
+
+/**
+ * @file
+ * Tests for the Synonyms Search module.
+ */
+
+/**
+ * Base class for tests of Synonyms Search module.
+ */
+abstract class AbstractSearchSynonymsWebTestCase extends SynonymsWebTestCase {
+
+  /**
+   * What search type is being tested.
+   *
+   * @var string
+   */
+  protected $search_type = 'node';
+
+  /**
+   * Array of terms that will be used for testing.
+   *
+   * @var array
+   */
+  protected $terms = array();
+
+  /**
+   * SetUp method.
+   */
+  public function setUp($modules = array()) {
+    $this->behavior_implementation['behavior'] = 'search';
+
+    array_unshift($modules, 'synonyms_search');
+    parent::setUp($modules);
+
+    // Create a few terms and synonyms.
+    $term = (object) array(
+      'vid' => $this->vocabulary->vid,
+      'name' => $this->randomName(),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    taxonomy_term_save($term);
+    $this->terms['no_synonyms'] = $term;
+
+    $term = (object) array(
+      'vid' => $this->vocabulary->vid,
+      'name' => $this->randomName(),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    taxonomy_term_save($term);
+    $this->terms['one_synonym'] = $term;
+
+    $term = (object) array(
+      'vid' => $this->vocabulary->vid,
+      'name' => $this->randomName(),
+      $this->fields['enabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+          array('value' => $this->randomName()),
+        ),
+      ),
+      $this->fields['disabled']['field']['field_name'] => array(
+        LANGUAGE_NONE => array(
+          array('value' => $this->randomName()),
+        ),
+      ),
+    );
+    taxonomy_term_save($term);
+    $this->terms['two_synonyms'] = $term;
+  }
+
+  /**
+   * Retrieve search results.
+   *
+   * @param $keyword string
+   *   Keyword to supply to the search mechanism
+   *
+   * @return array
+   *   Array of HTML search results. Each element in this array is a single
+   *   search result represented in HTML code as Drupal search mechanism outputs
+   *   it
+   */
+  protected function getSearchResults($keyword) {
+    $response = $this->drupalGet('search/' . $this->search_type . '/' . $keyword);
+    $matches = array();
+    preg_match_all('#\<li[^>]+class="search-result"[^>]*\>(.*?)\</li\>#si', $response, $matches);
+    return $matches[1];
+  }
+}
+
+/**
+ * Test Synonyms module integration with Drupal search functionality for nodes.
+ */
+class NodeSearchSynonymsWebTestCase extends AbstractSearchSynonymsWebTestCase {
+
+  /**
+   * GetInfo method.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Synonyms node search integration',
+      'description' => 'Ensure that Synonyms module correctly integrates with the Drupal search functionality.',
+      'group' => 'Synonyms',
+    );
+  }
+
+  /**
+   * SetUp method.
+   */
+  public function setUp($modules = array()) {
+    $modules[] = 'entityreference';
+    parent::setUp($modules);
+
+    // Creating a test content type.
+    $this->drupalPost('admin/structure/types/add', array(
+      'name' => 'Synonyms Test Content',
+      'type' => 'synonyms_test_content',
+    ), 'Save content type');
+  }
+
+  /**
+   * Test searching nodes by a term synonym.
+   *
+   * Since logically term and its synonyms represent the same entity, the idea
+   * is that searching by a term synonym should trigger all content referencing
+   * that term to be included in search results. Additionally we test that when
+   * a synonym is deleted/edited in a term, corresponding content is no longer
+   * encountered when searched by ex-synonym.
+   */
+  public function testSearchTermSynonym() {
+    // Attaching term reference field to the new content type.
+    $field = array(
+      'type' => 'taxonomy_term_reference',
+      'field_name' => 'synonyms_term_enabled',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => $this->vocabulary->machine_name,
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    $field = field_create_field($field);
+
+    $instance = array(
+      'field_name' => $field['field_name'],
+      'entity_type' => 'node',
+      'bundle' => 'synonyms_test_content',
+      'label' => 'Synonym Terms',
+    );
+
+    field_create_instance($instance);
+
+    // Creating a node, which references all the terms we have.
+    $node = (object) array(
+      'type' => 'synonyms_test_content',
+      'title' => $this->randomName(),
+      'synonyms_term_enabled' => array(LANGUAGE_NONE => array(
+        array('tid' => $this->terms['no_synonyms']->tid),
+        array('tid' => $this->terms['one_synonym']->tid),
+        array('tid' => $this->terms['two_synonyms']->tid),
+      )),
+    );
+    node_save($node);
+
+    // Rebuilding Search index.
+    $this->cronRun();
+
+    foreach ($this->terms as $k => $term) {
+      $this->assertSearchResults($term->name, array($node), 'Searching by name of the term ' . $k);
+      $items = field_get_items('taxonomy_term', $term, $this->fields['disabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $delta => $item) {
+          $this->assertSearchResults($item['value'], array(), 'Searching by not enabled search integration field value #' . $delta . ' of term ' . $k);
+        }
+      }
+
+      $items = field_get_items('taxonomy_term', $term, $this->fields['enabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $delta => $item) {
+          $this->assertSearchResults($item['value'], array($node), 'Searching by synonym #' . $delta . ' of the term ' . $k);
+        }
+      }
+    }
+
+    // Removing a synonym from the term. Then asserting node got re-indexed with
+    // new values of synonyms.
+    $deleted_synonym = array_pop($this->terms['one_synonym']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE]);
+    taxonomy_term_save($this->terms['one_synonym']);
+    $this->cronRun();
+    $this->assertSearchResults($deleted_synonym['value'], array(), 'Searching by recently deleted synonym of a taxonomy term yields no results.');
+
+    // Editing a synonym in a term. Then asserting node got re-indexed with new
+    // values of synonyms.
+    $ex_synonym = $this->terms['two_synonyms']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'];
+    $this->terms['two_synonyms']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'] = $this->randomName();
+    taxonomy_term_save($this->terms['two_synonyms']);
+    $this->cronRun();
+    $this->assertSearchResults($ex_synonym, array(), 'Searching by recently changed synonym of a taxonomy term yields no results.');
+
+    // We disable entire field from search integration and make sure for all
+    // synonyms search results are empty.
+    synonyms_behavior_implementation_delete($this->behavior_implementation);
+    $this->cronRun();
+    foreach ($this->terms as $k => $term) {
+      $items = field_get_items('taxonomy_term', $term, $this->fields['enabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $synonym) {
+          $this->assertSearchResults($synonym['value'], array(), 'Searching by ' . $k . ' term synonym, which field was recently disabled from search behavior yields no results.');
+        }
+      }
+    }
+  }
+
+  /**
+   * Test searching nodes by a term synonym when referenced by entity reference.
+   *
+   * This test pretty much does the same thing as the testSearchTermSynonym()
+   * with the only different that the terms are referenced through entity
+   * reference field type.
+   */
+  public function testSearchTermSynonymEntityReference() {
+    // Attaching entity reference field to the new content type.
+    $field = array(
+      'type' => 'entityreference',
+      'field_name' => 'synonyms_term_enabled',
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'target_type' => 'taxonomy_term',
+        'handler_settings' => array(
+          'target_bundles' => array($this->vocabulary->machine_name),
+        ),
+      ),
+    );
+    $field = field_create_field($field);
+
+    $instance = array(
+      'field_name' => $field['field_name'],
+      'entity_type' => 'node',
+      'bundle' => 'synonyms_test_content',
+      'label' => 'Synonym Terms',
+    );
+
+    field_create_instance($instance);
+
+    // Creating a node, which references all the terms we have.
+    $node = (object) array(
+      'type' => 'synonyms_test_content',
+      'title' => $this->randomName(),
+      'synonyms_term_enabled' => array(LANGUAGE_NONE => array(
+        array('target_id' => $this->terms['no_synonyms']->tid),
+        array('target_id' => $this->terms['one_synonym']->tid),
+        array('target_id' => $this->terms['two_synonyms']->tid),
+      )),
+    );
+    node_save($node);
+
+    // Rebuilding Search index.
+    $this->cronRun();
+
+    foreach ($this->terms as $k => $term) {
+      $this->assertSearchResults($term->name, array($node), 'Searching by name of the term ' . $k);
+      $items = field_get_items('taxonomy_term', $term, $this->fields['disabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $delta => $item) {
+          $this->assertSearchResults($item['value'], array(), 'Searching by not enabled search integration field value #' . $delta . ' of term ' . $k);
+        }
+      }
+
+      $items = field_get_items('taxonomy_term', $term, $this->fields['enabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $delta => $item) {
+          $this->assertSearchResults($item['value'], array($node), 'Searching by synonym #' . $delta . ' of the term ' . $k);
+        }
+      }
+    }
+
+    // Removing a synonym from the term. Then asserting node got re-indexed with
+    // new values of synonyms.
+    $deleted_synonym = array_pop($this->terms['one_synonym']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE]);
+    taxonomy_term_save($this->terms['one_synonym']);
+    $this->cronRun();
+    $this->assertSearchResults($deleted_synonym['value'], array(), 'Searching by recently deleted synonym of a taxonomy term yields no results.');
+
+    // Editing a synonym in a term. Then asserting node got re-indexed with new
+    // values of synonyms.
+    $ex_synonym = $this->terms['two_synonyms']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'];
+    $this->terms['two_synonyms']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'] = $this->randomName();
+    taxonomy_term_save($this->terms['two_synonyms']);
+    $this->cronRun();
+    $this->assertSearchResults($ex_synonym, array(), 'Searching by recently changed synonym of a taxonomy term yields no results.');
+
+    // We disable entire field from search integration and make sure for all
+    // synonyms search results are empty.
+    synonyms_behavior_implementation_delete($this->behavior_implementation);
+    $this->cronRun();
+    foreach ($this->terms as $k => $term) {
+      $items = field_get_items('taxonomy_term', $term, $this->fields['enabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $synonym) {
+          $this->assertSearchResults($synonym['value'], array(), 'Searching by ' . $k . ' term synonym, which field was recently disabled from search behavior yields no results.');
+        }
+      }
+    }
+  }
+
+  /**
+   * Assert search results.
+   *
+   * @param $keyword string
+   *   Keyword to supply to the search mechanism
+   * @param $results array
+   *   Array of fully loaded nodes that are expected to be on search results
+   * @param $message string
+   *   Drupal assertion message to display on test results page
+   */
+  protected function assertSearchResults($keyword, $results, $message) {
+    $matches = $this->getSearchResults($keyword);
+    if (count($matches) != count($results)) {
+      $this->fail($message);
+      return;
+    }
+    $matches = implode('', $matches);
+    foreach ($results as $node) {
+      if (strpos($matches, 'node/' . $node->nid) === FALSE) {
+        $this->fail($message);
+        return;
+      }
+    }
+    $this->pass($message);
+  }
+}
+
+/**
+ * Test Synonyms module integration with Drupal search for taxonomy terms.
+ */
+class TermSearchSynonymsWebTestCase extends AbstractSearchSynonymsWebTestCase {
+
+  protected $search_type = 'term';
+
+  /**
+   * GetInfo method.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Synonyms term search integration',
+      'description' => 'Ensure that Synonyms module correctly integrates with the Term Search module.',
+      'group' => 'Synonyms',
+    );
+  }
+
+  /**
+   * SetUp method.
+   */
+  public function setUp($modules = array()) {
+    $modules[] = 'term_search';
+    parent::setUp($modules);
+    $active_searches = variable_get('search_active_modules', array('node', 'user'));
+    $active_searches[] = 'term_search';
+    variable_set('search_active_modules', $active_searches);
+  }
+
+  /**
+   * Test searching terms by their synonyms.
+   */
+  public function testSearchTermSynonym() {
+    // Rebuilding Search index.
+    $this->cronRun();
+
+    foreach ($this->terms as $k => $term) {
+      $this->assertSearchResults($term->name, array($term), 'Searching by name of the term ' . $k);
+      $items = field_get_items('taxonomy_term', $term, $this->fields['disabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $delta => $item) {
+          $this->assertSearchResults($item['value'], array(), 'Searching by not enabled search integration field value #' . $delta . ' of term ' . $k);
+        }
+      }
+
+      $items = field_get_items('taxonomy_term', $term, $this->fields['enabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $delta => $item) {
+          $this->assertSearchResults($item['value'], array($term), 'Searching by synonym #' . $delta . ' of the term ' . $k);
+        }
+      }
+    }
+
+    // Removing a synonym from the term. Then asserting it got re-indexed with
+    // new values of synonyms.
+    $deleted_synonym = array_pop($this->terms['one_synonym']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE]);
+    taxonomy_term_save($this->terms['one_synonym']);
+    $this->cronRun();
+    $this->assertSearchResults($deleted_synonym['value'], array(), 'Searching by recently deleted synonym of a taxonomy term yields no results.');
+
+    // Editing a synonym in a term. Then asserting it got re-indexed with new
+    // values of synonyms.
+    $ex_synonym = $this->terms['two_synonyms']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'];
+    $this->terms['two_synonyms']->{$this->fields['enabled']['field']['field_name']}[LANGUAGE_NONE][0]['value'] = $this->randomName();
+    taxonomy_term_save($this->terms['two_synonyms']);
+    $this->cronRun();
+    $this->assertSearchResults($ex_synonym, array(), 'Searching by recently changed synonym of a taxonomy term yields no results.');
+
+    // We disable entire field from search integration and make sure for all
+    // synonyms search results are empty.
+    synonyms_behavior_implementation_delete($this->behavior_implementation);
+    $this->cronRun();
+    foreach ($this->terms as $k => $term) {
+      $items = field_get_items('taxonomy_term', $term, $this->fields['enabled']['field']['field_name']);
+      if (is_array($items)) {
+        foreach ($items as $synonym) {
+          $this->assertSearchResults($synonym['value'], array(), 'Searching by ' . $k . ' term synonym, which field was recently disabled from search behavior yields no results.');
+        }
+      }
+    }
+  }
+
+  /**
+   * Assert search results.
+   *
+   * @param $keyword string
+   *   Keyword to supply to the search mechanism
+   * @param $results array
+   *   Array of fully loaded terms that are expected to be on search results
+   * @param $message string
+   *   Drupal assertion message to display on test results page
+   */
+  protected function assertSearchResults($keyword, $results, $message) {
+    $matches = $this->getSearchResults($keyword);
+    if (count($matches) != count($results)) {
+      $this->fail($message);
+      return;
+    }
+    $matches = implode('', $matches);
+    foreach ($results as $term) {
+      if (strpos($matches, 'taxonomy/term/' . $term->tid) === FALSE) {
+        $this->fail($message);
+        return;
+      }
+    }
+    $this->pass($message);
+  }
+
+}

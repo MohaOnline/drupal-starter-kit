@@ -1,0 +1,25 @@
+name = Synonyms Search
+description = "Provides synonyms integration with searching."
+package = Synonyms
+core = 7.x
+dependencies[] = synonyms
+dependencies[] = search
+dependencies[] = taxonomy
+
+test_dependencies[] = entityreference:entityreference
+test_dependencies[] = term_search:term_search
+
+files[] = synonyms_search.test
+
+files[] = includes/SearchSynonymsBehavior.interface.inc
+files[] = includes/SearchTextSynonymsBehavior.class.inc
+files[] = includes/SearchTaxonomySynonymsBehavior.class.inc
+files[] = includes/SearchEntityReferenceSynonymsBehavior.class.inc
+files[] = includes/SearchCommerceProductReferenceSynonymsBehavior.class.inc
+
+; Information added by Drupal.org packaging script on 2017-06-30
+version = "7.x-1.6"
+core = "7.x"
+project = "synonyms"
+datestamp = "1498833845"
+

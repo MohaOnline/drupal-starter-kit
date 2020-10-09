@@ -1,0 +1,53 @@
+The Synonyms module provides various functionality targeted at handling synonymous (similar) spelling of the same name. This functionality is provided for all Drupal entities.
+
+There are few key concepts tightly integrated into Synonyms module that are worth knowing for the end user. They are:
+<dt>Storage abstraction</dt>
+<dd>Synonyms can be stored in any way your business logic requires it... It may go from fields attached to entities down to custom tables and then all the way up to querying an external API. Putting it simple, you can keep your synonyms in the most convenient way for you.</dd>
+<dt>Synonyms behaviors</dt>
+<dd>Having a list of synonyms doesn't really help much; what you want to do is something productive with them. That's where synonyms behaviors whatsoever come on stage. They are abstract self sufficient units of behavior operating on top of synonyms data that do something productive with it. For example, here we have the autocomplete behavior, which introduces autocomplete widgets that do look up not only by entity name but by its synonyms too. Synonyms behaviors can be added through other contributed modules, you're not locked down to what Synonyms module has to offer you.</dd>
+<dt>Synonyms behavior implementations</dt>
+<dd>Lastly, here is yet more abstract unit. Behavior implementations bridge between existing synonyms behaviors and the synonyms storage abstraction. Imagine as if you had a bipartite graph, one side of the graph are behaviors, the other side is storage abstractions and lastly the edges of this graph would be implementations of behaviors for specific storage.</dd>
+
+<p>Let's cover each of these important concepts in details.</p>
+
+<h2>Synonyms behaviors</h2>
+
+<p>Synonyms behaviors are some useful for the end user features that leverage the synonyms data. Synonyms module ships with the following behaviors:</p>
+<ul>
+    <li>Autocomplete: allows synonyms to participate in the synonyms friendly autocomplete functionality.</li>
+    <li>Select: allows synonyms to participate in the synonyms friendly select.</li>
+    <li>Search: (provided through "Synonyms Search" submodule) behavior that integrates synonyms with Search module, i.e. your nodes can be found not only by names of the terms they reference, but also by the synonyms of those terms. It also integrates with <a href="https://www.drupal.org/project/term_search">Term Search</a> module in the same manner: when searching for terms you can also find them by their synonyms.</li>
+</ul>
+
+<p>Other modules can introduce their own behaviors. If you are interested in introducing your own behavior, refer to <a href="&topic:synonyms/synonyms_behaviors&">synonyms behaviors</a> page.</p>
+
+<h2>Storage abstraction</h2>
+
+As stated above, your synonyms can be stored in about any kind of storage. On the other hand, no matter where they are stored, they can be used in synonyms behaviors and treated equally independently of their origin. Such decoupling of synonyms storage and synonyms manipulation gives an extra degree of freedom. Synonyms module provides the following types of storage:
+
+<dt>Entity properties</dt>
+<dd>As long as your entity property is stored in database, "Entity Property Synonyms Provider" submodule can extract them from there and give them good usage with synonyms behaviors. One good example would be to enable user's "email" field in "autocomplete" behavior, so users can find one another through autocomplete widget not only by username but by the email as well.</dd>
+<dt>Fields</dt>
+<dd>Many entities may have fields attached to them. "Field Synonyms Provider" submodule exposes field values as possible synonyms for the entities they belong to. Again, a good example would be to introduce a text field "Typos" and have it enabled in "autocomplete" behavior. This way you can cover at least the most common misspellings in your autocomplete widget.</dd>
+<dt>Anything else</dt>
+<dd>Synonyms module is built to be easily extended to cover custom needs of its client base. If you want to store your synonyms elsewhere, you can do so with a minimal required amount of code. Refer to <a href="&topic:synonyms/synonyms_behavior_implementation&">writing custom behavior implementation</a> for documentation on how to do it.</dd>
+
+<p>The "Field Synonyms Provider" submodule acts as a framework that exposes values from different field types into Synonyms core infrastructure. Out of the box this submodule covers the following field types:</p>
+<ul>
+    <li>Text</li>
+    <li>Term reference</li>
+    <li>Entity reference</li>
+    <li>Number</li>
+    <li>Decimal</li>
+    <li>Float</li>
+    <li>Commerce product reference (you'll have to additionally enable "Synonyms Commerce" submodule for this one)</li>
+    <li>Commerce price (you'll have to additionally enable "Synonyms Commerce" submodule for this one)</li>
+</ul>
+
+<p>Other modules may extend this list by implementing behaviors for other field types. Refer to <a href="&topic:synonyms/synonyms_behavior_implementation_field_based&">writing custom field-based behavior implementation</a> for more details.</p>
+
+<h2>Behavior Implementations</h2>
+
+<p>Behavior implementations connect behaviors to different types of synonyms storage. Out of the box Synonyms module provides enough behavior implementations to probably cover majority of use cases. As stated above, be it not the case, you can always extend coverage further through implementing custom behavior implementations in your own module. Feel free to study the hooks at synonyms.api.php file. Also, you may find it useful to read about <a href="&topic:synonyms/synonyms_behavior_implementation&">writing custom behavior implementation</a>.</p>
+
+<p>Lastly, you as a website admin can enable or disable certain behavior implementations to participate in certain behaviors. So you have full control over how things get set up in your website. Additionally, some behaviors may provide configs, for example, the autocomplete behavior will ask you with what wording to suggest an entity if it was matched by one of its synonyms.</p>

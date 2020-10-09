@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * @file
+ * Provides synonyms from entity fields.
+ */
+
+/**
+ * Implements hook_field_delete_instance().
+ */
+function synonyms_provider_field_field_delete_instance($instance) {
+  // Remove, if necessary, any synonyms behaviors enabled on this instance.
+  foreach (synonyms_behavior_get_all_enabled($instance['entity_type'], $instance['bundle'], synonyms_provider_field_provider_name(field_info_field($instance['field_name']))) as $behavior_implementation) {
+    synonyms_behavior_implementation_delete($behavior_implementation);
+  }
+}
+
+/**
+ * Implements hook_synonyms_provider_info().
+ */
+function synonyms_provider_field_synonyms_behavior_implementation_info($entity_type, $bundle, $behavior) {
+  $providers = array();
+
+  // Proxy the request down to any module that ships a synonyms behavior
+  // implementation based on a field.
+  $field_providers = module_invoke_all('synonyms_provider_field_behavior_implementation_info', $behavior);
+  drupal_alter('synonyms_provider_field_behavior_implementation_info', $field_providers, $behavior);
+
+  $instances = field_info_instances($entity_type, $bundle);
+
+  foreach ($instances as $instance) {
+    $field = field_info_field($instance['field_name']);
+    if (isset($field_providers[$field['type']])) {
+      $providers[] = array(
+        'provider' => synonyms_provider_field_provider_name($field),
+        'label' => $instance['label'],
+        'class' => $field_providers[$field['type']],
+      );
+    }
+  }
+
+  return $providers;
+}
+
+/**
+ * Implements hook_synonyms_provider_field_behavior_implementation_info().
+ */
+function synonyms_provider_field_synonyms_provider_field_behavior_implementation_info($behavior) {
+  switch ($behavior) {
+    case 'autocomplete':
+    case 'select':
+      return array(
+        'number_integer' => 'TextSynonymsBehavior',
+        'number_decimal' => 'TextSynonymsBehavior',
+        'number_float' => 'TextSynonymsBehavior',
+        'text' => 'TextSynonymsBehavior',
+        'taxonomy_term_reference' => 'TaxonomySynonymsBehavior',
+        'entityreference' => 'EntityReferenceSynonymsBehavior',
+      );
+      break;
+  }
+  return array();
+}
+
+/**
+ * Construct synonyms provider name out of underlying field.
+ *
+ * This function is inverse of synonyms_provider_field_field_name().
+ *
+ * @param array $field
+ *   Field definition array whose provider name should be constructed
+ *
+ * @return string
+ *   Provider name that corresponds to the $field
+ *
+ * @see synonyms_provider_field_field_name()
+ */
+function synonyms_provider_field_provider_name($field) {
+  return 'synonyms_provider_field_' . $field['field_name'];
+}
+
+/**
+ * Reconstruct field name from the name of its provider.
+ *
+ * This function is inverse of synonyms_provider_field_provider_name().
+ *
+ * @param string $provider
+ *   Name of the provider whose underlying field should be reconstructed
+ *
+ * @return string
+ *   Field name that corresponds to the $provider
+ *
+ * @see synonyms_provider_field_provider_name()
+ */
+function synonyms_provider_field_field_name($provider) {
+  return drupal_substr($provider, drupal_strlen('synonyms_provider_field_'));
+}

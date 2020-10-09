@@ -1,0 +1,98 @@
+<?php
+
+/**
+ * @file
+ * Provides synonyms from entity properties.
+ */
+
+/**
+ * Implements hook_synonyms_behavior_implementation_info().
+ */
+function synonyms_provider_property_synonyms_behavior_implementation_info($entity_type, $bundle, $behavior) {
+  $providers = array();
+
+  switch ($behavior) {
+    case 'select':
+    case 'autocomplete':
+    case 'search':
+      $entity_info = entity_get_info($entity_type);
+      $class = $behavior == 'search' ? 'SearchPropertySynonymsBehavior' : 'PropertySynonymsBehavior';
+
+      if ($entity_info['base table'] && isset($entity_info['entity keys']['id'])) {
+        $entity_keys = array_filter($entity_info['entity keys']);
+        $properties = entity_get_property_info($entity_type);
+        $properties = $properties['properties'];
+
+        // Label is the label of an entity, therefore it may not be a synonym.
+        if (isset($entity_keys['label'])) {
+          unset($properties[$entity_keys['label']]);
+          unset($entity_keys['label']);
+        }
+
+        // Get all defined entity keys. We prefer them from entity keys rather
+        // than from entity properties, because in the former case we know what
+        // those keys represent (entity ID, bundle, etc), so we can give a bit
+        // more unified UI by maintaining the same labels for the same entity
+        // keys among different entity types.
+        foreach ($entity_keys as $entity_key => $column) {
+          if (in_array($column, $entity_info['schema_fields_sql']['base table'])) {
+            $providers[] = array(
+              'provider' => synonyms_provider_property_provider_name($column),
+              'label' => $entity_key,
+              'class' => $class,
+            );
+
+            unset($properties[$column]);
+          }
+        }
+
+        foreach ($properties as $property => $property_info) {
+          if (isset($property_info['schema field']) && $property_info['schema field']) {
+            $providers[] = array(
+              'provider' => synonyms_provider_property_provider_name($property_info['schema field']),
+              'label' => $property_info['label'],
+              'class' => $class,
+            );
+          }
+        }
+      }
+      break;
+  }
+
+  return $providers;
+}
+
+/**
+ * Construct synonyms provider name out of underlying property.
+ *
+ * This function is inverse of synonyms_provider_property_name().
+ *
+ * @param string $property
+ *   Entity property name whose provider name should be constructed
+ *
+ * @return string
+ *   Provider name that corresponds to the $property
+ *
+ * @see synonyms_provider_property_name()
+ */
+function synonyms_provider_property_provider_name($property) {
+  return 'synonyms_provider_property_' . $property;
+}
+
+/**
+ * Reconstruct entity property name from the name of its provider.
+ *
+ * This function is inverse of synonyms_provider_property_provider_name().
+ *
+ * @param string $provider
+ *   Name of the provider whose underlying entity property should be
+ *   reconstructed
+ *
+ * @return string
+ *   Entity property name that corresponds to the $provider
+ *
+ * @see synonyms_provider_property_provider_name()
+ */
+function synonyms_provider_property_name($provider) {
+  return drupal_substr($provider, drupal_strlen('synonyms_provider_property_'));
+}

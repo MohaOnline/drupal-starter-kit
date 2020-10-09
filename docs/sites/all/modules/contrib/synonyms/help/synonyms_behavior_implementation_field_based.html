@@ -1,0 +1,32 @@
+<p>If you are looking into implementing a behavior for storage that is eventually field-based, then you are on the right page! Since it is quite likely that many behavior implementations will be field-based, we have walked an extra mile to facilitate this particular case.</p>
+
+<p>First of all, there is <em>synonyms_provider_field</em> submodule that:</p>
+
+<ul>
+    <li>implements some behaviors for a set of common field types (see <a href="&topic:synonyms/synonyms&">this page</a> for particular details)</li>
+    <li>provides a good starting point for implementing behaviors for new field types</li>
+</ul>
+
+<p>Apparently, on this page we will focus on the 2nd item from the list above. If you implement a behavior for a new field type, then:</p>
+
+<ul>
+    <li>Implement behavior interface for a particular field type. You are encouraged to extend your PHP class from <em>AbstractFieldSynonymsBehavior</em>. It has a few methods that will make your life easy. However, you are nowhere close to be obliged to use that abstract class; only as long as it helps you to achieve your goal.</li>
+    <li>Notify <em>synonyms_provider_field</em> submodule about availability of a new field type.</li>
+</ul>
+
+<p>Now let us see each of the steps in further details.</p>
+
+<h2>Implementing behavior interface</h2>
+
+<p>Look up in behavior cTools plugin definition of your interest what interface it declares. The cTools plugin must be of type <em>behavior</em> owned by <em>synonyms</em> module. The interface is declared under the <em>interface</em> property of the plugin definition. Read the documentation for that interface and write a PHP class that implements this interface for your particular field type. We cannot give more precise instructions about this step, because it all depends on the interface of the behavior.</p>
+
+<h2>Notifying synonyms_provider_field submodule about your new implementation</h2>
+
+<p>For the purposes of such notification we have the following hooks in <em>synonyms_provider_field</em> submodule:</p>
+
+<ul>
+    <li><em>hook_synonyms_field_behavior_implementation_info()</em> to collect info from modules about field types available for synonyms behavior implementations</li>
+    <li><em>hook_synonyms_provider_field_behavior_implementation_info_alter()</em> to alter previously collected info from modules about field types available for synonyms behavior implementations</li>
+</ul>
+
+<p>Implementing either of the 2 hooks is highly straight forward, you will just inform the submodule about what field type is exposed to behavior implementation through what PHP class for a given behavior. Then the <em>synonyms_provider_field</em> submodule will analyze what fields are attached to what entity types and will convert this data into the format expected by the core Synonyms module. For more details, refer to <b>synonyms_provider_field.api.php</b> file.</p>

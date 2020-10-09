@@ -1,0 +1,112 @@
+<?php
+
+/**
+ * @file
+ * Test cases for Property synonyms provider module.
+ */
+
+/**
+ * Test PropertySynonymsBehavior class.
+ */
+class SynonymsProviderPropertyWebTestCase extends SynonymsWebTestCase {
+
+  /**
+   * GetInfo method.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'PropertySynonymsBehavior',
+      'description' => 'Ensure that the synonyms module extracts synonyms from entity properties correctly.',
+      'group' => 'Synonyms',
+    );
+  }
+
+  public function setUp($modules = array()) {
+    $this->behavior_implementation['behavior'] = 'autocomplete';
+    $this->behavior_implementation['provider'] = 'whatever';
+
+    array_unshift($modules, 'synonyms_provider_property');
+    parent::setUp($modules);
+
+    // We can't initialize this before parent::setUp() because we depend on
+    // synonyms_provider_property_provider_name() function.
+    synonyms_behavior_implementation_delete($this->behavior_implementation);
+    $this->behavior_implementation['provider'] = synonyms_provider_property_provider_name('tid');
+    synonyms_behavior_implementation_save($this->behavior_implementation);
+    foreach (synonyms_behavior_get($this->behavior_implementation['behavior'], $this->behavior_implementation['entity_type'], $this->behavior_implementation['bundle'], TRUE) as $behavior_implementation) {
+      if ($behavior_implementation['provider'] == $this->behavior_implementation['provider']) {
+        $this->behavior_implementation = $behavior_implementation;
+        break;
+      }
+    }
+  }
+
+  /**
+   * Test property-based synonyms provider.
+   */
+  public function testProperty() {
+    $term = (object) array(
+      'vid' => $this->vocabulary->vid,
+      'name' => $this->randomName(),
+    );
+    taxonomy_term_save($term);
+
+    $term2 = (object) array(
+      'vid' => $this->vocabulary->vid,
+      'name' => $this->randomName(),
+    );
+    taxonomy_term_save($term2);
+
+    // Test extractSynonyms() method.
+    $synonyms = $this->behavior_implementation['object']->extractSynonyms($term);
+    $this->assertIdentical($synonyms, array($term->tid), $this->behavior_implementation['class'] . '::extractSynonyms() passed.');
+
+    // Test synonymsFind() method.
+    $condition = db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, 0);
+    $this->assertSynonymsFind($condition, array(), 'on non-existing synonym');
+
+    $condition = db_and()->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $term->tid);
+    $this->assertSynonymsFind($condition, array(array('entity_id' => $term->tid, 'synonym' => $term->tid)), 'on a synonym');
+
+    $condition = db_and()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $term->tid)
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $term2->tid);
+    $this->assertSynonymsFind($condition, array(), 'on a synonym AND on another synonym');
+
+    $condition = db_or()
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $term->tid)
+      ->condition(AbstractSynonymsBehavior::COLUMN_SYNONYM_PLACEHOLDER, $term2->tid);
+    $this->assertSynonymsFind($condition, array(array('entity_id' => $term->tid, 'synonym' => $term->tid), array('entity_id' => $term2->tid, 'synonym' => $term2->tid)), 'on a synonym OR another synonym');
+  }
+
+  /**
+   * Supportive assert method.
+   *
+   * Assert results of synonymsFind() method.
+   *
+   * @param QueryConditionInterface $condition
+   *   Query condition to be passed on into synonymsFind() method
+   * @param array $standard
+   *   Expected result
+   * @param string $message
+   *   Optional additional assert message
+   */
+  protected function assertSynonymsFind(QueryConditionInterface $condition, $standard, $message = '') {
+    $map_standard = array();
+    foreach ($standard as $v) {
+      $map_standard[$v['entity_id']] = $v['synonym'];
+    }
+
+    $message = $this->behavior_implementation['class'] . '::synonymsFind() ' . $message;
+    $result = $this->behavior_implementation['object']->synonymsFind($condition);
+    $count = 0;
+    foreach ($result as $row) {
+      $count++;
+      if (!isset($map_standard[$row->entity_id]) || $map_standard[$row->entity_id] != $row->synonym) {
+        $this->fail($message);
+        return;
+      }
+    }
+    $this->assertEqual(count($map_standard), $count, $message);
+  }
+}

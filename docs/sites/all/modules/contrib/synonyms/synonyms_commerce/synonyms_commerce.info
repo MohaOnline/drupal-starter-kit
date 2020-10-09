@@ -1,0 +1,21 @@
+name = Synonyms Commerce
+description = "Provides synonyms integration with Commerce."
+package = Synonyms
+core = 7.x
+dependencies[] = synonyms_provider_field
+dependencies[] = commerce_product_reference
+dependencies[] = commerce_price
+
+test_dependencies[] = commerce:commerce_product_ui
+
+files[] = synonyms_commerce.test
+
+files[] = includes/CommerceProductReferenceSynonymsBehavior.class.inc
+files[] = includes/CommercePriceSynonymsBehavior.class.inc
+
+; Information added by Drupal.org packaging script on 2017-06-30
+version = "7.x-1.6"
+core = "7.x"
+project = "synonyms"
+datestamp = "1498833845"
+
