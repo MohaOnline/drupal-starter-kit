@@ -2119,7 +2119,7 @@ class PHPVideoToolkit {
           $image = imagecreatefrompng($file);
           break;
         default :
-          continue 1;
+          continue 2;
       }
 
 // 				the dimensions will/should be the same for each image however still best to check
