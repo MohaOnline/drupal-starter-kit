@@ -12,8 +12,8 @@ dependencies[] = drupal:system (>= 7.40)
 files[] = entity_example.test
 configure = admin/structure/entity_example_basic/manage
 
-; Information added by Drupal.org packaging script on 2019-07-25
+; Information added by Drupal.org packaging script on 2020-11-18
 version = "7.x-1.x-dev"
 core = "7.x"
 project = "examples"
-datestamp = "1564036988"
+datestamp = "1605715631"
