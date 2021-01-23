@@ -96,7 +96,7 @@ function media_oembed_default_callback($plugin, $url, $matches, $parameters) {
     }
   }
   else {
-    watchdog('media_oembed', 'Error fetching data from %url.', array('%url' => $fetch_url), WATCHDOG_ERROR);
+    watchdog('media_oembed', 'HTTP error @errorcode occurred when trying to fetch @remote. Error: @error', array('@errorcode' => $response->code, '@remote' => $fetch_url, '@error' => $response->error), WATCHDOG_ERROR);
   }
 
   return $embed;

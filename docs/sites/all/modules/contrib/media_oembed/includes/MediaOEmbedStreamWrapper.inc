@@ -90,49 +90,56 @@ class MediaOEmbedStreamWrapper extends MediaReadOnlyStreamWrapper {
         // Retrieve the original thumbnail.
         $result = drupal_http_request($url);
 
-        // Using the redirect URL's basename might guarantee a path with an
-        // appropriate file extension.
-        if (isset($result->redirect_url)) {
-          // If the redirect and original basenames are identical, do nothing.
-          if (drupal_basename($result->redirect_url) != drupal_basename($url)) {
-            $url .= '/'. drupal_basename($result->redirect_url);
+        if (!isset($result->error)) {
+          // Using the redirect URL's basename might guarantee a path with an
+          // appropriate file extension.
+          if (isset($result->redirect_url)) {
+            // If the redirect and original basenames are identical, do nothing.
+            if (drupal_basename($result->redirect_url) != drupal_basename($url)) {
+              $url .= '/' . drupal_basename($result->redirect_url);
+            }
           }
+
+          $parsed_url = parse_url($url);
+
+          // Store local copies of images using hostname, path and filename of
+          // source.
+          $path = $parsed_url['host'];
+          $path .= drupal_dirname($parsed_url['path']);
+
+          if (substr($path, -1) != '/') {
+            $path .= '/';
+          }
+
+          $filename = drupal_basename($parsed_url['path']);
+
+          // Compare the extension with an allow-list.
+          if (!preg_match('/\.(jpg|jpeg|gif|png)$/', $filename)) {
+            return FALSE;
+          }
+          $filename = file_munge_filename($filename, '', FALSE);
+
+          $path .= $filename;
+          $local_uri = file_stream_wrapper_uri_normalize('public://media-oembed/' . $path);
+
+          if (!file_exists($local_uri)) {
+            /// Ensure filesystem has directories for new file.
+            $dirname = drupal_dirname($local_uri);
+            file_prepare_directory($dirname, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+
+            // Save the file data to the local directory.
+            file_unmanaged_save_data($result->data, $local_uri);
+          }
+
+          // Store the path to the local thumbnail in metadata.
+          $file->metadata['media_oembed_local_thumbnail_path'] = $local_uri;
+
+          // Save the file to update the metadata.
+          file_save($file);
         }
-
-        $parsed_url = parse_url($url);
-
-        // Store local copies of images using hostname, path and filename of
-        // source.
-        $path = $parsed_url['host'];
-        $path .= drupal_dirname($parsed_url['path']);
-
-        if (substr($path, -1) != '/') {
-          $path .= '/';
+        else {
+          watchdog('media_oembed', 'HTTP error @errorcode occurred when trying to fetch @remote. Error: @error', array('@errorcode' => $result->code, '@remote' => $url, '@error' => $result->error), WATCHDOG_ERROR);
         }
-
-        $filename = drupal_basename($parsed_url['path']);
-
-        if (strpos($filename, '.') !== FALSE) {
-          $filename = file_munge_filename($filename, 'jpg jpeg gif png', FALSE);
-        }
-
-        $path .= $filename;
-        $local_uri = file_stream_wrapper_uri_normalize('public://media-oembed/'. $path);
-
-        if (!file_exists($local_uri)) {
-          /// Ensure filesystem has directories for new file.
-          $dirname = drupal_dirname($local_uri);
-          file_prepare_directory($dirname, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
-
-          // Save the file data to the local directory.
-          file_unmanaged_save_data($result->data, $local_uri);
-        }
-
-        // Store the path to the local thumbnail in metadata.
-        $file->metadata['media_oembed_local_thumbnail_path'] = $local_uri;
-
-        // Save the file to update the metadata.
-        file_save($file);
       }
     }
 
