@@ -1,4 +1,4 @@
-<div <?php print $attributes;?> class="<?php print $classes;?>">
+<div <?php print $attributes;?> class="<?php print $classes;?>" role="navigation" aria-label="<?php print t('Main navigation') ?>">
   <?php if($section == 'frontend') :?>
     <button data-target=".nav-collapse" data-toggle="collapse" class="btn btn-navbar tb-megamenu-button" type="button">
       <i class="fa fa-reorder"></i>

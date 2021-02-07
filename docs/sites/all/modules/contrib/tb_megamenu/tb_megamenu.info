@@ -8,9 +8,8 @@ dependencies[] = libraries
 dependencies[] = jquery_update
 configure = admin/structure/tb-megamenu
 
-; Information added by Drupal.org packaging script on 2015-08-28
-version = "7.x-1.0-rc2"
+; Information added by Drupal.org packaging script on 2020-12-09
+version = "7.x-1.0-rc3"
 core = "7.x"
 project = "tb_megamenu"
-datestamp = "1440756596"
-
+datestamp = "1607541538"

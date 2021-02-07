@@ -10,10 +10,12 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
       $(".tb-megamenu-column-inner .close").click(function() {
         $(this).parent().html("");
       });
-      $("#tb-megamenu-admin select").chosen({
-        disable_search_threshold : 15,
-        allow_single_deselect: true
-      });
+      if (jQuery().chosen) {
+        $("#tb-megamenu-admin select").chosen({
+          disable_search_threshold : 15,
+          allow_single_deselect: true
+        });
+      }
     }
   }
 })(jQuery);

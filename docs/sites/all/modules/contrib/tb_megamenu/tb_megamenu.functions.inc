@@ -11,11 +11,23 @@ function tb_megamenu_check_library($module, $name) {
     }
   }
   elseif ($library = drupal_get_library($module, $name)) {
-    if (!empty($library['css'])) {
-      $files['css'] = key($library['css']);
+    // Get all directories in /sites/all/libraries fully or partially matching $name.
+    $paths = [];
+    foreach (glob('sites/all/libraries/' . $name . '*') as $path) {
+      if (is_dir($path)) {
+        $paths[] = $path;
+      }
     }
-    if (!empty($library['js'])) {
-      $files['js'] = key($library['js']);
+    // If one or more directories were found use the one with the highest version number.
+    if (!empty($paths)) {
+      $library_path = max($paths);
+
+      if (!empty($library['css'])) {
+        $files['css'] = $library_path . key($library['css']);
+      }
+      if (!empty($library['js'])) {
+        $files['js'] = $library_path . key($library['js']);
+      }
     }
   }
   return !empty($files) ? $files : FALSE;
@@ -326,11 +338,15 @@ function tb_megamenu_sync_config($items, &$item_config, $_mlid, $section) {
         else {
           $row = 0;
           $col = 0;
-          while (isset($item_config['rows_content'][$row][$col]['col_content']) && $item_config['rows_content'][$row][$col]['col_content'][0]['type'] == 'block') {
+          while (isset($item_config['rows_content'][$row][$col]['col_content'])
+            && isset($item_config['rows_content'][$row][$col]['col_content'][0])
+            && $item_config['rows_content'][$row][$col]['col_content'][0]['type'] == 'block') {
             $row++;
           }
           tb_megamenu_insert_tb_item($item_config, $row, $col, $item);
-          $item_config['rows_content'][$row][$col]['col_config'] = array();
+          if (!isset($item_config['rows_content'][$row][$col]['col_config'])) {
+            $item_config['rows_content'][$row][$col]['col_config'] = array();
+          }
         }
       }
     }
@@ -338,20 +354,36 @@ function tb_megamenu_sync_config($items, &$item_config, $_mlid, $section) {
 }
 
 function tb_megamenu_insert_tb_item(&$item_config, $row, $col, $item) {
-  $i = 0;
+  $added = FALSE;
+  $new_col = array();
   $col_content = isset($item_config['rows_content'][$row][$col]['col_content']) ? $item_config['rows_content'][$row][$col]['col_content'] : array();
-  while ($i < count($col_content) && $col_content[$i]['weight'] < $item['link']['weight']) {
-    $i++;
-  }
-  for ($j = count($col_content); $j > $i; $j--) {
-    $item_config['rows_content'][$row][$col]['col_content'][$j] = $item_config['rows_content'][$row][$col]['col_content'][$j - 1];
-  }
-  $item_config['rows_content'][$row][$col]['col_content'][$i] = array(
+
+  // If this tree has not been corrected due to issue #2571547, $col_content might be an associative array.
+  // It should be an indexed array. Build a new indexed array, discarding the keys.
+  $new_config = array(
     'mlid' => $item['link']['mlid'],
     'type' => 'menu_item',
     'weight' => $item['link']['weight'],
     'tb_item_config' => array(),
   );
+
+  foreach ($col_content as $cell) {
+    $new_col[] = $cell;
+    if (!$added && isset($new_config['weight'])) {
+      $new_col[] = $new_config;
+      $added = TRUE;
+    }
+    // Sort all cells by ascending weight value to match the menu ordering.
+    $weight = array_column($new_col, 'weight');
+    array_multisort($weight, SORT_ASC, $new_col);
+  }
+
+  if (!count($new_col)) {
+    // in case there were no existing items
+    $new_col[] = $new_config;
+  }
+
+  $item_config['rows_content'][$row][$col]['col_content'] = $new_col;
 }
 
 function tb_megamenu_array_to_object($array) {
@@ -426,7 +458,7 @@ function tb_megamenu_edit_block_config(&$block_config) {
     $block_config['style'] = "";
   }
   if (!isset($block_config['auto-arrow'])) {
-    $block_config['auto-arrow'] = true;
+    $block_config['auto-arrow'] = TRUE;
   }
   if (!isset($block_config['duration'])) {
     $block_config['duration'] = 400;
@@ -627,9 +659,32 @@ function tb_megamenu_get_counter($key) {
  * Update items in tb_megamenus table.
  */
 function tb_megamenu_update_megamenus(&$form, &$form_state) {
+  // Capture all values in $form_state representing a menu item.
+  $mlid_values = array_filter($form_state['values'], function($key) {
+    return strpos($key, 'mlid:') !== FALSE;
+  }, ARRAY_FILTER_USE_KEY );
+  // Extract the mlid for each item from the keys of the array of menu items.
+  $mlid_keys = array_keys($mlid_values);
+  $valid_mlids = [];
+  // Build an array of current/valid mlids.
+  foreach($mlid_keys as $key => $value) {
+    $valid_mlids[] = substr($value, 5);
+  }
+
   if (isset($form_state['build_info']['args'][0]['menu_name']) ) {
     $menu_name = $form_state['build_info']['args'][0]['menu_name'];
     if ($menu_config = tb_megamenu_get_menu_config($menu_name)) {
+      // Confirm the previously saved config doesn't contain any items that no
+      // longer exist by comparing the mlids in config to the mlids of the
+      // submitted form values.
+      $invalid_mlids = array_diff(array_keys($menu_config), $valid_mlids);
+      // Remove any invalid menu items from the config object.
+      if (!empty($invalid_mlids)) {
+        foreach ($invalid_mlids as $invalid_mlid) {
+          unset($menu_config[$invalid_mlid]);
+        }
+      }
+
       $items = tb_megamenu_get_tree($menu_name);
       if (function_exists('i18n_menu_localize_tree')) {
         $items = i18n_menu_localize_tree($items);
@@ -637,7 +692,7 @@ function tb_megamenu_update_megamenus(&$form, &$form_state) {
       $block_config = tb_megamenu_get_block_config($menu_name);
       tb_megamenu_sync_config_all($items, $menu_config, 'backend');
       tb_megamenu_sync_order_menus($menu_config);
-      
+
       global $language;
       $tb_megamenu = db_select('tb_megamenus', 't')
         ->fields('t')

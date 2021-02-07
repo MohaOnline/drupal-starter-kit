@@ -30,7 +30,8 @@ function tb_megamenu_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array ('tb_megamenu_configure_form', 3),
     'type' => MENU_CALLBACK,
-    'access arguments' => array('administer tb_megamenu'),
+    'access callback' => '_tb_megamenu_access',
+    'access arguments' => array(3),
     'file' => 'tb_megamenu.admin.inc',
   );
 
@@ -52,6 +53,49 @@ function tb_megamenu_permission() {
       'title' => t('Administer TB Mega Menu'),
     ),
   );
+}
+
+/**
+ * Access callback: Checks TB Megamenu config access.
+ *
+ * @param $menu
+ *   The menu name provided in the route.
+ * @param object $account
+ *   (optional) A user object representing the user for whom the operation is
+ *   to be performed. Determines access for a user other than the current user.
+ *
+ * @return
+ *   TRUE if access is allowed, FALSE otherwise.
+ */
+function _tb_megamenu_access($menu, $account = NULL) {
+  $access = &drupal_static(__FUNCTION__, array());
+
+  if (!$menu || !is_array($menu)) {
+    // If there was no menu to check against we return access denied.
+    return FALSE;
+  }
+
+  // Get the machine name for the menu.
+  $menu_name = reset($menu);
+
+  // Get the current user's account if no user was specified.
+  if (!isset($account)) {
+    $account = $GLOBALS['user'];
+  }
+
+  // Statically cache access by menu name and user account ID.
+  $cid = $menu_name . ':' . $account->uid;
+
+  if (!isset($access[$cid])) {
+    // Perform basic permission checks first.
+    if (!user_access('administer tb_megamenu', $account)) {
+      return $access[$cid] = FALSE;
+    }
+    // Check access on the specific route.
+    $access[$cid] = drupal_valid_path('admin/structure/menu/manage/' . $menu_name) ? TRUE : FALSE;
+  }
+
+  return $access[$cid];
 }
 
 /**
