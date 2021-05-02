@@ -1,0 +1,45 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations & callbacks for the campaignion_donation_amount module.
+ */
+
+use Drupal\campaignion_donation_amount\Utils;
+
+/**
+ * Implements hook_webform_component_render_alter().
+ */
+function campaignion_donation_amount_webform_component_render_alter(array &$element, array &$component) {
+  if (Utils::isAmountComponent($component)) {
+    $info = element_info($element['#type']);
+    $element += [
+      '#element_validate' => $info['#element_validate'] ?? [],
+    ];
+    $element['#element_validate'][] = 'campaignion_donation_amount_validate';
+    if ($element['#type'] == 'select_or_other') {
+      // Always show the select_or_other textfield.
+      $element['#attributes']['data-select-or-other-hide'] = 0;
+      if ($symbol = variable_get_value('campaignion_donation_amount_currency_symbol')) {
+        $element['#other_title'] = $symbol;
+        $element['#other_title_display'] = 'before';
+      }
+    }
+  }
+}
+
+/**
+ * Element validator for donation_amount.
+ */
+function campaignion_donation_amount_validate($element, &$form_state, $form) {
+  $value = &drupal_array_get_nested_value($form_state['values'], $element['#parents']);
+
+  if ($value === NULL) {
+    return;
+  }
+
+  $num = (int) $value;
+  if ((string) $num != $value || $num < 1) {
+    form_error($element, t('Please enter a whole-numbered amount of at least 1.'));
+  }
+}

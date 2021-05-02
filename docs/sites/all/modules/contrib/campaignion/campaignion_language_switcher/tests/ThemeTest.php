@@ -10,7 +10,7 @@ class ThemeTest extends DrupalUnitTestCase {
   /**
    * Backup globals.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $this->q = $_GET['q'] ?? NULL;
     $this->lang = $GLOBALS['language_url'] ?? NULL;
@@ -19,7 +19,7 @@ class ThemeTest extends DrupalUnitTestCase {
   /**
    * Restore globals.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     $_GET['q'] = $this->q;
     $GLOBALS['language_url'] = $this->lang;
   }

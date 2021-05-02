@@ -18,7 +18,10 @@ $(document).ready(function() {
 // Behaviors are executed in the order they are added to the behaviors object.
 // We want this behavior to execute last.
 Drupal.behaviors.campaignion_ux_webform_ajax_scroll = {};
-Drupal.behaviors.campaignion_ux_webform_ajax_scroll.attach = function(context) {
+Drupal.behaviors.campaignion_ux_webform_ajax_scroll.attach = function(context, settings) {
+  if (settings.campaignion_ux && settings.campaignion_ux.skip_scroll) {
+    return;
+  }
   // Scroll to top of the form + padding if we are below or more than the
   // toleratedOffset above it.
   var padding = 12;

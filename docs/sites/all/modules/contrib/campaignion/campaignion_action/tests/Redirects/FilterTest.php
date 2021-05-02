@@ -14,7 +14,7 @@ class FilterTest extends \DrupalWebTestCase {
   /**
    * Cleanup after testing.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     db_delete('campaignion_action_redirect_filter')->execute();
     db_delete('campaignion_newsletters_subscriptions')->execute();
   }

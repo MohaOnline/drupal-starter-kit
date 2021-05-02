@@ -33,12 +33,15 @@ class Theme {
    *
    * @param object $theme
    *   The theme object as given by list_themes().
-   * @param \Drupal\campaignion_layout\Theme $base
-   *   The theme’s base-theme if there it has one.
+   * @param \Drupal\campaignion_layout\Themes $themes
+   *   The themes service.
+   * @param \Drupal\campaignion_layout\Theme|null $base
+   *   The theme’s base-theme if there it has one, otherwise NULL.
    */
-  public function __construct($theme, Theme $base = NULL) {
+  public function __construct($theme, Themes $themes, Theme $base = NULL) {
     $this->theme = $theme;
     $this->base = $base;
+    $this->themes = $themes;
   }
 
   /**
@@ -49,21 +52,17 @@ class Theme {
   }
 
   /**
-   * Check whether the theme and its layout variations are enabled.
+   * Check whether the layout variations feature is enabled for this theme.
    */
-  public function isEnabled() {
-    return $this->theme->status && $this->hasFeature() && $this->setting('toggle_layout_variations');
+  public function hasFeatureEnabled() {
+    return $this->hasFeature() && $this->setting('toggle_layout_variations');
   }
 
   /**
-   * Check whether the theme is the current active theme.
-   *
-   * @param string $active
-   *   Machine name of the current active theme used for testing.
+   * Check whether the theme and its layout variations are enabled.
    */
-  public function isActive($active = NULL) {
-    $active = $active ?? $GLOBALS['theme'];
-    return $this->theme->name === $active;
+  public function isEnabled() {
+    return (bool) $this->theme->status;
   }
 
   /**
@@ -78,6 +77,23 @@ class Theme {
    */
   public function setting($setting) {
     return theme_get_setting($setting, $this->theme->name);
+  }
+
+  /**
+   * Get layouts that are implemented in this theme or one of its parents.
+   *
+   * @return string[]
+   *   An array of layouts that are declared to be implemented by this theme.
+   *   Entries of the array have the layout machine name as both key and value.
+   */
+  public function implementedLayouts() {
+    $implemented = [];
+    if ($this->base) {
+      $implemented += $this->base->implementedLayouts();
+    }
+    $info = $this->theme->info['layout'] ?? [];
+    $implemented += array_combine($info, $info);
+    return $implemented;
   }
 
   /**
@@ -100,9 +116,12 @@ class Theme {
    * Get info about all enabled layout variations for a theme.
    */
   public function layouts(bool $disabled = FALSE) {
-    $variations = $this->layoutInfo();
+    $variations = $this->themes->declaredLayouts();
+    $variations = array_intersect_key($variations, $this->implementedLayouts());
     if (!$disabled) {
       $enabled = $this->setting('layout_variations') ?? [];
+      $default = $this->defaultLayout();
+      $enabled[$default] = $default;
       $variations = array_intersect_key($variations, array_filter($enabled));
     }
     return $variations;
@@ -116,26 +135,46 @@ class Theme {
   }
 
   /**
-   * Get the theme’s declared layout metadata (with defaults).
+   * Get the first matchiing layout for a set of field items.
+   *
+   * If no matching item is found the default layout is returned.
    */
-  protected function layoutInfo() {
-    $info = $this->invokeLayoutHook();
-    foreach ($info as $name => &$i) {
-      $i += ['name' => $name, 'fields' => []];
-      foreach ($i['fields'] as $field_name => &$f) {
-        $f += [
-          'display' => [],
-          'variable' => $field_name,
-        ];
+  public function getLayoutFromItems($items) {
+    foreach ($items as $item) {
+      if ($layout = $this->getLayout($item['layout'])) {
+        return $layout;
       }
     }
-    return $info;
+    return $this->getLayout($this->defaultLayout(), FALSE);
+  }
+
+  /**
+   * Get the theme’s default layout.
+   *
+   * The default layout of a theme can’t be deactivated.
+   *
+   * @return string
+   *   Machine name of the default layout.
+   */
+  public function defaultLayout() {
+    return $this->theme->info['layout_default'] ?? ($this->base ? $this->base->defaultLayout() : 'default');
+  }
+
+  /**
+   * Get an array of this theme and all its bases keyed by machine name.
+   */
+  public function baseThemes($include_self = FALSE) {
+    $themes = $this->base ? $this->base->baseThemes(TRUE) : [];
+    if ($include_self) {
+      $themes[$this->theme->name] = $this;
+    }
+    return $themes;
   }
 
   /**
    * Include the theme’s template.php and invoke its hook.
    */
-  protected function invokeLayoutHook() {
+  public function invokeLayoutHook() {
     $this->includeTheme();
     $func = $this->theme->name . '_campaignion_layout_info';
     return function_exists($func) ? $func() : [];

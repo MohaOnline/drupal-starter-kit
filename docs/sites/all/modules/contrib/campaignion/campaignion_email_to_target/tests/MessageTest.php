@@ -37,7 +37,7 @@ class MessageTest extends \DrupalUnitTestCase {
   public function testRenderDisplayNameToken() {
     $target = ['salutation' => 'S'];
     $message = new Message([]);
-    $this->assertContains('contact.display_name', $message->display);
+    $this->assertStringContainsString('contact.display_name', $message->display);
     $message->replaceTokens($target);
     $this->assertEqual('S', $message->display);
 
@@ -103,6 +103,21 @@ class MessageTest extends \DrupalUnitTestCase {
     $m1 = new Message($data);
     $m2 = new Message($m1->toArray());
     $this->assertEqual($m1, $m2);
+  }
+
+  /**
+   * Test quoting address names.
+   */
+  public function testQuotingAddressNames() {
+    $data = [
+      'fromName' => 'I have, a comma but am no "addr-list"',
+      'fromAddress' => 'from@example.com',
+      'toName' => ' to \ be " quoted',
+      'toAddress' => 'to@example.com',
+    ];
+    $m = new Message($data);
+    $this->assertEqual('"to \\\\ be \" quoted" <to@example.com>', $m->to());
+    $this->assertEqual('"I have, a comma but am no \"addr-list\"" <from@example.com>', $m->from());
   }
 
 }

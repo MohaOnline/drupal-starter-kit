@@ -58,7 +58,7 @@ class Lookup {
    */
   public function getTheme() {
     foreach ($this->iterateItems() as $item) {
-      if (($theme = $this->themes->getTheme($item['theme'])) && $theme->isEnabled()) {
+      if (($theme = $this->themes->getTheme($item['theme'])) && $theme->hasFeatureEnabled()) {
         return $item['theme'];
       }
     }
@@ -66,16 +66,9 @@ class Lookup {
 
   /**
    * Find the layout configured for the currently active theme.
-   *
-   * @return string|null
-   *   The name of the first enabled layout of the currently active theme.
    */
   public function getLayout() {
-    foreach ($this->iterateItems() as $item) {
-      if (($theme = $this->themes->getTheme($item['theme'])) && $theme->isActive() && ($layout = $theme->getLayout($item['layout']))) {
-        return $layout;
-      }
-    }
+    return $this->themes->getTheme()->getLayoutFromItems($this->iterateItems());
   }
 
 }

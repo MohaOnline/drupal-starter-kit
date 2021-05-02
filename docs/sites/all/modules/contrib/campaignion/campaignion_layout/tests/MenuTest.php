@@ -18,7 +18,7 @@ class MenuTest extends DrupalUnitTestCase {
   /**
    * Create a test node.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $node = (object) ['type' => 'petition', 'title' => __CLASS__];
     node_object_prepare($node);
@@ -29,7 +29,7 @@ class MenuTest extends DrupalUnitTestCase {
   /**
    * Delete the test node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     node_delete($this->node->nid);
     parent::tearDown();
   }

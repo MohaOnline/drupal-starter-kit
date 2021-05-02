@@ -31,7 +31,7 @@ class FormSubmissionTest extends \DrupalUnitTestCase {
     $s['remote_addr'] = '127.0.0.1';
     $s['submitted'] = 4711;
     $m = new Submission($mock_node, (object) $s);
-    $fs = FormSubmission::fromWebformSubmission($m);
+    $fs = FormSubmission::fromWebformSubmission($m, 'Test user agent');
     $this->assertEquals('127.0.0.1', $fs->ip);
     $this->assertEquals(4711, $fs->date);
     $this->assertEquals(['submitted[one][two]' => 'test'], $fs->data);

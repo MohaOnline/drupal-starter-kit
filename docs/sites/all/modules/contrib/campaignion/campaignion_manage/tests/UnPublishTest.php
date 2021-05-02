@@ -15,7 +15,7 @@ class UnPublishTest extends \DrupalUnitTestCase {
   /**
    * Prepares a `Campaign` node for testing.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp(['campaignion_test']);
 
     $draft_campaign = (object) [
@@ -63,7 +63,7 @@ class UnPublishTest extends \DrupalUnitTestCase {
   /**
    * Deletes the test `Campaign` node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     node_delete($this->draftNode->nid);
     node_delete($this->publicNode->nid);
   }

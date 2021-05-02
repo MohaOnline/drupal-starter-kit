@@ -159,7 +159,7 @@ function _webform_csv_data_e2t_selector($component, $export_options, $value) {
       $t = 'campaignion_email_to_target_mail';
       $m = theme([$t, $t . '_' . $component['nid']], ['message' => $message]);
       return [
-        $message->to,
+        $message->to(),
         $message->subject,
         $m,
         $data['constituency']['name'],

@@ -4,7 +4,7 @@ namespace Drupal\campaignion_newsletters;
 
 class SubscriptionTest extends \DrupalWebTestCase {
 
-  public function tearDown() {
+  public function tearDown() : void {
     db_delete('campaignion_newsletters_subscriptions')->execute();
     db_delete('campaignion_newsletters_queue')->execute();
   }

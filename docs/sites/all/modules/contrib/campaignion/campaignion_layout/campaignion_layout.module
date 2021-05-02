@@ -8,6 +8,7 @@
 use Drupal\campaignion_layout\Entity;
 use Drupal\campaignion_layout\Lookup;
 use Drupal\campaignion_layout\Themes;
+use Drupal\campaignion_layout\Context\LayoutCondition;
 use Drupal\little_helpers\Services\Container;
 
 // The field.module does not group its hooks so we have to include this here.
@@ -67,16 +68,30 @@ function campaignion_layout_little_helpers_services() {
 }
 
 /**
+ * Implements hook_page_build().
+ */
+function campaignion_layout_page_build(&$page, $node = NULL) {
+  $node = $node ?? menu_get_object();
+  if ($node && ($layout = Lookup::fromEntity('node', $node)->getLayout())) {
+    $page['#layout'] = $layout;
+    if (module_exists('context')) {
+      if ($plugin = context_get_plugin('condition', 'campaignion_layout_context_condition_layout')) {
+        $plugin->execute($layout['name']);
+      }
+    }
+  }
+}
+
+/**
  * Prepare variables for page templates.
  */
 function campaignion_layout_preprocess_page(array &$vars) {
   $vars['layout'] = NULL;
-  if (($node = $vars['node'] ?? NULL) && ($layout = Lookup::fromEntity('node', $node)->getLayout())) {
+  if ($layout = $vars['page']['#layout'] ?? NULL) {
     $vars['layout'] = $layout['name'];
     array_unshift($vars['theme_hook_suggestions'], "page__layout__{$layout['name']}");
-
     foreach ($layout['fields'] as $field_name => $settings) {
-      $vars[$settings['variable']] = field_view_field('node', $node, $field_name, $settings['display']);
+      $vars[$settings['variable']] = field_view_field('node', $vars['node'], $field_name, $settings['display']);
     }
   }
 }
@@ -102,13 +117,19 @@ function campaignion_layout_form_system_theme_settings_alter(&$form, $form_state
     '#default_value' => $theme->setting('toggle_layout_variations'),
   ];
   $states['visible'][':input[name="toggle_layout_variations"]']['checked'] = TRUE;
+  $enabled = $theme->setting('layout_variations') ?? [];
   $form['layout_variations']['layout_variations'] = [
     '#type' => 'checkboxes',
     '#title' => t('Enabled layout variations.'),
     '#options' => $theme->layoutOptions(TRUE),
-    '#default_value' => $theme->setting('layout_variations') ?? [],
+    '#default_value' => $enabled,
     '#states' => $states,
   ];
+  $default = $theme->defaultLayout();
+  $form['layout_variations']['layout_variations'][$default]['#disabled'] = TRUE;
+  // Browsers don’t submit disabled checkboxes. So the value needs to be set
+  // here otherwise the settings are saved without it.
+  $form['layout_variations']['layout_variations'][$default]['#value'] = $default;
 }
 
 /**
@@ -117,21 +138,23 @@ function campaignion_layout_form_system_theme_settings_alter(&$form, $form_state
  * Hide other fields on node forms.
  */
 function campaignion_layout_form_node_form_alter(&$form, &$form_state) {
-  $hidden_fields = module_invoke_all('campaignion_layout_hidden_fields');
-  drupal_alter('campaignion_layout_hidden_fields', $hidden_fields);
-  foreach (array_keys(array_filter($hidden_fields)) as $field_name) {
+  $dependent_fields = module_invoke_all('campaignion_layout_dependent_fields');
+  drupal_alter('campaignion_layout_dependent_fields', $dependent_fields);
+  foreach (array_keys(array_filter($dependent_fields)) as $field_name) {
     if (!isset($form[$field_name])) {
       // Skip fields if they don’t appear in the form anyway.
       continue;
     }
-    $activating_selectors = $form_state['campaignion_layout_fields'][$field_name] ?? [];
-    foreach ($activating_selectors as $selector => $values) {
+    $states = [];
+    foreach ($form_state['campaignion_layout_fields'][$field_name] ?? [] as $selector => $values) {
       foreach ($values as $value) {
-        $states['visible'][$selector]['value'] = $value;
-        $form[$field_name]['#states'] = $states;
+        $states['visible'][$selector][] = ['value' => $value];
       }
     }
-    if (!$activating_selectors) {
+    if ($states) {
+      $form[$field_name]['#states'] = $states;
+    }
+    else {
       $form[$field_name]['#access'] = FALSE;
     }
   }
@@ -154,11 +177,11 @@ function campaignion_layout_form_node_form_alter(&$form, &$form_state) {
 }
 
 /**
- * Implements hook_campaignion_layout_hidden_fields().
+ * Implements hook_campaignion_layout_dependent_fields().
  */
-function campaignion_layout_campaignion_layout_hidden_fields() {
-  $hidden_fields['layout_background_image'] = TRUE;
-  return $hidden_fields;
+function campaignion_layout_campaignion_layout_dependent_fields() {
+  $dependent_fields['layout_background_image'] = TRUE;
+  return $dependent_fields;
 }
 
 /**
@@ -177,4 +200,34 @@ function campaignion_layout_node_prepare($node) {
       }
     }
   }
+}
+
+/**
+ * Impelements hook_context_plugins().
+ */
+function campaignion_layout_context_plugins() {
+  $plugins['campaignion_layout_context_condition_layout']['handler'] = [
+    'class' => LayoutCondition::class,
+    // Ctools throws a not notice if the file doesn’t exist. That’s why a file
+    // needs to be passed although we don’t rely on the Drupal/ctools
+    // auto loading. @see _ctools_registry_alter().
+    'file' => 'src/Context/LayoutCondition.php',
+  ];
+  return $plugins;
+}
+
+/**
+ * Implements hook_context_registry().
+ */
+function campaignion_layout_context_registry() {
+  $registry = [
+    'conditions' => [
+      'campaignion_layout_context_condition_layout' => [
+        'title' => t('Layout'),
+        'description' => t('Set this context based on the selected layout.'),
+        'plugin' => 'campaignion_layout_context_condition_layout',
+      ],
+    ],
+  ];
+  return $registry;
 }

@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Main module file that implements hooks and callbacks.
+ */
+
+use Drupal\campaignion_auth\AuthAppClient;
+
+/**
+ * Implements hook_little_helpers_services().
+ */
+function campaignion_auth_little_helpers_services() {
+  $info['campaignion_auth.AuthAppClient'] = [
+    'class' => AuthAppClient::class,
+    'arguments' => [
+      '!campaignion_auth_app_url',
+      '!campaignion_auth_api_key',
+      '!campaignion_organization',
+    ],
+  ];
+  return $info;
+}

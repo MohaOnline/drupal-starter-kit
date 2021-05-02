@@ -48,13 +48,14 @@ function campaignion_layout_field_widget_form(&$form, &$form_state, $field, $ins
     'theme' => NULL,
     'layout' => '',
   ]);
-  $themes = Container::get()->loadService('campaignion_layout.themes')->enabledThemes();
-  $selected_theme = isset($themes[$item['theme']]) ? $item['theme'] : NULL;
+  $themes = Container::get()->loadService('campaignion_layout.themes');
+  $enabled_themes = $themes->enabledThemes();
+  $selected_theme = isset($enabled_themes[$item['theme']]) ? $item['theme'] : NULL;
   $toggle_id = drupal_html_id('layout_toggle');
   $element['enabled'] = [
     '#type' => 'checkbox',
     '#title' => t('Custom theme and layout.'),
-    '#default_value' => $themes && $selected_theme,
+    '#default_value' => $enabled_themes && $selected_theme,
     '#id' => $toggle_id,
   ];
   $toggle_states['visible']["#$toggle_id"]['checked'] = TRUE;
@@ -67,7 +68,7 @@ function campaignion_layout_field_widget_form(&$form, &$form_state, $field, $ins
 
   $theme_options = array_map(function ($theme) {
     return $theme->title();
-  }, $themes);
+  }, $enabled_themes);
   $theme_id = drupal_html_id('campaignion-layout-theme');
   $element['values']['theme'] = [
     '#type' => 'select',
@@ -76,39 +77,40 @@ function campaignion_layout_field_widget_form(&$form, &$form_state, $field, $ins
     '#options' => $theme_options,
     '#default_value' => $selected_theme,
     '#id' => $theme_id,
-    '#states' => $toggle_states,
   ];
+  $layout_available_in_theme = [];
+  foreach ($enabled_themes as $theme_name => $theme) {
+    foreach (array_keys($theme->layouts()) as $layout) {
+      $layout_available_in_theme[$layout][$theme_name] = $theme_name;
+    }
+  }
+
+  $html_id = drupal_html_id('campaignion-layout_layout');
   $element['values']['layout'] = [
-    '#type' => 'value',
-    '#value' => $item['layout'],
+    '#type' => 'radios',
+    '#title' => t('Layout'),
+    '#description' => t('This layout is used for displaying the content.'),
+    '#id' => $html_id,
   ];
   $fields = [];
-  foreach ($themes as $theme_name => $theme) {
-    $options = ['' => t('Default layout')];
-    $html_id = drupal_html_id("layout_{$theme_name}");
-    foreach ($theme->layouts() as $layout => $info) {
-      $options[$layout] = $info['title'];
-      foreach (array_keys(array_filter($info['fields'])) as $field_name) {
-        $fields[$field_name]["#$html_id input"][] = $layout;
-      }
+  $available_layouts = array_intersect_key($themes->declaredLayouts(), $layout_available_in_theme);
+  $options = [];
+  foreach ($available_layouts as $layout => $info) {
+    $options[$layout] = $info['title'];
+    foreach (array_keys(array_filter($info['fields'])) as $field_name) {
+      $fields[$field_name]["#$html_id input"][] = $layout;
     }
-    $states['visible']["#{$theme_id}"]['value'] = $theme_name;
-    $selected_layout = '';
-    if ($theme_name == $selected_theme && isset($options[$item['layout']])) {
-      $selected_layout = $item['layout'];
+    $element['values']['layout'][$layout]['#disabled'] = TRUE;
+    foreach ($layout_available_in_theme[$layout] ?? [] as $theme_name) {
+      $element['values']['layout'][$layout]['#states']['enabled']["#$theme_id"][]['value'] = $theme_name;
     }
-    $element['values']["layout_{$theme_name}"] = [
-      '#type' => 'radios',
-      '#title' => t('Layout'),
-      '#description' => t('This layout is used for displaying the content.'),
-      '#options' => $options,
-      '#default_value' => $selected_layout,
-      '#states' => $states + $toggle_states,
-      '#id' => $html_id,
-    ];
   }
+  $element['values']['layout'] += [
+    '#options' => $options,
+    '#default_value' => isset($options[$item['layout']]) ? $item['layout'] : NULL,
+  ];
   $form_state['campaignion_layout_fields'] = $fields;
-  if (!$themes) {
+  if (!$enabled_themes) {
     $element['#access'] = FALSE;
   }
   return $element;
@@ -124,7 +126,7 @@ function _campaignion_layout_field_widget_validate($element, &$form_state, $form
   ];
   if ($element['enabled']['#value']) {
     $values['theme'] = $element['values']['theme']['#value'];
-    $values['layout'] = $element['values']["layout_{$values['theme']}"]['#value'];
+    $values['layout'] = $element['values']['layout']['#value'];
   }
   form_set_value($element, $values, $form_state);
 }

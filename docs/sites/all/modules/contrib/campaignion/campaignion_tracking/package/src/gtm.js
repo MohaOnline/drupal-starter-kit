@@ -211,7 +211,7 @@ export class GTMTracker {
     this.printDebug('(handle)', eventName, eventData, context)
     this.updateContext(context)
 
-    let data = {
+    let submissionData = {
       event: 'submission',
       webform: {
         nid: eventData.nid || null,
@@ -220,8 +220,22 @@ export class GTMTracker {
       }
     }
     // Allow others to modify the data being sent to GTM.
-    data = this.callChangeHook(eventName, data, this._context)
-    this.dataLayer.push(data)
+    submissionData = this.callChangeHook(eventName, submissionData, this._context)
+    this.dataLayer.push(submissionData)
+    this.printDebug('(event)', submissionData)
+
+    if (eventData.optins.length > 0) {
+      let optinData = {
+        event: 'optin'
+      }
+      for (const channel of eventData.optins) {
+        optinData[channel.channel] = channel.value
+      }
+      // Allow others to modify the data being sent to GTM.
+      optinData = this.callChangeHook(eventName, optinData, this._context)
+      this.dataLayer.push(optinData)
+      this.printDebug('(event)', optinData)
+    }
   }
 
   /**

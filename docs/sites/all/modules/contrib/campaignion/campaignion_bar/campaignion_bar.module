@@ -50,9 +50,9 @@ function campaignion_bar_init() {
     // load other needed js libs and files
     $path = drupal_get_path('module', 'campaignion_bar');
     drupal_add_js($path . '/js/tooltipsy.min.js');
-    drupal_add_js($path . '/js/ae_bar.sliding.js');
-    drupal_add_js($path . '/js/ae_bar.js');
-    drupal_add_css($path . '/theme/ae_bar.css');
+    drupal_add_js($path . '/js/campaignion_bar.sliding.js');
+    drupal_add_js($path . '/js/campaignion_bar.js');
+    drupal_add_css($path . '/theme/campaignion_bar.css');
   }
 }
 
@@ -61,12 +61,12 @@ function campaignion_bar_init() {
  */
 function campaignion_bar_theme($existing, $type, $theme, $path) {
   $path = drupal_get_path('module', 'campaignion_bar');
-  $items['ae_bar'] = array(
+  $items['campaignion_bar'] = array(
     'variables' => array('tree' => array(), 'rid' => NULL),
-    'template' => 'ae_bar',
+    'template' => 'campaignion-bar',
     'path' => $path . '/theme',
   );
-  $items['ae_menu'] = array(
+  $items['campaignion_bar_menu'] = array(
     'variables' => array('sidebar' => FALSE, 'widebar' => FALSE, 'links' => NULL, 'attributes' => array('class' => array('links')), 'heading' => array(), 'wide' => array()),
   );
 
@@ -92,12 +92,7 @@ function campaignion_bar_page_build(&$page) {
     }
     // Check to see if $user is authenticated
     if ($build_aebar && in_array('authenticated user', array_values($user->roles))) {
-      $links = '';
-      $links = array();
-      $page['page_top']['ae_bar'] = array(
-        '#type' => 'markup',
-        '#markup' => theme('ae_bar'),
-      );
+      $page['page_top']['campaignion_bar']['#theme'] = 'campaignion_bar';
     }
   }
 }
@@ -107,7 +102,7 @@ function campaignion_bar_page_build(&$page) {
  */
 function campaignion_bar_menu() {
   $items['admin/not_implemented'] = array(
-    'page callback' => 'not_implemented_view',
+    'page callback' => 'campaignion_bar_not_implemented_page',
     'access callback' => TRUE,
     'title' => 'This feature is not implemented yet. Soon to come!',
     'type' => MENU_CALLBACK,
@@ -115,14 +110,14 @@ function campaignion_bar_menu() {
   return $items;
 }
 
-function not_implemented_view() {
-    $page = array(
+function campaignion_bar_not_implemented_page() {
+  $page = array(
     '#type' => 'page',
   ) + element_info('page');
   return $page;
 }
 
-function theme_ae_menu($variables) {
+function theme_campaignion_bar_menu($variables) {
   $toplinks = $variables['links'];
   $attributes = $variables['attributes'];
   $heading = $variables['heading'];

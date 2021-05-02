@@ -157,43 +157,17 @@ class NewsletterList extends Model {
   /**
    * Subscribe a single email-address to this newsletter.
    */
-  public function subscribe($email, $fromProvider = FALSE) {
-    $fields = array(
-      'list_id' => $this->list_id,
-      'email' => $email,
-    );
-    // MySQL supports multi-value merge queries, drupal does not so far,
-    // so we could replace the following by a direct call to db_query().
-    db_merge('campaignion_newsletters_subscriptions')
-      ->key($fields)
-      ->fields($fields)
-      ->execute();
-
-    if (!$fromProvider) {
-      QueueItem::byData(array(
-        'list_id' => $this->list_id,
-        'email' => $email,
-        'action' => QueueItem::SUBSCRIBE,
-      ))->save();
-    }
+  public function subscribe($email, $from_provider = FALSE) {
+    Subscription::byData($this->list_id, $email)->save($from_provider);
   }
 
   /**
    * Unsubscribe an email address from this list.
    */
-  public function unsubscribe($email, $fromProvider = FALSE) {
-    db_delete('campaignion_newsletters_subscriptions')
-      ->condition('list_id', $this->list_id)
-      ->condition('email', $email)
-      ->execute();
-
-    if (!$fromProvider) {
-      QueueItem::byData(array(
-        'list_id' => $this->list_id,
-        'email' => $email,
-        'action' => QueueItem::UNSUBSCRIBE,
-      ))->save();
-    }
+  public function unsubscribe($email, $from_provider = FALSE) {
+    $subscription = Subscription::byData($this->list_id, $email);
+    $subscription->delete = TRUE;
+    $subscription->save($from_provider);
   }
 
   /**

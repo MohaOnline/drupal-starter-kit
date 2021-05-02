@@ -18,7 +18,7 @@ class CsvExporterTest extends \DrupalUnitTestCase {
   /**
    * Create test contact.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
 
     $importer = ContactTypeManager::instance()->importer('campaignion_action_taken');
@@ -35,7 +35,7 @@ class CsvExporterTest extends \DrupalUnitTestCase {
   /**
    * Delete test contact.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     $this->contact->delete();
     parent::tearDown();
   }

@@ -6,6 +6,7 @@
  */
 
 use Drupal\campaignion_action\Loader;
+use Drupal\little_helpers\Webform\Submission;
 use Drupal\little_helpers\Webform\Webform;
 
 /**
@@ -75,17 +76,31 @@ function campaignion_tracking_form_webform_client_form_alter(&$form, &$form_stat
 
   // Information about a donation (in case the node is one).
   if ($is_donation) {
+    // TODO: there might be more than 1 paymethod_select component in the form
     $paymethod = $webform->componentByKey('paymethod_select');
     $currency_code = isset($paymethod['extra']['currency_code']) ? $paymethod['extra']['currency_code'] : 'EUR';
     $submission = $webform->formStateToSubmission($form_state);
+    // Interval is read by key
+    $interval = $submission->valueByKey('donation_interval');
+    // Find first line item with has a value and use this as selected amount component
+    $selected_line_item = NULL;
+    foreach ($paymethod['extra']['line_items'] as $line_item) {
+      $value = $submission->valueByCid($line_item->amount_component);
+      if ($value) {
+        $selected_line_item = $line_item;
+        break;
+      }
+    }
 
-    // NB: Only after the first step submit we get values.
+    // NB: Only after the amount step submit we get values.
     // Thus `interval` and `amount` might be "null" in JS (in case no values
     // have been submitted so far)
     $donation_settings['campaignion_tracking']['context']['donation'] = [
       'currency_code' => $currency_code,
-      'interval' => $submission->valueByKey('donation_interval'),
-      'amount' => $submission->valueByKey('donation_amount'),
+      'interval' => $interval,
+      'amount' => $selected_line_item ? $submission->valueByCid($selected_line_item->amount_component) : NULL,
+      'amount_component' => $selected_line_item ? $selected_line_item->amount_component : NULL,
+      'description' => $selected_line_item ? $selected_line_item->description : NULL,
     ];
     $form['#attached']['js'][] = ['data' => $donation_settings, 'type' => 'setting'];
   }
@@ -99,7 +114,7 @@ function campaignion_tracking_form_webform_client_form_alter(&$form, &$form_stat
  * We want the SID and optionally donation specific information appended to the
  * URL so that trackers can pick it up.
  */
-function campaignion_tracking_webform_redirect_alter($redirect, $submission) {
+function campaignion_tracking_webform_redirect_alter($redirect, Submission $submission) {
   $type = Loader::instance()->type($submission->node->type);
   $is_donation = $type && $type->isDonation();
 
@@ -110,6 +125,14 @@ function campaignion_tracking_webform_redirect_alter($redirect, $submission) {
   $webformFragments[] = 'nid=' . $submission->node->nid;
   $webformFragments[] = 'sid=' . $submission->sid;
   $webformFragments[] = 'title=' . rawurlencode($submission->node->title);
+
+  $channels = array_keys(campaignion_opt_in_channel_info());
+  // Add optin values for all defined optin fields
+  foreach ($channels as $channel) {
+    if ($value = $submission->opt_in->canonicalValue($channel, TRUE)) {
+      $webformFragments[] = 'optin[' . rawurlencode($channel) . ']=' . rawurlencode($value);
+    }
+  }
 
   $donationFragments = [];
   if ($is_donation) {

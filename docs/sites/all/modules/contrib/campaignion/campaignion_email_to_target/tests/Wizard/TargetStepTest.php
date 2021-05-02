@@ -15,7 +15,7 @@ class TargetStepTest extends DrupalUnitTestCase {
   /**
    * Set some e2t-api connection data.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     Container::get()->inject('campaignion_email_to_target.api.Client', $this->createMock(Client::class));
   }
@@ -23,7 +23,7 @@ class TargetStepTest extends DrupalUnitTestCase {
   /**
    * Remove test API connection.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     drupal_static_reset(Container::class);
     parent::tearDown();
   }

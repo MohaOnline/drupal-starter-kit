@@ -9,7 +9,7 @@ class CountPollingTest extends \DrupalWebTestCase {
 
   protected $node = NULL;
 
-  public function setUp() {
+  public function setUp() : void {
     $this->node = (object) ['nid' => 123456789];
     db_merge('campaignion_email_to_target_counter')
       ->fields(['label' => 'Test target 1', 'count' => 1])
@@ -33,7 +33,7 @@ class CountPollingTest extends \DrupalWebTestCase {
       $this->assertEqual([], $p->getData());
   }
 
-  public function tearDown() {
+  public function tearDown() : void {
     campaignion_email_to_target_counter_node_delete($this->node);
   }
 

@@ -7,6 +7,7 @@ dependencies[] = campaignion:campaignion
 dependencies[] = campaignion:campaignion_action
 dependencies[] = campaignion:campaignion_activity
 dependencies[] = campaignion:campaignion_bar
+dependencies[] = campaignion:campaignion_donation
 dependencies[] = campaignion:campaignion_email_to_target
 dependencies[] = campaignion:campaignion_email_to_target_counter
 dependencies[] = campaignion:campaignion_facebook_pixel
@@ -30,6 +31,7 @@ dependencies[] = campaignion:campaignion_tracking
 dependencies[] = campaignion:campaignion_tracking_gtm
 dependencies[] = campaignion:campaignion_webform_tokens
 dependencies[] = campaignion:campaignion_wizard
+dependencies[] = context:context
 dependencies[] = ctools:ctools
 dependencies[] = date:date
 dependencies[] = drupal:image
@@ -114,8 +116,8 @@ features[variable][] = field_bundle_settings_node__thank_you_page
 features[variable][] = webform_node_email_to_target
 features[variable][] = webform_node_petition
 
-; Information added by Drupal.org packaging script on 2020-09-08
-version = "7.x-2.15"
+; Information added by Drupal.org packaging script on 2021-04-06
+version = "7.x-2.20"
 core = "7.x"
 project = "campaignion"
-datestamp = "1599580450"
+datestamp = "1617716859"

@@ -12,7 +12,7 @@ class PaletteTest extends \DrupalUnitTestCase {
   /**
    * Create a test node.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $node = (object) ['type' => 'webform'];
     entity_save('node', $node);
@@ -22,7 +22,7 @@ class PaletteTest extends \DrupalUnitTestCase {
   /**
    * Remove test node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     entity_delete('node', $this->node->nid);
     parent::tearDown();
   }

@@ -45,12 +45,12 @@ class Field {
       if (($value = $this->getValue($source)) && ($value = $this->preprocessField($value))) {
         if ($this->storeValue($entity, $value)) {
           return $this->setValue($entity, $value);
-        } else {
-          return FALSE;
         }
+        return FALSE;
       }
-    } catch (\EntityMetadataWrapperException $e) {
-      watchdog('campaignion', 'Tried to import into a non-existing field "!field".', array('!field' => $this->field), WATCHDOG_WARNING);
+    }
+    catch (\EntityMetadataWrapperException $e) {
+      watchdog_exception('campaignion', $e, 'Error when importing into !field', ['!field' => $this->field], WATCHDOG_WARNING);
     }
     return FALSE;
   }

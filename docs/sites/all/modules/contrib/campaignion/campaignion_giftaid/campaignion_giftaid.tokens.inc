@@ -5,6 +5,7 @@
  * Token hook implementations for campaignion_giftaid.
  */
 
+use Drupal\campaignion_donation_amount\Utils;
 use Drupal\little_helpers\Webform\Submission;
 
 /**
@@ -31,13 +32,12 @@ function campaignion_giftaid_tokens($type, $tokens, array $data = [], array $opt
   }
 
   $submission = new Submission($data['node'], $data['webform-submission']);
-  $donation_amount = $submission->valueByKey('donation_amount');
 
   $replacements = [];
   foreach ($tokens as $name => $original) {
     switch ($name) {
       case 'amount-including-giftaid':
-        $giftaid_amount = $donation_amount * 1.25;
+        $giftaid_amount = Utils::submissionTotal($submission) * 1.25;
         $replacements[$original] = number_format($giftaid_amount, 2);
         break;
     }

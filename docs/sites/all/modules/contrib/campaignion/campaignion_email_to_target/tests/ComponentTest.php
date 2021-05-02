@@ -114,7 +114,7 @@ class ComponentTest extends \DrupalUnitTestCase {
     $form = [];
     $form_state = form_state_defaults();
     $component->render($element, $form, $form_state);
-    $this->assertContains('D1', $element['t1']['send']['#markup']);
+    $this->assertStringContainsString('D1', $element['t1']['send']['#markup']);
   }
 
   /**

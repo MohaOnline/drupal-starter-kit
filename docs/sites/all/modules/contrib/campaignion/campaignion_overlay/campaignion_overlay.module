@@ -1,30 +1,24 @@
 <?php
+
 /**
  * @file
- * Code for the campaignion_overlay feature.
+ * Hook implementations for the campaignion_overlay module.
  */
 
 include_once 'campaignion_overlay.features.inc';
 
 /**
- * @file
- * Implements all needed hooks and functions.
- */
-
-/**
  * Implements hook_theme().
  */
 function campaignion_overlay_theme($existing, $type, $theme, $path) {
-  return [
-    'campaignion_overlay_options' => [
-      'template' => 'campaignion-overlay',
-      'path' => drupal_get_path('module', 'campaignion_overlay'),
-      'variables' => [
-        'introduction' => NULL,
-        'content' => NULL,
-      ],
+  $hooks['campaignion_overlay_options'] = [
+    'template' => 'campaignion-overlay-options',
+    'variables' => [
+      'introduction' => NULL,
+      'content' => NULL,
     ],
   ];
+  return $hooks;
 }
 
 /**

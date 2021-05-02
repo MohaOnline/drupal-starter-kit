@@ -45,6 +45,9 @@ fragmentListener.setup()
 export const codeSubscription = tracker.subscribe('code', e => {
   printDebug('handle_code', e)
 
+  // Prepare regexp for parsing optin channels
+  const optinRegex = /optin\[(\w+)\]/
+
   // Map codes to tracking data.
   const events = e.items.reduce(
     (acc, item) => {
@@ -67,6 +70,13 @@ export const codeSubscription = tracker.subscribe('code', e => {
         if (item.id === 'title') {
           acc.webform.title = item.codes[0]
         }
+        // Parse optins
+        if (item.id.substring(0, 5) === 'optin') {
+          const match = optinRegex.exec(item.id)
+          if (match[1]) {
+            acc.optins.push({ channel: match[1], value: item.codes[0] })
+          }
+        }
       }
       // Code to tracking context/data for 'donation'.
       if (item.prefix === 'd') {
@@ -76,7 +86,7 @@ export const codeSubscription = tracker.subscribe('code', e => {
       }
       return acc
     },
-    { tracking: { events: [] }, webform: {}, donation: {} }
+    { tracking: { events: [] }, webform: {}, donation: {}, optins: [] }
   )
 
   printDebug('handle_events', events)
@@ -95,7 +105,8 @@ export const codeSubscription = tracker.subscribe('code', e => {
     const data = {
       nid: events.webform.nid || null,
       sid: events.webform.sid || null,
-      title: events.webform.title || null
+      title: events.webform.title || null,
+      optins: events.optins || []
     }
     tracker.publish('webform', { name: 'submission', data: data, context: context })
   }

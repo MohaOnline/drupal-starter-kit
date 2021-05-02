@@ -2,6 +2,7 @@
 
 namespace Drupal\campaignion_email_to_target\Api;
 
+use Drupal\campaignion_auth\AuthAppClient;
 use Drupal\little_helpers\Rest\Client as _Client;
 use Drupal\little_helpers\Rest\HttpError;
 
@@ -31,7 +32,7 @@ class Client extends _Client {
    *
    * @param string $url
    *   The URL for the API endpoint (withut the version prefix).
-   * @param \Drupal\campaignion_email_to_target\Api\AuthAppClient $auth_client
+   * @param \Drupal\campaignion_auth\AuthAppClient $auth_client
    *   A auth app API client.
    */
   public function __construct(string $url, AuthAppClient $auth_client) {

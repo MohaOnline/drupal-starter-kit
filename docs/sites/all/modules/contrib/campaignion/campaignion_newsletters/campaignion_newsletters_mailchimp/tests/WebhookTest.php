@@ -9,7 +9,7 @@ use Drupal\campaignion_newsletters\Subscription;
  */
 class WebhookTest extends \DrupalWebTestCase {
 
-  public function setUp() {
+  public function setUp() : void {
     $this->subscription = Subscription::byData(4711, 'mc-webhook-test@example.com');
     $this->subscription->save(TRUE);
     $this->post = $_POST;
@@ -40,7 +40,7 @@ class WebhookTest extends \DrupalWebTestCase {
     $this->assertEqual(['status' => 'OK'], $answer);
   }
 
-  public function tearDown() {
+  public function tearDown() : void {
     $_POST = $this->post;
     $this->subscription->delete();
   }

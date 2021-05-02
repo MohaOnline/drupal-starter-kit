@@ -10,7 +10,7 @@ class NodeSearchTest extends \DrupalUnitTestCase {
   /**
    * Set up nodes for testing.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $node1 = (object) [
       'type' => 'petition',
@@ -28,7 +28,7 @@ class NodeSearchTest extends \DrupalUnitTestCase {
   /**
    * Delete test nodes.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     foreach ($this->nodes as $node) {
       node_delete($node->nid);
     }

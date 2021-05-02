@@ -66,7 +66,7 @@ class SourceTagTest extends \DrupalWebTestCase {
   /**
    * Delete test contact.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     if ($contact = Contact::byEmail($this->testEmail)) {
       $contact->delete();
     }

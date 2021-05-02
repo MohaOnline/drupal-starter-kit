@@ -10,7 +10,7 @@ class EndpointTest extends \DrupalWebTestCase {
   /**
    * Clear all redirects.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     db_delete('campaignion_action_redirect')->execute();
     db_delete('campaignion_action_redirect_filter')->execute();
   }

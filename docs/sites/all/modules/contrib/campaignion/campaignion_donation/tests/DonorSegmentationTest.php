@@ -91,4 +91,14 @@ class DonorSegmentationTest extends DrupalWebTestCase {
     $this->assertFalse($changed);
   }
 
+  /**
+   * Test that NULL values are ignored and don’t trigger errors.
+   */
+  public function testNullPayments() {
+    list($contact, $node, $submission, $payment) = $this->emptyTestData();
+    $submission->payments = [NULL];
+    $changed = campaignion_donation_campaignion_action_contact_alter($contact, $submission, $node);
+    $this->assertFalse($changed);
+  }
+
 }

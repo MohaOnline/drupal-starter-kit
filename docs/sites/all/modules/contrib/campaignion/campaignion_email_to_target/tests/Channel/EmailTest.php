@@ -38,4 +38,27 @@ class EmailTest extends \DrupalUnitTestcase {
     $this->assertTrue(strpos($rendered, '&amp;') === FALSE, 'Some strings were double-escaped.');
   }
 
+  /**
+   * Test rendering the form when editing is disabled.
+   */
+  public function testRenderNonEditable() {
+    list($target, $message) = [
+      ['id' => 't1', 'salutation' => 'T1', 'constituency' => ['name' => 'C1']],
+      new Message([
+        'subject' => "Subject's string",
+        'header' => "Header's string",
+        'message' => "Message's string",
+        'footer' => "Footer's string",
+      ]),
+    ];
+    $channel = new Email();
+    $element = $channel->messageForm($target, $message, FALSE);
+
+    $form_state = form_state_defaults();
+    drupal_prepare_form('e2t_component_element', $element, $form_state);
+    drupal_process_form('e2t_component_element', $element, $form_state);
+    $rendered = drupal_render($element);
+    $this->assertStringContainsString('<p class="email-to-target-subject"><strong>Subject&#039;s string</strong></p>', $rendered);
+  }
+
 }

@@ -10,7 +10,7 @@ class ConditionalTest extends \DrupalUnitTestCase {
   /**
    * Include the component file.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     webform_component_include('opt_in');
   }

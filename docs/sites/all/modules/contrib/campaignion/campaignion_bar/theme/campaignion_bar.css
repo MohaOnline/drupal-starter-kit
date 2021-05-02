@@ -11,6 +11,7 @@ body.aetoolbar .ui-page {
 #ae-bar,
 #ae-popups,
 #ae-widepopups {
+  box-sizing: content-box;
   font-family: "Helvetica Neue", Helvetica, Verdana, sans-serif !important;
   font-size: 11px !important;
   line-height: 2.272727em !important;
@@ -27,8 +28,8 @@ body.aetoolbar .ui-page {
   font-family: "Helvetica Neue", Helvetica, Verdana, sans-serif !important;
   font-size: 11px !important;
   line-height: 2.272727em !important;
-  margin-top: 0;
-  margin-bottom: 0;
+  margin: 0;
+  padding: 0;
 }
 #ae-bar a,
 #ae-popups a,
@@ -65,6 +66,8 @@ body.aetoolbar .ui-page {
   font-family: "Helvetica Neue", Helvetica, Verdana, sans-serif !important;
   font-size: 11px !important;
   line-height: 2.272727em !important;
+  margin: 0;
+  padding: 0;
 }
 /* general ae-bar styling */
 #ae-bar {
@@ -83,6 +86,9 @@ body.aetoolbar .ui-page {
   float: left;
   padding: 0.5em 1em 0.2em 1em;
   line-height: 0px;
+}
+#ae-bar #ae-logo img {
+  height: 51px;
 }
 /* ae bar menu styling */
 #ae-menu,
@@ -282,6 +288,8 @@ body.aetoolbar .ui-page {
 #ae-widepopups .sidepopup ul.menu a {
   padding: 0.5em 1em;
   display: block;
+  width: 100%;
+  box-sizing: border-box;
   background: url() repeat #787575;
   -moz-border-radius: 0.5em;
   -webkit-border-radius: 0.5em;
@@ -520,47 +528,6 @@ body.aetoolbar .ui-page {
 #ae-menu-show a:hover,
 #ae-menu-show a:focus {
   background: url('../img/ae_bar_icons.png') no-repeat center -454px;
-}
-#ae-menu-modal-hotkey-menu {
-  padding-top: 30px;
-  padding-bottom: 30px;
-  display: none;
-}
-#ae-menu-modal-hotkey-menu ul {
-  clear: both;
-  margin: auto 0;
-}
-#ae-menu-modal-hotkey-menu ul li {
-  border-bottom: 1px solid gray;
-  border-right: 1px solid gray;
-  float: left;
-  text-align: center;
-  padding: 5px;
-  position: relative;
-}
-#ae-menu-modal-hotkey-menu ul li:last-of-type {
-  border-right: none;
-}
-#ae-menu-modal-hotkey-menu ul li a {
-  vertical-align: bottom;
-  display: inline-block;
-  width: 100px;
-  color: #e4dede;
-}
-#ae-menu-modal-hotkey-menu ul.big-icons li a {
-  font-weight: bold;
-  padding-top: 20px;
-}
-#ae-menu-modal-hotkey-menu ul.last li {
-  border-bottom: none;
-}
-body.aetoolbar .ae-menu-modal-hotkey-menu-dialog {
-  top: 40px;
-  background: #333333;
-  border-radius: none;
-}
-body.aetoolbar .ae-menu-modal-hotkey-menu-dialog .ui-dialog-titlebar {
-  display: none;
 }
 body.aetoolar .ui-widget-overlay {
   background-color: #333333;

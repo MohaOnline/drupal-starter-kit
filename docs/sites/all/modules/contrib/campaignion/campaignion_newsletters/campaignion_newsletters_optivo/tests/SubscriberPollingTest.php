@@ -34,7 +34,7 @@ class SubscriberPollingTest extends \DrupalUnitTestCase {
     return new SubscriberPolling($this->list->source, $mock_factory, 20, 10);
   }
 
-  public function setUp() {
+  public function setUp() : void {
     $this->list = NewsletterList::fromData([
       'source' => 'test',
       'identifier' => 'test-4711',
@@ -54,7 +54,7 @@ class SubscriberPollingTest extends \DrupalUnitTestCase {
       ->execute();
   }
 
-  public function tearDown() {
+  public function tearDown() : void {
     db_delete('campaignion_newsletters_subscriptions')
       ->condition('list_id', $this->list->list_id)
       ->execute();

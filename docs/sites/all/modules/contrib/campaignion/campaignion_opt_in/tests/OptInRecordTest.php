@@ -14,7 +14,7 @@ class OptInRecrodTest extends \DrupalUnitTestCase {
   /**
    * Create a stub submission and activity.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     module_load_include('components.inc', 'webform', 'includes/webform');
     $node_stub = (object) [
@@ -66,7 +66,7 @@ class OptInRecrodTest extends \DrupalUnitTestCase {
   /**
    * Remove the activity and all opt-in records.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     $this->activity->delete();
     db_delete('campaignion_opt_in')->execute();
     parent::tearDown();

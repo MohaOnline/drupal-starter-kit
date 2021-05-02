@@ -25,7 +25,7 @@ class ComponentTest extends \DrupalUnitTestCase {
   /**
    * Create a contact and some lists for testing.
    */
-  public function setUp() {
+  public function setUp() : void {
     $this->submission = $this->createMock(WebformSubmission::class);
     parent::setUp();
   }
@@ -33,7 +33,7 @@ class ComponentTest extends \DrupalUnitTestCase {
   /**
    * Clean up the test contact.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     if ($c = Contact::byEmail('test@example.com')) {
       entity_delete('redhen_contact', $c->contact_id);
     }

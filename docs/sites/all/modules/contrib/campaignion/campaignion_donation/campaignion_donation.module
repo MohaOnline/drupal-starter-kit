@@ -1,12 +1,13 @@
 <?php
+
 /**
  * @file
  * Hook implementations for the donation functionality in campaignion.
  */
 
-use \Drupal\campaignion_action\Loader;
-use \Drupal\little_helpers\Webform\Webform;
-use \Drupal\little_helpers\Webform\Submission;
+use Drupal\campaignion_action\Loader;
+use Drupal\little_helpers\Webform\Submission;
+use Drupal\webform_paymethod_select\PaymentRecurrentController;
 
 /**
  * Helper function to check whether a node is a donation node.
@@ -18,16 +19,16 @@ function _campaignion_donation_node_is_instance($node) {
 /**
  * Implements hook_webform_paymethod_select_method_list_alter().
  *
- * Alters the list of available payment methods based whether the
- * payment interval is recurrent or not
+ * Alters the list of available payment methods based on whether the
+ * payment interval is recurrent or not.
  */
 function campaignion_donation_webform_paymethod_select_method_list_alter(&$methods, $payment) {
   $interval = $payment->contextObj->value('donation_interval');
-  $recurrent = in_array($interval, array('m', 'y'));
+  $recurrent = in_array($interval, ['m', 'y']);
 
   if ($recurrent) {
     foreach ($methods as $pmid => $method) {
-      if (!($method->controller instanceof \Drupal\webform_paymethod_select\PaymentRecurrentController)) {
+      if (!($method->controller instanceof PaymentRecurrentController)) {
         unset($methods[$pmid]);
       }
     }
@@ -50,12 +51,12 @@ function campaignion_donation_form_builder_palette_groups($form_type, $form_id) 
   if ($form_type != 'webform') {
     return;
   }
-  $palette = array();
+  $palette = [];
   if (_campaignion_donation_node_is_instance(node_load($form_id))) {
-    $palette['donation'] = array(
+    $palette['donation'] = [
       'weight' => -19,
       'title'  => t('Payment data'),
-    );
+    ];
   }
   return $palette;
 }
@@ -71,36 +72,40 @@ function campaignion_donation_form_builder_element_types($form_type, $form_id) {
   }
   if (_campaignion_donation_node_is_instance(node_load($form_id))) {
     module_load_include('inc', 'form_builder_webform', 'form_builder_webform.components');
-    $types['donation_interval'] = array(
-      'properties' => array(
+    $types['donation_interval'] = [
+      'properties' => [
         'default_value',
         'options',
         'multiple',
-      ),
-      'default'       => array(
-        '#options' => array('1' => t('only once'), 'm' => t('monthly'), 'y' => t('yearly')),
+      ],
+      'default' => [
+        '#options' => [
+          '1' => t('only once'),
+          'm' => t('monthly'),
+          'y' => t('yearly'),
+        ],
         '#default_value' => 'm',
         '#title' => t('Donation interval'),
         '#required' => TRUE,
-      ) + _form_builder_webform_default('select', array('aslist' => TRUE, 'multiple' => FALSE)),
+      ] + _form_builder_webform_default('select', ['aslist' => TRUE, 'multiple' => FALSE]),
       'palette_group' => 'donation',
-      'unique'        => TRUE,
-      'title'         => t('Donation interval'),
-      'weight'        => -98,
-    );
+      'unique' => TRUE,
+      'title' => t('Donation interval'),
+      'weight' => -98,
+    ];
 
-    $types['donation_amount'] = array(
+    $types['donation_amount'] = [
       'title'  => t('Donation amount'),
       'weight' => -99,
       'palette_group' => 'donation',
-      'unique'        => TRUE,
-      'properties'    => array('default_value'),
-      'default'       => array(
+      'unique' => TRUE,
+      'properties' => ['default_value'],
+      'default' => [
         '#title' => t('Donation amount'),
         '#default_value' => '[current-page:query:p12]',
         '#required' => TRUE,
-      ) + _form_builder_webform_default('textfield'),
-    );
+      ] + _form_builder_webform_default('textfield'),
+    ];
 
     return $types;
   }
@@ -132,7 +137,7 @@ function campaignion_donation_form_builder_element_types_alter(&$types, $form_ty
  */
 function campaignion_donation_campaignion_action_contact_alter(\RedhenContact $contact, Submission $submission, $node) {
   $changed = FALSE;
-  foreach ($submission->payments ?? [] as $payment) {
+  foreach (array_filter($submission->payments ?? []) as $payment) {
     $status = $payment->getStatus();
     if (!payment_status_is_or_has_ancestor($status->status, PAYMENT_STATUS_SUCCESS)) {
       continue;

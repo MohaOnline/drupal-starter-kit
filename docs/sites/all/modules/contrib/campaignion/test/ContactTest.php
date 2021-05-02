@@ -10,7 +10,7 @@ class ContactTest extends \DrupalUnitTestCase {
   /**
    * Remove the test contact if needed.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     if ($contact = Contact::byEmail('test@example.com')) {
       $contact->delete();
     }

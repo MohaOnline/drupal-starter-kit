@@ -48,21 +48,6 @@ class Address extends Field {
     return TRUE;
   }
 
-  public function import(SourceInterface $source, \EntityMetadataWrapper $entity) {
-    try {
-      if (($value = $this->getValue($source)) && ($value = $this->preprocessField($value))) {
-        if ($this->storeValue($entity, $value)) {
-          return $this->setValue($entity, $value);
-        }
-        return FALSE;
-      }
-    }
-    catch (\EntityMetadataWrapperException $e) {
-      watchdog('campaignion', 'Tried to import into a non-existing field "!field".', array('!field' => $this->field), WATCHDOG_WARNING);
-    }
-    return FALSE;
-  }
-
   public function setValue(\EntityMetadataWrapper $entity, $new_address) {
     $field = $entity->{$this->field};
     if ($field instanceof \EntityListWrapper) {

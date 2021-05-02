@@ -11,7 +11,7 @@ class WebformComponentFormTest extends DrupalUnitTestCase {
   /**
    * Create test node and list.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     module_load_include('inc', 'webform', 'includes/webform.components');
     $this->node = (object) ['type' => 'webform', 'title' => __CLASS__];
@@ -31,7 +31,7 @@ class WebformComponentFormTest extends DrupalUnitTestCase {
   /**
    * Remove test node and list.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     $this->list->delete();
     node_delete($this->node->nid);
     parent::tearDown();

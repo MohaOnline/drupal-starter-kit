@@ -88,8 +88,11 @@ class TargetStep extends WizardStep {
     $settings['validations'] = [
       // Escape backslashes so JS won’t interpret them as escape sequence.
       'email' => '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
-      'first_name' => '\\S+',
-      'last_name' => '\\S+',
+      // First and last name are:
+      // - at least one non-whitespace char (which is not ,"@ too)
+      // - and no ,"@ chars in the whole string.
+      'first_name' => '^\\s*([^,"@\\s]\\s*)+$',
+      'last_name' => '^\\s*([^,"@\\s]\\s*)+$',
       'salutation' => '\\S+',
     ];
     // Used by the front end vue app to validate field max length.

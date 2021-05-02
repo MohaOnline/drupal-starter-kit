@@ -12,7 +12,7 @@ class NewsletterSubscriptionWithMockedIPTest extends \DrupalWebTestCase {
   /**
    * Set up.
    */
-  public function setUp() {
+  public function setUp() : void {
     // Mocking the IP address see
     // https://api.drupal.org/api/drupal/modules%21simpletest%21tests%21bootstrap.test/class/BootstrapIPAddressTestCase/7.x
     $this->oldserver = $_SERVER;
@@ -30,7 +30,7 @@ class NewsletterSubscriptionWithMockedIPTest extends \DrupalWebTestCase {
   /**
    * Tear down.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     $_SERVER = $this->oldserver;
     drupal_static_reset('ip_address');
 

@@ -15,7 +15,7 @@ class SupporterFiltersTest extends \DrupalUnitTestCase {
   /**
    * Create test contacts.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $c1 = Contact::fromEmail('test@example.com');
     $c1->save();
@@ -30,7 +30,7 @@ class SupporterFiltersTest extends \DrupalUnitTestCase {
   /**
    * Remove test contacts.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     foreach ($this->contacts as $c) {
       $c->delete();
     }

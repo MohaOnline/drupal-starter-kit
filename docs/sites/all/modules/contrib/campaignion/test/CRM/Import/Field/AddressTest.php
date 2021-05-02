@@ -71,7 +71,7 @@ class AddressTest extends RedhenEntityTest {
   /**
    * Set up test data.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $this->importer = new Address('field_address', self::$mapping);
     $this->fakeContact = $this->createMock('EntityMetadataWrapper');

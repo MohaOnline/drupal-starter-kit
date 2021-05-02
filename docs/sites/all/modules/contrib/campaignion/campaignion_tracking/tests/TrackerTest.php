@@ -1,5 +1,8 @@
 <?php
 
+use Drupal\campaignion_opt_in\Values;
+use Drupal\little_helpers\Webform\Submission;
+
 require_once drupal_get_path('module', 'webform') . '/includes/webform.components.inc';
 
 /**
@@ -8,12 +11,16 @@ require_once drupal_get_path('module', 'webform') . '/includes/webform.component
 class TrackerTest extends \DrupalWebTestCase {
 
   /**
-   * Create test nodes.
+   * Create test node with a webform with 1 component.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
-    $this->petition = entity_create('node', ['type' => 'petition']);
-    $this->petition->webform = webform_node_defaults();
+    $node['nid'] = 1;
+    $node['type'] = 'petition';
+    $node['title'] = 'Test';
+    $node['language'] = 'und';
+    $node['webform'] = webform_node_defaults();
+    $node['webform']['webform_ajax'] = WEBFORM_AJAX_NO_CONFIRM;
     $component = [
       'type' => 'email',
       'form_key' => 'email',
@@ -21,17 +28,8 @@ class TrackerTest extends \DrupalWebTestCase {
       'page_num' => 1,
     ];
     webform_component_defaults($component);
-    $this->petition->webform['webform_ajax'] = WEBFORM_AJAX_NO_CONFIRM;
-    $this->petition->webform['components'][1] = $component;
-    node_save($this->petition);
-  }
-
-  /**
-   * Delete test nodes.
-   */
-  public function tearDown() {
-    node_delete($this->petition->nid);
-    parent::tearDown();
+    $node['webform']['components'][1] = $component;
+    $this->petition = (object) $node;
   }
 
   /**
@@ -108,19 +106,47 @@ class TrackerTest extends \DrupalWebTestCase {
    * TODO: testing donation codes.
    */
   public function testNodeContextRedirectCodes() {
+    $this->petition->title = "Donation test & stuff";
+    $submission['sid'] = 1;
+    $submission = new Submission($this->petition, (object) $submission);
+    $submission->opt_in = new Values($submission);
+    $nid = $submission->node->nid;
+
     $redirect = new stdClass();
     $redirect->fragment = '';
-    $submission = new stdClass();
-    $submission->node = $this->petition;
-    $submission->node->title = "Donation test & stuff";
-    $submission->sid = 1;
-    $nid = $submission->node->nid;
     campaignion_tracking_webform_redirect_alter($redirect, $submission);
     $this->assertEqual('t:t=s;w:nid=' . $nid . '&sid=1&title=Donation%20test%20%26%20stuff', $redirect->fragment);
 
     $redirect->fragment = 'something';
     campaignion_tracking_webform_redirect_alter($redirect, $submission);
     $this->assertEqual('something;t:t=s;w:nid=' . $nid . '&sid=1&title=Donation%20test%20%26%20stuff', $redirect->fragment);
+  }
+
+  /**
+   * Test adding optins to tracking fragment.
+   */
+  public function testSubmissionWithOptin() {
+    $component = [
+      'form_key' => 'newsletter',
+      'type' => 'opt_in',
+      'cid' => 1,
+      'page_num' => 1,
+      'extra' => [
+        'channel' => 'email',
+        'optin_statement' => 'Opt-in statement',
+      ],
+    ];
+    webform_component_defaults($component);
+    $this->petition->webform['components'][1] = $component;
+    $submission['sid'] = 1;
+    $submission['data'][1] = ['radios:opt-in'];
+    $submission = new Submission($this->petition, (object) $submission);
+    $submission->opt_in = new Values($submission);
+
+    $redirect = new stdClass();
+    $redirect->fragment = '';
+    campaignion_tracking_webform_redirect_alter($redirect, $submission);
+    $this->assertEqual('t:t=s;w:nid=1&sid=1&title=Test&optin[email]=opt-in', $redirect->fragment);
   }
 
 }

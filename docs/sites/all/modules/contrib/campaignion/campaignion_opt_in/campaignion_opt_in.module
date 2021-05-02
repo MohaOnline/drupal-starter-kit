@@ -165,3 +165,10 @@ function campaignion_opt_in_webform_submission_load(&$submissions) {
     $submission->opt_in = new Values(new Submission($node, $submission));
   }
 }
+
+/**
+ * Implements hook_webform_submission_create_alter().
+ */
+function campaignion_opt_in_webform_submission_create_alter($submission, $node) {
+  $submission->opt_in = new Values(new Submission($node, $submission));
+}

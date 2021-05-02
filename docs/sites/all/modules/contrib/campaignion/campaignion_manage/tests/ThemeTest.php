@@ -18,7 +18,7 @@ class ThemeTest extends \DrupalUnitTestCase {
     $_GET['q'] = 'system/ajax';
     $_SERVER['HTTP_REFERER'] = 'http://example.com/path';
     $html = drupal_render($element);
-    $this->assertContains('href="/path?page=1"', $html);
+    $this->assertStringContainsString('href="/path?page=1"', $html);
   }
 
 }

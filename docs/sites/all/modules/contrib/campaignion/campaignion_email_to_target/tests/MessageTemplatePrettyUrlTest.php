@@ -10,7 +10,7 @@ class MessageTemplatePrettyUrlTest extends \DrupalUnitTestCase {
   /**
    * Create a test node.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $this->node = (object) [
       'type' => 'petition',
@@ -22,7 +22,7 @@ class MessageTemplatePrettyUrlTest extends \DrupalUnitTestCase {
   /**
    * Delete the test node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     node_delete($this->node->nid);
     parent::tearDown();
   }

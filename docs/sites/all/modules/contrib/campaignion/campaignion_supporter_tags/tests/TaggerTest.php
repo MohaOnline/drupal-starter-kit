@@ -10,7 +10,7 @@ class TaggerTest extends \DrupalWebTestCase {
   /**
    * Set-up a parent term for testing.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp(['campaignion_test']);
     $this->parentTag = entity_create('taxonomy_term', [
       'name' => 'Test parent',
@@ -63,7 +63,7 @@ class TaggerTest extends \DrupalWebTestCase {
   /**
    * Delete parent term and all its children.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     $delete = array_keys(taxonomy_get_children($this->parentTag->tid));
     $delete[] = $this->parentTag->tid;
     entity_delete_multiple('taxonomy_term', $delete);

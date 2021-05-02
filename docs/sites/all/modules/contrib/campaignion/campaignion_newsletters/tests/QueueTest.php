@@ -5,6 +5,7 @@ namespace Drupal\campaignion_newsletters;
 use \Drupal\campaignion\Contact;
 
 class QueueTest extends \DrupalUnitTestCase {
+
   function test_updateContactWhileCronIsRunnning() {
     $subscription = $this->getMockBuilder(Subscription::class)
       ->setMethods(['provider'])
@@ -32,7 +33,7 @@ class QueueTest extends \DrupalUnitTestCase {
     $this->assertCount(1, $items, 'New data failed to override old (but claimed) data.');
   }
 
-  function tearDown() {
+  function tearDown() : void {
     db_delete('campaignion_newsletters_subscriptions')->execute();
     db_delete('campaignion_newsletters_queue')->execute();
   }

@@ -222,7 +222,7 @@ class Values {
         if (webform_component_feature($component['type'], 'opt_in')) {
           $values = $submission->valuesByCid($cid);
           if ($opt_in = webform_component_invoke($component['type'], 'opt_in', $component, $values)) {
-            $this->_values[] = $opt_in;
+            $this->_values[$cid] = $opt_in;
           }
         }
       }
@@ -236,8 +236,8 @@ class Values {
   public function valuesPerChannel($channel = NULL) {
     if (!isset($this->_valuesPerChannel)) {
       $this->_valuesPerChannel = [];
-      foreach ($this->values() as $v) {
-        $this->_valuesPerChannel[$v['channel']][] = $v;
+      foreach ($this->values() as $cid => $v) {
+        $this->_valuesPerChannel[$v['channel']][$cid] = $v;
       }
     }
     if ($channel) {

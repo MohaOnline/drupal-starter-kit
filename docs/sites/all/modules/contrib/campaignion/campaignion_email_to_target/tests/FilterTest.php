@@ -4,7 +4,7 @@ namespace Drupal\campaignion_email_to_target;
 
 class FilterTest extends \DrupalWebTestCase {
 
-  public function tearDown() {
+  public function tearDown() : void {
     db_delete('campaignion_email_to_target_filters')->execute();
   }
 

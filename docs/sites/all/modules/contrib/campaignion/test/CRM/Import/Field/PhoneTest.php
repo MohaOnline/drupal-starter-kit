@@ -14,7 +14,7 @@ class PhoneTest extends RedhenEntityTest {
   /**
    * Create the test importer.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $this->importer = new Phone('field_phone_number');
   }

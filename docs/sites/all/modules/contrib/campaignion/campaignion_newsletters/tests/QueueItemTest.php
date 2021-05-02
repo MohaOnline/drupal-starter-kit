@@ -60,7 +60,7 @@ class QueueItemTest extends DrupalWebTestCase {
   /**
    * Remove all stray queue items from the DB.
    */
-  function tearDown() {
+  function tearDown() : void {
     db_delete('campaignion_newsletters_queue')->execute();
   }
 

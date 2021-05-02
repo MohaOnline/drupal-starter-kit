@@ -44,6 +44,7 @@ body.aetoolbar {
 /* ae bar reset css styles */
 
 #ae-bar, #ae-popups, #ae-widepopups {
+  box-sizing: content-box;
   font-family: @fontfamily;
   font-size: @fontsizeabsolute;
   line-height: @lineheightabsolute;
@@ -51,8 +52,8 @@ body.aetoolbar {
     font-family: @fontfamily;
     font-size: @fontsizeabsolute;
     line-height: @lineheightabsolute;
-    margin-top: 0;
-    margin-bottom: 0;
+    margin: 0;
+    padding: 0;
   }
   a, a:hover, a:focus, a:active {
     font-family: @fontfamily;
@@ -64,9 +65,11 @@ body.aetoolbar {
     font-family: @fontfamily;
     font-size: @fontsizeabsolute;
     line-height: @lineheightabsolute;
+    margin: 0;
+    padding: 0;
   }
 }
-    
+
 /* general ae-bar styling */
 
 #ae-bar {
@@ -83,8 +86,10 @@ body.aetoolbar {
   #ae-logo {
     float: left;
     padding: 0.5em 1em 0.2em 1em;
-    
-    line-height: 0px; } }
+    line-height: 0px;
+    img {
+      height: 51px;
+    } } }
 
 
 /* ae bar menu styling */
@@ -219,6 +224,8 @@ body.aetoolbar {
     a {
       padding: 0.5em 1em;
       display: block;
+      width: 100%;
+      box-sizing: border-box;
       background: @bg_link;
       -moz-border-radius: @link_border_radius;
       -webkit-border-radius: @link_border_radius;
@@ -337,8 +344,11 @@ body.aetoolbar {
       }
       a {
         padding: .5em 1.5em .5em 1em;
-        display: block; }
-        list-style: none; }}
+        display: block;
+      }
+      list-style: none;
+    }
+  }
   .element-invisible {
     display: none; }
   /* main popup stlyes */
@@ -430,42 +440,6 @@ body.aetoolbar {
   }
   
 }
-
-#ae-menu-modal-hotkey-menu {
-  padding-top: 30px;
-  padding-bottom: 30px;
-  display: none;
-  ul {
-    clear: both;
-    margin: auto 0;
-    li {
-      border-bottom: 1px solid gray;
-      border-right: 1px solid gray;
-      float: left;
-      text-align: center;
-      padding: 5px;
-      position: relative;
-      &:last-of-type {
-        border-right: none; }
-      a {
-        vertical-align: bottom;
-        display: inline-block;
-        width: 100px;
-        color: @color_link; } }
-    &.big-icons {
-      li a {
-        font-weight: bold;
-        padding-top: 20px; } }
-    &.last {
-      li {
-        border-bottom: none; } } } }
-
-body.aetoolbar .ae-menu-modal-hotkey-menu-dialog {
-  top: 40px;
-  background: #333333;
-  border-radius: none;
-  .ui-dialog-titlebar {
-    display: none; } }
 
 body.aetoolar .ui-widget-overlay {
   background-color: #333333;

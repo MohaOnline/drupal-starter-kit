@@ -13,7 +13,7 @@ class FieldIntegrationTest extends DrupalUnitTestCase {
   /**
    * Delete the test node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     Container::get()->inject('campaignion_layout.themes', NULL);
     parent::tearDown();
   }
@@ -33,7 +33,7 @@ class FieldIntegrationTest extends DrupalUnitTestCase {
   public function testThemeForEntityItemDisabledTheme() {
     $node = $this->nodeWithItems([['theme' => 'foo', 'layout' => 'foo_layout']]);
     // Theme is configured in the field item but not enabled.
-    $this->injectTheme(FALSE);
+    $this->injectTheme(FALSE, TRUE, FALSE);
     $this->assertNull(campaignion_layout_get_theme_for_entity('node', $node));
   }
 
@@ -51,14 +51,14 @@ class FieldIntegrationTest extends DrupalUnitTestCase {
    * Test node rendering.
    */
   public function testNodePreprocess() {
-    $vars['node'] = $this->nodeWithItems([['theme' => 'foo', 'layout' => 'foo']]);
+    $vars['node'] = $this->nodeWithItems([['theme' => 'dontcare', 'layout' => 'foo']]);
     $vars['node']->field_main_image[LANGUAGE_NONE][0] = [
       'uri' => '/misc/druplicon.png',
     ];
     $vars['theme_hook_suggestions'] = [];
+    $vars['page'] = [];
     $theme = $this->injectTheme(TRUE);
-    $theme->method('isActive')->willReturn(TRUE);
-    $theme->method('getLayout')->willReturn([
+    $theme->method('getLayoutFromItems')->willReturn([
       'name' => 'foo',
       'fields' => [
         'field_main_image' => [
@@ -67,11 +67,26 @@ class FieldIntegrationTest extends DrupalUnitTestCase {
         ],
       ],
     ]);
+    campaignion_layout_page_build($vars['page'], $vars['node'], 'foo');
     campaignion_layout_preprocess_page($vars);
     $this->assertEqual('foo', $vars['layout']);
     $this->assertEqual(['page__layout__foo'], $vars['theme_hook_suggestions']);
     $this->assertNotEmpty($vars['main_image']);
     $this->assertEqual('field', $vars['main_image']['#theme']);
+  }
+
+  /**
+   * Test using the default layout.
+   */
+  public function testPageBuildDefaultLayout() {
+    $node = $this->nodeWithItems([]);
+    $page = [];
+    $theme = $this->injectTheme(TRUE);
+    $theme->expects($this->once())->method('getLayoutFromItems')->willReturn([
+      'name' => 'foo_default',
+    ]);
+    campaignion_layout_page_build($page, $node);
+    $this->assertEqual('foo_default', $page['#layout']['name']);
   }
 
   /**
@@ -88,12 +103,14 @@ class FieldIntegrationTest extends DrupalUnitTestCase {
   /**
    * Inject a themes service that always returns a enabled/disabled theme.
    */
-  protected function injectTheme($enabled) {
+  protected function injectTheme($enabled, $has_feature = TRUE, $has_feature_enabled = TRUE) {
     $themes = $this->createMock(Themes::class);
     $theme = $this->createMock(Theme::class);
     $themes->method('getTheme')->willReturn($theme);
     Container::get()->inject('campaignion_layout.themes', $themes);
     $theme->method('isEnabled')->willReturn($enabled);
+    $theme->method('hasFeature')->willReturn($has_feature);
+    $theme->method('hasFeatureEnabled')->willReturn($has_feature_enabled);
     return $theme;
   }
 

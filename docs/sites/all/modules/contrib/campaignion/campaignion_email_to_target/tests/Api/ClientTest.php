@@ -2,6 +2,8 @@
 
 namespace Drupal\campaignion_email_to_target\Api;
 
+use Drupal\campaignion_auth\AuthAppClient;
+
 /**
  * Test the API-client class.
  */
@@ -18,7 +20,7 @@ class ClientTest extends \DrupalUnitTestCase {
   /**
    * Reset static cache.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     drupal_static_reset(Client::class . '.datasets');
   }
 

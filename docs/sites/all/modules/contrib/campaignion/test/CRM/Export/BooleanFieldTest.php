@@ -15,7 +15,7 @@ class BooleanFieldTest extends \DrupalUnitTestCase {
    *
    * We use the contact type provided by the campaignion_test module here.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $this->contact = entity_create('redhen_contact', ['type' => 'contact']);
     $this->exporter = new ExporterBase([]);

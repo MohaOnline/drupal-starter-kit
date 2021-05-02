@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * Update hooks for the campaignion_giftaid module.
+ */
+
+/**
+ * Enable campaignion_donation_amount.
+ */
+function campaignion_giftaid_1() {
+  if (!module_enable(['campaignion_donation_amount'], TRUE)) {
+    new DrupalUpdateException("Unable to enable ‘campaignion_donation_amount’. Please verify it (and all it's dependencies) can be found by Drupal.");
+  }
+}

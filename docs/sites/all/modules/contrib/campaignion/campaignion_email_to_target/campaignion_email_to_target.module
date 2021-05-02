@@ -23,7 +23,6 @@ use Drupal\campaignion_email_to_target\Component;
 use Drupal\campaignion_email_to_target\Loader as SelectionModeLoader;
 use Drupal\campaignion_email_to_target\MessageEndpoint;
 use Drupal\campaignion_email_to_target\Tokens;
-use Drupal\campaignion_email_to_target\Api\AuthAppClient;
 use Drupal\campaignion_email_to_target\Api\Client;
 use Drupal\campaignion_email_to_target\SelectionMode\All;
 use Drupal\campaignion_email_to_target\SelectionMode\One;
@@ -77,14 +76,7 @@ function campaignion_email_to_target_little_helpers_services() {
     'class' => Client::class,
     'arguments' => [
       '!campaignion_email_to_target_e2t_api_url',
-      '@campaignion_email_to_target.api.AuthAppClient',
-    ],
-  ];
-  $info['campaignion_email_to_target.api.AuthAppClient'] = [
-    'class' => AuthAppClient::class,
-    'arguments' => [
-      '!campaignion_email_to_target_auth_app_url',
-      '!campaignion_email_to_target_api_key',
+      '@campaignion_auth.AuthAppClient',
     ],
   ];
   return $info;
@@ -279,6 +271,9 @@ function campaignion_email_to_target_theme() {
   ];
   $hooks['campaignion_email_to_target_results_table_entry'] = [
     'template' => 'campaignion-email-to-target-results-table-entry',
+  ] + $options;
+  $hooks['campaignion_email_to_target_email_message_form'] = [
+    'template' => 'campaignion-email-to-target-email-message-form',
   ] + $options;
   return $hooks;
 }

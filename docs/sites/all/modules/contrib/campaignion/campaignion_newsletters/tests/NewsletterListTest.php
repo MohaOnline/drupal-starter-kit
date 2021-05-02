@@ -12,7 +12,7 @@ class NewsletterListTest extends \DrupalUnitTestCase {
   /**
    * Remove all test data.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     if ($c = Contact::byEmail('test@example.com')) {
       entity_delete('redhen_contact', $c->contact_id);
     }

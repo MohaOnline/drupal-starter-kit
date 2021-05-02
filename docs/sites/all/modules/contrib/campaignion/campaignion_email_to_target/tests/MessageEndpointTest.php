@@ -5,7 +5,7 @@ namespace Drupal\campaignion_email_to_target;
 
 class MessageEndpointTest extends \DrupalWebTestCase {
 
-  public function tearDown() {
+  public function tearDown() : void {
     db_delete('campaignion_email_to_target_messages')->execute();
     db_delete('campaignion_email_to_target_filters')->execute();
   }

@@ -45,8 +45,8 @@ Drupal.behaviors.campaignion_tracking.attach = function(context, settings) {
     if (node['is_donation']) {
       if (donation['amount'] && donation['interval'] && donation['currency_code']) {
         var product = {
-          name: node['title'],
-          id: node['nid'],
+          name: `${node['title']} (${donation['description']})`,
+          id: `${node['nid']}-${donation['amount_component']}`,
           price: String(donation['amount']),
           variant: String(donation['interval']),
           quantity: 1

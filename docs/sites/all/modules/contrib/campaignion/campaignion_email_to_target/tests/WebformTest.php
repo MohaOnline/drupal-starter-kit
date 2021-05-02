@@ -16,7 +16,7 @@ class WebformTest extends DrupalUnitTestCase {
   /**
    * Create test node.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     Container::get()->inject('campaignion_email_to_target.api.Client', $this->createMock(Client::class));
     $node = (object) [
@@ -33,7 +33,7 @@ class WebformTest extends DrupalUnitTestCase {
   /**
    * Delete test node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     drupal_static_reset(Container::class);
     entity_delete('node', $this->node->nid);
     parent::tearDown();

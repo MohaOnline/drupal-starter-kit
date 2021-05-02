@@ -49,11 +49,12 @@ function hook_campaignion_layout_info_alter(&$info) {
  *
  * @return bool[]
  *   Boolean values keyed by field names. If a field name is in this array and
- *   has a truthy value then it will be hidden by default.
+ *   has a truthy value then it will be hidden unless it’s used by the selected
+ *   layout.
  */
 function hook_campaignion_layout_dependent_fields() {
-  $hidden_fields['layout_background_image'] = TRUE;
-  return $hidden_fields;
+  $dependent_fields['layout_background_image'] = TRUE;
+  return $dependent_fields;
 }
 
 /**
@@ -64,6 +65,6 @@ function hook_campaignion_layout_dependent_fields() {
  *
  * @see hook_campaignion_layout_dependent_fields()
  */
-function hook_campaignion_layout_dependent_fields_alter(array &$hidden_fields) {
-  $hidden_fields['not_hidden_after_all'] = FALSE;
+function hook_campaignion_layout_dependent_fields_alter(array &$dependent_fields) {
+  $dependent_fields['not_hidden_after_all'] = FALSE;
 }

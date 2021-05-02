@@ -175,6 +175,23 @@ function campaignion_email_to_target_requirements($phase) {
 }
 
 /**
+ * Move auth app implementation to its own module.
+ */
+function campaignion_email_to_target_update_10() {
+  if (!module_enable(['campaignion_auth'])) {
+    throw new \DrupalUpdateException('Could not enable the "campaignion_auth" module.');
+  }
+  $move = [
+    'campaignion_email_to_target_auth_app_url' => 'campaignion_auth_app_url',
+    'campaignion_email_to_target_auth_api_key' => 'campaignion_auth_api_key',
+  ];
+  foreach ($move as $from => $to) {
+    variable_set($to, variable_get($from));
+    variable_del($from);
+  }
+}
+
+/**
  * Add url field to {campaignion_email_to_target_messages}.
  */
 function campaignion_email_to_target_update_9() {

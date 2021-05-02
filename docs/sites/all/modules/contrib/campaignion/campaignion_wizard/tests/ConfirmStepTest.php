@@ -8,13 +8,6 @@ namespace Drupal\campaignion_wizard;
 class ConfirmStepTest extends \DrupalUnitTestCase {
 
   /**
-   * Enable dependencies.
-   */
-  public function setUp() {
-    parent::setUp(['campaignion_test']);
-  }
-
-  /**
    * Test getting the stepForm using the wizard.
    */
   public function testShowStepUsingWizard() {

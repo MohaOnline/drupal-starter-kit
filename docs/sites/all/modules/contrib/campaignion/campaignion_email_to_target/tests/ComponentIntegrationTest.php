@@ -15,7 +15,7 @@ class ComponentIntegrationTest extends \DrupalUnitTestCase {
   /**
    * Create test node.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $components[1] = ['type' => 'textfield', 'form_key' => 'text'];
     $components[2]['type'] = 'pagebreak';
@@ -26,7 +26,7 @@ class ComponentIntegrationTest extends \DrupalUnitTestCase {
   /**
    * Remove test node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     if (!empty($this->node->nid)) {
       node_delete($this->node->nid);
     }

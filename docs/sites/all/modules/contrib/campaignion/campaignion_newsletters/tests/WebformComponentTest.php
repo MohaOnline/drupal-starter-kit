@@ -17,7 +17,7 @@ class WebformComponentTest extends \DrupalUnitTestCase {
   /**
    * Load the components include file and create a test node.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     require_once drupal_get_path('module', 'webform') . '/includes/webform.components.inc';
     $this->node = (object) ['type' => 'webform'];
@@ -27,7 +27,7 @@ class WebformComponentTest extends \DrupalUnitTestCase {
   /**
    * Remove the test node.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     entity_delete('node', $this->node->nid);
     parent::tearDown();
   }

@@ -17,7 +17,7 @@ class ModuleTest extends DrupalUnitTestCase {
   /**
    * Prepare test data.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp();
     $this->node = (object) ['type' => 'petition'];
     node_object_prepare($this->node);
@@ -28,7 +28,7 @@ class ModuleTest extends DrupalUnitTestCase {
   /**
    * Delete test data.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     node_delete($this->node->nid);
     db_delete('campaignion_action_redirect');
     db_delete('campaignion_action_redirect_filter');

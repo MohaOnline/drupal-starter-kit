@@ -12,7 +12,7 @@ class NewsletterSubscriptionTest extends \DrupalWebTestCase {
   /**
    * Set up.
    */
-  public function setUp() {
+  public function setUp() : void {
     parent::setUp(['campaignion_activity', 'campaignion_newsletters']);
     db_delete('campaignion_activity')->execute();
     db_delete('campaignion_activity_newsletter_subscription')->execute();
@@ -21,7 +21,7 @@ class NewsletterSubscriptionTest extends \DrupalWebTestCase {
   /**
    * Tear down.
    */
-  public function tearDown() {
+  public function tearDown() : void {
     db_delete('campaignion_newsletters_subscriptions')->execute();
     db_delete('campaignion_newsletters_queue')->execute();
     db_delete('campaignion_activity')->execute();
