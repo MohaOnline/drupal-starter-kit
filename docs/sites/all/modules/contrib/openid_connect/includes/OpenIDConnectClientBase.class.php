@@ -5,6 +5,9 @@
  * Base class for OpenID Connect clients.
  */
 
+/**
+ * Base class for OpenID Connect clients.
+ */
 abstract class OpenIDConnectClientBase implements OpenIDConnectClientInterface {
 
   /**
@@ -28,6 +31,16 @@ abstract class OpenIDConnectClientBase implements OpenIDConnectClientInterface {
    */
   protected $settings;
 
+  /**
+   * Constructs a new OpenIDConnectClientBase.
+   *
+   * @param string $name
+   *   The machine name of the client plugin.
+   * @param string $label
+   *   The human-readable name of the client plugin.
+   * @param array $settings
+   *   Admin-provided configuration.
+   */
   public function __construct($name, $label, array $settings) {
     $this->name = $name;
     $this->label = $label;
@@ -186,4 +199,5 @@ abstract class OpenIDConnectClientBase implements OpenIDConnectClientInterface {
 
     return array();
   }
+
 }

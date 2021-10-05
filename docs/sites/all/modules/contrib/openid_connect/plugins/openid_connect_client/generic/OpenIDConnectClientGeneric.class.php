@@ -8,6 +8,9 @@
  * sites powered by oauth2-server-php.
  */
 
+/**
+ * Implements generic OpenID Connect Client plugin.
+ */
 class OpenIDConnectClientGeneric extends OpenIDConnectClientBase {
 
   /**
@@ -46,4 +49,5 @@ class OpenIDConnectClientGeneric extends OpenIDConnectClientBase {
       'userinfo' => $this->getSetting('userinfo_endpoint'),
     );
   }
+
 }
