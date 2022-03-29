@@ -1,0 +1,15 @@
+{
+    "require": {
+        "akamai-open/edgegrid-client": "0.4.x"
+    },
+    "autoload": {
+        "psr-4": {
+            "Drupal\\akamai\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Drupal\\akamai\\Tests\\": "tests"
+        }
+    }
+}

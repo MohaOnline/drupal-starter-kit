@@ -1,10 +1,26 @@
 <?php
+
 /**
  * @file
- * Integration with the Akamai CDN Cache Control Web Service.
+ * Integration with Akamai CDN CCU API.
  *
  * Akamai is a registered trademark of Akamai Technologies, Inc.
  */
+
+/**
+ * Default max number of seconds to spend processing the cron queue.
+ */
+define('AKAMAI_CRON_QUEUE_TIME_LIMIT_DEFAULT', 15);
+
+/**
+ * Default number of seconds to spend checking status of pending purge requests.
+ */
+define('AKAMAI_PURGE_STATUS_TIME_LIMIT_DEFAULT', 15);
+
+/**
+ * Default number of hours to keep purge request data.
+ */
+define('AKAMAI_PURGE_REQUEST_HOURS_TO_KEEP_DEFAULT', 72);
 
 /**
  * Implements hook_perm().
@@ -12,7 +28,7 @@
 function akamai_permission() {
   return array(
     'administer akamai' => array(
-      'description' => t('Configure the Akamai integration settings. Username, password, etc.'),
+      'description' => t('Configure the Akamai CDN settings. Username, password, etc.'),
       'title' => t('Administer Akamai Settings'),
     ),
     'purge akamai cache' => array(
@@ -30,9 +46,9 @@ function akamai_menu() {
 
   $items['admin/config/system/akamai'] = array(
     'title' => 'Akamai',
-    'description' => 'Akamai integration settings and cache clearing utility',
+    'description' => 'Akamai CDN settings.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('akamai_settings'),
+    'page arguments' => array('akamai_settings_form'),
     'access arguments' => array('administer akamai'),
     'file' => 'akamai.admin.inc',
   );
@@ -43,21 +59,38 @@ function akamai_menu() {
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
 
-  $items['admin/config/system/akamai/refresh'] = array(
-    'title' => 'Cache Control Utility',
-    'description' => 'Admin interface to flush Drupal resources from the Akamai cache',
+  $items['admin/config/system/akamai/purge'] = array(
+    'title' => 'Manual Purge (CCU)',
+    'description' => 'Admin interface to manually purge URLs from Akamai via the Content Control Utility (CCU) API.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('akamai_cache_control'),
+    'page arguments' => array('akamai_manual_purge_form'),
     'access arguments' => array('purge akamai cache'),
     'file' => 'akamai.admin.inc',
     'type' => MENU_LOCAL_TASK,
+  );
+
+  $items['admin/reports/akamai'] = array(
+    'title' => 'Akamai purge requests',
+    'description' => 'Provides status of purge requests.',
+    'page callback' => 'akamai_purge_request_list',
+    'access arguments' => array('purge akamai cache'),
+    'file' => 'akamai.admin.inc',
+  );
+
+  $items['admin/reports/akamai/%'] = array(
+    'title' => 'Akamai purge requests',
+    'description' => 'Provides information about an individual purge request.',
+    'page callback' => 'akamai_purge_request_detail',
+    'page arguments' => array(3),
+    'access arguments' => array('purge akamai cache'),
+    'file' => 'akamai.admin.inc',
   );
 
   return $items;
 }
 
 /**
- * Implements hook_theme()
+ * Implements hook_theme().
  */
 function akamai_theme() {
   return array(
@@ -91,10 +124,7 @@ function akamai_module_implements_alter(&$implementations, $hook) {
  * Implements hook_expire_cache().
  */
 function akamai_expire_cache($urls, $wildcards, $object_type, $object) {
-  foreach ($urls as $short_url => $full_url) {
-    $url = base_path() . $short_url;
-    akamai_clear_url($url, array(), $object);
-  }
+  akamai_purge_paths(array_keys($urls));
 }
 
 /**
@@ -104,8 +134,7 @@ function akamai_expire_cache($urls, $wildcards, $object_type, $object) {
  * cache. Clear base node/% url as well as aliases.
  */
 function akamai_node_update($node) {
-  $url = base_path() . "node/{$node->nid}";
-  akamai_clear_url($url, array(), $node);
+  akamai_purge_entity('node', $node);
 }
 
 /**
@@ -115,8 +144,7 @@ function akamai_node_update($node) {
  * cache. Clear base node/% url as well as aliases.
  */
 function akamai_node_delete($node) {
-  $url = base_path() . "node/{$node->nid}";
-  akamai_clear_url($url, array(), $node);
+  akamai_purge_entity('node', $node);
 }
 
 /**
@@ -169,7 +197,7 @@ function akamai_page_cache_control_form() {
 
   $form['path'] = array(
     '#type'  => 'hidden',
-    '#value' => $path
+    '#value' => $path,
   );
   $form['message'] = array(
     '#type'  => 'item',
@@ -192,18 +220,300 @@ function akamai_page_cache_control_form() {
 function akamai_page_cache_control_form_submit($form, &$form_state) {
   $values = $form_state['values'];
   $path = $values['path'];
-  $did_clear = akamai_clear_url($path, array(), $form['#node']);
-  if ($did_clear) {
-    $message = t("Akamai Cache Request has been made successfully, please allow 10 minutes for changes to take effect.");
+  $result = akamai_purge_path($path);
+  if ($result === TRUE) {
+    $message = t("A purge request for the path, %path, has been queued and will be submitted when cron runs.", array('%path' => $path));
+    drupal_set_message($message);
+  }
+  elseif (is_object($result)) {
+    $message = t("A purge request for the path, %path, has been submitted to Akamai, please allow 10 minutes for changes to take effect.", array('%path' => $path));
     drupal_set_message($message);
   }
   else {
-    drupal_set_message(t("There was a problem clearing the cache for this page.  Check your log messages for more information."), 'error');
+    drupal_set_message(t("There was a problem submitting a purge request for this page. Check your log messages for more information."), 'error');
   }
 }
 
 /**
- * Clear a URL from Akamai. Clears node/id and any URL aliases.
+ * Purges a path and its related paths from Akamai's cache.
+ *
+ * If purge request queuing is enabled, the request will be queued and submitted
+ * to the CCU API when cron is run.
+ *
+ * If purge request queing is not enabled, the purge request will be made
+ * immediately.
+ *
+ * @param string $path
+ *   The path being purged, such as "node/34".
+ *   - If you provide an internal path (e.g. "node/34"), its alias will also be
+ *     purged, if one exists. If an alias is provided, the corresponding system
+ *     path will also be purged. Additional query arguments must be supplied in
+ *     $options['query'], not included in $path.
+ *   - The special string '<front>' generates a link to the site's base URL.
+ * @param array $options
+ *   (optional) An associative array of additional options, with the following
+ *   elements:
+ *   - 'hostname': The hostname at which the path to be purged exists. If
+ *     omitted, the hostname will be obtained from the akamai_get_hostname()
+ *     function.
+ *   - Additional elements as used by the url() function.
+ *
+ * @see akamai_get_purge_paths()
+ *
+ * @return mixed
+ *   A response object if the purge request was submitted successfully.
+ *   FALSE if purge request submission or queing failed.
+ *   TRUE if the request was queued.
+ */
+function akamai_purge_path($path, array $options = array()) {
+  $language = empty($options['language']) ? $GLOBALS['language_url'] : $options['language'];
+  if (empty($options['hostname'])) {
+    $hostname = akamai_get_hostname($language);
+  }
+  else {
+    $hostname = $options['hostname'];
+  }
+
+  $paths = akamai_get_purge_paths($path, $options);
+
+  return akamai_purge_paths($paths, $hostname);
+}
+
+/**
+ * Purges a set of paths from Akamai's cache.
+ *
+ * If purge request queuing is enabled, the path will be queued and submitted
+ * to the CCU API when cron is run.
+ *
+ * If purge request queing is not enabled, the purge request will be made
+ * immediately.
+ *
+ * @param array $paths
+ *   A set of paths to purge. Aliases and other paths will not be added to the
+ *   list of paths. These paths should already be properly formatted and include
+ *   the base path (e.g. "/node/34", "/sitemap.xml").
+ * @param string $hostname
+ *   The hostname at which the paths to be purged exist. If omitted, the
+ *   hostname will be obtained from the akamai_get_hostname() function.
+ *
+ * @return mixed
+ *   A response object if the purge request was submitted successfully.
+ *   FALSE if purge request submission or queing failed.
+ *   TRUE if the request was queued.
+ */
+function akamai_purge_paths(array $paths, $hostname = NULL) {
+  if (empty($hostname)) {
+    $hostname = akamai_get_hostname();
+  }
+  // Either queue the purge request or submit it now.
+  if (variable_get('akamai_queue_purge_requests', FALSE)) {
+    return akamai_queue_purge_request($hostname, $paths);
+  }
+  else {
+    $result = akamai_submit_purge_request($hostname, $paths);
+    if ($result == FALSE && variable_get('akamai_queue_on_failure', TRUE)) {
+      return akamai_queue_purge_request($hostname, $paths);
+    }
+  }
+  return $result;
+}
+
+/**
+ * Builds a list of paths to purge in addition to a given path.
+ *
+ * The list includes the system path and path alias. The base path is included
+ * if the given path is set to the front page. Other modules may alter the list
+ * by implementing hook_akamai_paths_alter().
+ *
+ * @param string $path
+ *   The path being purged, such as "node/34".
+ * @param array $options
+ *   (optional) Additional options used by the url() function.
+ *
+ *   The following options are not supported:
+ *   - absolute
+ *   - https
+ *   - fragment
+ *
+ * @return array
+ *   An array of paths to submit to the CCU API.
+ */
+function akamai_get_purge_paths($path, array $options) {
+  $language_code = empty($options['language']->language) ? NULL : $options['language']->language;
+
+  // Lookup system path.
+  $path = drupal_get_normal_path($path, $language_code);
+
+  // Build options array to pass to url(). We don't want absolute URLs or
+  // or fragments in the URLs, so we prevent that here.
+  $url_options = $options;
+  $url_options['absolute'] = FALSE;
+  if (isset($url_options['https'])) {
+    unset($url_options['https']);
+  }
+  if (isset($url_options['fragment'])) {
+    unset($url_options['fragment']);
+  }
+
+  // Build the list of paths to purge.
+  $paths = [];
+  // Add system path by instructing url() to not replace with the alias.
+  $paths[] = url($path, $url_options + ['alias' => TRUE]);
+  // Add aliased path.
+  $paths[] = url($path, $url_options);
+
+  // Check if this path is configured as the frontpage.
+  if ($path == variable_get('site_frontpage', 'node')) {
+    $paths[] = url('<front>', $url_options);
+  }
+
+  // Allow other modules to add/modify paths to be cleared.
+  $context = $options;
+  $context['original_path'] = $path;
+  drupal_alter('akamai_paths', $paths, $context);
+
+  // Remove duplicates.
+  $paths = array_unique($paths);
+
+  return $paths;
+}
+
+/**
+ * Gets the hostname for which purge requests will be issued.
+ *
+ * @param object $language
+ *   (optional) The language object. If the option to use the language domain is
+ *   enabled, $language->domain will be used.
+ *
+ * @return string
+ *   Akamai hostname.
+ */
+function akamai_get_hostname($language = NULL) {
+  $language = empty($language) ? $GLOBALS['language_url'] : $language;
+  if (variable_get('akamai_use_language_domain', FALSE) && !empty($language->domain)) {
+    $hostname = $language->domain;
+  }
+  else {
+    $hostname = variable_get('akamai_hostname', '');
+  }
+  $context = ['language' => $language];
+  drupal_alter('akamai_hostname', $hostname, $context);
+
+  return $hostname;
+}
+
+/**
+ * Submits a purge request to the CCU API.
+ *
+ * @param string $hostname
+ *   The name of the URL that contains the objects you want to purge.
+ * @param array $paths
+ *   An array of paths to be purged.
+ *
+ * @return object|false
+ *   If the request was accepted, a response object. Otherwise, FALSE.
+ */
+function akamai_submit_purge_request($hostname, array $paths) {
+  if (variable_get('akamai_disabled', FALSE)) {
+    watchdog('akamai', 'Request to purge paths ignored because clearing is disabled. Check module settings.');
+    return FALSE;
+  }
+  try {
+    $ccu = akamai_get_client();
+    $response = $ccu->postPurgeRequest($hostname, $paths);
+    if (!empty($response)) {
+      akamai_log_purge_request($hostname, $paths, $response);
+      return $response;
+    }
+  }
+  catch (GuzzleHttp\Exception\RequestException $e) {
+    watchdog_exception('akamai', $e);
+
+    $request = $e->getRequest();
+    $request_variables = [
+      '@method' => $request->getMethod(),
+      '@uri'    => $request->getUri(),
+      '@body'   => (string) $request->getBody(),
+    ];
+    watchdog('akamai', 'Request: @method @uri @body', $request_variables, WATCHDOG_ERROR);
+
+    if ($e->hasResponse()) {
+      $response_body = $e->getResponse()->getBody()->getContents();
+      watchdog('akamai', 'Response: @response', ['@response' => $response_body], WATCHDOG_ERROR);
+    }
+  }
+  catch (Exception $e) {
+    watchdog_exception('akamai', $e);
+  }
+
+  return FALSE;
+}
+
+/**
+ * Logs the purge request for reporting and progress tracking.
+ */
+function akamai_log_purge_request($hostname, $paths, $response) {
+  try {
+    $time = time();
+    $is_fast_purge = empty($response->progressUri);
+    $record = [
+      'purge_id' => $response->purgeId,
+      'support_id' => $response->supportId,
+      'estimated_seconds' => $response->estimatedSeconds,
+      'check_after' => $is_fast_purge ? NULL : $time + $response->pingAfterSeconds,
+      'submission_time' => $time,
+      'status' => $response->detail,
+      'progress_uri' => $is_fast_purge ? NULL : $response->progressUri,
+      'completion_time' => $is_fast_purge ? $time + $response->estimatedSeconds : NULL,
+      'hostname' => $hostname,
+      'paths' => array_unique($paths),
+    ];
+    return drupal_write_record('akamai_purge_requests', $record);
+  }
+  catch (Exception $e) {
+    watchdog_exception('akamai', $e);
+    return FALSE;
+  }
+}
+
+/**
+ * Queues a purge request to be submitted at a later time.
+ *
+ * @param string $hostname
+ *   The name of the URL that contains the objects you want to purge.
+ * @param array $paths
+ *   An array of paths to be purged.
+ */
+function akamai_queue_purge_request($hostname, $paths) {
+  $queue = DrupalQueue::get('akamai_ccu');
+  return $queue->createItem(['hostname' => $hostname, 'paths' => $paths]);
+}
+
+/**
+ * Implements hook_cron().
+ */
+function akamai_cron() {
+  if (variable_get('akamai_disabled', FALSE)) {
+    watchdog('akamai', 'Akamai cron task skipped because purging is disabled. Check module settings.');
+    return;
+  }
+  module_load_include('inc', 'akamai', 'akamai.cron');
+  akamai_cron_process_queue();
+  akamai_cron_check_status();
+}
+
+/**
+ * Purges an entity's path from Akamai's cache.
+ */
+function akamai_purge_entity($entity_type, $entity) {
+  $uri = entity_uri($entity_type, $entity);
+  return akamai_purge_path($uri['path'], $uri['options']);
+}
+
+/**
+ * Deprecated. Use akamai_purge_path() instead.
+ *
+ * Clear one or more paths from Akamai. Clears node/id and any URL aliases.
  *
  * @param array $paths_in
  *   An array of paths or single path to clear.
@@ -212,23 +522,29 @@ function akamai_page_cache_control_form_submit($form, &$form_state) {
  * @param object $node
  *   (optional)
  *
- * @return bool
- *    TRUE if it was successfully cleared, FALSE otherwise.
+ * @return mixed
+ *   A response object if the purge request was accepted, FALSE otherwise.
+ *
+ * @deprecated Deprecated in 7.x-3.0.
+ * @see akamai_purge_path()
  */
-function akamai_clear_url($paths_in, $params = array(), $node = NULL) {
+function akamai_clear_url($paths_in, $params = [], $node = NULL) {
   if (variable_get('akamai_disabled', FALSE)) {
     watchdog('akamai', 'Request to clear paths ignored because clearing is disabled. Check module settings.');
     return FALSE;
   }
 
-  if (!is_array($paths_in)) {
-    $paths_in = array($paths_in);
-  }
-  // Get the system path and all aliases to this url
+  // Get the system path and all aliases to this url.
   $paths = array();
 
+  $options = [];
+  if (!empty($node)) {
+    $options['entity_type'] = 'node';
+    $options['entity'] = $node;
+  }
+
   foreach ($paths_in as $path) {
-    $paths = array_merge($paths, _akamai_get_all_paths($path, $node));
+    $paths = array_merge($paths, akamai_get_purge_paths($path, $options));
   }
 
   // It is possible to have no paths at this point if other modules have
@@ -238,14 +554,39 @@ function akamai_clear_url($paths_in, $params = array(), $node = NULL) {
     return FALSE;
   }
 
+  // This can cause the array to become non-associative and will cause
+  // json_encode() to use an object instead of an array when encoding.
   $paths = array_unique($paths);
 
+  $default_params = array(
+    'basepath'  => akamai_get_hostname(),
+    'action'    => variable_get("akamai_action", "invalidate"),
+    'domain'    => variable_get("akamai_network", ""),
+  );
+
+  $params = array_merge($default_params, $params);
+  if (!empty($params['basepath'])) {
+    $parsed = parse_url($params['basepath']);
+    $hostname = empty($parsed['host']) ? NULL : $parsed['host'];
+  }
+
+  $version = variable_get('akamai_ccu_version', 3);
+
   try {
-    $akamai = akamai_get_class($params);
-    $response = $akamai->clear_url($paths);
-    if (is_object($response)) {
-      $response->client = $akamai;
+    $client = akamai_get_client($version);
+
+    if (!empty($params['domain'])) {
+      $client->setNetwork($params['domain']);
     }
+
+    // v2 of the API uses 'remove', but v3 uses 'delete'.
+    if ($params['action'] == 'remove') {
+      $client->setOperation($client::OPERATION_DELETE);
+    }
+    else {
+      $client->setOperation($client::OPERATION_INVALIDATE);
+    }
+    $response = $client->postPurgeRequest($hostname, $paths);
     return $response;
   }
   catch (AkamaiException $e) {
@@ -255,171 +596,41 @@ function akamai_clear_url($paths_in, $params = array(), $node = NULL) {
 }
 
 /**
- * Return all system and alias paths for the provided URL.
+ * Gets an instance of a CCU client class.
  *
- * @param $url
- *   The URL to find all aliases
- * @param object $node
- *   (optional) The Node for the URL being cleared if one exists, NULL otherwise.
- *
- * @return array
- *    An array of all paths aliased to the provided URL.
+ * @param int $version
+ *   Specifies which version of the CCU API to use. Either 2 or 3.
  */
-function _akamai_get_all_paths($url, $node = NULL) {
-  global $language;
+function akamai_get_client($version = NULL) {
+  if (variable_get('akamai_credential_storage', 'database') == 'database') {
+    $edgegrid_client = new \Akamai\Open\EdgeGrid\Client([
+      'base_uri' => variable_get('akamai_base_uri', ''),
+      'timeout' => variable_get('akamai_timeout', \Akamai\Open\EdgeGrid\Client::DEFAULT_REQUEST_TIMEOUT),
+    ]);
 
-  // If it is not a node path, get the system path.
-  if (strpos($url, 'node') !== 0) {
-    $source = drupal_lookup_path('source', $url);
+    $client_token = variable_get('akamai_client_token', '');
+    $client_secret = variable_get('akamai_client_secret', '');
+    $access_token = variable_get('akamai_access_token', '');
+    $edgegrid_client->setAuth($client_token, $client_secret, $access_token);
   }
-  if (!isset($source)  || !$source) {
-    $source = $url;
-  }
-  $source = preg_replace("/^\//", "", $source);
-  $paths[] = $source;
-
-
-  $result = db_query('SELECT alias FROM {url_alias} WHERE source = :source AND language IN (:language, :language_none)',
-                      array(
-                        ':source' => $source,
-                        ':language' => isset($language->language) ? $language->language : '',
-                        ':language_none' => LANGUAGE_NONE,
-                      ));
-
-  foreach ($result as $record) {
-    $paths[] = $record->alias;
+  else {
+    $section = variable_get('akamai_edgerc_section', 'default');
+    $path = variable_get('akamai_edgerc_path', NULL);
+    $edgegrid_client = \Akamai\Open\EdgeGrid\Client::createFromEdgeRcFile($section, $path);
   }
 
-  // If this is the frontpage, add a blank to clear the root doc.
-  if ($source == variable_get('site_frontpage', 'node')) {
-    $paths[] = '';
+  $version = empty($version) ? variable_get('akamai_ccu_version', 3) : $version;
+  if ($version == 2) {
+    $ccu_client = new \Drupal\akamai\Ccu2Client($edgegrid_client);
+  }
+  else {
+    $ccu_client = new \Drupal\akamai\Ccu3Client($edgegrid_client);
   }
 
-  // Allow other modules to add/modify paths to be cleared.
-  drupal_alter('akamai_paths', $paths, $node);
+  $ccu_client->setNetwork(variable_get('akamai_network', 'production'));
+  if (variable_get('akamai_action', 'invalidate') == 'remove') {
+    $ccu_client->setOperation($ccu_client::OPERATION_DELETE);
+  }
 
-  return $paths;
+  return $ccu_client;
 }
-
-/**
- * Returns the Akamai Cache Control class.
- *
- * This is abstracted to provide the capability
- * of a no-op or recording class for testing purposes.
- *
- * @param array $params
- *
- * @return object
- */
-function akamai_get_class($params = array()) {
-  module_load_include('inc', 'akamai', 'akamai.class');
-  $class = variable_get('akamai_service_class', 'AkamaiCacheControlClient');
-  $akamai = new $class($params);
-  return $akamai;
-}
-
-/**
- * Implementation of hook_context_http_header_def()
- * from context_http_header module
- * These are the form items that display for the http header context reaction.
- */
-/*
- AWAITING UPGRADE OF context_http_headers TO DRUPAL 7
-
-function akamai_context_http_header_def() {
-  return array(
-    'akamai_ttl' => array(
-      '#title'       => 'TTL',
-      '#type'        => 'textfield',
-      '#description' => t("Specifies a Time-To-Live (TTL) for the object in the edge server’s cache. This is themaximum amount of time the content will be served before the edge server will issue an If Modified Since request back to the content provider to check whether the object content has changed. The content is an integer, followed by a unit specifier Current unit specifiers are: 's' (seconds), 'm' (minutes), 'h' (hours), 'd' (days)."),
-    ),
-    'akamai_nostore' => array(
-      '#title'         => 'No Store',
-      '#type'          => 'radios',
-      '#description'   => t("Specifies that the object is not to be cached. The edge server will retrieve the object from the origin server upon every request."),
-      '#options'       => array(
-        FALSE  => t('Not Specified'),
-        'on'   => t('On'),
-        'off'  => t('Off')
-      ),
-    ),
-    'akamai_bypass_cache' => array(
-      '#title'         => 'Bypass Cache',
-      '#type'          => 'radios',
-      '#description'   => t("When enabled, bypass-cache causes the request to be passed without caching. It's similar to no-store, except that it doesn't remove the cache entry if one already exists. This is useful if the object returned is an alternate for the content normally delivered"),
-      '#options'       => array(
-        FALSE  => t('Not Specified'),
-        'on'   => t('On'),
-        'off'  => t('Off')
-      ),
-    ),
-    'akamai_dynamic_content_assembly' => array(
-      '#title' => 'Dynamic Content Assembly (dca)',
-      '#type'  => 'radios',
-      '#description' => t('Nominates the request for Dynamic Content Assembly. Valid argument is a type of processing. This header is used to nominate the object for ESI processing. At this time, "esi" and "akamaizer" specify the available processing types. These headers tell the edge server to process the objects in the ESI processor. The other header dca=noop, tells the edge server not to process the associated content.'),
-      '#options' => array(
-        FALSE   => t('Not Specified'),
-        'noop'  => t('noop'),
-        'esi'   => t('esi'),
-        'akamaizer' => t('akamaizer'),
-      ),
-    ),
-
-  );
-}
-*/
-
-/**
- * @param $http_header_items
- *
- * Implemantation of hook_http_header_build
- * from context_http_header module
- * build the akamai edge control headers
- * array(
- *    'header-1' => array('value1', 'value2', etc),
- *    'header-2' => array(...),
- * )
- */
-
-/*
- AWAITING UPGRADE OF context_http_headers TO DRUPAL 7
-
-function akamai_context_http_header_build($http_header_items) {
-  $header_builds = array();
-  if ($value = $http_header_items['akamai_ttl']) {
-    $header_builds["Edge-Control"][] = "Cache-maxage=". check_plain($value);
-  }
-
-  if ($value = $http_header_items['akamai_nostore']) {
-    if ($value == 'on') {
-      $header_builds["Edge-Control"][] = "No-store";
-    }
-    elseif ($value == 'off') {
-      $header_builds["Edge-Control"][] = "!No-store";
-    }
-  }
-
-  if ($value = $http_header_items['akamai_bypass_cache']) {
-    if ($value == 'on') {
-      $header_builds["Edge-Control"][] = "bypass-cache";
-    }
-    elseif ($value == 'off') {
-      $header_builds["Edge-Control"][] = "!bypass-cache";
-    }
-  }
-
-  if ($value = $http_header_items['akamai_dynamic_content_assembly']) {
-    if ($value == 'noop') {
-      $header_builds["Edge-Control"][] = "dca=noop";
-    }
-    if ($value == 'esi') {
-      $header_builds["Edge-Control"][] ="dca=esi";
-    }
-    if ($value == 'akamaizer') {
-      $header_builds["Edge-Control"][] = "dca=akamaizer";
-    }
-  }
-
-  return $header_builds;
-}
-*/

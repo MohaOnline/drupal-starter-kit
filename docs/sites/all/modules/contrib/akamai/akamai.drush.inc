@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Drush commands for interacting with Akamai's CCU API.
+ */
+
+/**
  * Implements hook_drush_command().
  */
 function akamai_drush_command() {

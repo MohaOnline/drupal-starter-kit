@@ -1,6 +1,93 @@
 <?php
 
 /**
+ * Implements hook_schema().
+ */
+function akamai_schema() {
+  $schema['akamai_purge_requests'] = array(
+    'description' => 'Information about outstanding purge requests.',
+    'fields' => array(
+      'purge_id' => array(
+        'description' => 'External ID of the purge request.',
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'support_id' => array(
+        'description' => 'Support ID for the purge request.',
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'estimated_seconds' => array(
+        'description' => 'Estimated number of seconds until request is fulfilled.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'progress_uri' => array(
+        'description' => 'URI at which the progress of the purge request can be checked.',
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'status' => array(
+        'description' => 'The status of the purge request.',
+        'type' => 'varchar',
+        'length' => 36,
+        'not null' => TRUE,
+        'default' => 'Submitted',
+      ),
+      'submission_time' => array(
+        'description' => 'The Unix timestamp when the request was submitted.',
+        'type' => 'int',
+        'default' => NULL,
+      ),
+      'last_checked' => array(
+        'description' => 'The Unix timestamp when the status of the request was last checked.',
+        'type' => 'int',
+        'default' => NULL,
+      ),
+      'check_after' => array(
+        'description' => 'Unix timestamp used to determine if the status of this request should be checked.',
+        'type' => 'int',
+        'default' => NULL,
+      ),
+      'completion_time' => array(
+        'description' => 'The Unix timestamp when the request was fulfilled.',
+        'type' => 'int',
+        'default' => NULL,
+      ),
+      'hostname' => array(
+        'description' => 'The hostname that was submitted in the purge request.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'paths' => array(
+        'description' => 'The paths (objects) that were submitted in the purge request.',
+        'type' => 'text',
+        'serialize' => TRUE,
+        'size' => 'medium',
+      ),
+    ),
+    'indexes' => array(
+      'check_after'     => array('check_after'),
+      'completion_time' => array('completion_time'),
+      'submission_time' => array('submission_time'),
+    ),
+    'primary key' => array('purge_id'),
+  );
+
+  return $schema;
+}
+
+/**
  * Update hook for upgrading to Drupal 7.
  */
 function akamai_update_7000() {
@@ -31,15 +118,43 @@ function akamai_update_7002() {
 }
 
 /**
+ * Database updates for version 7.x-3.x.
+ */
+function akamai_update_7300() {
+  // The `akamai_domain` varable was renamed to `akamai_network`.
+  variable_set('akamai_network', variable_get('akamai_domain', 'production'));
+  variable_del('akamai_domain');
+  variable_del('akamai_service_class');
+  variable_del('akamai_username');
+  variable_del('akamai_password');
+  variable_del('akamai_restapi');
+  variable_del('akamai_basepath');
+  drupal_install_schema('akamai');
+}
+
+/**
  * Implements hook_uninstall().
  */
 function akamai_uninstall() {
   variable_del('akamai_action');
-  variable_del('akamai_basepath');
-  variable_del('akamai_domain');
-  variable_del('akamai_password');
-  variable_del('akamai_restapi');
+  variable_del('akamai_network');
   variable_del('akamai_timeout');
-  variable_del('akamai_username');
   variable_del('akamai_disabled');
+  variable_del('akamai_hostname');
+  variable_del('akamai_use_language_domain');
+  variable_del('akamai_credential_storage');
+  variable_del('akamai_base_uri');
+  variable_del('akamai_access_token');
+  variable_del('akamai_client_token');
+  variable_del('akamai_client_secret');
+  variable_del('akamai_edgerc_path');
+  variable_del('akamai_edgerc_section');
+  variable_del('akamai_queue_purge_requests');
+  variable_del('akamai_queue_on_failure');
+  variable_del('akamai_batch_size');
+  variable_del('akamai_cron_queue_time_limit');
+  variable_del('akamai_purge_status_time_limit');
+  variable_del('akamai_purge_log_duration_complete');
+  variable_del('akamai_purge_log_duration_incomplete');
+  variable_del('akamai_ccu_version');
 }
