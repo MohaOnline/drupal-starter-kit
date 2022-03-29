@@ -178,7 +178,7 @@ function form_example_states_form($form, &$form_state) {
     '#type' => 'select',
     '#options' => array(
       'UK' => t('UK'),
-      'other' t('Other'),
+      'other' => t('Other'),
     ),
     '#title' => t('In what country is your college or university located?'),
   );

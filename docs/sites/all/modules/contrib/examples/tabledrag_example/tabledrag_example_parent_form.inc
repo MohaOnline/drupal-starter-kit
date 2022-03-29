@@ -34,7 +34,7 @@ function tabledrag_example_parent_form($form_state) {
 
     // Create a form entry for this item.
     //
-    // Each entry will be an array using the the unique id for that item as
+    // Each entry will be an array using the unique id for that item as
     // the array key, and an array of table row data as the value.
     $form['example_items'][$item->id] = array(
 
