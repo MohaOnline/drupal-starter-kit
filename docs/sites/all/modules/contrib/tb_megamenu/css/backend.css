@@ -70,7 +70,7 @@
   display: none !important; /* Hide the Arrow */
 }
 
-.tb-megamenu .dropdown-menu {
+.tb-megamenu .mega > .mega-dropdown-menu {
   border: 1px solid #ddd;
   padding: 10px;
   margin-top: 10px;

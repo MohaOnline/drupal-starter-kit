@@ -151,6 +151,11 @@ function template_preprocess_tb_megamenu_item(&$vars) {
     $vars['classes_array'][] = 'active';
     $vars['classes_array'][] = $vars['a_classes'][] = 'active-trail';
   }
+  // Add list item attributes.
+    if (!empty($item['link']['localized_options']['item_attributes']['class'])) {
+    $vars['classes_array'][] = check_plain($item['link']['localized_options']['item_attributes']['class']);
+  }
+
   $vars['attributes_array']['data-id'] = $mlid;
   $vars['attributes_array']['data-level'] = $level;
   $vars['attributes_array']['data-type'] = 'menu_item';
@@ -163,6 +168,11 @@ function template_preprocess_tb_megamenu_item(&$vars) {
   $vars['attributes_array']['data-hidesub'] = $item_config['hidesub'];
   if ($vars['section'] == 'backend') {
     $vars['attributes_array']['title'] = t("Menu Item");
+  }
+
+  if (!empty($item['link']['localized_options']['item_attributes'])) {
+    // Add additional list item attributes besides the class (which was handled separately above).
+    $vars['attributes_array'] += array_diff_key( $item['link']['localized_options']['item_attributes'], array('class' => NULL));
   }
 }
 
@@ -323,7 +333,7 @@ function template_preprocess_tb_megamenu_block(&$vars) {
       if (isset($vars['showblocktitle']) && $vars['showblocktitle']) {
         // If i18n_block is not enabled, so we will set title to subject.
         if (!$is_enabled_i18n_block) {
-          $block->subject = $block->title ? $block->title : $block_content['subject'];
+          $block->subject = isset($block->title) ? check_plain($block->title) : $block_content['subject'];
         }
         elseif (!empty($block->title) && $block->title != '<none>') {
           // Check plain here to allow module generated titles to keep any markup.

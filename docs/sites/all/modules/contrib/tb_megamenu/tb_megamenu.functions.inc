@@ -138,12 +138,70 @@ function tb_megamenu_get_menu($menu_name) {
 
 function tb_megamenu_get_menu_config($menu_name) {
   $menu = tb_megamenu_get_menu($menu_name);
-  return $menu && isset($menu->menu_config) ? json_decode($menu->menu_config, true) : array();
+  if ($menu && isset($menu->menu_config)) {
+    $config = json_decode($menu->menu_config, true);
+
+    // Iterate through config in order to santitize items that could be
+    // vulnerable to XSS attacks.
+    foreach ($config as $key => $value) {
+      $config[$key]['submenu_config']['class'] = isset($value['submenu_config']['class']) ? check_plain($value['submenu_config']['class']) : '';
+      $config[$key]['item_config']['alignsub'] = isset($value['item_config']['alignsub']) ? check_plain($value['item_config']['alignsub']) : '';
+      $config[$key]['item_config']['caption'] = isset($value['item_config']['caption']) ? check_plain($value['item_config']['caption']) : '';
+      $config[$key]['item_config']['class'] = isset($value['item_config']['class']) ? check_plain($value['item_config']['class']) : '';
+      $config[$key]['item_config']['xicon'] = isset($value['item_config']['xicon']) ? check_plain($value['item_config']['xicon']) : '';
+
+      if (isset($value['rows_content'])) {
+        $rows = $value['rows_content'];
+
+        // Iterate through the rows content so that we can access and
+        // santitize the col config class.
+        foreach ($rows as $rows_key => $rows_value) {
+          if (isset($rows_value)) {
+            foreach ($rows_value as $row_key => $row_value) {
+              if (isset($row_value['col_config'])) {
+                $config[$key]['rows_content'][$rows_key][$row_key]['col_config']['class'] = isset($row_value['col_config']['class']) ? check_plain($row_value['col_config']['class']) : '';
+                $config[$key]['rows_content'][$rows_key][$row_key]['col_config']['width'] = isset($row_value['col_config']['width']) ? check_plain($row_value['col_config']['width']) : '';
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return $config;
+  }
+
+  return array();
 }
 
 function tb_megamenu_get_block_config($menu_name) {
   $menu = tb_megamenu_get_menu($menu_name);
-  return $menu && isset($menu->block_config) ? json_decode($menu->block_config, true) : array();
+  if ($menu && isset($menu->block_config)) {
+    $config = json_decode($menu->block_config, true);
+
+    // Ensure that the delay and duration values are only integers.
+    if (isset($config['delay']) && !is_int($config['delay'])) {
+      $config['delay'] = '';
+    }
+    if (isset($config['duration']) && !is_int($config['duration'])) {
+      $config['duration'] = '';
+    }
+
+    // Additional XSS santitation for Block config options.
+    if (isset($config['auto-arrow'])) {
+      $config['auto-arrow'] = check_plain($config['auto-arrow']);
+    }
+    if (isset($config['always-show-submenu'])) {
+      $config['always-show-submenu'] = check_plain($config['always-show-submenu']);
+    }
+    if (isset($config['style'])) {
+      $config['style'] = check_plain($config['style']);
+    }
+
+    return $config;
+  }
+
+    return array();
 }
 
 function tb_megamenu_find_templates($path) {
@@ -374,7 +432,12 @@ function tb_megamenu_insert_tb_item(&$item_config, $row, $col, $item) {
       $added = TRUE;
     }
     // Sort all cells by ascending weight value to match the menu ordering.
-    $weight = array_column($new_col, 'weight');
+    $weight = [];
+    foreach ($new_col as $col_key => $col_vals) {
+      if (isset($col_vals['weight'])) {
+        $weight[] = $col_vals['weight'];
+      }
+    }
     array_multisort($weight, SORT_ASC, $new_col);
   }
 

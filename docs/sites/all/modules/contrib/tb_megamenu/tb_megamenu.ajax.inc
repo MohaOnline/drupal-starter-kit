@@ -9,16 +9,19 @@ function tb_megamenu_request() {
       break;
     case 'save':
       global $language;
-      $menu_config = isset($_POST['menu_config']) ? $_POST['menu_config'] : NULL;
-      $block_config = isset($_POST['block_config']) ? $_POST['block_config'] : NULL;
+      $token = isset($_SERVER['HTTP_X_CSRF_TOKEN']) ? $_SERVER['HTTP_X_CSRF_TOKEN'] : NULL;
       $menu_name = isset($_POST['menu_name']) ? $_POST['menu_name'] : NULL;
-      if($menu_config && $menu_name) {
-        $tb_megamenu = db_select('tb_megamenus', 't')->fields('t')->condition('menu_name', $menu_name)->condition('language', $language->language)->execute()->fetchObject();
-        if($tb_megamenu) {
-          db_update('tb_megamenus')->fields(array('menu_config' => $menu_config, 'block_config' => $block_config, 'language' => $language->language))->condition('menu_name', $menu_name)->condition('language', $language->language)->execute();
-        }
-        else {
-          db_insert('tb_megamenus')->fields(array('menu_name' => $menu_name, 'block_config' => $block_config, 'menu_config' => $menu_config, 'language' => $language->language))->execute();
+      if (drupal_valid_token($token, $menu_name)) {
+        $menu_config = isset($_POST['menu_config']) ? $_POST['menu_config'] : NULL;
+        $block_config = isset($_POST['block_config']) ? $_POST['block_config'] : NULL;
+        if($menu_config && $menu_name) {
+          $tb_megamenu = db_select('tb_megamenus', 't')->fields('t')->condition('menu_name', $menu_name)->condition('language', $language->language)->execute()->fetchObject();
+          if($tb_megamenu) {
+            db_update('tb_megamenus')->fields(array('menu_config' => $menu_config, 'block_config' => $block_config, 'language' => $language->language))->condition('menu_name', $menu_name)->condition('language', $language->language)->execute();
+          }
+          else {
+            db_insert('tb_megamenus')->fields(array('menu_name' => $menu_name, 'block_config' => $block_config, 'menu_config' => $menu_config, 'language' => $language->language))->execute();
+          }
         }
       }
       break;

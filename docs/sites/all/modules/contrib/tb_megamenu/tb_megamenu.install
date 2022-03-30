@@ -66,12 +66,18 @@ function tb_megamenu_update_7102(&$sandbox) {
 }
 
 /**
- * Implements hook_update_N().
+ * Increase size of config columns to accommodate larger menus.
  */
 function tb_megamenu_update_7103(&$sandbox) {
-  // Increased column sizes so large menus can be saved properly.
-  // The API's db_change_field() is unnecessary because no keys or indices are
-  // affected.
-  db_query('ALTER TABLE {tb_megamenus} MODIFY COLUMN block_config MEDIUMTEXT');
-  db_query('ALTER TABLE {tb_megamenus} MODIFY COLUMN menu_config MEDIUMTEXT');
+  // Increase column sizes so large menus can be saved properly.
+  db_change_field('tb_megamenus', 'block_config', 'block_config', array(
+    'type' => 'text',
+    'size' => 'medium',
+    'not null' => FALSE
+  ));
+  db_change_field('tb_megamenus', 'menu_config', 'menu_config', array(
+    'type' => 'text',
+    'size' => 'medium',
+    'not null' => FALSE
+  ));
 }

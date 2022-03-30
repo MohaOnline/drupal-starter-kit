@@ -7,10 +7,11 @@ include_once drupal_get_path('module', 'tb_megamenu') . '/tb_megamenu.admin.inc'
  * Implements hook_menu().
  */
 function tb_megamenu_menu() {
-  $items['admin/structure/tb-megamenu/request'] = array(
+  $items['admin/structure/tb-megamenu/%tb_megamenu_menu_name/request'] = array(
     'title' => 'Request',
     'page callback' => 'tb_megamenu_request',
-    'access arguments' => array('administer tb_megamenu'),
+    'access callback' => '_tb_megamenu_access',
+    'access arguments' => array(3),
     'type' => MENU_SUGGESTED_ITEM,
     'file' => 'tb_megamenu.ajax.inc',
   );
@@ -308,7 +309,9 @@ function tb_megamenu_block_info() {
   $blocks = array();
   foreach($menus as $menu) {
     $blocks[$menu->menu_name] = array(
-      'info' => t('TB Mega Menu') . ': ' . $menu->title, 'cache' => DRUPAL_NO_CACHE
+      'info' => t("TB Mega Menu: @title",
+        array('@title' => $menu->title)),
+        'cache' => DRUPAL_NO_CACHE
     );
   }
   return $blocks;
@@ -358,4 +361,23 @@ function tb_megamenu_block_view_alter(&$data, $block) {
  */
 function tb_megamenu_form_menu_overview_form_alter(&$form, &$form_state) {
   $form['#submit'][] = 'tb_megamenu_update_megamenus';
+}
+
+/**
+ * Implements hook_features_api().
+ */
+function tb_megamenu_features_api() {
+  return array(
+    'tb_megamenu' => array(
+      'name' => 'TB Mega Menu',
+      'file' => drupal_get_path('module', 'tb_megamenu')
+        . '/tb_megamenu.features.inc',
+      'default_hook' => 'tb_megamenu_default_menus',
+      // Write exports to a file with a name like
+      // MODULENAME.features.tb_megamenu.inc.
+      'default_file' => FEATURES_DEFAULTS_INCLUDED,
+      // Offer this component as an option on the initial feature creation form.
+      'feature_source' => TRUE,
+    ),
+  );
 }

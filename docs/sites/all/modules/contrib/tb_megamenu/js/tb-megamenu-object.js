@@ -1,7 +1,7 @@
 Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
-
 !function ($) {
   var currentSelected = null,
+  menu_name,
   megamenu, nav_items, nav_subs, nav_cols, nav_all;
   Drupal.TBMegaMenu.lockedAjax = false;
 
@@ -20,6 +20,7 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
   $.fn.megamenuAdmin = function (options) {
     var defaultOptions = {};
     var options = $.extend(defaultOptions, options);
+    menu_name = options['menu_name'];
     megamenu = $(this).find('.tb-megamenu');
     nav_items = megamenu.find('ul[class*="level"]>li>:first-child');
     nav_subs = megamenu.find('.nav-child');
@@ -54,6 +55,7 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
     $('.toolbox-action').click (function(event) {
       var action = $(this).attr('data-action');
       if (action) {
+
       actions.datas = $(this).data();
         actions[action] (options);
       }
@@ -420,6 +422,7 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
   }
 
   actions.resetConfig = function (options) {
+    menu_name = options['menu_name'];
     if(Drupal.TBMegaMenu.isLockedAjax()) {
       window.setTimeout(function() {
         actions.resetConfig(options);
@@ -429,12 +432,13 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
     Drupal.TBMegaMenu.lockAjax();
     $('#tb-megamenu-admin-mm-tb #toolbox-message').html("").hide();
     $('#tb-megamenu-admin-mm-tb #toolbox-loading').show();
+
     $.ajax({
       type: "POST",
-      url: Drupal.settings.basePath + Drupal.settings.pathPrefix + Drupal.TBMegaMenu.ajax_link + Drupal.TBMegaMenu.ajax_link + "admin/structure/tb-megamenu/request",
-      data: { 'action': 'load', 'menu_name': options['menu_name']},
+      url: Drupal.settings.basePath + Drupal.settings.pathPrefix + Drupal.TBMegaMenu.ajax_link + "admin/structure/tb-megamenu/" +  menu_name  + "/request",
+      data: { 'action': 'load', menu_name },
       complete: function( msg ) {
-        $('#tb-megamenu-admin-mm-container').html(msg.responseText).megamenuAdmin({'menu_name': options['menu_name']});
+        $('#tb-megamenu-admin-mm-container').html(msg.responseText).megamenuAdmin({ menu_name });
         $('#tb-megamenu-admin-mm-container').find('.mega-inner').children('span.close').click(function() {
           $(this).parent().html("");
         });
@@ -449,6 +453,7 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
   }
 
   actions.saveConfig = function (options) {
+    menu_name = options['menu_name'];
     if(Drupal.TBMegaMenu.isLockedAjax()) {
       window.setTimeout(function() {
         actions.saveConfig(options);
@@ -526,8 +531,9 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
     $('#tb-megamenu-admin-mm-tb #toolbox-loading').show();
     $.ajax({
       type: "POST",
-      url: Drupal.settings.basePath + Drupal.settings.pathPrefix + Drupal.TBMegaMenu.ajax_link + "admin/structure/tb-megamenu/request",
-      data: {'action': 'save', 'menu_name': options['menu_name'], 'menu_config': JSON.stringify(menu_config), 'block_config': JSON.stringify(block_config)},
+      url: Drupal.settings.basePath + Drupal.settings.pathPrefix + Drupal.TBMegaMenu.ajax_link + "admin/structure/tb-megamenu/" + menu_name + "/request",
+      data: {'action': 'save', menu_name, 'menu_config': JSON.stringify(menu_config), 'block_config': JSON.stringify(block_config)},
+      headers: { 'X-CSRF-Token': Drupal.TBMegaMenu.csrf_token },
       complete: function( msg ) {
         $('#tb-megamenu-admin-mm-tb #toolbox-loading').hide();
 		$div = $('<div id="console" class="clearfix"><div class="messages status"><h2 class="element-invisible">Status message</h2>' + Drupal.t("Saved config sucessfully!") + '</div></div>');
@@ -756,8 +762,10 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
       if (type == 'item') {
         currentSelected.closest('li').attr('data-' + name, value);
         currentSelected.find('i').remove();
+        var escapedInputText = Drupal.checkPlain(value);
+
         if (value) {
-          currentSelected.prepend($('<i class="'+value+'"></i>'));
+          currentSelected.prepend($('<i class="'+escapedInputText+'"></i>'));
         }
       }
       break;
@@ -766,8 +774,10 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
       if (type == 'item') {
         currentSelected.closest('li').attr('data-' + name, value);
         currentSelected.find('span.mega-caption').remove();
+        var escapedInputText = Drupal.checkPlain(value);
+
         if (value) {
-          currentSelected.append($('<span class="mega-caption">'+value+'</span>'));
+          currentSelected.append($('<span class="mega-caption">'+escapedInputText+'</span>'));
         }
       }
       break;
@@ -799,7 +809,7 @@ Drupal.TBMegaMenu = Drupal.TBMegaMenu || {};
     case 'load_block':
         $.ajax({
           type: "POST",
-          url: Drupal.settings.basePath + Drupal.settings.pathPrefix + Drupal.TBMegaMenu.ajax_link + "admin/structure/tb-megamenu/request",
+          url: Drupal.settings.basePath + Drupal.settings.pathPrefix + Drupal.TBMegaMenu.ajax_link + "admin/structure/tb-megamenu/"+ menu_name +"/request",
           data: data,
           complete: function( msg ) {
             var resp = $.parseJSON(msg.responseText);
