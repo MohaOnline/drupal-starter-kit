@@ -83,7 +83,8 @@ function nagios_check($module, $check) {
   }
   $key = key($nagios_data);
   $status = nagios_status();
-  $message = $key . ' ' . $status[$nagios_data[$key]['status']] . ' - ' . $nagios_data[$key]['text'];
+  $exit_status = (int) $nagios_data[$key]['status'];
+  $message = $key . ' ' . $status[$exit_status] . ' - ' . $nagios_data[$key]['text'];
   if ($nagios_data[$key]['type'] == 'perf') {
     $message .= '|' . $key . '=' . $nagios_data[$key]['text'];
   }
@@ -91,7 +92,21 @@ function nagios_check($module, $check) {
   // of our drush nagios check so set DRUSH_EXECUTION_COMPLETED to true.
   drush_set_context('DRUSH_EXECUTION_COMPLETED', TRUE);
   drush_print($message);
-  exit((int) $nagios_data[$key]['status']);
+
+  $users = array_unique(_nagios_update_os_user());
+  if (count($users) > 1 && $exit_status != NAGIOS_STATUS_OK) {
+    $warning = dt('Warning') . ': ';
+    $warning .= dt('All nagios checks should be executed as the same user as the web page.') . "\n";
+    $warning .= dt('This is important when modules confirm file system permissions are correct.') . "\n";
+    $warning .= dt('You can use `sudo -u` to run drush under a different user.') . "\n";
+    drush_print($warning);
+
+    $rows = drush_key_value_to_array_table($users);
+    array_unshift($rows, ['PHP_SAPI', '', strtoupper(dt('Operating system user'))]);
+    drush_print_table($rows, TRUE);
+  }
+
+  exit($exit_status);
 }
 
 /**

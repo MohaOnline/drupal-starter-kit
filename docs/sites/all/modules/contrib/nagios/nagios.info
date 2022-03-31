@@ -5,8 +5,8 @@ php = 5.4
 package = "Monitoring"
 configure = admin/config/system/nagios
 
-; Information added by Drupal.org packaging script on 2020-05-21
-version = "7.x-1.7"
+; Information added by Drupal.org packaging script on 2021-09-26
+version = "7.x-1.9"
 core = "7.x"
 project = "nagios"
-datestamp = "1590084481"
+datestamp = "1632689032"

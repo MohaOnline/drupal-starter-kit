@@ -92,10 +92,34 @@ function nagios_permission() {
 }
 
 /**
+ * Update the information under which operating system user PHP is currently
+ * running. This helps to detect permission problems when CLI and web users
+ * differ.
+ */
+function _nagios_update_os_user() {
+  $os_user = variable_get('nagios_os_user', []);
+  if (function_exists('posix_getpwuid')) {
+    $current_user = posix_getpwuid(posix_geteuid())['name'];
+  }
+  else {
+    $current_user = exec('whoami');
+  }
+  if (isset($os_user[PHP_SAPI]) && $os_user[PHP_SAPI] == $current_user) {
+    // Already up-to-date
+    return $os_user;
+  }
+  $os_user[PHP_SAPI] = $current_user;
+  variable_set('nagios_os_user', $os_user);
+  return $os_user;
+}
+
+/**
  * Callback for the settings page
  */
 function nagios_settings($form) {
   $group = 'modules';
+
+  _nagios_update_os_user();
 
   $form['nagios_ua'] = [
     '#type' => 'textfield',
@@ -126,7 +150,7 @@ function nagios_settings($form) {
     '#type' => 'textfield',
     '#title' => t('Nagios page path'),
     '#description' => t('Enter the path for the Nagios HTTP status page. It must be a valid Drupal path.'),
-    '#default_value' => variable_get('nagios_page_path', 'nagios-status'),
+    '#default_value' => variable_get('nagios_page_path', 'nagios'),
   ];
   $form['nagios_status_page']['nagios_page_callback'] = [
     '#type' => 'textfield',
@@ -231,6 +255,8 @@ function nagios_settings($form) {
 function nagios_status_page() {
   // Make sure this page is not cached.
   drupal_page_is_cacheable(FALSE);
+
+  _nagios_update_os_user();
 
   $args = func_get_args();
   // Module to run checks for.
