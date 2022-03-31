@@ -53,7 +53,7 @@ class WeatherConfigurationTestCase extends DrupalWebTestCase {
     // This user may setup a system-wide weather block.
     $admin_user = $this->drupalCreateUser(array(
       'access content', 'administer custom weather block',
-      'administer site configuration', 'administer blocks',
+      'administer system-wide weather', 'administer blocks'
     ));
     // Test with admin user.
     $this->drupalLogin($admin_user);

@@ -1,0 +1,260 @@
+/* You must download the Meteocons font from https://www.alessioatzeni.com/meteocons/ and include it in your theme. */
+
+.weather-icon {
+  display: inline-block;
+  font-family: 'MeteoconsRegular';
+  font-size: 64px;
+  height: 64px;
+  line-height: 64px;
+  width: 64px;
+}
+
+.weather-icon-01d:before {
+  content: 'B';
+}
+.weather-icon-01m:before {
+  content: 'A';
+}
+.weather-icon-01n:before {
+  content: 'C';
+}
+.weather-icon-02d:before {
+  content: 'H';
+}
+.weather-icon-02m:before {
+  content: 'H';
+}
+.weather-icon-02n:before {
+  content: 'I';
+}
+.weather-icon-03d:before {
+  content: 'H';
+}
+.weather-icon-03m:before {
+  content: 'H';
+}
+.weather-icon-03n:before {
+  content: 'I';
+}
+.weather-icon-04:before {
+  content: 'N';
+}
+.weather-icon-05d:before {
+  content: 'Q';
+}
+.weather-icon-05m:before {
+  content: 'Q';
+}
+.weather-icon-05n:before {
+  content: 'Q';
+}
+.weather-icon-06d:before {
+  content: 'P';
+}
+.weather-icon-06m:before {
+  content: 'P';
+}
+.weather-icon-06n:before {
+  content: 'P';
+}
+.weather-icon-07d:before {
+  content: 'X';
+}
+.weather-icon-07m:before {
+  content: 'X';
+}
+.weather-icon-07n:before {
+  content: 'X';
+}
+.weather-icon-08d:before {
+  content: 'V';
+}
+.weather-icon-08m:before {
+  content: 'V';
+}
+.weather-icon-08n:before {
+  content: 'V';
+}
+.weather-icon-09:before {
+  content: 'Q';
+}
+.weather-icon-10:before {
+  content: 'R';
+}
+.weather-icon-11:before {
+  content: '0';
+}
+.weather-icon-12:before {
+  content: 'X';
+}
+.weather-icon-13:before {
+  content: 'W';
+}
+.weather-icon-14:before {
+  content: 'W';
+}
+.weather-icon-15:before {
+  content: 'M';
+}
+.weather-icon-20d:before {
+  content: 'X';
+}
+.weather-icon-20m:before {
+  content: 'X';
+}
+.weather-icon-20n:before {
+  content: 'X';
+}
+.weather-icon-21d:before {
+  content: 'V';
+}
+.weather-icon-21m:before {
+  content: 'V';
+}
+.weather-icon-21n:before {
+  content: 'V';
+}
+.weather-icon-22:before {
+  content: '0';
+}
+.weather-icon-23:before {
+  content: '0';
+}
+.weather-icon-24d:before {
+  content: 'P';
+}
+.weather-icon-24m:before {
+  content: 'P';
+}
+.weather-icon-24n:before {
+  content: 'P';
+}
+.weather-icon-25d:before {
+  content: '0';
+}
+.weather-icon-25m:before {
+  content: '0';
+}
+.weather-icon-25n:before {
+  content: '0';
+}
+.weather-icon-26d:before {
+  content: 'P';
+}
+.weather-icon-26m:before {
+  content: 'P';
+}
+.weather-icon-26n:before {
+  content: 'P';
+}
+.weather-icon-27d:before {
+  content: 'X';
+}
+.weather-icon-27m:before {
+  content: 'X';
+}
+.weather-icon-27n:before {
+  content: 'X';
+}
+.weather-icon-28d:before {
+  content: 'V';
+}
+.weather-icon-28m:before {
+  content: 'V';
+}
+.weather-icon-28n:before {
+  content: 'V';
+}
+.weather-icon-29d:before {
+  content: 'W';
+}
+.weather-icon-29m:before {
+  content: 'W';
+}
+.weather-icon-29n:before {
+  content: 'W';
+}
+.weather-icon-30:before {
+  content: 'P';
+}
+.weather-icon-31:before {
+  content: 'P';
+}
+.weather-icon-32:before {
+  content: 'X';
+}
+.weather-icon-33:before {
+  content: 'P';
+}
+.weather-icon-34:before {
+  content: 'W';
+}
+.weather-icon-40d:before {
+  content: 'Q';
+}
+.weather-icon-40m:before {
+  content: 'Q';
+}
+.weather-icon-40n:before {
+  content: 'Q';
+}
+.weather-icon-41d:before {
+  content: 'R';
+}
+.weather-icon-41m:before {
+  content: 'R';
+}
+.weather-icon-41n:before {
+  content: 'R';
+}
+.weather-icon-42d:before {
+  content: 'R';
+}
+.weather-icon-42m:before {
+  content: 'R';
+}
+.weather-icon-42n:before {
+  content: 'R';
+}
+.weather-icon-43d:before {
+  content: 'X';
+}
+.weather-icon-43m:before {
+  content: 'X';
+}
+.weather-icon-43n:before {
+  content: 'X';
+}
+.weather-icon-44d:before {
+  content: 'V';
+}
+.weather-icon-44m:before {
+  content: 'V';
+}
+.weather-icon-44n:before {
+  content: 'V';
+}
+.weather-icon-45d:before {
+  content: 'W';
+}
+.weather-icon-45m:before {
+  content: 'W';
+}
+.weather-icon-45n:before {
+  content: 'W';
+}
+.weather-icon-46:before {
+  content: 'Q';
+}
+.weather-icon-47:before {
+  content: 'Q';
+}
+.weather-icon-48:before {
+  content: 'X';
+}
+.weather-icon-49:before {
+  content: 'V';
+}
+.weather-icon-50:before {
+  content: 'W';
+}

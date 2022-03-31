@@ -70,6 +70,12 @@ function weather_admin_main_page() {
 function weather_admin_main_page_form() {
   // Determine the active theme path.
   $theme_path = drupal_get_path('theme', variable_get('theme_default', NULL));
+  $form['weather_use_webfont'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Use Meteocons webfont instead of images'),
+    '#description' => t('You can download and replace the Meteocons font in the "/assets/meteocons" folder with newer version from https://www.alessioatzeni.com/meteocons/'),
+    '#default_value' => variable_get('weather_use_webfont', FALSE),
+  );
   $form['weather_image_directory'] = array(
     '#type' => 'textfield',
     '#title' => t('Directory for custom images'),
@@ -95,6 +101,7 @@ function weather_admin_main_page_form() {
  * Handle the submission for general settings of the Weather module.
  */
 function weather_admin_main_page_form_submit($form, &$form_state) {
+  variable_set('weather_use_webfont', $form_state['values']['weather_use_webfont']);
   $directory = $form_state['values']['weather_image_directory'];
   // Remove whitespace and directory separators from the string.
   $directory = trim(trim($directory, '/\\'));
@@ -154,7 +161,7 @@ function weather_admin_places_form() {
   $form['weather_yrno_url'] = array(
     '#type' => 'textfield',
     '#title' => t('URL of English weather forecast on yr.no'),
-    '#description' => t('Example: http://www.yr.no/place/Germany/Hamburg/Hamburg/.'),
+    '#description' => t('Example: https://www.yr.no/place/Germany/Hamburg/Hamburg/.'),
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -172,13 +179,13 @@ function weather_admin_places_form_submit($form, &$form_state) {
   // Remove whitespace from the string.
   $url = trim($url);
   // Check for the english version.
-  if (substr($url, 0, 23) != 'http://www.yr.no/place/') {
-    drupal_set_message(t('Please make sure to use the English version of the forecast, starting with "http://www.yr.no/<strong>place</strong>/".'), 'error');
+  if (substr($url, 0, 24) != 'https://www.yr.no/place/') {
+    drupal_set_message(t('Please make sure to use the English version of the forecast, starting with "https://www.yr.no/<strong>place</strong>/".'), 'error');
     return;
   }
   // Ensure that the link is not known yet.
-  // Remove "http://www.yr.no/place/" from the URL.
-  $link = substr($url, 23);
+  // Remove "https://www.yr.no/place/" from the URL.
+  $link = substr($url, 24);
   // Remove trailing slash.
   $link = trim($link, '/');
   // Split by slashes and remove country (first item)
@@ -631,12 +638,12 @@ function weather_location_settings_form($form, &$form_state, $display_type, $dis
       $settings->place_geoid = key($settings->places);
       $settings->displayed_name = $settings->places[$settings->place_geoid];
       $form['place']['#options'] = $settings->places;
-      $form['place']['#value'] = $settings->place_geoid;
-      $form['displayed_name']['#value'] = $settings->displayed_name;
+      $form['place']['#attributes']['value'] = $settings->place_geoid;
+      $form['displayed_name']['#attributes']['value'] = $settings->displayed_name;
     }
     if ($form_state['triggering_element']['#title'] == t('Place')) {
       $settings->displayed_name = $settings->places[$form_state['values']['place']];
-      $form['displayed_name']['#value'] = $settings->displayed_name;
+      $form['displayed_name']['#attributes']['value'] = $settings->displayed_name;
     }
   }
   return $form;

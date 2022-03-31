@@ -262,8 +262,8 @@ function _weather_update_places($fc) {
   $place['country'] = (string) $fc->location->country;
   $place['name'] = (string) $fc->location->name;
   $url = (string) $fc->credit->link['url'];
-  // Remove "http://www.yr.no/place/" from the URL.
-  $link = substr($url, 23);
+  // Remove "https://www.yr.no/place/" from the URL.
+  $link = substr($url, 24);
   // Split by slashes and remove country (first item) and "forecast.xml" (last item)
   $link_parts = explode('/', $link);
   // Remove country.

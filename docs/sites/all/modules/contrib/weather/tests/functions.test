@@ -68,14 +68,14 @@ class WeatherFunctionsTestCase extends DrupalWebTestCase {
     $this->assertEqual($link, 'weather/Côte_d’Ivoire/Worodougou/Séguéla/u');
     // Test different numbers for yr links.
     $link = _weather_get_link_for_geoid('geonames_2596934', 'yr');
-    $this->assertEqual($link, 'http://www.yr.no/place/C%C3%B4te_d%E2%80%99Ivoire/Worodougou/S%C3%A9gu%C3%A9la/forecast.xml');
+    $this->assertEqual($link, 'https://www.yr.no/place/C%C3%B4te_d%E2%80%99Ivoire/Worodougou/S%C3%A9gu%C3%A9la/forecast.xml');
     $link = _weather_get_link_for_geoid('geonames_2596934', 'yr', 8);
-    $this->assertEqual($link, 'http://www.yr.no/place/C%C3%B4te_d%E2%80%99Ivoire/Worodougou/S%C3%A9gu%C3%A9la/forecast.xml');
+    $this->assertEqual($link, 'https://www.yr.no/place/C%C3%B4te_d%E2%80%99Ivoire/Worodougou/S%C3%A9gu%C3%A9la/forecast.xml');
     // Test different numbers for yr.no links.
     $link = _weather_get_link_for_geoid('geonames_2596934', 'yr.no');
-    $this->assertEqual($link, 'http://www.yr.no/place/Côte_d’Ivoire/Worodougou/Séguéla/');
+    $this->assertEqual($link, 'https://www.yr.no/place/Côte_d’Ivoire/Worodougou/Séguéla/');
     $link = _weather_get_link_for_geoid('geonames_2596934', 'yr.no', 8);
-    $this->assertEqual($link, 'http://www.yr.no/place/Côte_d’Ivoire/Worodougou/Séguéla/');
+    $this->assertEqual($link, 'https://www.yr.no/place/Côte_d’Ivoire/Worodougou/Séguéla/');
     // Test autocomplete link.
     $link = _weather_get_link_for_geoid('geonames_2596934', 'autocomplete');
     $this->assertEqual($link, 'Côte_d’Ivoire/Worodougou/Séguéla');

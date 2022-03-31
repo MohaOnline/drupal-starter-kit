@@ -163,6 +163,15 @@ function weather_format_image($symbol, $condition) {
   // file is not available, fall back to the default images of the module.
   // Determine the active theme path.
   $theme_path = drupal_get_path('theme', variable_get('theme_default', NULL));
+  // If webfont enabled attach new css file.
+  $use_webfont = variable_get('weather_use_webfont', FALSE);
+  if ($use_webfont) {
+    $path = drupal_get_path('module', 'weather');
+    // Attach the CSS
+    drupal_add_css($path . '/css/weather_meteocons.css');
+    drupal_add_css($path . '/assets/meteocons/stylesheet.css');
+    return "<span class='weather-icon weather-icon-$symbol' title='$condition'></span>";
+  }
   $custom_path = $theme_path . '/' . variable_get('weather_image_directory', '') . '/';
   // Construct the filename.
   $image = $custom_path . $symbol . '.png';

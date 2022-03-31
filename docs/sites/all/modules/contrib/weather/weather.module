@@ -49,6 +49,10 @@ function weather_cron() {
  */
 function weather_permission() {
   return array(
+    'administer system-wide weather' => array(
+      'title' => t('Administer system-wide weather'),
+      'description' => t('Allows users to configure system-wide weather displays and places.'),
+    ),
     'administer custom weather block' => array(
       'title' => t('Administer custom weather block'),
       'description' => t('Allows users to configure their custom weather block.'),
@@ -70,7 +74,7 @@ function weather_menu() {
     'description' => 'Configure system-wide weather displays and the default configuration of new displays. Add new places to the module.',
     'page callback' => 'weather_admin_main_page',
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_NORMAL_ITEM,
   );
   $items['admin/config/user-interface/weather/displays'] = array(
@@ -78,7 +82,7 @@ function weather_menu() {
     'description' => 'Configure system-wide weather displays and the default configuration of new displays.',
     'page callback' => 'weather_admin_main_page',
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
   );
   $items['admin/config/user-interface/weather/places'] = array(
@@ -86,7 +90,7 @@ function weather_menu() {
     'description' => 'Configure places for weather.',
     'page callback' => 'weather_admin_places',
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_LOCAL_TASK,
   );
   $items['admin/config/user-interface/weather/default'] = array(
@@ -95,7 +99,7 @@ function weather_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('weather_display_config_form', 4),
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_LOCAL_ACTION,
   );
   $items['admin/config/user-interface/weather/system-wide/add'] = array(
@@ -104,7 +108,7 @@ function weather_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('weather_display_config_form', 4, 5),
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_LOCAL_ACTION,
   );
   $items['admin/config/user-interface/weather/system-wide/%'] = array(
@@ -113,7 +117,7 @@ function weather_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('weather_display_config_form', 4, 5),
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_CALLBACK,
   );
   $items['admin/config/user-interface/weather/system-wide/%/delete'] = array(
@@ -122,7 +126,7 @@ function weather_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('weather_display_delete_confirm', 4, 5),
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_CALLBACK,
   );
   $items['admin/config/user-interface/weather/system-wide/%/add'] = array(
@@ -131,7 +135,7 @@ function weather_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('weather_location_settings_form', 4, 5, 6),
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_CALLBACK,
   );
   $items['admin/config/user-interface/weather/system-wide/%/%'] = array(
@@ -140,7 +144,7 @@ function weather_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('weather_location_settings_form', 4, 5, 6),
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_CALLBACK,
   );
   $items['admin/config/user-interface/weather/system-wide/%/%/delete'] = array(
@@ -149,7 +153,7 @@ function weather_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('weather_location_delete_confirm', 6),
     'file' => 'weather.forms.inc',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer system-wide weather'),
     'type' => MENU_CALLBACK,
   );
   $items['user/%/weather'] = array(
@@ -256,7 +260,7 @@ function weather_help($path, $arg) {
     case 'admin/config/user-interface/weather/places':
       $output .= '<p>';
       $output .= t('You can add new places to the module. Just paste the URL of the weather forecast on the <a href="@url">yr.no</a> website in the input field below. The easiest way to do this is to search on their website for the wanted place, click on the forecast link and copy the URL from the address bar of your browser.',
-        array('@url' => url('http://www.yr.no/')));
+        array('@url' => url('https://www.yr.no/')));
       $output .= '</p>';
       break;
 

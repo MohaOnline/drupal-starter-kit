@@ -48,7 +48,7 @@
  *   (newline)
  *
  * To save space, the link to the actual yr.no URL has been shortened.
- * Every URL starts with "http://www.yr.no/place/", followed by the
+ * Every URL starts with "https://www.yr.no/place/", followed by the
  * country.
  *
  * In the country's name, every whitespace gets replaced with an
@@ -123,6 +123,7 @@ function weather_uninstall() {
   variable_del('weather_image_directory');
   variable_del('date_format_weather');
   variable_del('weather_forecast_days');
+  variable_del('weather_use_webfont');
   // Remove blocks provided by the module.
   db_delete('block')
     ->condition('module', 'weather')

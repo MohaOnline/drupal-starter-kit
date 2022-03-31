@@ -239,11 +239,11 @@ function _weather_get_link_for_geoid($geoid, $destination, $number = 1) {
       // Otherwise, the request will fail on yr.no.
       $link = rawurlencode($link);
       $link = str_replace('%2F', '/', $link);
-      $link = 'http://www.yr.no/place/' . $link . '/forecast.xml';
+      $link = 'https://www.yr.no/place/' . $link . '/forecast.xml';
       break;
 
     case 'yr.no':
-      $link = 'http://www.yr.no/place/' . $link . '/';
+      $link = 'https://www.yr.no/place/' . $link . '/';
       break;
 
     case 'autocomplete':
@@ -335,7 +335,7 @@ function weather_get_weather($geoid, $days = 0, $detailed = TRUE) {
   )->fetchAssoc();
   $current_utc_time = gmdate('Y-m-d H:i:s', $time);
   // If the next scheduled download is due, try to get forecasts.
-  if ($current_utc_time >= $meta['next_download_attempt']) {
+  if (($meta === FALSE) or ($current_utc_time >= $meta['next_download_attempt'])) {
     $result = _weather_download_forecast($geoid);
     // If that worked, get the next scheduled update time.
     $meta = db_query(
