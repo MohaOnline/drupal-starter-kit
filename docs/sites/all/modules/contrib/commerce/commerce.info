@@ -12,8 +12,8 @@ files[] = tests/commerce_base.test
 ; Central Entity Controller.
 files[] = includes/commerce.controller.inc
 
-; Information added by Drupal.org packaging script on 2019-05-28
-version = "7.x-1.15"
+; Information added by Drupal.org packaging script on 2022-03-05
+version = "7.x-1.17"
 core = "7.x"
 project = "commerce"
-datestamp = "1559009289"
+datestamp = "1646502150"

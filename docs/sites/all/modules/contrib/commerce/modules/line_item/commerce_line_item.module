@@ -1013,7 +1013,7 @@ function commerce_line_item_field_widget_form(&$form, &$form_state, $field, $ins
     }
 
     // Load the line items for temporary storage in the form array.
-    if(!empty($line_item_ids)) {
+    if (!empty($line_item_ids)) {
       $line_items = commerce_line_item_load_multiple($line_item_ids);
     }
     else {
@@ -1032,6 +1032,8 @@ function commerce_line_item_field_widget_form(&$form, &$form_state, $field, $ins
 
     if (!empty($form_state['line_item_save_warning'])) {
       drupal_set_message(t('New line items on this order will not be saved until the <em>Save order</em> button is clicked.'), 'warning');
+      // Set variable to false to prevent it from showing up in other contexts.
+      $form_state['line_item_save_warning'] = FALSE;
     }
 
     // Add a set of elements to the form for each referenced line item.
@@ -1114,7 +1116,7 @@ function commerce_line_item_field_widget_form(&$form, &$form_state, $field, $ins
 
       $element['actions']['cancel'] = array(
         '#type' => 'button',
-        '#value' => t('Cancel'),
+        '#value' => t('Cancel line item'),
         '#limit_validation_errors' => array(),
         '#ajax' => array(
           'callback' => 'commerce_line_item_manager_refresh',
@@ -1521,7 +1523,7 @@ function commerce_line_items_total($line_items, $types = array()) {
 
     $line_item_currency_code = $line_item_wrapper->commerce_total->currency_code->value();
 
-    if (!in_array($line_item_currency_code, array_keys($currencies))) {
+    if (!array_key_exists($line_item_currency_code, $currencies)) {
       $currencies[$line_item_currency_code] = 1;
     }
     else {
@@ -1535,7 +1537,7 @@ function commerce_line_items_total($line_items, $types = array()) {
   if (count($currencies) == 1) {
     $currency_code = key($currencies);
   }
-  elseif (in_array(commerce_default_currency(), array_keys($currencies))) {
+  elseif (array_key_exists(commerce_default_currency(), $currencies)) {
     // Otherwise use the site default currency if it's in the array.
     $currency_code = commerce_default_currency();
   }

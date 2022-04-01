@@ -709,6 +709,19 @@ function commerce_cart_block_view($delta) {
  *   Boolean indicating whether or not the cart order can be refreshed.
  */
 function commerce_cart_order_can_refresh($order) {
+  $can_refresh = module_invoke_all('commerce_cart_order_can_refresh', $order);
+
+  // We refresh the cart order if both of the following conditions are met:
+  // - No modules say to skip the cart refresh.
+  // - At least one module allows it.
+  // If no module specified either allow or skip, we fall back to the
+  // logic below.
+  if (in_array(FALSE, $can_refresh, TRUE)) {
+    return FALSE;
+  }
+  elseif (in_array(TRUE, $can_refresh, TRUE)) {
+    return TRUE;
+  }
   global $user;
 
   // Force the shopping cart refresh on /cart and /checkout/* paths if enabled.
@@ -954,7 +967,7 @@ function commerce_cart_order_new($uid = 0, $type = 'commerce_order') {
  */
 function commerce_cart_order_is_cart($order) {
   // If the order is in a shopping cart order status, assume it is a cart.
-  $is_cart = in_array($order->status, array_keys(commerce_order_statuses(array('cart' => TRUE))));
+  $is_cart = array_key_exists($order->status, commerce_order_statuses(array('cart' => TRUE)));
 
   // Allow other modules to make the judgment based on some other criteria.
   foreach (module_implements('commerce_cart_order_is_cart') as $module) {
@@ -1140,6 +1153,7 @@ function commerce_cart_order_refresh($order) {
       is_null($current_line_item_wrapper->commerce_unit_price->amount->value()) ||
       is_null($current_line_item_wrapper->commerce_unit_price->currency_code->value())) {
       commerce_cart_order_product_line_item_delete($order, $cloned_line_item->line_item_id, TRUE);
+      $line_item_changed = TRUE;
     }
     else {
       // Compare the refreshed unit price to the original unit price looking for
@@ -1756,7 +1770,12 @@ function _commerce_cart_matching_products($products, &$form_state) {
       // Store which attributes this product is associated with.
       foreach ($attributes as $attribute_name => $attribute_value) {
         $product_attribute_items = field_get_items('commerce_product', $product, $attribute_name);
-        $product_attribute_value = reset($product_attribute_items[0]);
+        if (!empty($product_attribute_items[0])) {
+          $product_attribute_value = reset($product_attribute_items[0]);
+        }
+        else {
+          $product_attribute_value = NULL;
+        }
 
         if ($product_attribute_value == $attribute_value) {
           $attributes_products[$attribute_name][$product_id] = $product;
@@ -2096,7 +2115,12 @@ function commerce_cart_add_to_cart_form($form, &$form_state, $line_item, $show_q
               // value matches the selected value on that element.
               if (isset($form['attributes'][$used_field_name]) && array_key_exists('#default_value', $form['attributes'][$used_field_name])) {
                 $used_field_items = field_get_items('commerce_product', $product, $used_field_name);
-                $used_field_value = reset($used_field_items[0]);
+                if (!empty($used_field_items[0])) {
+                  $used_field_value = reset($used_field_items[0]);
+                }
+                else {
+                  $used_field_value = NULL;
+                }
 
                 if ($used_field_value != $form['attributes'][$used_field_name]['#default_value']) {
                   continue 2;
@@ -2107,7 +2131,12 @@ function commerce_cart_add_to_cart_form($form, &$form_state, $line_item, $show_q
             // With our hard dependency on widgets provided by the Options
             // module, we can make assumptions about where the data is stored.
             $field_items = field_get_items('commerce_product', $product, $field_name);
-            $field_value = reset($field_items[0]);
+            if (!empty($field_items[0])) {
+              $field_value = reset($field_items[0]);
+            }
+            else {
+              $field_value = NULL;
+            }
 
             if ($field_value != NULL) {
               $field_has_options[$field_name] = TRUE;
@@ -2123,7 +2152,12 @@ function commerce_cart_add_to_cart_form($form, &$form_state, $line_item, $show_q
           }
           else {
             $default_product_field_items = field_get_items('commerce_product', $default_product, $field_name);
-            $default_product_field_value = reset($default_product_field_items[0]);
+            if (!empty($default_product_field_items[0])) {
+              $default_product_field_value = reset($default_product_field_items[0]);
+            }
+            else {
+              $default_product_field_value = NULL;
+            }
 
             $form['attributes'][$field_name] = array(
               '#type' => $data['commerce_cart_settings']['attribute_widget'],
@@ -2169,7 +2203,12 @@ function commerce_cart_add_to_cart_form($form, &$form_state, $line_item, $show_q
 
               foreach (element_children($form['attributes']) as $field_name) {
                 $product_field_items = field_get_items('commerce_product', $product, $field_name);
-                $product_field_value = reset($product_field_items[0]);
+                if (!empty($product_field_items[0])) {
+                  $product_field_value = reset($product_field_items[0]);
+                }
+                else {
+                  $product_field_value = NULL;
+                }
 
                 if ($product_field_value != $form['attributes'][$field_name]['#default_value']) {
                   $match = FALSE;
@@ -2297,7 +2336,10 @@ function commerce_cart_add_to_cart_form($form, &$form_state, $line_item, $show_q
     // Do not allow products without a price to be purchased.
     $values = commerce_product_calculate_sell_price($form_state['default_product']);
 
-    if (is_null($values) || is_null($values['amount']) || is_null($values['currency_code'])) {
+    // Do not allow products without active status to be purchased.
+    $status = $form_state['default_product']->status;
+
+    if (is_null($values) || is_null($values['amount']) || is_null($values['currency_code']) || !$status) {
       $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Product not available'),
@@ -2712,15 +2754,20 @@ function commerce_cart_field_formatter_view($entity_type, $entity, $field, $inst
   }
 
   if ($display['type'] == 'commerce_cart_add_to_cart_form') {
-    // Load the referenced products.
-    $products = commerce_product_load_multiple($product_ids);
+    // Return an empty render array if there were no referenced products.
+    if (empty($product_ids)) {
+      return array();
+    }
 
-    // Check to ensure products are referenced, before returning results.
-    if (!empty($products)) {
+    // Load the default product to use for this form.
+    $product = commerce_product_reference_get_default_product($entity, $entity_type, $field, $langcode);
+
+    // Check to ensure a default product is loaded before returning results.
+    if (!empty($product)) {
       $type = !empty($settings['line_item_type']) ? $settings['line_item_type'] : 'product';
-      $line_item = commerce_product_line_item_new(commerce_product_reference_default_product($products), $settings['default_quantity'], 0, array(), $type);
-      $line_item->data['context']['button_text'] = !empty($settings['button_text']) ? filter_xss($settings['button_text'], array()) : t('Add to cart');;
-      $line_item->data['context']['product_ids'] = array_keys($products);
+      $line_item = commerce_product_line_item_new($product, $settings['default_quantity'], 0, array(), $type);
+      $line_item->data['context']['product_ids'] = $product_ids;
+      $line_item->data['context']['button_text'] = !empty($settings['button_text']) ? filter_xss($settings['button_text'], array()) : t('Add to cart');
       $line_item->data['context']['add_to_cart_combine'] = !empty($settings['combine']);
       $line_item->data['context']['show_single_product_attributes'] = !empty($settings['show_single_product_attributes']);
 

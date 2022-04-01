@@ -407,13 +407,20 @@ function commerce_payment_commerce_payment_totals_row_info($totals, $order) {
 
     // Add a row for the remaining balance on the order.
     if ($order) {
-      // @todo Fix for when there's a FALSE $balance.
       $balance = commerce_payment_order_balance($order, $totals);
+
+      // Fix false balances.
+      if (empty($balance)) {
+        $formatted_amount = commerce_currency_format(0, NULL);
+      }
+      else {
+        $formatted_amount = commerce_currency_format($balance['amount'], $balance['currency_code']);
+      }
 
       $rows[] = array(
         'data' => array(
           array('data' => t('Order balance'), 'class' => array('label')),
-          array('data' => commerce_currency_format($balance['amount'], $balance['currency_code']), 'class' => array('balance')),
+          array('data' => $formatted_amount, 'class' => array('balance')),
         ),
         'class' => array('order-balance'),
         'weight' => 10,
@@ -468,7 +475,7 @@ function commerce_payment_commerce_payment_transaction_insert($transaction) {
         rules_invoke_all('commerce_payment_order_paid_in_full', $order, $transaction);
 
         // Update the order's data array to indicate this just happened.
-        $order->data['commerce_payment_order_paid_in_full_invoked'] = TRUE;
+        $order->data['commerce_payment_order_paid_in_full_invoked'] = REQUEST_TIME;
 
         // Save the updated order.
         commerce_order_save($order);
@@ -812,6 +819,13 @@ function commerce_payment_transaction_status_options_list() {
   }
 
   return $options;
+}
+
+/**
+ * Themes the payment transaction entity.
+ */
+function theme_commerce_payment_transaction($variables) {
+  return render($variables['content']);
 }
 
 /**
@@ -1186,7 +1200,7 @@ function commerce_payment_order_has_payments($order) {
     ->propertyCondition('status', COMMERCE_PAYMENT_STATUS_FAILURE, '!=')
     ->count();
 
-  return $query->execute() == 1;
+  return $query->execute() >= 1;
 }
 
 /**
