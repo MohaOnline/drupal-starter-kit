@@ -104,6 +104,7 @@ class OpenidConnectWindowsAadClient extends OpenIDConnectClientBase {
       return array(
         'id_token' => $response_data['id_token'],
         'access_token' => $response_data['access_token'],
+        'refresh_token' => isset($response_data['refresh_token']) ? $response_data['refresh_token'] : FALSE,
         'expire' => REQUEST_TIME + $response_data['expires_in'],
       );
     }
@@ -132,16 +133,7 @@ class OpenidConnectWindowsAadClient extends OpenIDConnectClientBase {
         break;
     }
 
-    // Check to see if we have changed email data, openid_connect doesn't
-    // give us the possibility to add a mapping for it, so we do the change
-    // now, first checking if this is wanted by checking the setting for it.
-    if ($this->getSetting('userinfo_update_email') == 1) {
-      $user = user_load_by_name($userinfo['name']);
-      if ($user && ($user->mail <> $userinfo['email'])) {
-        $edit = array('mail' => $userinfo['email']);
-        user_save($user, $edit);
-      }
-    }
+    drupal_alter('openid_connect_windows_aad_userinfo', $userinfo);
 
     return $userinfo;
   }

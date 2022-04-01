@@ -1,0 +1,13 @@
+diff --git a/plugins/openid_connect_client/windows_aad/OpenidConnectWindowsAadClient.class.php b/plugins/openid_connect_client/windows_aad/OpenidConnectWindowsAadClient.class.php
+index d33d56d..f22d447 100644
+--- a/plugins/openid_connect_client/windows_aad/OpenidConnectWindowsAadClient.class.php
++++ b/plugins/openid_connect_client/windows_aad/OpenidConnectWindowsAadClient.class.php
+@@ -132,6 +132,8 @@ class OpenidConnectWindowsAadClient extends OpenIDConnectClientBase {
+         break;
+     }
+ 
++    drupal_alter('openid_connect_windows_aad_userinfo', $userinfo);
++
+     // Check to see if we have changed email data, openid_connect doesn't
+     // give us the possibility to add a mapping for it, so we do the change
+     // now, first checking if this is wanted by checking the setting for it.

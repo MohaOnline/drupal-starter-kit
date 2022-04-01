@@ -13,3 +13,22 @@ function openid_connect_windows_aad_ctools_plugin_directory($module, $plugin) {
     return "plugins/$plugin";
   }
 }
+
+/**
+ * Implements hook_openid_connect_post_authorize().
+ *
+ * Update the account email if it has been changed.
+ */
+function openid_connect_windows_aad_openid_connect_post_authorize($tokens, $account, $userinfo, $client_name, $is_new) {
+  $client = openid_connect_get_client($client_name);
+
+  // Check to see if we have changed email data, openid_connect doesn't
+  // give us the possibility to add a mapping for it, so we do the change
+  // now, first checking if this is wanted by checking the setting for it.
+  if ($client->getSetting('userinfo_update_email') == 1) {
+    if ($account && ($account->mail <> $userinfo['email'])) {
+      $edit = array('mail' => $userinfo['email']);
+      user_save($account, $edit);
+    }
+  }
+}
