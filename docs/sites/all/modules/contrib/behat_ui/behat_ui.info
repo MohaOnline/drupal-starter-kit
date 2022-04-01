@@ -1,0 +1,10 @@
+name = Behat UI
+description = "Create and run Behat/Mink tests from the web interface"
+core = 7.x
+
+; Information added by Drupal.org packaging script on 2016-02-07
+version = "7.x-2.1"
+core = "7.x"
+project = "behat_ui"
+datestamp = "1454828345"
+
