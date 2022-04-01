@@ -1,0 +1,115 @@
+User Registration Password 7.x-1.5 2017-11-08
+---------------------------------------------
+
+- Bug: Used or invalid one-time link
+  https://www.drupal.org/node/2344171
+
+- Bug: Fatal error: Call to undefined function commerce_cart_order_id() in
+  user_registrationpassword.pages.inc on line 78
+  https://www.drupal.org/node/2498003
+
+- Bug: Undefined variable: text in _user_mail_text()
+  https://www.drupal.org/node/2500879
+
+- Task: Remove tokes when unable to generate value
+  https://www.drupal.org/node/2857760
+
+- New: Mail Debugger Integration (Patch Included) (and followup)
+  https://www.drupal.org/node/2849288
+  https://www.drupal.org/node/2859910
+
+- New: Any way to hook into user_registrationpassword_confirm_account?
+  https://www.drupal.org/node/2058431
+
+- Bug: Mail not sent for pending approval
+  https://www.drupal.org/node/2152925
+
+- Bug: Missing translation for admin overriden mails
+  https://www.drupal.org/node/2554717
+
+- Task: Fix codingstandards
+  https://www.drupal.org/node/2916052
+
+- Task: Add access check to rules event
+  https://www.drupal.org/node/2914234
+
+- Task: Move variable hooks into separate file
+  https://www.drupal.org/node/2916134
+
+- Bug: Variable translation saved (during install)
+  https://www.drupal.org/node/2917971
+
+
+User Registration Password 7.x-1.4 2015-05-08
+---------------------------------------------
+
+- New: Added support for the rpt module.
+- New: Rules integration: raise an event when a user activates their account
+  https://drupal.org/node/1776286
+- New: Resend confirmation e-mail
+  https://drupal.org/node/1816678
+
+- Bug: Error for drupal_access_denied()
+  https://drupal.org/node/1970436
+- Bug: Fixed wrong tokens in e-mail activation template
+  http://drupal.org/node/1832002
+- Bug: Fixed missing token on configuration page
+  http://drupal.org/node/1831922
+- Bug: Fixed Duplicate email using the verification email option (3rd option)
+  By bago - https://drupal.org/node/1773430
+
+ * All static variables 'values' have changed.
+ * Moved everything in user_registrationpassword_form_user_register_submit()
+   function into the if() statement.
+ * Created a new function: user_registrationpassword_set_message()
+   to drupal_set_message() and redirect.
+
+   >>> You need to run update.php after updating the module files. <<<
+
+  And this update will invalidate ALL current activation links.
+  Sad, true, but it's required to fix a major issue with the activation link.
+  Everybody should re-request their activation links if they registered before
+  this update was applied.
+
+- Task: Added tests. (admin config page test still needs work)
+- Task: Codingstandards++ (almost done).
+- Task: In-code documentation++ (still needs some work).
+
+
+User Registration Password 7.x-1.3 2012-09-12
+---------------------------------------------
+- Feature request: Translatable Confirmation E-Mail
+  By kle - http://drupal.org/node/1321998
+- New: The correct configuration options are set from the 1.3 release
+  and higher during install. No need to configure anything from now on.
+- New: The default 'Account activation' e-mail template will be
+  overridden during installation, now it makes a lot more sense.
+- Renamed the user_registrationpassword variable to
+  'user_registrationpassword_registration'
+  so we can actually remove it correctly via the uninstaller.
+- Minor edit to the e-mail template.
+- Small change in the logic, we used to check for the role of a user
+  (if admin perms) before we called the submit handler, we now only check
+  if the uid < 1. This fixes a minor possible issue. This module should
+  only work if an anonymous user tries to register.
+- Added an update function to update the variable names that changed.
+- Added CHANGELOG.txt so people can check at all times what changed,
+  even if d.o. is down. (for maintenance for example)
+- Updated README.txt to reflect changes and remove wrong / unclear
+  documentation.
+
+User Registration Password 1.2 2012-04-12
+-----------------------------------------
+- Bug by scor : Error with user status value
+  http://drupal.org/node/1513016
+- New: hook_mailkeys() is now supported, please test this.
+  Thanks ominds for the patch!
+
+User Registration Password 1.1 2012-02-04
+-----------------------------------------
+- Bug by jide : Verification email was sent
+  even when option was disabled.
+
+User Registration Password 1.0 2012-02-04
+-----------------------------------------
+- First commit.
