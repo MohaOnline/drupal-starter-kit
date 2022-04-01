@@ -1,0 +1,329 @@
+
+<?php
+
+/**
+ * @file
+ * Tests that some "special" files can be dealt with.
+ */
+
+module_load_include('php', 'api', 'tests/api_test_case');
+
+/**
+ * Tests that files containing special issues can be dealt with.
+ */
+class ApiTestSpecialIssues extends ApiWebPagesBaseTest {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Special files',
+      'description' => 'Tests that files containing two-byte Unicode characters and other special cases can be dealt with.',
+      'group' => 'API module',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp() {
+    $this->baseSetUp(array('api_test'));
+
+    // Set up a files branch with the special files directory.
+    $this->branchInfo = $this->setUpBranchUi('', TRUE, array(
+      'directory' => drupal_get_path('module', 'api') . '/tests/special_files',
+      'excluded' => '',
+    ));
+
+    // We don't need the PHP branch for this test, so for speed, remove it.
+    $this->removePhpBranch();
+
+    // Parse the code.
+    $this->resetBranchesAndCache();
+    $this->updateBranches();
+    $this->processApiParseQueue();
+
+    // Display the navigation block.
+    $this->drupalPost(
+      'admin/structure/block/list', array(
+        'blocks[api_navigation][region]' => 'sidebar_first',
+      ),
+      'Save blocks');
+  }
+
+  /**
+   * Runs the other tests, to avoid reparsing multiple times.
+   */
+  public function testAll() {
+    $this->verifyFormatting();
+    $this->verifyUnicode();
+    $this->verifyBadFileHeader();
+    $this->verifyExtendsLoops();
+    $this->verifyTwig();
+    $this->verifySearchCaseSensitivity();
+    $this->verifyYamlServices();
+    $this->verifyParseAlterHook();
+    $this->verifyReferences();
+  }
+
+  /**
+   * Tests that code formatting matches original code for PHP files.
+   */
+  protected function verifyFormatting() {
+    // ClassWithUnicode.php is omitted, because it has a Unicode error in
+    // the file (intentionally), so the formatted output does not work.
+    $files = array(
+      'badheader.php',
+      'ClassExtendsLoop.php',
+      'class_loop.php',
+      'dup_names.php',
+      'php54.php',
+    );
+    foreach ($files as $file) {
+      $object = api_filename_load($file, $this->branchInfo['project'], $this->branchInfo['branch_name']);
+      $this->assertCodeFormatting($object->code, $this->branchInfo['directory'] . '/' . $object->file_name);
+    }
+  }
+
+  /**
+   * Tests that files with Unicode can be dealt with.
+   */
+  protected function verifyUnicode() {
+    // Verify that both files are present on the Files page.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/files');
+    $this->assertLink('AllUnicodeChars.txt', 0, 'Unicode text file is there');
+    $this->assertLink('ClassWithUnicode.php', 0, 'Unicode class file is there');
+    $this->assertText('Tests that Unicode characters can be dealt with.', 'Class file description is there');
+
+    // Verify the text file page.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/AllUnicodeChars.txt/' . $this->branchInfo['branch_name']);
+    $this->assertText('abcdefghij', 'ASCII characters are there');
+    $this->assertText('àáâãä', 'Accented characters are there');
+    $this->assertText('ਙਚਛਜ', 'Some other Unicode characters are there');
+    $this->assertText('ゾタダ', 'Some CJK characters are there');
+    $this->assertText('AllUnicodeChars.txt', 'File name is there');
+
+    // Verify the class is listed on the classes page.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/classes');
+    $this->assertLink('CacheArray', 0, 'Link to class is there');
+    $this->assertText('Non-displayable characters.', 'Non-displayable message is there');
+
+    // Click through to the class page and verify the methods are shown.
+    $this->clickLink('CacheArray');
+    $this->assertText('Non-displayable characters.', 'Non-displayable message is there');
+    $this->assertText('CacheArray implements ArrayAccess', 'Class hierarchy is shown');
+    $this->assertLink('CacheArray::$cid', 0, 'Property link is shown');
+    $this->assertText('A cid to pass to', 'Property description is shown.');
+    $this->assertLink('CacheArray::persist', 0, 'Method link is shown');
+    $this->assertText('Flags an offset value', 'Method description is shown');
+    $this->assertText('$this', 'Source code is shown');
+    $this->assertText('written to the persistent', 'Source code is shown');
+    $this->assertText('keysToPersist', 'Source code is shown');
+  }
+
+  /**
+   * Tests that a file with defgroup/mainpage in the file header can be parsed.
+   */
+  protected function verifyBadFileHeader() {
+    // This file is in the special_files directory. Check that it triggered
+    // three log messages when it was parsed.
+    $this->drupalGet('admin/reports/dblog');
+    $this->assertRaw('@file docblock containing @defgroup', 'Warning message is present for bad file');
+    $this->assertRaw('Item docblock containing @defgroup', 'Warning message is present for bad class');
+    $this->assertRaw('Duplicate item found in file', 'Warning message is present for duplicated function');
+
+    // Verify that the file is listed and the file's page can be visited.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/files');
+    $this->assertLinkUrlSubstring('badheader.php', $this->branchInfo['project'] . '/badheader.php', 'File link exists', 'File link goes to right place');
+    $this->clickLink('badheader.php');
+    $this->assertLink('badheader_fun', 0, 'Function link is present on file page');
+    $this->assertTitleContains('badheader.php', 'Page title has file name');
+
+    // Verify that the class is listed on this page, and not the method.
+    $this->assertLink('ClassWithDefgroupDocBlock', 0, 'Class with defgroup docblock appears on file page');
+    $this->assertNoLink('ClassWithDefgroupDocBlock::foo', 'Method in class with defgroup docblock does not appear on file page');
+
+    // Verify that the duplicate function is listed, and it's the right
+    // version.
+    $this->clickLink('twice_in_one_file');
+    $this->assertText('First duplicate function in same file');
+    $this->assertNoText('Second duplicate function in same file');
+  }
+
+  /**
+   * Tests that circular class dependencies do not screw us up.
+   */
+  protected function verifyExtendsLoops() {
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/ClassExtendsLoop.php/class/FirstClass');
+    $this->assertText('First class', 'Description is on the class page');
+    $this->clickLink('Expanded class hierarchy of FirstClass');
+    $this->assertRaw('SecondClass', 'Second class link exists');
+    $this->assertRaw('ThirdClass', 'Third class link exists');
+  }
+
+  /**
+   * Tests Twig files.
+   */
+  protected function verifyTwig() {
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/files');
+    $this->assertText('Sample Twig template file, taken from', 'File description is there');
+    $this->assertNoText('Available variables', 'Extra information after first line is not shown');
+
+    // Visit the Twig template file and verify the theme call link is there.
+    $this->clickLink('sample.html.twig');
+    $this->assertText('Sample Twig template file', 'Theme link went to Twig file');
+    $this->assertLink('badheader_fun', 0, 'Link to theme calls is present');
+
+    // Click through to the badheader_fun() function and check the theme link.
+    $this->clickLink('badheader_fun');
+    $this->assertLinkUrlSubstring('sample', '/sample.html.twig', 'Theme call turns into link', 'Link goes to right place');
+  }
+
+  /**
+   * Tests searching case sensitivity.
+   */
+  protected function verifySearchCaseSensitivity() {
+    // Search for lower-case function name should get to the function page.
+    $this->drupalPost('api/' . $this->branchInfo['project'] . '/' . $this->branchInfo['branch_name'] . '/search', array('search' => 'sample_function'), 'Search');
+    $this->assertUrlContains('dup_names.php/function/sample_function', 'Got to function page with lower-case search');
+
+    // Search for upper-case function name should get to the constant page.
+    $this->drupalPost('api/' . $this->branchInfo['project'] . '/' . $this->branchInfo['branch_name'] . '/search', array('search' => 'SAMPLE_FUNCTION'), 'Search');
+    $this->assertUrlContains('dup_names.php/constant/SAMPLE_FUNCTION', 'Got to constant page with upper-case search');
+
+  }
+
+  /**
+   * Tests services YAML file parsing and display.
+   */
+  protected function verifyYamlServices() {
+    // Test the Services listing page.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/services/');
+    $this->assertLink('cache_context.url', 0, 'Service is linked');
+    $this->assertLink('test.services.yml', 0, 'Services file is linked');
+    $this->assertText('Alias of config.storage.active', 'Alias doc is there');
+    $this->assertText('Abstract', 'Abstract doc is there');
+    $this->assertText('CacheArray', 'Class is there');
+
+    // Test individual services pages.
+    $this->clickLink('route_enhancer.param_conversion');
+    $this->assertText('Tags', 'Tags header is there');
+    $this->assertText('event_subscriber', 'Tag is listed');
+    $this->assertText('ParamConversionEnhancer', 'Class is listed');
+
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/test.services.yml/service/container.trait');
+    $this->assertNoText('Tags', 'Tags header is not there');
+    $this->assertText('Abstract', 'Listed as abstract');
+
+    // Verify that the Services link is in the navigation block.
+    $this->assertLink('Services', 0, 'Services link is present');
+
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/test.services.yml/service/config.storage');
+    $this->assertNoText('Tags', 'Tags header is not there');
+    $this->assertText('Alias of', 'Listed as alias');
+
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/test.services.yml/service/cache_context.url');
+    $this->assertLink('CacheArray', 0, 'Class is linked');
+    $this->assertLink('test.services.yml', 0, 'File is linked');
+    $this->assertText('@request', 'Source is listed');
+
+    // Test that the class page links back to the service.
+    $this->clickLink('CacheArray');
+    $this->assertText('1 service uses CacheArray', 'Service reference text is there');
+    $this->assertLink('cache_context.url', 0, 'Service is linked');
+
+    // Test that in the method page, there is a link to the service it
+    // references.
+    $this->clickLink('CacheArray::persist');
+    $this->assertLinkUrlSubstring('container.trait', 'test.services.yml/service/container.trait', 'Link to service name exists', 'Link goes to right place');
+
+    // Test that the service page shows references.
+    $this->clickLink('container.trait');
+    $this->assertText('2 string references to container.trait', 'Reference text is there');
+    $this->assertLink('CacheArray::persist', 0, 'Link to referencing method is there');
+    $this->assertLink('alter_invoke_two', 0, 'Link to referencing function with chained call is there');
+  }
+
+  /**
+   * Tests hook_api_parse_functions_alter().
+   *
+   * The test module implements this to make sure files with extension 'foo'
+   * can be parsed. Verify that the function in this file shows up on the
+   * site.
+   */
+  protected function verifyParseAlterHook() {
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/functions/');
+    $this->assertText('only_function_in_file');
+  }
+
+  /**
+   * Verifies hook invokes and calls are recognized and linked correctly.
+   */
+  protected function verifyReferences() {
+    // Info array is keyed by hook name. Value is list of invokes that should
+    // be detected.
+    $info = array(
+      'hook_foo' => array(
+        'regular_invoke_bootstrap',
+        'regular_invoke_get_implementations',
+        'regular_invoke_implements_hook',
+        'regular_invoke_invoke',
+        'regular_invoke_invoke_all',
+        'regular_invoke_module_hook',
+        'regular_invoke_module_implements',
+        'regular_invoke_module_invoke',
+        'regular_invoke_module_invoke_all',
+        'regular_invoke_node_invoke',
+      ),
+      'hook_field_boo' => array('field_invoke_one', 'field_invoke_two'),
+      'hook_field_foo' => array('field_invoke_one', 'field_invoke_two'),
+      'hook_entity_coo' => array('entity_invoke'),
+      'hook_entity_foo' => array('entity_invoke'),
+      'hook_node_doo' => array('entity_invoke'),
+      'hook_user_moo' => array('user_invoke'),
+      'hook_user_foo' => array('user_invoke'),
+      'hook_noo_alter' => array('alter_invoke_one', 'alter_invoke_two'),
+      'hook_foo_alter' => array('alter_invoke_one'),
+    );
+
+    foreach($info as $hook => $invokes) {
+      $hookname = substr($hook, -3);
+      if ($hookname == 'ter') {
+        // It was an alter hook.
+        $hookname = substr($hook, -9, 3);
+      }
+      $count = count($invokes);
+
+      // Visit invokes page; verify count and links.
+      $this->drupalGet('api/' . $this->branchInfo['project'] . '/hooks.php/function/invokes/' . $hook);
+      if ($count == 1) {
+        $this->assertText('1 invocation');
+      }
+      else {
+        $this->assertText($count . ' invocations');
+      }
+      foreach ($invokes as $invoke) {
+        $this->assertLink($invoke);
+      }
+
+      // Verify that the hook "function" is called once from the control
+      // structures function.
+      $this->drupalGet('api/' . $this->branchInfo['project'] . '/hooks.php/function/calls/' . $hook);
+      $this->assertText('1 call to');
+      $this->assertLink('control_structures');
+
+      // Visit each invoking function page; verify links go to the correct
+      // hooks, and verify each function is called from the control structures
+      // function.
+      foreach ($invokes as $invoke) {
+        $this->drupalGet('api/' . $this->branchInfo['project'] . '/hooks.php/function/' . $invoke);
+        $this->assertLinkUrlSubstring($hookname, 'hooks.php/function/' . $hook, 'Link to hook ' . $hook . ' exists on ' . $invoke, 'Link to hook ' . $hook . ' goes to right hook on ' . $invoke);
+        $this->drupalGet('api/' . $this->branchInfo['project'] . '/hooks.php/function/calls/' . $invoke);
+        $this->assertText('1 call to');
+        $this->assertLink('control_structures');
+      }
+    }
+  }
+
+}

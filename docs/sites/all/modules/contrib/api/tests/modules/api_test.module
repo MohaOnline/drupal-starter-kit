@@ -1,0 +1,14 @@
+<?php
+
+/**
+ * @file
+ * Test module for API module tests.
+ */
+
+/**
+ * Implements hook_api_parse_functions_alter().
+ */
+function api_test_api_parse_functions_alter(array &$parse_functions) {
+  // Parse '.foo' files as PHP.
+  $parse_functions['foo'] = 'api_parse_php_file';
+}

@@ -1,0 +1,106 @@
+<?php
+
+/**
+ * @file
+ * Tests search integration for the API module.
+ */
+
+module_load_include('php', 'api', 'tests/api_test_case');
+
+/**
+ * Tests search integration for the API module.
+ */
+class ApiTestSearchIntegration extends ApiWebPagesBaseTest {
+
+  /**
+   * User with permission to search but not see API stuff.
+   *
+   * @var object
+   */
+  protected $restrictedUser;
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Search integration',
+      'description' => 'Tests integration of the API module with Core Search',
+      'group' => 'API module',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp() {
+    DrupalWebTestCase::setUp('api', 'ctools', 'views', 'composer_manager', 'node', 'search', 'dblog', 'api_search');
+    $this->ensureAutoLoader();
+
+    // Set up a new super-user.
+    $this->super_user = $this->drupalCreateUser(array(
+      'access API reference',
+      'administer API reference',
+      'access content',
+      'search content',
+      'access administration pages',
+      'administer search',
+    ));
+
+    // Set up a restricted user.
+    $this->restrictedUser = $this->drupalCreateUser(array(
+      'access content',
+      'search content',
+    ));
+
+    $this->drupalLogin($this->super_user);
+
+    // Set up a regular files branch.
+    $this->branchInfo = $this->setUpBranchUi();
+
+    // We don't need the PHP branch for this test, so for speed, remove it.
+    $this->removePhpBranch();
+
+    // Run cron a few times to make sure the code is indexed by the API
+    // module and search is also indexed.
+    $this->cronRun();
+    $this->cronRun();
+    $this->cronRun();
+
+    // Visit the search page and verify indexing is complete.
+    $this->drupalGet('admin/config/search/settings');
+    $this->assertText('There are 0 items left to index', 'Site is fully indexed');
+  }
+
+  /**
+   * Tests that API documentation can be searched.
+   */
+  public function testSearch() {
+    $terms = array(
+      // Direct name of the function.
+      'sample_function',
+      // Exact phrase in the first line.
+      '"sample function"',
+      // Some text in the documentation body.
+      'sample-related',
+      // Text in parameter.
+      'generic parameter',
+      // Text in the return value.
+      'about return',
+    );
+
+    foreach ($terms as $term) {
+      $this->drupalPost('search/node', array('keys' => $term), 'Search');
+      $this->assertLinkUrlSubstring('sample_function | function | sample.php | ' . $this->branchInfo['title'], 'sample.php/function/sample_function', 'sample_function page title is in search results for ' . $term, 'sample_function link is in search results for ' . $term);
+    }
+
+    // Now log in as the restricted user and verify that the searches do
+    // not give the API results.
+    $this->drupalLogin($this->restrictedUser);
+    foreach ($terms as $term) {
+      $this->drupalPost('search/node', array('keys' => $term), 'Search');
+      $this->assertText('Your search yielded no results', 'No search results with restricted user who cannot see API documentation');
+    }
+  }
+
+}

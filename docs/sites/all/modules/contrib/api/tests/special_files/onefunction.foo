@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Foo extension file to be parsed as PHP.
+ */
+
+/**
+ * A function.
+ */
+function only_function_in_file() {
+  $x = 'hi there';
+}

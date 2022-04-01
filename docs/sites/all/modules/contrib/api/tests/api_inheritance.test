@@ -1,0 +1,109 @@
+<?php
+
+/**
+ * @file
+ * Tests that inheritance for classes and interfaces is working.
+ */
+
+module_load_include('php', 'api', 'tests/api_test_case');
+
+/**
+ * Tests that inheritance for classes and interfaces is working.
+ */
+class ApiTestInheritance extends ApiWebPagesBaseTest {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Inheritance',
+      'description' => 'Tests that inheritance for classes and interfaces is working.',
+      'group' => 'API module',
+    );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp() {
+    $this->baseSetUp();
+
+    // Make a branch for sample 2 code.
+    $this->branchInfo = $this->setUpBranchUi('', TRUE, array(
+      'project' => 'test2',
+      'project_title' => 'Project 2',
+      'title' => 'Project 2 6.x',
+      'directory' => drupal_get_path('module', 'api') . '/tests/sample2',
+      'excluded' => drupal_get_path('module', 'api') . '/tests/sample2/maybe_exclude',
+    ));
+
+    $this->removePhpBranch();
+    $this->resetBranchesAndCache();
+    $this->updateBranches();
+
+    $count = $this->processApiParseQueue();
+    $this->assertEqual($count, 2, "2 files were parsed ($count)");
+  }
+
+  /**
+   * Tests that inheritance is working.
+   */
+  public function testInheritance() {
+    // Visit the base interface page, verify implementing class is shown on
+    // the implementing page.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/inheritance.php/interface/BaseInterface');
+    $this->clickLink('All classes that implement BaseInterface');
+    $this->assertLink('ExcitingClass', 0, 'Implementing class is shown.');
+
+    // Visit the class hierarchy page and verify everything is there.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/inheritance.php/interface/BaseInterface');
+    $this->clickLink('Expanded class hierarchy of BaseInterface');
+    $this->assertLink('SecondInterface', 0, 'Second interface is linked');
+    $this->assertLink('ThirdInterface', 0, 'Third interface is linked');
+    $this->assertLink('FourthInterface', 0, 'Fourth interface is linked');
+
+    // Visit the FourthInterface page and verify that both interfaces it
+    // extends have links.
+    $this->clickLink('FourthInterface');
+    $this->assertLink('BaseInterface', 0, 'First base interface is linked');
+    $this->assertLink('AnotherBaseInterface', 0, 'Second base interface is linked');
+    // Verify all the methods are shown.
+    $this->assertLink('BaseInterface::base_function', 0, 'First base method is shown');
+    $this->assertLink('AnotherBaseInterface::another_base_function', 0, 'Second base method is shown');
+    $this->assertLink('FourthInterface::fourth_function', 0, 'Self method is shown');
+
+    // Visit the TwoExternal page and verify both external interfaces it extends
+    // are shown in the hierarchy line.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/inheritance.php/interface/TwoExternal');
+    $this->assertPattern('|\<li.*extends.*\\Foo.*\</li\>|');
+    $this->assertPattern('|\<li.*extends.*\\Bar.*\</li\>|');
+
+    // Visit the ThirdInterface page and verify that the "Implemented by"
+    // text is missing.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/inheritance.php/interface/ThirdInterface');
+    $this->assertNoText('Implemented by', 'Implemented by text is omitted from interface without implementing class');
+
+    // Visit the first class page and verify the method overrides are shown.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/inheritance.php/class/ExcitingClass');
+    $this->assertLink('BaseInterface::base_function', 0, 'First override is shown');
+    $this->assertLink('SecondInterface::second_function', 0, 'Second override is shown');
+
+    // Visit the third class page and verify all methods and overrides are
+    // shown.
+    $this->drupalGet('api/' . $this->branchInfo['project'] . '/inheritance.php/class/YetAnotherExcitingClass');
+    $this->assertLink('AnotherExcitingClass::another_function', 0, 'New function is shown');
+    $this->assertLink('ExcitingClass::base_function', 0, 'Indirectly inherited function is shown');
+    $this->assertLink('BaseInterface::base_function', 0, 'Indirect function override is shown');
+    $this->assertLink('YetAnotherExcitingClass::second_function', 0, 'Directly inherited function is shown');
+    $this->assertLink('ExcitingClass::second_function', 0, 'Directly inherited function override is shown');
+
+    // Check formatting for PHP files in top directory of this branch.
+    $files = array('inheritance.php', 'sample2.php');
+    foreach ($files as $file) {
+      $object = api_filename_load($file, $this->branchInfo['project'], $this->branchInfo['branch_name']);
+      $this->assertCodeFormatting($object->code, $this->branchInfo['directory'] . '/' . $object->file_name);
+    }
+  }
+
+}

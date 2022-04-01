@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="api_module">
+  <description>PHP CodeSniffer configuration for API module.</description>
+
+  <file>.</file>
+  <arg name="extensions" value="inc,install,module,php,profile,test,theme"/>
+
+  <!-- Exclude sample code used in tests only, some of which violates coding
+       standards, and the views exports. -->
+  <exclude-pattern>./tests/php_sample/*</exclude-pattern>
+  <exclude-pattern>./tests/sample/*</exclude-pattern>
+  <exclude-pattern>./tests/sample2/*</exclude-pattern>
+  <exclude-pattern>./tests/sample_drupal/*</exclude-pattern>
+  <exclude-pattern>./tests/sample_namespace/*</exclude-pattern>
+  <exclude-pattern>./tests/special_files/*</exclude-pattern>
+  <exclude-pattern>./views/api.views_default.inc</exclude-pattern>
+
+  <!-- Include the standard Drupal rule set, plus DrupalPractice. -->
+  <rule ref="Drupal" />
+  <rule ref="DrupalPractice" />
+
+  <!-- Exclude Views and PrettyPrinter classes from method camel case rules.
+       PrettyPrinter has a bunch of methods overridden from a parent class in a
+       different project. Views doesn't follow the conventions. -->
+  <rule ref="Drupal.NamingConventions.ValidFunctionName">
+    <exclude-pattern>./pretty_printer.inc</exclude-pattern>
+    <exclude-pattern>./views/handlers/*</exclude-pattern>
+    <exclude-pattern>./views/plugins/*</exclude-pattern>
+    <exclude-pattern>./views/api.views.inc</exclude-pattern>
+  </rule>
+
+  <!-- Exclude Views from class name rules. It doesn't follow conventions. -->
+  <rule ref="Drupal.NamingConventions.ValidClassName">
+    <exclude-pattern>./views/handlers/*</exclude-pattern>
+    <exclude-pattern>./views/plugins/*</exclude-pattern>
+    <exclude-pattern>./views/api.views.inc</exclude-pattern>
+  </rule>
+
+  <!-- Exclude PrettyPrinter class from use declaration rules. PrettyPrinter
+       has a bunch of methods overridden from a parent class in a
+       different project. -->
+  <rule ref="Drupal.Classes.FullyQualifiedNamespace">
+    <exclude-pattern>./pretty_printer.inc</exclude-pattern>
+  </rule>
+
+</ruleset>
