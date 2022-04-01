@@ -1,25 +1,8 @@
 <?php
 
+use \Drupal\little_helpers\Webform\Submission;
 use \Drupal\little_helpers\Webform\Webform;
 use \Drupal\campaignion_action\Loader;
-
-function _campaignion_google_analytics_load_payment($nid, $sid) {
-  $subquery = db_select('campaignion_activity_webform', 'w')
-    ->fields('w', array('activity_id'))
-    ->condition('nid', $nid)
-    ->condition('sid', $sid);
-  $pid = db_select('campaignion_activity_payment', 'p')
-    ->fields('p', array('pid'))
-    ->condition('p.activity_id', $subquery, 'in')
-    ->execute()
-    ->fetchColumn();
-  if ($pid) {
-    $payments = entity_load('payment', array($pid));
-    return array_shift($payments);
-  } else {
-    return false;
-  }
-}
 
 /**
  * Implements hook_node_view().
@@ -173,6 +156,9 @@ function campaignion_google_analytics_form_webform_client_form_alter(&$form, &$f
   }
 }
 
+/**
+ * Implements hook_page_build().
+ */
 function campaignion_google_analytics_page_build(&$page) {
   $parameters = drupal_get_query_parameters();
 
@@ -182,7 +168,7 @@ function campaignion_google_analytics_page_build(&$page) {
 
   $sid = intval($parameters['sid']);
   $nid = db_query('SELECT nid FROM {webform_submissions} WHERE sid=:sid', [':sid' => $sid])->fetchField();
-  if (!($submission = \Drupal\little_helpers\Webform\Submission::load($nid, $sid))) {
+  if (!($submission = Submission::load($nid, $sid))) {
     return;
   }
   $node = $submission->getNode();
@@ -200,7 +186,7 @@ function campaignion_google_analytics_page_build(&$page) {
     ),
     'setting');
 
-  if ($payment = _campaignion_google_analytics_load_payment($nid, $sid)) {
+  if (!empty($submission->payments) && ($payment = reset($submission->payments))) {
     $donation_title = $node->title;
     $donation_lang = $node->language;
     $interval = '';
@@ -241,4 +227,23 @@ function campaignion_google_analytics_page_build(&$page) {
   }
   drupal_add_js(drupal_get_path('module', 'campaignion_google_analytics') . '/tracking.js');
   drupal_add_js(drupal_get_path('module', 'campaignion_google_analytics') . '/thank_you_page.js');
+}
+
+/**
+ * Implements hook_campaignion_tracking_snippets().
+ */
+function campaignion_google_analytics_campaignion_tracking_snippets() {
+  $snippets = [];
+  if ($ga_id = variable_get_value('campaignion_google_analytics_id')) {
+    $ga_id = drupal_json_encode($ga_id);
+    $snippets['ga'] = <<<SNIPPET
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+ga('create', {$ga_id}, 'auto');
+ga('send', 'pageview');
+SNIPPET;
+  }
+  return $snippets;
 }

@@ -152,48 +152,6 @@ function campaignion_activity_schema() {
     ),
     'primary key' => ['activity_id'],
   );
-
-  $schema['campaignion_activity_newsletter_subscription'] = [
-    'description' => 'Track changes in newsletter subscriptions',
-    'fields' => [
-      'activity_id' => [
-        'description' => 'Foreign key to the activity.',
-      ] + $unsigned_int_not_null,
-      'list_id' => [
-        'description' => 'Foreign key to the newsletter list.',
-      ] + $unsigned_int_not_null,
-      'action' => [
-        'description' => 'Action (subscribe, unsubscribe, …)',
-        'type' => 'varchar',
-        'length' => '16',
-        'not null' => TRUE,
-      ],
-      'from_provider' => [
-        'description' => 'Flag for whether the change was initiated by the provider',
-      ] + $unsigned_int_not_null,
-      'remote_addr' => array(
-        'description' => 'The IP address of the user that optted in.',
-        'type' => 'varchar',
-        'length' => 128,
-      ),
-    ],
-    'primary key' => ['activity_id'],
-    'indexes' => [
-      'newsletter_list' => ['list_id'],
-      'action' => ['action'],
-    ],
-    'foreign keys' => [
-      'activity' => [
-        'table' => 'campaignion_activity',
-        'columns' => ['activity_id' => 'activity_id'],
-      ],
-      'newsletter_list' => [
-        'table' => 'campaignion_newsletters_lists',
-        'columns' => ['list_id' => 'list_id'],
-      ],
-    ],
-  ];
-
   return $schema;
 }
 
@@ -202,6 +160,16 @@ function campaignion_activity_schema() {
  */
 function campaignion_activity_uninstall() {
   variable_del('campaignion_activity_log_contact_save');
+}
+
+/**
+ * Remove newsletter activities.
+ */
+function campaignion_activity_update_9() {
+  db_delete('campaignion_activity')
+    ->condition('type', 'newsletter_subscription')
+    ->execute();
+  db_drop_table('campaignion_activity_newsletter_subscription');
 }
 
 /**

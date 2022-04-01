@@ -164,6 +164,8 @@ function campaignion_newsletters_schema() {
       'primary key' => ['id'],
       'indexes' => [
         'list_email' => ['list_id', 'email'],
+        'created' => ['created'],
+        'locked' => ['locked'],
       ],
     ],
   ];
@@ -193,6 +195,14 @@ function campaignion_newsletters_uninstall() {
   variable_del('campaignion_newsletters_batch_size');
   variable_del('campaignion_newsletters_last_list_poll');
   variable_del('campaignion_newsletters_poll_time');
+}
+
+/**
+ * Add indexes for campaignion_newsletters_queue.locked and .created.
+ */
+function campaignion_newsletters_update_22() {
+  db_add_index('campaignion_newsletters_queue', 'locked', ['locked']);
+  db_add_index('campaignion_newsletters_queue', 'created', ['created']);
 }
 
 /**

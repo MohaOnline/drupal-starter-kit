@@ -130,7 +130,7 @@ class Component {
     $element['#attributes']['class'][] = 'webform-prefill-exclude';
 
     try {
-      $pairs_or_exclusion = $this->action->targetMessagePairs($submission_o, $test_mode);
+      $pairs_or_exclusion = $this->action->targetMessagePairs($submission_o, $channel, $test_mode);
     }
     catch (\Exception $e) {
       watchdog_exception('campaignion_email_to_target', $e);

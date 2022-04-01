@@ -47,6 +47,7 @@ function campaignion_layout_field_widget_form(&$form, &$form_state, $field, $ins
   ArrayConfig::mergeDefaults($item, [
     'theme' => NULL,
     'layout' => '',
+    'reversed' => 0,
   ]);
   $themes = Container::get()->loadService('campaignion_layout.themes');
   $enabled_themes = $themes->enabledThemes();
@@ -95,6 +96,7 @@ function campaignion_layout_field_widget_form(&$form, &$form_state, $field, $ins
   $fields = [];
   $available_layouts = array_intersect_key($themes->declaredLayouts(), $layout_available_in_theme);
   $options = [];
+  $reversable_layouts = [];
   foreach ($available_layouts as $layout => $info) {
     $options[$layout] = $info['title'];
     foreach (array_keys(array_filter($info['fields'])) as $field_name) {
@@ -104,11 +106,26 @@ function campaignion_layout_field_widget_form(&$form, &$form_state, $field, $ins
     foreach ($layout_available_in_theme[$layout] ?? [] as $theme_name) {
       $element['values']['layout'][$layout]['#states']['enabled']["#$theme_id"][]['value'] = $theme_name;
     }
+    if (!empty($info['reversable'])) {
+      $reversable_layouts[$layout] = $layout;
+    }
   }
   $element['values']['layout'] += [
     '#options' => $options,
     '#default_value' => isset($options[$item['layout']]) ? $item['layout'] : NULL,
   ];
+  $element['values']['reversed'] = [
+    '#type' => 'radios',
+    '#title' => t('Order on the mobile page'),
+    '#options' => [
+      0 => t('Show form above the main page content'),
+      1 => t('Show form below the main page content'),
+    ],
+    '#default_value' => $item['reversed'],
+  ];
+  foreach ($reversable_layouts as $layout) {
+    $element['values']['reversed']['#states']['enabled']["#$html_id input"][]['value'] = $layout;
+  }
   $form_state['campaignion_layout_fields'] = $fields;
   if (!$enabled_themes) {
     $element['#access'] = FALSE;
@@ -123,10 +140,12 @@ function _campaignion_layout_field_widget_validate($element, &$form_state, $form
   $values = [
     'theme' => NULL,
     'layout' => NULL,
+    'reversed' => 0,
   ];
   if ($element['enabled']['#value']) {
     $values['theme'] = $element['values']['theme']['#value'];
     $values['layout'] = $element['values']['layout']['#value'];
+    $values['reversed'] = $element['values']['reversed']['#value'];
   }
   form_set_value($element, $values, $form_state);
 }

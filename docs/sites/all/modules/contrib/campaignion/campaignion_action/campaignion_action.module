@@ -79,13 +79,54 @@ function campaignion_action_module_implements_alter(&$impl, $hook) {
     }
     $impl = $new_impl;
   }
-  if ($hook == 'webform_redirect_alter') {
+  $move_to_front = function () use (&$impl) {
     // Add our implemetation first.
     $ours = $impl['campaignion_action'];
     unset($impl['campaignion_action']);
     $new_impl['campaignion_action'] = $ours;
     $new_impl += $impl;
     $impl = $new_impl;
+  };
+  if ($hook == 'webform_redirect_alter') {
+    $move_to_front();
+  }
+  if ($hook == 'campaignion_action_taken') {
+    $move_to_front();
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_form().
+ */
+function campaignion_action_form_node_form_alter(&$form, &$form_state) {
+  // Add a toggle to the `action_closed_text` to disable the action and show
+  // the text field.
+  $node = $form['#node'];
+  if (!empty($form['action_closed_text']) && isset($node->webform)) {
+    $wrapper = &$form['action_closed_text'];
+    $toggle_id = drupal_html_id('action_closed_toggle');
+    $wrapper['toggle'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Deactivate this action'),
+      '#description' => t('Removes the webform and shows a replacement content instead.'),
+      '#default_value' => $node->webform['status'] ? 0 : 1,
+      '#parents' => ['action_closed_toggle'],
+      '#id' => $toggle_id,
+      '#weight' => -1,
+    ];
+    $wrapper[$wrapper['#language']]['#type'] = 'container';
+    $wrapper[$wrapper['#language']]['#states']['visible']["#$toggle_id"]['checked'] = TRUE;
+  }
+}
+
+/**
+ * Implements hook_node_submit().
+ */
+function campaignion_action_node_submit($node, $form, &$form_state) {
+  // Set webform status.
+  $action_closed = &$form_state['values']['action_closed_toggle'] ?? NULL;
+  if ($action_closed !== NULL) {
+    $node->webform['status'] = $action_closed ? 0 : 1;
   }
 }
 
@@ -120,6 +161,11 @@ function campaignion_action_node_view($node) {
         drupal_set_message($link_text, 'status', FALSE);
       }
     }
+  }
+  // Remove `action_closed_text` when there is a webform.
+  if (!empty($node->webform['status'])) {
+    unset($node->action_closed_text);
+    unset($node->content['action_closed_text']);
   }
 }
 
@@ -231,7 +277,7 @@ function _campaignion_action_redirect_add_get_parameters(FormRedirect &$redirect
  * Implements hook_webform_submission_insert().
  */
 function campaignion_action_webform_submission_insert($node, $submission) {
-  $item = array('nid' => $node->nid, 'sid' => $submission->sid);
+  $item = array('nid' => $node->nid, 'sid' => $submission->sid, 'created' => time());
   DrupalQueue::get('campaignion_action')->createItem($item);
 }
 
@@ -240,6 +286,15 @@ function campaignion_action_webform_submission_insert($node, $submission) {
  */
 function campaignion_action_webform_submission_update($node, $submission) {
   campaignion_action_webform_submission_insert($node, $submission);
+}
+
+/**
+ * Implements hook_webform_confirm_email_email_confirmed().
+ */
+function campaignion_action_webform_confirm_email_email_confirmed($node, $submission, $first_confirmation) {
+  if ($first_confirmation) {
+    campaignion_action_webform_submission_insert($node, $submission);
+  }
 }
 
 /**
@@ -305,7 +360,7 @@ function campaignion_action_cron() {
     $d = &$item->data;
     $node = node_load($d['nid']);
     if ($submissionObj = WebformSubmission::load($d['nid'], $d['sid'])) {
-      module_invoke_all('campaignion_action_taken', $node, $submissionObj);
+      module_invoke_all('campaignion_action_taken', $node, $submissionObj, $d['created'] ?? time());
     }
     else {
       watchdog('campaignion_action', 'Submission(!nid,!sid) has vanished before import.', array('!nid' => $d['nid'], '!sid' => $d['sid']), WATCHDOG_INFO);
@@ -354,5 +409,29 @@ function campaignion_action_campaignion_action_taken($node, Submission $submissi
   if ($changed) {
     $contact->save();
   }
+  // Pass along the contact so later calls can rely on it.
+  $submission->contact = $contact;
   return $contact;
+}
+
+/**
+ * Implements hook_theme_registry_alter().
+ */
+function campaignion_action_theme_registry_alter(&$theme_registry) {
+  // Use this module’s theme_webform_view_messages().
+  $webform_messages = &$theme_registry['webform_view_messages'];
+  $webform_messages['theme_path'] = drupal_get_path('module', 'campaignion_action');
+  $webform_messages['function'] = 'campaignion_action_webform_view_messages';
+}
+
+/**
+ * Implements theme_webform_view_messages().
+ *
+ * Don’t display any Drupal messages on closed forms when the node has a
+ * `action_closed_text` field.
+ */
+function campaignion_action_webform_view_messages($variables) {
+  if (empty($variables['closed']) || empty($variables['node']->action_closed_text)) {
+    return theme_webform_view_messages($variables);
+  }
 }

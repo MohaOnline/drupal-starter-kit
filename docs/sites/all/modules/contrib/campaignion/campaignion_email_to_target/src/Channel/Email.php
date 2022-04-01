@@ -12,13 +12,6 @@ use Drupal\campaignion_email_to_target\Message;
 class Email {
 
   /**
-   * Create a new instance based on some config.
-   */
-  public static function fromConfig(array $config) {
-    return new static();
-  }
-
-  /**
    * Send email to one target.
    *
    * @param \Drupal\campaignion_email_to_target\Message $message
@@ -117,6 +110,26 @@ class Email {
       'message' => $edited_message + $element['#message'],
       'target' => $element['#target'],
     ];
+  }
+
+  /**
+   * Remove or modify targets and messages for this channel.
+   */
+  public function filterPairs(array $pairs, Submission $submission, bool $test_mode) {
+    $submission_email = $submission->valueByKey('email');
+    $new_pairs = [];
+    foreach ($pairs as $pair) {
+      list($target, $message) = $pair;
+      if (empty($target['email'])) {
+        continue;
+      }
+      if ($test_mode) {
+        $message->toAddress = $submission_email;
+        $target['email'] = $submission_email;
+      }
+      $new_pairs[] = [$target, $message];
+    }
+    return $new_pairs;
   }
 
 }

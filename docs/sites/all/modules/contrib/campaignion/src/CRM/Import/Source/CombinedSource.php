@@ -23,4 +23,14 @@ class CombinedSource implements SourceInterface {
     }
   }
 
+  /**
+   * Get the first non-empty language from any of the sources.
+   *
+   * @return string
+   *   The language code of the source object.
+   */
+  public function getLanguageCode() {
+    return $this->a->getLanguageCode() ?? $this->b->getLanguageCode();
+  }
+
 }

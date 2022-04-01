@@ -72,13 +72,10 @@ function campaignion_layout_little_helpers_services() {
  */
 function campaignion_layout_page_build(&$page, $node = NULL) {
   $node = $node ?? menu_get_object();
-  if ($node && ($layout = Lookup::fromEntity('node', $node)->getLayout())) {
-    $page['#layout'] = $layout;
-    if (module_exists('context')) {
-      if ($plugin = context_get_plugin('condition', 'campaignion_layout_context_condition_layout')) {
-        $plugin->execute($layout['name']);
-      }
-    }
+  if ($node && ($item = Lookup::fromEntity('node', $node)->getItem())) {
+    $page['#layout'] = $item->layout;
+    $page['#reversed'] = $item->pageOrderIsReversed();
+    $item->executeContextCondition();
   }
 }
 
@@ -89,11 +86,13 @@ function campaignion_layout_preprocess_page(array &$vars) {
   $vars['layout'] = NULL;
   if ($layout = $vars['page']['#layout'] ?? NULL) {
     $vars['layout'] = $layout['name'];
-    array_unshift($vars['theme_hook_suggestions'], "page__layout__{$layout['name']}");
+    $suggestion = str_replace('-', '_', $layout['name']);
+    array_unshift($vars['theme_hook_suggestions'], "page__layout__{$suggestion}");
     foreach ($layout['fields'] as $field_name => $settings) {
       $vars[$settings['variable']] = field_view_field('node', $vars['node'], $field_name, $settings['display']);
     }
   }
+  $vars['reversed'] = !empty($vars['page']['#reversed']);
 }
 
 /**

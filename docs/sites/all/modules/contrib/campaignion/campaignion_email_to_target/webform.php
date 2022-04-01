@@ -61,11 +61,24 @@ function _webform_render_e2t_selector($component, $value = NULL, $filter = TRUE)
 }
 
 /**
+ * Helper function to serialize a value item.
+ */
+function _campaignion_email_to_target_value_serialized($value) {
+  if (empty($value) || !($data = unserialize($value))) {
+    return '';
+  }
+  unset($data['target']['email']);
+  unset($data['message']['tokenEnabledFields']);
+  unset($data['message']['toAddress']);
+  return serialize($data);
+}
+
+/**
  * Implements _webform_display_[component]().
  */
 function _webform_display_e2t_selector($component, $value, $format = 'html') {
   return [
-    '#markup' => isset($value[0]) ? $value[0] : '',
+    '#markup' => check_plain(_campaignion_email_to_target_value_serialized($value[0] ?? NULL)),
   ];
 }
 
@@ -88,7 +101,7 @@ function _webform_table_e2t_selector($component, $value) {
     ]];
   }
   else {
-    return check_plain(empty($value[0]) ? '' : $value[0]);
+    return check_plain(_campaignion_email_to_target_value_serialized($value[0] ?? NULL));
   }
 }
 
@@ -173,7 +186,7 @@ function _webform_csv_data_e2t_selector($component, $export_options, $value) {
     }
   }
   else {
-    return empty($value[0]) ? '' : $value[0];
+    return _campaignion_email_to_target_value_serialized($value[0] ?? NULL);
   }
 }
 

@@ -36,9 +36,25 @@ function campaignion_overlay_field_collection_item_view_alter(&$build) {
     if ($node = $item->campaignion_overlay_content->value()) {
       $element['#content'] = drupal_get_form('webform_client_form_' . $node->nid, $node, []);
     }
-    $settings['campaignion_overlay']['overlay_enabled'] = (bool) $item->campaignion_overlay_enabled->value();
     $element['#attached']['library'][] = ['system', 'ui.dialog'];
-    $element['#attached']['js'][] = ['data' => $settings, 'type' => 'setting'];
+    $element['#access'] = (bool) $item->campaignion_overlay_enabled->value();
     $build = $element;
+  }
+}
+
+/**
+ * Implements hook_views_pre_view().
+ */
+function campaignion_overlay_views_pre_view(&$view, &$display_id, &$args) {
+  if ($view->name != 'actions_reference') {
+    return;
+  }
+  // If the field doesn’t exist views removes it from the data structure before
+  // calling this hook. In this case we still want to display the node title.
+  // The prettier solution would be to do it the other way round (only add the
+  // field_admin_title field if it is present), but that seems way more
+  // complicated because the data structure in this hook is already processed.
+  if (!isset($view->field['field_admin_title'])) {
+    $view->field['title']->options['exclude'] = FALSE;
   }
 }

@@ -39,11 +39,12 @@ function hook_campaignion_action_info() {
  *  - Import of supporter data into your CRM.
  *  - Calling external APIs.
  *
- * @param $node The node object of the action.
- * @param $submissionObj The \Drupal\little_helpers\Webform\Submission object
+ * @param object $node The node object of the action.
+ * @param \Drupal\little_helpers\Webform\Submission $submission The submission
  *   that can be used to obtain data from the submission.
+ * @param int The timestamp of when the event happened that lead to this call.
  */
-function hook_campaignion_action_taken($node, Submission $submissionObj) {
+function hook_campaignion_action_taken($node, Submission $submissionObj, int $when) {
   $myCRM->import($node, $submissionObj);
 }
 

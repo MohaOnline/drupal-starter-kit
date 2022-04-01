@@ -7,6 +7,7 @@ dependencies[] = campaignion:campaignion
 dependencies[] = campaignion:campaignion_action
 dependencies[] = campaignion:campaignion_activity
 dependencies[] = campaignion:campaignion_bar
+dependencies[] = campaignion:campaignion_content_security_policy
 dependencies[] = campaignion:campaignion_donation
 dependencies[] = campaignion:campaignion_email_to_target
 dependencies[] = campaignion:campaignion_email_to_target_counter
@@ -45,6 +46,7 @@ dependencies[] = file:file
 dependencies[] = file_entity:file_entity
 dependencies[] = form_builder:form_builder_webform
 dependencies[] = i18n:i18n_taxonomy
+dependencies[] = i18n:i18n_variable
 dependencies[] = media:media
 dependencies[] = paypal_payment:paypal_payment_ec
 dependencies[] = paypal_payment:paypal_payment_pps
@@ -116,8 +118,8 @@ features[variable][] = field_bundle_settings_node__thank_you_page
 features[variable][] = webform_node_email_to_target
 features[variable][] = webform_node_petition
 
-; Information added by Drupal.org packaging script on 2021-04-06
-version = "7.x-2.20"
+; Information added by Drupal.org packaging script on 2022-03-15
+version = "7.x-2.29"
 core = "7.x"
 project = "campaignion"
-datestamp = "1617716859"
+datestamp = "1647361549"

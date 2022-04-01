@@ -4,8 +4,8 @@ core = 7.x
 
 dependencies[] = psr0
 
-; Information added by Drupal.org packaging script on 2021-04-06
-version = "7.x-2.20"
+; Information added by Drupal.org packaging script on 2022-03-15
+version = "7.x-2.29"
 core = "7.x"
 project = "campaignion"
-datestamp = "1617716859"
+datestamp = "1647361549"

@@ -24,13 +24,6 @@ class Config {
   protected $mapping;
 
   /**
-   * Create a new instance with the mapping from the variable.
-   */
-  public static function fromConfig() {
-    return new static(variable_get('campaignion_facebook_pixel_codes', []));
-  }
-
-  /**
    * Construct a new config object.
    *
    * @param string[] $mapping

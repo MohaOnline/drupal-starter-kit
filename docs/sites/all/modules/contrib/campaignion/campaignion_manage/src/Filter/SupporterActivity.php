@@ -14,13 +14,15 @@ class SupporterActivity extends Base {
 
   protected function actionsWithActivity() {
     $query = db_select('node', 'n');
-    $query->fields('n', array('nid', 'type', 'title'))
+    $query->fields('n', array('nid'))
       ->where('n.tnid = 0 OR n.tnid = n.nid')
       ->orderBy('n.created', 'DESC');
+    $nids = $query->execute()->fetchCol();
+    $nodes = entity_load('node', $nids);
 
     $actions = array();
-    foreach ($query->execute()->fetchAllAssoc('nid') as $nid => $action) {
-      $actions[$action->type][$nid] = $action->title;
+    foreach ($nodes as $node) {
+      $actions[$node->type][$node->nid] = $node->title;
     }
 
     return $actions;
@@ -178,7 +180,40 @@ class SupporterActivity extends Base {
 
 
   protected function isNoop(array $values) {
-    return $values['activity'] == 'any_activity' && $values['frequency'] == 'any' && $values['date_range'] == 'all';
+    if ($values['activity'] == 'any_activity' && $values['frequency'] == 'any') {
+      return $values['date_range'] == 'all' || !$this->dateFilterIsComplete($values);
+    }
+    return FALSE;
+  }
+
+  /**
+   * Check if we have a complete set of values for the date filter.
+   *
+   * The auto-submit leads to one submit every time some value in the date form
+   * is changed. This means we need to ignore all incomplete filters.
+   *
+   * @param array $values
+   *   The filter values that were submitted.
+   *
+   * @return bool
+   *   TRUE if all needed values were provided otherwise FALSE.
+   */
+  protected function dateFilterIsComplete(array $values) {
+    switch ($values['date_range']) {
+      case 'all':
+      case 'never':
+        return TRUE;
+
+      case 'range':
+        return $values['date_range_from'] && $values['date_range_to'];
+
+      case 'to':
+        return (bool) $values['date_to'];
+
+      case 'from':
+        return (bool) $values['date_from'];
+    }
+    return FALSE;
   }
 
   /**
@@ -227,19 +262,21 @@ class SupporterActivity extends Base {
       $inner->having('COUNT(*)' . $values['how_many_op'] . ' :nr', array(':nr' => $values['how_many_nr']));
     }
 
-    switch ($values['date_range']) {
-      case 'range':
-        $date_range = array(strtotime($values['date_range_from']), strtotime($values['date_range_to']));
-        $inner->condition('act.created', $date_range, 'BETWEEN');
-        break;
-      case 'to':
-        $to = strtotime($values['date_to']);
-        $inner->condition('act.created', $to, '<');
-        break;
-      case 'from':
-        $from  = strtotime($values['date_from']);
-        $inner->condition('act.created', $from, '>');
-        break;
+    if ($this->dateFilterIsComplete($values)) {
+      switch ($values['date_range']) {
+        case 'range':
+          $date_range = array(strtotime($values['date_range_from']), strtotime($values['date_range_to']));
+          $inner->condition('act.created', $date_range, 'BETWEEN');
+          break;
+        case 'to':
+          $to = strtotime($values['date_to']);
+          $inner->condition('act.created', $to, '<');
+          break;
+        case 'from':
+          $from  = strtotime($values['date_from']);
+          $inner->condition('act.created', $from, '>');
+          break;
+      }
     }
     if ($values['frequency'] == 'never') {
       $inner = db_select('redhen_contact', 'r')

@@ -42,3 +42,24 @@ function campaignion_share_light_options_alter(&$options) {
     $options['link']['query']['refsid'] = $_GET['sid'];
   }
 }
+
+/**
+ * Implements hook_variable_info_alter().
+ */
+function campaignion_variable_info_alter(array &$info) {
+  $info['site_default_country']['localize'] = TRUE;
+  $info['site_default_country']['default callback'] = '_campaignion_site_default_country_from_language';
+}
+
+/**
+ * Variable default value callback: Get the default country from the language.
+ */
+function _campaignion_site_default_country_from_language($variable, array $options) {
+  if ($language = $options['langcode']) {
+    $countries = country_get_list();
+    $parts = explode('-', $language, 2);
+    if (count($parts) == 2 && isset($countries[$country = $parts[1]])) {
+      return $country;
+    }
+  }
+}

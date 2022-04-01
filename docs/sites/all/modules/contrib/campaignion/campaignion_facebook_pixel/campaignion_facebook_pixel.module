@@ -6,6 +6,7 @@
  */
 
 use Drupal\campaignion_facebook_pixel\Config;
+use Drupal\little_helpers\Services\Container;
 use Drupal\little_helpers\System\FormRedirect;
 use Drupal\little_helpers\Webform\Submission;
 
@@ -22,13 +23,38 @@ function campaignion_facebook_pixel_init() {
 }
 
 /**
+ * Implements hook_little_helpers_services().
+ */
+function campaignion_facebook_pixel_little_helpers_services() {
+  $info['campaignion_facebook_pixel.Config'] = [
+    'class' => Config::class,
+    'arguments' => ['!campaignion_facebook_pixel_codes'],
+  ];
+  return $info;
+}
+
+/**
+ * Implements hook_campaignion_tracking_snippets().
+ */
+function campaignion_facebook_pixel_campaignion_tracking_snippets() {
+  $snippets['facebook_pixel'] = <<<SNIPPET
+!function(f,b,e,v,n,t,s){if(f.fbq&&!f.fbq.dummy)return;
+f.fbq.dummy=0;
+t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+SNIPPET;
+  return $snippets;
+}
+
+/**
  * Implements hook_node_view().
  */
 function campaignion_facebook_pixel_node_view($node, $view_mode, $langcode) {
   if ($view_mode != 'full') {
     return;
   }
-  Config::fromConfig()->attach($node);
+  Container::get()->loadService('campaignion_facebook_pixel.Config')->attach($node);
 }
 
 /**
@@ -37,7 +63,7 @@ function campaignion_facebook_pixel_node_view($node, $view_mode, $langcode) {
  * Add fb-pixel tracking data to the URL-fragment of the redirect.
  */
 function campaignion_facebook_pixel_webform_redirect_alter(FormRedirect &$redirect, Submission $submission) {
-  if ($fragment = Config::fromConfig()->submissionFragment($submission)) {
+  if ($fragment = Container::get()->loadService('campaignion_facebook_pixel.Config')->submissionFragment($submission)) {
     if ($redirect->fragment) {
       $redirect->fragment .= ';' . $fragment;
     }

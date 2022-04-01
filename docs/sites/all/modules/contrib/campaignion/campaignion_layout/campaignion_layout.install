@@ -20,10 +20,49 @@ function campaignion_layout_field_schema($field) {
       'length' => 255,
       'not null' => FALSE,
     ],
+    'reversed' => [
+      'type' => 'int',
+      'size' => 'tiny',
+      'default' => 0,
+      'not null' => TRUE,
+    ],
   ];
   $schema['foreign keys']['theme'] = [
     'table' => 'system',
     'columns' => ['theme' => 'name'],
   ];
   return $schema;
+}
+
+/**
+ * Add  reversed order indicator to layout field.
+ */
+function campaignion_layout_update_1() {
+  $spec = [
+    'type' => 'int',
+    'size' => 'tiny',
+    'default' => 0,
+    'not null' => TRUE,
+  ];
+
+  $additional['include_inactive'] = TRUE;
+  $fields = field_read_fields(['type' => 'layout_selection'], $additional);
+  foreach ($fields as $field_name => $field) {
+    // Update DB tables for each field.
+    $field_name = $field['field_name'];
+    $table1 = _field_sql_storage_tablename($field);
+    $table2 = _field_sql_storage_revision_tablename($field);
+    $column = $field_name . '_reversed';
+    db_add_field($table1, $column, $spec);
+    db_add_field($table2, $column, $spec);
+
+    // Update instance default values.
+    $instances = field_read_instances(['field_name' => $field_name], $additional);
+    foreach ($instances as $instance) {
+      foreach ($instance['default_value'] as &$item) {
+        $item['reversed'] = 0;
+      }
+      field_update_instance($instance);
+    }
+  }
 }

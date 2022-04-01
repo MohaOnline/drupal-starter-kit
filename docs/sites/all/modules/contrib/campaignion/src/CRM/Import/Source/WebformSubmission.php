@@ -50,4 +50,14 @@ class WebformSubmission extends Submission implements SourceInterface {
     return $this->valueByKey($key);
   }
 
+  /**
+   * Get the source’s language if available.
+   *
+   * @return string
+   *   The language code of the source object.
+   */
+  public function getLanguageCode() {
+    return $this->node->language;
+  }
+
 }

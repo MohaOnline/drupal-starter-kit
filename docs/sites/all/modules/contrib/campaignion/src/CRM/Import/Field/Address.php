@@ -9,11 +9,24 @@ use Drupal\campaignion\CRM\Import\Source\SourceInterface;
  */
 class Address extends Field {
 
-  public function __construct($field, $mapping) {
+  /**
+   * Array of known countries keyed by their country codes.
+   *
+   * @var array
+   *
+   * @see country_get_list()
+   */
+  protected $countries;
+
+  /**
+   * Create a new address importer instance.
+   */
+  public function __construct($field, $mapping, $countries = NULL) {
     foreach ($mapping as $target => $keys) {
       $mapping[$target] = is_array($keys) ? $keys : array($keys);
     }
     parent::__construct($field, $mapping);
+    $this->countries = is_null($countries) ? country_get_list() : $countries;
   }
 
   /**
@@ -36,12 +49,47 @@ class Address extends Field {
     if (empty($address)) {
       return FALSE;
     }
-    $countryList = country_get_list();
-    $empty_or_unknown_country = empty($address['country']) || !isset($countryList[$address['country']]);
-    if ($empty_or_unknown_country && ($c = variable_get('site_default_country', 'AT'))) {
+    $empty_or_unknown_country = empty($address['country']) || !isset($this->countries[$address['country']]);
+    if ($empty_or_unknown_country && ($c = $this->defaultCountry($source))) {
       $address['country'] = $c;
     }
     return $address;
+  }
+
+  /**
+   * Get the fallback country from the settings.
+   */
+  protected function defaultCountry(SourceInterface $source): ?string {
+    $language = $source->getLanguageCode();
+    // Explicitly set language specific default country.
+    if (module_exists('i18n_variable') && ($country = i18n_variable_get('site_default_country', $language, ''))) {
+      return $country;
+    }
+    // Default country for single language sites.
+    if (!drupal_multilingual() && ($country = variable_get('site_default_country'))) {
+      return $country;
+    }
+    // Language based country.
+    if ($country = $this->countryFromLanguage($language)) {
+      return $country;
+    }
+    // Non localized setting for multilingual sites.
+    if ($country = variable_get_value('site_default_country')) {
+      return $country;
+    }
+    return NULL;
+  }
+
+  /**
+   * Get the country based on the language.
+   *
+   * We can’t use variable_get_value() here because Drupal sets an empty default
+   * country on new installations. We want to ignore that by invoking the
+   * variable “default callback” directly.
+   */
+  protected function countryFromLanguage($language) {
+    $options['langcode'] = $language;
+    return _campaignion_site_default_country_from_language(NULL, $options);
   }
 
   public function storeValue($entity, $new_address) {

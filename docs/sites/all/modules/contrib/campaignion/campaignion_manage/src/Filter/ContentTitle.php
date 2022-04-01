@@ -22,7 +22,15 @@ class ContentTitle extends Base implements FilterInterface {
       $search = preg_replace('/%%+/', '%', $search);
       $search = preg_replace('/^%/', '', $search);
       $search = preg_replace('/%$/', '', $search);
-      $query->where('LOWER(n.title) LIKE :search_string', array( ':search_string' => '%' . strtolower($search) . '%'));
+      $search = strtolower($search);
+      $search_condition = db_or()
+        ->where('LOWER(n.title) LIKE :search_string', array( ':search_string' => '%' . $search . '%'));
+
+      if (module_exists('campaignion_node_admin_title')) {
+        $query->leftJoin('field_data_field_admin_title', 'admin_title', "%alias.entity_type='node' AND %alias.entity_id=n.nid");
+        $search_condition->where('LOWER(admin_title.field_admin_title_value) LIKE :search_string', array( ':search_string' => '%' . $search . '%'));
+      }
+      $query->condition($search_condition);
     }
   }
   public function defaults() {

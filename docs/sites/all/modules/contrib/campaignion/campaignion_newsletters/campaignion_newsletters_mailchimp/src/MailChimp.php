@@ -147,6 +147,9 @@ class MailChimp extends ProviderBase {
         unset($webhook_urls[$webhook_url]);
       }
       elseif ($register) {
+        // Make sure the list is already saved to the DB otherwise the webhook
+        // will yield a 404 and MailChimp won’t allow us to register it.
+        $list->save();
         $this->api->post("/lists/{$list->identifier}/webhooks", [], [
           'url' => $webhook_url,
           'events' => [

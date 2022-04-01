@@ -89,7 +89,7 @@ class MailChimpTest extends \DrupalUnitTestCase {
   public function testGetListsOneList() {
     list($api, $provider) = $this->mockChimp();
     $paging = ['offset' => 0, 'count' => 100];
-    $list = ['id' => 'a1234', 'name' => 'mocknewsletters'];
+    $list_data = ['id' => 'a1234', 'name' => 'mocknewsletters'];
     $list_query = ['fields' => 'lists.id,lists.name,total_items'] + $paging;
     $merge_query = ['fields' => 'merge_fields.tag,total_items'] + $paging;
     $webhook_query = ['fields' => 'webhooks.id,webhooks.url,total_items'] + $paging;
@@ -100,7 +100,7 @@ class MailChimpTest extends \DrupalUnitTestCase {
       [$this->equalTo('/lists/a1234/webhooks'), $this->equalTo($webhook_query)],
       [$this->equalTo('/lists/a1234/webhooks')]
     )->will($this->onConsecutiveCalls(
-      ['lists' => [$list], 'total_items' => 1],
+      ['lists' => [$list_data], 'total_items' => 1],
       ['merge_fields' => [], 'total_items' => 0],
       ['categories' => [], 'total_items' => 0],
       ['webhooks' => [], 'total_items' => 0],
@@ -110,14 +110,14 @@ class MailChimpTest extends \DrupalUnitTestCase {
         'data' => json_encode(['title' => '', 'detail' => '', 'errors' => []]),
       ]), 'POST', '/lists/a1234/webhooks'))
     ));
-    $this->assertEquals([
-      NewsletterList::fromData([
-        'identifier' => $list['id'],
-        'title'      => $list['name'],
-        'source'     => 'MailChimp-testname',
-        'data'       => (object) ($list + ['merge_vars' => [], 'groups' => []]),
-      ]),
-    ], $provider->getLists());
+    $lists = $provider->getLists();
+    $this->assertCount(1, $lists);
+    $list = $lists[0];
+    $this->assertEquals($list_data['id'], $list->identifier);
+    $this->assertEquals($list_data['name'], $list->title);
+    $this->assertEquals('MailChimp-testname', $list->source);
+    $expected = (object) ($list_data + ['merge_vars' => [], 'groups' => []]);
+    $this->assertEquals($expected, $list->data);
   }
 
   /**

@@ -114,7 +114,7 @@ class AddressTest extends RedhenEntityTest {
    * Test importing only the locality.
    */
   public function testWithOnlyLocality() {
-    $data = self::filtered(self::$testdataAT, ['street_address']);
+    $data = self::filtered(self::$testdataAT, ['street_address', 'country']);
     $this->import($data);
     $this->assertEqual($this->mapped($data), $this->contact->field_address->value()[0]);
   }
@@ -124,8 +124,8 @@ class AddressTest extends RedhenEntityTest {
    */
   public function testIdenticalImportsReturnFalse() {
     $this->assertTrue($this->import(self::$testdataAT), 'Import into new contact returned FALSE intead of TRUE.');
-    $this->assertFalse($this->import(self::$testdataAT), 'Import of identical datat returned TRUE twice.');
-    $data = self::filtered(self::$testdataAT, ['street_address']);
+    $this->assertFalse($this->import(self::$testdataAT), 'Import of identical data returned TRUE twice.');
+    $data = self::filtered(self::$testdataAT, ['street_address', 'country']);
     $this->assertFalse($this->import($data), 'Import of identical street_address/throughfare returned TRUE instead of FALSE.');
   }
 
@@ -200,6 +200,33 @@ class AddressTest extends RedhenEntityTest {
 
     // Re-confirming the top address shouldn’t change anything.
     $this->assertFalse($this->import($partial_at));
+  }
+
+  /**
+   * Test the country fallback.
+   */
+  public function testCountryFallback() {
+    $importer = new Address('field_address', self::$mapping);
+    $data = self::filtered(self::$testdataUK, ['zip_code']);
+
+    // Without country from lanugage.
+    $importer->import(new ArraySource($data), $this->contact);
+    $address = $this->contact->field_address->value()[0];
+    $this->assertArrayNotHasKey('country', $address);
+    $this->assertEqual($data['zip_code'], $address['postal_code']);
+
+    // With country from language.
+    $importer->import(new ArraySource($data, 'de-AT'), $this->contact);
+    $address = $this->contact->field_address->value()[0];
+    $this->assertEqual('AT', $address['country']);
+    $this->assertEqual($data['zip_code'], $address['postal_code']);
+
+    // With explicitly set country.
+    i18n_variable_set('site_default_country', 'DE', 'de');
+    $importer->import(new ArraySource($data, 'de'), $this->contact);
+    $address = $this->contact->field_address->value()[0];
+    $this->assertEqual('DE', $address['country']);
+    $this->assertEqual($data['zip_code'], $address['postal_code']);
   }
 
 }

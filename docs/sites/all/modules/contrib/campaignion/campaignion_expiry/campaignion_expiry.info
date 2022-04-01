@@ -1,0 +1,15 @@
+name = Campaignion expiry
+description = Expire form submissions and contact data
+core = 7.x
+php = 7.3
+
+dependencies[] = campaignion:campaignion_activity
+dependencies[] = ultimate_cron:ultimate_cron
+dependencies[] = variable:variable
+dependencies[] = webform:webform
+
+; Information added by Drupal.org packaging script on 2022-03-15
+version = "7.x-2.29"
+core = "7.x"
+project = "campaignion"
+datestamp = "1647361549"

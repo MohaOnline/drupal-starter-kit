@@ -10,6 +10,23 @@ use Drupal\little_helpers\Webform\Submission;
 use Drupal\little_helpers\Webform\Webform;
 
 /**
+ * Implements hook_init().
+ */
+function campaignion_tracking_init() {
+  $module_path = drupal_get_path('module', 'campaignion_tracking');
+  drupal_add_js($module_path . '/js/events.js', [
+    'every_page' => TRUE,
+    'group' => JS_LIBRARY,
+    // Should be before drupal.js with weight -1 to run before behaviors.
+    'weight' => -5,
+  ]);
+  $events = module_invoke_all('campaignion_tracking_events');
+  drupal_alter('campaignion_tracking_events', $events);
+  $settings['campaignion_tracking']['events'] = array_filter(array_values($events));
+  drupal_add_js($settings, ['type' => 'setting']);
+}
+
+/**
  * Implements hook_page_build().
  */
 function campaignion_tracking_page_build(&$page) {
@@ -24,6 +41,8 @@ function campaignion_tracking_page_build(&$page) {
     'preprocess' => FALSE,
   ];
   $page['content']['#attached']['js'][] = $module_path . '/js/campaignion_tracking.js';
+
+  _campaignion_tracking_add_snippets();
 }
 
 /**
@@ -77,14 +96,14 @@ function campaignion_tracking_form_webform_client_form_alter(&$form, &$form_stat
   // Information about a donation (in case the node is one).
   if ($is_donation) {
     // TODO: there might be more than 1 paymethod_select component in the form
-    $paymethod = $webform->componentByKey('paymethod_select');
-    $currency_code = isset($paymethod['extra']['currency_code']) ? $paymethod['extra']['currency_code'] : 'EUR';
+    $component = $webform->componentByKey('paymethod_select');
+    $currency_code = isset($component['extra']['currency_code']) ? $component['extra']['currency_code'] : 'EUR';
     $submission = $webform->formStateToSubmission($form_state);
     // Interval is read by key
     $interval = $submission->valueByKey('donation_interval');
     // Find first line item with has a value and use this as selected amount component
     $selected_line_item = NULL;
-    foreach ($paymethod['extra']['line_items'] as $line_item) {
+    foreach ($component['extra']['line_items'] as $line_item) {
       $value = $submission->valueByCid($line_item->amount_component);
       if ($value) {
         $selected_line_item = $line_item;
@@ -95,12 +114,14 @@ function campaignion_tracking_form_webform_client_form_alter(&$form, &$form_stat
     // NB: Only after the amount step submit we get values.
     // Thus `interval` and `amount` might be "null" in JS (in case no values
     // have been submitted so far)
+    $description = $selected_line_item->description ?? '';
     $donation_settings['campaignion_tracking']['context']['donation'] = [
+      'id' => "{$node->nid}-{$component['cid']}",
+      'name' => trim("{$node->title} {$description}"),
       'currency_code' => $currency_code,
       'interval' => $interval,
       'amount' => $selected_line_item ? $submission->valueByCid($selected_line_item->amount_component) : NULL,
       'amount_component' => $selected_line_item ? $selected_line_item->amount_component : NULL,
-      'description' => $selected_line_item ? $selected_line_item->description : NULL,
     ];
     $form['#attached']['js'][] = ['data' => $donation_settings, 'type' => 'setting'];
   }
@@ -158,4 +179,78 @@ function campaignion_tracking_webform_redirect_alter($redirect, Submission $subm
 
   $tracking_fragment = implode(';', $fragments);
   $redirect->fragment = empty($redirect->fragment) ? $tracking_fragment : $redirect->fragment . ';' . $tracking_fragment;
+}
+
+/**
+ * Helper function to get all defined snippets.
+ */
+function _campaignion_tracking_snippets() {
+  $snippets = module_invoke_all('campaignion_tracking_snippets');
+  foreach ($snippets as &$snippet) {
+    if (!is_array($snippet)) {
+      $snippet = ['js' => $snippet];
+    }
+    $snippet += ['event' => variable_get_value('campaignion_tracking_default_event')];
+  }
+  drupal_alter('campaignion_tracking_snippets', $snippets);
+  return $snippets;
+}
+
+/**
+ * Implements hook_campaignion_tracking_events().
+ */
+function campaignion_tracking_campaignion_tracking_events() {
+  $events = [];
+  foreach (_campaignion_tracking_snippets() as $snippet) {
+    $events[$snippet['event']] = $snippet['event'];
+  }
+  return $events;
+}
+
+/**
+ * Gather snippets from hooks and add them to the page.
+ */
+function _campaignion_tracking_add_snippets() {
+  // Disable all tracking on admin pages.
+  if (path_is_admin($_GET['q'])) {
+    return;
+  }
+
+  // Check if tracking should be disabled all together e.g. in case we are
+  // working not in a production environment.
+  if (!variable_get('campaignion_tracking_enabled', TRUE) || !($snippets = _campaignion_tracking_snippets())) {
+    return;
+  }
+
+  // Either tracking was allowed already, or we wait for the appropriate event.
+  $parts[] = <<<HEADER
+jQuery(function() {
+HEADER;
+
+  // Add parts
+  foreach ($snippets as $snippet) {
+    if ($event = $snippet['event']) {
+      $parts[] = <<<SNIPPET
+Drupal.campaignion_tracking.eventsFired['{$snippet['event']}'].then(function() {
+{$snippet['js']}
+});
+SNIPPET;
+    }
+    else {
+      $parts[] = $snippet['js'];
+    }
+  }
+
+  $parts[] = <<<FOOTER
+});
+FOOTER;
+
+  // This should be added pretty early in the DOM so that the library JS get
+  // the correct allowed state early enough.
+  drupal_add_js(implode('', $parts), [
+    'type' => 'inline',
+    'group' => JS_LIBRARY,
+    'every_page' => TRUE,
+    'weight' => -4,
+  ]);
 }

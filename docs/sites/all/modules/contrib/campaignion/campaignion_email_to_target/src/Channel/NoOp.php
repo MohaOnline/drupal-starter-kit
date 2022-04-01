@@ -12,13 +12,6 @@ use Drupal\campaignion_email_to_target\Message;
 class NoOp {
 
   /**
-   * Create a new instance based on some config.
-   */
-  public static function fromConfig(array $config) {
-    return new static();
-  }
-
-  /**
    * Send email to one target.
    *
    * @param \Drupal\campaignion_email_to_target\Message $message
@@ -51,6 +44,13 @@ class NoOp {
     return [
       'target' => $element['#target'],
     ];
+  }
+
+  /**
+   * Remove or modify targets and messages for this channel.
+   */
+  public function filterPairs(array $pairs) {
+    return $pairs;
   }
 
 }

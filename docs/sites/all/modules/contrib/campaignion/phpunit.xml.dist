@@ -8,6 +8,7 @@
     <directory suffix=".inc">.</directory>
     <directory suffix=".module">.</directory>
     <exclude>
+      <directory suffix="Drupal.php">.</directory>
       <directory suffix="Test.php">.</directory>
       <directory suffix=".api.php">.</directory>
       <directory suffix=".tpl.php">.</directory>

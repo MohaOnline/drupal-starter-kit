@@ -38,42 +38,39 @@ Drupal.behaviors.campaignion_tracking.attach = function(context, settings) {
   if (settings['campaignion_tracking'] && settings['campaignion_tracking']['context']) {
     settings['campaignion_tracking']['sent'] = settings['campaignion_tracking']['sent'] || [];
 
-    var node = settings.campaignion_tracking.context['node'] || {};
     var donation = settings.campaignion_tracking.context['donation'] || {};
     var webform = settings.campaignion_tracking.context['webform'] || {};
 
-    if (node['is_donation']) {
-      if (donation['amount'] && donation['interval'] && donation['currency_code']) {
-        var product = {
-          name: `${node['title']} (${donation['description']})`,
-          id: `${node['nid']}-${donation['amount_component']}`,
-          price: String(donation['amount']),
-          variant: String(donation['interval']),
-          quantity: 1
-        };
+    if (donation['amount'] && donation['interval'] && donation['currency_code']) {
+      var product = {
+        name: donation['name'],
+        id: donation['id'],
+        price: String(donation['amount']),
+        variant: String(donation['interval']),
+        quantity: 1
+      };
 
-        var msg = {
-          currencyCode: donation['currency_code'] || 'EUR',
-          product: product
-        };
+      var msg = {
+        currencyCode: donation['currency_code'] || 'EUR',
+        product: product
+      };
 
-        gracefulDispatch('setDonationProduct', msg, settings.campaignion_tracking.context);
+      gracefulDispatch('setDonationProduct', msg, settings.campaignion_tracking.context);
 
-        // Assume the checkout begings when we are on the second step or if
-        // there is only one page.
-        if (!settings['campaignion_tracking']['sent'].includes('checkoutBegin')) {
-          if (webform['current_step'] === 2 || webform['total_steps'] === 1) {
-            settings['campaignion_tracking']['sent'].push('checkoutBegin');
-            gracefulDispatch('checkoutBegin', {}, settings.campaignion_tracking.context);
-          }
+      // Assume the checkout begings when we are on the second step or if
+      // there is only one page.
+      if (!settings['campaignion_tracking']['sent'].includes('checkoutBegin')) {
+        if (webform['current_step'] === 2 || webform['total_steps'] === 1) {
+          settings['campaignion_tracking']['sent'].push('checkoutBegin');
+          gracefulDispatch('checkoutBegin', {}, settings.campaignion_tracking.context);
         }
+      }
 
-        // Assume the checkout ends on the last webform step
-        if (!settings['campaignion_tracking']['sent'].includes('checkoutEnd')) {
-          if (webform['current_step'] === webform['total_steps']) {
-            settings['campaignion_tracking']['sent'].push('checkoutEnd');
-            gracefulDispatch('checkoutEnd', {}, settings.campaignion_tracking.context);
-          }
+      // Assume the checkout ends on the last webform step
+      if (!settings['campaignion_tracking']['sent'].includes('checkoutEnd')) {
+        if (webform['current_step'] === webform['total_steps']) {
+          settings['campaignion_tracking']['sent'].push('checkoutEnd');
+          gracefulDispatch('checkoutEnd', {}, settings.campaignion_tracking.context);
         }
       }
     }

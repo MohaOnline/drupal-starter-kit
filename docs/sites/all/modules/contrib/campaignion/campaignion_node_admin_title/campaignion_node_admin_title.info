@@ -1,0 +1,16 @@
+name = Campaignion node admin title
+description = Provides an internal admin title field for nodes.
+core = 7.x
+package = Campaignion
+
+dependencies[] = features
+dependencies[] = node
+dependencies[] = text
+features[features_api][] = api:2
+features[field_base][] = field_admin_title
+
+; Information added by Drupal.org packaging script on 2022-03-15
+version = "7.x-2.29"
+core = "7.x"
+project = "campaignion"
+datestamp = "1647361549"

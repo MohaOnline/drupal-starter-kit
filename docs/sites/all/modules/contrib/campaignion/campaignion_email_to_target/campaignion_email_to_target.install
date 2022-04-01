@@ -5,7 +5,7 @@
  * campaignion_email_to_target.install
  */
 
-use Drupal\campaignion_email_to_target\Api\ConfigError;
+use Drupal\campaignion_auth\ConfigError;
 use Drupal\campaignion_email_to_target\NullCacheBin;
 use Drupal\little_helpers\Services\Container;
 

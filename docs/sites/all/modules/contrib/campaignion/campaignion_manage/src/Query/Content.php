@@ -9,12 +9,8 @@ class Content extends Base {
   public function __construct() {
     $query = db_select('node', 'n');
     $query->addExpression('IF(n.tnid=0, n.nid, n.tnid)', 'tset');
-    $query->fields('n', array('nid', 'tnid', 'title', 'type', 'language', 'status', 'uid'));
-    $query->innerJoin('users', 'u', 'u.uid=n.uid');
-    $query->addField('u', 'name');
     $query->condition('n.type', 'thank_you_page', '!=')
       ->orderBy('n.changed', 'DESC');
-
     parent::__construct($query);
 
     // build the language preference list:
@@ -58,27 +54,33 @@ class Content extends Base {
   }
 
   public function modifyResult(&$rows) {
+    $self = $this;
     if (empty($rows)) {
       return;
     }
+    // The query gives us a list of transalationsets. Get all translations
+    // for each of them.
     $nids = array();
     foreach ($rows as $row) {
       $nids[$row->tset] = $row->tset;
     }
-    $query = clone $this->filtered;
+    $query = db_select('node', 'n');
+    $query->addField('n', 'nid');
     $or = db_or();
     $or->condition('n.tnid', $nids, 'IN');
     $or->condition('n.nid', $nids, 'IN');
     $query->condition($or);
-    $result = $query->execute();
-    $tsets = array();
-    foreach ($result as $row) {
-      $tsets[$row->tset][$row->language] = $row;
+    $nids = $query->execute()->fetchCol();
+    $nodes = entity_load('node', $nids);
+
+    // Group nodes into translationsets.
+    $tsets = [];
+    foreach ($nodes as $node) {
+      $tsets[$node->tnid ?: $node->nid][$node->language] = $node;
     }
-    foreach ($rows as $index => $row) {
-      $tset = $row->tset;
-      $rows[$index] = $this->buildTset($tsets[$tset]);
-    }
+    $rows = array_map(function ($row) use ($self, $tsets) {
+      return $this->buildTset($tsets[$row->tset]);
+    }, $rows);
   }
 
   protected function buildTset($nodes) {

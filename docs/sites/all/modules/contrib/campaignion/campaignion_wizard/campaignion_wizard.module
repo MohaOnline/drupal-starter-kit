@@ -108,19 +108,24 @@ function campaignion_wizard_search_nodes() {
   $search = isset($_GET['s']) ? $_GET['s'] : '';
   $q = db_select('node', 'n')
     ->addTag('node_access')
-    ->fields('n', ['nid', 'title'])
+    ->fields('n', ['nid'])
     ->range(0, 100);
+  $search_condition = db_or()
+    ->condition('n.title', '%' . db_like($search) . '%', 'LIKE');
+  if (module_exists('campaignion_node_admin_title')) {
+    $q->leftJoin('field_data_field_admin_title', 'admin_title', "%alias.entity_type='node' AND %alias.entity_id=n.nid");
+    $q->addExpression('COALESCE(admin_title.field_admin_title_value, n.title)', 'title');
+    $search_condition->condition('admin_title.field_admin_title_value', '%' . db_like($search) . '%', 'LIKE');
+  }
+  else {
+    $q->addField('n', 'title', 'title');
+  }
   if (is_numeric($search)) {
-    $s = db_or()
-      ->condition('n.nid', $search)
-      ->condition('n.title', '%' . db_like($search) . '%', 'LIKE');
-    $q->condition($s);
+    $search_condition->condition('n.nid', $search);
     $q->addExpression('n.nid=:nid', 'nid_match', [':nid' => $search]);
     $q->orderBy('nid_match', 'DESC');
   }
-  else {
-    $q->condition('n.title', '%' . db_like($search) . '%', 'LIKE');
-  }
+  $q->condition($search_condition);
   $data = [];
   foreach ($q->execute() as $row) {
     $data[] = [

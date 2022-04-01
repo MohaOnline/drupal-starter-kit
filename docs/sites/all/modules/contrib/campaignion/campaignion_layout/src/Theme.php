@@ -135,17 +135,27 @@ class Theme {
   }
 
   /**
-   * Get the first matchiing layout for a set of field items.
+   * Get the first field item with an avaiable layout.
    *
-   * If no matching item is found the default layout is returned.
+   * If no matching field item is found then an item with the default layout is
+   * returned.
+   *
+   * @param iterable $items
+   *   A list of field items for the current entity.
+   *
+   * @return \Drupal\campaignion_layout\Item
+   *   An Item object representing the matching item and layout.
    */
-  public function getLayoutFromItems($items) {
+  public function getLayoutItem(iterable $items) : ?Item {
     foreach ($items as $item) {
       if ($layout = $this->getLayout($item['layout'])) {
-        return $layout;
+        return new Item($layout, $item);
       }
     }
-    return $this->getLayout($this->defaultLayout(), FALSE);
+    if ($layout = $this->getLayout($this->defaultLayout(), FALSE)) {
+      return new Item($layout, []);
+    }
+    return NULL;
   }
 
   /**

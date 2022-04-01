@@ -6,15 +6,11 @@ use \Drupal\campaignion\ContactTypeManager;
 use \Drupal\campaignion\CRM\Import\Source\WebformSubmission as Submission;
 
 class WebformSubmission extends ActivityBase {
-  protected $type = 'webform_submission';
+  public $type = 'webform_submission';
 
   public $sid;
   public $nid;
   public $confirmed = NULL;
-
-  public static function bySubmission($node, $submission) {
-    return static::byNidSid($node->nid, $submission->sid);
-  }
 
   public static function load($activity_id) {
     $query = static::buildJoins();
@@ -37,23 +33,16 @@ class WebformSubmission extends ActivityBase {
     return $query;
   }
 
-  public static function fromSubmission($node, $submission, $data = array()) {
-    if ($activity = static::bySubmission($node, $submission)) {
+  public static function fromSubmission($submission, $data = []) {
+    if ($activity = static::byNidSid($submission->nid, $submission->sid)) {
       return $activity;
     }
-    $importer = ContactTypeManager::instance()->importer('campaignion_activity');
-    $source = new Submission($node, $submission);
-    $contact = $importer->findOrCreateContact($source);
-    if ($importer->import($source, $contact)) {
-      $contact->save();
-    }
 
-    $data = array(
-      'confirmed' => $source->webform->needsConfirmation() ? NULL : REQUEST_TIME,
-      'contact_id' => $contact->contact_id,
-      'nid' => $node->nid,
+    $data = [
+      'created' => $submission->submitted,
+      'nid' => $submission->nid,
       'sid' => $submission->sid,
-    ) + $data;
+    ] + $data;
     return new static($data);
   }
 

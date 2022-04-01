@@ -55,4 +55,12 @@ class AuthAppClientTest extends \DrupalUnitTestCase {
     $this->assertEqual($token, $token2);
   }
 
+  /**
+   * Test config validation for an empty API-key.
+   */
+  public function testValidateConfigEmptyKey() {
+    $this->expectException(ConfigError::class);
+    $api = new AuthAppClient('http://url', [], 'org');
+  }
+
 }

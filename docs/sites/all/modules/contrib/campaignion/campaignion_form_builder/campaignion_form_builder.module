@@ -213,15 +213,3 @@ function campaignion_form_builder_admin_paths() {
     );
   }
 }
-
-/**
- * Implements hook_form_FORM_ID_alter().
- * Implements hook_form_form_builder_webform_save_form_alter().
- *
- * Work around for form_builder.js not loading additional Javascripts. Make
- * states.js work.
- */
-function campaignion_form_builder_form_form_builder_webform_save_form_alter(&$form, &$form_state) {
-  $form['#attached']['js'][] = 'misc/ajax.js';
-  $form['#attached']['js'][] = 'misc/states.js';
-}

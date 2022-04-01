@@ -26,4 +26,12 @@ interface SourceInterface {
    */
   public function value($key);
 
+  /**
+   * Get the source’s language if available.
+   *
+   * @return string
+   *   The language code of the source object.
+   */
+  public function getLanguageCode();
+
 }

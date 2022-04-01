@@ -1,15 +1,14 @@
 (function($) {
   Drupal.behaviors.campaignionOverlay = {
     attach: function(context, settings) {
-      if (settings.campaignion_overlay
-          && settings.campaignion_overlay.overlay_enabled) {
+      var overlay = $(".campaignion-overlay-options", context).first();
+      if (overlay.length) {
         // Add jQuery functions for animations
         jQuery.fn.extend({
           campaignionOverlayShow: Drupal.behaviors.campaignionOverlay.show,
           campaignionOverlayClose: Drupal.behaviors.campaignionOverlay.close
         });
 
-        var overlay = $(".campaignion-overlay-options", context).first();
         overlay.dialog({
           dialogClass: "campaignion-overlay",
           maxWidth: $(window).width() * 0.9,

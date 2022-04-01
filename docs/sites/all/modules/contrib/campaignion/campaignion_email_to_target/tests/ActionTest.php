@@ -2,9 +2,10 @@
 
 namespace Drupal\campaignion_email_to_target;
 
-use \Drupal\campaignion_action\Loader;
-use \Drupal\campaignion_email_to_target\Api\Client;
-use \Drupal\little_helpers\Webform\Submission;
+use Drupal\campaignion_action\Loader;
+use Drupal\campaignion_email_to_target\Api\Client;
+use Drupal\campaignion_email_to_target\Channel\NoOp;
+use Drupal\little_helpers\Webform\Submission;
 
 class ActionTest extends \DrupalUnitTestCase {
 
@@ -90,7 +91,7 @@ class ActionTest extends \DrupalUnitTestCase {
       }
       return $m;
     }));
-    $pairs = $action->targetMessagePairs($submission_o);
+    $pairs = $action->targetMessagePairs($submission_o, new NoOp(), FALSE);
     $this->assertEqual([[$contacts[0], $m], [$contacts[2], $m]], $pairs);
   }
 
@@ -116,7 +117,7 @@ class ActionTest extends \DrupalUnitTestCase {
         'message' => 'excluded!',
       ]);
     }));
-    $exclusion = $action->targetMessagePairs($submission_o);
+    $exclusion = $action->targetMessagePairs($submission_o, new NoOp(), FALSE);
     $this->assertEqual(['#markup' => "<p>excluded first!</p>\n"], $exclusion->renderable());
   }
 
@@ -125,9 +126,8 @@ class ActionTest extends \DrupalUnitTestCase {
    */
   public function testTargetMessagePairsDefaultExclusion() {
     list($action, $api, $submission_o) = $this->mockAction([]);
-    $exclusion = $action->targetMessagePairs($submission_o);
+    $exclusion = $action->targetMessagePairs($submission_o, new NoOp(), FALSE);
     $this->assertEqual(['#markup' => '<p>Default exclusion</p>'], $exclusion->renderable()[0]);
   }
 
 }
-

@@ -3,6 +3,7 @@
 namespace Drupal\campaignion_email_to_target\Channel;
 
 use Drupal\campaignion_email_to_target\Message;
+use Drupal\little_helpers\Webform\Submission;
 
 /**
  * Test the “Email” channel.
@@ -59,6 +60,55 @@ class EmailTest extends \DrupalUnitTestcase {
     drupal_process_form('e2t_component_element', $element, $form_state);
     $rendered = drupal_render($element);
     $this->assertStringContainsString('<p class="email-to-target-subject"><strong>Subject&#039;s string</strong></p>', $rendered);
+  }
+
+  /**
+   * Test filterPairs() removes targets without email address.
+   */
+  public function testFilterPairsWithoutEmail() {
+    $pairs = [
+      [['email' => 'test1@example.com', 'name' => 'One'], []],
+      [['Name' => 'No email'], []],
+      [['email' => 'test2@example.com', 'name' => 'Two'], []],
+    ];
+    $channel = new Email();
+    $submission = $this->createMock(Submission::class);
+    $submission->method('valueByKey')->willReturn('test-mode@example.com');
+    $new_pairs = $channel->filterPairs($pairs, $submission, FALSE);
+    $this->assertEqual([$pairs[0], $pairs[2]], $new_pairs);
+  }
+
+  /**
+   * Test filterPairs() replaces email addresses of targets in test-mode.
+   *
+   * Targets without email are still excluded.
+   */
+  public function testFilterPairsTestMode() {
+    $pairs = [
+      [
+        ['email' => 'test1@example.com', 'name' => 'One'],
+        new Message(['toAddress' => 'test1@example.com']),
+      ],
+      [['Name' => 'No email'], []],
+      [
+        ['email' => 'test2@example.com', 'name' => 'Two'],
+        new Message(['toAddress' => 'test2@example.com']),
+      ],
+    ];
+    $channel = new Email();
+    $submission = $this->createMock(Submission::class);
+    $test_email = 'test-mode@example.com';
+    $submission->method('valueByKey')->willReturn($test_email);
+    $new_pairs = $channel->filterPairs($pairs, $submission, TRUE);
+    $this->assertEqual([
+      ['email' => $test_email, 'name' => 'One'],
+      ['email' => $test_email, 'name' => 'Two'],
+    ], array_map(function ($p) { return $p[0]; }, $new_pairs));
+    foreach ($new_pairs as $pair) {
+      $message = $pair[1];
+      $to = $message->to();
+      $this->assertEqual("<$test_email>", substr($to, -(strlen($test_email)+2)));
+    }
   }
 
 }

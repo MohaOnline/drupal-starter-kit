@@ -1,1 +1,15 @@
 <?php
+
+/**
+ * @file
+ * Define database and configration updates.
+ */
+
+/**
+ * Enable new dependency: campaignion_tracking.
+ */
+function campaignion_google_analytics_update_1() {
+  if (!module_enable(['campaignion_tracking'], TRUE)) {
+    new DrupalUpdateException('Unable to enable campaignion_tracking. Please verify it (and all its dependencies) can be found by Drupal.');
+  }
+}

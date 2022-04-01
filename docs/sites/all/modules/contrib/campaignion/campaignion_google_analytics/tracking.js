@@ -149,22 +149,21 @@
          * @instance
          * @memberof module:tracking~Tracker
          */
-        this.ga = null;
-        if (this._checkGA()) {
-            this.ga = this.settings.root[this.settings.gaFnName];
-        } else {
-            console.error('Tracker: "' + this.settings.gaFnName + '" is not defined yet or not a function'); // eslint-disable-line no-console
-        }
+        this.ga = this._ensureGA();
     }
 
     /**
-     * Check whether the Google Analytics queue function is available
+     * Ensure that the Google Analytics command queue (or a dummy) exists.
+     *
+     * The dummy is the same as is used in GA snippets until the actual script
+     * is loaded.
      *
      * @private
      * @returns {boolean}
      */
-    Tracker.prototype._checkGA = function () {
-        return typeof this.settings.root[this.settings.gaFnName] === 'function';
+    Tracker.prototype._ensureGA = function () {
+        (function(i,r){i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)}})(this.settings.root, this.settings.gaFnName);
+        return this.settings.root[this.settings.gaFnName];
     };
 
     /**

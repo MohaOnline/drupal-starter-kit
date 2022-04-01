@@ -6,9 +6,9 @@ use \Drupal\campaignion\Contact;
 
 class ActivityBase implements ActivityInterface {
   public $activity_id = NULL;
-  protected $contact_id;
-  protected $type;
-  protected $created;
+  public $contact_id;
+  public $type;
+  public $created;
   protected $original = NULL;
 
   public function __construct($data = array()) {

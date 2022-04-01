@@ -6,7 +6,6 @@
         return array.indexOf(el) === index;
       }
 
-      if (typeof ga === 'undefined') { return; }
       // guard against missing window.sessionStorage
       // this prevents errors, but degrades functionality on systems missing
       // sessionStorage

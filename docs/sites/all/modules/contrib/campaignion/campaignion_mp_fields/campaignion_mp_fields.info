@@ -27,8 +27,8 @@ features[uuid_term][] = 48bba52f-836f-4ccf-afac-9944e9eaf599
 features[uuid_term][] = 578118e7-477e-44b7-85df-cd897437c91d
 features[uuid_term][] = 60c353e3-7079-40ff-9790-264bd1a19a1f
 
-; Information added by Drupal.org packaging script on 2021-04-06
-version = "7.x-2.20"
+; Information added by Drupal.org packaging script on 2022-03-15
+version = "7.x-2.29"
 core = "7.x"
 project = "campaignion"
-datestamp = "1617716859"
+datestamp = "1647361549"

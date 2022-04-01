@@ -1,6 +1,9 @@
 <?php
 
-use \Drupal\campaignion_activity\ActivityBase;
+use Drupal\campaignion_activity\ActivityBase;
+use Drupal\campaignion_activity\WebformSubmission;
+use Drupal\campaignion_activity\WebformPayment;
+use Drupal\little_helpers\Webform\Submission;
 
 function campaignion_activity_types() {
   $info = module_invoke_all('campaignion_activity_type_info');
@@ -16,25 +19,38 @@ function campaignion_activity_views_api() {
   );
 }
 
-if (module_exists('webform')) {
-  require_once dirname(__FILE__) . '/modules/webform.php';
-  if (module_exists('webform_paymethod_select')) {
-    require_once dirname(__FILE__) . '/modules/webform_paymethod_select.php';
+/**
+ * Implements hook_campaignion_action_taken().
+ */
+function campaignion_activity_campaignion_action_taken($node, Submission $submission, int $when) {
+  if (!($contact = $submission->contact ?? NULL)) {
+    return;
   }
-}
-if (module_exists('campaignion_newsletters')) {
-  require_once dirname(__FILE__) . '/modules/campaignion_newsletters.php';
+
+  $activity = WebformSubmission::fromSubmission($submission, [
+    'contact_id' => $contact->contact_id,
+  ]);
+  $activity->confirmed = $activity->confirmed ?? ($submission->confirmed ? $when : NULL);
+
+  if ($payments = $submission->payments ?? NULL) {
+    foreach ($payments as $payment) {
+      if (payment_status_is_or_has_ancestor($payment->getStatus()->status, PAYMENT_STATUS_SUCCESS)) {
+        $activity = new WebformPayment($activity);
+        $activity->pid = $payment->pid;
+        break;
+      }
+    }
+  }
+  $activity->save();
 }
 
 /**
  * Implements hook_campaignion_activity_type_info().
- *
- * … on behalf of redhen_contact().
  */
-function redhen_contact_campaignion_activity_type_info() {
+function campaignion_action_campaignion_activity_type_info() {
   $info['redhen_contact_create'] = '\Drupal\campaignion_activity\ActivityTypeBase';
   $info['redhen_contact_edit'] = '\Drupal\campaignion_activity\ActivityTypeBase';
-
+  $info['webform_submission'] = 'Drupal\campaignion_activity\WebformSubmissionType';
   return $info;
 }
 

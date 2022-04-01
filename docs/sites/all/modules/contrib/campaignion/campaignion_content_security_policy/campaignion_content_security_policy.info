@@ -1,0 +1,12 @@
+name = Campaignion Content-Security-Policy
+description = Provides configuration for sending the Content-Security-Policy HTTP headers.
+core = 7.x
+
+dependencies[] = little_helpers:little_helpers
+dependencies[] = variable:variable
+
+; Information added by Drupal.org packaging script on 2022-03-15
+version = "7.x-2.29"
+core = "7.x"
+project = "campaignion"
+datestamp = "1647361549"

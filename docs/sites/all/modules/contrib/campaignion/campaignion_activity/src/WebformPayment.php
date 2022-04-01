@@ -3,7 +3,7 @@
 namespace Drupal\campaignion_activity;
 
 class WebformPayment extends WebformSubmission {
-  protected $type = 'webform_payment';
+  public $type = 'webform_payment';
 
   protected static function buildJoins() {
     $query = parent::buildJoins();
@@ -12,30 +12,19 @@ class WebformPayment extends WebformSubmission {
     return $query;
   }
 
-  public static function byPayment(\Payment $payment) {
-    $query = static::buildJoins();
-    $query->condition('ap.pid', $payment->pid);
-    return $query->execute()->fetchObject(get_called_class());
-  }
-
-  public static function fromPayment(\Payment $payment, $data = array()) {
-    $data['pid'] = $payment->pid;
-    $submission = $payment->contextObj->getSubmission();
-    return static::fromSubmission($submission->getNode(), $submission->unwrap(), $data);
-  }
-
   protected function insert() {
     parent::insert();
-    db_insert('campaignion_activity_payment')
-      ->fields($this->values(array('activity_id', 'pid')))
+    db_merge('campaignion_activity_payment')
+      ->key(['activity_id' => $this->activity_id])
+      ->fields($this->values(['pid']))
       ->execute();
   }
 
   protected function update() {
     parent::update();
-    db_update('campaignion_activity_payment')
-      ->fields($this->values(array('pid')))
-      ->condition('activity_id', $this->activity_id)
+    db_merge('campaignion_activity_payment')
+      ->key(['activity_id' => $this->activity_id])
+      ->fields($this->values(['pid']))
       ->execute();
   }
 }

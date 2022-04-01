@@ -72,12 +72,12 @@ class QueueItem extends Model {
   /**
    * Load or create queue item.
    */
-  public static function byData($data) {
+  public static function byData(array $data, array $data_if_new = []) {
     if ($item = static::load($data['list_id'], $data['email'])) {
       $item->__construct($data, FALSE);
     }
     else {
-      $item = new static($data);
+      $item = new static($data + $data_if_new);
     }
     return $item;
   }
@@ -94,10 +94,12 @@ class QueueItem extends Model {
    *   A queue item.
    */
   public static function fromSubscription(Subscription $subscription, ProviderInterface $provider = NULL) {
-    $item = static::byData(array(
+    $item = static::byData([
       'list_id' => $subscription->list_id,
       'email' => $subscription->email,
-    ));
+    ], [
+      'action' => static::SUBSCRIBE ? 'subscribe' : 'update',
+    ]);
     if ($provider) {
       list($data, $fingerprint) = $provider->data($subscription, $item->data);
       $item->fingerprint = $fingerprint;
@@ -114,8 +116,8 @@ class QueueItem extends Model {
         $item->optin_info = FormSubmission::fromWebformSubmission($subscription->source);
       }
     }
-    else {
-      $item->action = static::UPDATE;
+    elseif ($item->action == static::UNSUBSCRIBE) {
+      $item->action = static::SUBSCRIBE;
     }
     return $item;
   }

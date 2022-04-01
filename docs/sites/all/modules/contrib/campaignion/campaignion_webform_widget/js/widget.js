@@ -1,11 +1,13 @@
 var messageParent = function(scrollTop){
   // be sure this code runs when document.body is defined
-  var h = document.body.scrollHeight;
-  h = (scrollTop)? h+'s':h;
-  if(top.postMessage){
-    top.postMessage( h , '*');
+  var height = document.body.scrollHeight;
+  if (scrollTop) {
+    height += 's';
+  }
+  if (top.postMessage){
+    top.postMessage(height, '*');
   } else {
-    window.location.hash = 'h'+h;
+    window.location.hash = 'h'+ height;
   }
 }
 
@@ -49,18 +51,18 @@ function gaLinkerHandler() {
   }
 }
 
-function registerListeners() {
-  if (window.addEventListener) {
-    window.addEventListener("DOMSubtreeModified", function(){messageParent();}, true);
-    document.addEventListener("DOMContentLoaded", gaLinkerHandler);
-  } else if (window.attachEvent) {
-    window.attachEvent("onDOMSubtreeModified", function(){messageParent();});
-  }
-}
+window.addEventListener("DOMContentLoaded", function() {
+  gaLinkerHandler();
+  messageParent(false);
+});
+
 window.onload = function() {
-  messageParent();
-  registerListeners();
+  messageParent(false);
+  window.addEventListener("DOMSubtreeModified", function() {
+    messageParent(false);
+  }, true);
 }
+
 window.onresize = function() {
-  messageParent();
+  messageParent(false);
 }

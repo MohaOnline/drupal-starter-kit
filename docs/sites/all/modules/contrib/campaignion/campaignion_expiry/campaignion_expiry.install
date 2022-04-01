@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Implement hooks called when installing, updating or uninstalling the module.
+ */
+
+/**
+ * Implements hook_schema_alter().
+ */
+function campaignion_expiry_schema_alter(&$schema) {
+  $schema['webform_submissions']['fields']['anonymized'] = [
+    'description' => 'Should this submission be considered anonymized?',
+    'type' => 'int',
+    'size' => 'tiny',
+    'not null' => TRUE,
+    'default' => 0,
+  ];
+  $schema['webform_submissions']['indexes']['anonymized'] = ['anonymized'];
+}
+
+/**
+ * Implements hook_install().
+ */
+function campaignion_expiry_install() {
+  $schema = [];
+  campaignion_expiry_schema_alter($schema);
+  db_add_field('webform_submissions', 'anonymized', $schema['webform_submissions']['fields']['anonymized']);
+  db_add_index('webform_submissions', 'anonymized', ['anonymized']);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function campaignion_expiry_uninstall() {
+  db_drop_field('webform_submissions', 'anonymized');
+  db_drop_index('webform_submissions', 'anonymized');
+}

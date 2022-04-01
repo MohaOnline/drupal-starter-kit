@@ -46,4 +46,9 @@ class ExporterBase implements ExporterInterface {
     $this->wrappedContact = $contact->wrap();
     return $this;
   }
+
+  public function getLanguageCode() {
+    return NULL;
+  }
+
 }

@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for the campaignion_node_admin_title module.
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_form().
+ *
+ * Make sure the title field is prefilled with the original node title.
+ */
+function campaignion_node_admin_title_form_node_form_alter(&$form, &$form_state) {
+  $node = $form['#entity'];
+  $form['title']['#default_value'] = $node->public_title ?? $form['title']['#default_value'];
+}
+
+/**
+ * Implements hook_node_submit().
+ *
+ * Update the public title to match the node title in case it was changed.
+ */
+function campaignion_node_admin_title_node_submit($node, $form, &$form_state) {
+  $node->public_title = $node->title;
+}
+
+/**
+ * Implements hook_node_presave().
+ *
+ * Make sure the node title doesn’t get replaced by the admin title
+ * when a node is loaded on an admin path and saved again.
+ */
+function campaignion_node_admin_title_node_presave($node) {
+  $node->title = $node->public_title ?? $node->title;
+}
+
+/**
+ * Check if we are on an admin page or a form from an admin page was submitted.
+ */
+function campaignion_node_admin_path_is_admin($value = NULL) {
+  $is_admin = &drupal_static(__FUNCTION__, NULL);
+  if (isset($value)) {
+    return $is_admin = $value;
+  }
+  if (!isset($is_admin)) {
+    return $is_admin = path_is_admin(current_path());
+  }
+  return $is_admin;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function campaignion_node_admin_title_form_alter(&$form, &$form_state) {
+  $form['#process'][] = '_campaignion_node_admin_title_process_form';
+}
+
+/**
+ * Form process callback: Check if this is an admin page form.
+ */
+function _campaignion_node_admin_title_process_form($form, &$form_state) {
+  if ($form_state['path_is_admin'] ?? FALSE) {
+    // Let other parts of the module know that this form was built on an
+    // admin page.
+    campaignion_node_admin_path_is_admin(TRUE);
+  }
+  $form_state['path_is_admin'] = campaignion_node_admin_path_is_admin();
+  return $form;
+}
+
+/**
+ * Implements hook_node_load().
+ *
+ * Add `admin_title` and `public_title` to nodes.
+ * Replace the node title with the admin title on admin paths.
+ */
+function campaignion_node_admin_title_node_load($nodes, $types) {
+  foreach ($nodes as $nid => $node) {
+    $node->public_title = $node->title;
+    $node->admin_title = '';
+    if ($field = field_get_items('node', $node, 'field_admin_title')) {
+      $node->admin_title = $field[0]['safe_value'];
+    }
+    if (campaignion_node_admin_path_is_admin() && $node->admin_title) {
+      $node->title = $node->admin_title;
+    }
+  }
+}

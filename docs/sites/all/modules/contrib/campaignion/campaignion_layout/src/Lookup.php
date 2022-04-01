@@ -67,8 +67,8 @@ class Lookup {
   /**
    * Find the layout configured for the currently active theme.
    */
-  public function getLayout() {
-    return $this->themes->getTheme()->getLayoutFromItems($this->iterateItems());
+  public function getItem() {
+    return $this->themes->getTheme()->getLayoutItem($this->iterateItems());
   }
 
 }

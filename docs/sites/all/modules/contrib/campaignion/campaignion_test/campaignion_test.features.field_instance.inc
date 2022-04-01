@@ -342,7 +342,7 @@ function campaignion_test_field_default_field_instances() {
       0 => array(
         'theme' => '',
         'layout' => NULL,
-        'layout_simplicity' => '',
+        'reversed' => 0,
       ),
     ),
     'deleted' => 0,
