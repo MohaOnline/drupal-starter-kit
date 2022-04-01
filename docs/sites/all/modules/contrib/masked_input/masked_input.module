@@ -1,0 +1,304 @@
+<?php
+
+/**
+ * @file
+ * Provides a form element, Field widget, and simple API for using the Masked
+ * Input jQuery plugin.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function masked_input_menu() {
+  $items['admin/config/user-interface/masked_input'] = array(
+    'title' => 'Masked Input',
+    'description' => 'Settings page for Masked Input',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('masked_input_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'masked_input.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function masked_input_theme($existing, $type, $theme, $path) {
+  return array(
+    'masked_input_settings_definitions' => array(
+      'render element' => 'form',
+      'file' => 'masked_input.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function masked_input_libraries_info() {
+  return array(
+    'maskedinput' => array(
+      'name' => 'Masked Input',
+      'vendor url' => 'http://digitalbush.com/projects/masked-input-plugin',
+      'download url' => 'http://cloud.github.com/downloads/digitalBush',
+      'versions' => array(
+        '1.3' => array(
+          'variants' => array(
+            'minified' => array(
+              'files' => array(
+                'js' => array('jquery.maskedinput-1.3.min.js'),
+              ),
+            ),
+            'source' => array(
+              'files' => array(
+                'js' => array('jquery.maskedinput-1.3.js'),
+              ),
+            ),
+          ),
+          'integration files' => array(
+            'masked_input' => array(
+              'js' => array('js/masked_input.js'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_element_info().
+ */
+function masked_input_element_info() {
+  $types['masked_input'] = array(
+    '#input' => TRUE,
+    '#size' => 60,
+    '#maxlength' => 128,
+    '#autocomplete_path' => FALSE,
+    '#process' => array('masked_input_process_callback', 'ajax_process_form'),
+    '#theme' => 'textfield',
+    '#theme_wrappers' => array('form_element'),
+    '#mask' => '',
+    '#placeholder' => '_',
+    '#definitions' => array(),
+  );
+
+  return $types;
+}
+
+/**
+ * Process callback: 'masked_input' element type.
+ */
+function masked_input_process_callback($element, &$form_state, $form) {
+  $info = element_info('masked_input');
+
+  // Merge configured definitions with the ones supplied by the form builder.
+  if (isset($element['#definitions']) && is_array($element['#definitions'])) {
+    $data['masked_input']['definitions'] = array_merge(masked_input_get_configured_definitions(), $element['#definitions']);
+  }
+
+  // Send Drupal.settings a reference to this form element.
+  $data['masked_input']['elements'][$element['#id']] = array(
+    'id' => $element['#id'],
+    'mask' => isset($element['#mask']) ? $element['#mask'] : $info['#mask'],
+    'placeholder' => isset($element['#placeholder']) ? $element['#placeholder'] : $info['#placeholder'],
+  );
+
+  // Attaching library, integration script, and settings array.
+  $element['#attached']['js'][] = libraries_get_path('maskedinput') . '/jquery.maskedinput-1.3.js';
+  $element['#attached']['js'][] = drupal_get_path('module','masked_input') . '/js/masked_input.js';
+  $element['#attached']['js'][] = array(
+    'type' => 'setting',
+    'data' => $data,
+  );
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function masked_input_field_widget_info() {
+  // Use defaults in element_info to ensure element alters take affect here too.
+  $element = element_info('masked_input');
+
+  return array(
+    'masked_input' => array(
+      'label' => t('Masked Input'),
+      'field types' => array('text', 'text_long', 'number_integer', 'number_decimal', 'number_float'),
+      'settings' => array(
+        'size' => 60,
+        'mask' => isset($element['#mask']) ? $element['#mask'] : '',
+        'placeholder' => isset($element['#placeholder']) ? $element['#placeholder'] : '',
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ */
+function masked_input_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $element['value'] = $element + array(
+     '#type' => 'masked_input',
+     '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
+     '#size' => $instance['widget']['settings']['size'],
+     '#mask' => $instance['widget']['settings']['mask'],
+     '#placeholder' => $instance['widget']['settings']['placeholder'],
+  );
+
+  // Use the textarea html element for "text_long" field types.
+  if ($field['type'] == 'text_long') {
+    $element['value']['#theme'] = 'textarea';
+  }
+
+  // Clean input for field types that expect numeric values
+  if (in_array($field['type'], array('number_integer', 'number_decimal', 'number_float'))) {
+    $element['value']['#element_validate'][] = 'masked_input_validate_numeric';
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_error().
+ */
+function masked_input_field_widget_error($element, $error, $form, &$form_state) {
+  form_error($element['value'], $error['message']);
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ */
+function masked_input_field_widget_settings_form($field, $instance) {
+  $settings = $instance['widget']['settings'];
+  $definitions = masked_input_view_configured_definitions();
+
+  $form['size'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Size of textfield'),
+    '#size' => '3',
+    '#default_value' => $settings['size'],
+    '#element_validate' => array('_element_validate_integer_positive'),
+    '#required' => TRUE,
+  );
+
+  $form['mask'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Mask'),
+    '#description' => '',
+    '#default_value' => $settings['mask'],
+  );
+  $form['mask']['#description'] .= t('A mask is defined by a format made up of mask literals and mask definitions. Any character not in the definitions list below is considered a mask literal. Mask literals will be automatically entered for the user as they type and will not be able to be removed by the user.') . ' ';
+  $form['mask']['#description'] .= t('Here is a list of definitions that already exist, you can create more at !link', array('!link' => l('admin/config/user-interface/masked_input', 'admin/config/user-interface/masked_input', array('query' => array('destination' => $_GET['q'])))));
+  $form['mask']['#description'] .= render($definitions);
+
+  $form['placeholder'] = array(
+    '#type' => 'textfield',
+    '#size' => 1,
+    '#title' => t('Placeholder'),
+    '#description' => t('Optionally, if you are not satisfied with the underscore ("_") character as a placeholder, you may pass an optional argument to the masked_input method.'),
+    '#default_value' => $settings['placeholder'],
+  );
+
+  return $form;
+}
+
+/**
+ * Element validation callback for masked_input elements that require values to
+ * be stored as "numeric"
+ */
+function masked_input_validate_numeric($element, &$form_state) {
+  $existing = NULL;
+  $value = drupal_array_get_nested_value($form_state['values'], $element['#parents'], $existing);
+
+  // If the value in question cannot be recognized as being numeric, we strip
+  // away everything except numbers and decimals.
+  if (!is_numeric($value) && $existing) {
+    $clean_value = preg_replace('/[^0-9\.]/u', '', $value);
+    form_set_value($element, $clean_value, $form_state);
+  }
+}
+
+/**
+ * Attach the masked input to existing form elements.
+ *
+ * This will ensure we properly merge process callbacks and not break essential
+ * functionality from the original form element.
+ */
+function masked_input_attach_to(&$element) {
+  $current = element_info($element['#type']) + array('#process' => array());
+  $info = element_info('masked_input') + array('#process' => array());
+  $element['#process'] = array_unique(array_merge($current['#process'], $info['#process']));
+}
+
+/**
+ * Retrieve configured definitions prepared for the #definitions property of
+ * the masked_input element type.
+ */
+function masked_input_get_configured_definitions() {
+  $definitions = array();
+  foreach (variable_get('masked_input_definitions', array()) as $definition) {
+    $definitions[$definition['character']] = $definition['regex'];
+  }
+
+  return $definitions;
+}
+
+/**
+ * Returns a build to render a preview of available mask definitions as a table.
+ */
+function masked_input_view_configured_definitions() {
+  // Get default masks.
+  $rows = _masked_input_default_definitions();
+
+  // Get configured masks.
+  foreach (variable_get('masked_input_definitions', array()) as $definition) {
+    $rows[] = array(
+      array('data' => $definition['character']),
+      array('data' => $definition['regex']),
+      array('data' => $definition['description']),
+    );
+  }
+
+  $header = array(
+    t('Character'),
+    t('Regular expression'),
+    t('Description'),
+  );
+
+  $build = array(
+    '#theme' => 'table__masked_input_definitions',
+    '#header' => $header,
+    '#rows' => $rows,
+  );
+
+  return $build;
+}
+
+/**
+ * Default mask definitions provided by the plugin. Prepared specifically for
+ * 'rows' variable of theme_table().
+ */
+function _masked_input_default_definitions() {
+  return array(
+    array(
+      array('data' => 'a'),
+      array('data' => '[a-zA-Z]'),
+      array('data' => 'Represents an alpha character'),
+    ),
+    array(
+      array('data' => '9'),
+      array('data' => '[0-9]'),
+      array('data' => 'Represents a numeric character'),
+    ),
+    array(
+      array('data' => '*'),
+      array('data' => '[A-Za-z0-9]'),
+      array('data' => 'Represents an alpha character'),
+    ),
+  );
+}

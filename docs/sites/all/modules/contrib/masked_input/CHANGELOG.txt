@@ -1,0 +1,6 @@
+Masked Input 7.x-2.x
+----------------------
+
+Masked Input 7.x-2.0
+----------------------
+  Merged Masked-Input (http://drupal.org/project/maskedinput) into this current project.

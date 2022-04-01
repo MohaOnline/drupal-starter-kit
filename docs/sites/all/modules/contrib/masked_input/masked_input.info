@@ -1,0 +1,12 @@
+name = Masked Input
+description = Allows textfields to contain "masked" placeholders to easily communicate with the user how data should be formatted.
+core = 7.x
+
+dependencies[] = libraries
+
+; Information added by drupal.org packaging script on 2013-09-25
+version = "7.x-2.1"
+core = "7.x"
+project = "masked_input"
+datestamp = "1380130641"
+

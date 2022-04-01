@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Install, uninstall, and requirements operations.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function masked_input_requirements($phase) {
+  module_load_include('module', 'libraries');
+  $available = libraries_get_path('maskedinput');
+
+  return array(
+    'masked_input_library' => array(
+      'title' => t('Masked Input'),
+      'value' => $available ? t('Library is available') : t('Library is missing'),
+      'description' => $available ? NULL : t('Please download the masked input library into "sites/all/libraries/maskedinput" or any alternative path that is supported by the libraries module. See README.txt for more information.'),
+      'severity' => $available ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+    ),
+  );
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function masked_input_uninstall() {
+  variable_del('masked_input_definitions');
+}
