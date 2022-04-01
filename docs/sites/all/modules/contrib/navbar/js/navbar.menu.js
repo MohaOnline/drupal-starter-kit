@@ -119,14 +119,19 @@
             }
             var $menu = settings.findItemSubMenu && settings.findItemSubMenu($item, $menu) || $item.children('ul');
             if ($menu.length) {
-              // Get the item 'link' element.
-              var $box = $($item.data('box'));
-              if ($box.length) {
-                var $twistyItem = $item.once('navbar-menu-twisties');
-                if ($twistyItem.length) {
-                  options.text = Drupal.t('@label', {'@label': $box.text()});
-                  $item.addClass('navbar-twisty');
-                  $box.append(Drupal.theme('navbarMenuItemToggle', options));
+              // The 'box' data is stored in the jQuery internal cache,
+              // so never trust the data-box attribute on a DOM element,
+              // as this could contain user-supplied data.
+              if (!$item[0].hasAttribute('data-box')) {
+                // Get the item 'link' element.
+                var $box = $($item.data('box'));
+                if ($box.length) {
+                  var $twistyItem = $item.once('navbar-menu-twisties');
+                  if ($twistyItem.length) {
+                    options.text = Drupal.t('@label', {'@label': $box.text()});
+                    $item.addClass('navbar-twisty');
+                    $box.append(Drupal.theme('navbarMenuItemToggle', options));
+                  }
                 }
               }
             }

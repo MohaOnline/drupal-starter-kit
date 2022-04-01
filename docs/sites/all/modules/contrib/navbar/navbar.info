@@ -5,9 +5,8 @@ package = Administration
 
 dependencies[] = libraries (>=2.0)
 
-; Information added by Drupal.org packaging script on 2015-12-07
-version = "7.x-1.7"
+; Information added by Drupal.org packaging script on 2022-01-26
+version = "7.x-1.8"
 core = "7.x"
 project = "navbar"
-datestamp = "1449520443"
-
+datestamp = "1643201351"
