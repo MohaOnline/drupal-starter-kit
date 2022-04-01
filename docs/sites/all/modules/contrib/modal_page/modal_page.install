@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Modal Page.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function modal_page_uninstall() {
+  variable_del('modal_page_modals');
+}

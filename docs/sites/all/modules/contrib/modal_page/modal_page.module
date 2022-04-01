@@ -1,0 +1,179 @@
+<?php
+
+/**
+ * @file
+ * Main file for the Modal Page.
+ */
+
+/**
+ * Implements hook_theme().
+ */
+function modal_page_theme() {
+  return array(
+    'modal_page_modal' => array(
+      'render element' => 'elements',
+      'template' => 'templates/modal_page_modal',
+      'variables' => array('title' => NULL, 'text' => NULL, 'button' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implements hook_page_build().
+ */
+function modal_page_page_build(&$page) {
+
+  $path_modal_page = drupal_get_path('module', 'modal_page');
+
+  $external_js = variable_get('modal_page_external_js', TRUE);
+
+  if ($external_js) {
+    $page['content']['#attached']['js'][] = array(
+      'type' => 'external',
+      'data' => 'https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js',
+    );
+
+    $page['content']['#attached']['js'][] = array(
+      'type' => 'external',
+      'data' => 'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js',
+    );
+  }
+
+  $page['content']['#attached']['css'][] = array(
+    'type' => 'file',
+    'data' => $path_modal_page . '/css/modal_page.css',
+  );
+
+  $modal_page_settings = variable_get('modal_page_modals');
+
+  if (empty($modal_page_settings)) {
+    return FALSE;
+  }
+
+  $modals_settings = explode(PHP_EOL, $modal_page_settings);
+
+  foreach ($modals_settings as $modal_settings) {
+
+    // Default values.
+    $path = $title = $text = $button = '';
+
+    $modal = explode('|', $modal_settings);
+
+    if (!empty($modal[0])) {
+      $path = $modal[0];
+    }
+
+    if ($path != '<front>') {
+      $path = filter_xss($modal[0]);
+      $path = trim($path);
+    }
+
+    if (!empty($modal[1])) {
+      $title = filter_xss($modal[1]);
+      $title = trim($title);
+    }
+
+    // Check HTML tags.
+    $modal_page_allowed_tags = variable_get('modal_page_allowed_tags');
+
+    if (!empty($modal_page_allowed_tags)) {
+      $modal_page_allowed_tags = explode(PHP_EOL, $modal_page_allowed_tags);
+      $modal_page_allowed_tags = preg_replace('/\s/', '', $modal_page_allowed_tags);
+    }
+
+    if (!empty($modal[2])) {
+      $text = empty($modal_page_allowed_tags) ? filter_xss($modal[2]) : filter_xss($modal[2], $modal_page_allowed_tags);
+      $text = trim($text);
+    }
+
+    if (!empty($modal[3])) {
+      $button = filter_xss($modal[3]);
+      $button = trim($button);
+    }
+
+    $current_path = drupal_get_path_alias(current_path());
+
+    if (drupal_is_front_page()) {
+      $current_path = '<front>';
+    }
+
+    if ($path == $current_path) {
+
+      $page['content']['#attached']['js'][] = array(
+        'type' => 'file',
+        'data' => $path_modal_page . '/js/modal_page.js',
+      );
+
+      $modal = theme('modal_page_modal', array(
+        'title' => $title,
+        'text' => $text,
+        'button' => $button,
+      ));
+
+      $page['page_top']['slidedown_templates'] = array(
+        '#weight' => -1000,
+        '#markup' => $modal,
+      );
+
+      break;
+    }
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function modal_page_menu() {
+
+  $items = array();
+
+  $items['admin/config/user-interface/modal-page'] = array(
+    'title' => 'Modal Page',
+    'description' => 'Configuration for Modal Page module',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('modal_page_settings'),
+    'access arguments' => array('administer site configuration'),
+  );
+
+  return $items;
+}
+
+/**
+ * Function modal_page_settings.
+ */
+function modal_page_settings($form, &$form_state) {
+
+  $form['modal_page_modals'] = array(
+    '#title' => t('Modal settings.'),
+    '#type' => 'textarea',
+    '#description' => t('Insert values with format: <br><br><b>Page|Title|Text|Button</b> &lt;front&gt; is the front page. <br><br> e.g.  <b>Home|Welcome|Welcome to our new website|Thanks</b>'),
+    '#default_value' => variable_get('modal_page_modals', ''),
+    '#size' => 10,
+    '#resizable' => FALSE,
+  );
+
+  $form['modal_page_advanced_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['modal_page_advanced_settings']['modal_page_allowed_tags'] = array(
+    '#title' => t('Allowed HTML Tags in the Text (filter_xss)'),
+    '#type' => 'textarea',
+    '#description' => t('Modal Page use filter_xss function to Filters HTML to prevent cross-site-scripting (XSS) vulnerabilities. <br>Optionally you can insert your allowed tags. Use one per line. E.g:<ul><li>a</li><li>strong</li><li>ul</li><li>li</li>'),
+    '#default_value' => variable_get('modal_page_allowed_tags', ''),
+    '#size' => 10,
+    '#resizable' => FALSE,
+  );
+
+  $form['modal_page_advanced_settings']['modal_page_external_js'] = array(
+    '#title' => t('Use external jQuery and Bootstrap libraries'),
+    '#type' => 'checkbox',
+    '#description' => t('Uncheck this box is want to use local jQuery and Bootstrap libraries.'),
+    '#default_value' => variable_get('modal_page_external_js', TRUE),
+  );
+
+  return system_settings_form($form);
+}
