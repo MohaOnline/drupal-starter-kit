@@ -226,10 +226,9 @@ function form_builder_preview($f, &$form_state, $form_obj, $form_type, $form_id)
   $form['#attached']['js'][] = drupal_get_path('module', 'options_element') .'/options_element.js';
   // TODO: Use libraries if available. see http://drupal.org/node/954804
   $form['#attached']['js'][] = 'misc/tabledrag.js';
-  $form['#attached']['js'][] = 'misc/jquery.cookie.js';
-  $form['#attached']['library'][] = array('system', 'form');
-  $form['#attached']['js'][] = 'misc/form.js';
-  $form['#attached']['js'][] = 'misc/collapse.js';
+  $form['#attached']['library'][] = array('system', 'jquery.cookie');
+  $form['#attached']['library'][] = array('system', 'drupal.form');
+  $form['#attached']['library'][] = array('system', 'drupal.collapse');
 
   $form['#attached']['js'][] = drupal_get_path('module', 'filter') . '/filter.js';
   $form['#attached']['css'][] = drupal_get_path('module', 'filter') . '/filter.css';

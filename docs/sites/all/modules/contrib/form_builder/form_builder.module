@@ -48,6 +48,7 @@ function form_builder_menu() {
     'file' => 'form_builder.admin.inc',
     'file path' => drupal_get_path('module', 'form_builder') . '/includes',
     'delivery callback' => 'form_builder_deliver_ajax_or_html',
+    'theme callback' => 'ajax_base_page_theme',
   );
 
   $items['admin/structure/form-builder/remove'] = array(
@@ -60,6 +61,7 @@ function form_builder_menu() {
     'file' => 'form_builder.admin.inc',
     'file path' => drupal_get_path('module', 'form_builder') . '/includes',
     'delivery callback' => 'form_builder_deliver_ajax_or_html',
+    'theme callback' => 'ajax_base_page_theme',
   );
 
   $items['admin/structure/form-builder/json'] = array(
