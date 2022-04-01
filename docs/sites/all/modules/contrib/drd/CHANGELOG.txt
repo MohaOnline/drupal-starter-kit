@@ -1,0 +1,227 @@
+drd 7.x-2.10, 2017-07-12
+------------------------
+Improve key length handling
+Always generate random keys
+Store and transport keys in base64 encoded format
+
+drd 7.x-2.9, 2017-04-07
+-----------------------
+Issue #2855797 by renatog: Implements hook_uninstall for cleanup variables on uninstall project
+Issue #2865843: Fix encoding and decoding of IV and only do that once at each end: when adding to and reading from header
+Issue #2859328 by jurgenhaas, cwells: aes_iv column PDOException: incorrect string value for aes_iv
+
+drd 7.x-2.8, 2017-02-23
+-----------------------
+Issue #2855388 by jurgenhaas: Use new IV for each request
+
+drd 7.x-2.7, 2017-02-22
+-----------------------
+#2852175 by jurgenhaas: Remove AES dependency
+
+drd 7.x-2.6, 2016-10-12
+-----------------------
+Issue #2491177 by Cyberschorsch: Generating a IV should respect the aes crypt implementation
+Issue #2780417 by dahousecat: Domain modules page incorectly returns not found
+Issue #2779363 by dahousecat: 401 error when action domain "DRD: remotely install/uninstall" used with authenication
+Issue #2777091 by dahousecat: Deleting a core from it's view tab causes loads of errors
+Issue #2655962: Upgrade path from D7 to D8, rebuild menu and enhance validity period for tokens to 30 minutes
+Issue #2655962: Upgrade path from D7 to D8, make the token unique by adding a timestamp
+Issue #2655962: Upgrade path from D7 to D8
+Issue #2592967 by jurgenhaas: Can't add new Drupal core - aes_config() undefined
+Issue #2592967: Can't add new Drupal core - aes_config() undefined
+Issue #2370845 by SteffenR: Heartbeat not working correctly due JS error
+Issue #2438045 by jurgenhaas: Uncaught TypeError: Cannot read property 'messages' of undefined
+Issue #2471204 by zvs: Warning: htmlspecialchars() [function.htmlspecialchars]: Invalid multibyte sequence in argument in check_plain()
+#2324063 Implement part 2 of http authentication
+#2382909 Avoid some warnings about missing indexes
+#2369569 Output domain blocks only on the respective domain detail tab
+#2332877 Implement SSH2 auth method through agent if ssh2_auth_agent() is available
+#2332877 Cleanup core adding via drush
+#2332877 Implement fallback to install DRD remotely over SSH if available
+#2332877 Adding and updating new cores via drush aliases completed
+#2332877 Implementing drush commands to add, update and remove cores from the DRD dashboard (work in progress)
+#2311355 Avoid warnings for modules with incomplete versioning info
+#2324063 Support HTTP headers for cores and domains, db table and editing for authorization completed
+#2322147 Fix the DRD message if a server based drush command was xecuted
+#2322827 Better implementation of Drush command as actions
+#2322147 Bug fix with action submits with field keys containing spaces
+#2322479 Action drd.server.domains does not provide SSL information
+#2322451 Module list shows to many items when filter is active
+
+drd 7.x-2.5, 2014-07-10
+-----------------------
+Exclude xmlrpc responses from Drush logging at the console
+#2291213: Properly include headers into DRD http requests to make sure that mod_security or other tools won't reject our requests
+#2291213: Improve debugging and implement a debug export
+#2291213: Avoid notice by moving init index to the correct location
+#2291213: Avoid notice by better merging arrays with default values
+#2287477: Log new and removed domains in the core messages
+
+drd 7.x-2.4, 2014-06-16
+-----------------------
+Make sure that heartbeat and other task execution gets performed for cron via URL or Drush
+Enable Drush over SSH on remote hosts
+Improve SSH support
+Include more details for available updates on admin/drd/modules/updates
+Bug fix to properly remove domains from DRD if they no longer exist
+Overwrite project status information only if we received something from the remote core
+#2281135: Cleanup of code and complete phpdocs
+#2266251: Cleanup, change term "operation" to "action"
+#2272773: Introduce cluster mode
+#2276711: Correct a "small code problem" with arrays in the chart integration
+#2274089: Display modules and themes that are available but not installed
+#2274065: Correct a variable name from $server['aes_implementation'] to $server['aes_impl']
+#1391306: Drush integration
+
+drd 7.x-2.3, 2014-05-12
+-----------------------
+NEW #2225807 by @iantresman: Include indicator for maintenance mode into domain lists
+NEW #2168581 by @Johann Wagner: Support file element in forms
+NEW #1477258 by @daften: Support Aegir platforms
+NEW #1477258 by @daften: Display a hint to either push AES keys or edit them manually
+IMPROVEMENT #2256137: Make sure DRD uses the database for caching because we need some queries with wildcards that are not implemented in the cache interface
+CHANGE Improve documentation on security
+FIX #2258455: Remove cached project update status data when receiving new cache data to make sure we don't get outdated status information by mistake
+FIX #2258455: Properly handle project update status action in server mode and remove that from D6 cores as it is not supported by Drupal 6
+FIX #2258455: Fix some bugs with fetching and storing update information in server mode
+FIX #2257125: Avoid notice for missing index of #type
+FIX #2251981 @schuster211: Trim the XML Response to avoid XML parser errors
+
+drd 7.x-2.2, 2014-01-09
+-----------------------
+NEW #2153325 by @zbabtkis: New settings to be able to hide inactive or uninstalled domains by default.
+NEW #2060233 by @alexfarr: Allow other modules to preprocess actions by implementing hook_drd_action_preprocess().
+NEW #1816384: Reset project update status information before storing new stati grabbed on a core level.
+FIX #2085451 by @kumkum29: Ignore warnings when pretty printing global variables.
+FIX #2084717 by @kumkum29: Do not serialize the server settings explicitly because the database layer is handling the serialisation.
+FIX: Avoid a warning when taxonomy is not installed and a core record gets saved.
+
+drd 7.x-2.1, 2012-08-23
+-----------------------
+NEW: Integrate the filter function on the module overview for all cores
+NEW #1736284: Implement nice ignore/unignore function into domain status overview Also change the requirements in D7 from globalredirect to redirect
+NEW #1601068: Start documentation of the API.
+NEW: Make the modules list available for DRD globally, for each core and for each domain separately
+NEW: In settings (admin/drd/settings) there is a new action "Reset Module Usage" to cleanup module usage data, just in case it got confused at some point
+NEW: Implement more requirements and categorize them to be properly displayed on the domain overview list
+NEW: Provide more detailed status information and icons on the domain overview page
+NEW: In DRD settings you can now globally ignore certain requirements
+NEW: In DRD settings you can now also define any number of additional tasks that get executed during cron, e.g. useful to collect status information from all remote domains automatically
+NEW #1534494: Make actions available on core and domain detail pages
+NEW #1534424: Implement a modules overview at admin/drd/modules to show modules stati for all modules across all cores and domains
+NEW #1480094: While editing a domain you now get a list of requirements from which you can select to ignore them when calculating warning and error status for that domain
+NEW: New action to execute arbitrary PHP code at the remote domain
+NEW: Implement hook_requirements to deliver some more information back to the dashboard
+NEW #1391314: Implement support for blocks so that each remote domain can deliver any block for the domain detail page on the dashboard
+NEW #1499208: While editing a domain you now get a list of requirements from which you can select to ignore them when calculating warning and error status for that domain
+NEW #1499208: Change (simplify) the way how "Update domain info" delivers the collected information back to the dashboard
+NEW #1480094: Improved UX and navigation in preparation of much more functionality to come
+CHANGE #1710034: Include a note for troubleshooting into the readme file and fix a small css issue for the domain detail view
+CHANGE #1736284: Several improvements to the domain detail page
+CHANGE: Refresh the page if looking at the domain detail and refresh data was provided by DRD ajax call
+CHANGE: Fix a bug with timestamps for messages from the remote domains
+CHANGE: Highlight bottom bar only if wanrings or errors are included, not for status messages
+CHANGE: Allow remote installation also for the domain which is the core domain
+CHANGE: Improve the method to check the server capabilities when we add a new core
+CHANGE #1540574: make some changes according to comment #22
+CHANGE #1534424: Remove rotation of table header and put the full server name into the title tag so that you can determine the name by hovering the mouse over the shortened name
+CHANGE #1534424: Implement defined column widths for the modules overview tables
+CHANGE #1391314: Better styling of the block list in the domain edit form
+CHANGE #1516016: Make urls in messages clickable
+CHANGE #1520160 by @Lenn-Art: Enhance the description of the url field in a server edit page
+CHANGE #1516014: Implement different icons for heartbeat status on and off
+CHANGE #1516014: Add an improved tooltip to the heartbeat toggle to indicate the current status
+CHANGE #1515664 by @TAM Software: In core edit form, allow aes keys to be empty and then leave it unchanged. If no aes key was set yet, then define a random one
+FIX: Avoid a warning with missing $requirement['value']
+FIX #1534424: Avoid warning if index version doesn't exist
+FIX the bug where the checkbox "select/unselect all" didn't trigger the selection change
+FIX: Make sure that hook_cron() collects heartbeat information if called through crontab using the cron_key get parameter
+FIX: Change the schema for mobitor values, the integer for file usages was far too small
+FIX: Improve the module list at admin/drd/modules and remove all errors
+FIX: Make sure that hook_cron() collects heartbeat information if called through crontab using the cron_key get parameter
+FIX #1515664: Fix an error with messages where the object was an array instead of an object
+FIX #1535302: Fix an error with filter settings where the server list is indexed by server ids and not by consecutive numbers
+FIX #1535302: Remove a left-over from list filters that validated a field that got moved into the drd settings
+FIX #1535308: Implement access control, i.e. to manage weather heartbeat tab gets displayed or not
+FIX #1499208: Trying to avoid "empty" options in the ignore list
+FIX #1515664: Resolve a bug where either new cores or legacy cores have no settings array yet
+
+drd 7.x-2.0, 2012-04-03
+-----------------------
+CHANGE #1504006: Remove all references to SVN for the time being
+CHANGE #1507966 by j.slemmer: Rename "Server" to "Drupal Core"
+NEW #1505140 by @j.slemmer: Include the config link into the info file for quick access on the modules page
+NEW #1504642 by @j.slemmer: Shorten long site names in server and in domain list and include the full name as title attribute
+NEW #1498512: Include a setting for the number of list items into the filter form; later moved that into the module settings form
+FIX #1504310: Remote installation failed because the function drd_install_drd_server() required an extra dummy parameter due to the #markup field in the action form
+FIX #1504310: Avoid an error message because of markup in forms which comes without a #type index
+FIX #1504310 by @j.slemmer: write a record into watchdog if remote installation fails during AES key update
+FIX #1498382: properly reset the domain filter when coming from the server list asking for domains of that specific server
+FIX #1499264 by @j.slemmer: improve the remote installation process, here: accept #markup in action definition so that we can output a message/warning
+
+drd 7.x-2.0-rc1, 2012-02-18
+---------------------------
+NEW #1422564 by checker: Allow a new server setting to determine if automatic remote installation is supported on that server
+NEW: Cron jobs of DRD now only get executed if cron runs in CLI mode
+IMPROVEMENT #1418692 by @drvdt: Description of url field and error message improved for initial server installation
+IMPROVEMENT: More fine tuned error messages depending on feedback from remote site and offer more and better links to resolve the issue(s)
+FIX: Change the array definition for drd actions so that array_merge_deep() works properly
+FIX: Add a counter also to info ajax requests
+FIX: Do not display the heartbeat info pane toggle for domains that are disabled
+FIX: Now make queue runs really work asynched in parallel (thanks to @thorstenmarx)
+FIX #1415118: Send back refresh data only of the current object is potentially listed on the current page
+
+drd 7.x-2.0-beta3, 2012-01-22
+-----------------------------
+NEW: Cleanup heartbeat values after a period of time: store daily, weekly, monthly, quarterly and yearly values
+NEW: Display heartbeat for certain periods: last 24 hours, daily, weekly, monthly, quarterly and yearly
+NEW: Heartbeat is looking for the last 5 minutes if there is no record available yet
+NEW: If module "chart" is enabled then the dashboard can display nice charts for the collected data
+NEW: Collect file data and watchdog info during heartbeat
+NEW: Collect heartbeat info from all domains during cron. This can be used to implement a regular monitoring system, the data gets collected in a new database table
+NEW: We now get feedback from remote sites if there is a encryption key mismatch and provide a link in the error message to define new encryption keys
+CHANGE: Code improvement around chart creation
+CHANGE: Heartbeat on domain lists is now disabled by default
+CHANGE: Actions list: use a default group for orphaned items and then sort groups and their items alphabetically
+CHANGE: Collect actions from all domains, not just from the main domain
+CHANGE: Properly merge subform from remote server when editing server settings and do the same thing for domains as well
+CHANGE: Show a "Wait" message while Ajax grabs historical data
+CHANGE: Properly manage the changing content in the info-pane of a server/domain
+FIX: Find the correct last value for heartbeat requests
+FIX: Heartbeat toggle button now also works in the fixed table header
+FIX: User the correct object (server vs domain) in building messages
+FIX: Edit server details now allows colons but still not protocolls
+
+drd 7.x-2.0-beta2, 2012-01-08
+-----------------------------
+NEW: When installing a new server and after pushing AES keys to the remote server, DRD will then automatically get the actions and available domains from thatremote server automatically
+NEW: Validate URL when editing a server
+NEW: Do not allow to change the URL of a server once it's been saved
+NEW: Include drupal version as filter in server and domain list
+NEW: Include more icons in the url, alias and heartbeat column
+NEW: Include an icon in the heartbeat header to switch heartbeats on and off
+NEW: Include an icon in the name column to indicate that there you can edit the domain or server
+NEW: Indicate refreshed rows for 5 seconds with a green background in the first column
+NEW: Include an icon in the status column to indicate that there is more when clicking on it
+NEW: Refresh the list after queued action if an action has refresh property set to TRUE
+NEW: Clicking on drupal messages removes them from the page
+NEW: Display drupal messages also from ajax calls
+NEW: Implement heartbeat information from all displayed domains
+NEW: Show useful status information while the DRD server is working on the queue
+NEW: Execute the actions in queus, which allows multiple tasks in parallel and hence will improve performance significantly
+NEW: Allow to build sequences of actions to be executed, e.g. drd.info is collected right after cron or collecting update information
+NEW: Filter for server and domain lists
+NEW: Tagging for server and domains
+NEW: Local action in server list to access all domains
+CHANGE: Remove Ajax and Autocomplete callbacks from the admin trail as that causes some unwanted side-effects
+CHANGE: Change the form for actions/actions so that the contained fields are blocks, not inline anymore
+IMPROVEMENT: Allow removal of messages by a click on a pseudo-button above the messages
+FIX: Small CSS issue
+FIX: Solve the problem with the wrong link to the config page when installing drd_server on a new server
+FIX: Avoid execution of JavaScript on other pages than server and domain lists
+FIX: Skip disabled servers with remote actions
+FIX: Make sure that we do not reset remote actions after pushing AES keys when installing a new server
+
+drd 7.x-2.0-beta1, 2012-01-01
+-----------------------------
+Initial development version of the completely rewritten version 2.x
