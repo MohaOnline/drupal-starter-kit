@@ -66,17 +66,19 @@ function at_generate_html_classes(&$vars, $theme_name) {
 
     // Set classes for views and panels pages
     $vars['menu_item'] = menu_get_item();
-    switch ($vars['menu_item']['page_callback']) {
-      case 'views_page':
-        // Is this a Views page?
-        $classes_array[] = 'page-views';
-        break;
-      case 'page_manager_page_execute':
-      case 'page_manager_node_view':
-      case 'page_manager_contact_site':
-        // Is this a Panels page?
-        $classes_array[] = 'page-panels';
-        break;
+    if ($vars['menu_item']) {
+      switch ($vars['menu_item']['page_callback']) {
+        case 'views_page':
+          // Is this a Views page?
+          $classes_array[] = 'page-views';
+          break;
+        case 'page_manager_page_execute':
+        case 'page_manager_node_view':
+        case 'page_manager_contact_site':
+          // Is this a Panels page?
+          $classes_array[] = 'page-panels';
+          break;
+      }
     }
   }
 

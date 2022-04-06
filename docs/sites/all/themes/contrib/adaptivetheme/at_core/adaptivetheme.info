@@ -373,9 +373,8 @@
 ;----------// Custom CSS
   settings[custom_css] = ''
 
-; Information added by Drupal.org packaging script on 2016-07-13
-version = "7.x-3.4"
+; Information added by Drupal.org packaging script on 2021-11-17
+version = "7.x-3.5"
 core = "7.x"
 project = "adaptivetheme"
-datestamp = "1468404543"
-
+datestamp = "1637173349"

@@ -291,7 +291,7 @@ function adaptivetheme_page_alter(&$page) {
 
   // Theme taxonomy term pages sensibly, remove redundant and potentially empty
   // markup and wrap the node list in section elements with a class for theming.
-  if ($menu_item['tab_root'] == 'taxonomy/term/%') {
+  if ($menu_item && $menu_item['tab_root'] == 'taxonomy/term/%') {
     unset($page['content']['system_main']['term_heading']['#prefix']);
     unset($page['content']['system_main']['term_heading']['#suffix']);
     $page['content']['system_main']['nodes']['#prefix'] = '<section class="nodes">';

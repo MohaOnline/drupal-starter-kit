@@ -476,7 +476,7 @@ function at_load_subtheme_conditional_styles($theme_name) {
 
     // General IE stylesheets from the info file
     if (array_key_exists('ie_stylesheets', $info)) {
-      $ie_style = '';
+      $ie_style = array();
       foreach ($info['ie_stylesheets'] as $media => $stylesheets) {
         // Set default value for media in case the themer forgets, all is an
         // "assumed" value and not printed in the output.
