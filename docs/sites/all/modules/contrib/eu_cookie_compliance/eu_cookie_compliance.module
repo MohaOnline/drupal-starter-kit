@@ -22,6 +22,46 @@ function eu_cookie_compliance_menu() {
     'access arguments' => array('administer EU Cookie Compliance popup'),
     'file' => 'eu_cookie_compliance.admin.inc',
   );
+  $items['admin/config/system/eu-cookie-compliance/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Configure the cookie consent popup.',
+    'weight' => 0,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/system/eu-cookie-compliance/categories'] = array(
+    'title' => 'Categories',
+    'description' => 'Administer cookie categories.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('eu_cookie_compliance_admin_categories_form'),
+    'access arguments' => array('administer EU Cookie Compliance categories'),
+    'file' => 'eu_cookie_compliance.admin.categories.inc',
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/system/eu-cookie-compliance/categories/add'] = array(
+    'title' => 'Add new category',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('eu_cookie_compliance_admin_category_form'),
+    'access arguments' => array('administer EU Cookie Compliance categories'),
+    'file' => 'eu_cookie_compliance.admin.categories.inc',
+  );
+  $items['admin/config/system/eu-cookie-compliance/categories/%/edit'] = array(
+    'title' => 'Edit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('eu_cookie_compliance_admin_category_form', 5),
+    'access arguments' => array('administer EU Cookie Compliance categories'),
+    'file' => 'eu_cookie_compliance.admin.categories.inc',
+  );
+  $items['admin/config/system/eu-cookie-compliance/categories/%/delete'] = array(
+    'title' => 'Delete',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array(
+      'eu_cookie_compliance_admin_category_delete_form',
+      5,
+    ),
+    'access arguments' => array('administer EU Cookie Compliance categories'),
+    'file' => 'eu_cookie_compliance.admin.categories.inc',
+  );
   $items['eu-cookie-compliance/store_consent/%'] = array(
     'title' => 'EU Cookie Compliance store consent',
     'page callback' => 'eu_cookie_compliance_store_consent',
@@ -42,10 +82,18 @@ function eu_cookie_compliance_menu() {
 }
 
 /**
+ * Implements hook_action_info().
+ */
+function eu_cookie_compliance_admin_access() {
+  return user_access('administer EU Cookie Compliance categories') ||
+    user_access('administer EU Cookie Compliance popup');
+}
+
+/**
  * Implements hook_ctools_plugin_directory().
  */
 function eu_cookie_compliance_ctools_plugin_directory($module, $plugin) {
-  if ($module == 'eu_cookie_compliance' && !empty($plugin)) {
+  if ($module === 'eu_cookie_compliance' && !empty($plugin)) {
     return 'plugins/' . $plugin;
   }
 }
@@ -63,7 +111,7 @@ function eu_cookie_compliance_ctools_plugin_type() {
  * Implements hook_page_alter().
  */
 function eu_cookie_compliance_page_alter(&$page) {
-  if (isset($page['#theme']) && $page['#theme'] == 'panels_everywhere_page') {
+  if (isset($page['#theme']) && $page['#theme'] === 'panels_everywhere_page') {
     eu_cookie_compliance_page_build($page);
   }
 }
@@ -133,7 +181,7 @@ function eu_cookie_compliance_page_build(&$page) {
 
     // Set default template (based on earlier version of module).
     if (!isset($popup_settings['info_template'])) {
-      $popup_settings['info_template'] = $method == 'default' ? 'legacy' : 'new';
+      $popup_settings['info_template'] = $method === 'default' ? 'legacy' : 'new';
     }
     // Array storage for caching full client data.
     if (module_exists('domain')) {
@@ -173,7 +221,7 @@ function eu_cookie_compliance_page_build(&$page) {
           .eu-cookie-withdraw-tab { border-color: #' . check_plain($popup_settings['popup_text_hex']) . ';}';
 
         }
-        if ($popup_settings['info_template'] == 'new') {
+        if ($popup_settings['info_template'] === 'new') {
           $data['css'] .= '.eu-cookie-compliance-more-button {color: #' . check_plain($popup_settings['popup_text_hex']) . ' !important;}';
         }
       }
@@ -186,7 +234,7 @@ function eu_cookie_compliance_page_build(&$page) {
         $show_disagree_buttons = FALSE;
       }
 
-      if ($method == 'auto') {
+      if ($method === 'auto') {
         $dnt = isset($_SERVER['HTTP_DNT']) ? $_SERVER['HTTP_DNT'] : NULL;
         if ((int) $dnt === 0 && $dnt !== NULL) {
           $method = 'default';
@@ -257,14 +305,26 @@ function eu_cookie_compliance_page_build(&$page) {
           break;
       }
 
-      $cookie_categories = $popup_settings['cookie_categories'];
-      $fix_first_cookie_category = $popup_settings['fix_first_cookie_category'];
-      $cookie_categories = $method === 'categories' ? _eu_cookie_compliance_extract_category_key_label_description($cookie_categories) : FALSE;
+      if (module_exists('translation') && isset($popup_settings['popup_link_translate']) && $popup_settings['popup_link_translate']) {
+        $node_parts = explode('/', $popup_settings['popup_link']);
+        if (isset($node_parts[1])) {
+          $node = node_load($node_parts[1]);
+          if ($node) {
+            $translations = translation_node_get_translations($node->tnid);
+            if (isset($translations[$language->language])) {
+              $popup_settings['popup_link'] = $node_parts[0] . '/' . $translations[$language->language]->nid;
+            }
+          }
+        }
+      }
 
       $popup_text_info = str_replace(array("\r", "\n"), '', filter_xss_admin($popup_settings['popup_info']['value']));
       $popup_text_agreed = str_replace(array("\r", "\n"), '', filter_xss_admin($popup_settings['popup_agreed']['value']));
       $mobile_popup_text_info = str_replace(array("\r", "\n"), '', !empty($popup_settings['mobile_popup_info']['value']) ? filter_xss_admin($popup_settings['mobile_popup_info']['value']) : '');
       $withdraw_markup = str_replace(array("\r", "\n"), '', !empty($popup_settings['withdraw_message']['value']) ? filter_xss_admin($popup_settings['withdraw_message']['value']) : '');
+      $cookie_categories = variable_get('eu_cookie_compliance_categories', array());
+      $cookie_categories = $method === 'categories' ? $cookie_categories : FALSE;
+
       $html_info = theme($popup_info_template, array(
         'message' => check_markup($popup_text_info, $popup_settings['popup_info']['format'], FALSE),
         'agree_button' => $primary_button_label,
@@ -274,7 +334,6 @@ function eu_cookie_compliance_page_build(&$page) {
         'secondary_button_class' => $secondary_button_class,
         'cookie_categories' => $cookie_categories,
         'save_preferences_button_label' => $save_preferences_button_label,
-        'fix_first_cookie_category' => $fix_first_cookie_category,
         'privacy_settings_tab_label' => $privacy_settings_tab_label,
         'withdraw_button_on_info_popup' => $withdraw_button_on_info_popup,
         'method' => $method,
@@ -288,7 +347,6 @@ function eu_cookie_compliance_page_build(&$page) {
         'secondary_button_class' => $secondary_button_class,
         'cookie_categories' => $cookie_categories,
         'save_preferences_button_label' => $save_preferences_button_label,
-        'fix_first_cookie_category' => $fix_first_cookie_category,
         'privacy_settings_tab_label' => $privacy_settings_tab_label,
         'withdraw_button_on_info_popup' => $withdraw_button_on_info_popup,
         'method' => $method,
@@ -311,10 +369,10 @@ function eu_cookie_compliance_page_build(&$page) {
         $html_agreed = preg_replace('/<!--(.|\s)*?-->/', '', $html_agreed);
         $withdraw_markup = preg_replace('/<!--(.|\s)*?-->/', '', $withdraw_markup);
       }
-      $cookie_categories = $popup_settings['cookie_categories'];
-      $cookie_categories = _eu_cookie_compliance_extract_category_key_label_description($cookie_categories);
+      $cookie_categories = variable_get('eu_cookie_compliance_categories', array());
 
       $data['variables'] = array(
+        'cookie_policy_version' => isset($popup_settings['cookie_policy_version']) ? $popup_settings['cookie_policy_version'] : '1.0.0',
         'popup_enabled' => $popup_settings['popup_enabled'],
         'popup_agreed_enabled' => $popup_settings['popup_agreed_enabled'],
         'popup_hide_agreed' => isset($popup_settings['popup_hide_agreed']) ? $popup_settings['popup_hide_agreed'] : FALSE,
@@ -327,14 +385,14 @@ function eu_cookie_compliance_page_build(&$page) {
         'popup_html_agreed' => empty($html_agreed) ? FALSE : trim($html_agreed),
         'popup_use_bare_css' => empty($popup_settings['use_bare_css']) ? FALSE : $popup_settings['use_bare_css'],
         'popup_height' => ($popup_settings['popup_height'] !== '') ? (int) $popup_settings['popup_height'] : 'auto',
-        'popup_width' => (drupal_substr($popup_settings['popup_width'], -1) == '%') ? $popup_settings['popup_width'] : (int) $popup_settings['popup_width'],
+        'popup_width' => (drupal_substr($popup_settings['popup_width'], -1) === '%') ? $popup_settings['popup_width'] : (int) $popup_settings['popup_width'],
         'popup_delay' => (int) ($popup_settings['popup_delay']),
         'popup_link' => url(token_replace($popup_settings['popup_link'])),
         'popup_link_new_window' => isset($popup_settings['popup_link_new_window']) ? $popup_settings['popup_link_new_window'] : 1,
         'popup_position' => empty($popup_settings['popup_position']) ? NULL : $popup_settings['popup_position'],
         'fixed_top_position' => empty($popup_settings['fixed_top_position']) ? FALSE : $popup_settings['fixed_top_position'],
         'popup_language' => $language->language,
-        'store_consent' => $popup_settings['consent_storage_method'] != 'do_not_store',
+        'store_consent' => $popup_settings['consent_storage_method'] !== 'do_not_store',
         'better_support_for_screen_readers' => isset($popup_settings['better_support_for_screen_readers']) ? $popup_settings['better_support_for_screen_readers'] : 0,
         'reload_page' => isset($popup_settings['reload_page']) ? $popup_settings['reload_page'] : 0,
         'domain' => variable_get('eu_cookie_compliance_domain', ''),
@@ -344,15 +402,19 @@ function eu_cookie_compliance_page_build(&$page) {
         'cookie_session' => empty($popup_settings['cookie_session']) ? FALSE : $popup_settings['cookie_session'],
         'disagree_do_not_show_popup' => isset($popup_settings['disagree_do_not_show_popup']) ? $popup_settings['disagree_do_not_show_popup'] : 0,
         'method' => $method,
-        'whitelisted_cookies' => !empty($popup_settings['whitelisted_cookies']) ? $popup_settings['whitelisted_cookies'] : '',
+        'allowed_cookies' => !empty($popup_settings['allowed_cookies']) ? $popup_settings['allowed_cookies'] : '',
         'withdraw_markup' => $withdraw_markup,
         'withdraw_enabled' => !empty($popup_settings['withdraw_enabled']) ? $popup_settings['withdraw_enabled'] : FALSE,
         'withdraw_button_on_info_popup' => $popup_settings['withdraw_button_on_info_popup'],
         'cookie_categories' => is_array($cookie_categories) ? array_keys($cookie_categories) : FALSE,
+        'cookie_categories_details' => $cookie_categories,
         'enable_save_preferences_button' => $popup_settings['enable_save_preferences_button'],
-        'fix_first_cookie_category' => $popup_settings['fix_first_cookie_category'],
-        'select_all_categories_by_default' => $popup_settings['select_all_categories_by_default'],
         'cookie_name' => !empty($popup_settings['cookie_name']) ? $popup_settings['cookie_name'] : '',
+        'cookie_value_disagreed' => !empty($popup_settings['cookie_value_disagreed']) ? $popup_settings['cookie_value_disagreed'] : '0',
+        'cookie_value_agreed_show_thank_you' => !empty($popup_settings['cookie_value_agreed_show_thank_you']) ? $popup_settings['cookie_value_agreed_show_thank_you'] : '1',
+        'cookie_value_agreed' => !empty($popup_settings['cookie_value_agreed']) ? $popup_settings['cookie_value_agreed'] : '2',
+        'containing_element' => !empty($popup_settings['containing_element']) ? $popup_settings['containing_element'] : 'body',
+        'automatic_cookies_removal' => !empty($popup_settings['automatic_cookies_removal']) ? $popup_settings['automatic_cookies_removal'] : '',
       );
       // For some reason, we're getting the wrong language when editing the
       // localized form, so we shouldn't cache.
@@ -361,8 +423,13 @@ function eu_cookie_compliance_page_build(&$page) {
       }
     }
     if ($data['css']) {
-      drupal_add_css($data['css'], array(
-        'type' => 'inline',
+      $cid = md5($data['css']);
+      ctools_include('css');
+      $filename = ctools_css_retrieve($cid);
+      if (empty($filename)) {
+        $filename = ctools_css_store($cid, $data['css'], FALSE);
+      }
+      drupal_add_css($filename, array(
         'weight' => 1000,
       ));
     }
@@ -378,20 +445,20 @@ function eu_cookie_compliance_page_build(&$page) {
       $disabled_javascripts = array_filter($disabled_javascripts, 'strlen');
 
       foreach ($disabled_javascripts as $script) {
-        $parts = explode('%3A', $script);
+        $parts = explode(':', $script);
         $category = NULL;
-        if (count($parts) > 1) {
+        if (count($parts) > 1 && $popup_settings['method'] === 'categories') {
           $category = array_shift($parts);
-          $script = implode(':', $parts);
         }
+        $script = implode(':', $parts);
 
         // Split the string if a | is present.
         // The second parameter (after the |) will be used to trigger a script
         // attach.
         $attach_name = '';
-        if (strpos($script, '%7C') !== FALSE) {
+        if (strpos($script, '|') !== FALSE) {
           // Swallow a notice in case there is no behavior name.
-          @list($script, $attach_name) = explode('%7C', $script);
+          @list($script, $attach_name) = explode('|', $script);
         }
 
         _eu_cookie_compliance_convert_relative_uri($script);
@@ -417,14 +484,23 @@ function eu_cookie_compliance_page_build(&$page) {
     }
 
     if ($load_disabled_scripts) {
-      drupal_add_js('function euCookieComplianceLoadScripts(category) {' . $load_disabled_scripts . '}', array('type' => 'inline', 'scope' => $script_scope));
+      drupal_add_js('window.euCookieComplianceLoadScripts = function(category) {' . $load_disabled_scripts . '}', array(
+        'type' => 'inline',
+        'scope' => $script_scope,
+      ));
     }
 
     // Add the cookie name inline, since Drupal.settings will not be available
     // if the script is loaded in the header.
-    drupal_add_js('var eu_cookie_compliance_cookie_name = ' . drupal_json_encode(!empty($popup_settings['cookie_name']) ? $popup_settings['cookie_name'] : '') . ';', array('type' => 'inline', 'scope' => $script_scope));
+    drupal_add_js('window.eu_cookie_compliance_cookie_name = ' . drupal_json_encode(!empty($popup_settings['cookie_name']) ? $popup_settings['cookie_name'] : '') . ';', array(
+      'type' => 'inline',
+      'scope' => $script_scope,
+    ));
 
-    drupal_add_js(array('eu_cookie_compliance' => $data['variables']), array('type' => 'setting', 'scope' => $script_scope));
+    drupal_add_js(array('eu_cookie_compliance' => $data['variables']), array(
+      'type' => 'setting',
+      'scope' => $script_scope,
+    ));
     if (!isset($popup_settings['use_bare_css']) || $popup_settings['use_bare_css'] == 0) {
       drupal_add_css(drupal_get_path('module', 'eu_cookie_compliance') . '/css/eu_cookie_compliance.css');
     }
@@ -437,6 +513,7 @@ function eu_cookie_compliance_page_build(&$page) {
       'scope' => $script_scope,
       'group' => JS_DEFAULT,
       'weight' => 0,
+      'defer' => TRUE,
     ));
   }
 }
@@ -448,6 +525,9 @@ function eu_cookie_compliance_permission() {
   return array(
     'administer EU Cookie Compliance popup' => array(
       'title' => 'Administer EU Cookie Compliance banner',
+    ),
+    'administer EU Cookie Compliance categories' => array(
+      'title' => 'Administer EU Cookie Compliance categories',
     ),
     'display EU Cookie Compliance popup' => array(
       'title' => 'Display EU Cookie Compliance banner',
@@ -470,9 +550,7 @@ function eu_cookie_compliance_theme() {
         'secondary_button_label' => NULL,
         'primary_button_class' => NULL,
         'secondary_button_class' => NULL,
-        'cookie_categories' => NULL,
         'save_preferences_button_label' => NULL,
-        'fix_first_cookie_category' => NULL,
         'privacy_settings_tab_label' => NULL,
         'withdraw_button_on_info_popup' => FALSE,
         'method' => 'default',
@@ -512,6 +590,9 @@ function eu_cookie_compliance_theme() {
       ),
       'path' => $path,
     ),
+    'eu_cookie_compliance_admin_categories_form' => array(
+      'render element' => 'form',
+    ),
   );
 }
 
@@ -533,7 +614,7 @@ function _eu_cookie_compliance_extract_category_key_label_description($string) {
   $list = array_map('trim', $list);
   $list = array_filter($list, 'strlen');
 
-  foreach ($list as $position => $text) {
+  foreach ($list as $text) {
     $parts = explode('|', $text);
     $num_parts = count($parts);
     if ($num_parts >= 3) {
@@ -569,17 +650,16 @@ function eu_cookie_compliance_get_settings($setting = 'all') {
   $popup_settings = variable_get('eu_cookie_compliance', array());
 
   // Ensure a default value exists for each setting.
-  $popup_settings += array(
+  $popup_settings_dafaults = array(
     'consent_storage_method' => 'do_not_store',
-    'cookie_categories' => NULL,
     'enable_save_preferences_button' => NULL,
-    'fix_first_cookie_category' => NULL,
-    'select_all_categories_by_default' => NULL,
     'show_disagree_button' => TRUE,
     'withdraw_button_on_info_popup' => NULL,
   );
 
-  if ($setting == 'all') {
+  $popup_settings = array_merge($popup_settings_dafaults, $popup_settings);
+
+  if ($setting === 'all') {
     return $popup_settings;
   }
 
@@ -683,29 +763,106 @@ function eu_cookie_compliance_clear_caches() {
  * Implements hook_js_alter().
  */
 function eu_cookie_compliance_js_alter(&$javascript) {
+  global $user;
+
+  // Determine which array key holds the EUCC disabled script loader.
+  $js_disabled_script_position = _eu_cookie_compliance_get_script_key($javascript);
+
   $popup_settings = eu_cookie_compliance_get_settings();
   if (!empty($popup_settings['disabled_javascripts'])) {
     $disabled_javascripts = $popup_settings['disabled_javascripts'];
     $disabled_javascripts = _eu_cookie_compliance_explode_multiple_lines($disabled_javascripts, FALSE);
 
-    foreach ($disabled_javascripts as $script) {
-      // Remove 'category:' if present.
-      $parts = explode(':', $script);
-      $script = end($parts);
-      // Parse the string and drop the parameter that is a behavior name.
-      @list($script, $attach_name) = explode('|', $script);
-      _eu_cookie_compliance_convert_relative_uri($script);
+    $exclude_paths = explode(PHP_EOL, $popup_settings['exclude_paths']);
+    $current_path = drupal_get_path_alias();
 
-      unset($javascript[$script]);
+    $path_is_excluded = FALSE;
+    foreach ($exclude_paths as $path) {
+      $path_clean = trim($path);
+      if (drupal_match_path($current_path, $path_clean)) {
+        $path_is_excluded = TRUE;
+      }
+    }
+
+    if (!empty($popup_settings['exclude_admin_pages']) && path_is_admin($current_path)) {
+      $path_is_excluded = TRUE;
+    }
+
+    if ((int) $user->uid === 1 && isset($popup_settings['exclude_uid_1']) && $popup_settings['exclude_uid_1']) {
+      $path_is_excluded = TRUE;
+    }
+
+    if ($path_is_excluded === FALSE) {
+      foreach ($disabled_javascripts as $script) {
+        // https://www.drupal.org/project/eu_cookie_compliance/issues/3205742
+        // Only add the script if it's actually present in the page scripts.
+        if (array_key_exists($script, $javascript)) {
+          // Remove 'category:' if present.
+          $parts = explode(':', $script);
+          // Deal with absolute links with category.
+          if (!empty($parts[2]) && strpos($parts[2], '//') === 0) {
+            array_shift($parts);
+            $script = implode(':', $parts);
+          }
+          // Deal with relative links.
+          else {
+            if (!empty($parts[1]) && strpos($parts[1], '//') !== 0) {
+              $script = end($parts);
+            }
+          }
+          // Parse the string and drop the parameter that is a behavior name.
+          if (strpos($script, '|') !== FALSE) {
+            @list($script) = explode('|', $script);
+          }
+
+          unset($javascript[$script]);
+        }
+        else {
+          _eu_cookie_compliance_remove_script_from_loader($javascript, $script, $js_disabled_script_position);
+        }
+      }
     }
   }
+}
+
+/**
+ * Find the array key that holds the disabled script loader.
+ *
+ * @param array $javascript
+ *   The javascripts.
+ *
+ * @return int|bool
+ *   The array key where the script loader lives, FALSE if not found.
+ */
+function _eu_cookie_compliance_get_script_key(array $javascript) {
+  foreach ($javascript as $key => $script) {
+    if (!empty($script['data']) && !is_array($script['data']) && strpos($script['data'], 'window.euCookieComplianceLoadScripts') !== FALSE) {
+      return $key;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Modifies the script loader to remove a script.
+ *
+ * @param array $javascript
+ *   The javascript array.
+ * @param string $script
+ *   The script to remove.
+ * @param int $js_disabled_script_position
+ *   The position of our script loader.
+ */
+function _eu_cookie_compliance_remove_script_from_loader(array &$javascript, $script, $js_disabled_script_position) {
+  $string_to_find = 'var scriptTag = document.createElement("script");scriptTag.src = "' . str_replace('/', '\\/', $GLOBALS['base_url']) . '\/' . str_replace('/', '\\/', $script) . '";document.body.appendChild(scriptTag);';
+  $javascript[$js_disabled_script_position]['data'] = str_replace($string_to_find, '', $javascript[$js_disabled_script_position]['data']);
 }
 
 /**
  * Implements hook_library_alter().
  */
 function eu_cookie_compliance_library_alter(&$libraries, $module) {
-  if ($module != 'system') {
+  if ($module !== 'system') {
     return;
   }
   $libraries['jquery.cookie']['js']['misc/jquery.cookie.js']['data'] = drupal_get_path('module', 'eu_cookie_compliance') . '/js/jquery.cookie-1.4.1.min.js';
@@ -739,69 +896,6 @@ function _eu_cookie_compliance_explode_multiple_lines($text, $convert = TRUE) {
 }
 
 /**
- * Attempt to find the cookie/privacy policy by searching for common titles.
- *
- * @return bool|string
- *   URL to the node if found, otherwise FALSE.
- */
-function _eu_cookie_compliance_find_privacy_policy() {
-  $database_type = $GLOBALS['databases']['default']['default']['driver'];
-
-  if ($database_type === 'sqlsrv') {
-    $query = db_query(
-      "select nid from {node} where
-      title LIKE 'Privacy%' OR
-      title LIKE 'Privacy policy%' OR
-      title LIKE 'Privacy Policy%' OR
-      title LIKE 'Cookie policy%' OR
-      title LIKE 'Cookie Policy%' OR
-      title LIKE 'Terms of use%' OR
-      title LIKE 'Terms of Use%' OR
-      title LIKE 'Terms of service%' OR
-      title LIKE 'Terms of Service%' OR
-      title LIKE 'Terms and conditions%' OR
-      title LIKE 'Terms and Conditions%'
-      "
-    );
-    $result = $query->fetchAllAssoc('nid');
-
-    if (!empty($result)) {
-      return ('/node/' . reset(array_keys($result)));
-    }
-  }
-  else {
-    // Select operator based on the database type.
-    switch ($database_type) {
-      case 'pgsql':
-        $op = '~*';
-        break;
-
-      case 'sqlite':
-        $op = 'REGEXP';
-        // The regexp function is not defined in SQLite for Drupal 7.
-        Database::getConnection('default')->sqliteCreateFunction('REGEXP', '_eu_cookie_compliance_sqlite_regex_query_builder', 2);
-        break;
-
-      default:
-        $op = 'RLIKE';
-    }
-
-    $pattern = 'privacy|privacy +policy|cookie +policy|terms +of +use|terms +of +service|terms +and +conditions';
-
-    $query = new EntityFieldQuery();
-    $query->entityCondition('entity_type', 'node')
-      ->propertyCondition('title', $pattern, $op);
-
-    $result = $query->execute();
-    if (isset($result['node'])) {
-      $nodes = array_keys($result['node']);
-      return ('node/' . array_shift($nodes));
-    }
-  }
-  return FALSE;
-}
-
-/**
  * Callback function for SQLite regular expression query.
  *
  * @param string $pattern
@@ -825,20 +919,15 @@ function _eu_cookie_compliance_sqlite_regex_query_builder($pattern, $data) {
 function _eu_cookie_compliance_get_current_policy_node_revision() {
   $cookie_policy_path = eu_cookie_compliance_get_settings('popup_link');
   $drupal_path = drupal_get_normal_path($cookie_policy_path);
-  if (substr($drupal_path, 0, 5) == 'node/') {
+  if (substr($drupal_path, 0, 5) === 'node/') {
     $drupal_path = explode('/', $drupal_path);
     $cookie_policy_node_id = $drupal_path[1];
     $cookie_policy_node = node_load($cookie_policy_node_id);
     if (!empty($cookie_policy_node)) {
       return $cookie_policy_node->vid;
     }
-    else {
-      return FALSE;
-    }
   }
-  else {
-    return FALSE;
-  }
+  return FALSE;
 }
 
 /**
@@ -852,17 +941,23 @@ function eu_cookie_compliance_store_consent($type) {
 
   $type = check_plain($type);
   $consent_storage_method = eu_cookie_compliance_get_settings('consent_storage_method');
-  if ($consent_storage_method == 'do_not_store') {
+  if ($consent_storage_method === 'do_not_store' || $consent_storage_method === '') {
     drupal_json_output(NULL);
     drupal_exit();
   }
 
   // Get plugin.
   $consent_storage_plugin = ctools_get_plugins('eu_cookie_compliance', 'consent_storage', $consent_storage_method);
-  $consent_storage_function = $consent_storage_plugin['consent_storage_callback'];
-  $result = $consent_storage_function($type);
+  if (!empty($consent_storage_plugin['consent_storage_callback'])) {
+    $consent_storage_function = $consent_storage_plugin['consent_storage_callback'];
+    if ($consent_storage_function !== '') {
+      $result = $consent_storage_function($type);
+      drupal_json_output($result);
+      drupal_exit();
+    }
+  }
 
-  drupal_json_output($result);
+  drupal_json_output(NULL);
   drupal_exit();
 }
 
@@ -873,9 +968,6 @@ function eu_cookie_compliance_store_consent($type) {
  *
  * @param string $element
  *   Url to transform.
- *
- * @return mixed
- *   Paths converted.
  */
 function _eu_cookie_compliance_convert_relative_uri(&$element) {
   $element = preg_replace('/^\//', '', file_create_url($element));
@@ -888,5 +980,52 @@ function eu_cookie_compliance_views_api() {
   return array(
     'api' => 3,
     'path' => drupal_get_path('module', 'eu_cookie_compliance') . '/includes/views',
+  );
+}
+
+/**
+ * Implements hook_variable_settings_form_alter().
+ */
+function eu_cookie_compliance_variable_settings_form_alter(&$form, &$form_state, $form_id) {
+  // If both these submit callback are present, make sure
+  // variable_realm_variable_settings_form_submit is right before
+  // variable_settings_form_submit, so the order of execution
+  // is as expected. If our custom form handler comes after
+  // variable_settings_form_submit that stays, if it comes before
+  // it will also come before variable_realm_variable_settings_form_submit.
+  if (($index_realm = array_search('variable_realm_variable_settings_form_submit', $form['#submit'])) !== FALSE) {
+    if (($index_var = array_search('variable_settings_form_submit', $form['#submit'])) !== FALSE) {
+      $element = 'variable_realm_variable_settings_form_submit';
+      unset($form['#submit'][$index_realm]);
+      $form['#submit'] = array_values($form['#submit']);
+      $index = ($index_var - 1) < 0 ? 0 : $index_var - 1;
+      array_splice($form['#submit'], $index, 0, $element);
+    }
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function eu_cookie_compliance_module_implements_alter(&$implementations, $hook) {
+  if ($hook === 'variable_settings_form_alter') {
+    // Make sure we run *after* variable_realm_variable_settings_form_alter.
+    $group = $implementations['eu_cookie_compliance'];
+    unset($implementations['eu_cookie_compliance']);
+    $implementations['eu_cookie_compliance'] = $group;
+  }
+}
+
+/**
+ * Returns an associative array of keys and labels for use in #options.
+ *
+ * @return array
+ *   The options list for cookie default checkbox states.
+ */
+function _eu_cookie_compliance_get_category_checkbox_default_state_options_list() {
+  return array(
+    'unchecked' => t('Unchecked by default'),
+    'checked' => t('Checked by default'),
+    'required' => t('Checked and disabled (user cannot clear the checkbox)'),
   );
 }

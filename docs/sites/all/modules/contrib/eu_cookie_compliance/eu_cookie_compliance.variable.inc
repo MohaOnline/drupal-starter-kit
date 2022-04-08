@@ -17,6 +17,14 @@ function eu_cookie_compliance_variable_info($options) {
     'localize' => TRUE,
     'multidomain' => TRUE,
   );
+  $variable['eu_cookie_compliance_categories'] = array(
+    'title' => t('EU Cookie Compliance categories'),
+    'description' => t('Settings for the EU Cookie Compliance categories.'),
+    'type' => 'array',
+    'access' => 'administer EU Cookie Compliance popup',
+    'localize' => TRUE,
+    'multidomain' => TRUE,
+  );
 
   return $variable;
 }

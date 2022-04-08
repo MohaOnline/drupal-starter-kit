@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Template file for a banner informing a user that he has agreed to cookies.
+ * Template file for a banner informing a user that they has agreed to cookies.
  *
  * When overriding this template it is important to note that jQuery will use
  * the following classes to assign actions to buttons:

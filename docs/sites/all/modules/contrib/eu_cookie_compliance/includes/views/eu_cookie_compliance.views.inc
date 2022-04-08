@@ -1,11 +1,11 @@
 <?php
 
-define('EU_COOKIE_COMPLIANCE_BASE_TABLE', 'eu_cookie_compliance_basic_consent');
-
 /**
  * @file
  * Provides views data for eu_cookie_compliance.module.
  */
+
+define('EU_COOKIE_COMPLIANCE_BASE_TABLE', 'eu_cookie_compliance_basic_consent');
 
 /**
  * Implements hook_views_data().
