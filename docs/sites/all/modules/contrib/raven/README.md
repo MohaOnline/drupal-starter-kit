@@ -46,7 +46,7 @@ settings at admin/config/development/logging.
 
 1. Download and install [Libraries API 2](http://drupal.org/project/libraries),
    [X Autoload 5](http://drupal.org/project/xautoload) and Raven modules.
-2. Then download version 1.x (not 2.x) of the
+2. Then download version 1.x (which is an older unsupported version) of the
    [Sentry PHP library](https://github.com/getsentry/sentry-php/releases),
    unpack and rename the Sentry library directory to `sentry-php` and place it
    inside the `sites/all/libraries` directory.
@@ -56,9 +56,10 @@ settings at admin/config/development/logging.
 
 ## Dependencies
 
-* The [Sentry PHP library](https://github.com/getsentry/sentry-php) version 1.x
-(not 2.x) installed by composer or in `sites/all/libraries`. In the former case,
-you will also need a module to autoload your composer dependencies, such as
+The [Sentry PHP library](https://github.com/getsentry/sentry-php) version 1.x
+(which is an older unsupported version) installed by composer or in
+`sites/all/libraries`. In the former case, you will also need a module to
+autoload your composer dependencies, such as
 [Composer Autoloader](https://www.drupal.org/project/composer_autoloader). In
 the latter case, [Libraries API 2](http://drupal.org/project/libraries) and
 [X Autoload 5](http://drupal.org/project/xautoload) modules are also required.

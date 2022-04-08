@@ -12,5 +12,5 @@
     "url": "https://git.drupal.org/project/raven.git"
   },
   "author": "mark burdett <mfb@eff.org>",
-  "license": "GPL-3.0"
+  "license": "GPL-2.0-or-later"
 }

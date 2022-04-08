@@ -108,12 +108,12 @@ function raven_settings_form(array &$form, array &$form_state) {
     '#options' => $watchdog_levels,
   );
 
-  $form['raven']['php']['raven_ignored_types'] = [
+  $form['raven']['php']['raven_ignored_types'] = array(
     '#type' => 'textarea',
     '#title' => t('Ignored types'),
     '#description' => t('A list of log event types for which messages should not be sent to Sentry (one type per line). Commonly-configured types include <em>access denied</em> for 403 errors and <em>page not found</em> for 404 errors.'),
     '#default_value' => variable_get('raven_ignored_types', ''),
-  ];
+  );
 
   $form['raven']['php']['raven_message_limit'] = array(
     '#type' => 'textfield',

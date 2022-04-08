@@ -46,7 +46,10 @@ function drush_raven_capture_message($message = 'Test message from Drush.') {
   }
   $level = drush_get_option('level', 'info');
   $logger = drush_get_option('logger', 'drush');
-  $id = $client->captureMessage($message, array(), array('level' => $level, 'logger' => $logger));
+  $id = $client->captureMessage($message, array(), array(
+    'level' => $level,
+    'logger' => $logger,
+  ));
   if (!$id) {
     return drush_set_error('RAVEN_SEND', dt('Send failed.'));
   }

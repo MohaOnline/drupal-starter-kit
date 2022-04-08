@@ -43,12 +43,6 @@ function raven_libraries_info() {
       'xautoload' => function ($adapter) {
         $adapter->composerJson('composer.json');
       },
-      'path' => 'lib/Raven',
-      'files' => array(
-        'php' => array(
-          'Client.php',
-        ),
-      ),
     );
   }
   return $libraries;
@@ -242,12 +236,15 @@ function raven_watchdog($log_entry) {
       array_shift($stack);
     }
     if (empty($stack[0]['class']) && isset($stack[0]['function']) && ($stack[0]['function'] == 'watchdog_exception' || $stack[0]['function'] == '_drupal_exception_handler')) {
-      $arg = ['watchdog_exception' => 1, '_drupal_exception_handler' => 0];
+      $arg = array('watchdog_exception' => 1, '_drupal_exception_handler' => 0);
       // Use the exception backtrace for (usually) easier debugging.
       $exception = $stack[0]['args'][$arg[$stack[0]['function']]];
       $stack = $exception->getTrace();
       // Copy logic from _drupal_decode_exception().
-      array_unshift($stack, array('line' => $exception->getLine(), 'file' => $exception->getFile()));
+      array_unshift($stack, array(
+        'line' => $exception->getLine(),
+        'file' => $exception->getFile(),
+      ));
       if ($exception instanceof PDOException) {
         $db_functions = array('db_query', 'db_query_range');
         while (!empty($stack[1]) && ($caller = $stack[1]) &&
@@ -269,16 +266,16 @@ function raven_watchdog($log_entry) {
   }
 
   // Record a breadcrumb.
-  $breadcrumb = [
+  $breadcrumb = array(
     'log_entry' => $log_entry,
     'process' => TRUE,
-    'breadcrumb' => [
+    'breadcrumb' => array(
       'category' => $log_entry['type'],
       'message' => $message,
       'level' => $data['level'],
-    ],
-  ];
-  foreach (['%line', '%file', '%type', '%function'] as $key) {
+    ),
+  );
+  foreach (array('%line', '%file', '%type', '%function') as $key) {
     if (isset($log_entry['variables'][$key])) {
       $breadcrumb['breadcrumb']['data'][substr($key, 1)] = $log_entry['variables'][$key];
     }
@@ -383,7 +380,10 @@ function raven_get_client() {
     }
 
     // Bind user context to prevent session ID from being sent as user ID.
-    $client->user_context(['id' => $user ? $user->uid : 0, 'ip_address' => ip_address()]);
+    $client->user_context(array(
+      'id' => $user ? $user->uid : 0,
+      'ip_address' => ip_address(),
+    ));
 
     // Register fatal error handler.
     if (variable_get('raven_fatal_error_handler', TRUE)) {
@@ -421,13 +421,6 @@ function raven_libraries_load() {
     drupal_set_message(t('Sentry PHP library cannot be loaded. Check status report for more details.'), 'warning', FALSE);
   }
   return (bool) $library['loaded'];
-}
-
-/**
- * This function is provided for backwards compatibility only.
- */
-function _raven_get_client() {
-  return raven_get_client();
 }
 
 /**

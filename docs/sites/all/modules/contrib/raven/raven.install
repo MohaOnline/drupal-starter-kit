@@ -74,7 +74,7 @@ function raven_requirements($phase) {
 
   switch ($phase) {
     case 'runtime':
-      $raven = [];
+      $raven = array();
       if (class_exists('Raven_Client')) {
         $raven['loaded'] = TRUE;
         $raven['version'] = Raven_Client::VERSION;

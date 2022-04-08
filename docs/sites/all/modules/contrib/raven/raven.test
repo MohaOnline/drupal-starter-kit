@@ -40,12 +40,14 @@ class RavenTestCase extends DrupalWebTestCase {
    */
   public function setUp() {
     $modules = array(
-      function_exists('composer_autoloader') ? 'composer_autoloader' : 'composer_manager',
       'libraries',
       'xautoload',
       'raven',
       'raven_test',
     );
+    if (file_exists(DRUPAL_ROOT . '/../vendor/autoload.php') || file_exists(DRUPAL_ROOT . '/vendor/autoload.php')) {
+      $modules[] = 'composer_autoloader';
+    }
     parent::setUp($modules);
     $this->ensureAutoloader();
     $this->adminUser = $this->drupalCreateUser(array(
@@ -58,8 +60,6 @@ class RavenTestCase extends DrupalWebTestCase {
 
   /**
    * Ensures that the Composer autoloader is set up properly.
-   *
-   * Must be run after the composer_manager module is enabled.
    */
   protected function ensureAutoloader() {
     // Test to see if one of the classes that the autoloader should know
@@ -67,8 +67,7 @@ class RavenTestCase extends DrupalWebTestCase {
     if (!class_exists('Raven_Client')) {
       // This most likely means that we are running on DrupalCI, so set
       // up for that.
-      variable_set('composer_manager_vendor_dir', 'vendor');
-      composer_manager_register_autoloader();
+      variable_set('composer_autoloader', DRUPAL_ROOT . '/vendor/autoload.php');
     }
   }
 
