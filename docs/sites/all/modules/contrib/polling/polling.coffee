@@ -62,6 +62,7 @@ class EndpointRegistry
 
   start: ->
     for url, endpoint of @registry
+      endpoint.poll()
       endpoint.scheduleNextPoll()
     return
 
