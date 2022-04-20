@@ -573,10 +573,21 @@ function tripal_menu() {
 
   // User file renew.
   $items['user/%/files/%/renew'] = [
-    'title' => 'Renew File',
+    'title' => 'Renew File Expiration',
     'description' => "Renew a user's file",
     'page callback' => 'tripal_renew_file',
     'page arguments' => [3],
+    'access callback' => 'tripal_access_user_files',
+    'access arguments' => ['renew', 1, 3],
+    'type' => MENU_CALLBACK,
+    'file' => 'includes/tripal.user.inc',
+    'file path' => drupal_get_path('module', 'tripal'),
+  ];
+  $items['user/%/files/%/permanent'] = [
+    'title' => 'Make File Permanent',
+    'description' => "Removes the expiration date of a file. It will never be removed.",
+    'page callback' => 'tripal_set_file_permanent',
+    'page arguments' => [3, TRUE],
     'access callback' => 'tripal_access_user_files',
     'access arguments' => ['renew', 1, 3],
     'type' => MENU_CALLBACK,
@@ -736,6 +747,12 @@ function tripal_permission() {
       'title' => t('Upload Files'),
       'description' => t('Allows the user to upload files using Tripal\'s HTML5 loader.'),
     ),
+    'make files permanent' => array(
+      'title' => t('Make Files Permanent'),
+      'description' => t('Allows the user to make files they have access to ' .
+         'permanent. Files that are permanent will not expire and will not ' .
+         'be cleaned up.'),
+    ),
     'view dev helps' => array(
       'title' => t('View Developer Hints'),
       'description' => t('Tripal will provide blue shaded boxes that provide
@@ -812,8 +829,13 @@ function tripal_theme($existing, $type, $theme, $path) {
     'tripal_add_list' => array(
       'variables' => array('content' => NULL),
     ),
-    // Themeing for all fields.
+    // Theming for all fields.
     'tripal_field_default' => array(
+      'render element' => 'element',
+      'file' => 'includes/tripal.fields.inc',
+    ),
+    // Theming for all field settings forms.
+    'tripal_field_settings_default' => array(
       'render element' => 'element',
       'file' => 'includes/tripal.fields.inc',
     ),
@@ -1560,7 +1582,7 @@ function tripal_html5_file_validate($element, &$form_state) {
 /**
  * Implements hook_value() for the html5_file form element.
  */
-function tripal_html5_file_value($element, $input = FALSE, &$form_state) {
+function tripal_html5_file_value($element, $input = FALSE, $form_state = NULL) {
 
   if ($input) {
     if (is_array($input)) {
@@ -1620,4 +1642,48 @@ function tripal_field_group_table_rows_alter(&$element, &$children) {
       }
     }
   }
+}
+
+/**
+ * Implements hook_job_describe_args().
+ *
+ * @ingroup tripal
+ */
+function tripal_job_describe_args($callback, $args) {
+
+  if ($callback == 'tripal_run_importer') {
+
+    // Get the importer arguments.
+    $importer = TripalImporter::byID($args[0]);
+    $args = $importer->getArguments();
+    $ret = $args['run_args'];
+    $ret['file'] = $args['file']['file_path'];
+
+    // Remove form elements from the TripalImporter form.
+    unset($ret['form_id']);
+    unset($ret['form_token']);
+    unset($ret['form_build_id']);
+    unset($ret['button']);
+    unset($ret['op']);
+    unset($ret['html5_file_submit']);
+    unset($ret['html5_file_table_key']);
+    unset($ret['importer_class']);
+    unset($ret['file_upload_existing']);
+    unset($ret['file_upload']);
+    unset($ret['file_local']);
+    unset($ret['file_remote']);
+    return $ret;
+  }
+  return $args;
+}
+
+/**
+ * Returns the current version of Tripal, according to the tripal.info file
+ *
+ * @return string
+ *   The version string of Tripal. Ex. 7.x-3.1
+ */
+function tripal_version() {
+  $version = system_get_info('module', 'tripal');
+  return $version['version'];
 }

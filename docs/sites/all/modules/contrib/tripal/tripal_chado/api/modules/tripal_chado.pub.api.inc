@@ -105,7 +105,7 @@ function chado_get_publication($identifiers, $options = []) {
     }
     else {
       tripal_report_error('tripal_pub_api', TRIPAL_ERROR,
-        "chado_get_publication: The dbxref identifier is not correctly formatted.",
+        "chado_get_publication: The dbxref identifier is not correctly formatted. Identifiers passed: %identifier.",
         ['%identifier' => print_r($identifiers, TRUE)]
       );
     }
@@ -252,7 +252,7 @@ function chado_publication_exists($pub_details) {
     $series_name = substr($pub_details['Conference Name'], 0, 255);
   }
 
-  // Make sure the publication is unique using the prefereed import
+  // Make sure the publication is unique using the preferred import
   // duplication check.
   $import_dups_check = variable_get('tripal_pub_import_duplicate_check', 'title_year_media');
   $pubs = [];
@@ -315,7 +315,7 @@ function chado_autocomplete_pub($string = '') {
   ";
   $pubs = chado_query($sql, [':str' => $string . '%']);
   while ($pub = $pubs->fetchObject()) {
-    $val = $pub->title . " [id:" . $pub->pub_id . "]";
+    $val = $pub->title . " [id: " . $pub->pub_id . "]";
     $items[$val] = $pub->title;
   }
 
@@ -362,7 +362,7 @@ function chado_import_pub_by_dbxref($pub_dbxref, $do_contact = FALSE,
   // the terminal
   $message_type = 'pub_import';
   $message_opts = [
-    'watchdog' == FALSE,
+    'watchdog' => FALSE,
     'print' => TRUE,
   ];
 
@@ -498,7 +498,7 @@ function chado_execute_pub_importer($import_id, $publish = TRUE,
   // the terminal
   $message_type = 'pub_import';
   $message_opts = [
-    'watchdog' == FALSE,
+    'watchdog' => FALSE,
     'job' => $job,
     'print' => TRUE,
   ];
@@ -571,8 +571,13 @@ function chado_execute_pub_importer($import_id, $publish = TRUE,
     return FALSE;
   }
 
+  // Summary of importer results for each action
+  $message = 'Done. Publication importer summary:';
+  foreach ($report as $action => $pubs) {
+    $message .= ' ' . $action . '=' . count($pubs);
+  }
   tripal_report_error($message_type, TRIPAL_INFO,
-    "Done.", [], $message_opts);
+    $message, [], $message_opts);
 
   return $report;
 }
@@ -600,16 +605,18 @@ function _chado_execute_pub_importer_publish($publish, $job, $message_type, $mes
       'vocabulary' => 'TPUB',
       'accession' => '0000002',
     ]);
-    $bundle = tripal_load_bundle_entity(['term_id' => $bundle_term->id]);
-    if ($bundle) {
-      tripal_report_error($message_type, TRIPAL_INFO,
-        "Publishing publications with Drupal...", [], $message_opts);
-      chado_publish_records(['bundle_name' => $bundle->name], $job);
+    if ($bundle_term) {
+      $bundle = tripal_load_bundle_entity(['term_id' => $bundle_term->id]);
+      if ($bundle) {
+        tripal_report_error($message_type, TRIPAL_INFO,
+          "Publishing publications with Drupal...", [], $message_opts);
+        chado_publish_records(['bundle_name' => $bundle->name], $job);
+      }
+      // Note: we won't publish contacts as Tripal v2 did because there is
+      // no consisten way to do that. Each site my use a different term for
+      // different contact content types (e.g. all as one 'Contact' type or
+      // specific such as 'Person', 'Organization', etc.).
     }
-    // Note: we won't publish contacts as Tripal v2 did because there is
-    // no consisten way to do that. Each site my use a different term for
-    // different contact content types (e.g. all as one 'Contact' type or
-    // specific such as 'Person', 'Organization', etc.).
   }
 
   // For backwords compatibility with legacy module do a sync.
@@ -664,7 +671,7 @@ function chado_reimport_publications($do_contact = FALSE, $dbxref = NULL,
   // the terminal
   $message_type = 'pub_import';
   $message_opts = [
-    'watchdog' == FALSE,
+    'watchdog' => FALSE,
     'print' => TRUE,
   ];
 
@@ -1170,6 +1177,47 @@ function chado_pub_create_citation($pub) {
 }
 
 /**
+ * Retrieves an array with all database cross references
+ *
+ * Implemented as SQL for performance reasons because chado_expand_var
+ * can take too long as it loads more information than needed
+ *
+ * @param $pub_id
+ *   A pub_id from the 'chado.pub' table
+ *
+ * @return
+ *   An array of records with the following keys:  'accession', 'version',
+ *   'description', 'name', 'url', 'urlprefix'.
+ *   These are the column names from the 'dbxref' and 'db' tables
+ *
+ * @ingroup tripal_pub_api
+ */
+function chado_get_pub_dbxrefs($pub_id) {
+  $fkey = 'pub_id';  // Should this be looked up in the schema?
+  $options = ['return_array' => 1];
+  $sql = "SELECT REF.accession, REF.version, REF.description, DB.name, DB.url, DB.urlprefix "
+       . "FROM {pub_dbxref} LINK "
+       . "INNER JOIN {dbxref} REF on LINK.dbxref_id = REF.dbxref_id "
+       . "INNER JOIN {db} DB on REF.db_id = DB.db_id "
+       . "WHERE LINK.$fkey = :pub_id";
+  $args = [':pub_id' => $pub_id];
+  $records = chado_query($sql, $args);
+
+  $results = [];
+  $delta = 0;
+  while($record = $records->fetchObject()) {
+    $results[$delta]['accession'] = $record->accession;
+    $results[$delta]['version'] = $record->version;
+    $results[$delta]['description'] = $record->description;
+    $results[$delta]['name'] = $record->name;
+    $results[$delta]['url'] = $record->url;
+    $results[$delta]['urlprefix'] = $record->urlprefix;
+    $delta++;
+  }
+  return $results;
+}
+
+/**
  * Retrieves the minimal information to uniquely describe any publication.
  *
  * The returned array is an associative array where the keys are
@@ -1238,17 +1286,24 @@ function chado_get_minimal_pub_info($pub) {
     }
   }
 
+  // Load all database cross references.
+  $pub_dbxrefs = chado_get_pub_dbxrefs($pub->pub_id);
+
   // Get the first database cross-reference with a url.
-  $options = ['return_array' => 1];
-  $pub = chado_expand_var($pub, 'table', 'pub_dbxref', $options);
-  $dbxref = NULL;
-  if ($pub->pub_dbxref) {
-    foreach ($pub->pub_dbxref as $index => $pub_dbxref) {
-      if ($pub_dbxref->dbxref_id->db_id->urlprefix) {
-        $dbxref = $pub_dbxref->dbxref_id;
-      }
-    }
-  }
+// it is not clear what this was doing, it would have retrieved the last not the first
+// dbxref with a url, but the variable $dbxref is not referenced later. It could have
+// added information to $pub, but that does not appear to be referenced later.
+// chado_expand_var() can sometimes take a long time to execute, so just remove it?
+//  $options = ['return_array' => 1];
+//  $pub = chado_expand_var($pub, 'table', 'pub_dbxref', $options);
+//  $dbxref = NULL;
+//  if ($pub->pub_dbxref) {
+//    foreach ($pub->pub_dbxref as $index => $pub_dbxref) {
+//      if ($pub_dbxref->dbxref_id->db_id->urlprefix) {
+//        $dbxref = $pub_dbxref->dbxref_id;
+//      }
+//    }
+//  }
 
   // Get the URL.
   $values = [
@@ -1270,17 +1325,10 @@ function chado_get_minimal_pub_info($pub) {
     }
   }
 
-  // Get the list of database cross references.
-  $values = [
-    'pub_id' => $pub->pub_id,
-  ];
-  $options = [
-    'return_array' => 1,
-  ];
-  $pub_dbxrefs = chado_generate_var('pub_dbxref', $values, $options);
+  // Generate a list of database cross references formatted as "DB:accession".
   $dbxrefs = [];
   foreach ($pub_dbxrefs as $pub_dbxref) {
-    $dbxrefs[] = $pub_dbxref->dbxref_id->db_id->name . ':' . $pub_dbxref->dbxref_id->accession;
+    $dbxrefs[] = $pub_dbxref['name'] . ':' . $pub_dbxref['accession'];
   }
 
   // Get the citation.

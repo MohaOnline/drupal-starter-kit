@@ -22,7 +22,7 @@ function tripal_bulk_loader_add_loader_job_form($form, &$form_state, $node) {
   if ($node->job_status == 'Loading...') {
     drupal_set_message(t("The Loading Summary only updates at the end of each constant set.
       Although records may have already been inserted, they won't be available until the
-      current constant set is full loaded and no errors are encountered.", []), 'warning');
+      current constant set is fully loaded and no errors are encountered.", []), 'warning');
   }
 
   $form['nid'] = [
@@ -152,18 +152,26 @@ function tripal_bulk_loader_load_data($nid, $job_id) {
   $node = node_load($nid);
   print "Template: " . $node->template->name . " (" . $node->template_id . ")\n";
 
-  // Determine the total number of lines in the file.
+  // Determine the total number of non-blank lines in the file.
   $total_lines = 0;
   $handle = fopen($node->file, "r");
   while (!feof($handle)) {
     $line = fgets($handle);
+    $line = trim($line);
+    if (empty($line)) {
+      continue;
+    } // skips blank lines
     $total_lines++;
   }
   fclose($handle);
+  // do not count header line in the non-blank line count
+  if (($total_lines) and (preg_match('/(t|true|1)/', $node->file_has_header))) {
+    $total_lines--;
+  }
 
   // Correct for files with a single line and no enter character.
   $total_lines = ($total_lines == 0) ? 1 : $total_lines;
-  print "File: " . $node->file . " (" . $total_lines . " lines)\n";
+  print "File: " . $node->file . " (" . $total_lines . " lines with data)\n";
 
   //print "\nClearing all prepared statements from previous runs of this loader...\n";
   //tripal_core_chado_clear_prepared('_'.$node->nid.'_');
@@ -393,7 +401,10 @@ function tripal_bulk_loader_load_data($nid, $job_id) {
 
         // percentage of lines processed for the current group
         $group_progress = round(($num_lines / $total_lines) * 100);
-        tripal_bulk_loader_progress_bar($num_lines, $total_lines);
+        // don't show progress for the last line, that is printed at the end of this function
+        if ($num_lines < $total_lines) {
+          tripal_bulk_loader_progress_bar($num_lines, $total_lines);
+        }
 
         // percentage of lines processed for all groups
         // <previous group index> * 100 + <current group progress>
@@ -472,7 +483,7 @@ function tripal_bulk_loader_load_data($nid, $job_id) {
       $loaded_without_errors = FALSE;
       break;
     }
-    tripal_bulk_loader_progress_bar($total_lines, $total_lines);
+    tripal_bulk_loader_progress_bar($num_lines, $total_lines);
     tripal_bulk_loader_progress_file_track_job($job_id, FALSE, FALSE, TRUE);
   } //end of foreach constant set
 
@@ -524,8 +535,8 @@ function process_data_array_for_line($priority, &$data, &$default_data, $addt) {
   }
 
   // Check that template required fields are present. if a required field is
-  // missing and this
-  // is an optional record then just return. otherwise raise an error
+  // missing and this is an optional record then just return. otherwise raise
+  // an error
   $skip_optional = 0;
   foreach ($table_data['required'] as $field => $required) {
     if ($required) {
@@ -537,10 +548,10 @@ function process_data_array_for_line($priority, &$data, &$default_data, $addt) {
         if ($table_data['optional'] or preg_match('/optional/', $table_data['mode']) or
           $table_data['select_optional']) {
           $skip_optional = 1;
-          // set the values array to be empty since we all required fields are
+          // set the values array to be NULL since we all required fields are
           // optional and we can't do a select/insert so we don't want to keep
           // the values if this record is used in a later FK relationship.
-          $values = [];
+          $values = NULL;
         }
         else {
           $msg = "Line " . $addt->line_num . ' "' . $table_data['record_id'] .

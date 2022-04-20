@@ -57,6 +57,7 @@ class TripalImporter {
    */
   public static $use_analysis = TRUE;
 
+
   /**
    * If the $use_analysis value is set above then this value indicates if the
    * analysis should be required.
@@ -68,6 +69,13 @@ class TripalImporter {
    * form.
    */
   public static $button_text = 'Import File';
+
+  /**
+   * If the form submit button that is provided by the Importer is not
+   * needed (i.e. the child class wants to do something different). Then
+   * set this to FALSE.
+   */
+  public static $use_button = TRUE;
 
   /**
    * Indicates the methods that the file uploader will support.
@@ -578,7 +586,6 @@ class TripalImporter {
   public function logMessage($message, $variables = [], $severity = TRIPAL_INFO) {
     // Generate a translated message.
     $tmessage = t($message, $variables);
-
 
     // If we have a job then pass along the messaging to the job.
     if ($this->job) {

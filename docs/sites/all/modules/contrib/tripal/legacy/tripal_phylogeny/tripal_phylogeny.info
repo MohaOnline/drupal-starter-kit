@@ -3,7 +3,7 @@ description = Supports the phylogeny tables of Chado by providing pages for view
 core = 7.x
 project = tripal_phylogeny
 package = Tripal v2 Legacy
-version = 7.x-3.1
+version = 7.x-3.8
 dependencies[] = tripal_core
 dependencies[] = tripal_cv
 dependencies[] = tripal_db
@@ -11,8 +11,8 @@ dependencies[] = tripal_organism
 dependencies[] = tripal_analysis
 dependencies[] = tripal_feature
 
-; Information added by Drupal.org packaging script on 2020-09-13
-version = "7.x-3.4"
+; Information added by Drupal.org packaging script on 2022-02-22
+version = "7.x-3.8"
 core = "7.x"
 project = "tripal"
-datestamp = "1599961626"
+datestamp = "1645551560"

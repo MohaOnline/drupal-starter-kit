@@ -219,7 +219,7 @@ function chado_get_cvterm($identifiers, $options = []) {
     ];
     $result = chado_select_record('cvtermsynonym', ['cvterm_id'], $values, $options);
 
-    // if the synonym doens't exist or more than one record is returned then
+    // if the synonym doesn't exist or more than one record is returned then
     // return false.
     if (count($result) == 0) {
       return FALSE;
@@ -702,7 +702,7 @@ function chado_insert_cv($name, $definition) {
   $sel_values = ['name' => $name];
   $results = chado_select_record('cv', ['*'], $sel_values);
 
-  // If it does not exists then add it.
+  // If it does not exist then add it.
   if (count($results) == 0) {
     $success = chado_insert_record('cv', $ins_values);
     if (!$success) {
@@ -946,7 +946,7 @@ function chado_insert_cvterm($term, $options = []) {
     // can't do an insert or it will violate the constraint in the cvterm table.
     // So we'll need to add the record to the cvterm_dbxref table instead.
     if ($dbxref->accession != $accession) {
-      // Get/add the dbxref for his term.
+      // Get/add the dbxref for this term.
       $dbxref_new = chado_insert_dbxref([
         'db_id' => $db->db_id,
         'accession' => $accession,
@@ -963,7 +963,7 @@ function chado_insert_cvterm($term, $options = []) {
         'is_for_definition' => 1,
       ];
       $result = chado_select_record('cvterm_dbxref', ['*'], $values);
-      // if the cvterm_dbxref record does not exists then add it
+      // if the cvterm_dbxref record does not exist then add it
       if (count($result) == 0) {
         $options = [
           'return_record' => FALSE,

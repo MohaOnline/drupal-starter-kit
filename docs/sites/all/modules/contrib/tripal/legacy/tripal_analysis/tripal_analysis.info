@@ -3,7 +3,7 @@ description = Supports the companalyses tables of Chado by providing pages for v
 core = 7.x
 project = tripal
 package = Tripal v2 Legacy
-version = 7.x-3.1
+version = 7.x-3.8
 configure = admin/tripal/legacy/tripal_analysis/configuration
 
 dependencies[] = tripal_core
@@ -11,8 +11,8 @@ dependencies[] = tripal_chado_views
 dependencies[] = tripal_db
 dependencies[] = tripal_cv
 
-; Information added by Drupal.org packaging script on 2020-09-13
-version = "7.x-3.4"
+; Information added by Drupal.org packaging script on 2022-02-22
+version = "7.x-3.8"
 core = "7.x"
 project = "tripal"
-datestamp = "1599961626"
+datestamp = "1645551560"

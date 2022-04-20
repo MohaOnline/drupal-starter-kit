@@ -248,15 +248,20 @@ class sbo__relationship extends ChadoField {
       case 'quantification_relationship':
       case 'element_relationship':
       case 'project_relationship':
-      case 'pub_relationship':
-        $this->base_type_column = 'table_name';
         $this->base_name_columns = ['name'];
-      break;
+        $this->base_type_column = 'table_name';
+        break;
+
+      case 'pub_relationship':
+        $this->base_name_columns = ['title'];
+        $this->base_type_column = 'table_name';
+        break;
 
       case 'organism_relationship':
         $this->base_name_columns = ['genus', 'species'];
         $this->base_type_column = 'table_name';
         break;
+
       case 'phylonode_relationship':
         $this->base_name_columns = ['label'];
         $this->base_type_column = 'table_name';
@@ -266,6 +271,7 @@ class sbo__relationship extends ChadoField {
         $this->base_name_columns = ['name'];
         $this->base_type_column = 'type_id';
         break;
+
       default:
         // @todo update this to use the schema.
         $this->base_name_columns = ['name'];
@@ -419,6 +425,13 @@ class sbo__relationship extends ChadoField {
     // @todo grab these separately like it was before.
     $subject_pkey = $object_pkey = $this->base_schema['primary key'][0];
 
+    // A publication title can exceed the character limit for chado_expand_var()
+    // so make sure it has been added.
+    // TODO Should this step be generalized to other content type that could have a long name?
+    if (in_array('pub.title', $relationship->expandable_fields)) {
+      $relationship = chado_expand_var($relationship, 'field', 'pub.title', []);
+    }
+
     $entity->{$field_name}['und'][$delta]['value'] = [
       'local:relationship_subject' => $this->getRelationshipSubject($relationship),
       'local:relationship_type' => $relationship->type_id->name,
@@ -433,14 +446,15 @@ class sbo__relationship extends ChadoField {
     $object_type = $entity->{$field_name}['und'][$delta]['value']['local:relationship_object']['rdfs:type'];
     $object_name = $entity->{$field_name}['und'][$delta]['value']['local:relationship_object']['schema:name'];
 
-
     // Remember the current entity could be either the subject or object!
     // Example: The genetic_marker, MARKER1 , derives from the sequence_variant, VARIANT1.
     // The above relationship will be shown both on marker and variant pages
     // and as such both subject and object names need to be shown.
+    // Keep the clause as an array for now so we can apply formatting
+    // and links in the formatter
     $clause = 'The ' . $subject_type . ', ' .
-      $subject_name . ', ' . $verb . ' ' . $rel_type_clean . ' ' .
-      $object_type . ', ' . $object_name . '.';
+        $subject_name . ', ' . $verb . ' ' . $rel_type_clean . ' ' .
+        $object_type . ', ' . $object_name . '.';
     $entity->{$field_name}['und'][$delta]['value']['SIO:000493'] = $clause;
 
     // Adding a label allows us to provide a single text value for the
@@ -645,42 +659,37 @@ class sbo__relationship extends ChadoField {
    * @return
    *   The verb to use when creating a sentence of the relationship.
    */
-  private function get_rel_verb($rel_type) {
+  public static function get_rel_verb($rel_type) {
     $rel_type_clean = lcfirst(preg_replace('/_/', ' ', $rel_type));
     $verb = '';
-    switch ($rel_type_clean) {
-      case 'integral part of':
-      case 'instance of':
-        $verb = 'is an';
-        break;
-      case 'proper part of':
-      case 'transformation of':
-      case 'genome of':
-      case 'part of':
-        $verb = 'is a';
-      case 'position of':
-      case 'sequence of':
-      case 'variant of':
-        $verb = 'is a';
-        break;
-      case 'derives from':
-      case 'connects on':
-      case 'contains':
-      case 'finishes':
-      case 'guides':
-      case 'has origin':
-      case 'has part':
-      case 'has quality':
-      case 'is a':
-      case 'is a maternal parent of':
-      case 'is a paternal parent of':
-      case 'is consecutive sequence of':
-      case 'maximally overlaps':
-      case 'overlaps':
-      case 'starts':
-        break;
-      default:
-        $verb = 'is';
+    // can skip anything already starting with 'is' or 'has'
+    if (!preg_match('/^(is|has) /', $rel_type_clean)) {
+      switch ($rel_type_clean) {
+        case 'integral part of':
+        case 'instance of':
+          $verb = 'is an';
+          break;
+        case 'genome of':
+        case 'part of':
+        case 'position of':
+        case 'proper part of':
+        case 'sequence of':
+        case 'transformation of':
+        case 'variant of':
+          $verb = 'is a';
+          break;
+        case 'connects on':
+        case 'contains':
+        case 'derives from':
+        case 'finishes':
+        case 'guides':
+        case 'maximally overlaps':
+        case 'overlaps':
+        case 'starts':
+          break;
+        default:
+          $verb = 'is';
+      }
     }
 
     return $verb;

@@ -3,13 +3,13 @@ description = Exposes Tripal Entites as RESTful web services.
 core = 7.x
 project = tripal
 package = Tripal
-version = 7.x-3.1
+version = 7.x-3.8
 
 stylesheets[all][] = theme/css/tripal_ws.css
 
 dependencies[] = tripal
-; Information added by Drupal.org packaging script on 2020-09-13
-version = "7.x-3.4"
+; Information added by Drupal.org packaging script on 2022-02-22
+version = "7.x-3.8"
 core = "7.x"
 project = "tripal"
-datestamp = "1599961626"
+datestamp = "1645551560"

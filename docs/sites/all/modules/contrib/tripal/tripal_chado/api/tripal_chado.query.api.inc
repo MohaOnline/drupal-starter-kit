@@ -1687,6 +1687,9 @@ function chado_select_record_check_value_type(&$op, &$value, $type) {
  *   The array of arguments, with the same structure as passed to
  *   the db_query() function of Drupal.
  *
+ * @param $options
+ *   An array of options to control how the query operates.
+ *
  * @return
  *   DatabaseStatementInterface A prepared statement object, already executed.
  *
@@ -1708,7 +1711,7 @@ function chado_select_record_check_value_type(&$op, &$value, $type) {
  *
  * @ingroup tripal_chado_query_api
  */
-function chado_query($sql, $args = []) {
+function chado_query($sql, $args = [], $options = []) {
   $results = NULL;
 
   $is_local = isset($GLOBALS["chado_is_local"]) && $GLOBALS["chado_is_local"];
@@ -1759,7 +1762,7 @@ function chado_query($sql, $args = []) {
     }
 
     // Add an alter hook to allow module developers to change the query right
-    // before it's  executed. Since all queriying of chado by Tripal eventually
+    // before it's executed. Since all querying of chado by Tripal eventually
     // goes through this function, we only need to provide an alter hook at this
     // point in order to ensure developers have complete control over the query
     // being executed. For example, a module developer might want to remove
@@ -1777,7 +1780,7 @@ function chado_query($sql, $args = []) {
     if (preg_match('/' . $chado_schema_name . '.featureloc/i', $sql) or preg_match('/' . $chado_schema_name . '.feature/i', $sql)) {
       $previous_db = chado_set_active('chado');
       try {
-        $results = db_query($sql, $args);
+        $results = db_query($sql, $args, $options);
         chado_set_active($previous_db);
       } catch (Exception $e) {
         chado_set_active($previous_db);
@@ -1787,7 +1790,7 @@ function chado_query($sql, $args = []) {
     // For all other tables we should have everything in scope so just run the
     // query.
     else {
-      $results = db_query($sql, $args);
+      $results = db_query($sql, $args, $options);
     }
   }
   // Check for any cross schema joins (ie: both drupal and chado tables
@@ -1805,7 +1808,7 @@ function chado_query($sql, $args = []) {
     // switch to another database.
     else {
       $previous_db = chado_set_active('chado');
-      $results = db_query($sql, $args);
+      $results = db_query($sql, $args, $options);
       chado_set_active($previous_db);
     }
   }

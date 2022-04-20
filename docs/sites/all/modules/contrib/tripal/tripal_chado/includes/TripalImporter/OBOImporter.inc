@@ -160,6 +160,15 @@ class OBOImporter extends TripalImporter {
    */
   private $default_namespace = '';
 
+
+  /**
+   * Holds the idspace elements from the header. These will correspond
+   * to the accession prefixes, or short names (e.g. GO) for the terms. For
+   * example, the EDAM vocabulary has several id spaces:
+   * format, data, operation and topic.
+   */
+  private $idspaces = [];
+
   /**
    * The default database prefix for this ontology.
    *
@@ -169,7 +178,7 @@ class OBOImporter extends TripalImporter {
 
 
   /**
-   * An array of used cvterm objects so that we don't have to lookup them
+   * An array of used cvterm objects so that we don't have to look them
    * up repeatedly.
    */
   private $used_terms = [];
@@ -248,8 +257,8 @@ class OBOImporter extends TripalImporter {
     $form['obo_existing']['existing_instructions'] = [
       '#type' => 'item',
       '#markup' => t('The vocabularies listed in the select box below have been pre-populated
-        upon installation of Tripal or have been previously loaded.  Select one to edit
-        its settings or submit for loading.  You may reload any vocabulary that has
+        upon installation of Tripal or have been previously loaded. Select one to edit
+        its settings or submit for loading. You may reload any vocabulary that has
         already been loaded to retrieve any new updates.'),
     ];
 
@@ -298,7 +307,7 @@ class OBOImporter extends TripalImporter {
       $form['obo_existing']['uobo_name'] = [
         '#type' => 'textfield',
         '#title' => t('Vocabulary Name'),
-        '#description' => t('Please provide a name for this vocabulary.  After upload, this name will appear in the drop down
+        '#description' => t('Please provide a name for this vocabulary. After upload, this name will appear in the drop down
                              list above for use again later.'),
         '#default_value' => $uobo_name,
       ];
@@ -306,8 +315,8 @@ class OBOImporter extends TripalImporter {
       $form['obo_existing']['uobo_url'] = [
         '#type' => 'textfield',
         '#title' => t('Remote URL'),
-        '#description' => t('Please enter a URL for the online OBO file.  The file will be downloaded and parsed.
-                             (e.g. http://www.obofoundry.org/ro/ro.obo)'),
+        '#description' => t('Please enter a URL for the online OBO file. The file will be downloaded and parsed.
+                             (e.g. https://raw.githubusercontent.com/oborel/obo-relations/master/ro.obo)'),
         '#default_value' => $uobo_url,
       ];
 
@@ -318,8 +327,8 @@ class OBOImporter extends TripalImporter {
           definition file. If entering a path relative to
           the Drupal installation you may use a relative path that excludes the
           Drupal installation directory (e.g. sites/default/files/xyz.obo). Note
-          that Drupal relative paths have no preceding slash.
-          Otherwise, please provide the full path on the filesystem.  The path
+          that Drupal relative paths have no preceeding slash.
+          Otherwise, please provide the full path on the filesystem. The path
           must be accessible to the web server on which this Drupal instance is running.'),
         '#default_value' => $uobo_file,
       ];
@@ -338,24 +347,24 @@ class OBOImporter extends TripalImporter {
     ];
 
     $form['obo_new']['path_instructions'] = [
-      '#value' => t('Provide the name and path for the OBO file.  If the vocabulary OBO file
+      '#value' => t('Provide the name and path for the OBO file. If the vocabulary OBO file
                      is stored local to the server provide a file name. If the vocabulary is stored remotely,
-                     provide a URL.  Only provide a URL or a local file, not both.'),
+                     provide a URL. Only provide a URL or a local file, not both.'),
     ];
 
     $form['obo_new']['obo_name'] = [
       '#type' => 'textfield',
       '#title' => t('New Vocabulary Name'),
-      '#description' => t('Please provide a name for this vocabulary.  After upload, this name will appear in the drop down
-                             list above for use again later. Additionally, if a default namespace is not provided in the OBO
-                             header this name will be used as the default_namespace.'),
+      '#description' => t('Please provide a name for this vocabulary. After upload, this name will appear in the drop down
+                           list above for use again later. Additionally, if a default namespace is not provided in the OBO
+                           header this name will be used as the default_namespace.'),
     ];
 
     $form['obo_new']['obo_url'] = [
       '#type' => 'textfield',
       '#title' => t('Remote URL'),
       '#description' => t('Please enter a URL for the online OBO file.  The file will be downloaded and parsed.
-                             (e.g. http://www.obofoundry.org/ro/ro.obo)'),
+                           (e.g. https://raw.githubusercontent.com/oborel/obo-relations/master/ro.obo)'),
     ];
 
     $form['obo_new']['obo_file'] = [
@@ -365,7 +374,7 @@ class OBOImporter extends TripalImporter {
           definition file. If entering a path relative to
           the Drupal installation you may use a relative path that excludes the
           Drupal installation directory (e.g. sites/default/files/xyz.obo). Note
-          that Drupal relative paths have no preceding slash.
+          that Drupal relative paths have no preceeding slash.
           Otherwise, please provide the full path on the filesystem.  The path
           must be accessible to the web server on which this Drupal instance is running.'),
     ];
@@ -595,7 +604,7 @@ class OBOImporter extends TripalImporter {
     tripal_populate_mview($mview_id);
 
     // Update the cvtermpath table for each newly added CV.
-    $this->logMessage("Updating cvtermpath table.  This may take a while...");
+    $this->logMessage("Updating cvtermpath table. This may take a while...");
     foreach ($this->obo_namespaces as $namespace => $cv_id) {
       $this->logMessage("- Loading paths for vocabulary: @vocab", ['@vocab' => $namespace]);
       chado_update_cvtermpath($cv_id, $this->job);
@@ -605,7 +614,7 @@ class OBOImporter extends TripalImporter {
   /**
    * A wrapper function for importing the user specified OBO file into Chado by
    * specifying the obo_id of the OBO. It requires that the file be in OBO v1.2
-   * compatible format.  This function is typically executed via the Tripal
+   * compatible format. This function is typically executed via the Tripal
    * jobs
    * management after a user submits a job via the Load Ontologies form.
    *
@@ -653,7 +662,7 @@ class OBOImporter extends TripalImporter {
   /**
    * A wrapper function for importing the user specified OBO file into Chado by
    * specifying the filename and path of the OBO. It requires that the file be
-   * in OBO v1.2 compatible format.  This function is typically executed via
+   * in OBO v1.2 compatible format. This function is typically executed via
    * the Tripal jobs management after a user submits a job via the Load
    * Ontologies form.
    *
@@ -664,7 +673,7 @@ class OBOImporter extends TripalImporter {
    *   The path on the file system where the ontology can be found
    * @param $is_new
    *   Set to TRUE if this is a new ontology that does not yet exist in the
-   *   tripal_cv_obo table.  If TRUE the OBO will be added to the table.
+   *   tripal_cv_obo table. If TRUE the OBO will be added to the table.
    *
    * @ingroup tripal_obo_loader
    */
@@ -841,6 +850,7 @@ class OBOImporter extends TripalImporter {
   private function setDefaults($header) {
     $short_name = '';
     $namespace = '';
+    $idspaces = [];
 
     // Get the 'ontology' and 'default-namespace' headers.  Unfortunately,
     // not all OBO files contain these.
@@ -850,7 +860,19 @@ class OBOImporter extends TripalImporter {
     if (array_key_exists('default-namespace', $header)) {
       $namespace = $header['default-namespace'][0];
     }
-
+    if (array_key_exists('idspace', $header)) {
+      $matches = [];
+      foreach ($header['idspace'] as $idspace) {
+        if (preg_match('/^(.+?)\s+(.+?)\s+"(.+)"$/', $idspace, $matches)) {
+          $idspaces[$matches[1]]['url'] = $matches[2];
+          $idspaces[$matches[1]]['description'] = $matches[3];
+        }
+        elseif (preg_match('/^(.+?)\s+(.+?)$/', $idspace, $matches)) {
+          $idspaces[$matches[1]]['url'] = $matches[2];
+          $idspaces[$matches[1]]['description'] = '';
+        }
+      }
+    }
     // The OBO specification allows the 'ontology' header tag to be nested for
     // subsets (e.g. go/subsets/goslim_plant).  We need to simplify that down
     // to the top-level item.
@@ -888,9 +910,20 @@ class OBOImporter extends TripalImporter {
       }
     }
 
+    // If we still don't have a namespace defined, use the one from the form
+    // in the "New Vocabulary Name" field
+    if (!$namespace and array_key_exists('run_args', $this->arguments)
+        and array_key_exists('obo_name', $this->arguments['run_args'])) {
+      $namespace = $this->arguments['run_args']['obo_name'];
+    }
+    if (!$namespace and array_key_exists('run_args', $this->arguments)
+        and array_key_exists('uobo_name', $this->arguments['run_args'])) {
+      $namespace = $this->arguments['run_args']['uobo_name'];
+    }
+
     // If we can't find the namespace or the short_name then bust.
     if (!$namespace and !$short_name) {
-      throw new ErrorException('Cannot determine the namespace or ontology prefix from this OBO file. It is missing both the "default-namespace" and "ontology" headers.');
+      throw new ErrorException('Cannot determine the namespace or ontology prefix from this OBO file. It is missing both the "default-namespace" or a compatible "ontology" header.');
     }
 
     // Set the defaults.
@@ -899,8 +932,12 @@ class OBOImporter extends TripalImporter {
     $this->addDB($this->default_db);
     $cv = $this->addCV($this->default_namespace);
     $this->obo_namespaces[$namespace] = $cv->cv_id;
+    $this->idspaces = $idspaces;
 
-
+    // Add a new database for each idspace.
+    foreach ($idspaces as $shortname => $idspace) {
+      $this->addDB($shortname, $idspace['url'], $idspace['description']);
+    }
   }
 
   /**
@@ -915,14 +952,14 @@ class OBOImporter extends TripalImporter {
 
     // Check if the EBI ontology search has this ontology:
     try {
-      $results = $this->oboEbiLookup($ontology, 'ontology');
-      if (array_key_exists('default-namespace', $results['config']['annotations'])) {
+      $results = $this->oboEbiLookup($ontology, 'ontology'); 
+      if ($results and array_key_exists('config', $results) and array_key_exists('default-namespace', $results['config']['annotations'])) {
         $namespace = $results['config']['annotations']['default-namespace'];
         if (is_array($namespace)) {
           $namespace = $namespace[0];
         }
       }
-      elseif (array_key_exists('namespace', $results['config'])) {
+      elseif ($results and array_key_exists('config', $results) and array_key_exists('namespace', $results['config'])) {
         $namespace = $results['config']['namespace'];
       }
       // If we can't find the namespace at EBI, then just default to using the
@@ -983,7 +1020,7 @@ class OBOImporter extends TripalImporter {
         "Lookup Service to retrieve the information for this term. " .
         "Please note, that vocabularies with many non-local terms " .
         "require remote lookups and these lookups can dramatically " .
-        "decrease loading time. ",
+        "increase loading time. ",
         ['!vocab' => $this->default_namespace], TRIPAL_WARNING);
       $this->ebi_warned = TRUE;
 
@@ -1003,17 +1040,22 @@ class OBOImporter extends TripalImporter {
     // First get the ontology so we can build an IRI for the term
     $base_iri = '';
     $ontologyID = '';
+    $iri = '';
+    $type ='';
     if (array_key_exists($short_name, $this->baseIRIs)) {
       list($ontologyID, $base_iri) = $this->baseIRIs[$short_name];
     }
     else {
-      $full_url = 'http://www.ebi.ac.uk/ols/api/ontologies/' . $short_name;
-      $response = drupal_http_request($full_url, []);
-      if (!$response) {
-        throw new Exception(t('Did not get a response from EBI OLS trying to lookup ontology: !ontology',
-          ['!ontology' => $short_name]));
+      $ontology_results =  $this->oboEbiLookup($id, 'query');
+      // If results were received but the number of results is 0, do a query-non-local lookup.
+      if ($ontology_results['response']['numFound'] == 0) {
+        print "oboEbiLookup($id, 'query-non-local')\n";
+        $ontology_results =  $this->oboEbiLookup($id, 'query-non-local'); 
       }
-      $ontology_results = drupal_json_decode($response->data);
+      if (!$ontology_results) {
+        throw new Exception(t('Did not get a response from EBI OLS trying to lookup ontology: !id',
+          ['!id' => $id]));
+      }
       if ($ontology_results['error']) {
 
         $this->logMessage(t('Cannot find the ontology via an EBI OLS lookup: !short_name. \n' .
@@ -1026,34 +1068,67 @@ class OBOImporter extends TripalImporter {
             '!url' => $full_url,
           ]), TRIPAL_WARNING);
       }
-      //What should happen with this stuff?
-      $base_iri = $ontology_results['config']['baseUris'][0];
-      $ontologyID = $ontology_results['ontologyId'];
-      $this->baseIRIs[$short_name] = [$ontologyID, $base_iri];
+      // The following foreach code works but, I am not sure that
+      // I am retrieving each query result from the json associative
+      // array with the correct style
+      foreach ($ontology_results['response']['docs'] as $each ) {
+        $obo_id = $each['obo_id'];
+        $defining_ontology = $each['is_defining_ontology'];
+        // First result should have defining_ontology=true, but if 
+        // it doesn't, use the first result with obo_id=$id
+        if ($defining_ontology == 'false' and $obo_id != $id) {
+          continue;
+        }
+        $iri = urlencode(urlencode($each['iri']));
+        $ontologyID = $each['ontology_name'];
+        // Type should be 'property' or 'class' in the response
+        $type = $each['type'];
+      }
     }
 
     // Next get the term.
-    $iri = urlencode(urlencode($base_iri . $accession));
-    $full_url = 'http://www.ebi.ac.uk/ols/api/ontologies/' . $ontologyID . '/terms/' . $iri;
-    $response = drupal_http_request($full_url, []);
-    if (!$response) {
-      throw new Exception(t('Did not get a response from EBI OLS trying to lookup term: !id',
-        ['!id' => $id]));
+    $query = $type;
+    if ($type == 'class') {
+      $query = 'term';
     }
-    $results = drupal_json_decode($response->data);
+    $results =  $this->oboEbiLookup($id, $query);
     if (!$results) {
-      $this->logMessage('Error: no data with !url.  The response was: !response', [
-        '!url' => $full_url,
-        '!response' => $response,
-      ]);
-
+      $query = 'query-non-local';
+      $ontology_results = $this->oboEbiLookup($id, $query);
+      if ($ontology_results) {
+        foreach ($ontology_results['response']['docs'] as $each ){
+          $obo_id = $each['obo_id'];
+          $defining_ontology = $each['is_defining_ontology'];
+          if ( !$defining_ontology and $obo_id != $id ) {    
+            continue;
+          }  
+          $found_iri = urlencode(urlencode($each['iri']));
+          $ontology = $each['ontology_name'];
+          // Type should be 'property' or 'class' in the response
+          $type = $each['type'];
+          $results = $this->oboEbiLookup($id, $type, $found_iri, $ontology);
+          // if this term is the defining_ontology and we have the correct ID, 
+          // we dont need more, get it and stop
+          break;
+        } 
+      }
+    }
+    if (!$results) {
+      throw new Exception(t('Did not get a response from EBI OLS trying to lookup: !type !id with !url',
+        ['!type'=> $type, '!id' => $id, '!url' => $full_url]));
+      $this->logMessage('Error: no data with !id.  The response was: !response result was:!results', 
+        [
+          '!id' => $id,
+          '!response' => $response,
+    	  '!results' => $results,
+        ]);
       return FALSE;
     }
 
     // If EBI sent an error message then throw an error.
     if ($results['error']) {
       $this->logMessage('Cannot find the term via an EBI OLS lookup: !term. ' .
-        'We tried to access: !url' .
+        'We tried to access: "!url" ' .
         'EBI Reported: !message. Consider finding the OBO file for this ontology and manually loading it first.',
         [
           '!message' => $results['message'],
@@ -1394,7 +1469,7 @@ class OBOImporter extends TripalImporter {
       }
     }
 
-    // We have no conflict so it's save to update or insert.
+    // We have no conflict so it's safe to update or insert.
     return FALSE;
   }
 
@@ -1465,7 +1540,7 @@ class OBOImporter extends TripalImporter {
     chado_query($sql, [':cvterm_id' => $cvterm_id]);
 
     // We should never have the problem where we don't have a cvterm_id. The
-    // saveTerm() function should always return on.  But if for some unknown
+    // saveTerm() function should always return one.  But if for some unknown
     // reason we don't have one then fail.
     if (!$cvterm_id) {
       throw new Exception(t('Missing cvterm after saving term: !term',
@@ -1774,7 +1849,8 @@ class OBOImporter extends TripalImporter {
       $accession = $matches[2];
 
       // If the term is borrowed then let's try to deal with it.
-      if ($short_name != $this->default_db) {
+      $idspaces = array_keys($this->idspaces);
+      if ($short_name != $this->default_db and !in_array($short_name, $idspaces)) {
 
         // First try to lookup the term and replace the stanza with the updated
         // details.
@@ -2069,6 +2145,11 @@ class OBOImporter extends TripalImporter {
 
           // If this term has a namespace then we want to keep track of it.
           if (array_key_exists('namespace', $stanza)) {
+            // Fix the namespace for EDAM terms so they all use the same
+            // namespacke (i.e. cv record).
+            if ($this->default_namespace == 'EDAM') {
+              $stanza['namespace'][0] = 'EDAM';
+            }
             $namespace = $stanza['namespace'][0];
             $cv = $this->all_cvs[$namespace];
             $this->obo_namespaces[$namespace] = $cv->cv_id;
@@ -2079,7 +2160,7 @@ class OBOImporter extends TripalImporter {
           // add the ID to the name to ensure it doesn't.
           if (array_key_exists($stanza['name'][0], $this->term_names)) {
             $new_name = $stanza['name'][0] . '(' . $stanza['id'][0] . ')';
-            $stanza['name'][0] = $stanza['name'][0];
+            $stanza['name'][0] = $new_name;
           }
 
           $this->cacheTermStanza($stanza, $type);
@@ -2093,6 +2174,11 @@ class OBOImporter extends TripalImporter {
         $stanza = [];
         continue;
       }
+
+      // For EDAM, we have to unfortuantely hard-code a fix as the
+      // short names of terms are correct.
+      $line = preg_replace('/EDAM_(\w+)/', '\1', $line);
+
 
       // break apart the line into the tag and value but ignore any escaped colons
       preg_replace("/\\:/", "|-|-|", $line); // temporarily replace escaped colons
@@ -2247,7 +2333,7 @@ class OBOImporter extends TripalImporter {
    * @return
    *   A Chado database object.
    */
-  private function addDB($dbname) {
+  private function addDB($dbname, $url = '',  $description = '') {
     // Add the database if it doesn't exist.
     $db = NULL;
     if (array_key_exists($dbname, $this->all_dbs)) {
@@ -2256,7 +2342,14 @@ class OBOImporter extends TripalImporter {
     else {
       // If it's not in the cache we can assume it doesn't exist and insert.
       $db = new ChadoRecord('db');
-      $db->setValues(['name' => $dbname]);
+      $values = ['name' => $dbname];
+      if ($url) {
+        $values['url'] = $url;
+      }
+      if ($description) {
+        $values['description'] = $description;
+      }
+      $db->setValues($values);
       $db->insert();
       $db = (object) $db->getValues();
       $this->all_dbs[$dbname] = $db;
@@ -2331,7 +2424,8 @@ class OBOImporter extends TripalImporter {
     }
 
     if (!$accession) {
-      throw new Exception("Cannot add an Alt ID without an accession: '$alt_id'");
+      $this->logMessage("Cannot add an Alt ID without an accession: '!alt_id'", ['!alt_id' => $alt_id]);
+      return;
     }
 
     // Add the database if it doesn't exist.
@@ -2458,12 +2552,31 @@ class OBOImporter extends TripalImporter {
    *
    * @ingroup tripal_obo_loader
    */
-  private function oboEbiLookup($accession, $type_of_search) {
+  private function oboEbiLookup($accession, $type_of_search, $found_iri = NULL, $found_ontology = NULL) {
     //Grab just the ontology from the $accession.
     $parts = explode(':', $accession);
     $ontology = strtolower($parts[0]);
     $ontology = preg_replace('/\s+/', '', $ontology);
-    if ($type_of_search == 'ontology') {
+    if ($found_iri) {
+      // When we cannot grab the ontology from the accession or the IRI cannot be automatically formed we
+      // we need to use the ontology and the IRI found in the previous query.
+      $ontology = $found_ontology;
+      $type = '';
+      if ($type_of_search == 'property') {
+        $type = 'properties';
+      }
+      elseif ( $type_of_search == 'class') {
+        $type = 'terms';
+      }
+      $full_url = 'http://www.ebi.ac.uk/ols/api/ontologies/' . $ontology . '/' . $type . '/' . $found_iri;
+      print "fullurl: $full_url\n";
+      $options = [];
+      $response = drupal_http_request($full_url, $options);
+      if (!empty($response)) {
+        $response = drupal_json_decode($response->data);
+      }
+    }
+    elseif ($type_of_search == 'ontology') {
       $options = [];
       $full_url = 'http://www.ebi.ac.uk/ols/api/ontologies/' . $ontology;
       $response = drupal_http_request($full_url, $options);
@@ -2476,6 +2589,16 @@ class OBOImporter extends TripalImporter {
       $iri = urlencode(urlencode("http://purl.obolibrary.org/obo/" . str_replace(':', '_', $accession)));
       $options = [];
       $full_url = 'http://www.ebi.ac.uk/ols/api/ontologies/' . $ontology . '/' . 'terms/' . $iri;
+      $response = drupal_http_request($full_url, $options);
+      if (!empty($response)) {
+        $response = drupal_json_decode($response->data);
+      }
+    }
+    elseif ($type_of_search == 'property') {
+    //The IRI of the terms, this value must be double URL encoded
+      $iri = urlencode(urlencode("http://purl.obolibrary.org/obo/" . str_replace(':', '_', $accession)));
+      $options = [];
+      $full_url = 'http://www.ebi.ac.uk/ols/api/ontologies/' . $ontology . '/' . 'properties/' . $iri;
       $response = drupal_http_request($full_url, $options);
       if (!empty($response)) {
         $response = drupal_json_decode($response->data);
