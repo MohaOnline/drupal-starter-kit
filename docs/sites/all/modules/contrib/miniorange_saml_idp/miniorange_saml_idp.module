@@ -191,15 +191,13 @@ function miniorange_saml_idp_login_request() {
 }
 
 function miniorange_saml_idp_metadata(){
-    if(isset($_REQUEST['q']) && $_REQUEST['q'] == 'moidp_metadata') {
-        _generate_metadata();
-    }
+
+    _generate_metadata();
+
 }
 
 function miniorange_saml_idp_download_metadata(){
-    if(isset($_REQUEST['q']) && $_REQUEST['q'] == 'moidp_download_metadata') {
-        _generate_metadata(true);
-    }
+    _generate_metadata(true);
 }
 
 function _generate_metadata($download=false){
@@ -273,7 +271,7 @@ function _read_saml_request($REQUEST,$GET) {
     if(empty($acs_url) || empty($sp_issuer)){
         $errors.= '<strong>INVALID_SP: </strong>Service Provider is not configured. Please configure your Service Provider.<br/>';
     }else{
-        if(strcmp($acs_url,$acs_url_from_request) !== 0 ){
+        if(!is_null($acs_url_from_request)&&strcmp($acs_url,$acs_url_from_request) !== 0 ){
             $errors.= '<strong>INVALID_ACS: </strong>Invalid ACS URL!. Please check your Service Provider Configurations.<br/>';
 	    }
         if(strcmp($sp_issuer,$sp_issuer_from_request) !== 0){
@@ -291,7 +289,7 @@ function _read_saml_request($REQUEST,$GET) {
 	        <h3>PROCESSING...PLEASE WAIT!</h3>
 	    </div>
         <?php
-        mo_idp_authorize_user($acs_url_from_request,$sp_issuer_from_request,$relayState,$inResponseTo);
+        mo_idp_authorize_user($acs_url,$sp_issuer_from_request,$relayState,$inResponseTo);
     } else{
 	    echo sprintf($errors);
 	    exit;

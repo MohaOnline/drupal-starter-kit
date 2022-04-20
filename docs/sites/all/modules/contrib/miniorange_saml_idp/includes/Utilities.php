@@ -50,14 +50,14 @@ class Utilities {
                         <tr><th class="mo_guide_text-center" style="font-weight:bold;">Service Providers</th><th class="mo_guide_text-center" style="font-weight:bold;">Links</th></tr>
                     </thead>
                     <tbody style="color:gray;">
-                        <tr><td>Tableau</td><td><strong><a href="https://plugins.miniorange.com/configure-tableau-as-sp-in-drupal-7-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Zendesk	</td><td><strong><a href="https://plugins.miniorange.com/zendesk-sso-single-sign-on-for-drupal-7-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Tableau</td><td><strong><a href="https://plugins.miniorange.com/configure-tableau-sp-as-sp-and-drupal-8-as-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Zendesk	</td><td><strong><a href="https://plugins.miniorange.com/zendesk-single-sign-sso-for-drupal-8-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Workplace by Facebook</td><td><strong><a href="https://plugins.miniorange.com/guide-drupal-idp-workplace-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Canvas LMS</td><td><strong><a href="https://plugins.miniorange.com/guide-to-configure-canvas-lms-as-sp-and-drupal-as-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Owncloud</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-owncloud-sp-and-drupal-as-idp" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>Inkling</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-inkling-sso-as-sp-for-drupal-7-idp" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Inkling</td><td><strong><a class="mo_guide_text-color" href="https://plugins.miniorange.com/configure-inkling-as-sp-for-drupal-8-idp" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>AppStream2</td><td><strong><a href="https://plugins.miniorange.com/guide-to-setup-drupal-as-idp-and-aws-appstream2-as-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
-                        <tr><td>For any other SP</td><td><strong><a href="https://www.miniorange.com/contact" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>For any other SP</td><td><strong><a href="https://plugins.miniorange.com/guide-enable-miniorange-drupal-saml-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                     </tbody>
 
                 </table></div>',
@@ -354,6 +354,7 @@ class Utilities {
         $customer_config = new MiniorangeSAMLIdpCustomer($username, $phone, $password, NULL);
         $check_customer_response = json_decode($customer_config->checkCustomer());
 
+
         if ($check_customer_response->status == 'CUSTOMER_NOT_FOUND') {
             // Create customer.
             // Store email and phone.
@@ -590,11 +591,7 @@ class Utilities {
     }
 
     public static function isCurlInstalled() {
-        if ( in_array( 'curl', get_loaded_extensions() ) ) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return in_array( 'curl', get_loaded_extensions() );
     }
 
 	public static function generateID() {
@@ -1081,4 +1078,10 @@ class Utilities {
 		$certificate = str_replace( " ", "", $certificate );
 		return $certificate;
 	}
+
+  public static function drupal_is_cli()
+  {
+      return !isset($_SERVER['SERVER_SOFTWARE']) && (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0));
+  }
+
 }

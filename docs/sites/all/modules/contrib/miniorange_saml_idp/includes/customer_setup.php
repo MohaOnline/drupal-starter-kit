@@ -42,61 +42,21 @@ class MiniorangeSAMLIdpCustomer {
    * Check if customer exists.
    */
   public function checkCustomer() {
-    if (!Utilities::isCurlInstalled()) {
-      return json_encode(array(
-        "status" => 'CURL_ERROR',
-        "statusMessage" => '<a href="http://php.net/manual/en/curl.installation.php">PHP cURL extension</a> is not installed or disabled.',
-      ));
-    }
 
     $url = MiniorangeSAMLIdpConstants::BASE_URL . '/moas/rest/customer/check-if-exists';
-    $ch = curl_init($url);
-    $email = $this->email;
 
     $fields = array(
-      'email' => $email,
+      'email' => $this->email,
     );
-    $field_string = json_encode($fields);
-
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-    curl_setopt($ch, CURLOPT_ENCODING, "");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-
-    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-      'Content-Type: application/json', 'charset: UTF - 8',
-      'Authorization: Basic',
-    ));
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-    $content = curl_exec($ch);
-    if (curl_errno($ch)) {
-      $error = array(
-        '%method' => 'checkCustomer',
-        '%file' => 'customer_setup.php',
-        '%error' => curl_error($ch),
-      );
-      watchdog('miniorange_saml_idp', 'Error at %method of %file: %error', $error);
-    }
-    curl_close($ch);
-
-    return $content;
+   return $this->callService($url,$fields);
   }
 
   /**
    * Create Customer.
    */
   public function createCustomer() {
-    if (!Utilities::isCurlInstalled()) {
-      return json_encode(array(
-        "statusCode" => 'ERROR',
-        "statusMessage" => '. Please check your configuration.',
-      ));
-    }
+
     $url = MiniorangeSAMLIdpConstants::BASE_URL . '/moas/rest/customer/add';
-    $ch = curl_init($url);
 
     $fields = array(
       'companyName' => $_SERVER['SERVER_NAME'],
@@ -105,203 +65,140 @@ class MiniorangeSAMLIdpCustomer {
       'phone' => $this->phone,
       'password' => $this->password,
     );
-    $field_string = json_encode($fields);
-
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-    curl_setopt($ch, CURLOPT_ENCODING, "");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-
-    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-      'Content-Type: application/json',
-      'charset: UTF - 8',
-      'Authorization: Basic',
-    ));
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-    $content = curl_exec($ch);
-
-    if (curl_errno($ch)) {
-      $error = array(
-        '%method' => 'createCustomer',
-        '%file' => 'customer_setup.php',
-        '%error' => curl_error($ch),
-      );
-      watchdog('miniorange_saml_idp', 'Error at %method of %file: %error', $error);
-    }
-    curl_close($ch);
-    return $content;
+    return $this->callService($url,$fields);
   }
 
   /**
    * Get Customer Keys.
    */
   public function getCustomerKeys() {
-    if (!Utilities::isCurlInstalled()) {
-      return json_encode(array(
-        "apiKey" => 'CURL_ERROR',
-        "token" => '<a href="http://php.net/manual/en/curl.installation.php">PHP cURL extension</a> is not installed or disabled.',
-      ));
-    }
 
     $url = MiniorangeSAMLIdpConstants::BASE_URL . '/moas/rest/customer/key';
-    $ch = curl_init($url);
-    $email = $this->email;
-    $password = $this->password;
-
     $fields = array(
-      'email' => $email,
-      'password' => $password,
+      'email' => $this->email,
+      'password' => $this->password,
     );
-    $field_string = json_encode($fields);
 
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-    curl_setopt($ch, CURLOPT_ENCODING, "");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-
-    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-      'Content-Type: application/json',
-      'charset: UTF - 8',
-      'Authorization: Basic',
-    ));
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-    $content = curl_exec($ch);
-    if (curl_errno($ch)) {
-      $error = array(
-        '%method' => 'getCustomerKeys',
-        '%file' => 'customer_setup.php',
-        '%error' => curl_error($ch),
-      );
-      watchdog('miniorange_saml_idp', 'Error at %method of %file: %error', $error);
-    }
-    curl_close($ch);
-
-    return $content;
+    return $this->callService($url,$fields);
   }
 
   /**
    * Send OTP.
    */
   public function sendOtp() {
-    if (!Utilities::isCurlInstalled()) {
-      return json_encode(array(
-        "status" => 'CURL_ERROR',
-        "statusMessage" => '<a href="http://php.net/manual/en/curl.installation.php">PHP cURL extension</a> is not installed or disabled.',
-      ));
-    }
+
     $url = MiniorangeSAMLIdpConstants::BASE_URL . '/moas/api/auth/challenge';
-    $ch = curl_init($url);
+
     $customer_key = $this->defaultCustomerId;
-    $api_key = $this->defaultCustomerApiKey;
-
     $username = variable_get('miniorange_saml_idp_customer_admin_email', NULL);
-
-    /* Current time in milliseconds since midnight, January 1, 1970 UTC. */
-    $currentTimeInMillis = round(microtime(TRUE) * 1000);
-
-    /* Creating the Hash using SHA-512 algorithm */
-    $string_to_hash = $customer_key . number_format($currentTimeInMillis, 0, '', '' ) . $api_key;
-    $hash_value = hash("sha512", $string_to_hash);
-
-    $customer_key_header = "Customer-Key: " . $customer_key;
-    $timestamp_header = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
-    $authorization_header = "Authorization: " . $hash_value;
 
     $fields = array(
       'customerKey' => $customer_key,
       'email' => $username,
       'authType' => 'EMAIL',
     );
-    $field_string = json_encode($fields);
-
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-    curl_setopt($ch, CURLOPT_ENCODING, "");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-
-    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", $customer_key_header,
-      $timestamp_header, $authorization_header,
-    ));
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-    $content = curl_exec($ch);
-
-    if (curl_errno($ch)) {
-      $error = array(
-        '%method' => 'sendOtp',
-        '%file' => 'customer_setup.php',
-        '%error' => curl_error($ch),
-      );
-      watchdog('miniorange_saml_idp', 'Error at %method of %file: %error', $error);
-    }
-    curl_close($ch);
-    return $content;
+    return $this->callService($url,$fields,TRUE);
   }
 
   /**
    * Validate OTP.
    */
   public function validateOtp($transaction_id) {
-    if (!Utilities::isCurlInstalled()) {
-      return json_encode(array(
-        "status" => 'CURL_ERROR',
-        "statusMessage" => '<a href="http://php.net/manual/en/curl.installation.php">PHP cURL extension</a> is not installed or disabled.',
-      ));
-    }
 
     $url = MiniorangeSAMLIdpConstants::BASE_URL . '/moas/api/auth/validate';
-    $ch = curl_init($url);
-
-    $customer_key = $this->defaultCustomerId;
-    $api_key = $this->defaultCustomerApiKey;
-
-    $currentTimeInMillis = round(microtime(TRUE) * 1000);
-
-    $string_to_hash = $customer_key . number_format($currentTimeInMillis, 0, '', '' ) . $api_key;
-    $hash_value = hash("sha512", $string_to_hash);
-
-    $customer_key_header = "Customer-Key: " . $customer_key;
-    $timestamp_header = "Timestamp: " . number_format($currentTimeInMillis, 0, '', '' );
-    $authorization_header = "Authorization: " . $hash_value;
 
     $fields = array(
       'txId' => $transaction_id,
       'token' => $this->otpToken,
     );
 
-    $field_string = json_encode($fields);
 
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-    curl_setopt($ch, CURLOPT_ENCODING, "");
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-
-    curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", $customer_key_header,
-      $timestamp_header, $authorization_header,
-    ));
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-    $content = curl_exec($ch);
-
-    if (curl_errno($ch)) {
-      $error = array(
-        '%method' => 'validateOtp',
-        '%file' => 'customer_setup.php',
-        '%error' => curl_error($ch),
-      );
-      watchdog('miniorange_saml_idp', 'Error at %method of %file: %error', $error);
-    }
-    curl_close($ch);
-    return $content;
+    return $this->callService($url,$fields,TRUE);
   }
+
+  function callService($url,$fields,$addExtendedHeader=FALSE,$logError=TRUE){
+    if (!Utilities::isCurlInstalled()) {
+      return json_encode(array(
+        "statusCode" => 'ERROR',
+        "statusMessage" => 'cURL is not enabled on your site. Please enable the cURL module.',
+      ));
+    }
+    $fieldString = is_string($fields)?$fields:json_encode($fields);
+
+    $header = $this->getHeader($addExtendedHeader);
+
+    $response = drupal_http_request($url,[
+      'data' => $fieldString,
+      'method'=>'POST',
+      'allow_redirects' => TRUE,
+      'http_errors' => FALSE,
+      'decode_content'  => true,
+      'verify' => FALSE,
+      'headers' =>$header
+    ]);
+
+    if(isset($response->error) && $response->code != 200 && $logError)
+    {
+        $error = array(
+          '%apiName' => explode("moas",$url)[1],
+          '%error' => $response->error,
+        );
+        watchdog('miniorange_saml_idp','Error at %apiName of  %error', $error);
+    }
+    return $response->data;
+
+  }
+  function getHeader($addExtendedHeader=FALSE){
+
+    $header = array(
+      'Content-Type'=>'application/json', 'charset'=>'UTF - 8',
+      'Authorization'=> 'Basic',
+    );
+
+    if($addExtendedHeader){
+      /* Current time in milliseconds since midnight, January 1, 1970 UTC. */
+      $current_time_in_millis = $this->getTimeStamp();
+
+
+      /* Creating the Hash using SHA-512 algorithm */
+      list($customerId,$apiKey) = $this->getCustomerDetails();
+
+      $string_to_hash = $customerId .$current_time_in_millis . $apiKey;
+      $hashValue = hash("sha512", $string_to_hash);
+      $timestamp_header = number_format($current_time_in_millis, 0, '', '' );
+      $header=array_merge($header,array("Customer-Key"=>$customerId,
+        "Timestamp"=>$timestamp_header, "Authorization"=>$hashValue));
+
+    }
+    return $header;
+  }
+  public  function getTimeStamp()
+  {
+    $url = MiniorangeSAMLIdpConstants::BASE_URL.'/moas/rest/mobile/get-timestamp';
+    $fields = array();
+    $currentTimeInMillis = $this->callService($url,$fields);
+    if (empty($currentTimeInMillis)) {
+      $currentTimeInMillis = round(microtime(true) * 1000);
+      $currentTimeInMillis = number_format($currentTimeInMillis, 0, '', '');
+    }
+    return $currentTimeInMillis;
+  }
+
+
+  public function  getCustomerDetails(){
+    $customerKey = variable_get('miniorange_saml_idp_customer_id');
+    $apikey = variable_get('miniorange_saml_idp_customer_api_key');
+
+    if(!is_null($customerKey) && !is_null($apikey) && !empty($customerKey) && !empty($apikey)){
+      return array($customerKey,$apikey);
+    }
+    else
+      return array($this->defaultCustomerId,$this->defaultCustomerApiKey);
+
+
+  }
+
+
+
+
 }

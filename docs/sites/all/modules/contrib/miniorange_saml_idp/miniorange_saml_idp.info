@@ -19,8 +19,8 @@ version = "7.x-1.38"
 core = "7.x"
 project = "miniorange_saml_idp"
 datestamp = "1591552819"
-; Information added by Drupal.org packaging script on 2020-07-14
-version = "7.x-1.39"
+; Information added by Drupal.org packaging script on 2022-04-12
+version = "7.x-1.42"
 core = "7.x"
 project = "miniorange_saml_idp"
-datestamp = "1594754306"
+datestamp = "1649759841"

@@ -27,7 +27,7 @@ CONFIGURATION
  * Configure user permissions in Configuration » People » miniOrange SAML IDP Configuration:
 
    - Setup Customer account with miniOrange (Optional)
-     Login/Create account with miniOrange by entering email address, phone number and password.
+     Login/Create account with miniOrange by entering email address, phone number (optional) and password.
 
    - Service Provider Setup.
      Make note of the Identity Provider information from IDP Metadata tab. This will be required to configure your SP.

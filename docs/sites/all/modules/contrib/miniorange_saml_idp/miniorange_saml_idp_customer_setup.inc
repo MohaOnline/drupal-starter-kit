@@ -65,20 +65,13 @@ function miniorange_saml_idp_customer_setup($form, &$form_state) {
             '#markup' => '<br/><br/><h4>Your Profile: </h4>',
         );
 
-        $header = array(
-            'email' => array('data' => t('Customer Email')),
-            'customerid' => array('data' => t('Customer ID')),
-            'token' => array('data' => t('Token Key')),
-            'apikey' => array('data' => t('API Key')),
-        );
-
-        $options = array();
-
-        $options[0] = array(
-            'email' => variable_get('miniorange_saml_idp_customer_admin_email', ''),
-            'customerid' => variable_get('miniorange_saml_idp_customer_id', ''),
-            'token' => variable_get('miniorange_saml_idp_customer_admin_token', ''),
-            'apikey' => variable_get('miniorange_saml_idp_customer_api_key', ''),
+        $header = array( t('Attribute'),  t('Value') );
+        $options = array(
+            array( t('Customer Email'), variable_get('miniorange_saml_idp_customer_admin_email', '') ),
+            array( t('Customer ID'), variable_get('miniorange_saml_idp_customer_id', '') ),
+            array( t('Token Key'), variable_get('miniorange_saml_idp_customer_admin_token', '') ),
+            array( t('API Key'), variable_get('miniorange_saml_idp_customer_api_key', ''),
+            ),
         );
 
         $form['fieldset']['customerinfo'] = array(
@@ -88,7 +81,7 @@ function miniorange_saml_idp_customer_setup($form, &$form_state) {
         );
 
         $form['miniorange_saml_customer_Remove_Account_info'] = array(
-            '#markup' => '<br><br><br><br/><br><h4>Remove Account: </a></br></h4>
+            '#markup' => '<br><br/><br><h4>Remove Account: </a></br></h4>
                     <p>This section will help you to remove your current logged in account without losing your current configurations.</p>'
         );
 

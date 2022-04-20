@@ -105,9 +105,6 @@ function miniorange_saml_idp_licensing() {
                                               <tr>
                                                 <td><a class="mo_saml_btn mo_saml_btn-danger mo_saml_btn-sm" onclick="click_to_upgrade_or_register(\'' . miniorange_saml_premium_plan_button() . '\');" >Upgrade Now</a></td>
                                               </tr>
-                                              <tr>
-                                                <td style="font-size: smaller">[50% from second year onwards]</td>
-                                              </tr>
                                          </table> 
                                     </li>                             
                                     <li><table class="miniOrange_pricing_table"><td style="text-align:center;">$450</td></table></li>
@@ -194,8 +191,8 @@ function miniorange_saml_idp_licensing() {
           . 'Additional charges will be applicable based on the number of Service Providers you wish to configure.<br>'
   );
   $form['markup_9']=array(
-    '#markup'=>"<br><h3>10 Days Return Policy -</h3>
-At miniOrange, we want to ensure you are 100% happy with your purchase. If the module you purchased is not working as advertised and you've attempted to resolve any issues with our support team, which couldn't get resolved, we will refund the whole amount given that you have a raised a refund request within the first 10 days of the purchase. Please email us at info@xecurify.com for any queries regarding the return policy.
+    '#markup'=>"<br><h3>Return Policy -</h3>
+At miniOrange, we want to ensure 100% customer satisfaction with our product/module purchase. If the module you purchased is not working as advertised and you've attempted to resolve any issues with our support team, which couldn't get resolved, we will refund the whole amount given that you have raised a refund request within the first 10 days of the purchase. For any queries regarding the return policy, please email us at <a href='mailto:drupalsupport@xecurify.com'>drupalsupport@xecurify.com</a>.
     "
   );
 

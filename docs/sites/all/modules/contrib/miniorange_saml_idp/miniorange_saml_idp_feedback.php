@@ -6,6 +6,7 @@ function miniorange_idp_feedback()
         //code to send email alert
         $reason      = $_POST['deactivate_plugin'];
         $q_feedback  = $_POST['query_feedback'];
+      if(isset($_POST['miniorange_feedback_submit'])) {
         $admin_email = variable_get('miniorange_saml_idp_customer_admin_email', '');
         if ( empty( $admin_email ) )
             $email = $_POST['miniorange_feedback_email'];
@@ -14,65 +15,38 @@ function miniorange_idp_feedback()
 
         $message = '<br><b>Reason: </b>' . $reason . '<br><br><b>Feedback:</b> ' . $q_feedback;
 
-        $url = 'https://login.xecurify.com/moas/api/notify/send';
-        $ch = curl_init($url);
+        $url = MiniorangeSAMLIdpConstants::BASE_URL.'/moas/api/notify/send';
+
         $phone = variable_get('miniorange_saml_idp_customer_admin_phone', '');
-        $customerKey = variable_get('miniorange_saml_idp_customer_id', '');
-        $apikey = variable_get('miniorange_saml_idp_customer_api_key', '');
         $drupalCoreVersion = VERSION;
 
-
         if (valid_email_address($email)) {
+          $customer = new MiniorangeSAMLIdpCustomer($email, $phone, NULL, NULL);
+          list($customerKey, $apikey) = $customer->getCustomerDetails();
+          $fromEmail = $email;
+          $query = '[Drupal-' . $drupalCoreVersion . ' SAML IDP Free] ' . $message;
 
-            if ($customerKey == '') {
-                $customerKey = "16555";
-                $apikey = "fFd2XcvTGDemZvbw1bcUesNJWEqKbbUq";
-            }
-
-            $currentTimeInMillis = get_idp_timestamp();
-            $stringToHash = $customerKey . $currentTimeInMillis . $apikey;
-            $hashValue = hash("sha512", $stringToHash);
-            $customerKeyHeader = "Customer-Key: " . $customerKey;
-            $timestampHeader = "Timestamp: " . $currentTimeInMillis;
-            $authorizationHeader = "Authorization: " . $hashValue;
-            $fromEmail = $email;
-            $query = '[Drupal-'. $drupalCoreVersion .' SAML IDP Free] ' . $message;
-
-            $content = '<div >Hello, <br><br>Company :<a href="' . $_SERVER['SERVER_NAME'] . '" target="_blank" >' . $_SERVER['SERVER_NAME'] . '</a>
+          $content = '<div >Hello, <br><br>Company :<a href="' . $_SERVER['SERVER_NAME'] . '" target="_blank" >' . $_SERVER['SERVER_NAME'] . '</a>
                                    <br><br>Phone Number :' . $phone . '<br><br>Email :<a href="mailto:' . $fromEmail . '" target="_blank">' . $fromEmail . '</a>
                                    <br><br><b>Query:</b> ' . $query . '</div>';
 
-            $fields = array(
-                'customerKey' => $customerKey,
-                'sendEmail' => true,
-                'email' => array(
-                    'customerKey' => $customerKey,
-                    'fromEmail' => $fromEmail,
-                    'fromName' => 'miniOrange',
-                    'toEmail' => 'drupalsupport@xecurify.com',
-                    'toName' => 'drupalsupport@xecurify.com',
-                    'subject' => 'Drupal-'. $drupalCoreVersion .' SAML IDP Module Feedback',
-                    'content' => $content
-                ),
-            );
-
-            $field_string = json_encode($fields);
-
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_ENCODING, "");
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);    # required for https urls
-            curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", $customerKeyHeader, $timestampHeader, $authorizationHeader));
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-            $content = curl_exec($ch);
-
-            if (curl_errno($ch)) {
-                return json_encode(array("status" => 'ERROR', 'statusMessage' => curl_error($ch)));
-            }
-            curl_close($ch);
+          $fields = array(
+            'customerKey' => $customerKey,
+            'sendEmail' => true,
+            'email' => array(
+              'customerKey' => $customerKey,
+              'fromEmail' => $fromEmail,
+              'fromName' => 'miniOrange',
+              'toEmail' => 'drupalsupport@xecurify.com',
+              'toName' => 'drupalsupport@xecurify.com',
+              'subject' => 'Drupal-' . $drupalCoreVersion . ' SAML IDP Module Feedback',
+              'content' => $content
+            ),
+          );
+          $response = json_decode($customer->callService($url, $fields, TRUE));
+          if (is_object($response) && isset($response->statusCode))
+            return $response;
+        }
         }
     } else if (variable_get('mo_feedback_given') == 0) {
 
@@ -180,7 +154,7 @@ function miniorange_idp_feedback()
                                         <div class="radio" style="vertical-align: middle;">
                                             <label for="<?php echo $deactivate_reasons; ?>">
                                                 <input type="radio" name="deactivate_plugin" id="deactivate_plugin"
-                                                       value="<?php echo $deactivate_reasons; ?>" required>
+                                                       value="<?php echo $deactivate_reasons; ?>" >
                                                 <?php echo $deactivate_reasons; ?>
                                             </label>
                                         </div>
@@ -193,9 +167,12 @@ function miniorange_idp_feedback()
                                               cols="50" placeholder="Write your query here"></textarea>
                                     <br><br>
                                     <div class="mo2f_modal-footer">
-                                        <input type="submit" id="submit_button" name="miniorange_feedback_submit"
-                                               class="button btn btn-primary" value="Submit and Continue"
-                                               style="margin: auto; display: block; font-size: 11px;"/><br>
+                                      <input type="submit" id="submit_button" name="miniorange_feedback_submit"
+                                             class="button btn btn-primary" value="Submit and Continue"
+                                             style="margin: auto; display: block; font-size: 11px; float: left;"/><br>
+                                      <input type="submit" id="skip_button"
+                                             style="margin: auto; display: block; font-size: 11px; float: right;"
+                                             name="miniorange_feedback_skip" class="button btn btn-primary" value="Skip" />
                                         <div class="idp_loader" id="idp_loader" style="display: none;"></div>
                                     </div>
                                     <?php

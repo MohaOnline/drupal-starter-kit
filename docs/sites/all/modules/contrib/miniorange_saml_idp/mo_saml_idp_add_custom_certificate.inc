@@ -25,7 +25,7 @@ function mo_saml_idp_add_custom_certificate($form, &$form_state)
     $form['mo_saml_country_code_text'] = array(
         '#type' => 'textfield',
         '#attributes' => array('style' => 'width:80%;background-color: hsla(0,0%,0%,0.08) !important;','placeholder' => 'Enter Country code:'),
-        '#description' => t('<b>Note: </b>Check your country code <a href="https://www.digicert.com/ssl-certificate-country-codes.htm" target="_blank">here.</a>'),
+        '#description' => t('<b>Note: </b>Check your country code <a href="https://www.digicert.com/kb/ssl-certificate-country-codes.htm" target="_blank">here.</a>'),
         '#disabled' => TRUE,
         '#prefix' => '<tr>
                         <td width="20%"><h4 style="margin-left: 44px;">Country code :</h4></td><td width="10%">'

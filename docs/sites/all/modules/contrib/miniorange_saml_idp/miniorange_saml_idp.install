@@ -3,14 +3,14 @@
  * @file
  * Installation file for miniOrange SAML Module.
  */
- 
+
  include 'miniorange_saml_idp_feedback.php';
 
 /**
  * Implements hook_uninstall().
  */
 function miniorange_saml_idp_uninstall() {
-  
+
   variable_del('miniorange_saml_idp_status');
   variable_del('miniorange_saml_idp_customer_admin_email');
   variable_del('miniorange_saml_idp_customer_admin_phone');
@@ -48,9 +48,9 @@ function miniorange_saml_idp_install() {
  */
 
 function miniorange_saml_idp_disable() {
-    if(variable_get('mo_feedback_given',0) == 0){
+    $drupal_is_cli_command = Utilities::drupal_is_cli();
+    if( !$drupal_is_cli_command && variable_get('mo_feedback_given',0) == 0){
         miniorange_idp_feedback();
         variable_set('mo_feedback_given', 1);
     }
 }
- 
