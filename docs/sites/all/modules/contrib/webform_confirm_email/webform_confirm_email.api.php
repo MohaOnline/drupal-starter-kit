@@ -1,26 +1,24 @@
 <?php
+
 /**
  * @file
+ * Document hooks invoked by this module.
  */
-
 
 /**
- * React on an email that was confirmed when the user clicked
- * the confirmation link
+ * React when a confirmation link was clicked.
  *
- * @param $node
- *   The node object of the webform for which an email was confirmed
- *
- * @param $submission
- *   The submission object of the webform submission where the user
- *   just confirmed his/her email address
+ * @param object $node
+ *   The webform node of the the submission.
+ * @param object $submission
+ *   The confirmed webform submission.
+ * @param bool $first_confirmation
+ *   TRUE the first time a confirmation link for this submission was clicked.
  */
-function hook_webform_confirm_email_email_confirmed($node, $submission) {
-  db_query(
-    'INSERT INTO {my_confirmed_submission_list} ' .
-    '  VALUES (:nid, :sid) ',
-    array(':nid' => $node->nid, ':sid' => $submission->sid)
-  );
+function hook_webform_confirm_email_email_confirmed($node, $submission, $first_confirmation) {
+  db_insert('my_confirmed_submission_list')
+    ->fields(['nid' => $node->nid, 'sid' => $submission->sid])
+    ->execute();
 }
 
 /**

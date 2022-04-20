@@ -121,6 +121,7 @@ function webform_confirm_email_confirmation($node, $submission, $eid) {
     ->condition('nid', $node->nid)
     ->condition('sid', $submission->sid)
     ->execute();
+  $first_confirmation = !$submission->confirmed;
   $submission->confirmed = 1;
 
   $messages = db_select('webform_confirm_email_queued_emails', 'e')
@@ -173,9 +174,9 @@ function webform_confirm_email_confirmation($node, $submission, $eid) {
     ->execute();
 
   // Let other modules react to the submission being confirmed.
-  module_invoke_all('webform_confirm_email_email_confirmed', $node, $submission);
+  module_invoke_all('webform_confirm_email_email_confirmed', $node, $submission, $first_confirmation);
   if (module_exists('rules') == TRUE) {
-    rules_invoke_event('webform_confirm_email_email_confirmed', $node, $submission);
+    rules_invoke_event('webform_confirm_email_email_confirmed', $node, $submission, $first_confirmation);
   }
   $redirect_url = db_query(
     'SELECT redirect_url ' .
