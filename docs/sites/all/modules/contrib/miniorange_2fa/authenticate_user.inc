@@ -85,20 +85,6 @@ function mo_auth_authenticate_user_submit($form, &$form_state) {
   $user = user_load($uid);
   $input = isset($form_state['input']) && is_array($form_state['input'])?$form_state['input']:array();
 
-  if (array_key_exists('mo_auth_remember_device', $input) && !is_null($input['mo_auth_remember_device'])){
-    if ( $input['mo_auth_remember_device'] == 1 ) {
-      if (isset($_SESSION['mo2f_rba_status'])) {
-        $rba_register_status = $_SESSION['mo2f_rba_status']['status'];
-        $rba_session_uuid = $_SESSION['mo2f_rba_status']['sessionUuid'];
-        if ($rba_register_status == 'WAIT_FOR_INPUT') {
-          $mo_auth_rba = new MoAuthRBA();
-          $mo_auth_rba->mo2f_register_rba_profile($user->miniorange_registered_email[LANGUAGE_NONE][0]['value'], $rba_session_uuid);
-        }
-      }
-    }
-  }
-
-
   $user_email = $user->miniorange_registered_email[LANGUAGE_NONE][0]['value'];
   // $user_api_response = $_SESSION['mo_auth']['user'];
   $challenge_response = $_SESSION['mo_auth']['mo_challenge_response'];
@@ -139,6 +125,21 @@ function mo_auth_authenticate_user_submit($form, &$form_state) {
   // read API response
   if ( isset( $response ) ){
     if ( $response->status == 'SUCCESS' ) {
+
+      //Register RBA profile
+      if (array_key_exists('mo_auth_remember_device', $input)){
+        if ( $input['mo_auth_remember_device'] == 1 ) {
+          if (isset($_SESSION['mo2f_rba_status'])) {
+            $rba_register_status = $_SESSION['mo2f_rba_status']['status'];
+            $rba_session_uuid = $_SESSION['mo2f_rba_status']['sessionUuid'];
+            if ($rba_register_status == 'WAIT_FOR_INPUT') {
+              $mo_auth_rba = new MoAuthRBA();
+              $mo_auth_rba->mo2f_register_rba_profile($user->miniorange_registered_email[LANGUAGE_NONE][0]['value'], $rba_session_uuid);
+            }
+          }
+        }
+      }
+
       $change2FARequest = array_key_exists('mo_auth_change_2fa',$input) && !is_null($input['mo_auth_change_2fa'])?TRUE:FALSE;
       user_login_submit(array(), $form_state);
       unset( $_SESSION['mo_auth'] );

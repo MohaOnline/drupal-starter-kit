@@ -493,9 +493,9 @@
         '#description' => t('<br><br><b>Note:-</b> If you want to allow your users to remember device then select <strong>\'Allowed\'</strong> above.
                              <br><strong>2FA will not be invoked for the remembered devices for the specified period.</strong>
                              <br><br><div class="mo2f_highlight_background_note">You can control the following settings related to this feature:-</div>
-                             <br><br><strong>1. </strong>Click <a target="_blank"  href="' . MoAuthConstants::$BASE_URL . '/login?redirectUrl=' . MoAuthConstants::$BASE_URL . '/admin/customer/customerpreferences" >here</a> to configure the number of days for which the device to be remembered.
-                             <br><strong>2. </strong>Click <a target="_blank" href="'. MoAuthConstants::$BASE_URL  .'/login?redirectUrl='. MoAuthConstants::$BASE_URL . '/admin/customer/configpolicy" >here</a> to manage the number of allowed devices to be remembered.
-                             <br><strong>3. </strong>Click <a target="_blank"  href="' . MoAuthConstants::$BASE_URL . '/login?redirectUrl=' . MoAuthConstants::$BASE_URL . '/admin/customer/viewrbareport" >here</a> to manage the remembered devices of all the users.
+                             <br><br><strong>1. </strong>Click <a target="_blank"  href="' . MoAuthConstants::getBaseUrl() . '/login?redirectUrl=' . MoAuthConstants::getBaseUrl() . '/admin/customer/customerpreferences" >here</a> to configure the number of days for which the device to be remembered.
+                             <br><strong>2. </strong>Click <a target="_blank" href="'. MoAuthConstants::getBaseUrl()  .'/login?redirectUrl='. MoAuthConstants::getBaseUrl() . '/admin/customer/configpolicy" >here</a> to manage the number of allowed devices to be remembered.
+                             <br><strong>3. </strong>Click <a target="_blank"  href="' . MoAuthConstants::getBaseUrl() . '/login?redirectUrl=' . MoAuthConstants::getBaseUrl() . '/admin/customer/viewrbareport" >here</a> to manage the remembered devices of all the users.
                                '),
         '#suffix' => '<br></details>',
         '#disabled' => $is_free,

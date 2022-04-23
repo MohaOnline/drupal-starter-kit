@@ -411,6 +411,7 @@ class MoAuthUtilities {
       return FALSE;
     }
     $current_IP_address = self::get_client_ip();
+    watchdog('miniorange_2fa', 'Current IP Address '.$current_IP_address);
     $whitelisted_IP = variable_get('mo_auth_two_factor_whitelist_IP','');
     if( is_null( $whitelisted_IP ) || empty( $whitelisted_IP ) ){
       return FALSE;
@@ -427,11 +428,13 @@ class MoAuthUtilities {
         $current_IP  = ip2long( $current_IP_address );
         if( $lower_range !== FALSE && $upper_range !== FALSE && $current_IP !== FALSE && ( ( $current_IP >= $lower_range ) && ( $current_IP <= $upper_range ) ) ){
           $mo_ip_found = TRUE;
+          watchdog('miniorange_2fa', 'IP Range found');
           break;
         }
       }else {
         /** Compare with single IP address **/
         if( $current_IP_address == $value ){
+          watchdog('miniorange_2fa', 'IP Address found');
           $mo_ip_found = TRUE;
           break;
         }

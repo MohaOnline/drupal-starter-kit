@@ -10,7 +10,6 @@
  */
 class MoAuthConstants {
     public static $MODULE_NAME = 'mo_auth';
-    public static $BASE_URL = 'https://login.xecurify.com/moas';
     public static $PLUGIN_NAME = 'Drupal Two-Factor Plugin';
     public static $TRANSACTION_NAME = 'Drupal Two-Factor Module';
 
@@ -40,7 +39,7 @@ class MoAuthConstants {
 
     public static function getBaseUrl() {
         $getBrandingName = variable_get('mo_auth_customer_domain_name', 'login');
-        //return "https://" . $getBrandingName . ".xecurify-au.com/moas";  // Uncomment this line for Australian servers (and comment the one below)
+       // return "https://" . $getBrandingName . ".xecurify-au.com/moas";  // Uncomment this line for Australian servers (and comment the one below)
         return "https://" . $getBrandingName . ".xecurify.com/moas";
     }
 }

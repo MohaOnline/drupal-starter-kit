@@ -3,7 +3,7 @@
 class MoAuthRBA
 {
    public static function mo2f_collect_attributes( $useremail, $rba_attributes ) {
-    $url          = MoAuthConstants::$BASE_URL . '/rest/rba/acs';
+    $url          = MoAuthConstants::getBaseUrl() . '/rest/rba/acs';
     $ch = curl_init($url);
     $customerKey  = variable_get('mo_auth_customer_id', '');
     $apiKey = variable_get('mo_auth_customer_api_key', '');
@@ -50,7 +50,7 @@ class MoAuthRBA
 
 
   public static function mo2f_evaluate_risk($useremail,$sessionUuid){
-    $url = MoAuthConstants::$BASE_URL . '/rest/rba/evaluate-risk';
+    $url = MoAuthConstants::getBaseUrl() . '/rest/rba/evaluate-risk';
     $ch = curl_init($url);
     /* The customer Key provided to you */
     $customerKey  = variable_get('mo_auth_customer_id', '');
@@ -96,7 +96,7 @@ class MoAuthRBA
 
 
   public static function mo2f_register_rba_profile($useremail,$sessionUuid){
-    $url = MoAuthConstants::$BASE_URL . '/rest/rba/register-profile';
+    $url = MoAuthConstants::getBaseUrl() . '/rest/rba/register-profile';
     $ch = curl_init($url);
     /* The customer Key provided to you */
     $customerKey  = variable_get('mo_auth_customer_id', '');

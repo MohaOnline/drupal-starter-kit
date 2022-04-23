@@ -9,9 +9,8 @@ use Drupal\Core\Controller\ControllerBase;
 		If( (isset($_POST['mo_2fa_check'])) && ($_POST['mo_2fa_check'] == "True" ))
 		{
 			//code to send email alert
-
-			$reason = $_POST['deactivate_plugin'];
-			$q_feedback = $_POST['query_feedback'];
+        $reason = isset($_POST['deactivate_plugin']) ? $_POST['deactivate_plugin'] : "";
+		$q_feedback = $_POST['query_feedback'];
       if(isset($_POST['miniorange_feedback_submit'])) {
 
         $email = !empty(variable_get('mo_auth_customer_admin_email', '')) ? variable_get('mo_auth_customer_admin_email', '') : $_POST['miniorange_feedback_email'];

@@ -783,17 +783,24 @@ function mo_auth_collectattributes()
   $user = user_load_by_name($username);
   $form_state['uid'] = $user->uid;
 
+  if ($user->uid == variable_get('mo_auth_module_activator_admin_uid', '')){
+    $email = variable_get('mo_auth_customer_admin_email');
+  }
+  else{
+    $email = $user->mail;
+  }
+
   $mo_auth_rba = new MoAuthRBA();
 
   //collect RBA attributes
-  $collect_attributes_response = json_decode($mo_auth_rba->mo2f_collect_attributes($user->mail, $attributes), true);
+  $collect_attributes_response = json_decode($mo_auth_rba->mo2f_collect_attributes($email, $attributes), true);
 
   if (json_last_error() == JSON_ERROR_NONE) {
     if ($collect_attributes_response['status'] == 'SUCCESS') {
       $sessionUuid = $collect_attributes_response['sessionUuid'];
 
       //Evaluate risk
-      $evaluate_risk_response = json_decode($mo_auth_rba->mo2f_evaluate_risk($user->mail, $sessionUuid), true);
+      $evaluate_risk_response = json_decode($mo_auth_rba->mo2f_evaluate_risk($email, $sessionUuid), true);
       if (json_last_error() == JSON_ERROR_NONE) {
 
         //2FA needed

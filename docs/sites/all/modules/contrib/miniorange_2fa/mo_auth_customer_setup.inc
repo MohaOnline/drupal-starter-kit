@@ -413,6 +413,10 @@ function mo_auth_save_customer($user, $json, $username, $phone)
     variable_set('mo_auth_customer_admin_phone', $phone);
     variable_set('mo_auth_customer_api_key', $json->apiKey);
     variable_set('mo_auth_customer_app_secret', $json->appSecret);
+
+    //This variable will help recognize the user who has activated the module.
+    variable_set('mo_auth_module_activator_admin_uid', $user->uid);
+
     isset($json->appSecret) ? (variable_set('mo_auth_customer_app_secret', $json->appSecret)) : NULL;
     $user->miniorange_registered_email[LANGUAGE_NONE][0]['value'] = $username;
     $user->configured_auth_methods[LANGUAGE_NONE][0]['value'] = array(

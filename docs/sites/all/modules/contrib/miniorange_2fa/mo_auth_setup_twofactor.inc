@@ -51,7 +51,7 @@ function mo_auth_setup_twofactor($form, &$form_state) {
       $users_active_method = AuthenticationType::getAuthType( 'LASTPASS AUTHENTICATOR' );
     }
   }
-
+  $users_active_method['name']=isset($users_active_method['code']) ? $users_active_method['code']: '';
 
   $form['header_top']['#markup'] = '<div class="mo2f-setup-header">
       <span class="mo2f-setup-header-top-left">Setup Two-Factor</span>
@@ -60,6 +60,7 @@ function mo_auth_setup_twofactor($form, &$form_state) {
     </div>
     <div style="width:80%;display:inline-block"><div class="mo2f-info" style="padding:15px 0px;"><b>Select any Two-Factor of your choice below and complete its setup.</b></div></div><div style="width:20%;display:inline-block;text-align: right;"></div>';
 
+  $users_active_method['code'] = isset($users_active_method['code']) ? $users_active_method['code']: '';
 
   $form['header_methods']['#markup'] = '<div class="mo2f-setup-methods-info-wrap">
         <div class="mo2f-setup-methods-info-left"><span class="mo2f-color-icon mo2f-active-method"></span>- Active Method</div>
