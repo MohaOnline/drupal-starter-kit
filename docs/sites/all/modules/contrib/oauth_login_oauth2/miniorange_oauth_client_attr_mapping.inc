@@ -182,11 +182,11 @@
         variable_set('miniorange_oauth_client_email_attr_val',$email_attr);
         variable_set('miniorange_oauth_client_name_attr_val',$name_attr);
         $app_values = variable_get('miniorange_oauth_client_appval','');
-
+        $app_name = variable_get('miniorange_auth_client_app_name');
         $app_values['miniorange_oauth_client_email_attr'] = $email_attr;
         $app_values['miniorange_oauth_client_name_attr'] = $name_attr;
         variable_set('miniorange_oauth_client_appval', $app_values);
-        drupal_set_message(t('Attribute Mapping saved successfully.'));
+        drupal_set_message(t('Attribute Mapping saved successfully. Please logout and go to your Drupal site’s login page, you will automatically find a <b>Login with ' . $app_name . '</b> link there.'));
     }
 
     /**

@@ -1,4 +1,4 @@
-name = OAuth 2.0 & OpenID Connect Login
+name = miniOrange OAuth 2.0 & OpenID Connect Login
 description = Login to Drupal site through an external Authentication Server using the OAuth or OpenID Protocol
 core = 7.x
 configure = admin/config/people/oauth_login_oauth2
@@ -10,8 +10,8 @@ files[] = includes/Utilities.php
 files[] = includes/miniorange_support.php
 scripts[] = js/testconfig.js
 
-; Information added by Drupal.org packaging script on 2020-07-01
-version = "7.x-1.17"
+; Information added by Drupal.org packaging script on 2022-03-03
+version = "7.x-1.20"
 core = "7.x"
 project = "oauth_login_oauth2"
-datestamp = "1593588538"
+datestamp = "1646314964"

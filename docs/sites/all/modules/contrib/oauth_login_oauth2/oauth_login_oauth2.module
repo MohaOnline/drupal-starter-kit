@@ -118,6 +118,14 @@ function miniorange_oauth_client_mologin()
 }
 
 function oauth_login_oauth2_form_alter(&$form, &$form_state, $form_id) {
+
+    $is_admin = path_is_admin(current_path());
+    $module_link = request_path();
+
+    if ( $is_admin && strpos($module_link, 'oauth_login_oauth2') !== false ) {
+        drupal_set_message( t('<strong>If you want to test out the features that we provide in the paid versions of our module to ensure your business use case is fulfilled, please drop us an email at <a target="_blank" href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a> for the 7-days trial</strong>.'), 'warning');
+    }
+
     global $base_url;
     $enable_login_with_oauth = variable_get('miniorange_oauth_enable_login_with_oauth','');
     if(($form_id == 'user_login_block') || ($form_id == 'user_login'))
@@ -223,7 +231,10 @@ function test_config()
         $module_path = drupal_get_path('module', 'oauth_login_oauth2');
         user_cookie_save(array("mo_oauth_test" => false));
         $username = isset($resourceOwner['email'])?$resourceOwner['email']:'User';
-        variable_set('miniorange_oauth_client_attr_list_from_server', $resourceOwner);
+        $resourceOwner_encoded = json_encode($resourceOwner);
+        variable_set('miniorange_oauth_client_attr_list_from_server', $resourceOwner_encoded);
+        $someattrs = '';
+        Utilities::show_attr($resourceOwner, $someattrs, 0, '', '<tr style="text-align:center;">', "<td style='font-weight:bold;padding:2%;border:2px solid #949090; word-wrap:break-word;'>" );
 
         echo '<div style="font-family:Calibri;padding:0 3%;">';
         echo '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center; border:1px solid #AEDB9A;
@@ -240,20 +251,16 @@ function test_config()
                               <td style="font-weight:bold;border:2px solid #949090;padding:2%;">ATTRIBUTE NAME</td>
                               <td style="font-weight:bold;padding:2%;border:2px solid #949090; word-wrap:break-word;">ATTRIBUTE VALUE</td>
                           </tr>';
-        testattrmappingconfig("",$resourceOwner);
-
+        echo $someattrs;
         echo '</table>';
-        echo '<span style="font-size:13pt;"><br><b>Note: </b>Please copy the Attribute Name of <b>email</b> and <b>username</b> to configure in the <b>Attribute Mapping</b> tab for the successful SSO.</span></div>';
-
+        echo '<span style="font-size:13pt;"><br><b>Step 1: </b>Please copy the <b>Attribute Name</b> in which you are getting <b>Email ID</b> and <b>Username</b>.
+                  <br><b>Step 2: </b>Save the attributes in the respective fields after clicking on <b>Attribute/Role Mapping</b> tab button below.<br></span></div>';
         echo '<div style="margin:3%;display:block;text-align:center;">
                         <input style="padding:1%;width:37%;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;font-size:15px;
                             border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;box-sizing: border-box;border-color: #0073AA;
                             box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;color: #FFF;"type="button" value="Configure Attribute/Role Mapping"
                         onClick="close_and_redirect();">
 
-                        <input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;font-size:15px;
-                            border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;box-sizing: border-box;border-color: #0073AA;
-                            box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;color: #FFF;"type="button" value="Done" onClick="self.close();">
                     </div>
                     <script>
                         function close_and_redirect(){

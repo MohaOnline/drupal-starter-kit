@@ -7,6 +7,7 @@
 
 		If( (isset($_POST['mo_oauth_client_check'])) && ($_POST['mo_oauth_client_check'] == "True" ) ) {
             //code to send email alert
+            if (isset($_POST['miniorange_feedback_submit'])){
             $_SESSION['mo_other'] = "False";
             $reason = $_POST['deactivate_plugin'];
             $q_feedback = $_POST['query_feedback'];
@@ -67,6 +68,7 @@
                 }
                 curl_close($ch);
             }
+        }
         } else{
             unset($_SESSION['mo_other']);
             $myArray = array();
@@ -186,10 +188,11 @@
 							<input type="hidden" name="form_id" value= <?php echo $form_id ?>>
 
 						<br>
-						<textarea id="query_feedback" name="query_feedback"  rows="4" style="margin-left:2%; font-size: medium;" cols="50" placeholder="Write your query here"></textarea>
+						<textarea id="query_feedback" name="query_feedback"  rows="4" style="margin-left:2%; font-size: medium;" cols="40" placeholder="Write your query here"></textarea>
 						<br><br>
 						<div class="mo2f_modal-footer">
 							<input type="submit" style="background-color: #4CAF50;border: none;color: white;padding: 15px 32px;text-align: center;text-decoration: none;display: inline-block;font-size: 16px;" name="miniorange_feedback_submit" class="button button-primary button-large" value="Submit and Continue" />
+                            <input type="submit" formnovalidate="formnovalidate" style="margin: auto; display: block; font-size: 11px; float: right;" name="miniorange_feedback_skip" class="btn btn-link" value="Skip" />
                             <div class="oauth_loader" id="oauth_loader" style="display: none;"></div>
 						</div>
 						<?php

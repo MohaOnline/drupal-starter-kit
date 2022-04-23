@@ -195,7 +195,7 @@ function miniorange_oauth_client_validate_otp_submit(&$form, $form_state) {
             <strong>(We discourage the use of disposable emails) </strong>
             <br>Please try again with a valid email.'), 'error');
             variable_set('miniorange_oauth_client_status', '');
-           return;
+            return;
     }
     else {
       drupal_set_message(t('Error creating customer'), 'error');

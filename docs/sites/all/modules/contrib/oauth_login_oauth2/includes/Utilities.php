@@ -180,6 +180,14 @@ class Utilities {
         }
     }
 
+    public static function drupal_is_cli() 
+    {
+        if(!isset($_SERVER['SERVER_SOFTWARE']) && (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0)))
+            return TRUE;
+        else
+            return FALSE;
+    }
+
     public static function isCurlInstalled() {
         if (in_array('curl', get_loaded_extensions())) {
             return 1;
@@ -347,7 +355,7 @@ class Utilities {
     {
         global $base_url;
         $server_attrs = variable_get('miniorange_oauth_client_attr_list_from_server');
-
+        $server_attrs = json_decode($server_attrs, TRUE);
         if(empty($server_attrs)){
             Utilities::spConfigGuide($form, $form_state);
             return;
@@ -380,35 +388,7 @@ class Utilities {
         );
 
         $someattrs = '';
-        $attrroles = '';
-
-        if(isset($server_attrs) && !empty($server_attrs))
-        {
-            foreach ($server_attrs as $attr_name => $attr_values)
-            {
-                if(is_array($attr_values) || is_object($attr_values)){
-                    foreach ($attr_values as $key1=>$val)
-                    {
-                        $someattrs .= '<tr><td>' . $attr_name.'.'.$key1 . '</td><td>' ;
-                        $someattrs .= $val . '</td></tr>';
-                    }
-                }
-                else{
-                    $someattrs .= '<tr><td>' . $attr_name . '</td><td>' ;
-                    $someattrs .= $attr_values . '</td></tr>';
-                }
-
-                if( $attr_name == 'roles' && is_array($server_attrs['roles']))
-                {
-                    foreach ($attr_values as $attr_roles => $role)
-                    {
-                        $attrroles .=  $role . ' | ';
-                    }
-                    $someattrs .=  $attrroles.'</td></tr>';
-                }
-
-            }
-        }
+        self::show_attr($server_attrs, $someattrs);
 
         $form['miniorange_saml_guide_table_list'] = array(
             '#markup' => '<tbody style="font-weight:bold;font-size: 12px;color:gray;">'.$someattrs.'</tbody></table></div>',
@@ -434,5 +414,29 @@ class Utilities {
         $form['miniorange_saml_guide_table_end'] = array(
             '#markup' => '</div>',
         );
+    }
+
+    public static function show_attr($attrs, &$result, $depth=0, $carry='', $tr = '<tr>', $td = '<td>'){
+      if ( !is_array($attrs) || sizeof($attrs) < 1 ){
+        return is_array($attrs) ? '' : $attrs .'</td></tr>';
+      }
+
+      foreach ($attrs as $key => $value) {
+        if (is_array($value)) {
+          if ($depth == 0) {
+            $carry = $tr .$td . $key;
+            self::show_attr($attrs[$key], $result,$depth + 1, $carry, $tr, $td);
+          } else{
+            self::show_attr($attrs[$key], $result,$depth + 1, $carry . '.' . $key , $tr, $td);
+          }
+        }else{
+          if ($depth == 0){
+            $result .= $tr .$td . $key . '</td>'. $td . $value .'</td></tr>';
+          } else{
+            if (!empty($carry))
+              $result .= $carry . '.' . $key . '</td>' . $td . $value .'</td></tr>';
+          }
+        }
+      }
     }
 }

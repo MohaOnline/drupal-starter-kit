@@ -59,6 +59,9 @@ function oauth_login_oauth2_install() {
  */
  function oauth_login_oauth2_disable()
  {
+     $drupal_is_cli = Utilities::drupal_is_cli();
+     if(!$drupal_is_cli){
 		miniorange_oauth_client_feedback();
+     }
  }
  ?>

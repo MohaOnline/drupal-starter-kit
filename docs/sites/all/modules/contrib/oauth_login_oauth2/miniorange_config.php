@@ -57,7 +57,7 @@ function miniorange_config($form, &$formstate)
         <h3>Backup/ Import Configurations</h3><hr><span class="mo_oauth_backup_cancel">
         <input type="button" class="btn btn-sm btn-danger" value="Cancel" onclick = "hide_backup_form()"/></a><br></span>'
       );
-    
+
       $form['markup_1s'] = array(
         '#markup' => '<br><br><div class="mo_oauth_highlight_background_note_2" style="width: auto" ><p><b>NOTE: </b>This tab will help you to transfer your module configurations when you change your Drupal instance.
                             <br>Example: When you switch from test environment to production.<br>Follow these 3 simple steps to do that:<br>
@@ -65,12 +65,12 @@ function miniorange_config($form, &$formstate)
                             <br><strong>2.</strong> Install the module on new Drupal instance.<br><strong>3.</strong> Upload the configuration file in Import module Configurations section.<br>
                             <br><b>And just like that, all your module configurations will be transferred!</b></p></div>',
       );
-    
+
       $form['mo_markup_top'] = array(
         '#markup' => '<div><br><br><div class="mo_oauth_container_3" style="text-align: center;float: left;margin-right: 20px;border: solid 1px #00000024;padding-bottom: 55px;">
                         <div><b><span style="font-size: 17px;">EXPORT CONFIGURATION</span></b><br><br><hr><br/><br>'
       );
-    
+
     $form['miniorange_oauth_export'] = array(
           '#type' => 'submit',
           '#value' => t('Download Module Configuration'),
@@ -78,18 +78,18 @@ function miniorange_config($form, &$formstate)
           '#suffix' => '</td>',
           '#submit' => array('miniorange_import_export'),
         );
-    
+
       $form['miniorange_oauth_import'] = array(
         '#markup' => '</div></div><div class="mo_oauth_container_3" style="float: left;text-align:center;padding-bottom: 20px;border: solid 1px #00000024;;">
                           <b><span style="font-size: 17px;">IMPORT CONFIGURATION <b><a href="'.$base_url.'/admin/config/people/oauth_login_oauth2/licensing"> [Standard]</a></b></span></b><br><br><hr><br>  ',
       );
-    
+
       $form['import_Config_file'] = array(
         '#type' => 'file',
         '#disabled' => TRUE,
         '#attributes' => array('style'=>'width: 175px;'),
       );
-    
+
       $form['miniorange_oauth_import_file'] = array(
         '#type' => 'button',
         '#value' => t('Upload'),
@@ -164,7 +164,7 @@ function miniorange_config($form, &$formstate)
         '#type' => 'textfield',
         '#default_value' => variable_get('miniorange_auth_client_app_name',NULL),
         '#id'  => 'miniorange_oauth_client_app_name',
-        '#title' => t('Custom App Name:<span class="form-required"> *</span>'),
+        '#title' => t('Display Name:<span class="form-required"> *</span>'),
         '#disabled' => $disabled,
         '#attributes' => $attributes_arr,
     );
@@ -181,6 +181,7 @@ function miniorange_config($form, &$formstate)
     $form['miniorange_oauth_client_id'] = array(
         '#type' => 'textfield',
         '#id'  => 'miniorange_oauth_client_client_id',
+        '#maxlength' => 1048,
         '#default_value' => variable_get('miniorange_auth_client_client_id',NULL),
         '#title' => t('Client Id:<span class="form-required"> *</span>'),
         '#description' => "You will get this value from your OAuth Server",
@@ -189,6 +190,7 @@ function miniorange_config($form, &$formstate)
 
     $form['miniorange_oauth_client_secret'] = array(
         '#type' => 'textfield',
+        '#maxlength' => 1048,
         '#default_value' => variable_get('miniorange_auth_client_client_secret',NULL),
         '#description' => "You will get this value from your OAuth Server",
         '#id'  => 'miniorange_oauth_client_client_secret',
@@ -215,6 +217,7 @@ function miniorange_config($form, &$formstate)
 
     $form['miniorange_oauth_client_authorize_endpoint'] = array(
         '#type' => 'textfield',
+        '#maxlength' => 1048,
         '#default_value' => variable_get('miniorange_auth_client_authorize_endpoint',NULL),
         '#id'  => 'miniorange_oauth_client_auth_ep',
         '#title' => t('Authorize Endpoint:<span class="form-required"> *</span>'),
@@ -223,6 +226,7 @@ function miniorange_config($form, &$formstate)
 
     $form['miniorange_oauth_client_access_token_endpoint'] = array(
         '#type' => 'textfield',
+        '#maxlength' => 1048,
         '#default_value' => variable_get('miniorange_auth_client_access_token_ep',NULL),
         '#id'  => 'miniorange_oauth_client_access_token_ep',
         '#title' => t('Access Token Endpoint:<span class="form-required"> *</span>'),
@@ -231,6 +235,7 @@ function miniorange_config($form, &$formstate)
 
     $form['miniorange_oauth_client_userinfo_endpoint'] = array(
         '#type' => 'textfield',
+        '#maxlength' => 1048,
         '#default_value' => variable_get('miniorange_auth_client_user_info_ep',NULL),
         '#id'  => 'miniorange_oauth_client_user_info_ep',
         '#title' => t('Get User Info Endpoint:<span class="form-required"> *</span>'),
@@ -253,7 +258,7 @@ function miniorange_config($form, &$formstate)
 
     $form['miniorange_oauth_send_with_body_oauth'] = array(
         '#type' => 'checkbox',
-        '#default_value' => variable_get('miniorange_oauth_send_with_body_oauth',1),
+        '#default_value' => variable_get('miniorange_oauth_send_with_body_oauth'),
         '#title' => t('<b>Body</b>'),
     );
 
@@ -528,7 +533,7 @@ function miniorange_oauth_client_save_config($form, &$form_state)
             drupal_set_message(t('The <b>Select Application</b> dropdown is required. Please Select your application.'), 'error');
             return;
         }
-        drupal_set_message(t('The <b>Custom App name</b>, <b>Client ID</b>, <b>Client Secret</b>, <b>Authorize Endpoint</b>, <b>Access Token Endpoint</b>
+        drupal_set_message(t('The <b>Display name</b>, <b>Client ID</b>, <b>Client Secret</b>, <b>Authorize Endpoint</b>, <b>Access Token Endpoint</b>
                 , <b>Get User Info Endpoint</b> fields are required.'), 'error');
         return;
     }
@@ -565,7 +570,7 @@ function miniorange_oauth_client_save_config($form, &$form_state)
     {
         $user_info_ep = variable_get('miniorange_auth_client_user_info_ep','');
     }
-    
+
     if($client_app == 'Azure AD'){
         $baseUrlValue = preg_replace('/^http:/i', 'https:', $baseUrlValue);
         $callback_uri = $baseUrlValue."/?q=mo_login";
@@ -637,7 +642,7 @@ function miniorange_oauth_client_reset_config($form, &$form_state)
             $baseUrlValue = $base_url;
     $miniorange_auth_client_callback_uri = $baseUrlValue."/?q=mo_login";
     variable_set('miniorange_auth_client_callback_uri',$miniorange_auth_client_callback_uri);
-    
+
     drupal_set_message(t('Configurations deleted successfully.'));
     return;
 }
@@ -683,7 +688,7 @@ function miniorange_import_export() {
 	echo(json_encode($configuration_array, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));
 	exit;
 	}
-  
+
   function mo_get_configuration_array( $class_name ) {
     $class_object = Utilities::getVariableNames($class_name);
     $mo_array = array();
@@ -695,7 +700,7 @@ function miniorange_import_export() {
     }
     return $mo_array;
   }
-  
+
   function mo_get_version_informations(){
     $array_version = array();
     $array_version["PHP_version"] = phpversion();
@@ -706,7 +711,7 @@ function miniorange_import_export() {
     $array_version["DOM"] = mo_oauth_is_dom_installed();
     return $array_version;
   }
-  
+
   function mo_oauth_is_openssl_installed() {
     if ( in_array( 'openssl', get_loaded_extensions() ) ) {
       return 1;
@@ -714,7 +719,7 @@ function miniorange_import_export() {
       return 0;
     }
   }
-  
+
   function mo_oauth_is_curl_installed() {
     if ( in_array( 'curl', get_loaded_extensions() ) ) {
       return 1;
@@ -722,7 +727,7 @@ function miniorange_import_export() {
       return 0;
     }
   }
-  
+
   function mo_oauth_is_iconv_installed(){
     if ( in_array( 'iconv', get_loaded_extensions() ) ) {
       return 1;
@@ -730,7 +735,7 @@ function miniorange_import_export() {
       return 0;
     }
   }
-  
+
   function mo_oauth_is_dom_installed(){
     if ( in_array( 'dom', get_loaded_extensions() ) ) {
       return 1;
