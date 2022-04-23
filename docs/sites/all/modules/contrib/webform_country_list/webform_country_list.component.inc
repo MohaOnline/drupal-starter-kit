@@ -164,9 +164,10 @@ function _webform_render_country_list(array $component, array $value = NULL, $fi
   }
   reset($available_countries);
   $default_ctry = key($available_countries);
-  // If the PHP PECL geoip package is available set the default country to that
-  // matching the geoip country.
-  if (function_exists('geoip_country_code_by_name')) {
+  // If the PHP PECL geoip package is available set the default based on the
+  // geoip location. Since the result depends on the request this is only done,
+  // when the page is not cachable.
+  if (function_exists('geoip_country_code_by_name') && !drupal_page_is_cacheable()) {
     // We use the PHP PECL geoip package to look up the IP address of the
     // user in the geoip IP database in order to find a matching country.
     // We get back the ISO country code for the user.
