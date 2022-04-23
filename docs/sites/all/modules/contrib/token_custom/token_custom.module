@@ -519,3 +519,17 @@ function token_custom_token_render($machine_name, $code, $data, $options) {
     return check_markup($code, $format);
   }
 }
+
+/**
+ * Implements hook_features_api().
+ */
+function token_custom_features_api() {
+  return array(
+    'token_custom' => array(
+      'name' => 'Custom tokens',
+      'file' => drupal_get_path('module', 'token_custom') . '/token_custom.features.inc',
+      'default_hook' => 'token_custom_features_default_settings',
+      'feature_source' => TRUE,
+    ),
+  );
+}
