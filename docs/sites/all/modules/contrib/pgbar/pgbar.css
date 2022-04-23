@@ -32,18 +32,13 @@
   position: relative;
 }
 
-.pgbar-target {
-  position: absolute;
-  right: 0;
-}
-
 
 .pgbar-wrapper {
   max-width: 40em;
   margin-bottom: 1.5em;
 }
 
-.pgbar-wrapper p span {
+.pgbar-wrapper p span:not(.pgbar-needed) {
   display: block;
   margin-bottom: 1.5em;
 }

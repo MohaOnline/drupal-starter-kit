@@ -10,8 +10,8 @@ dependencies[] = psr0
 
 stylesheets[screen][] = pgbar.css
 
-; Information added by Drupal.org packaging script on 2020-06-09
-version = "7.x-2.8"
+; Information added by Drupal.org packaging script on 2021-05-04
+version = "7.x-2.9"
 core = "7.x"
 project = "pgbar"
-datestamp = "1591713316"
+datestamp = "1620139478"

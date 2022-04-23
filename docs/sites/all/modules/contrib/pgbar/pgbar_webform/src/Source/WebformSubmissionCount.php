@@ -3,6 +3,7 @@
 namespace Drupal\pgbar_webform\Source;
 
 use Drupal\pgbar\Source\AddNids;
+use Drupal\pgbar\Source\ExternalSource;
 use Drupal\pgbar\Source\PluginInterface;
 
 /**
@@ -15,6 +16,7 @@ class WebformSubmissionCount implements PluginInterface {
    * @var Drupal\pgbar\Source\AddNids
    */
   protected $addNids;
+  protected $externalSource;
 
   public static function label() {
     return t('Webform submission count');
@@ -30,6 +32,7 @@ class WebformSubmissionCount implements PluginInterface {
   public function __construct($entity) {
     $this->entity = $entity;
     $this->addNids = new AddNids($entity ? $entity->nid : NULL);
+    $this->externalSource = new ExternalSource();
   }
 
   /**
@@ -53,7 +56,9 @@ class WebformSubmissionCount implements PluginInterface {
    * Build the configuration form for the field widget.
    */
   public function widgetForm($item) {
-    return $this->addNids->widgetForm($item);
+    $form = $this->addNids->widgetForm($item);
+    $form = array_merge_recursive($form, $this->externalSource->widgetForm($item));
+    return $form;
   }
 
 }

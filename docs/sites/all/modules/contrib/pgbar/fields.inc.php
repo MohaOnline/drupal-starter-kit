@@ -90,8 +90,12 @@ function _pgbar_add_item_defaults(array $item) {
       ],
       'display' => [
         'template' => '',
+        'autostart' => TRUE,
       ],
-      'source' => [],
+      'source' => [
+        'enable_external_url' => FALSE,
+        'external_url' => '',
+      ],
     ],
   ], $item);
 }
@@ -126,7 +130,7 @@ function pgbar_field_widget_form(&$form, &$form_state, $field, $instance, $langc
     'texts' => array(
       '#type' => 'fieldset',
       '#title' => t('Texts'),
-      '#description' => t('Available tokens: !current, !current-animated, !target, !needed.')
+      '#description' => t('Available tokens: !current, !current-animated, !target, !target-animated, !needed, !needed-animated.')
     ),
     'source' => array(
       '#type' => 'fieldset',
@@ -196,6 +200,12 @@ function pgbar_field_widget_form(&$form, &$form_state, $field, $instance, $langc
     '#default_value' => $item['options']['display']['template'],
     '#type' => 'textfield',
   );
+  $element['options']['display']['autostart'] = [
+    '#title' => t('Autostart'),
+    '#description' => t('Start the animation and polling automatically'),
+    '#type' => 'checkbox',
+    '#default_value' => isset($item['options']['display']['autostart']) ? $item['options']['display']['autostart'] : TRUE,
+  ];
   $source = _pgbar_source_plugin_load(NULL, $field, $instance);
   if ($source && ($source_form = $source->widgetForm($item))) {
     $element['options']['source'] += $source_form;
@@ -283,13 +293,23 @@ function pgbar_field_formatter_view($entity_type, $entity, $field, $instance, $l
     if ($d['#target'] <= 0) {
       continue;
     }
+    $polling_url = UrlGenerator::instance()->entityUrl($entity_type, $entity_id);
+    $find_at = '';
+    if ($item['options']['source']['enable_external_url']) {
+      $polling_url = $item['options']['source']['external_url'] ?: $polling_url;
+      $find_at = $item['options']['source']['find_at'];
+    }
     $settings['pgbar'][$html_id] = [
       'current' => $current,
       'target' => $target,
-      'pollingURL' => UrlGenerator::instance()->entityUrl($entity_type, $entity_id),
+      'targets' => $item['options']['target']['target'],
+      'threshold' => $item['options']['target']['threshold'],
+      'pollingURL' => $polling_url,
+      'find_at' => $find_at,
       'field_name' => $field['field_name'],
       'delta' => $delta,
-      'autostart' => TRUE,
+      'autostart' => $item['options']['display']['autostart'] ? TRUE : FALSE,
+      'external_url' => $item['options']['source']['external_url'] ? TRUE : FALSE,
     ];
     $element[] = $d;
   }

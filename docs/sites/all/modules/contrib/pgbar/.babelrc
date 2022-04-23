@@ -1,9 +1,7 @@
 {
   "presets": [
-    ["env", {
-      "targets": {
-        "browsers": ["> 1%", "last 2 versions", "not < 0.1%", "not dead"]
-      }
-    }]
+    [
+      "@babel/preset-env",
+    ],
   ]
 }
