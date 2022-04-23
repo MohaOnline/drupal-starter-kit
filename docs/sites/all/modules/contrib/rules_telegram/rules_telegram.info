@@ -5,8 +5,8 @@ php = 5.4
 dependencies[] = rules
 configure = admin/config/workflow/rules_telegram
 
-; Information added by Drupal.org packaging script on 2019-05-10
-version = "7.x-1.2"
+; Information added by Drupal.org packaging script on 2020-11-27
+version = "7.x-1.3"
 core = "7.x"
 project = "rules_telegram"
-datestamp = "1557490391"
+datestamp = "1606460015"
