@@ -3,9 +3,8 @@ description = Provides basic functionality for a CRM Core.
 package = CRM Core
 core = 7.x
 
-; Information added by Drupal.org packaging script on 2017-02-16
-version = "7.x-1.0"
+; Information added by Drupal.org packaging script on 2021-03-04
+version = "7.x-1.1"
 core = "7.x"
 project = "crm_core"
-datestamp = "1487217492"
-
+datestamp = "1614850224"

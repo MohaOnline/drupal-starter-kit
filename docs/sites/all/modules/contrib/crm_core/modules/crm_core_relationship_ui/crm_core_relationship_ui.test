@@ -13,18 +13,19 @@ class CRMCoreRelationshipUITestCase extends DrupalWebTestCase {
    * Enable dependencies.
    */
   public function setUp() {
-    parent::setUp(array('ctools', 'entity', 'views', 'image', 'name', 'crm_core', 'addressfield', 'email', 'link', 'cck_phone', 'field_group', 'name', 'crm_core_contact', 'crm_core_contact_ui', 'crm_core_relationship', 'crm_core_relationship_ui'));
-    cache_clear_all();
+    parent::setUp(array('crm_core_contact_ui', 'crm_core_relationship_ui'));
+    module_load_include('test', 'crm_core_contact_ui');
   }
 
   public function testRelationshipOperations() {
     $user = $this->drupalCreateUser(
-            array('administer crm_core_contact entities',
-                  'view any crm_core_contact entity',
-                  'create relation entities of any contact relationship',
-                  'view relation entities of any contact relationship',
-                  'edit relation entities of any contact relationship',
-                  ));
+      array(
+        'administer crm_core_contact entities',
+        'view any crm_core_contact entity',
+        'create relation entities of any contact relationship',
+        'view relation entities of any contact relationship',
+        'edit relation entities of any contact relationship',
+      ));
     $this->drupalLogin($user);
 
     // Create organization and individual contacts.
@@ -45,13 +46,12 @@ class CRMCoreRelationshipUITestCase extends DrupalWebTestCase {
 
     // Assert standard relationship types.
     $this->drupalGet('crm-core/contact/1/relationships/add');
-    $this->assertLink(t('Employee of'));
-    $this->assertLink(t('Friend of'));
-    $this->assertLink(t('Member of'));
+    $this->assertLink(t('works for'));
+    $this->assertLink(t('is friends with'));
+    $this->assertLink(t('is a member of'));
 
-    // Create relationship "Employer of"
+    // Create relationship "Employer of".
     $values = array(
-//      'source_contact' => CRMCoreContactUITestCase::getIndividualContactTitle($individual_contact) . ' [cid:1]',
       'destination_contact' => CRMCoreContactUITestCase::getOrganizationContactTitle($organization_contact) . ' [cid:2]',
     );
     $this->drupalPost('crm-core/contact/1/relationships/add/crm_employee/0', $values, t('Save Relationship'));

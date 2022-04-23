@@ -16,6 +16,7 @@ class DashboardTestCase extends DrupalWebTestCase {
     $this->privileged_user = $this->drupalCreateUser(array(
       'view crm dashboard',
       'administer crm-core settings',
+      'administer blocks',
     ));
     $this->drupalLogin($this->privileged_user);
   }
@@ -44,6 +45,9 @@ class DashboardTestCase extends DrupalWebTestCase {
     $this->drupalPost($config_path, array($checkbox => TRUE, $path_input => 'node'), $save);
     $this->assertText('The configuration options have been saved.', 'Valid path OK.');
 
+    $this->drupalPost('admin/structure/block', array('blocks[menu_crm-core-menu][region]' => 'sidebar_first'), 'Save blocks');
+    $this->assertText('The block settings have been updated.', 'CRM Core menu block configuration changed.');
+
     $this->drupalGet('<front>');
     $this->assertLink('Dashboard', 0, 'Link to Dashboard present.');
 
@@ -52,9 +56,12 @@ class DashboardTestCase extends DrupalWebTestCase {
 
     // Emulate deleted Dashboard.
     variable_set('crm_core_dashboard_path', 'node1');
+    menu_rebuild();
+
     $this->clickLink('Dashboard');
     $text = 'The dashboard cannot be loaded. Please check the CRM Core Dashboard settings.';
     $this->assertText($text, 'Dashboard gracefully handles broken config.');
-    $this->assertUrl('crm-core/contact', array(),'Dashboard gracefully handles broken config and redirect user correctly.');
+    $this->assertUrl('<front>', array(), 'Dashboard gracefully handles broken config and redirect user correctly.');
   }
+
 }

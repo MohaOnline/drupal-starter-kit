@@ -101,7 +101,7 @@ class CRMCoreContactController extends EntityAPIController {
   /**
    * Updates 'changed' property on save.
    */
-  public function save($contact) {
+  public function save($contact, DatabaseTransaction $transaction = NULL) {
     $contact->changed = REQUEST_TIME;
     // Storing formatted contact label for autocomplete lookups.
     $contact->name = crm_core_contact_label($contact);

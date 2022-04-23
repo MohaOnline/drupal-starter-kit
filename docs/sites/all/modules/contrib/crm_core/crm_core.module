@@ -6,6 +6,29 @@
  */
 
 /**
+ * Implements hook_help().
+ */
+function crm_core_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#crm_core':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('CRM Core is a set of modules for managing contacts, activities and relationships within your Drupal website. It is designed to provide a basic framework for managing these items and interacting with other components of Drupal. For more information, see the online handbook entry for <a href="@crm_core">CRM Core module</a>.', array('@crm_core' => 'https://www.drupal.org/docs/7/modules/crm-core')) . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<p>' . t('CRM Core is a tool for developing your own systems for managing contact relationships. It was built in a way that makes it easy to expand basic features in meaningful ways by creating small, useful applications that extend what it can do. In this sense, CRM Core can be considered a platform within Drupal for creating your own CRM systems, which are portable, reliable and can be implemented over and over again.') . '</p>';
+      $output .= '<dt>' . t('General') . '</dt>';
+      $output .= '<dd>' . t('CRM Core is used to track contacts, relationships and activities. It creates these things as fieldable entities, meaning you can add as many custom fields as you want. It includes a variety of bulk operations for merging contacts, putting people into households, sending messages via email, and the like.') . '</dd>';
+      $output .= '<dt>' . t('Design') . '</dt>';
+      $output .= '<dd>' . t('CRM Core is designed to be easily managed by anyone who knows how to work with Drupal. This ensures that a specialized knowledge is not required in order to work with the system. The majority of components can be managed through drag-and-drop interfaces, and everything can be easily themed using skills you probably already have.') . '</dd>';
+      $output .= '<dt>' . t('Features') . '</dt>';
+      $output .= '<dd>' . t('CRM Core was built so that users can create small, useful applications that extend the operations of the core platform in meaningful ways. Its modular design allows administrators to easily select features that are useful in their specific use case, and ignore the ones that are not. The user interface for CRM Core itself can be turned off and replaced with something different. The default matching engine provided by CRM Core can be replaced with other custom matching engines simply by turning off a module.') . '</dd>';
+      $output .= '</dl>';
+      return $output;
+  }
+}
+
+/**
  * Implements hook_hook_info().
  */
 function crm_core_hook_info() {

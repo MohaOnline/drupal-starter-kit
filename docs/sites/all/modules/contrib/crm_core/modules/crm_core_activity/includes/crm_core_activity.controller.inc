@@ -38,7 +38,7 @@ class CRMCoreActivityController extends EntityAPIController {
     return parent::create($values);
   }
 
-  public function save($activity) {
+  public function save($activity, DatabaseTransaction $transaction = NULL) {
     $activity->changed = time();
 
     return parent::save($activity);

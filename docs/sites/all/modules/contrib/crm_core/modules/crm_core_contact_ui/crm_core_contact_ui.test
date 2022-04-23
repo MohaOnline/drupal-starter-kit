@@ -13,18 +13,7 @@ class CRMCoreContactUITestCase extends DrupalWebTestCase {
    * Enable dependency modules.
    */
   public function setUp() {
-    parent::setUp(array(
-      'ctools',
-      'entity',
-      'views',
-      'image',
-      'crm_core',
-      'cck_phone',
-      'field_group',
-      'name',
-      'crm_core_contact',
-      'crm_core_contact_ui'
-    ));
+    parent::setUp('crm_core_contact_ui');
   }
 
   /**
@@ -50,14 +39,14 @@ class CRMCoreContactUITestCase extends DrupalWebTestCase {
 
     // Create Household contact.
     $household_node = array(
-      'contact_name[und][0][given]' => $this->randomName(),
+      'contact_name[und][0][family]' => $this->randomName(),
     );
     $this->drupalPost('crm-core/contact/add/household', $household_node, crm_core_contact_ui_save_contact_button_name('household'));
 
     // Assert we were redirected back to the list of contacts.
     $this->assertUrl('crm-core/contact');
 
-    $this->assertLink($household_node['contact_name[und][0][given]'], 0, t('Newly created contact title listed.'));
+    $this->assertLink($household_node['contact_name[und][0][family]'], 0, t('Newly created contact title listed.'));
     $this->assertText(t('Household'), t('Newly created contact type listed.'));
 
     // Create individual contact.
@@ -80,14 +69,14 @@ class CRMCoreContactUITestCase extends DrupalWebTestCase {
 
     // Create Organization contact.
     $organization_node = array(
-      'contact_name[und][0][given]' => $this->randomName(),
+      'contact_name[und][0][family]' => $this->randomName(),
     );
     $this->drupalPost('crm-core/contact/add/organization', $organization_node, crm_core_contact_ui_save_contact_button_name('organization'));
 
     // Assert we were redirected back to the list of contacts.
     $this->assertUrl('crm-core/contact');
 
-    $this->assertLink($organization_node['contact_name[und][0][given]'], 0, t('Newly created contact title listed.'));
+    $this->assertLink($organization_node['contact_name[und][0][family]'], 0, t('Newly created contact title listed.'));
     $this->assertText(t('Organization'), t('Newly created contact type listed.'));
 
     // Edit operations.
@@ -98,16 +87,16 @@ class CRMCoreContactUITestCase extends DrupalWebTestCase {
 
     // Assert we were redirected back to the list of contacts.
     $this->assertUrl('crm-core/contact/1');
-    $this->assertText($household_node['contact_name[und][0][given]'], 0, t('Contact updated.'));
+    $this->assertText($household_node['contact_name[und][0][family]'], 0, t('Contact updated.'));
 
     // Check listing page.
     $this->drupalGet('crm-core/contact');
-    $this->assertLink($household_node['contact_name[und][0][given]'], 0, t('Updated contact title listed.'));
+    $this->assertLink($household_node['contact_name[und][0][family]'], 0, t('Updated contact title listed.'));
 
     // Delete household contact.
     $this->drupalPost('crm-core/contact/1/delete', array(), t('Yes'));
     $this->assertUrl('crm-core/contact');
-    $this->assertNoLink($household_node['contact_name[und][0][given]'], 0, t('Deleted contact title no more listed.'));
+    $this->assertNoLink($household_node['contact_name[und][0][family]'], 0, t('Deleted contact title no more listed.'));
 
     // Edit individual contact.
     $individual_node = $this->individualContactValues();
@@ -132,16 +121,16 @@ class CRMCoreContactUITestCase extends DrupalWebTestCase {
 
     // Assert we were redirected back to the list of contacts.
     $this->assertUrl('crm-core/contact/3');
-    $this->assertText($organization_node['contact_name[und][0][given]'], 0, t('Contact updated.'));
+    $this->assertText($organization_node['contact_name[und][0][family]'], 0, t('Contact updated.'));
 
     // Check listing page.
     $this->drupalGet('crm-core/contact');
-    $this->assertLink($organization_node['contact_name[und][0][given]'], 0, t('Updated contact title listed.'));
+    $this->assertLink($organization_node['contact_name[und][0][family]'], 0, t('Updated contact title listed.'));
 
     // Delete organization contact.
     $this->drupalPost('crm-core/contact/3/delete', array(), t('Yes'));
     $this->assertUrl('crm-core/contact');
-    $this->assertNoLink($organization_node['contact_name[und][0][given]'], 0, t('Deleted contact title no more listed.'));
+    $this->assertNoLink($organization_node['contact_name[und][0][family]'], 0, t('Deleted contact title no more listed.'));
 
     // Assert that there are no contacts left.
     $this->assertText(t('There are no contacts available. Add one now.'), t('No contacts available after fresh installation.'));
@@ -169,17 +158,17 @@ class CRMCoreContactUITestCase extends DrupalWebTestCase {
 
   public static function householdContactValues() {
     return array(
-      'contact_name[und][0][given]' => DrupalTestCase::randomName(),
+      'contact_name[und][0][family]' => DrupalTestCase::randomName(),
     );
   }
 
   public static function getOrganizationContactTitle($organization_values) {
-    return $organization_values['contact_name[und][0][given]'];
+    return $organization_values['contact_name[und][0][family]'];
   }
 
   public static function organizationContactValues() {
     return array(
-      'contact_name[und][0][given]' => DrupalTestCase::randomName(),
+      'contact_name[und][0][family]' => DrupalTestCase::randomName(),
     );
   }
 }

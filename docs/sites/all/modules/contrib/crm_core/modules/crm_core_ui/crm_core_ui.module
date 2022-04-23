@@ -101,7 +101,9 @@ function crm_core_ui_admin_paths() {
 }
 
 /**
- * Render CRM Core Dashboard, if configured, otherwise redirects to contacts list.
+ * Dashboard page callback.
+ *
+ * Render CRM Core Dashboard, if configured, otherwise redirects to front page.
  */
 function crm_core_ui_dashboard() {
   if (variable_get('crm_core_dashboard_enabled', FALSE)) {
@@ -117,10 +119,8 @@ function crm_core_ui_dashboard() {
           )
         ), 'error');
       }
-      // @todo Consider menu_rebuild() instead for performance reasons.
-      drupal_flush_all_caches();
-      // @todo Where do we go if the crm_core_contact_ui is not enabled?
-      drupal_goto('crm-core/contact');
+      menu_rebuild();
+      drupal_goto('<front>');
     }
     // If the callback returns an array instead of text, render it.
     if (is_array($output)) {
@@ -142,10 +142,8 @@ function crm_core_ui_dashboard() {
         )
       ));
     }
-    // @todo Consider menu_rebuild() instead for performance reasons.
-    drupal_flush_all_caches();
-    // @todo Where do we go if the crm_core_contact_ui is not enabled?
-    drupal_goto('crm-core/contact');
+    menu_rebuild();
+    drupal_goto('<front>');
   }
 }
 

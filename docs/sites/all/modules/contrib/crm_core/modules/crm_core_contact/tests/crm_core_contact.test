@@ -1,8 +1,7 @@
 <?php
 
-
 /**
- * Tests the site-wide contact form.
+ * CRMCoreContactTestCase.
  */
 class CRMCoreContactTestCase extends DrupalWebTestCase {
   public static function getInfo() {
@@ -14,7 +13,7 @@ class CRMCoreContactTestCase extends DrupalWebTestCase {
   }
 
   function setUp() {
-    parent::setUp(array('ctools', 'entity', 'views', 'image', 'name', 'crm_core', 'crm_core_contact', 'crm_core_contact_ui'));
+    parent::setUp(array('crm_core_contact'));
   }
 
   function testCRUD() {
@@ -38,10 +37,19 @@ class CRMCoreContactTestCase extends DrupalWebTestCase {
     $this->assertEqual($contact_type->description, $contact_type_load->description, t('Loaded contact type has same description.'));
     $this->assertTrue(!empty($contact_type_load->id), 'Loaded contact type has id.');
 
+    // Update test.
+    $new_description = $this->randomString();
+    $contact_type_load = crm_core_contact_type_load($type);
+    $contact_type_load->description = $new_description;
+    crm_core_contact_type_save($contact_type_load);
+    $contact_type_load_updated = crm_core_contact_type_load($type);
+    $this->assertEqual($new_description, $contact_type_load_updated->description, 'Updated contact type description match.');
+
     // Delete contact type.
     crm_core_contact_type_delete($contact_type->id);
     // Avoid static cache.
     $contact_type_load = crm_core_contact_type_load($type, TRUE);
     $this->assertTrue(empty($contact_type_load), t('Contact type deleted.'));
   }
+
 }
