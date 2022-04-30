@@ -1,22 +1,19 @@
 <?php
-/**
- * @file
- * Style: Circle.
- */
 
 namespace Drupal\openlayers\Plugin\Style\Circle;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Style;
 
 /**
- * Class Circle.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Circle"
  * )
  */
 class Circle extends Style {
+
   /**
    * {@inheritdoc}
    */
@@ -47,7 +44,10 @@ class Circle extends Style {
       '#title' => 'Fill color',
       '#field_prefix' => 'rgba(',
       '#field_suffix' => ')',
-      '#default_value' => $this->getOption(array('default', 'image', 'fill', 'color'), '255,255,255,0.4'),
+      '#default_value' => $this->getOption(
+        array('default', 'image', 'fill', 'color'),
+        '255,255,255,0.4'
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['image']['stroke'] = array(
@@ -60,26 +60,38 @@ class Circle extends Style {
       '#title' => 'Stroke color',
       '#field_prefix' => 'rgba(',
       '#field_suffix' => ')',
-      '#default_value' => $this->getOption(array('default', 'image', 'stroke', 'color'), '51,153,204,1'),
+      '#default_value' => $this->getOption(
+        array('default', 'image', 'stroke', 'color'),
+        '51,153,204,1'
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['image']['stroke']['width'] = array(
       '#type' => 'textfield',
       '#title' => 'Stroke width',
-      '#default_value' => $this->getOption(array('default', 'image', 'stroke', 'width'), '1.25'),
+      '#default_value' => $this->getOption(
+        array('default', 'image', 'stroke', 'width'),
+        '1.25'
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['image']['stroke']['lineDash'] = array(
       '#type' => 'textfield',
       '#title' => 'Line dash',
-      '#default_value' => $this->getOption(array('default', 'image', 'stroke', 'lineDash'), '0,0'),
+      '#default_value' => $this->getOption(
+        array('default', 'image', 'stroke', 'lineDash'),
+        '0,0'
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['stroke']['lineDash'] = array(
       '#type' => 'textfield',
       '#title' => 'Line dash',
       '#description' => 'Two integers separated by a comma. The comma is mandatory. Default to disable is <em>0,0</em>.',
-      '#default_value' => $this->getOption(array('default', 'image', 'stroke', 'lineDash'), '0,0'),
+      '#default_value' => $this->getOption(
+        array('default', 'image', 'stroke', 'lineDash'),
+        '0,0'
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['stroke'] = array(
@@ -91,20 +103,29 @@ class Circle extends Style {
       '#title' => 'Color',
       '#field_prefix' => 'rgba(',
       '#field_suffix' => ')',
-      '#default_value' => $this->getOption(array('default', 'stroke', 'color'), '51,153,204,1'),
+      '#default_value' => $this->getOption(
+        array('default', 'stroke', 'color'),
+        '51,153,204,1'
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['stroke']['width'] = array(
       '#type' => 'textfield',
       '#title' => 'Width',
-      '#default_value' => $this->getOption(array('default', 'stroke', 'width'), 1.25),
+      '#default_value' => $this->getOption(
+        array('default', 'stroke', 'width'),
+        1.25
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['stroke']['lineDash'] = array(
       '#type' => 'textfield',
       '#title' => 'Line dash',
       '#description' => 'Two integers separated by a comma. The comma is mandatory. Default to disable is <em>0,0</em>.',
-      '#default_value' => $this->getOption(array('default', 'stroke', 'lineDash'), '0,0'),
+      '#default_value' => $this->getOption(
+        array('default', 'stroke', 'lineDash'),
+        '0,0'
+      ),
       '#required' => TRUE,
     );
     $form['options']['default']['fill'] = array(
@@ -116,7 +137,10 @@ class Circle extends Style {
       '#title' => 'Color',
       '#field_prefix' => 'rgba(',
       '#field_suffix' => ')',
-      '#default_value' => $this->getOption(array('default', 'fill', 'color'), '51,153,204,1'),
+      '#default_value' => $this->getOption(
+        array('default', 'fill', 'color'),
+        '51,153,204,1'
+      ),
       '#required' => TRUE,
     );
 
@@ -136,33 +160,48 @@ class Circle extends Style {
       $form['options'][$geometry_type]['image']['radius'] = array(
         '#type' => 'textfield',
         '#title' => 'Radius',
-        '#default_value' => $this->getOption(array($geometry_type, 'image', 'radius'), '5'),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'image', 'radius'),
+          '5'
+        ),
       );
       $form['options'][$geometry_type]['image']['fill']['color'] = array(
         '#type' => 'textfield',
         '#title' => 'Fill color',
         '#field_prefix' => 'rgba(',
         '#field_suffix' => ')',
-        '#default_value' => $this->getOption(array($geometry_type, 'image', 'fill', 'color'), '255,255,255,0.4'),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'image', 'fill', 'color'),
+          '255,255,255,0.4'
+        ),
       );
       $form['options'][$geometry_type]['image']['stroke']['color'] = array(
         '#type' => 'textfield',
         '#title' => 'Color',
         '#field_prefix' => 'rgba(',
         '#field_suffix' => ')',
-        '#default_value' => $this->getOption(array($geometry_type, 'image', 'stroke', 'color'), '51,153,204,1'),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'image', 'stroke', 'color'),
+          '51,153,204,1'
+        ),
       );
       $form['options'][$geometry_type]['image']['stroke']['width'] = array(
         '#type' => 'textfield',
         '#title' => 'Width',
-        '#default_value' => $this->getOption(array($geometry_type, 'image', 'stroke', 'width'), 1.25),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'image', 'stroke', 'width'),
+          1.25
+        ),
         '#required' => TRUE,
       );
       $form['options'][$geometry_type]['image']['stroke']['lineDash'] = array(
         '#type' => 'textfield',
         '#title' => 'Line dash',
         '#description' => 'Two integers separated by a comma. The comma is mandatory. Default to disable is <em>0,0</em>.',
-        '#default_value' => $this->getOption(array($geometry_type, 'image', 'stroke', 'lineDash'), '0,0'),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'image', 'stroke', 'lineDash'),
+          '0,0'
+        ),
         '#required' => TRUE,
       );
       $form['options'][$geometry_type]['stroke'] = array(
@@ -174,18 +213,27 @@ class Circle extends Style {
         '#title' => 'Color',
         '#field_prefix' => 'rgba(',
         '#field_suffix' => ')',
-        '#default_value' => $this->getOption(array($geometry_type, 'stroke', 'color'), '51,153,204,1'),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'stroke', 'color'),
+          '51,153,204,1'
+        ),
       );
       $form['options'][$geometry_type]['stroke']['width'] = array(
         '#type' => 'textfield',
         '#title' => 'Width',
-        '#default_value' => $this->getOption(array($geometry_type, 'stroke', 'width'), 1.25),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'stroke', 'width'),
+          1.25
+        ),
       );
       $form['options'][$geometry_type]['stroke']['lineDash'] = array(
         '#type' => 'textfield',
         '#title' => 'Line dash',
         '#description' => 'Two integers separated by a comma. The comma is mandatory. Default to disable is <em>0,0</em>.',
-        '#default_value' => $this->getOption(array($geometry_type, 'stroke', 'lineDash'), '0,0'),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'stroke', 'lineDash'),
+          '0,0'
+        ),
       );
       $form['options'][$geometry_type]['fill'] = array(
         '#type' => 'fieldset',
@@ -196,7 +244,10 @@ class Circle extends Style {
         '#title' => 'Color',
         '#field_prefix' => 'rgba(',
         '#field_suffix' => ')',
-        '#default_value' => $this->getOption(array($geometry_type, 'fill', 'color'), '51,153,204,1'),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'fill', 'color'),
+          '51,153,204,1'
+        ),
       );
     }
   }

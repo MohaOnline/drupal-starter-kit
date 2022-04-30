@@ -1,19 +1,16 @@
 <?php
-/**
- * @file
- * Interface LayerInterface.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Interface LayerInterface.
+ * FIX: Insert short comment here.
  */
 interface LayerInterface extends ObjectInterface {
+
   /**
    * Returns the source of this layer.
    *
-   * @return SourceInterface|FALSE
+   * @return SourceInterface|false
    *   The source of this layer.
    */
   public function getSource();
@@ -32,7 +29,7 @@ interface LayerInterface extends ObjectInterface {
   /**
    * Returns the style of this layer.
    *
-   * @return StyleInterface|FALSE
+   * @return StyleInterface|false
    *   The style of this layer.
    */
   public function getStyle();
@@ -76,7 +73,7 @@ interface LayerInterface extends ObjectInterface {
    * @return LayerInterface
    *   The parent layer.
    */
-  public function setZIndex($zindex);
+  public function setZindex($zindex);
 
   /**
    * Return the Z-index of the layer.
@@ -84,7 +81,7 @@ interface LayerInterface extends ObjectInterface {
    * @return int
    *   The Z-Index.
    */
-  public function getZIndex();
+  public function getZindex();
 
   /**
    * Set the visibility of the layer.

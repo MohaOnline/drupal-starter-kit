@@ -1,24 +1,19 @@
 <?php
-/**
- * @file
- * Component: Fractal.
- */
 
 namespace Drupal\openlayers_library\Plugin\Component\Fractal;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
-use Drupal\openlayers\Openlayers;
+
 use Drupal\openlayers\Types\Component;
 use Drupal\openlayers\Types\ObjectInterface;
 
 /**
- * Class Fractal.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *   id = "Fractal"
  * )
- *
  */
 class Fractal extends Component {
+
   /**
    * {@inheritdoc}
    */
@@ -52,4 +47,5 @@ class Fractal extends Component {
 
     $build['description']['#description'] = 'This example is based on the <a href="http://openlayers.org/en/master/examples/fractal.html">offical fractal example</a>. You need the <em><a href="https://drupal.org/project/elements">elements</a></em> module to get it working properly.';
   }
+
 }

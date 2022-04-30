@@ -1,23 +1,19 @@
 <?php
 
-/**
- * @file
- * Interaction: Snap.
- */
-
 namespace Drupal\openlayers\Plugin\Interaction\Snap;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class Snap.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Snap"
  * )
  */
 class Snap extends Interaction {
+
   /**
    * {@inheritdoc}
    */
@@ -56,4 +52,5 @@ class Snap extends Interaction {
 
     return $import;
   }
+
 }

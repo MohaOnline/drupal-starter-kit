@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Style: Invisible.
- */
 
 namespace Drupal\openlayers\Plugin\Style\Invisible;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Style;
 
 /**
- * Class Invisible.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Invisible"

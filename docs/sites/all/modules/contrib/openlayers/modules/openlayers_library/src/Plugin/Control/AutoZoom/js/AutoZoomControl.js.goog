@@ -87,7 +87,12 @@ ol.control.AutoZoom.prototype.handleClick_ = function(type, event) {
 
       var maxExtent = calculateMaxExtent();
       if (!ol.extent.isEmpty(maxExtent)) {
-        map.getView().fit(maxExtent, map.getSize());
+        //  Introduced in v4.0.0 - number of parameters has changed to getView().fit function.
+        if (map.getView().fit.length > 2) {
+          map.getView().fit(maxExtent, map.getSize());
+        } else {
+          map.getView().fit(maxExtent);
+        }
       }
 
       if (options.zoom !== 'disabled') {

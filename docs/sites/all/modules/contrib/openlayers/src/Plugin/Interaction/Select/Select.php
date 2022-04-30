@@ -1,16 +1,12 @@
 <?php
-/**
- * @file
- * Interaction: Select.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\Select;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class Select.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Select",
@@ -18,6 +14,7 @@ use Drupal\openlayers\Types\Interaction;
  * )
  */
 class Select extends Interaction {
+
   /**
    * {@inheritdoc}
    */

@@ -1,19 +1,16 @@
 <?php
-/**
- * @file
- * Control: ZoomExtent.
- */
 
 namespace Drupal\openlayers\Plugin\Control\ZoomToExtent;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Control;
 
 /**
- * Class ZoomToExtent.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "ZoomToExtent",
- *  description = "A button control which, when pressed, changes the map view to a specific extent."
+ *  description = "A button control which changes the map view to a specific
+ *    extent."
  * )
  */
 class ZoomToExtent extends Control {

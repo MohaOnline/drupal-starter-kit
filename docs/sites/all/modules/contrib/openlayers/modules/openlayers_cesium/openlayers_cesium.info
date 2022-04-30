@@ -1,0 +1,15 @@
+name = "Openlayers Cesium"
+description = "Openlayers Cesium integration"
+core = 7.x
+php = 5.3.10
+package = "Openlayers"
+
+dependencies[] = openlayers
+
+registry_autoload[] = PSR-4
+
+; Information added by Drupal.org packaging script on 2022-04-29
+version = "7.x-3.2"
+core = "7.x"
+project = "openlayers"
+datestamp = "1651252723"

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Provides forms for the GeoJSON Source.
@@ -20,7 +21,7 @@
  * @return array
  *   The populated form.
  *
- * @see \Drupal\openlayers\Plugin\Source\GeoJSON\GeoJSON::getJS()
+ * @see \Drupal\openlayers\Plugin\Source\GeoJSON\GeoJSON::getJs()
  */
 function openlayers_dev_dialog_form(array $form, array $form_state, $object) {
   $object->optionsForm($form, $form_state);

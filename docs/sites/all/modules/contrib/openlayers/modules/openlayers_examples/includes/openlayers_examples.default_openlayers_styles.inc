@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Default styles.
@@ -322,6 +323,103 @@ function openlayers_examples_default_openlayers_styles() {
     ),
   );
   $export['openlayers_examples_style_regularshape_plus'] = $ol_style;
+
+  $ol_style = new stdClass();
+  $ol_style->disabled = FALSE; /* Edit this to true to make a default ol_style disabled initially */
+  $ol_style->api_version = 1;
+  $ol_style->machine_name = 'openlayers_examples_style_london_stations';
+  $ol_style->name = 'Openlayers examples: London Stations';
+  $ol_style->description = '';
+  $ol_style->factory_service = 'openlayers.Style:Circle';
+  $ol_style->options = array(
+    'default' => array(
+      'image' => array(
+        'radius' => 8,
+        'fill' => array(
+          'color' => '227, 32, 23, 1',
+        ),
+        'stroke' => array(
+          'color' => '0, 0, 153, 1',
+          'width' => 4,
+          'lineDash' => '0,0',
+        ),
+      ),
+      'stroke' => array(
+        'color' => '0, 0, 153, 1',
+        'width' => 4,
+        'lineDash' => '0,0',
+      ),
+      'fill' => array(
+        'color' => '227, 32, 23, 1',
+      ),
+    ),
+  );
+  $export['openlayers_examples_style_london_stations'] = $ol_style;
+
+  $ol_style = new stdClass();
+  $ol_style->disabled = FALSE; /* Edit this to true to make a default ol_style disabled initially */
+  $ol_style->api_version = 1;
+  $ol_style->machine_name = 'openlayers_examples_style_london_thames';
+  $ol_style->name = 'Openlayers examples: London Thames';
+  $ol_style->description = '';
+  $ol_style->factory_service = 'openlayers.Style:Circle';
+  $ol_style->options = array(
+    'default' => array(
+      'image' => array(
+        'radius' => 5,
+        'fill' => array(
+          'color' => '128,190,205,0.5',
+        ),
+        'stroke' => array(
+          'color' => '128,190,205,0.5',
+          'width' => 0,
+          'lineDash' => '0,0',
+        ),
+      ),
+      'stroke' => array(
+        'color' => '128,190,205,0.5',
+        'width' => 0,
+        'lineDash' => '0,0',
+      ),
+      'fill' => array(
+        'color' => '128,190,205,0.5',
+      ),
+    ),
+  );
+  $export['openlayers_examples_style_london_thames'] = $ol_style;
+
+  $ol_style = new stdClass();
+  $ol_style->disabled = FALSE; /* Edit this to true to make a default ol_style disabled initially */
+  $ol_style->api_version = 1;
+  $ol_style->machine_name = 'openlayers_examples_style_london_lines';
+  $ol_style->name = 'Openlayers examples: London Lines';
+  $ol_style->description = '';
+  $ol_style->factory_service = 'openlayers.Style:InlineJS';
+  $ol_style->options = array(
+    'javascript' => 'var line_colour = feature.get(\'lines\')[0].colour;
+    return [
+      new ol.style.Style({
+              image: new ol.style.Circle({
+                fill: new ol.style.Fill({
+                  color: \'#000000\'
+                }),
+                stroke: new ol.style.Stroke({
+                  width: 2,
+                  color: \'#000000\'
+                }),
+                radius: 2
+              }),
+              fill: new ol.style.Fill({
+                color: \'#000000\'
+              }),
+              stroke: new ol.style.Stroke({
+                width: 4,
+                color: line_colour
+              })
+    })
+    ] ;',
+  );
+  $export['openlayers_examples_style_london_lines'] = $ol_style;
 
   return $export;
 }

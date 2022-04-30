@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Control: Geofield.
- */
 
 namespace Drupal\openlayers_geofield\Plugin\Control\Geofield;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Control;
 
 /**
- * Class Geofield.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Geofield",
@@ -17,8 +13,9 @@ use Drupal\openlayers\Types\Control;
  * )
  */
 class Geofield extends Control {
+
   /**
-   * @inheritDoc
+   * FIX - Insert short comment here.
    */
   public function optionsForm(array &$form, array &$form_state) {
     $form['options']['draw'] = array(

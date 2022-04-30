@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * @file
+ * Main file of the Openlayers Cesium module.
+ */
+
+use Drupal\openlayers\Config;
+
+/**
+ * Implements hook_libraries_info().
+ */
+function openlayers_cesium_libraries_info() {
+  // During an upgrade from Openlayers 7.x-2.x branch, the new registry_autoload
+  // dependency may not be enabled, which makes it impossible to use the new
+  // namespaced classes. So provide a fallback variable instead.
+  $js_css_group = 'openlayers';
+  if (class_exists('Config')) {
+    $js_css_group = Config::get('openlayers.js_css.group');
+  }
+
+  $libraries['ol3-cesium'] = array(
+    'name' => 'Openlayers 3 Cesium',
+    'vendor url' => 'https://github.com/openlayers/ol3-cesium',
+    'download url' => 'https://github.com/openlayers/ol3-cesium/releases/download/v1.11/ol3-cesium-v1.11.zip',
+    'version arguments' => array(
+      'file' => 'CHANGES.md',
+      'pattern' => '/##(?: v(.*) - )/',
+      'lines' => 4,
+    ),
+    'files' => array(
+      'js' => array(
+        'Cesium/Cesium.js' => array(
+          'weight' => 1,
+          'group' => $js_css_group,
+        ),
+        'ol3cesium.js' => array(
+          'weight' => 2,
+          'group' => $js_css_group,
+        ),
+      ),
+      'css' => array(
+        'ol.css' => array(
+          'weight' => 2,
+          'group' => $js_css_group,
+        ),
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_libraries_info_alter().
+ */
+function openlayers_cesium_libraries_info_alter(&$libraries) {
+  $library = libraries_detect('ol3-cesium');
+
+  if ($library['installed'] == TRUE) {
+    $data = "var CESIUM_BASE_URL = '" . url($library['library path'] . '/Cesium/') . "';";
+    $jsfile = file_unmanaged_save_data($data, 'public://openlayers_cesium_base_url.js', FILE_EXISTS_REPLACE);
+
+    $libraries['ol3-cesium']['files']['js'][$jsfile] = array(
+      'data' => $jsfile,
+      'weight' => 0,
+      'group' => JS_LIBRARY,
+    );
+  }
+}

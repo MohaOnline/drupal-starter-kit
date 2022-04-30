@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Class Interactions.
- */
 
 namespace Drupal\openlayers_ui\UI;
 

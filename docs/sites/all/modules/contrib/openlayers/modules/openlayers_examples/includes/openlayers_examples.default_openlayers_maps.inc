@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Default maps.
@@ -73,7 +74,7 @@ function openlayers_examples_default_openlayers_maps() {
       'zoom' => '2',
     ),
     'layers' => array(
-      0 => 'openlayers_examples_layer_tile_mapbox_example3',
+      0 => 'openlayers_examples_layer_tile_mapbox_example2',
       1 => 'openlayers_examples_layer_vector_geojson_cities',
     ),
     'interactions' => array(
@@ -83,6 +84,48 @@ function openlayers_examples_default_openlayers_maps() {
     ),
   );
   $export['openlayers_examples_map_geojson_cities'] = $ol_map;
+
+  $ol_map = new stdClass();
+  $ol_map->disabled = FALSE; /* Edit this to true to make a default ol_map disabled initially */
+  $ol_map->api_version = 1;
+  $ol_map->machine_name = 'openlayers_examples_map_london_tube';
+  $ol_map->name = 'Openlayers examples: London Tube';
+  $ol_map->description = '';
+  $ol_map->factory_service = 'openlayers.Map:OLMap';
+  $ol_map->options = array(
+    'width' => 'auto',
+    'height' => '300px',
+    'contextualLinks' => 1,
+    'provideBlock' => 1,
+    'provideIframe' => 1,
+    'view' => array(
+      'center' => array(
+        'lat' => 0,
+        'lon' => 0,
+      ),
+      'rotation' => 0,
+      'zoom' => 2,
+    ),
+    'layers' => array(
+      0 => 'openlayers_examples_layer_group_london_tube_backgrounds',
+      1 => 'openlayers_examples_layer_group_london_tube_overlays',
+    ),
+    'interactions' => array(
+      0 => 'openlayers_interaction_doubleclickzoom',
+      1 => 'openlayers_interaction_dragpan',
+      2 => 'openlayers_interaction_mousewheelzoom',
+    ),
+    'components' => array(
+      0 => 'openlayers_examples_component_popup_london_tube',
+      1 => 'openlayers_examples_component_zoomtosource_london_tube',
+    ),
+    'controls' => array(
+      0 => 'openlayers_examples_control_london_tube_ol3layerswitcher',
+      1 => 'openlayers_control_fullscreen',
+      2 => 'openlayers_control_zoom',
+    ),
+  );
+  $export['openlayers_examples_map_london_tube'] = $ol_map;
 
   $ol_map = new stdClass();
   $ol_map->disabled = FALSE; /* Edit this to true to make a default map disabled initially */
@@ -106,7 +149,7 @@ function openlayers_examples_default_openlayers_maps() {
       'zoom' => '2',
     ),
     'layers' => array(
-      0 => 'openlayers_examples_layer_tile_mapbox_example3',
+      0 => 'openlayers_examples_layer_tile_mapbox_example2',
       1 => 'openlayers_examples_layer_vector_geojson_cities_heatmap',
     ),
     'interactions' => array(
@@ -211,7 +254,7 @@ function openlayers_examples_default_openlayers_maps() {
       'maxZoom' => '0',
     ),
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
       1 => 'openlayers_examples_layer_cluster_cities',
     ),
     'controls' => array(
@@ -252,7 +295,7 @@ function openlayers_examples_default_openlayers_maps() {
       'maxZoom' => '0',
     ),
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
       1 => 'openlayers_examples_layer_views_geojson_popup',
     ),
     'controls' => array(
@@ -298,7 +341,7 @@ function openlayers_examples_default_openlayers_maps() {
       1 => 'openlayers_examples_layer_mapquest_hyb',
       2 => 'openlayers_examples_layer_mapquest_sat',
       3 => 'openlayers_examples_layer_stamen3',
-      4 => 'openlayers_layer_tile_mapquest_osm',
+      4 => 'openlayers_layer_tile_osm',
       5 => 'openlayers_examples_layer_openstreetmap_mapnik',
       6 => 'openlayers_examples_layer_vector_kml_earthquakes',
       7 => 'openlayers_examples_layer_views_geojson',
@@ -341,7 +384,7 @@ function openlayers_examples_default_openlayers_maps() {
       'zoom' => '2',
     ),
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
     ),
     'controls' => array(
       0 => 'openlayers_control_rotate',
@@ -505,7 +548,7 @@ function openlayers_examples_default_openlayers_maps() {
       8 => 'openlayers_examples_layer_opencyclemap_outdoors',
       9 => 'openlayers_examples_layer_opencyclemap',
       10 => 'openlayers_examples_layer_openstreetmap_hot',
-      11 => 'openlayers_layer_tile_mapquest_osm',
+      11 => 'openlayers_layer_tile_osm',
       12 => 'openlayers_examples_layer_openstreetmap_de',
       13 => 'openlayers_examples_layer_openstreetmap_mapnik',
     ),
@@ -765,7 +808,7 @@ function openlayers_examples_default_openlayers_maps() {
       3 => 'openlayers_interaction_mousewheelzoom',
     ),
     'components' => array(
-      0 => 'openlayers_examples_component_icon_sprite'
+      0 => 'openlayers_examples_component_icon_sprite',
     ),
   );
   $export['openlayers_examples_map_icon_sprite'] = $ol_map;
@@ -850,7 +893,6 @@ function openlayers_examples_default_openlayers_maps() {
     'layers' => array(
       0 => 'openlayers_examples_layer_tile_mapbox_example1',
       1 => 'openlayers_examples_layer_tile_mapbox_example2',
-      2 => 'openlayers_examples_layer_tile_mapbox_example3',
       3 => 'openlayers_examples_layer_mapbox_geography_class',
       4 => 'openlayers_examples_layer_mapbox_natural_earth_hypso_bathy',
       5 => 'openlayers_examples_layer_mapbox_geography_class_utfgrid',
@@ -869,7 +911,7 @@ function openlayers_examples_default_openlayers_maps() {
       3 => 'openlayers_interaction_mousewheelzoom',
     ),
     'components' => array(
-      0 => 'openlayers_examples_component_tileutfgrid'
+      0 => 'openlayers_examples_component_tileutfgrid',
     ),
   );
   $export['openlayers_examples_map_mapbox'] = $ol_map;
@@ -895,7 +937,7 @@ function openlayers_examples_default_openlayers_maps() {
     ),
     'renderer' => 'canvas',
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
       1 => 'openlayers_examples_layer_mapquest_sat',
     ),
     'controls' => array(
@@ -935,7 +977,7 @@ function openlayers_examples_default_openlayers_maps() {
     ),
     'renderer' => 'canvas',
     'components' => array(
-      0 => 'openlayers_examples_component_timezones',
+      0 => 'openlayers_examples_component_tooltip_timezones',
     ),
     'controls' => array(
       0 => 'openlayers_control_zoom',
@@ -1160,7 +1202,7 @@ function openlayers_examples_default_openlayers_maps() {
     'provideBlock' => 0,
     'provideIframe' => 1,
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
     ),
     'controls' => array(
       0 => 'openlayers_control_rotate',
@@ -1174,8 +1216,8 @@ function openlayers_examples_default_openlayers_maps() {
       2 => 'openlayers_interaction_mousewheelzoom',
     ),
     'components' => array(
-      0 => 'openlayers_examples_component_debug'
-      )
+      0 => 'openlayers_examples_component_debug',
+    ),
   );
   $export['openlayers_examples_map_ui_default_debug'] = $ol_map;
 
@@ -1237,7 +1279,7 @@ function openlayers_examples_default_openlayers_maps() {
     ),
     'renderer' => 'canvas',
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
       1 => 'openlayers_examples_layer_tilewms',
     ),
     'controls' => array(
@@ -1277,8 +1319,8 @@ function openlayers_examples_default_openlayers_maps() {
     ),
     'renderer' => 'canvas',
     'layers' => array(
-      0 => 'openlayers_examples_layer_group_overlay',
-      1 => 'openlayers_examples_layer_group_base',
+      0 => 'openlayers_examples_layer_group_base',
+      1 => 'openlayers_examples_layer_group_overlay',
     ),
     'controls' => array(
       0 => 'openlayers_examples_control_ol3layerswitcher',
@@ -1463,6 +1505,87 @@ function openlayers_examples_default_openlayers_maps() {
     ),
   );
   $export['openlayers_examples_map_opentopomap'] = $ol_map;
+
+  $ol_map = new stdClass();
+  $ol_map->disabled = FALSE;
+  $ol_map->api_version = 1;
+  $ol_map->machine_name = 'openlayers_examples_map_cesium';
+  $ol_map->name = 'Openlayers examples: 3D Map with Cesium';
+  $ol_map->description = '';
+  $ol_map->factory_service = 'openlayers.Map:OLMap';
+  $ol_map->options = array(
+    'width' => 'auto',
+    'height' => '400px',
+    'view' => array(
+      'center' => array(
+        'lat' => 0,
+        'lon' => 0,
+      ),
+      'rotation' => 0,
+      'zoom' => 2,
+    ),
+    'contextualLinks' => 0,
+    'provideBlock' => 0,
+    'provideIframe' => 1,
+    'layers' => array(
+      0 => 'openlayers_examples_layer_group_cesium_backgrounds',
+    ),
+    'controls' => array(
+      0 => 'openlayers_control_attribution',
+      1 => 'openlayers_control_rotate',
+      2 => 'openlayers_control_zoom',
+      4 => 'openlayers_control_fullscreen',
+      5 => 'openlayers_examples_control_ol3layerswitcher',
+      6 => 'openlayers_examples_control_ol3cesiumcontrol',
+    ),
+    'interactions' => array(
+      0 => 'openlayers_interaction_dragpan',
+      1 => 'openlayers_interaction_dragrotate',
+      2 => 'openlayers_interaction_mousewheelzoom',
+    ),
+    'components' => array(
+      0 => 'openlayers_examples_component_ol3cesium',
+    ),
+  );
+  $export['openlayers_examples_map_cesium'] = $ol_map;
+
+  $ol_map = new stdClass();
+  $ol_map->disabled = FALSE;
+  $ol_map->api_version = 1;
+  $ol_map->machine_name = 'openlayers_examples_map_hilbert';
+  $ol_map->name = 'Openlayers examples: Hilbert fractal';
+  $ol_map->description = '';
+  $ol_map->factory_service = 'openlayers.Map:OLMap';
+  $ol_map->options = array(
+    'width' => 'auto',
+    'height' => '400px',
+    'view' => array(
+      'center' => array(
+        'lat' => 0,
+        'lon' => 0,
+      ),
+      'rotation' => 0,
+      'zoom' => 2,
+    ),
+    'contextualLinks' => 0,
+    'provideBlock' => 0,
+    'provideIframe' => 1,
+    'controls' => array(
+      0 => 'openlayers_control_attribution',
+      1 => 'openlayers_control_rotate',
+      2 => 'openlayers_control_zoom',
+      4 => 'openlayers_control_fullscreen',
+    ),
+    'interactions' => array(
+      0 => 'openlayers_interaction_dragpan',
+      1 => 'openlayers_interaction_dragrotate',
+      2 => 'openlayers_interaction_mousewheelzoom',
+    ),
+    'components' => array(
+      0 => 'openlayers_examples_component_hilbert',
+    ),
+  );
+  $export['openlayers_examples_map_hilbert'] = $ol_map;
 
   return $export;
 }

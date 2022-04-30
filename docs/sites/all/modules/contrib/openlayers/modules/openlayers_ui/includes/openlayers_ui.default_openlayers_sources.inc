@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Default sources.
@@ -26,8 +27,50 @@ function openlayers_ui_default_openlayers_sources() {
           'geometry' => array(
             'type' => 'Point',
             'coordinates' => array(
-              0 => 0,
-              1 => 0,
+              0 => -5,
+              1 => -5,
+            ),
+          ),
+        ),
+        array(
+          'type' => 'Feature',
+          'geometry' => array(
+            'type' => 'Polygon',
+            'coordinates' => array(
+              array(
+                array(
+                  0 => 15,
+                  1 => 15,
+                ),
+                array(
+                  0 => 0,
+                  1 => 15,
+                ),
+                array(
+                  0 => 0,
+                  1 => 0,
+                ),
+                array(
+                  0 => 15,
+                  1 => 0,
+                ),
+              ),
+            ),
+          ),
+        ),
+        array(
+          'type' => 'Feature',
+          'geometry' => array(
+            'type' => 'LineString',
+            'coordinates' => array(
+              array(
+                0 => -15,
+                1 => -15,
+              ),
+              array(
+                0 => 15,
+                1 => -15,
+              ),
             ),
           ),
         ),

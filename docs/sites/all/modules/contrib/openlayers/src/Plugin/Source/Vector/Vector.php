@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Source: Vector.
- */
 
 namespace Drupal\openlayers\Plugin\Source\Vector;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class Vector.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Vector"

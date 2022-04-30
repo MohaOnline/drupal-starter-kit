@@ -111,21 +111,7 @@
               map_id: map_id
             }
           ]);
-
-          var groups = {};
-          var layers = {};
-
-          settings.layer.map(function (data, key) {
-            if (data.fs === 'openlayers.Layer:Group') {
-              groups[data.mn] = data;
-            }
-            else {
-              layers[data.mn] = data;
-            }
-          });
-
-          for (var i in layers) {
-            var data = jQuery.extend(true, {}, layers[i]);
+          settings.layer.map(function (data) {
             data.opt.source = Drupal.openlayers.instances[map_id].sources[data.opt.source];
             if (data.opt.style !== undefined && Drupal.openlayers.instances[map_id].styles[data.opt.style] !== undefined) {
               data.opt.style = Drupal.openlayers.instances[map_id].styles[data.opt.style];
@@ -136,38 +122,10 @@
               if (data.opt.name !== undefined) {
                 layer.set('title', data.opt.name);
               }
-              layers[i] = layer;
+
+              map.addLayer(layer);
             }
-          }
-
-          for (var i in groups) {
-            data = jQuery.extend(true, {}, groups[i]);
-            var candidates = [];
-            data.opt.grouplayers.map(function (layer_machine_name) {
-              candidates.push(layers[layer_machine_name]);
-              delete layers[layer_machine_name];
-            });
-            data.opt.grouplayers = candidates;
-            layer = Drupal.openlayers.getObject(context, 'layers', data, map_id);
-
-            if (layer) {
-              groups[i] = layer;
-            }
-          }
-
-          $.map(layers, function (layer) {
-            map.addLayer(layer);
           });
-
-          // Todo: See why it's not ordered properly automatically.
-          var groupsOrdered = [];
-          for (var i in groups) {
-            groupsOrdered.push(groups[i]);
-          }
-          groupsOrdered.reverse().map(function (layer) {
-            map.addLayer(layer);
-          });
-
           $(document).trigger('openlayers.layers_post_alter', [
             {
               layers: settings.layer,
@@ -335,11 +293,13 @@
         // Store object to the instances cache.
         if (type == 'maps') {
           Drupal.openlayers.instances[map_id][instances_type] = object;
+          return Drupal.openlayers.instances[map_id][instances_type];
         }
         else {
           Drupal.openlayers.instances[map_id][instances_type][data.mn] = object;
+          return Drupal.openlayers.instances[map_id][instances_type][data.mn];
         }
-        return object;
+        //return object;
       }
       else {
         $(document).trigger('openlayers.object_error', [

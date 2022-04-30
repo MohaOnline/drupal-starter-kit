@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Control: JS Control.
- */
 
 namespace Drupal\openlayers\Plugin\Control\InlineJS;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Control;
 
 /**
- * Class InlineJS.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "InlineJS"
@@ -26,7 +22,7 @@ class InlineJS extends Control {
     if (module_exists('ace_editor')) {
       $attached = array(
         'library' => array(
-          array('ace_editor', 'ace-editor'),
+          array('ace_editor', 'ace'),
         ),
         'js' => array(
           drupal_get_path('module', 'openlayers') . '/js/openlayers.editor.js',
@@ -34,7 +30,14 @@ class InlineJS extends Control {
       );
     }
     else {
-      \Drupal::service('messenger')->addMessage(t('To get syntax highlighting, you should install the module <a href="@url1">ace_editor</a> and its <a href="@url2">library</a>.', array('@url1' => 'http://drupal.org/project/ace_editor', '@url2' => 'http://ace.c9.io/')), 'warning');
+      \Drupal::service('messenger')->addMessage(t('To get syntax highlighting,
+        you should install the module <a href="@url1">ace_editor</a> and its <a
+        href="@url2">library</a>.',
+        array(
+          '@url1' => 'http://drupal.org/project/ace_editor',
+          '@url2' => 'http://ace.c9.io/',
+        )), 'warning'
+      );
     }
 
     $form['options']['javascript'] = array(

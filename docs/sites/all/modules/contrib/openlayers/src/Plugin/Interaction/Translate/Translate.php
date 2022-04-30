@@ -1,16 +1,12 @@
 <?php
-/**
- * @file
- * Interaction: Translate.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\Translate;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class Translate.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Translate",
@@ -18,6 +14,7 @@ use Drupal\openlayers\Types\Interaction;
  * )
  */
 class Translate extends Interaction {
+
   /**
    * {@inheritdoc}
    */

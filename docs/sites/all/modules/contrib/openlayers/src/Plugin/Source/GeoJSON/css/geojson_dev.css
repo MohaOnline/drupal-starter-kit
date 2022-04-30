@@ -1,6 +1,6 @@
-/* @TODO However effect or tooltip?*/
+/* FIX However effect or tooltip?*/
 .ol-dev-dialog .description {
-  display:none;
+  display: none;
 }
 
 .ol-dev-dialog input,

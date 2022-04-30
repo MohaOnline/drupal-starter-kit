@@ -23,20 +23,37 @@ var openlayers_source_internal_geojson = {
     // compiled version of ol.
     if ( (data.opt.reloadOnZoomChange !== undefined && data.opt.reloadOnZoomChange) || (data.opt.reloadOnExtentChange !== undefined && data.opt.reloadOnExtentChange) ) {
       data.opt.strategy = function (extent, resolution) {
+        // If loading is already in process don't trigger a new load.
+        // If features just were loaded don't trigger a new load.
+        // If features are cleaned don't trigger a new load.
+        if (this._loadingFeatures || this._cleaningFeatures || this._featuresLoaded) {
+          // If features were just loaded reset status.
+          if (this._featuresLoaded) {
+            this._loadingFeatures = false;
+            this._featuresLoaded = false;
+          }
+          // Return an empty list - so the original loader is skipped.
+          return [];
+        }
+
         // If reloading the features is forced load them here. Otherwise just
         // return the extent of the standard loading strategy.
         if (this._forceReloadFeatures) {
           this._loadingFeatures = true;
           var projection = (this.getProjection()) ? this.getProjection() : data.map.getView().getProjection();
-          data.opt.loader.call(this, extent, resolution, projection);
-          // This has to be enabled / disabled before each loadFeatures
-          // call.
-          this._forceReloadFeatures = false;
-          // Return an empty list - so the original loader is skipped.
-          return [];
+          // data.opt.loader.call(this, extent, resolution, projection);
+          // // This has to be enabled / disabled before each loadFeatures
+          // // call.
+          // this._forceReloadFeatures = false;
+          // // Return an empty list - so the original loader is skipped.
+          // return [];
+        }
+        // If bbox is used return proper extent.
+        if (data.opt.useBBOX) {
+          return ol.loadingstrategy.bbox(extent, resolution);
         }
         else {
-          return ol.loadingstrategy.all;
+          return ol.loadingstrategy.all(extent, resolution);
         }
       };
     }
@@ -50,11 +67,13 @@ var openlayers_source_internal_geojson = {
    * In some cases we need to adjust the load features handler.
    */
   configureVectorSource: function(vectorSource, data) {
-    // @todo Add more strategies. Paging strategy would be really interesting
+    // FIX Add more strategies. Paging strategy would be really interesting
     //   to use with views_geojson.
     if (data.opt.useBBOX) {
       vectorSource._clearFeaturesOnLoad = false;
       vectorSource._loadingFeatures = false;
+      vectorSource._featuresLoaded = false;
+      vectorSource._cleaningFeatures = false;
 
       if (data.opt.reloadOnExtentChange !== undefined) {
         vectorSource._clearFeaturesOnLoad = true;
@@ -69,6 +88,17 @@ var openlayers_source_internal_geojson = {
         data.map.getView().on('change:resolution', function() {
           if (!vectorSource._loadingFeatures) {
             vectorSource._forceReloadFeatures = true;
+          }
+        });
+      }
+      if (vectorSource._clearFeaturesOnLoad) {
+        vectorSource.on('clear', function() {
+          //vectorSource._cleaningFeatures = false;
+        });
+        vectorSource.on('change', function(e) {
+          // Cleaned.
+          if (e.target.getFeaturesCollection() == null) {
+            e.target._cleaningFeatures = false;
           }
         });
       }
@@ -127,7 +157,7 @@ var openlayers_source_internal_geojson = {
             // isn't handled by decodeURIComponent.
             params[decodeURIComponent(param[0])] = (param[1] !== undefined) ? decodeURIComponent(param[1].replace(/\+/g, ' ')) : '';
           }
-        })
+        });
       }
       params.bbox = bbox.join(',');
       params.zoom = data.map.getView().getZoom();
@@ -142,22 +172,24 @@ var openlayers_source_internal_geojson = {
         success: function(data) {
           // If the _clearFeaturesOnLoad flag is set remove the current
           // features before adding the new ones.
-          if (that._clearFeaturesOnLoad !== undefined) {
-            // Clear features in this extent. We can't use that.clear()
-            // because this causes some strange trouble afterwards. And we
-            // can't use that.forEachFeature() or
-            // that.forEachFeatureInExtent() because those functions won't
-            // work with that.removeFeature().
-            var features = that.getFeaturesInExtent(extent);
-            jQuery(features).each(function (i, f) {
-              that.removeFeature(f);
-            });
+          if (typeof that._clearFeaturesOnLoad !== 'undefined' && that._clearFeaturesOnLoad) {
+            // Use clear to ensure the features are removed from the extent
+            // caching as well.
+            that._cleaningFeatures = true;
+            that.clear(true);
           }
+
           var format = new ol.format.GeoJSON();
           var features = format.readFeatures(data, {featureProjection: projection});
           that.addFeatures(features);
-          that._loadingFeatures = false;
+        },
+        complete: function(jqXHR, textStatus) {
+          // Ensure the status of the vector is properly set - no matter if the
+          // request was successful or not.
+          that._forceReloadFeatures = false;
+          that._featuresLoaded = true;
         }
+
       });
     }
   }

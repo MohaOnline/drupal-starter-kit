@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Component: Graticule.
- */
 
 namespace Drupal\openlayers\Plugin\Component\Graticule;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Component;
 
 /**
- * Class Graticule.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Graticule"

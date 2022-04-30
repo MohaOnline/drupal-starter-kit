@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Provide default maps.
@@ -32,7 +33,7 @@ function openlayers_ui_default_openlayers_maps() {
     'provideBlock' => 0,
     'provideIframe' => 1,
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
     ),
     'controls' => array(
       0 => 'openlayers_control_attribution',
@@ -90,7 +91,7 @@ function openlayers_ui_default_openlayers_maps() {
     'contextualLinks' => 0,
     'provideBlock' => 0,
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
     ),
     'controls' => array(
       0 => 'openlayers_control_rotate',

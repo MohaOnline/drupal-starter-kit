@@ -1,8 +1,11 @@
 <?php
+
 /**
  * @file
  * Allow to render an openlayers map as ctools content.
  */
+
+use Drupal\openlayers\Openlayers;
 
 $plugin = array(
   'title' => t('Openlayers Map'),
@@ -44,7 +47,7 @@ function openlayers_content_types_openlayers_content_type_edit_form($form, &$for
   $form['conf']['map'] = array(
     '#type' => 'select',
     '#title' => t('Map'),
-    '#options' => \Drupal\openlayers\Openlayers::loadAllAsOptions('Map'),
+    '#options' => Openlayers::loadAllAsOptions('Map'),
     '#default_value' => $conf['map'],
   );
 
@@ -75,7 +78,7 @@ function openlayers_content_types_openlayers_content_type_admin_info($subtype, $
   $map_name = t('Unknown');
   try {
     /** @var Drupal\openlayers\Types\MapInterface $map */
-    if (($map = \Drupal\openlayers\Openlayers::load('Map', $conf['map'])) == TRUE) {
+    if (($map = Openlayers::load('Map', $conf['map'])) == TRUE) {
       $map_name = $map->getName();
     }
   }

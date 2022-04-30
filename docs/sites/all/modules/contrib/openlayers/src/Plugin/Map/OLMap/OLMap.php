@@ -1,8 +1,4 @@
 <?php
-/**
- * @file
- * Map: Map.
- */
 
 namespace Drupal\openlayers\Plugin\Map\OLMap;
 
@@ -11,7 +7,7 @@ use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Map;
 
 /**
- * Class OLMap.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "OLMap"
@@ -68,14 +64,14 @@ class OLMap extends Map {
 
     $form['options']['view']['center'] = array(
       '#tree' => TRUE,
-      'lat' => array(
-        '#type' => 'textfield',
-        '#title' => t('Latitude'),
-        '#default_value' => $this->getOption(array('view', 'center', 'lat'), 0),
-      ),
       'lon' => array(
         '#type' => 'textfield',
-        '#title' => t('Longitude'),
+        '#title' => t('Longitude (X axis)'),
+        '#default_value' => $this->getOption(array('view', 'center', 'lon'), 0),
+      ),
+      'lat' => array(
+        '#type' => 'textfield',
+        '#title' => t('Latitude (Y axis)'),
         '#default_value' => $this->getOption(array('view', 'center', 'lat'), 0),
       ),
     );
@@ -104,7 +100,10 @@ class OLMap extends Map {
       '#title' => t('Limit to extent'),
       '#empty_option' => t('Disabled'),
       '#empty_value' => '',
-      '#options' => array('custom' => 'Custom extent', 'projection' => 'Map projection'),
+      '#options' => array(
+        'custom' => 'Custom extent',
+        'projection' => 'Map projection',
+      ),
       '#description' => t('If enabled navigation on the map is limited to the give extent.'),
       '#default_value' => $this->getOption(array('view', 'limit_extent'), FALSE),
     );
@@ -136,11 +135,10 @@ class OLMap extends Map {
       '#parents' => array('options', 'renderer'),
     );
 
-
     $i = 0;
     $data = array();
     $map_options = $this->getOptions();
-    /** @var \Drupal\openlayers\Types\Object $object */
+    /** @var \Drupal\openlayers\Types\Base $object */
     foreach ($this->getCollection()->getFlatList() as $object) {
       $weight = 0;
       if (isset($map_options['capabilities']['options']['table'][$object->getMachineName()])) {
@@ -156,7 +154,7 @@ class OLMap extends Map {
       );
     }
 
-    uasort($data, function($a, $b) {
+    uasort($data, function ($a, $b) {
       if ($a['enabled'] > $b['enabled']) {
         return -1;
       }
@@ -250,13 +248,19 @@ class OLMap extends Map {
             'fieldset' => 'Fieldset',
             'container' => 'Simple div',
           ),
-          '#default_value' => $this->getOption(array('capabilities', 'options', 'container_type'), 'fieldset'),
+          '#default_value' => $this->getOption(
+            array('capabilities', 'options', 'container_type'),
+            'fieldset'
+          ),
         ),
         'title' => array(
           '#type' => 'textfield',
           '#title' => t('Title'),
           '#description' => t('Show a title ? Empty to disable.'),
-          '#default_value' => $this->getOption(array('capabilities', 'options', 'title'), t('Map capabilities')),
+          '#default_value' => $this->getOption(
+            array('capabilities', 'options', 'title'),
+            t('Map capabilities')
+          ),
           '#states' => array(
             'visible' => array(
               ':input[name="options[capabilities][options][container_type]"]' => array('value' => 'fieldset'),
@@ -267,7 +271,10 @@ class OLMap extends Map {
           '#type' => 'textfield',
           '#title' => t('Description'),
           '#description' => t('Show a description ? Empty to disable.'),
-          '#default_value' => $this->getOption(array('capabilities', 'options', 'description'), t('Description')),
+          '#default_value' => $this->getOption(
+            array('capabilities', 'options', 'description'),
+            t('Description')
+          ),
           '#states' => array(
             'visible' => array(
               ':input[name="options[capabilities][options][container_type]"]' => array('value' => 'fieldset'),
@@ -277,7 +284,10 @@ class OLMap extends Map {
         'collapsible' => array(
           '#type' => 'checkbox',
           '#title' => t('Collapsible'),
-          '#default_value' => (bool) $this->getOption(array('capabilities', 'options', 'collapsible'), TRUE),
+          '#default_value' => (bool) $this->getOption(
+            array('capabilities', 'options', 'collapsible'),
+            TRUE
+          ),
           '#states' => array(
             'visible' => array(
               ':input[name="options[capabilities][options][container_type]"]' => array('value' => 'fieldset'),
@@ -287,7 +297,10 @@ class OLMap extends Map {
         'collapsed' => array(
           '#type' => 'checkbox',
           '#title' => t('Collapsed'),
-          '#default_value' => (bool) $this->getOption(array('capabilities', 'options', 'collapsed'), TRUE),
+          '#default_value' => (bool) $this->getOption(
+            array('capabilities', 'options', 'collapsed'),
+            TRUE
+          ),
           '#states' => array(
             'visible' => array(
               ':input[name="options[capabilities][options][container_type]"]' => array('value' => 'fieldset'),
@@ -337,7 +350,7 @@ class OLMap extends Map {
     if (isset($form_state['values']['options']['capabilities']['enabled']) && (bool) $form_state['values']['options']['capabilities']['enabled'] == TRUE) {
       $elements = (array) $form_state['values']['options']['capabilities']['options']['table']['elements'];
 
-      uasort($elements, function($a, $b) {
+      uasort($elements, function ($a, $b) {
         return $a['weight'] - $b['weight'];
       });
 

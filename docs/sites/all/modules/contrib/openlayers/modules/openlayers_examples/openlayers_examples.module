@@ -1,8 +1,11 @@
 <?php
+
 /**
  * @file
  * Openlayers Examples.
  */
+
+use Drupal\openlayers\Openlayers;
 
 /**
  * Implements hook_ctools_plugin_api().
@@ -38,7 +41,7 @@ function openlayers_examples_menu() {
 function openlayers_examples($form, &$form_state, $map_arg = NULL) {
   $maps = array();
   $options = array();
-  foreach (\Drupal\openlayers\Openlayers::loadAllExportable('Map') as $machine_name => $data) {
+  foreach (Openlayers::loadAllExportable('Map') as $machine_name => $data) {
     if (!is_object($data) || (property_exists($data, 'disabled') && ($data->disabled == 1 || $data->disabled == TRUE))) {
       continue;
     }
@@ -83,7 +86,7 @@ function openlayers_examples($form, &$form_state, $map_arg = NULL) {
   );
 
   foreach ($maps as $map) {
-    if (($map = \Drupal\openlayers\Openlayers::load('Map', $map)) == FALSE) {
+    if (($map = Openlayers::load('Map', $map)) == FALSE) {
       continue;
     }
 
@@ -226,7 +229,7 @@ function openlayers_examples($form, &$form_state, $map_arg = NULL) {
   );
 
   $form['version'] = array(
-    '#markup' => 'Module running Openlayers version: ' . \Drupal\openlayers\Openlayers::getLibraryVersion(),
+    '#markup' => 'Module running Openlayers version: ' . Openlayers::getLibraryVersion(),
   );
 
   // This is for preventing 'system/ajax' as destination when using AJAX maps.

@@ -5,6 +5,8 @@
  * Openlayers quicktab plugin.
  */
 
+use Drupal\openlayers\Openlayers;
+
 /**
  * Class for tab content of type "openlayers_map".
  *
@@ -29,7 +31,7 @@ class OpenlayersMap extends QuickContent {
     $form['Openlayers-map']['map'] = array(
       '#type' => 'select',
       '#title' => t('Openlayers map'),
-      '#options' => \Drupal\openlayers\Openlayers::loadAllAsOptions('Map'),
+      '#options' => Openlayers::loadAllAsOptions('Map'),
       "#empty_option" => t('- Select a map -'),
       '#default_value' => isset($tab['openlayers_map']) ? $tab['openlayers_map'] : '',
     );
@@ -60,4 +62,5 @@ class OpenlayersMap extends QuickContent {
   public function getAjaxKeys() {
     return array('Openlayers-map');
   }
+
 }

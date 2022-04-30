@@ -1,13 +1,9 @@
 <?php
-/**
- * @file
- * Class openlayers_components_ui.
- */
 
 namespace Drupal\openlayers_ui\UI;
 
 /**
- * Class openlayers_components_ui.
+ * FIX - insert comment here.
  */
 class OpenlayersProjections extends \OpenlayersObjects {
 
@@ -28,7 +24,7 @@ class OpenlayersProjections extends \OpenlayersObjects {
    * This doesn't have to be true if you override both.
    */
   public function list_build_row($item, &$form_state, $operations) {
-    // Set up sorting,
+    // Set up sorting.
     $name = $item->{$this->plugin['export']['key']};
     $schema = ctools_export_get_schema($this->plugin['schema']);
 
@@ -53,25 +49,39 @@ class OpenlayersProjections extends \OpenlayersObjects {
     }
 
     $this->rows[$name]['data'] = array();
-    $this->rows[$name]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
+    $this->rows[$name]['class'] = !empty($item->disabled) ?
+      array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
 
     // If we have an admin title, make it the first row.
     if (!empty($this->plugin['export']['admin_title'])) {
-      $this->rows[$name]['data'][] = array('data' => check_plain($item->{$this->plugin['export']['admin_title']}), 'class' => array('ctools-export-ui-title'));
+      $this->rows[$name]['data'][] = array(
+        'data' => check_plain($item->{$this->plugin['export']['admin_title']}),
+        'class' => array('ctools-export-ui-title'),
+      );
     }
-    $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
-    $this->rows[$name]['data'][] = array('data' => check_plain($item->{$schema['export']['export type string']}), 'class' => array('ctools-export-ui-storage'));
+    $this->rows[$name]['data'][] = array(
+      'data' => check_plain($name),
+      'class' => array('ctools-export-ui-name'),
+    );
+    $this->rows[$name]['data'][] = array(
+      'data' => check_plain($item->{$schema['export']['export type string']}),
+      'class' => array('ctools-export-ui-storage'),
+    );
 
     $ops = theme('links__ctools_dropbutton', array(
       'links' => $operations,
       'attributes' => array('class' => array('links', 'inline')),
     ));
 
-    $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
+    $this->rows[$name]['data'][] = array(
+      'data' => $ops,
+      'class' => array('ctools-export-ui-operations'),
+    );
 
     // Add an automatic mouseover of the description if one exists.
     if (!empty($this->plugin['export']['admin_description'])) {
-      $this->rows[$name]['title'] = $item->{$this->plugin['export']['admin_description']};
+      $this->rows[$name]['title'] =
+        $item->{$this->plugin['export']['admin_description']};
     }
   }
 
@@ -84,12 +94,24 @@ class OpenlayersProjections extends \OpenlayersObjects {
   public function list_table_header() {
     $header = array();
     if (!empty($this->plugin['export']['admin_title'])) {
-      $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-title'));
+      $header[] = array(
+        'data' => t('Name'),
+        'class' => array('ctools-export-ui-title'),
+      );
     }
 
-    $header[] = array('data' => t('Machine name'), 'class' => array('ctools-export-ui-name'));
-    $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
-    $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
+    $header[] = array(
+      'data' => t('Machine name'),
+      'class' => array('ctools-export-ui-name'),
+    );
+    $header[] = array(
+      'data' => t('Storage'),
+      'class' => array('ctools-export-ui-storage'),
+    );
+    $header[] = array(
+      'data' => t('Operations'),
+      'class' => array('ctools-export-ui-operations'),
+    );
 
     return $header;
   }

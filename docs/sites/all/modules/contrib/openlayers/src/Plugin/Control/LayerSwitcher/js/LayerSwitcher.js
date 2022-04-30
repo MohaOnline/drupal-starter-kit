@@ -45,6 +45,12 @@ Drupal.openlayers.pluginManager.register({
         });
       }
     });
+
+    // Show/hide layers according to inital input field settings.
+    jQuery.each(jQuery('input[name=layer]', element), function(i, el) {
+      jQuery(el).change();
+     return false;
+    });
     
     return new ol.control.Control({
       element: element[0]

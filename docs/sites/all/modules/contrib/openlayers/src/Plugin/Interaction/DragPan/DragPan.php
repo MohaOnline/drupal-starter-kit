@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Interaction: DragPan.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\DragPan;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class DragPan.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "DragPan",

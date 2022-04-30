@@ -1,15 +1,12 @@
 <?php
-/**
- * @file
- * Class Component.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Class Component.
+ * FIX: Insert short comment here.
  */
-abstract class Component extends Object implements ComponentInterface {
+abstract class Component extends Base implements ComponentInterface {
+
   /**
    * The array containing the options.
    *

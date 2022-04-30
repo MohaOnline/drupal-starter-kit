@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Component: Bootstap JS Popup.
- */
 
 namespace Drupal\openlayers\Plugin\Component\BootstrapjsPopup;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Component;
 
 /**
- * Class BootstrapjsPopup.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "BootstrapjsPopup"

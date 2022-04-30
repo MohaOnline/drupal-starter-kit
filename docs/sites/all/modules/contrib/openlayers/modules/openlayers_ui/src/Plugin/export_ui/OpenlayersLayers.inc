@@ -1,8 +1,12 @@
 <?php
+
 /**
  * @file
  * CTools Export UI plugin definition for layers.
  */
+
+use Drupal\openlayers\Openlayers;
+use Drupal\openlayers_ui\UI\OpenlayersLayers;
 
 /**
  * CTools Export UI plugin definition.
@@ -75,25 +79,39 @@ function openlayers_ui_OpenlayersLayers_ctools_export_ui() {
  * Layer base config form handler.
  */
 function openlayers_layer_form_start($form, &$form_state) {
-  $class = new \Drupal\openlayers_ui\UI\OpenlayersLayers();
+  $class = new OpenlayersLayers();
   $class->init($form_state['plugin']);
   $class->edit_form($form, $form_state);
 
   $options = array();
-  foreach (\Drupal\openlayers\Openlayers::loadAllExportable('Map') as $machine_name => $map) {
+  $defaultOptions = array();
+
+  foreach (Openlayers::loadAllExportable('Map') as $machine_name => $map) {
     if (!is_object($map) || (property_exists($map, 'disabled') && ($map->disabled == 1 || $map->disabled == TRUE))) {
       continue;
     }
     $options[$machine_name] = $map->name;
+    $mapObject = Openlayers::load('map', $map);
+    $layers = $mapObject->getOption('layers', array());
+    if (in_array($form_state['item']->machine_name, $layers)) {
+      $defaultOptions[] = $machine_name;
+    }
   }
 
-  $form['attachToMap'] = array(
-    '#type' => 'select',
-    '#title' => 'Add this to a map ?',
-    '#empty_option' => t('- Do no attach -'),
-    '#description' => 'Select the map to add this object to.',
+  // Define which map(s) this layer is added to.
+  $form['attachMaps'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Attach to Maps ?'),
+    '#description' => t('Select one or maps to add this object to.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['attachMaps']['attachToMap'] = array(
+    '#type' => 'checkboxes',
+    '#title' => 'Maps:',
     '#options' => $options,
-    '#default_value' => isset($form_state['item']->attachToMap) ? $form_state['item']->attachToMap : '',
+    '#default_value' => $defaultOptions,
   );
 
   return $form;
@@ -103,7 +121,7 @@ function openlayers_layer_form_start($form, &$form_state) {
  * Layer base config form validation handler.
  */
 function openlayers_layer_form_start_validate($form, &$form_state) {
-  $class = new \Drupal\openlayers_ui\UI\OpenlayersLayers();
+  $class = new OpenlayersLayers();
   $class->init($form_state['plugin']);
   $class->edit_form_validate($form, $form_state);
 }
@@ -112,9 +130,34 @@ function openlayers_layer_form_start_validate($form, &$form_state) {
  * Layer base config form submit handler.
  */
 function openlayers_layer_form_start_submit($form, &$form_state) {
-  $class = new \Drupal\openlayers_ui\UI\OpenlayersLayers();
+  $class = new OpenlayersLayers();
   $class->init($form_state['plugin']);
   $class->edit_form_submit($form, $form_state);
+  
+  $attachMaps = $form_state['input']['attachToMap'];
+  $maps = Openlayers::loadAll('map');
+
+  foreach ($attachMaps as $key => $map) {
+    $layers = $maps[$key]->getOption('layers', array());
+    $newLayer = $form_state['values']['machine_name'];
+    
+    // if new layer is being added to a map
+    if (!is_null($attachMaps[$key]) && !in_array($newLayer, $layers)) {
+      $layers[] = $newLayer;
+      $maps[$key]->setOption('layers', $layers);
+      Openlayers::save($maps[$key]);
+    }
+    
+    // if new layer is being deleted from a map
+    if (is_null($attachMaps[$key]) && in_array($newLayer, $layers)) {
+      if (($key2 = array_search($newLayer, $layers)) !== false) {
+        unset($layers[$key2]);
+      }
+      $maps[$key]->setOption('layers', $layers);
+      Openlayers::save($maps[$key]);
+    }    
+  }
+  
 }
 
 /**
@@ -127,7 +170,7 @@ function openlayers_layer_form_type($form, &$form_state) {
     '#empty_option' => t('- Select a @plugin type -', array('@plugin' => 'Layer')),
     '#default_value' => isset($form_state['item']->factory_service) ? $form_state['item']->factory_service : '',
     '#description' => t('Select the type of layer.'),
-    '#options' => \Drupal\openlayers\Openlayers::getOLObjectsOptions('Layer'),
+    '#options' => Openlayers::getOlObjectsOptions('Layer'),
     '#required' => TRUE,
   );
 
@@ -141,7 +184,7 @@ function openlayers_layer_form_type($form, &$form_state) {
     '#empty_option' => t('- Select a Source -'),
     '#default_value' => isset($form_state['item']->options['source']) ? $form_state['item']->options['source'] : '',
     '#description' => t('Select the source.'),
-    '#options' => \Drupal\openlayers\Openlayers::loadAllAsOptions('Source'),
+    '#options' => Openlayers::loadAllAsOptions('Source'),
     '#required' => FALSE,
   );
 
@@ -179,7 +222,7 @@ function openlayers_layer_form_style($form, &$form_state) {
     '#empty_option' => t('- Select a Style -'),
     '#default_value' => isset($form_state['item']->options['style']) ? $form_state['item']->options['style'] : '',
     '#description' => t('Select the style.'),
-    '#options' => \Drupal\openlayers\Openlayers::loadAllAsOptions('Style'),
+    '#options' => Openlayers::loadAllAsOptions('Style'),
     '#required' => FALSE,
   );
 
@@ -199,7 +242,7 @@ function openlayers_layer_form_style_submit($form, &$form_state) {
  * Layer options config form handler.
  */
 function openlayers_layer_form_options($form, &$form_state) {
-  if (($layer = \Drupal\openlayers\Openlayers::load('Layer', $form_state['item'])) == TRUE) {
+  if (($layer = Openlayers::load('Layer', $form_state['item'])) == TRUE) {
     $layer->optionsForm($form, $form_state);
     $form['options']['#tree'] = TRUE;
   }
@@ -211,7 +254,7 @@ function openlayers_layer_form_options($form, &$form_state) {
  * Layer options config form validation handler.
  */
 function openlayers_layer_form_options_validate($form, &$form_state) {
-  if (($layer = \Drupal\openlayers\Openlayers::load('Layer', $form_state['item'])) == TRUE) {
+  if (($layer = Openlayers::load('Layer', $form_state['item'])) == TRUE) {
     $layer->optionsFormValidate($form, $form_state);
   }
 }
@@ -224,13 +267,7 @@ function openlayers_layer_form_options_submit($form, &$form_state) {
     $form_state['item']->options = array_merge((array) $form_state['item']->options, (array) $form_state['values']['options']);
   }
 
-  if (($layer = \Drupal\openlayers\Openlayers::load('Layer', $form_state['item'])) == TRUE) {
-    if (!empty($form_state['item']->attachToMap) && ($map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']->attachToMap)) == TRUE) {
-      $map->getCollection()->append($layer);
-      \Drupal\openlayers\Openlayers::save($map);
-      unset($form_state['item']->attachToMap);
-    }
-
+  if (($layer = Openlayers::load('Layer', $form_state['item'])) == TRUE) {
     $layer->optionsFormSubmit($form, $form_state);
   }
 }

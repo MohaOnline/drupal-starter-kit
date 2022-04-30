@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Interaction: DragAndDrop.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\DragAndDrop;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class DragAndDrop.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "DragAndDrop"

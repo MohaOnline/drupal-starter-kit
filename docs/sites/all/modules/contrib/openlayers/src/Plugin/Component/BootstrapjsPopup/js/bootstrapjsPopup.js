@@ -1,5 +1,5 @@
 Drupal.openlayers.pluginManager.register({
-  fs: 'openlayers.Component:BoostrapjsPopup',
+  fs: 'openlayers.Component:BootstrapjsPopup',
   init: function(data) {
     jQuery("body").append("<div id='popup'></div>");
 
@@ -11,11 +11,23 @@ Drupal.openlayers.pluginManager.register({
     data.map.addOverlay(popup);
 
     data.map.on('click', function(evt) {
-      var feature = data.map.forEachFeatureAtPixel(evt.pixel,
-        function(feature, layer) {
-          return feature;
-        });
 
+      if ('getFeaturesAtPixel' in map) {
+        //  Introduced in v4.3.0 - new map.getFeaturesAtPixel() method.
+        var features = data.map.getFeaturesAtPixel(evt.pixel);
+      } else {
+        //  Replaced in v4.3.0 - forEachFeatureAtPixel() method replaced.
+        features = [];        
+        data.map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+          features.push(feature);
+        });
+      }
+
+      var feature = undefined;
+      for (item of features) {
+        feature = item;
+      }
+      
       var element = popup.getElement();
       jQuery(element).popover('destroy');
 

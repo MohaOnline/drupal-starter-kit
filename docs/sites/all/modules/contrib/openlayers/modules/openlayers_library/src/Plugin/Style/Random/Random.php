@@ -1,22 +1,19 @@
 <?php
-/**
- * @file
- * Style: Random.
- */
 
 namespace Drupal\openlayers_library\Plugin\Style\Random;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Style;
 
 /**
- * Class Random.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Random"
  * )
  */
 class Random extends Style {
+
   /**
    * {@inheritdoc}
    */
@@ -52,4 +49,5 @@ class Random extends Style {
 
     return $import;
   }
+
 }

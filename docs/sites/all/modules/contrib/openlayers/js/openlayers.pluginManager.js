@@ -22,7 +22,7 @@
       }
     },
     alter: function () {
-      // @todo: alter hook
+      // FIX: alter hook
     },
     getPlugin: function (factoryService) {
       if (this.isRegistered(factoryService)) {

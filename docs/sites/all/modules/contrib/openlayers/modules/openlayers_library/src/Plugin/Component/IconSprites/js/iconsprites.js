@@ -98,11 +98,16 @@ Drupal.openlayers.pluginManager.register({
         'Hold on a second, while I catch those butterflies for you ...';
 
       window.setTimeout(function() {
-        var features = [];
-        map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
-          features.push(features);
-          return false;
-        });
+        if ('getFeaturesAtPixel' in map) {
+          //  Introduced in v4.3.0 - new map.getFeaturesAtPixel() method.
+          var features = map.getFeaturesAtPixel(evt.pixel);
+        } else {
+          //  Replaced in v4.3.0 - forEachFeatureAtPixel() method replaced.
+          features = [];        
+          map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+            features.push(feature);
+          });
+        }
 
         if (features.length === 1) {
           info.innerHTML = 'Got one butterfly';

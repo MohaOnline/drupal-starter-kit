@@ -1,23 +1,20 @@
 <?php
-/**
- * @file
- * Component: MapSwitcher.
- */
 
 namespace Drupal\openlayers_library\Plugin\Component\MapSwitcher;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Component;
 use Drupal\openlayers\Types\ObjectInterface;
 
 /**
- * Class MapSwitcher.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *   id = "MapSwitcher"
  * )
  */
 class MapSwitcher extends Component {
+
   /**
    * {@inheritdoc}
    */
@@ -25,8 +22,9 @@ class MapSwitcher extends Component {
     parent::postBuild($build, $context);
 
     $options = array();
-    foreach (\Drupal\openlayers\Openlayers::loadAllExportable('Map') as $machine_name => $data) {
-      if (!is_object($data) || (property_exists($data, 'disabled') && ($data->disabled == 1 || $data->disabled == TRUE))) {
+    foreach (Openlayers::loadAllExportable('Map') as $machine_name => $data) {
+      if (!is_object($data) ||
+        (property_exists($data, 'disabled') && ($data->disabled == 1 || $data->disabled == TRUE))) {
         continue;
       }
       $options[$machine_name] = $data->name;

@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Source: Stamen.
- */
 
 namespace Drupal\openlayers\Plugin\Source\Stamen;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class Stamen.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Stamen"

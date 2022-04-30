@@ -26,7 +26,10 @@ Drupal.openlayers.pluginManager.register({
     });
 
     data.map.getView().setCenter(data.map.getView().getCenter());
+    data.map.getView().dispatchEvent('change:center');
+
     data.map.getView().setZoom(data.map.getView().getZoom());
+    data.map.getView().dispatchEvent('change:resolution');
 
     data.map.on('change:size', function() {
       google.maps.event.trigger(gmap, 'resize');
@@ -55,17 +58,17 @@ Drupal.openlayers.pluginManager.register({
    */
   scriptLoading: false,
   attach: function(context, settings) {
-    // There seem cases in which google is already defind, but the loading isn't
+    // There are cases in which google is already defined, but the loading isn't
     // finished, so make sure we'll wait till the loading is complete before
     // calling the initialize function ourselves.
     if (Drupal.openlayers.pluginManager.getPlugin('openlayers.Source:GoogleMaps').scriptLoading) {
       return;
     }
-    if (typeof google === 'undefined') {
+    if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
       Drupal.openlayers.pluginManager.getPlugin('openlayers.Source:GoogleMaps').scriptLoading = true;
 
       var params = {
-        v: 3.22,
+        v: 3,
         callback: 'Drupal.openlayers.openlayers_source_internal_googlemaps_initialize'
       };
 
@@ -112,7 +115,7 @@ Drupal.openlayers.pluginManager.register({
  */
 Drupal.openlayers.openlayers_source_internal_googlemaps_initialize = function() {
   Drupal.openlayers.pluginManager.getPlugin('openlayers.Source:GoogleMaps').scriptLoading = false;
-  jQuery('.openlayers.gmap-map').each(function() {
+  jQuery('.openlayers.gmap-map').once('gmap-init').each(function() {
     var map_id = jQuery(this).attr('id').replace('gmap-', '');
     var callback = Drupal.openlayers.asyncIsReadyCallbacks[map_id.replace(/[^0-9a-z]/gi, '_')];
     if (callback !== undefined) {

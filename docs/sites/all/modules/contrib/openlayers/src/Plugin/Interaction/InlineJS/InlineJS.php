@@ -1,19 +1,15 @@
 <?php
-/**
- * @file
- * Interaction: JS.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\InlineJS;
 
-use Drupal\Core\Extension\ModuleHandlerInterface;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+use OpenlayersDrupal\Core\Extension\ModuleHandlerInterface;
+
 use Drupal\openlayers\Types\Interaction;
-use Drupal\service_container\Legacy\Drupal7;
-use Drupal\service_container\Messenger\MessengerInterface;
+use Drupal\openlayers\Legacy\Drupal7;
+use Drupal\openlayers\Messenger\MessengerInterface;
 
 /**
- * Class InlineJS.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "InlineJS",
@@ -35,6 +31,12 @@ class InlineJS extends Interaction {
    *   The plugin id.
    * @param array $plugin_definition
    *   The plugin definition.
+   * @param OpenlayersDrupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   FIX.
+   * @param Drupal\openlayers\Messenger\MessengerInterface $messenger
+   *   FIX.
+   * @param Drupal\openlayers\Legacy\Drupal7 $drupal7
+   *   FIX.
    */
   public function __construct(array $configuration, $plugin_id, array $plugin_definition, ModuleHandlerInterface $module_handler, MessengerInterface $messenger, Drupal7 $drupal7) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
@@ -52,7 +54,7 @@ class InlineJS extends Interaction {
     if ($this->moduleHandler->moduleExists('ace_editor')) {
       $attached = array(
         'library' => array(
-          array('ace_editor', 'ace-editor'),
+          array('ace_editor', 'ace'),
         ),
         'js' => array(
           $this->drupal7->drupal_get_path('module', 'openlayers') . '/js/openlayers.editor.js',
@@ -60,7 +62,16 @@ class InlineJS extends Interaction {
       );
     }
     else {
-      $this->messenger->addMessage(t('To get syntax highlighting, you should install the module <a href="@url1">ace_editor</a> and its <a href="@url2">library</a>.', array('@url1' => 'http://drupal.org/project/ace_editor', '@url2' => 'http://ace.c9.io/')), 'warning');
+      $this->messenger->addMessage(
+        t(
+          'To get syntax highlighting, you should install the module <a href="@url1">ace_editor</a> and its <a href="@url2">library</a>.',
+          array(
+            '@url1' => 'http://drupal.org/project/ace_editor',
+            '@url2' => 'http://ace.c9.io/',
+          )
+        ),
+        'warning'
+      );
     }
 
     $form['options']['javascript'] = array(

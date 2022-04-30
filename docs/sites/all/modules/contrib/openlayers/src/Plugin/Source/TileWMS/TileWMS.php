@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Source: TileWMS.
- */
 
 namespace Drupal\openlayers\Plugin\Source\TileWMS;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class TileWMS.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "TileWMS",
@@ -17,6 +13,7 @@ use Drupal\openlayers\Types\Source;
  * )
  */
 class TileWMS extends Source {
+
   /**
    * {@inheritdoc}
    */

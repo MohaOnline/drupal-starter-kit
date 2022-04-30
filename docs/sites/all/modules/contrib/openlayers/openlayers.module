@@ -1,8 +1,12 @@
 <?php
+
 /**
  * @file
- * Openlayers module.
+ * FIX - insert comment here.
  */
+
+use Drupal\openlayers\Openlayers;
+use Drupal\openlayers\Config;
 
 /**
  * Implements hook_ctools_plugin_api().
@@ -47,8 +51,8 @@ function openlayers_element_info() {
  * Renders the map and returns the markup in an renderable array.
  */
 function openlayers_element_process_callback($element, $form_state, $complete_form) {
-  /* @var \Drupal\openlayers\Types\MapInterface $map */
-  if (($map = \Drupal\openlayers\Openlayers::load('Map', $element['#map'])) == TRUE) {
+  /** @var \Drupal\openlayers\Types\MapInterface $map */
+  if (($map = Openlayers::load('Map', $element['#map'])) == TRUE) {
     $element['map'] = $map->build();
   }
 
@@ -60,8 +64,8 @@ function openlayers_element_process_callback($element, $form_state, $complete_fo
  */
 function openlayers_element_prerender_callback($element) {
   if (empty($element['map'])) {
-    /* @var \Drupal\openlayers\Types\Map $map */
-    if (($map = \Drupal\openlayers\Openlayers::load('Map', $element['#map'])) == TRUE) {
+    /** @var \Drupal\openlayers\Types\Map $map */
+    if (($map = Openlayers::load('Map', $element['#map'])) == TRUE) {
       $element['map'] = $map->build();
     }
   }
@@ -117,7 +121,7 @@ function openlayers_i18n_string_info() {
  *
  * @see i18n_string()
  */
-function openlayers_i18n_string($name, $default, $options = array()) {
+function openlayers_i18n_string($name, $default, array $options = array()) {
   if (module_exists('i18n_string')) {
     $result = i18n_string($name, $default, $options);
   }
@@ -156,7 +160,7 @@ function openlayers_i18n_string($name, $default, $options = array()) {
  *
  * @see i18n_string_update()
  */
-function openlayers_i18n_string_update($name, $string, $options = array()) {
+function openlayers_i18n_string_update($name, $string, array $options = array()) {
   if (module_exists('i18n_string')) {
     return i18n_string_update($name, $string, $options);
   }
@@ -181,7 +185,7 @@ function openlayers_i18n_string_update($name, $string, $options = array()) {
  *
  * @see i18n_string_remove()
  */
-function openlayers_i18n_string_remove($name, $string = NULL, $options = array()) {
+function openlayers_i18n_string_remove($name, $string = NULL, array $options = array()) {
   if (module_exists('i18n_string')) {
     return i18n_string_remove($name, $string, $options);
   }
@@ -191,9 +195,9 @@ function openlayers_i18n_string_remove($name, $string = NULL, $options = array()
  * Implements hook_i18n_string_refresh().
  */
 function openlayers_i18n_string_refresh() {
-  foreach (\Drupal\openlayers\Openlayers::getPluginTypes() as $type) {
-    foreach (\Drupal\openlayers\Openlayers::loadAllExportable($type) as $exportable) {
-      $object = \Drupal\openlayers\Openlayers::load($type, $exportable);
+  foreach (Openlayers::getPluginTypes() as $type) {
+    foreach (Openlayers::loadAllExportable($type) as $exportable) {
+      $object = Openlayers::load($type, $exportable);
       $object->i18nStringsRefresh();
     }
   }
@@ -208,12 +212,47 @@ function openlayers_libraries_info() {
   // namespaced classes. So provide a fallback variable instead.
   $js_css_group = 'openlayers';
   if (class_exists('\Drupal\openlayers\Config')) {
-    $js_css_group = \Drupal\openlayers\Config::get('openlayers.js_css.group');
+    $js_css_group = Config::get('openlayers.js_css.group');
   }
 
-  $info = system_get_info('module', 'openlayers');
-  $version = $info['version'] ? $info['version'] : '7.x-3.x';
   $module_path = drupal_get_path('module', 'openlayers');
+  $library_path = libraries_get_path('openlayers3');
+  $versions = scandir($library_path . '/versions');
+
+  $local_variants = [];
+  foreach ($versions as $version) {
+    $variant_path = $library_path . '/versions/' . $version;
+    if (is_dir($variant_path) && substr($version, 0, 1) == 'v') {
+      $jsdir = '/build';
+      $cssdir = '/css';
+      // Might be a reduced fingerprint distribution.
+      if (!is_dir($variant_path . '/build')) {
+        $jsdir = '';
+        $cssdir = '';
+      }
+      $local_variants['local:' . substr($version, 1)] = [
+        'name' => 'Openlayers ' . $version,
+        'files' => array(
+          'js' => array(
+            'versions/' . $version . $jsdir . '/ol.js' => array(
+              'type' => 'file',
+              'weight' => 6,
+              'group' => $js_css_group,
+            ),
+          ),
+          'css' => array(
+            'versions/' . $version . $cssdir . '/ol.css' => array(
+              'type' => 'file',
+              'weight' => 4,
+              'group' => $js_css_group,
+            ),
+          ),
+        ),
+      ];
+    }
+  }
+
+  ksort($local_variants);
 
   $libraries['openlayers3_integration'] = array(
     'name' => 'Openlayers 3 Drupal integration files',
@@ -297,7 +336,10 @@ function openlayers_libraries_info() {
     'name' => 'Openlayers 3',
     'vendor url' => 'http://openlayers.org/',
     'download url' => 'https://github.com/openlayers/ol3/releases/download/v3.11.2/v3.11.2.zip',
-    'version callback' => array('\Drupal\openlayers\Openlayers', 'getLibraryVersion'),
+    'version callback' => array(
+      '\Drupal\openlayers\Openlayers',
+      'getLibraryVersion',
+    ),
     'version arguments' => array(),
     'library path' => $module_path,
     // This is taken in account if the module libraries_cdn is enabled.
@@ -312,35 +354,14 @@ function openlayers_libraries_info() {
         'timeout' => 10,
       ),
     ),
-    'variants' => array(),
+    'variants' => $local_variants,
     'dependencies' => array(
       'openlayers3_integration',
     ),
   );
 
-
-  if ($version = \Drupal\openlayers\Openlayers::getLocalLibraryVersion()) {
-    unset($libraries['openlayers3']['library path']);
-    $libraries['openlayers3']['variants']['local:' . $version] = array(
-      'name' => 'Openlayers ' . $version,
-      'files' => array(
-        'js' => array(
-          'build/ol.js' => array(
-            'type' => 'file',
-            'weight' => 6,
-            'group' => $js_css_group,
-          ),
-        ),
-        'css' => array(
-          'css/ol.css' => array(
-            'type' => 'file',
-            'weight' => 4,
-            'group' => $js_css_group,
-          ),
-        ),
-      ),
-    );
-  }
+  unset($libraries['openlayers3']['library path']);
+  $libraries['openlayers3']['variants'] = $local_variants;
 
   return $libraries;
 }
@@ -355,4 +376,60 @@ function openlayers_hook_info() {
   );
 
   return array_fill_keys($hooks, array('group' => 'openlayers'));
+}
+
+/**
+ * Implements hook_stream_wrappers_alter().
+ */
+function openlayers_stream_wrappers_alter(&$wrappers) {
+  if (class_exists('OpenlayersDrupal')) {
+
+  }
+  if (class_exists('OpenlayersServiceContainer')) {
+    OpenlayersServiceContainer::init();
+  }
+}
+
+/**
+ * Implements hook_modules_enabled().
+ */
+function openlayers_modules_enabled() {
+  if (class_exists('OlServiceContainer')) {
+    ServiceContainer::reset();
+    ServiceContainer::init();
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ */
+function openlayers_module_implements_alter(&$implementations, $hook) {
+  // Moves our hook_init() implementation to occur first so that we
+  // can initialize the container.
+  if ($hook == 'stream_wrappers_alter') {
+    $group = $implementations['openlayers'];
+    unset($implementations['openlayers']);
+    $implementations = array('openlayers' => $group) + $implementations;
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function openlayers_ctools_plugin_type() {
+  $items['ServiceProvider'] = array(
+    'cache' => FALSE,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function openlayers_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'openlayers') {
+    return 'src/ServiceContainer/' . $plugin_type;
+  }
+
+  return NULL;
 }

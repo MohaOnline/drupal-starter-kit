@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Control: MousePosition.
- */
 
 namespace Drupal\openlayers\Plugin\Control\MousePosition;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Control;
 
 /**
- * Class MousePosition.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "MousePosition",

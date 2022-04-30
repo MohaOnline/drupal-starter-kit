@@ -1,24 +1,21 @@
 <?php
-/**
- * @file
- * Component: Autopopup.
- */
 
 namespace Drupal\openlayers\Plugin\Component\Autopopup;
 
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Component;
 
 /**
- * Class Autopopup.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Autopopup",
- *  description = "Automatically opens a popup on the first feature of the source."
+ *  description = "Automatically opens a popup on the first feature of
+ *    the source."
  * )
  */
 class Autopopup extends Component {
+
   /**
    * {@inheritdoc}
    */
@@ -29,7 +26,7 @@ class Autopopup extends Component {
       '#empty_option' => t('- Select a Source -'),
       '#default_value' => isset($form_state['item']->options['source']) ? $form_state['item']->options['source'] : '',
       '#description' => t('Select the source.'),
-      '#options' => \Drupal\openlayers\Openlayers::loadAllAsOptions('Source'),
+      '#options' => Openlayers::loadAllAsOptions('Source'),
       '#required' => TRUE,
     );
     $form['options']['zoom'] = array(

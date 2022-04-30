@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Layer: Heatmap.
- */
 
 namespace Drupal\openlayers\Plugin\Layer\Heatmap;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Layer;
 
 /**
- * Class Heatmap.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Heatmap"

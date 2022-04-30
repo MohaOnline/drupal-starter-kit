@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Interaction: DoubleClickZoom.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\DoubleClickZoom;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class DoubleClickZoom.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "DoubleClickZoom",

@@ -28,7 +28,15 @@ ol.control.AutoZoom = function(opt_options) {
   button.addEventListener('click', handleClick_, false);
   this.options = options;
 };
-ol.inherits(ol.control.AutoZoom, ol.control.Control);
+
+if (ol.hasOwnProperty('inherits')) {
+  //  Deprecated in v6.0.0 - ol.inherits function.
+  ol.inherits(ol.control.AutoZoom, ol.control.Control);
+} else {
+  //  Introduced in v6.0.0 - replace with ECMAScript classes.
+  ol.control.AutoZoom.prototype = Object.create(ol.control.Control.prototype);
+  ol.control.AutoZoom.prototype.constructor = ol.control.AutoZoom;
+}
 
 /**
  * @param {event} event Browser event.
@@ -77,35 +85,74 @@ ol.control.AutoZoom.prototype.handleClick_ = function(event) {
       options.processed_once = true;
 
       if (options.enableAnimations === 1) {
-        var animationPan = ol.animation.pan({
-          duration: options.animations.pan,
-          source: map.getView().getCenter()
-        });
-        var animationZoom = ol.animation.zoom({
-          duration: options.animations.zoom,
-          resolution: map.getView().getResolution()
-        });
-        map.beforeRender(animationPan, animationZoom);
-      }
+        if (ol.hasOwnProperty('animation')) {
+          //  Deprecated in v3.20.0 - map.beforeRender() and ol.animation functions
+          var animationPan = ol.animation.pan({
+            duration: options.animations.pan,
+            source: map.getView().getCenter()
+          });
+          var animationZoom = ol.animation.zoom({
+            duration: options.animations.zoom,
+            resolution: map.getView().getResolution()
+          });
+          map.beforeRender(animationPan, animationZoom);
 
-      var maxExtent = calculateMaxExtent();
-      if (!ol.extent.isEmpty(maxExtent)) {
-        map.getView().fit(maxExtent, map.getSize());
-      }
-
-      if (options.zoom !== 'disabled') {
-        if (options.zoom !== 'auto') {
-          map.getView().setZoom(options.zoom);
-        } else {
-          var zoom = map.getView().getZoom() - 1;
-          if (options.max_zoom !== undefined && options.max_zoom > 0 && zoom > options.max_zoom) {
-            zoom = options.max_zoom;
+          var maxExtent = calculateMaxExtent();
+          if (!ol.extent.isEmpty(maxExtent)) {
+            //  Introduced in v4.0.0 - number of parameters has changed to getView().fit function.
+            if (map.getView().fit.length > 2) {
+              map.getView().fit(maxExtent, map.getSize());
+            } else {
+              map.getView().fit(maxExtent);
+            }
           }
+          var zoom = Math.floor(map.getView().getZoom());
           map.getView().setZoom(zoom);
+        } else {
+          //  Introduced in v3.20.0 - view.animate() instead of map.beforeRender() and ol.animation functions
+          var maxExtent = calculateMaxExtent();
+          
+          //  @TODO - find a way to to determine zoom without fitting theextend into the view, thereby ruining the animation
+          if (!ol.extent.isEmpty(maxExtent)) {
+            //  Introduced in v4.0.0 - number of parameters has changed to getView().fit function.
+            if (map.getView().fit.length > 2) {
+              map.getView().fit(maxExtent, map.getSize());
+            } else {
+              map.getView().fit(maxExtent);
+            }
+          }
+          var zoom = Math.floor(map.getView().getZoom());
+          map.getView().animate({
+            zoom: zoom,
+            center: ol.extent.getCenter(maxExtent),
+            duration: options.animations.zoom
+          });
         }
+      } else {
+        //  No animation
+        var maxExtent = calculateMaxExtent();
+        if (!ol.extent.isEmpty(maxExtent)) {
+            //  Introduced in v4.0.0 - number of parameters has changed to getView().fit function.
+          if (map.getView().fit.length > 2) {
+            map.getView().fit(maxExtent, map.getSize());
+          } else {
+            map.getView().fit(maxExtent);
+          }
+        }
+
+        if (options.zoom !== 'disabled') {
+          if (options.zoom !== 'auto') {
+            map.getView().setZoom(options.zoom);
+          } else {
+            var zoom = Math.floor(map.getView().getZoom());
+            if (options.max_zoom !== undefined && options.max_zoom > 0 && zoom > options.max_zoom) {
+              zoom = options.max_zoom;
+            }
+            map.getView().setZoom(zoom);
+          }
+        }       
       }
     }
   };
-
   zoomToSource.call();
 };

@@ -1,23 +1,19 @@
 <?php
-/**
- * @file
- * Component: Logistic.
- */
 
 namespace Drupal\openlayers_library\Plugin\Component\Logistic;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
-use Drupal\openlayers\Openlayers;
+
 use Drupal\openlayers\Types\Component;
 use Drupal\openlayers\Types\ObjectInterface;
 
 /**
- * Class Logistic.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *   id = "Logistic"
  * )
  */
 class Logistic extends Component {
+
   /**
    * {@inheritdoc}
    */
@@ -101,4 +97,5 @@ class Logistic extends Component {
     );
 
   }
+
 }

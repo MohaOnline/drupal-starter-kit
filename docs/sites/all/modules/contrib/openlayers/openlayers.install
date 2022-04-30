@@ -1,8 +1,12 @@
 <?php
+
 /**
  * @file
- * Openlayers module - installation procedure.
+ * FIX - insert comment here.
  */
+
+use Drupal\openlayers\Openlayers;
+use Drupal\openlayers\Config;
 
 /**
  * Implements hook_uninstall().
@@ -436,25 +440,43 @@ function openlayers_schema() {
 }
 
 /**
- * Implements hook__requirements().
+ * Implements hook_requirements().
  */
 function openlayers_requirements($phase) {
   $requirements = array();
   $t = get_t();
 
   if ($phase != 'install') {
-    if (($library = libraries_detect('openlayers3')) && !empty($library['installed'])) {
+    if ($library = Openlayers::detectLibrary()) {
       $requirements['openlayers3'] = array(
         'title' => $t('Openlayers'),
         'severity' => REQUIREMENT_OK,
-        'value' => $t('Openlayers %version installed at %path', array('%path' => $library['library path'], '%version' => $library['version'])),
+        'value' => $t(
+          'Openlayers library variant (%variant) installed at %path',
+          array(
+            '%path' => $library['library path'],
+            '%variant' => $library['version'],
+          )),
       );
     }
     else {
+      $variant = Openlayers::getLibraryVersion();
       $requirements['openlayers3'] = array(
         'title' => $t('Openlayers'),
         'severity' => REQUIREMENT_ERROR,
-        'value' => $t('Openlayers library was not found. To install it, <a href="@url">download it manually</a> or use <em>drush dl-openlayers</em>. The library directory must be named <em>openlayers3</em> to be recognized by this module.', array('@url' => $library['download url'])),
+        'value' => $t(
+          'The configured Openlayers library variant (%variant) was not found.
+            To install it, <a href="@url">download it manually</a> or use
+            <em>drush dl-openlayers</em>. The library directory must be named
+            <em>openlayers3</em> to be recognized by this module. Don\'t forget
+            to <a href="@openlayers_admin">update your settings</a> and select
+            a valid library variant.',
+          array(
+            '%variant' => $variant,
+            '@url' => $library['download url'],
+            '@openlayers_admin' => '/admin/structure/openlayers',
+          )
+        ),
       );
     }
   }
@@ -514,7 +536,7 @@ function openlayers_update_7350() {
       }
     }
     // If there's a data field but none is defined in the schema drop it.
-    // @TODO This leads to data loss! Can we do anything better?
+    // FIX This leads to data loss! Can we do anything better?
     if (!isset($table_schema['data']) && db_field_exists($table, 'data')) {
       db_drop_field($table, 'data');
     }
@@ -528,7 +550,7 @@ function openlayers_update_7350() {
     }
   }
   // Drop extra projection columns.
-  // @TODO This ALSO leads to data loss! Can we do anything better?
+  // FIX This ALSO leads to data loss! Can we do anything better?
   $old_projection_columns = array(
     'identifier',
     'authority',
@@ -545,7 +567,7 @@ function openlayers_update_7350() {
     }
   }
   // Truncate the styles table to remove old OL 2.x styles.
-  // @TODO Yes... more data loss...
+  // FIX Yes... more data loss...
   db_query('TRUNCATE {openlayers_styles}');
 }
 
@@ -564,7 +586,11 @@ function openlayers_update_7360() {
     $fs_after = 'openlayers.' . drupal_ucfirst($plugin_type) . '.';
 
     db_update($table)
-      ->expression('factory_service', 'REPLACE(factory_service, :before, :after)', array(':before' => $fs_before, ':after' => $fs_after))
+      ->expression(
+        'factory_service',
+        'REPLACE(factory_service, :before, :after)',
+        array(':before' => $fs_before, ':after' => $fs_after)
+      )
       ->execute();
   }
 }
@@ -583,12 +609,18 @@ function openlayers_update_7370() {
     $fs_after = ':';
 
     db_update($table)
-      ->expression('factory_service', 'REPLACE(factory_service, :before, :after)', array(':before' => $fs_before, ':after' => $fs_after))
+      ->expression(
+        'factory_service',
+        'REPLACE(factory_service, :before, :after)',
+        array(':before' => $fs_before, ':after' => $fs_after)
+      )
       ->execute();
   }
 }
 
 /**
+ * FIX - insert comment here.
+ *
  * Make sure that the submodule service_container_symfony from
  * module service_container is properly enabled.
  */
@@ -602,6 +634,8 @@ function openlayers_update_7380() {
 }
 
 /**
+ * FIX - insert comment here.
+ *
  * Make sure that the submodule service_container_annotation_discovery
  * from module service_container is properly enabled.
  */

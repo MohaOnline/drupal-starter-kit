@@ -24,7 +24,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.Point) {
     var pointLabel = options.pointLabel || '\u25CF';
-    var pointTipLabel = options.pointTipLabel || 'Draw a point';
+    var pointTipLabel = options.pointTipLabel || Drupal.t('Draw a point');
     var pointElement = document.createElement('button');
     pointElement.className = className + '-point';
     pointElement.type = 'button';
@@ -37,7 +37,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.MultiPoint) {
     var multipointLabel = options.multipointLabel || '\u25CF';
-    var multipointTipLabel = options.multipointTipLabel || 'Draw a multipoint';
+    var multipointTipLabel = options.multipointTipLabel || Drupal.t('Draw a multipoint');
     var multipointElement = document.createElement('button');
     multipointElement.className = className + '-multipoint';
     multipointElement.type = 'button';
@@ -50,7 +50,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.LineString) {
     var linestringLabel = options.pointLabel || '\u2500';
-    var linestringTipLabel = options.pointTipLabel || 'Draw a linestring, hold [shift] for free hand.';
+    var linestringTipLabel = options.pointTipLabel || Drupal.t('Draw a linestring, hold [shift] for free hand.');
     var linestringElement = document.createElement('button');
     linestringElement.className = className + '-linestring';
     linestringElement.type = 'button';
@@ -63,7 +63,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.MultiLineString) {
     var multilinestringLabel = options.pointLabel || '\u2500';
-    var multilinestringTipLabel = options.pointTipLabel || 'Draw a multilinestring, hold [shift] for free hand.';
+    var multilinestringTipLabel = options.pointTipLabel || Drupal.t('Draw a multilinestring, hold [shift] for free hand.');
     var multilinestringElement = document.createElement('button');
     multilinestringElement.className = className + '-multilinestring';
     multilinestringElement.type = 'button';
@@ -76,7 +76,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.Triangle) {
     var triangleLabel = options.triangleLabel || '\u25B3';
-    var triangleTipLabel = options.triangleTipLabel || 'Draw a triangle';
+    var triangleTipLabel = options.triangleTipLabel || Drupal.t('Draw a triangle');
     var triangleElement = document.createElement('button');
     triangleElement.className = className + '-triangle';
     triangleElement.type = 'button';
@@ -89,7 +89,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.Square) {
     var squareLabel = options.squareLabel || '\u25FB';
-    var squareTipLabel = options.squareTipLabel || 'Draw a square';
+    var squareTipLabel = options.squareTipLabel || Drupal.t('Draw a square');
     var squareElement = document.createElement('button');
     squareElement.className = className + '-square';
     squareElement.type = 'button';
@@ -102,7 +102,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.Box) {
     var boxLabel = options.boxLabel || '\u25AF';
-    var boxTipLabel = options.boxTipLabel || 'Draw a box';
+    var boxTipLabel = options.boxTipLabel || Drupal.t('Draw a box');
     var boxElement = document.createElement('button');
     boxElement.className = className + '-box';
     boxElement.type = 'button';
@@ -115,7 +115,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.Circle) {
     var circleLabel = options.circleLabel || '\u25EF';
-    var circleTipLabel = options.circleTipLabel || 'Draw a circle';
+    var circleTipLabel = options.circleTipLabel || Drupal.t('Draw a circle');
     var circleElement = document.createElement('button');
     circleElement.className = className + '-circle';
     circleElement.type = 'button';
@@ -128,7 +128,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.Polygon) {
     var polygonLabel = options.polygonLabel || '\u2B1F';
-    var polygonTipLabel = options.polygonTipLabel || 'Draw a polygon';
+    var polygonTipLabel = options.polygonTipLabel || Drupal.t('Draw a polygon');
     var polygonElement = document.createElement('button');
     polygonElement.className = className + '-polygon';
     polygonElement.type = 'button';
@@ -141,7 +141,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (draw.MultiPolygon) {
     var multipolygonLabel = options.multipolygonLabel || '\u2B1F';
-    var multipolygonTipLabel = options.multipolygonTipLabel || 'Draw a multipolygon';
+    var multipolygonTipLabel = options.multipolygonTipLabel || Drupal.t('Draw a multipolygon');
     var multipolygonElement = document.createElement('button');
     multipolygonElement.className = className + '-multipolygon';
     multipolygonElement.type = 'button';
@@ -154,7 +154,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (actions.Edit) {
     var editLabel = options.editLabel || '\u270D';
-    var editTipLabel = options.editTipLabel || 'Edit features';
+    var editTipLabel = options.editTipLabel || Drupal.t('Edit features');
     var editElement = document.createElement('button');
     editElement.className = className + '-edit';
     editElement.type = 'button';
@@ -167,7 +167,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (actions.Move) {
     var moveLabel = options.moveLabel || '\u27A4';
-    var moveTipLabel = options.moveTipLabel || 'Move features';
+    var moveTipLabel = options.moveTipLabel || Drupal.t('Move features');
     var moveElement = document.createElement('button');
     moveElement.className = className + '-move';
     moveElement.type = 'button';
@@ -180,7 +180,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (actions.Clear) {
     var clearLabel = options.clearLabel || 'X';
-    var clearTipLabel = options.clearTipLabel || 'Clear features';
+    var clearTipLabel = options.clearTipLabel || Drupal.t('Clear features');
     var clearElement = document.createElement('button');
     clearElement.className = className + '-clear';
     clearElement.type = 'button';
@@ -193,7 +193,7 @@ ol.control.Geofield = function(opt_options) {
 
   if (options.Snap) {
     var snapLabel = options.snapLabel || '\u25CE';
-    var snapTipLabel = options.snapTipLabel || 'Snap to features';
+    var snapTipLabel = options.snapTipLabel || Drupal.t('Snap to features');
     var snapElement = document.createElement('button');
     snapElement.className = className + '-snap';
     snapElement.type = 'button';
@@ -239,7 +239,15 @@ ol.control.Geofield = function(opt_options) {
     target: options.target
   });
 };
-ol.inherits(ol.control.Geofield, ol.control.Control);
+
+if (ol.hasOwnProperty('inherits')) {
+  //  Deprecated in v6.0.0 - ol.inherits function.
+  ol.inherits(ol.control.Geofield, ol.control.Control);
+} else {
+  //  Introduced in v6.0.0 - replace with ECMAScript classes.
+  ol.control.Geofield.prototype = Object.create(ol.control.Control.prototype);
+  ol.control.Geofield.prototype.constructor = ol.control.Geofield;
+}
 
 ol.control.Geofield.prototype.handleDrawClick_ = function(event) {
   var options = this.options;

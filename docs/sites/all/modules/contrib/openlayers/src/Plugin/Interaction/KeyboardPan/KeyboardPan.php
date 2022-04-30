@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Interaction: KeyboardPan.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\KeyboardPan;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class KeyboardPan.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "KeyboardPan",

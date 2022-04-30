@@ -1,12 +1,18 @@
 <?php
+
 /**
  * @file
- * Helper functions
+ * Helper functions.
  */
 
+use Drupal\openlayers\Openlayers;
+
+/**
+ * FIX - insert comment here.
+ */
 function _openlayers_services_retrieve($name) {
   /** @var \Drupal\openlayers\Types\MapInterface $map */
-  if (($map = \Drupal\openlayers\Openlayers::load('Map', $name)) == TRUE) {
+  if (($map = Openlayers::load('Map', $name)) == TRUE) {
 
     array_map(
       'drupal_static_reset',
@@ -29,7 +35,10 @@ function _openlayers_services_retrieve($name) {
   }
 }
 
+/**
+ * FIX - insert comment here.
+ */
 function _openlayers_services_access($operation, $map) {
-  $map = \Drupal\openlayers\Openlayers::load('Map', $map[0]);
+  $map = Openlayers::load('Map', $map[0]);
   return $map == TRUE && (bool) $map->getOption('provideIframe', FALSE);
 }

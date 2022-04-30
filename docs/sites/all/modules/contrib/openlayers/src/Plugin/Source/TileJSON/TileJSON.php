@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Source: TileJson.
- */
 
 namespace Drupal\openlayers\Plugin\Source\TileJSON;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class TileJSON.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "TileJSON"

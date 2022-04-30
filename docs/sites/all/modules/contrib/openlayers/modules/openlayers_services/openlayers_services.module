@@ -1,10 +1,13 @@
 <?php
+
 /**
  * @file
  * Openlayers Services module.
  */
 
 include 'openlayers_services.helpers.inc';
+
+use Drupal\openlayers\Openlayers;
 
 /**
  * Implements hook_ctools_plugin_api().
@@ -58,13 +61,16 @@ function openlayers_services_theme($existing, $type, $theme, $path) {
         'styles' => '',
       ),
       'template' => 'openlayers-map--iframe',
-      'path' => drupal_get_path('module', 'openlayers_services') . '/themes',
+      'path' => $path . '/themes',
     ),
   );
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function openlayers_services_form_openlayers_map_form_settings_alter(&$form, &$form_state) {
-  if (($map = \Drupal\openlayers\Openlayers::load('map', $form_state['item'])) == TRUE) {
+  if (($map = Openlayers::load('map', $form_state['item'])) == TRUE) {
 
     $form['options']['ui']['provideIframe'] = array(
       '#type' => 'checkbox',
@@ -76,8 +82,11 @@ function openlayers_services_form_openlayers_map_form_settings_alter(&$form, &$f
   }
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
 function openlayers_services_form_openlayers_map_form_preview_alter(&$form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
 
   if ($map == FALSE || (bool) $map->getOption('provideIframe', FALSE) == FALSE) {
     return;

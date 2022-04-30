@@ -53,25 +53,62 @@ Drupal.openlayers.pluginManager.register({
           var coordinates = feature.getGeometry().getFirstCoordinate();
 
           if (feature) {
+            var featureProperties = feature.getProperties();
+            var popupContent = featureProperties.popup_content;
+
+            for (key in featureProperties) {        
+              if (key != 'popup_content') {
+                oldPopupContent = popupContent + '.';
+                while (oldPopupContent != popupContent) {
+                  oldPopupContent = popupContent;
+                  popupContent = popupContent.replace('${' + key + '}', featureProperties[key]);
+                }
+              }
+            }
+        
             var name = feature.get('name') || '';
             var description = feature.get('description') || '';
 
-            content.innerHTML = '<div class="ol-popup-name">' + name + '</div><div class="ol-popup-description">' + description + '</div>';
-            container.style.display = 'block';
-            overlay.setPosition(coordinates);
+            if (popupContent != '') {
+              content.innerHTML = '<div class="ol-popup-content">' + popupContent + '</div>';
+              container.style.display = 'block';
+              overlay.setPosition(coordinates);
+            }
 
             if (data.opt.zoom !== 'disabled') {
-              if (data.opt.enableAnimations == 1) {
-                var pan = ol.animation.pan({duration: data.opt.animations.pan, source: map.getView().getCenter()});
-                var zoom = ol.animation.zoom({duration: data.opt.animations.zoom, resolution: map.getView().getResolution()});
-                map.beforeRender(pan, zoom);
-              }
               var dataExtent = feature.getGeometry().getExtent();
-              map.getView().fit(dataExtent, map.getSize());
+
+              if (!ol.extent.isEmpty(maxExtent)) {
+                //  Introduced in v4.0.0 - number of parameters has changed to getView().fit function.
+                if (map.getView().fit.length > 2) {
+                  map.getView().fit(maxExtent, map.getSize());
+                } else {
+                  map.getView().fit(maxExtent);
+                }
+              }
+
               if (data.opt.zoom != 'auto') {
-                map.getView().setZoom(data.opt.zoom);
+                var zoom = data.opt.zoom;
               } else {
-                map.getView().setZoom(map.getView().getZoom() - 1);
+                var zoom = map.getView().getZoom() - 1;
+              }
+              
+              if (data.opt.enableAnimations == 1) {
+                if (ol.hasOwnProperty('animation')) {
+                  //  Deprecated in v3.20.0 - map.beforeRender() and ol.animation functions
+                  var pan = ol.animation.pan({duration: data.opt.animations.pan, source: map.getView().getCenter()});
+                  var zoomAnimation = ol.animation.zoom({duration: data.opt.animations.zoom, resolution: map.getView().getResolution()});
+                  map.beforeRender(pan, zoomAnimation);
+                  map.getView().setZoom(zoom);
+                } else {
+                  //  Introduced in v3.20.0 - view.animate() instead of map.beforeRender() and ol.animation functions
+                  map.getView().animate({
+                    zoom: zoom,
+                    duration: data.opt.animations.zoom
+                  });
+                }
+              } else {
+                  map.getView().setZoom(zoom);                
               }
             }
           }

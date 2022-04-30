@@ -1,7 +1,8 @@
 <?php
+
 /**
  * @file
- * drush integration for Openlayers.
+ * The drush integration for Openlayers.
  */
 
 /**
@@ -14,7 +15,7 @@ function openlayers_drush_command() {
   $items['dl-openlayers'] = array(
     'callback' => 'drush_openlayers_plugin',
     'description' => dt('Download and install the Openlayers library.'),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH, // No bootstrap.
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
     'arguments' => array(
       'path' => dt('Optional. A path where to install the Openlayers library. If omitted Drush will use the default location.'),
     ),

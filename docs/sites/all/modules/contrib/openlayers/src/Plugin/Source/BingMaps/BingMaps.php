@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Source: BingMaps.
- */
 
 namespace Drupal\openlayers\Plugin\Source\BingMaps;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class BingMaps.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "BingMaps"

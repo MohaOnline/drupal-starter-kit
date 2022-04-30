@@ -1,0 +1,55 @@
+<?php
+
+/**
+ * @file
+ * Tests for openlayers.module.
+ */
+
+/**
+ * FIX - Insert comment here.
+ */
+class OpenlayersBaseTestCase extends DrupalWebTestCase {
+  /**
+   * FIX - Insert comment here.
+   *
+   * @var \Drupal\User
+   */
+  protected $adminUser;
+
+  /**
+   * FIX - Insert comment here.
+   */
+  public static function getInfo() {
+    // Note: getInfo() strings are not translated with t().
+    return array(
+      'name' => 'Openlayers Test Case 1',
+      'description' => 'Ensure that the openlayers module functions properly.',
+      'group' => 'Openlayers',
+    );
+  }
+
+  /**
+   * FIX - Insert comment here.
+   */
+  public function setUp() {
+    // Enable any modules required for the test. This should be an array of
+    // module names.
+    parent::setUp(array('geofield'));
+
+    // Create and log in our admin user.
+    /*
+    $this->adminUser = $this->drupalCreateUser([
+    'administer openlayers',
+    ]);
+    $this->drupalLogin($this->adminUser);
+     */
+  }
+
+  /**
+   * An example test for Openlayers module.
+   */
+  public function testOpenlayersExample() {
+
+  }
+
+}

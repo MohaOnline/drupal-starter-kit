@@ -1,8 +1,13 @@
 <?php
+
 /**
  * @file
  * Openlayers Geofield integration.
  */
+
+use Drupal\openlayers\Openlayers;
+use Drupal\openlayers\Plugin\Source\Vector\Vector;
+use Drupal\openlayers_geofield\Plugin\Component\GeofieldWidget\GeofieldWidget;
 
 // Always include the widget code of geofield. This re-uses major parts of it.
 module_load_include('inc', 'geofield', 'geofield.widgets.openlayers');
@@ -25,7 +30,7 @@ function openlayers_geofield_field_formatter_info() {
   $formatters = array();
 
   $formatters['openlayers_geofield'] = array(
-    'label' => t('Openlayers'),
+    'label' => t('Openlayers map'),
     'field types' => array('geofield'),
     'settings' => array(
       'data' => 'full',
@@ -56,7 +61,8 @@ function openlayers_geofield_field_formatter_settings_form($field, $instance, $v
   $settings = $display['settings'];
 
   $options = array();
-  foreach (\Drupal\openlayers\Openlayers::loadAll('map') as $map) {
+
+  foreach (Openlayers::loadAll('map') as $map) {
     foreach ($map->getCollection()->getObjects('layer') as $layer) {
       $key = $map->getMachineName() . ':' . $layer->getMachineName();
       $value = sprintf("%s (%s)", $layer->getName(), $layer->getMachineName());
@@ -106,7 +112,7 @@ function openlayers_geofield_field_formatter_settings_summary($field, $instance,
 
   if ($display['type'] == 'openlayers_geofield' && !empty($settings['map_layer_preset'])) {
     list($map_name, $layer_name) = explode(':', $settings['map_layer_preset']);
-    if (($map = \Drupal\openlayers\Openlayers::load('Map', $map_name)) == TRUE) {
+    if (($map = Openlayers::load('Map', $map_name)) == TRUE) {
       $summary[] = t('Openlayers map: @data', array('@data' => $map->getName()));
       $summary[] = t('Openlayers layer: @data', array('@data' => $layer_name));
     }
@@ -145,6 +151,11 @@ function openlayers_geofield_field_formatter_view($entity_type, $entity, $field,
     if (empty($item['geom'])) {
       unset($items[$delta]);
     }
+  }
+
+  // If there are no items, stop here. We won't show anything.
+  if (empty($items)) {
+    return $element;
   }
 
   // Ensure geophp is available.
@@ -204,10 +215,10 @@ function openlayers_geofield_field_formatter_view($entity_type, $entity, $field,
   list($map_name, $layer_name) = explode(':', $display['settings']['map_layer_preset'], 2);
 
   /** @var \Drupal\openlayers\Types\MapInterface $map */
-  if (($map = \Drupal\openlayers\Openlayers::load('Map', $map_name)) == TRUE) {
+  if (count($items) && (($map = Openlayers::load('Map', $map_name)) == TRUE)) {
     /** @var \Drupal\openlayers\Types\LayerInterface $layer */
     if ($layer = $map->getCollection()->getObjectById('layer', $layer_name)) {
-      if ($layer->getSource() instanceof \Drupal\openlayers\Plugin\Source\Vector\Vector) {
+      if ($layer->getSource() instanceof Vector) {
         $layer->getSource()->setOption('features', $features);
       }
     }
@@ -217,7 +228,6 @@ function openlayers_geofield_field_formatter_view($entity_type, $entity, $field,
       '#type' => 'openlayers',
       '#map' => $map,
     );
-
   }
 
   return $element;
@@ -263,9 +273,9 @@ function openlayers_geofield_field_widget_settings_form($field, $instance) {
 
   // Get preset options, filtered to those which have the GeoField component.
   $map_options = array();
-  foreach (\Drupal\openlayers\Openlayers::loadAll('Map') as $map) {
+  foreach (Openlayers::loadAll('Map') as $map) {
     foreach ($map->getObjects('component') as $component) {
-      if ($component instanceof \Drupal\openlayers_geofield\Plugin\Component\GeofieldWidget\GeofieldWidget) {
+      if ($component instanceof GeofieldWidget) {
         $map_options[$map->getMachineName()] = $map->getName();
       }
     }
@@ -301,7 +311,9 @@ function openlayers_geofield_field_widget_settings_form($field, $instance) {
       'polygon' => t('Polygon'),
     ),
     '#description' => t('Select what features are available to draw.'),
-    '#default_value' => isset($settings['feature_types']) ? $settings['feature_types'] : array('point' => 'point', 'path' => 'path', 'polygon' => 'polygon'),
+    '#default_value' =>
+    isset($settings['feature_types']) ? $settings['feature_types'] :
+      array('point' => 'point', 'path' => 'path', 'polygon' => 'polygon'),
   );
   $form['allow_edit'] = array(
     '#title' => t('Allow shape modification'),
@@ -370,7 +382,10 @@ function openlayers_geofield_field_widget_settings_form($field, $instance) {
  */
 function openlayers_geofield_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
   $widget = $instance['widget'];
-  $parents = array_merge($element['#field_parents'], array($element['#field_name'], $langcode, $delta));
+  $parents = array_merge(
+    $element['#field_parents'],
+    array($element['#field_name'], $langcode, $delta)
+  );
   $field_name = $field['field_name'];
   $id_prefix = implode('-', array_merge($parents, array($field_name, $delta)));
   $wrapper_id = drupal_html_id($id_prefix . '-use-geocoder-wrapper');
@@ -391,7 +406,7 @@ function openlayers_geofield_field_widget_form(&$form, &$form_state, $field, $in
   $openlayers_map_id = !empty($instance['widget']['settings']['openlayers_map']) ? $instance['widget']['settings']['openlayers_map'] : 'openlayers_geofield_map_geofield_widget';
 
   /** @var \Drupal\openlayers\Types\MapInterface $map */
-  if (($map = \Drupal\openlayers\Openlayers::load('Map', $openlayers_map_id)) == FALSE) {
+  if (($map = Openlayers::load('Map', $openlayers_map_id)) == FALSE) {
     // If the map couldn't be load we can't do a thing.
     return array();
   }
@@ -419,11 +434,19 @@ function openlayers_geofield_field_widget_form(&$form, &$form_state, $field, $in
         $action_feature['modify'] = 'modify';
       }
 
+      // Get the initial data from $form_state['input'], if it exists.
+      // Otherwise, use the field's $items. This allows the Geocoder button
+      // to populate the map, replacing any other shapes.
+      $initial_data = $items;
+      if (($input_value = drupal_array_get_nested_value($form_state['input'], $element['#field_parents'])) && !empty($input_value[$field_name][$langcode])) {
+        $initial_data = $input_value[$field_name][$langcode];
+      }
+
       $component->setOption('dataType', array('WKT' => 'WKT'));
       $component->setOption('dataProjection', 'EPSG:4326');
       $component->setOption('typeOfFeature', $feature_types);
       $component->setOption('actionFeature', $action_feature);
-      $component->setOption('initialData', $items);
+      $component->setOption('initialData', $initial_data);
       $component->setOption('featureLimit', $field['cardinality']);
       $component->setOption('inputFieldName', 'geom');
       $component->setOption('showInputField', !empty($settings['showInputField']));
@@ -431,7 +454,7 @@ function openlayers_geofield_field_widget_form(&$form, &$form_state, $field, $in
     }
   }
 
-  $element['openlayers'] = array(
+  $element += array(
     '#type' => 'openlayers',
     '#map' => $map,
   );
@@ -503,7 +526,7 @@ function openlayers_geofield_field_widget_form(&$form, &$form_state, $field, $in
       // of the geocoder field.
       '#limit_validation_errors' => array(),
       '#ajax' => array(
-        'callback' => 'openlayers_widget_geocode',
+        'callback' => 'openlayers_geofield_geocode_ajax_callback',
         'wrapper' => $wrapper_id,
         'effect' => 'fade',
       ),
@@ -538,7 +561,10 @@ function openlayers_openlayers_use_geocoder_submit($form, &$form_state) {
   // Set the widget value based on geocoding results.
   $field_state = field_form_get_state($parents, $field_name, $langcode, $form_state);
   $geocoder_field = $field_state['instance']['widget']['settings']['geocoder_field'];
-  $geocoder_field_parents = array_merge(array_slice($button['#array_parents'], 0, -4), array($geocoder_field, $langcode));
+  $geocoder_field_parents = array_merge(
+    array_slice($button['#array_parents'], 0, -4),
+    array($geocoder_field, $langcode)
+  );
   // Since all validation errors are disabled we need to fetch the values for
   // the geocoding as only validate values are sent to the values array of the
   // form state.
@@ -555,8 +581,29 @@ function openlayers_openlayers_use_geocoder_submit($form, &$form_state) {
     $field_value[$langcode][$delta]['input_format'] = 'wkt';
     // Override the field's value in the 'input' array to substitute the new
     // field value for the one that was submitted.
-    drupal_array_set_nested_value($form_state, array_merge(array('values'), array_slice($button['#array_parents'], 0, -4), array($field_name)), $field_value);
+    drupal_array_set_nested_value($form_state, array_merge(array('input'), array_slice($button['#array_parents'], 0, -4), array($field_name)), $field_value);
   }
+
+  // Rebuild the form to ensure that the map is recreated from scratch.
+  // See field_add_more_submit() in core field.form.inc for similar usage.
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Return the altered form element from an AJAX request.
+ *
+ * @see openlayers_geofield_field_widget_form()
+ */
+function openlayers_geofield_geocode_ajax_callback($form, $form_state) {
+  $button = $form_state['triggering_element'];
+
+  // Go one level up in the form, to the widgets container.
+  $element = drupal_array_get_nested_value($form, array_slice($button['#array_parents'], 0, -1));
+
+  // Return the map, but remove the '_weight' element inserted
+  // by the field API.
+  unset($element['_weight']);
+  return $element;
 }
 
 /**

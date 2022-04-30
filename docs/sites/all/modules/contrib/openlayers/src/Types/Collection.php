@@ -1,19 +1,11 @@
 <?php
-/**
- * @file
- * Class Collection.
- */
 
 namespace Drupal\openlayers\Types;
 
-use Drupal\Component\Plugin\PluginBase;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
-use Drupal\openlayers\Openlayers;
-use Drupal\openlayers\Types\Object;
-
+use OpenlayersDrupal\Component\Plugin\PluginBase;
 
 /**
- * Class Collection.
+ * FIX: Insert short comment here.
  *
  * @OpenlayersPlugin(
  *   id = "Collection"
@@ -24,9 +16,9 @@ class Collection extends PluginBase {
   /**
    * The variable containing the objects.
    *
-   * @var ObjectInterface[] $objects
+   * @var ObjectInterface[]
    *   List of objects in this collection. The items have to be instances of
-   *   \Drupal\openlayers\Types\Object.
+   *   \Drupal\openlayers\Types\Base.
    */
   protected $objects = array();
 
@@ -58,7 +50,6 @@ class Collection extends PluginBase {
    */
   public function getFlatList(array $types = array()) {
     $list = $this->objects;
-
 
     if (!empty($types)) {
       $types = array_values($types);
@@ -122,11 +113,11 @@ class Collection extends PluginBase {
     $attached = array();
     foreach ($this->getFlatList() as $object) {
       $object_attached = $object->attached() + array(
-          'js' => array(),
-          'css' => array(),
-          'library' => array(),
-          'libraries_load' => array(),
-        );
+        'js' => array(),
+        'css' => array(),
+        'library' => array(),
+        'libraries_load' => array(),
+      );
       foreach (array('js', 'css', 'library', 'libraries_load') as $type) {
         foreach ($object_attached[$type] as $data) {
           if (isset($attached[$type])) {
@@ -147,11 +138,11 @@ class Collection extends PluginBase {
    * @return array
    *   All the JS settings of the collection objects.
    */
-  public function getJS() {
+  public function getJs() {
     $settings = array();
 
     foreach ($this->getFlatList() as $object) {
-      $settings[$object->getType()][] = $object->getJS();
+      $settings[$object->getType()][] = $object->getJs();
     }
 
     return array_change_key_case($settings, CASE_LOWER);
@@ -226,7 +217,7 @@ class Collection extends PluginBase {
    * @return false|\Drupal\openlayers\Types\ObjectInterface
    *   If found, returns the object. False otherwise.
    */
-  public function getObjectById($type = array(), $id) {
+  public function getObjectById($type = array(), $id = NULL) {
     foreach ($this->getFlatList((array) $type) as $object) {
       if ($id === $object->getMachineName()) {
         return $object;

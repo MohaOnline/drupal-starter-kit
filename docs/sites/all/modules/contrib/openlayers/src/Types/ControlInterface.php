@@ -1,13 +1,9 @@
 <?php
-/**
- * @file
- * Interface ControlInterface.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Interface ControlInterface.
+ * FIX: Insert short comment here.
  */
 interface ControlInterface extends ObjectInterface {
 

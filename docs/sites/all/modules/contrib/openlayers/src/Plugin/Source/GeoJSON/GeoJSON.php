@@ -1,22 +1,19 @@
 <?php
-/**
- * @file
- * Source: GeoJson.
- */
 
 namespace Drupal\openlayers\Plugin\Source\GeoJSON;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Config;
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class GeoJSON.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "GeoJSON"
  * )
  */
 class GeoJSON extends Source {
+
   /**
    * {@inheritdoc}
    */
@@ -24,6 +21,7 @@ class GeoJSON extends Source {
     $form['options']['url'] = array(
       '#title' => t('URL'),
       '#type' => 'textfield',
+      '#maxlength' => '256',
       '#default_value' => $this->getOption('url'),
     );
     $form['options']['useBBOX'] = array(
@@ -79,8 +77,8 @@ class GeoJSON extends Source {
   /**
    * {@inheritdoc}
    */
-  public function getJS() {
-    $js = parent::getJS();
+  public function getJs() {
+    $js = parent::getJs();
     // Ensure we've a sane url.
     if (!empty($js['opt']['url'])) {
       $js['opt']['url'] = url($js['opt']['url']);
@@ -90,7 +88,7 @@ class GeoJSON extends Source {
       unset($js['opt']['url']);
     }
 
-    // @TODO Find a way how to do this just once per map / collection.
+    // FIX: Find a way how to do this just once per map / collection.
     if ($this->getOption('devMode')) {
       include 'forms.inc';
       $form_state = array();
@@ -127,10 +125,13 @@ class GeoJSON extends Source {
     $plugin = $this->getPluginDefinition();
     $plugin['path'] = $this->getClassDirectory();
     if ($this->getOption('devMode')) {
-      // @TODO Find a way how to do this just once per map / collection.
-      $attached['library']['system.ui.dialog'] = array('system', 'ui.dialog');
-      $attached['library']['system.jquery.cookie'] = array('system', 'jquery.cookie');
-      $attached['js'][$plugin['path'] . '/js/geojson_dev.js']['weight'] = Config::get('openlayers.js_css.weight') + 1;
+      // FIX: Find a way how to do this just once per map / collection.
+      $attached['library']['system.ui.dialog'] =
+        array('system', 'ui.dialog');
+      $attached['library']['system.jquery.cookie'] =
+        array('system', 'jquery.cookie');
+      $attached['js'][$plugin['path'] . '/js/geojson_dev.js']['weight'] =
+        Config::get('openlayers.js_css.weight') + 1;
     }
     else {
       unset($attached['js'][$plugin['path'] . '/js/geojson_dev.js']);
@@ -138,4 +139,5 @@ class GeoJSON extends Source {
     }
     return $attached;
   }
+
 }

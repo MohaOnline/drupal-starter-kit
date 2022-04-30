@@ -1,8 +1,11 @@
 <?php
+
 /**
  * @file
  * Openlayers field module.
  */
+
+use Drupal\openlayers\Openlayers;
 
 /**
  * Implements hook_field_info().
@@ -37,7 +40,7 @@ function openlayers_field_field_instance_settings_form($field, $instance) {
     '#description' => 'Only selected maps will be available for authors. Leave empty to allow all.',
     '#type' => 'checkboxes',
     '#default_value' => array_filter($instance['settings']['allowed_maps']),
-    '#options' => \Drupal\openlayers\Openlayers::loadAllAsOptions('map'),
+    '#options' => Openlayers::loadAllAsOptions('map'),
   );
   return $form;
 }
@@ -80,6 +83,13 @@ function openlayers_field_field_formatter_info() {
       'label' => t('Openlayers map'),
       'field types' => array('openlayers_map'),
     ),
+    'openlayers_geofile_formatter' => array(
+      'label' => t('Openlayers file to map'),
+      'field types' => array('file'),
+      'settings'  => array(
+        'map_layer' => '',
+      ),
+    ),
     'openlayers_addressfield_textfield_formatter' => array(
       'label' => t('Openlayers map (geocoded field)'),
       'field types' => array('addressfield', 'text'),
@@ -104,11 +114,34 @@ function openlayers_field_field_formatter_settings_form($field, $instance, $view
     case 'openlayers_map_formatter':
       break;
 
-    case 'openlayers_addressfield_textfield_formatter':
-
+    case 'openlayers_geofile_formatter':
       $options = array();
       /** @var \Drupal\openlayers\Types\MapInterface $map */
-      foreach (\Drupal\openlayers\Openlayers::loadAll('map') as $map) {
+      foreach (Openlayers::loadAll('map') as $map) {
+        /** @var \Drupal\openlayers\Types\LayerInterface $layer */
+        foreach ($map->getCollection()->getObjects('layer') as $layer) {
+          if ($source = $layer->getSource()) {
+            $key = $map->getMachineName() . ':' . $layer->getMachineName();
+            $value = sprintf("%s: %s (%s)", $map->getName(), $layer->getName(), $layer->getMachineName());
+            $options[$map->getName()][$key] = $value;
+          }
+        }
+      }
+
+      $element['map_layer'] = array(
+        '#type' => 'select',
+        '#title' => 'Base map to use and vector layer to fill with the features',
+        '#description' => 'You may choose only vector layer having a Field type source',
+        '#options' => $options,
+        '#default_value' => $settings['map_layer'],
+        '#required' => TRUE,
+      );
+      break;
+
+    case 'openlayers_addressfield_textfield_formatter':
+      $options = array();
+      /** @var \Drupal\openlayers\Types\MapInterface $map */
+      foreach (Openlayers::loadAll('map') as $map) {
         /** @var \Drupal\openlayers\Types\LayerInterface $layer */
         foreach ($map->getCollection()->getObjects('layer') as $layer) {
           if ($source = $layer->getSource()) {
@@ -169,6 +202,17 @@ function openlayers_field_field_formatter_settings_summary($field, $instance, $v
 
   switch ($display['type']) {
     case 'openlayers_map_formatter':
+      break;
+
+    case 'openlayers_geofile_formatter':
+      list($map, $layer) = explode(':', $settings['map_layer'], 2);
+
+      $summary[] = t('Openlayers map: @map', array(
+        '@map' => $map,
+      ));
+      $summary[] = t('Openlayers layer: @layer', array(
+        '@layer' => $layer,
+      ));
       break;
 
     case 'openlayers_addressfield_textfield_formatter':
@@ -250,7 +294,7 @@ function openlayers_field_field_formatter_view($entity_type, $entity, $field, $i
       list($map, $layer) = explode(':', $settings['map_layer'], 2);
 
       /** @var \Drupal\openlayers\Types\MapInterface $map */
-      $map = \Drupal\openlayers\Openlayers::load('map', $map);
+      $map = Openlayers::load('map', $map);
 
       /** @var \Drupal\openlayers\Types\LayerInterface $layer */
       if ($layer = $map->getCollection()->getObjectById('layer', $layer)) {
@@ -265,6 +309,29 @@ function openlayers_field_field_formatter_view($entity_type, $entity, $field, $i
         '#type' => 'openlayers',
         '#map' => $map,
       );
+
+      break;
+
+    // Render a geo file (gpx, kml, etc etc...) on a map.
+    case 'openlayers_geofile_formatter':
+      list($map, $layer) = explode(':', $settings['map_layer'], 2);
+
+      foreach ($items as $delta => $item) {
+        /** @var \Drupal\openlayers\Types\MapInterface $map */
+        $map = Openlayers::load('map', $map);
+
+        /** @var \Drupal\openlayers\Types\LayerInterface $layer */
+        if ($layer = $map->getCollection()->getObjectById('layer', $layer)) {
+          if ($source = $layer->getSource()) {
+            $source->setOption('url', file_create_url($item['uri']));
+          }
+        }
+
+        $element[$delta] = array(
+          '#type' => 'openlayers',
+          '#map' => $map,
+        );
+      }
 
       break;
   }
@@ -293,12 +360,12 @@ function openlayers_field_field_widget_form(&$form, &$form_state, $field, $insta
   $options = array();
 
   foreach ($allowed_maps as $machine_name) {
-    $map = \Drupal\openlayers\Openlayers::load('map', $machine_name);
+    $map = Openlayers::load('map', $machine_name);
     $options[$machine_name] = $map->getMachineName();
   }
 
   if (empty($options)) {
-    $options = \Drupal\openlayers\Openlayers::loadAllAsOptions('map');
+    $options = Openlayers::loadAllAsOptions('map');
   }
 
   if (isset($form['#type']) && $form['#type'] == 'fieldset') {

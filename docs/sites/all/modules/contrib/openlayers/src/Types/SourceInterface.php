@@ -1,13 +1,9 @@
 <?php
-/**
- * @file
- * Interface SourceInterface.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Interface SourceInterface.
+ * FIX - Insert short comment here.
  */
 interface SourceInterface extends ObjectInterface {
 

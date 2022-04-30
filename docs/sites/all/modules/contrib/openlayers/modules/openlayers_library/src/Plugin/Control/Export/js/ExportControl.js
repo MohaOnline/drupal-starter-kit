@@ -33,7 +33,15 @@ ol.control.Export = function(opt_options) {
   button.addEventListener('click', handleClick_, false);
   this.options = options;
 };
-ol.inherits(ol.control.Export, ol.control.Control);
+
+if (ol.hasOwnProperty('inherits')) {
+  //  Deprecated in v6.0.0 - ol.inherits function.
+  ol.inherits(ol.control.Export, ol.control.Control);
+} else {
+  //  Introduced in v6.0.0 - replace with ECMAScript classes.
+  ol.control.Export.prototype = Object.create(ol.control.Control.prototype);
+  ol.control.Export.prototype.constructor = ol.control.Export;
+}
 
 /**
  * @param {event} event Browser event.

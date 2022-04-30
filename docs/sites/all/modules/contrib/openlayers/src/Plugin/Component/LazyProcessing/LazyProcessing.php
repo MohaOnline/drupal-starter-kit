@@ -1,21 +1,18 @@
 <?php
-/**
- * @file
- * Component: LazyProcessing.
- */
 
 namespace Drupal\openlayers\Plugin\Component\LazyProcessing;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Component;
 
 /**
- * Class LazyProcessing.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "LazyProcessing"
  * )
  */
 class LazyProcessing extends Component {
+
   /**
    * {@inheritdoc}
    */

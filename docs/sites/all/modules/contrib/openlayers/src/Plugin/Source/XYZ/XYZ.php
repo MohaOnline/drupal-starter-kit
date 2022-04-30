@@ -1,21 +1,18 @@
 <?php
-/**
- * @file
- * Source: XYZ.
- */
 
 namespace Drupal\openlayers\Plugin\Source\XYZ;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class XYZ.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "XYZ"
  * )
  */
 class XYZ extends Source {
+
   /**
    * {@inheritdoc}
    */
@@ -44,4 +41,5 @@ class XYZ extends Source {
     }
     parent::optionsFormSubmit($form, $form_state);
   }
+
 }

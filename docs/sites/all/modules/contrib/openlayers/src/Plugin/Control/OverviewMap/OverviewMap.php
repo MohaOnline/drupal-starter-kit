@@ -1,19 +1,16 @@
 <?php
-/**
- * @file
- * Control: OverviewMap.
- */
 
 namespace Drupal\openlayers\Plugin\Control\OverviewMap;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Control;
 
 /**
- * Class OverviewMap.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "OverviewMap",
- *  description = "Create a new control with a map acting as an overview map for an other defined map."
+ *  description = "Create a new control with a map acting as an overview map
+ *    for an other defined map."
  * )
  */
 class OverviewMap extends Control {

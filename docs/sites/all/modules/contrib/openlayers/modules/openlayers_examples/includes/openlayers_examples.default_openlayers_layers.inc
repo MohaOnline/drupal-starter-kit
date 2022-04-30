@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Default layers.
@@ -31,17 +32,6 @@ function openlayers_examples_default_openlayers_layers() {
     'source' => 'openlayers_examples_source_mapbox_example2',
   );
   $export['openlayers_examples_layer_tile_mapbox_example2'] = $ol_layer;
-
-  $ol_layer = new stdClass();
-  $ol_layer->api_version = 1;
-  $ol_layer->machine_name = 'openlayers_examples_layer_tile_mapbox_example3';
-  $ol_layer->name = 'Openlayers examples: MapBox example 2';
-  $ol_layer->description = 'Layer MapBox example 3';
-  $ol_layer->factory_service = 'openlayers.Layer:Tile';
-  $ol_layer->options = array(
-    'source' => 'openlayers_examples_source_mapbox_example3',
-  );
-  $export['openlayers_examples_layer_tile_mapbox_example3'] = $ol_layer;
 
   $ol_layer = new stdClass();
   $ol_layer->api_version = 1;
@@ -111,9 +101,45 @@ function openlayers_examples_default_openlayers_layers() {
   $ol_layer->factory_service = 'openlayers.Layer:Vector';
   $ol_layer->options = array(
     'source' => 'openlayers_examples_source_geojson_file',
-    'style' => 'openlayers_style_default'
+    'style' => 'openlayers_style_default',
   );
   $export['openlayers_examples_layer_vector_geojson_cities'] = $ol_layer;
+
+  $ol_layer = new stdClass();
+  $ol_layer->api_version = 1;
+  $ol_layer->machine_name = 'openlayers_examples_layer_vector_london_tube_lines';
+  $ol_layer->name = 'Openlayers examples: London Tube Lines';
+  $ol_layer->description = '';
+  $ol_layer->factory_service = 'openlayers.Layer:Vector';
+  $ol_layer->options = array(
+    'source' => 'openlayers_examples_source_geojson_london_tube_lines',
+    'style' => 'openlayers_examples_style_london_lines',
+  );
+  $export['openlayers_examples_layer_vector_london_tube_lines'] = $ol_layer;
+
+  $ol_layer = new stdClass();
+  $ol_layer->api_version = 1;
+  $ol_layer->machine_name = 'openlayers_examples_layer_vector_london_tube_stations';
+  $ol_layer->name = 'Openlayers examples: London Tube Stations';
+  $ol_layer->description = '';
+  $ol_layer->factory_service = 'openlayers.Layer:Vector';
+  $ol_layer->options = array(
+    'source' => 'openlayers_examples_source_geojson_london_tube_stations',
+    'style' => 'openlayers_examples_style_london_stations',
+  );
+  $export['openlayers_examples_layer_vector_london_tube_stations'] = $ol_layer;
+
+  $ol_layer = new stdClass();
+  $ol_layer->api_version = 1;
+  $ol_layer->machine_name = 'openlayers_examples_layer_vector_london_thames';
+  $ol_layer->name = 'Openlayers examples: London River Thames';
+  $ol_layer->description = '';
+  $ol_layer->factory_service = 'openlayers.Layer:Vector';
+  $ol_layer->options = array(
+    'source' => 'openlayers_examples_source_geojson_london_thames',
+    'style' => 'openlayers_examples_style_london_thames',
+  );
+  $export['openlayers_examples_layer_vector_london_thames'] = $ol_layer;
 
   $ol_layer = new stdClass();
   $ol_layer->api_version = 1;
@@ -134,7 +160,7 @@ function openlayers_examples_default_openlayers_layers() {
   $ol_layer->factory_service = 'openlayers.Layer:Vector';
   $ol_layer->options = array(
     'source' => 'openlayers_examples_source_kml_earthquakes',
-    'style' => 'openlayers_style_default'
+    'style' => 'openlayers_style_default',
   );
   $export['openlayers_examples_layer_vector_kml_earthquakes'] = $ol_layer;
 
@@ -146,7 +172,7 @@ function openlayers_examples_default_openlayers_layers() {
   $ol_layer->factory_service = 'openlayers.Layer:Vector';
   $ol_layer->options = array(
     'source' => 'openlayers_examples_source_kml_timezones',
-    'style' => 'openlayers_examples_style_timezones'
+    'style' => 'openlayers_examples_style_timezones',
   );
   $export['openlayers_examples_layer_vector_kml_timezones'] = $ol_layer;
 
@@ -170,7 +196,7 @@ function openlayers_examples_default_openlayers_layers() {
   $ol_layer->factory_service = 'openlayers.Layer:Vector';
   $ol_layer->options = array(
     'source' => 'views_geojson_openlayers_examples_geojson_feed_1',
-    'style' => 'openlayers_style_default'
+    'style' => 'openlayers_style_default',
   );
   $export['openlayers_examples_layer_views_geojson'] = $ol_layer;
 
@@ -497,7 +523,6 @@ function openlayers_examples_default_openlayers_layers() {
   );
   $export['openlayers_examples_layer_esri_worldshadedrelief'] = $ol_layer;
 
-  //
   $ol_layer = new stdClass();
   $ol_layer->disabled = FALSE; /* Edit this to true to make a default layer disabled initially */
   $ol_layer->api_version = 1;
@@ -764,7 +789,7 @@ function openlayers_examples_default_openlayers_layers() {
   $ol_layer->options = array(
     'grouptitle' => 'Base layers',
     'grouplayers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
       1 => 'openlayers_examples_layer_openstreetmap_mapnik',
       2 => 'openlayers_examples_layer_openstreetmap_hot',
       3 => 'openlayers_examples_layer_openstreetmap_de',
@@ -795,6 +820,65 @@ function openlayers_examples_default_openlayers_layers() {
     'source' => 'openlayers_examples_source_opentopomap',
   );
   $export['openlayers_examples_layer_opentopomap'] = $ol_layer;
+
+  $ol_layer = new stdClass();
+  $ol_layer->disabled = FALSE; /* Edit this to true to make a default ol_layer disabled initially */
+  $ol_layer->api_version = 1;
+  $ol_layer->machine_name = 'openlayers_examples_layer_group_london_tube_backgrounds';
+  $ol_layer->name = 'Openlayers examples: London Tube Backgrounds';
+  $ol_layer->description = '';
+  $ol_layer->factory_service = 'openlayers.Layer:Group';
+  $ol_layer->options = array(
+    'visible' => 1,
+    'grouptitle' => 'Background layers',
+    'grouplayers' => array(
+      0 => 'openlayers_examples_layer_openmapsurfer_roadsg',
+      1 => 'openlayers_examples_layer_openstreetmap_bw',
+      2 => 'openlayers_examples_layer_openstreetmap_de',
+      3 => 'openlayers_examples_layer_tile_mapbox_example2',
+    ),
+  );
+  $export['openlayers_examples_layer_group_london_tube_backgrounds'] = $ol_layer;
+
+  $ol_layer = new stdClass();
+  $ol_layer->disabled = FALSE; /* Edit this to true to make a default ol_layer disabled initially */
+  $ol_layer->api_version = 1;
+  $ol_layer->machine_name = 'openlayers_examples_layer_group_london_tube_overlays';
+  $ol_layer->name = 'Openlayers examples: London Tube Overlays';
+  $ol_layer->description = '';
+  $ol_layer->factory_service = 'openlayers.Layer:Group';
+  $ol_layer->options = array(
+    'visible' => 1,
+    'grouptitle' => 'Overlays',
+    'grouplayers' => array(
+      0 => 'openlayers_examples_layer_vector_london_tube_stations',
+      1 => 'openlayers_examples_layer_vector_london_tube_lines',
+      2 => 'openlayers_examples_layer_vector_london_thames',
+    ),
+  );
+  $export['openlayers_examples_layer_group_london_tube_overlays'] = $ol_layer;
+
+  $ol_layer = new stdClass();
+  $ol_layer->disabled = FALSE; /* Edit this to true to make a default ol_layer disabled initially */
+  $ol_layer->api_version = 1;
+  $ol_layer->machine_name = 'openlayers_examples_layer_group_cesium_backgrounds';
+  $ol_layer->name = 'Openlayers examples: Cesium map backgrounds';
+  $ol_layer->description = '';
+  $ol_layer->factory_service = 'openlayers.Layer:Group';
+  $ol_layer->options = array(
+    'visible' => 1,
+    'grouptitle' => 'Base layers',
+    'grouplayers' => array(
+      0 => 'openlayers_examples_layer_mapquest_sat',
+      1 => 'openlayers_layer_tile_osm',
+      2 => 'openlayers_examples_layer_openstreetmap_mapnik',
+      3 => 'openlayers_examples_layer_openmapsurfer_roads',
+      4 => 'openlayers_examples_layer_openstreetmap_de',
+      5 => 'openlayers_examples_layer_openstreetmap_hot',
+      6 => 'openlayers_examples_layer_tile_mapbox_example2',
+    ),
+  );
+  $export['openlayers_examples_layer_group_cesium_backgrounds'] = $ol_layer;
 
   return $export;
 }

@@ -28,7 +28,8 @@
   border: none;
 }
 
-.layer-switcher button:focus, .layer-switcher button:hover {
+.layer-switcher button:focus,
+.layer-switcher button:hover {
   background-color: white;
 }
 

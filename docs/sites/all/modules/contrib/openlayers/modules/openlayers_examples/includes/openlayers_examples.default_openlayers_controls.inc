@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Provide default controls.
@@ -116,7 +117,7 @@ function openlayers_examples_default_openlayers_controls() {
       'openlayers_examples_layer_openstreetmap_de' => 'openlayers_examples_layer_openstreetmap_de',
       'openlayers_examples_layer_openstreetmap_hot' => 'openlayers_examples_layer_openstreetmap_hot',
       'openlayers_examples_layer_openstreetmap_mapnik' => 'openlayers_examples_layer_openstreetmap_mapnik',
-      'openlayers_layer_tile_mapquest_osm' => 'openlayers_layer_tile_mapquest_osm',
+      'openlayers_layer_tile_osm' => 'openlayers_layer_tile_osm',
     ),
     'multiselect' => 0,
   );
@@ -136,7 +137,6 @@ function openlayers_examples_default_openlayers_controls() {
       'openlayers_examples_layer_mapbox_natural_earth_hypso_bathy' => 'openlayers_examples_layer_mapbox_natural_earth_hypso_bathy',
       'openlayers_examples_layer_tile_mapbox_example1' => 'openlayers_examples_layer_tile_mapbox_example1',
       'openlayers_examples_layer_tile_mapbox_example2' => 'openlayers_examples_layer_tile_mapbox_example2',
-      'openlayers_examples_layer_tile_mapbox_example3' => 'openlayers_examples_layer_tile_mapbox_example3',
     ),
     'multiselect' => 0,
   );
@@ -195,6 +195,28 @@ function openlayers_examples_default_openlayers_controls() {
     'exportTipLabel' => 'Export as image',
   );
   $export['openlayers_examples_control_export'] = $ol_control;
+
+  $ol_control = new stdClass();
+  $ol_control->disabled = FALSE; /* Edit this to true to make a default ol_control disabled initially */
+  $ol_control->api_version = 1;
+  $ol_control->machine_name = 'openlayers_examples_control_london_tube_ol3layerswitcher';
+  $ol_control->name = 'Openlayers examples: London Tube Layer Switcher';
+  $ol_control->description = '';
+  $ol_control->factory_service = 'openlayers.Control:OL3LayerSwitcher';
+  $ol_control->options = array(
+    'collapsible' => 1,
+  );
+  $export['openlayers_examples_control_london_tube_ol3layerswitcher'] = $ol_control;
+
+  $ol_control = new stdClass();
+  $ol_control->disabled = FALSE; /* Edit this to true to make a default ol_control disabled initially */
+  $ol_control->api_version = 1;
+  $ol_control->machine_name = 'openlayers_examples_control_ol3cesiumcontrol';
+  $ol_control->name = 'Openlayers examples: Cesium toggler';
+  $ol_control->description = '';
+  $ol_control->factory_service = 'openlayers.Control:OL3CesiumControl';
+  $ol_control->options = array();
+  $export['openlayers_examples_control_ol3cesiumcontrol'] = $ol_control;
 
   return $export;
 }

@@ -1,19 +1,18 @@
 <?php
-/**
- * @file
- * Google maps API integration based on the example here:
- * http://openlayers.org/en/v3.0.0/examples/google-map.html
- * http://bl.ocks.org/elemoine/e82c7dd4b1d0ef45a9a4
- *
- * TODO: https://github.com/mapgears/ol3-google-maps/
- */
 
 namespace Drupal\openlayers\Plugin\Source\GoogleMaps;
+
 use Drupal\openlayers\Types\ObjectInterface;
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class GoogleMaps.
+ * FIX - Insert short comment here.
+ *
+ * Google maps API integration based on the example here:
+ * http://openlayers.org/en/v3.0.0/examples/google-map.html
+ * http://bl.ocks.org/elemoine/e82c7dd4b1d0ef45a9a4.
+ *
+ * FIX: https://github.com/mapgears/ol3-google-maps
  *
  * @OpenlayersPlugin(
  *  id = "GoogleMaps"
@@ -45,7 +44,7 @@ class GoogleMaps extends Source {
     $form['options']['channel'] = array(
       '#title' => t('Channel'),
       '#type' => 'textfield',
-      '#default_value' => $this->getOption('client', ''),
+      '#default_value' => $this->getOption('channel', ''),
     );
     $form['options']['mapTypeId'] = array(
       '#title' => t('Mapy Type'),
@@ -84,4 +83,5 @@ class GoogleMaps extends Source {
   public function isAsynchronous() {
     return TRUE;
   }
+
 }

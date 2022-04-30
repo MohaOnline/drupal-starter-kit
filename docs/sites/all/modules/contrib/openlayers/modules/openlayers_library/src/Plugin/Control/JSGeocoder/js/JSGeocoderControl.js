@@ -47,7 +47,15 @@ ol.control.JSGeocoder = function(opt_options) {
   textInput.addEventListener('keypress', handleChange_, false);
   this.options = options;
 };
-ol.inherits(ol.control.JSGeocoder, ol.control.Control);
+
+if (ol.hasOwnProperty('inherits')) {
+  //  Deprecated in v6.0.0 - ol.inherits function.
+  ol.inherits(ol.control.JSGeocoder, ol.control.Control);
+} else {
+  //  Introduced in v6.0.0 - replace with ECMAScript classes.
+  ol.control.JSGeocoder.prototype = Object.create(ol.control.Control.prototype);
+  ol.control.JSGeocoder.prototype.constructor = ol.control.JSGeocoder;
+}
 
 /**
  * @param {event} event Browser event.
@@ -83,15 +91,27 @@ ol.control.JSGeocoder.prototype.updateMap = function(results, control) {
 
   var coordinates = ol.proj.transform([results[0].geometry.location.lng(), results[0].geometry.location.lat()], 'EPSG:4326', 'EPSG:3857');
 
-  var animationPan = ol.animation.pan({
-    duration: 500,
-    source: map.getView().getCenter()
-  });
-  var animationZoom = ol.animation.zoom({
-    duration: 500,
-    resolution: map.getView().getResolution()
-  });
-  map.beforeRender(animationPan, animationZoom);
+  if (ol.hasOwnProperty('animation')) {
+    //  Deprecated in v3.20.0 - map.beforeRender() and ol.animation functions
+
+    var animationPan = ol.animation.pan({
+      duration: 500,
+      source: map.getView().getCenter()
+    });
+    var animationZoom = ol.animation.zoom({
+      duration: 500,
+      resolution: map.getView().getResolution()
+    });
+    map.beforeRender(pan, zoomAnimation);
+    map.getView().setZoom(zoom);
+  } else {
+    //  Introduced in v3.20.0 - view.animate() instead of map.beforeRender() and ol.animation functions
+    //  TODO - need to complete this section
+    map.getView().animate({
+      zoom: zoom,
+      duration: data.opt.animations.zoom
+    });
+  }
 
   map.getView().setCenter(coordinates);
   if (control.options.zoom !== undefined && control.options.zoom !== 0) {

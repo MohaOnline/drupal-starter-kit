@@ -1,13 +1,9 @@
 <?php
-/**
- * @file
- * Class openlayers_components_ui.
- */
 
 namespace Drupal\openlayers_ui\UI;
 
 /**
- * Class openlayers_components_ui.
+ * FIX - insert comment here.
  */
 class OpenlayersSources extends \OpenlayersObjects {
 

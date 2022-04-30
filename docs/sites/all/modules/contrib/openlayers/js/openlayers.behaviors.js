@@ -5,7 +5,6 @@
   Drupal.behaviors.openlayers = {
       attach: function (context, settings) {
         Drupal.openlayers.pluginManager.attach(context, settings);
-
         $('.openlayers-map:not(.asynchronous)', context).once('openlayers-map', function () {
           var map_id = $(this).attr('id');
           if (Drupal.settings.openlayers.maps[map_id] !== undefined) {

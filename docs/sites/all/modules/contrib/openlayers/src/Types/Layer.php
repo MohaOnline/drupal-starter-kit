@@ -1,17 +1,14 @@
 <?php
-/**
- * @file
- * Class Layer.
- */
 
 namespace Drupal\openlayers\Types;
 
 use Drupal\openlayers\Openlayers;
 
 /**
- * Class Layer.
+ * FIX: Insert short comment here.
  */
-abstract class Layer extends Object implements LayerInterface {
+abstract class Layer extends Base implements LayerInterface {
+
   /**
    * The array containing the options.
    *
@@ -100,14 +97,14 @@ abstract class Layer extends Object implements LayerInterface {
   /**
    * {@inheritdoc}
    */
-  public function setZIndex($zindex) {
+  public function setZindex($zindex) {
     return $this->setOption('zIndex', intval($zindex));
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getZIndex() {
+  public function getZindex() {
     return $this->getOption('zIndex');
   }
 
@@ -124,4 +121,5 @@ abstract class Layer extends Object implements LayerInterface {
   public function getVisible() {
     return (bool) $this->getOption('visible');
   }
+
 }

@@ -1,13 +1,9 @@
 <?php
-/**
- * @file
- * Interface ComponentInterface.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Interface ComponentInterface.
+ * FIX: Insert short comment here.
  */
 interface ComponentInterface extends ObjectInterface {
 

@@ -1,19 +1,16 @@
 <?php
-/**
- * @file
- * Interaction: PinchRotate.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\PinchRotate;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class PinchRotate.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "PinchRotate",
- *  description = "Allows the user to rotate the map by twisting with two fingers on a touch screen."
+ *  description =
+ *    "Allows map rotation by twisting with two fingers on a touch screen."
  * )
  */
 class PinchRotate extends Interaction {

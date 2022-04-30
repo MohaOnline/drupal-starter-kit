@@ -1,21 +1,18 @@
 <?php
-/**
- * @file
- * Component: SetValues.
- */
 
 namespace Drupal\openlayers\Plugin\Component\SetValues;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Component;
 
 /**
- * Class SetValues.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "SetValues"
  * )
  */
 class SetValues extends Component {
+
   /**
    * {@inheritdoc}
    */

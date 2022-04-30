@@ -1,13 +1,9 @@
 <?php
-/**
- * @file
- * Interface ProjectionInterface.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Interface ProjectionInterface.
+ * FIX - Insert short comment here.
  */
 interface ProjectionInterface extends ObjectInterface {
 

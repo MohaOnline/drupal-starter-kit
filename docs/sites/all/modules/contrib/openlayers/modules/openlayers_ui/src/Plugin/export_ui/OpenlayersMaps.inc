@@ -1,8 +1,16 @@
 <?php
+
 /**
  * @file
  * CTools Export UI plugin definition for maps.
  */
+
+use Drupal\openlayers\Openlayers;
+use Drupal\openlayers_ui\UI\OpenlayersMaps;
+use Drupal\openlayers\Types\LayerInterface;
+use Drupal\openlayers\Types\ComponentInterface;
+use Drupal\openlayers\Types\ControlInterface;
+use Drupal\openlayers\Types\InteractionInterface;
 
 /**
  * CTools Export UI plugin definition.
@@ -87,7 +95,7 @@ function openlayers_ui_OpenlayersMaps_ctools_export_ui() {
  * Map base config form handler.
  */
 function openlayers_map_form_start($form, &$form_state) {
-  $class = new Drupal\openlayers_ui\UI\OpenlayersMaps();
+  $class = new OpenlayersMaps();
   $class->init($form_state['plugin']);
   $class->edit_form($form, $form_state);
   return $form;
@@ -97,7 +105,7 @@ function openlayers_map_form_start($form, &$form_state) {
  * Map base config form validation handler.
  */
 function openlayers_map_form_start_validate($form, &$form_state) {
-  $class = new Drupal\openlayers_ui\UI\OpenlayersMaps();
+  $class = new OpenlayersMaps();
   $class->init($form_state['plugin']);
   $class->edit_form_validate($form, $form_state);
 }
@@ -106,7 +114,7 @@ function openlayers_map_form_start_validate($form, &$form_state) {
  * Map base config form submit handler.
  */
 function openlayers_map_form_start_submit($form, &$form_state) {
-  $class = new Drupal\openlayers_ui\UI\OpenlayersMaps();
+  $class = new OpenlayersMaps();
   $class->init($form_state['plugin']);
   $class->edit_form_submit($form, $form_state);
 }
@@ -118,7 +126,7 @@ function openlayers_map_form_settings($form, &$form_state) {
   if (!isset($form_state['item']->factory_service)) {
     $form_state['item']->factory_service = 'openlayers.Map:OLMap';
   }
-  if (($map = \Drupal\openlayers\Openlayers::load('Map', $form_state['item'])) == TRUE) {
+  if (($map = Openlayers::load('Map', $form_state['item'])) == TRUE) {
     $map->optionsForm($form, $form_state);
     $form['options']['#tree'] = TRUE;
   }
@@ -130,7 +138,7 @@ function openlayers_map_form_settings($form, &$form_state) {
  * Map settings config form validation handler.
  */
 function openlayers_map_form_settings_validate($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
   $map->optionsFormValidate($form, $form_state);
 }
 
@@ -138,7 +146,7 @@ function openlayers_map_form_settings_validate($form, &$form_state) {
  * Map settings config form submit handler.
  */
 function openlayers_map_form_settings_submit($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
 
   if (!$map->getFactoryService()) {
     $map->setFactoryService('openlayers.Map:OLMap');
@@ -151,25 +159,27 @@ function openlayers_map_form_settings_submit($form, &$form_state) {
  * Map layers config form handler.
  */
 function openlayers_map_form_layers($form, &$form_state) {
-  if (($map = \Drupal\openlayers\Openlayers::load('Map', $form_state['item'])) == FALSE) {
+  if (($map = Openlayers::load('Map', $form_state['item'])) == FALSE) {
     return;
   }
 
-  $all_layers = \Drupal\openlayers\Openlayers::loadAll('Layer');
+  $all_layers = Openlayers::loadAll('Layer');
 
-  array_walk($all_layers, function(\Drupal\openlayers\Types\LayerInterface $layer) {
+  array_walk($all_layers, function (LayerInterface $layer) {
     $layer->setWeight(0);
     $layer->enabled = 0;
   });
 
   foreach ($map->getOption('layers', array()) as $weight => $layer) {
     /** @var Drupal\openlayers\Types\LayerInterface $layer */
-    $layer = \Drupal\openlayers\Openlayers::load('layer', $layer);
-    $all_layers[$layer->getMachineName()]->setWeight($weight);
-    $all_layers[$layer->getMachineName()]->enabled = 1;
+    $layer = Openlayers::load('layer', $layer);
+    if (isset($all_layers[$layer->getMachineName()])) {
+      $all_layers[$layer->getMachineName()]->setWeight($weight);
+      $all_layers[$layer->getMachineName()]->enabled = 1;
+    }
   }
 
-  uasort($all_layers, function(\Drupal\openlayers\Types\LayerInterface $a, \Drupal\openlayers\Types\LayerInterface $b) {
+  uasort($all_layers, function (LayerInterface $a, LayerInterface $b) {
     if ($a->enabled > $b->enabled) {
       return -1;
     }
@@ -195,10 +205,68 @@ function openlayers_map_form_layers($form, &$form_state) {
   $i = 0;
   /** @var \Drupal\openlayers\Types\Layer $layer */
   foreach ($all_layers as $machine_name => $layer) {
+    $operations = array();
+
+    $operations[] =
+      l(t('Edit layer'), 'admin/structure/openlayers/layers/list/' . $layer->getMachineName() . '/edit/options',
+        array(
+          'query' => array(
+            'destination' => current_path(),
+          ),
+        )
+      );
+
+    if ($source = $layer->getSource()) {
+      $operations[] =
+        l(t('Edit source'), 'admin/structure/openlayers/sources/list/' . $source->getMachineName() . '/edit/options',
+          array(
+            'query' => array(
+              'destination' => current_path(),
+            ),
+          )
+        );
+      $source = (array) $source->getExport();
+      $source_properties = array(
+        t('@name (<em>@machine_name</em>)',
+          array(
+            '@name' => $source['name'],
+            '@machine_name' => $source['machine_name'],
+          )),
+        t('Factory service: <em>@factory_service</em>',
+          array('@factory_service' => $source['factory_service'])),
+      );
+    }
+    else {
+      $source = array();
+      $source_properties = array(
+        t('Undefined'),
+      );
+    }
+
+    $source += array(
+      'name' => t('Undefined'),
+      'machine_name' => t('Undefined'),
+      'factory_service' => t('Undefined'),
+    );
+
+    $operations = implode('<br/>', $operations);
+
+    $layer_properties = array(
+      t('@name (<em>@machine_name</em>)',
+        array(
+          '@name' => $layer->getName(),
+          '@machine_name' => $layer->getMachineName(),
+        )
+      ),
+      t('Factory service: <em>@factory_service</em>', array('@factory_service' => $layer->getFactoryService())),
+    );
+
     $data[$machine_name] = array(
-      'name' => $layer->getName(),
+      'layer_properties' => implode('<br/>', $layer_properties),
+      'source_properties' => implode('<br/>', $source_properties),
       'machine_name' => $layer->getMachineName(),
       'factory_service' => $layer->getFactoryService(),
+      'operations' => $operations,
       'weight' => $i++,
       'enabled' => isset($layer->enabled) ? $layer->enabled : 0,
       'default' => 1,
@@ -245,21 +313,14 @@ function openlayers_map_form_layers($form, &$form_state) {
             '#type' => 'select',
             '#title' => t('Style'),
             '#title_display' => 'invisible',
-            '#options' => array('' => t('- Select a Style -')) + \Drupal\openlayers\Openlayers::loadAllAsOptions('style'),
+            '#options' => array('' => t('- Select a Style -')) + Openlayers::loadAllAsOptions('style'),
             '#default_value' => $entry['style'],
             '#parents' => array('layers', $id, 'style'),
           ),
         ),
-        check_plain($entry['name']),
-        check_plain($entry['machine_name']),
-        check_plain($entry['factory_service']),
-        l(t('Edit'), 'admin/structure/openlayers/layers/list/' . $entry['machine_name'] . '/edit/options',
-          array(
-            'query' => array(
-              'destination' => current_path(),
-            ),
-          )
-        ),
+        $entry['layer_properties'],
+        $entry['source_properties'],
+        $entry['operations'],
       ),
       'class' => array('draggable'),
     );
@@ -282,10 +343,9 @@ function openlayers_map_form_layers($form, &$form_state) {
       // We need two empty columns for the weigth field and the cross.
       array('data' => NULL, 'colspan' => 2),
       array('data' => t('Enabled'), 'colspan' => 2),
-      array('data' => t('Style'), 'colspan' => 1),
-      t('Name'),
-      t('Machine name'),
-      t('Factory service'),
+      array('data' => t('Layer style'), 'colspan' => 1),
+      t('Layer properties'),
+      t('Source properties'),
       t('Operations'),
     ),
     '#rows' => $rows,
@@ -301,26 +361,26 @@ function openlayers_map_form_layers($form, &$form_state) {
  * Map layers config form submit handler.
  */
 function openlayers_map_form_layers_submit($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
 
-  $layers_enabled = array_filter($form_state['values']['layers'], function($item) {
+  $layers_enabled = array_filter($form_state['values']['layers'], function ($item) {
     return (bool) $item['enabled'];
   });
 
-  uasort($layers_enabled, function($a, $b) {
+  uasort($layers_enabled, function ($a, $b) {
     return $a['weight'] - $b['weight'];
   });
 
   foreach ($layers_enabled as $data) {
     // Update the layer style.
-    if (($layer = \Drupal\openlayers\Openlayers::load('layer', $data['machine_name'])) == TRUE) {
+    if (($layer = Openlayers::load('layer', $data['machine_name'])) == TRUE) {
       if (!empty($data['style'])) {
         $layer->setOption('style', $data['style']);
       }
       else {
         $layer->clearOption('style');
       }
-      \Drupal\openlayers\Openlayers::save($layer);
+      Openlayers::save($layer);
     }
   }
 
@@ -332,14 +392,14 @@ function openlayers_map_form_layers_submit($form, &$form_state) {
  * Map controls config form handler.
  */
 function openlayers_map_form_controls($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
-  $all_controls = \Drupal\openlayers\Openlayers::loadAll('Control');
+  $map = Openlayers::load('map', $form_state['item']);
+  $all_controls = Openlayers::loadAll('Control');
 
   if (!isset($form_state['item']->options['controls'])) {
     $form_state['item']->options['controls'] = array();
   }
 
-  array_walk($all_controls, function(\Drupal\openlayers\Types\ControlInterface $control) {
+  array_walk($all_controls, function (ControlInterface $control) {
     $control->setWeight(0);
     $control->enabled = 0;
   });
@@ -350,7 +410,7 @@ function openlayers_map_form_controls($form, &$form_state) {
     $all_controls[$control->getMachineName()]->enabled = 1;
   }
 
-  uasort($all_controls, function(\Drupal\openlayers\Types\ControlInterface $a, \Drupal\openlayers\Types\ControlInterface $b) {
+  uasort($all_controls, function (ControlInterface $a, ControlInterface $b) {
     if ($a->enabled > $b->enabled) {
       return -1;
     }
@@ -466,13 +526,13 @@ function openlayers_map_form_controls($form, &$form_state) {
  * Map controls config form submit handler.
  */
 function openlayers_map_form_controls_submit($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
 
-  $controls_enabled = array_filter($form_state['values']['controls'], function($item) {
+  $controls_enabled = array_filter($form_state['values']['controls'], function ($item) {
     return (bool) $item['enabled'];
   });
 
-  uasort($controls_enabled, function($a, $b) {
+  uasort($controls_enabled, function ($a, $b) {
     return $a['weight'] - $b['weight'];
   });
 
@@ -485,8 +545,8 @@ function openlayers_map_form_controls_submit($form, &$form_state) {
  * Map interactions config form handler.
  */
 function openlayers_map_form_interactions($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
-  $all_interactions = \Drupal\openlayers\Openlayers::loadAll('Interaction');
+  $map = Openlayers::load('map', $form_state['item']);
+  $all_interactions = Openlayers::loadAll('Interaction');
 
   $header = array(
     'name' => t('Name'),
@@ -495,7 +555,7 @@ function openlayers_map_form_interactions($form, &$form_state) {
     'operations' => t('Operations'),
   );
 
-  array_walk($all_interactions, function(\Drupal\openlayers\Types\InteractionInterface $interaction) {
+  array_walk($all_interactions, function (InteractionInterface $interaction) {
     $interaction->setWeight(0);
     $interaction->enabled = 0;
   });
@@ -506,7 +566,7 @@ function openlayers_map_form_interactions($form, &$form_state) {
     $all_interactions[$interaction->getMachineName()]->enabled = 1;
   }
 
-  uasort($all_interactions, function(\Drupal\openlayers\Types\InteractionInterface $a, \Drupal\openlayers\Types\InteractionInterface $b) {
+  uasort($all_interactions, function (InteractionInterface $a, InteractionInterface $b) {
     if ($a->enabled > $b->enabled) {
       return -1;
     }
@@ -566,7 +626,7 @@ function openlayers_map_form_interactions($form, &$form_state) {
  * Map interactions config form submit handler.
  */
 function openlayers_map_form_interactions_submit($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
 
   $interactions_enabled = array_filter($form_state['values']['options']['interactions']);
 
@@ -579,10 +639,10 @@ function openlayers_map_form_interactions_submit($form, &$form_state) {
  * Map components config form handler.
  */
 function openlayers_map_form_components($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
-  $all_components = \Drupal\openlayers\Openlayers::loadAll('Component');
+  $map = Openlayers::load('map', $form_state['item']);
+  $all_components = Openlayers::loadAll('Component');
 
-  array_walk($all_components, function(\Drupal\openlayers\Types\ComponentInterface $component) {
+  array_walk($all_components, function (ComponentInterface $component) {
     $component->setWeight(0);
     $component->enabled = 0;
   });
@@ -593,7 +653,7 @@ function openlayers_map_form_components($form, &$form_state) {
     $all_components[$component->getMachineName()]->enabled = 1;
   }
 
-  uasort($all_components, function(\Drupal\openlayers\Types\ComponentInterface $a, \Drupal\openlayers\Types\ComponentInterface $b) {
+  uasort($all_components, function (ComponentInterface $a, ComponentInterface $b) {
     if ($a->enabled > $b->enabled) {
       return -1;
     }
@@ -643,7 +703,8 @@ function openlayers_map_form_components($form, &$form_state) {
             '#attributes' => array(
               'class' => array('entry-order-weight'),
             ),
-          )),
+          ),
+        ),
         array(
           'data' => array(
             '#type' => 'checkbox',
@@ -651,7 +712,8 @@ function openlayers_map_form_components($form, &$form_state) {
             '#title_display' => 'invisible',
             '#default_value' => $entry['enabled'],
             '#parents' => array('components', $id, 'enabled'),
-          )),
+          ),
+        ),
         check_plain($entry['name']),
         check_plain($entry['machine_name']),
         check_plain($entry['description']),
@@ -702,13 +764,13 @@ function openlayers_map_form_components($form, &$form_state) {
  * Map components config form submit handler.
  */
 function openlayers_map_form_components_submit($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
 
-  $components_enabled = array_filter($form_state['values']['components'], function($item) {
+  $components_enabled = array_filter($form_state['values']['components'], function ($item) {
     return (bool) $item['enabled'];
   });
 
-  uasort($components_enabled, function($a, $b) {
+  uasort($components_enabled, function ($a, $b) {
     return $a['weight'] - $b['weight'];
   });
 
@@ -721,14 +783,22 @@ function openlayers_map_form_components_submit($form, &$form_state) {
  * Map preview form handler.
  */
 function openlayers_map_form_preview($form, &$form_state) {
-  $map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']);
+  $map = Openlayers::load('map', $form_state['item']);
 
   $form['preview'] = array(
     '#type' => 'openlayers',
     '#map' => $map,
   );
 
+  //  If the map height is specified as relative, force the previewed map height to 400px to ensure that a map is displayed 
+  if ($form['preview']['#map']->getOption('height') && substr($form['preview']['#map']->getOption('height'), -1) == '%') {
+    $form['preview']['#map']->setOption('height', '400px');
+    drupal_set_message('Map height set to 400px for preview purposes only, as original map height was set to a non-absolute value.', 'warning');
+  }
+
   $alternative_template = 'openlayers--' . str_replace('_', '-', $map->getMachineName()) . '.tpl.php';
+
+  $value = file_get_contents(drupal_get_path('module', 'openlayers') . '/theme/openlayers.tpl.php');
 
   $form['information']['theme'] = array(
     '#weight' => 20,
@@ -739,8 +809,9 @@ function openlayers_map_form_preview($form, &$form_state) {
     'template_content' => array(
       '#title' => 'Openlayers map template',
       '#type' => 'textarea',
-      '#default_value' => file_get_contents(drupal_get_path('module', 'openlayers') . '/theme/openlayers.tpl.php'),
-      '#description' => t('The default Openlayers template is <strong>openlayers.tpl.php</strong> for all the maps. You may override it by creating a file with the same name in your theme template\'s directory. You can also name it <em>openlayers--[map_machine_name].tpl.php</em> if you want to alter the display of this particular map only. For example: <strong>@template</strong>.', array('@template' => $alternative_template)),
+      '#default_value' => $value,
+      '#value' => $value,
+      '#description' => t("The default Openlayers template is <strong>openlayers.tpl.php</strong> for all the maps. You may override it by creating a file with the same name in your theme template's directory. You can also name it <em>openlayers--[map_machine_name].tpl.php</em> if you want to alter the display of this particular map only. For example: <strong>@template</strong>.", array('@template' => $alternative_template)),
     ),
   );
 

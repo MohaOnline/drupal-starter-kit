@@ -19,19 +19,29 @@ Drupal.openlayers.pluginManager.register({
       jQuery('#' + data.opt.headingID).val(geolocation.getHeading() + ' [rad]');
       jQuery('#' + data.opt.speedID).val(geolocation.getSpeed() + ' [m/s]');
 
-      var pan = ol.animation.pan({
-        duration: 2000,
-        source: map.getView().getCenter()
-      });
-      var zoom = ol.animation.zoom({
-        duration: 2000,
-        resolution: map.getView().getResolution(),
-        source: (map.getView().getZoom())
-      });
+      if (ol.hasOwnProperty('animation')) {
+        //  Deprecated in v3.20.0 - map.beforeRender() and ol.animation functions
+        var pan = ol.animation.pan({
+          duration: 2000,
+          source: map.getView().getCenter()
+        });
+        var zoom = ol.animation.zoom({
+          duration: 2000,
+          resolution: map.getView().getResolution(),
+          source: (map.getView().getZoom())
+        });
 
-      map.beforeRender(pan, zoom);
-      map.getView().setCenter(geolocation.getPosition());
-      map.getView().setZoom(7);
+        map.beforeRender(pan, zoom);
+        map.getView().setCenter(geolocation.getPosition());
+        map.getView().setZoom(7);
+      } else {
+        //  Introduced in v3.20.0 - view.animate() instead of map.beforeRender() and ol.animation functions
+        //  TODO - need to complete this section
+        map.getView().animate({
+          zoom: zoom,
+          duration: data.opt.animations.zoom
+        });
+      }
     });
 
     geolocation.on('error', function(error) {

@@ -1,24 +1,20 @@
 <?php
-/**
- * @file
- * Layer: Heatmap.
- */
 
 namespace Drupal\openlayers\Plugin\Layer\Group;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Layer;
-use Drupal\openlayers\Types\LayerInterface;
 use Drupal\openlayers\Types\ObjectInterface;
 
 /**
- * Class Group.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Group"
  * )
  */
 class Group extends Layer {
+
   /**
    * {@inheritdoc}
    */
@@ -29,10 +25,9 @@ class Group extends Layer {
       '#default_value' => $this->getOption('grouptitle', 'Base layers'),
     );
 
-    /** @var LayerInterface[] $all_layers */
     $all_layers = Openlayers::loadAll('Layer');
 
-    array_walk($all_layers, function($object) {
+    array_walk($all_layers, function ($object) {
       $object->setWeight(0);
       $object->enabled = 0;
     });
@@ -43,7 +38,7 @@ class Group extends Layer {
       $all_layers[$layer->getMachineName()]->enabled = 1;
     }
 
-    uasort($all_layers, function($a, $b) {
+    uasort($all_layers, function ($a, $b) {
       if ($a->enabled > $b->enabled) {
         return -1;
       }
@@ -166,11 +161,11 @@ class Group extends Layer {
    * {@inheritdoc}
    */
   public function optionsFormSubmit(array $form, array &$form_state) {
-    $layers_enabled = array_filter($form_state['values']['grouplayers'], function($item) {
+    $layers_enabled = array_filter($form_state['values']['grouplayers'], function ($item) {
       return (bool) $item['enabled'];
     });
 
-    uasort($layers_enabled, function($a, $b) {
+    uasort($layers_enabled, function ($a, $b) {
       return $a['weight'] - $b['weight'];
     });
 
@@ -187,7 +182,7 @@ class Group extends Layer {
 
     foreach ($this->getOption('grouplayers', array()) as $weight => $object) {
       if ($merge_object = Openlayers::load('layer', $object)) {
-        $merge_object->setWeight($weight);
+        $merge_object->setWeight($this->getWeight() - 1);
         $import[] = $merge_object;
       }
     }
@@ -199,9 +194,9 @@ class Group extends Layer {
    * {@inheritdoc}
    */
   public function preBuild(array &$build, ObjectInterface $context = NULL) {
-    /** @var LayerInterface $layer */
     foreach ($context->getObjects('layer') as $layer) {
       $layer->setOption('title', $layer->getName());
     }
   }
+
 }

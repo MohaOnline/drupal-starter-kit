@@ -1,7 +1,10 @@
 <?php
+
 /**
  * @file
- * Openlayers views integration.
+ * Openlayers Views module.
+ *
+ * Provides Views integration with the Openlayers module.
  */
 
 /**
@@ -27,44 +30,36 @@ function openlayers_views_ctools_plugin_api($module, $api) {
 /**
  * Return all views compatible with this module.
  *
- * Uses static caching.
- *
- * @param bool $reset
- *   Resets the static cache.
- *
- * @return array
+ * @return array[]
  *   List of views id and display names.
  */
-function openalyers_views_get_views($reset = FALSE) {
-  $cache = &drupal_static(__FUNCTION__, NULL);
-  // If cache isn't set yet or the cache has to be reset iterate over all views.
-  if (!isset($cache) || $reset) {
-    $cache = array();
-    /** @var view $view */
-    foreach (views_get_all_views() as $view) {
-      foreach ($view->display as $display => $data) {
-        if ($display != 'default') {
-          $view->set_display($display);
-          if ($view->display_handler->get_option('style_plugin') == 'openlayers_source_vector') {
-            $cache[] = array(
-              'openlayers_source_vector',
-              $view,
-              $display,
-            );
-          }
-          if ($view->display_handler->get_option('style_plugin') == 'openlayers_map_views') {
-            $cache[] = array(
-              'openlayers_map_views',
-              $view,
-              $display,
-            );
-          }
+function openlayers_views_get_views() {
+  $views = array();
+
+  /** @var view $view */
+  foreach (views_get_all_views() as $view) {
+    foreach (array_keys($view->display) as $display) {
+      if ($display != 'default') {
+        $view->set_display($display);
+        if ($view->display_handler->get_option('style_plugin') == 'openlayers_source_vector') {
+          $views[] = array(
+            'openlayers_source_vector',
+            $view,
+            $display,
+          );
+        }
+        if ($view->display_handler->get_option('style_plugin') == 'openlayers_map_views') {
+          $views[] = array(
+            'openlayers_map_views',
+            $view,
+            $display,
+          );
         }
       }
     }
   }
 
-  return $cache;
+  return $views;
 }
 
 /**

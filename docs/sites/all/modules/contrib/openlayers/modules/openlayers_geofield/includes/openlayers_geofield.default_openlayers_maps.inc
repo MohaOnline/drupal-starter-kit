@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Default maps.
@@ -32,7 +33,7 @@ function openlayers_geofield_default_openlayers_maps() {
       'zoom' => '2',
     ),
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
       1 => 'openlayers_geofield_layer_widget',
     ),
     'controls' => array(
@@ -73,7 +74,7 @@ function openlayers_geofield_default_openlayers_maps() {
       0 => 'openlayers_control_zoom',
     ),
     'layers' => array(
-      0 => 'openlayers_layer_tile_mapquest_osm',
+      0 => 'openlayers_layer_tile_osm',
       1 => 'openlayers_geofield_layer_formatter',
     ),
     'interactions' => array(

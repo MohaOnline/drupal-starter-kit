@@ -1,14 +1,10 @@
 <?php
-/**
- * @file
- * Class Projection.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Class Projection.
+ * FIX - Insert short comment here.
  */
-abstract class Projection extends Object implements ProjectionInterface {
+abstract class Projection extends Base implements ProjectionInterface {
 
 }

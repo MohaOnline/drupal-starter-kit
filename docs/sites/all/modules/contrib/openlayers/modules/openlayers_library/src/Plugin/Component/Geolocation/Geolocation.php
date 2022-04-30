@@ -1,16 +1,12 @@
 <?php
-/**
- * @file
- * Component: Geolocation.
- */
 
 namespace Drupal\openlayers_library\Plugin\Component\Geolocation;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Component;
 use Drupal\openlayers\Types\ObjectInterface;
 
 /**
- * Class Geolocation.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *   id = "Geolocation"

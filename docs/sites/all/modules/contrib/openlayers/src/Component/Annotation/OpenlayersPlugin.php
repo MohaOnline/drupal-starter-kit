@@ -1,13 +1,8 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\openlayers\Component\Annotation\OpenlayersPlugin.
- */
-
 namespace Drupal\openlayers\Component\Annotation;
 
-use Drupal\Component\Annotation\Plugin;
+use OpenlayersDrupal\Component\Annotation\Plugin;
 
 /**
  * Defines an Openlayers Plugin annotation object.

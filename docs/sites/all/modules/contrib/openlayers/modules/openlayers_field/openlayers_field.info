@@ -4,13 +4,12 @@ core = 7.x
 package = "Openlayers"
 
 dependencies[] = openlayers
+dependencies[] = geocoder
 
-registry_autoload[] = PSR-0
 registry_autoload[] = PSR-4
 
-; Information added by Drupal.org packaging script on 2016-01-03
-version = "7.x-3.1"
+; Information added by Drupal.org packaging script on 2022-04-29
+version = "7.x-3.2"
 core = "7.x"
 project = "openlayers"
-datestamp = "1451782149"
-
+datestamp = "1651252723"

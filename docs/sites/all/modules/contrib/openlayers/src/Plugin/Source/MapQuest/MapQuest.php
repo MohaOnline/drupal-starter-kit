@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Source: Mapquest.
- */
 
 namespace Drupal\openlayers\Plugin\Source\MapQuest;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class MapQuest.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "MapQuest"

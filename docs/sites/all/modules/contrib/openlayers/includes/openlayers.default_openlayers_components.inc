@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Provide default components.
@@ -26,7 +27,7 @@ function openlayers_default_openlayers_components() {
   );
   $export['openlayers_component_map_edit_form_values'] = $ol_component;
 
-  // @todo: Transform this into a real component, without inlinejs.
+  // @FIX: Transform this into a real component, without inlinejs.
   $ol_component = new stdClass();
   $ol_component->disabled = TRUE; /* Edit this to true to make a default component disabled initially */
   $ol_component->api_version = 1;
@@ -36,13 +37,22 @@ function openlayers_default_openlayers_components() {
   $ol_component->factory_service = 'openlayers.Component:InlineJS';
   $ol_component->options = array(
     'javascript' => 'data.map.on(\'click\', function(evt){
-  var pan = ol.animation.pan({
-    duration: 2000,
-    source: (data.map.getView().getCenter())
-  });
-  data.map.beforeRender(pan);
-  data.map.getView().setCenter(evt.coordinate);
-});',
+      if (ol.hasOwnProperty(\'animation\')) {
+        //  Deprecated in v3.20.0 - map.beforeRender() and ol.animation functions
+        var pan = ol.animation.pan({
+          duration: 2000,
+          source: (data.map.getView().getCenter())
+        });
+        data.map.beforeRender(pan);
+        data.map.getView().setCenter(evt.coordinate);
+      } else {
+        //  Introduced in v3.20.0 - view.animate() instead of map.beforeRender() and ol.animation functions
+        data.map.getView().animate({
+          center: evt.coordinate,
+          duration: 2000
+        });
+      }
+    });',
   );
   $export['openlayers_component_map_edit_form_setcenter'] = $ol_component;
 

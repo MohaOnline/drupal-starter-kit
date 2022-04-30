@@ -1,16 +1,12 @@
 <?php
-/**
- * @file
- * Source: ImageVector.
- */
 
 namespace Drupal\openlayers\Plugin\Source\ImageVector;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class ImageVector.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "ImageVector"

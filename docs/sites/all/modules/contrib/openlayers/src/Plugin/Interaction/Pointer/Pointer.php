@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Interaction: Pointer.
- */
 
 namespace Drupal\openlayers\Plugin\Interaction\Pointer;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Interaction;
 
 /**
- * Class Pointer.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Pointer"

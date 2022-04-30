@@ -1,15 +1,12 @@
 <?php
-/**
- * @file
- * Interface MapInterface.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Interface MapInterface.
+ * FIX: Insert short comment here.
  */
 interface MapInterface extends ObjectInterface {
+
   /**
    * Returns the id of this map.
    *
@@ -128,13 +125,16 @@ interface MapInterface extends ObjectInterface {
   /**
    * Return the size of the map.
    *
-   * @return array $size
+   * @return array
    *   Return an array with width and height.
    */
   public function getSize();
 
   /**
    * Set the size of the map.
+   *
+   * @param array $size
+   *   An array with two elements, a width and a height.
    *
    * @return MapInterface
    *   The map.

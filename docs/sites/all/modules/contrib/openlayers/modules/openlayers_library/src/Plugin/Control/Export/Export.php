@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Control: Attribution.
- */
 
 namespace Drupal\openlayers_library\Plugin\Control\Export;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Control;
 
 /**
- * Class Export.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Export",
@@ -17,6 +13,7 @@ use Drupal\openlayers\Types\Control;
  * )
  */
 class Export extends Control {
+
   /**
    * {@inheritdoc}
    */
@@ -27,4 +24,5 @@ class Export extends Control {
       '#default_value' => $this->getOption('exportTipLabel', 'Export as image'),
     );
   }
+
 }

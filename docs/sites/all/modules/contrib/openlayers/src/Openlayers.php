@@ -1,14 +1,11 @@
 <?php
-/**
- * @file
- * Contains Openlayers.
- */
 
 namespace Drupal\openlayers;
+
 use Drupal\openlayers\Types\ObjectInterface;
 
 /**
- * Class Openlayers.
+ * FIX - Insert short comment here.
  */
 class Openlayers {
 
@@ -21,10 +18,10 @@ class Openlayers {
    * @return array
    *   Openlayers objects types options.
    */
-  public static function getOLObjectsOptions($object_type) {
+  public static function getOlObjectsOptions($object_type) {
     $options = array();
     $service_basename = 'openlayers.' . $object_type;
-    foreach (\Drupal::service($service_basename)->getDefinitions() as $data) {
+    foreach (\OpenlayersDrupal::service($service_basename)->getDefinitions() as $data) {
       $name = isset($data['label']) ? $data['label'] : $data['id'];
       $options[$service_basename . ':' . $data['id']] = $name;
     }
@@ -64,7 +61,7 @@ class Openlayers {
   public static function loadAllExportable($type = NULL) {
     ctools_include('export');
     $exports = ctools_export_crud_load_all('openlayers_' . drupal_strtolower(check_plain($type)) . 's');
-    uasort($exports, function($a, $b) {
+    uasort($exports, function ($a, $b) {
       return strcasecmp($a->name, $b->name);
     });
     return $exports;
@@ -82,11 +79,13 @@ class Openlayers {
    */
   public static function loadAll($object_type = NULL) {
     $objects = array();
+
     foreach (Openlayers::loadAllExportable($object_type) as $exportable) {
       if (is_object($exportable)) {
         $objects[$exportable->machine_name] = Openlayers::load($object_type, $exportable);
       }
     }
+
     return $objects;
   }
 
@@ -99,11 +98,11 @@ class Openlayers {
    * @param array|string|object $export
    *   The exported object.
    *
-   * @return ObjectInterface|Error
+   * @return \Drupal\openlayers\Types\ObjectInterface|Error
    *   Returns the instance of the requested object or an instance of
    *   Error on error.
    */
-  public static function load($object_type = NULL, $export) {
+  public static function load($object_type, $export) {
     /** @var \Drupal\openlayers\Types\ObjectInterface $object */
     $object = NULL;
     $configuration = array();
@@ -116,9 +115,11 @@ class Openlayers {
       $array_object = new \ArrayObject($export);
       $configuration = $array_object->getArrayCopy();
     }
+
     if (is_object($export) && ($export instanceof ObjectInterface)) {
       return $export;
     }
+
     if (is_string($export)) {
       $configuration = (array) Openlayers::loadExportable($object_type, $export);
     }
@@ -126,12 +127,13 @@ class Openlayers {
     if (is_array($configuration) && isset($configuration['factory_service'])) {
       // Bail out if the base service can't be found - likely due a registry
       // rebuild.
-      if (!\Drupal::hasService('openlayers.Types')) {
+      if (!\OpenlayersDrupal::hasService('openlayers.Types')) {
         return NULL;
       }
+
       list($plugin_manager_id, $plugin_id) = explode(':', $configuration['factory_service'], 2);
-      if (\Drupal::hasService($plugin_manager_id)) {
-        $plugin_manager = \Drupal::service($plugin_manager_id);
+      if (\OpenlayersDrupal::hasService($plugin_manager_id)) {
+        $plugin_manager = \OpenlayersDrupal::service($plugin_manager_id);
         if ($plugin_manager->hasDefinition($plugin_id)) {
           $object = $plugin_manager->createInstance($plugin_id, $configuration);
         }
@@ -140,7 +142,7 @@ class Openlayers {
             'type' => $object_type,
             'errorMessage' => 'Unable to load @type @machine_name',
           );
-          $object = \Drupal::service('openlayers.Types')->createInstance('Error', $configuration);
+          $object = \OpenlayersDrupal::service('openlayers.Types')->createInstance('Error', $configuration);
         }
       }
       else {
@@ -148,7 +150,7 @@ class Openlayers {
           'type' => $object_type,
           'errorMessage' => 'Service <em>@service</em> doesn\'t exists, unable to load @type @machine_name',
         );
-        $object = \Drupal::service('openlayers.Types')->createInstance('Error', $configuration);
+        $object = \OpenlayersDrupal::service('openlayers.Types')->createInstance('Error', $configuration);
       }
     }
     else {
@@ -158,9 +160,9 @@ class Openlayers {
         'description' => 'Error',
         'factory_service' => '',
         'machine_name' => $export,
-        'errorMessage' => 'Unable to load CTools exportable @type @machine_name.',
+        'errorMessage' => 'Unable to load CTools exportable @type (<em>@machine_name</em>).',
       );
-      $object = \Drupal::service('openlayers.Types')->createInstance('Error', $configuration);
+      $object = \OpenlayersDrupal::service('openlayers.Types')->createInstance('Error', $configuration);
     }
 
     if (isset($configuration['disabled']) && (bool) $configuration['disabled'] == 1) {
@@ -190,7 +192,7 @@ class Openlayers {
   /**
    * Save an object in the database.
    *
-   * @param ObjectInterface $object
+   * @param \Drupal\openlayers\Types\ObjectInterface $object
    *   The object to save.
    */
   public static function save(ObjectInterface $object) {
@@ -213,7 +215,7 @@ class Openlayers {
   public static function getPluginTypes(array $filter = array()) {
     $plugins = array();
 
-    foreach (\Drupal::getContainer()->getDefinitions() as $id => $definition) {
+    foreach (\OpenlayersDrupal::getContainer()->getDefinitions() as $id => $definition) {
       $id = explode(".", drupal_strtolower($id));
       if (count($id) == 2) {
         if ($id[0] == 'openlayers') {
@@ -247,40 +249,14 @@ class Openlayers {
    *   Return the version of the Openlayers library set in the configuration.
    */
   public static function getLibraryVersion() {
-    $variant = \Drupal\openlayers\Config::get('openlayers.variant');
-
-    if (strpos($variant, 'local-') !== FALSE) {
-      $version = self::getLocalLibraryVersion();
+    $version = Config::get('openlayers.variant');
+    if (strpos($version, 'local:') !== FALSE) {
+      return $version;
     }
-    else {
-      $version = \Drupal\openlayers\Config::get('openlayers.variant', NULL);
-    }
-
-    return $version;
-  }
-
-  /**
-   * Return the version of the Openlayers library in use.
-   *
-   * @return string
-   *   Return the version of the Openlayers library in the filesystem.
-   */
-  public static function getLocalLibraryVersion() {
-    $version = FALSE;
-    if ($path = libraries_get_path('openlayers3')) {
-      $library = libraries_detect('openlayers3');
-      $options = array(
-        'file' => 'build/ol.js',
-        'pattern' => '@Version: (.*)@',
-        'lines' => 3,
-      );
-      $library['library path'] = $path;
-      if ($version = libraries_get_version($library, $options)) {
-        $version = substr($version, 1);
-      }
-    }
-
-    return $version;
+    $version = array_diff(scandir(libraries_get_path('openlayers3') . '/versions'), ['.', '..']);
+    rsort($version);
+    $version = current($version);
+    return str_replace('v', 'local:', $version);
   }
 
   /**
@@ -294,18 +270,18 @@ class Openlayers {
    * @return array
    *   The processed array
    */
-  public static function array_map_recursive($func, array $arr) {
+  public static function arrayMapRecursive(callable $func, array $arr) {
     /*
     // This is the PHP Version >= 5.5
     // $func must be a callable.
     array_walk_recursive($arr, function(&$v) use ($func) {
-      $v = $func($v);
+    $v = $func($v);
     });
     return $arr;
-    */
+     */
     foreach ($arr as $key => $value) {
       if (is_array($arr[$key])) {
-        $arr[$key] = self::array_map_recursive($func, $arr[$key]);
+        $arr[$key] = self::arrayMapRecursive($func, $arr[$key]);
       }
       else {
         $arr[$key] = call_user_func($func, $arr[$key]);
@@ -323,7 +299,7 @@ class Openlayers {
    * @return float|mixed
    *   The variable - casted to type float if possible.
    */
-  public static function floatval_if_numeric($var) {
+  public static function floatvalIfNumeric($var) {
     if (is_numeric($var)) {
       return is_float($var + 0) ? floatval($var) : intval($var);
     }
@@ -395,23 +371,51 @@ class Openlayers {
   }
 
   /**
-   * Returns the list of files libraries or js/css files needed according to
-   * the settings.
+   * Returns the list of attached libraries or js/css files.
    *
    * @return array
+   *   Array containing the attachment libraries to load.
    */
   public static function getAttached() {
     $attached = array();
 
+    if (!self::detectLibrary()) {
+      global $base_url;
+      $configuration = array(
+        'errorMessage' => t('Unable to load the Openlayers JS library variant,
+          please <a href="@openlayers_admin">update your settings</a> and select
+          a valid variant of the library.',
+        array('@openlayers_admin' => $base_url . '/admin/structure/openlayers')),
+      );
+      \OpenlayersDrupal::service('openlayers.Types')->createInstance('Error', $configuration)->init();
+
+      return $attached;
+    }
+
     $attached['libraries_load'] = array(
-      'openlayers3' => array('openlayers3', Config::get('openlayers.variant', NULL)),
+      'openlayers3' => array(
+        'openlayers3',
+        self::getLibraryVersion(),
+      ),
     );
 
     if (Config::get('openlayers.debug', FALSE)) {
-      $attached['libraries_load']['openlayers3_integration'] = array('openlayers3_integration', 'debug');
+      $attached['libraries_load']['openlayers3_integration'] =
+        array('openlayers3_integration', 'debug');
     };
 
     return $attached;
+  }
+
+  /**
+   * Check if the Openlayers library and settings are properly found.
+   *
+   * @return bool|array
+   *   Return the library array is found, FALSE otherwise.
+   */
+  public static function detectLibrary() {
+    $library = libraries_detect('openlayers3');
+    return isset($library['variants'][self::getLibraryVersion()]) ? $library : FALSE;
   }
 
 }

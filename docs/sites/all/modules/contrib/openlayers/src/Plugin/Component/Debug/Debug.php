@@ -1,45 +1,51 @@
 <?php
-/**
- * @file
- * Component: Debug.
- */
 
 namespace Drupal\openlayers\Plugin\Component\Debug;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Component;
 use Drupal\openlayers\Types\ObjectInterface;
 
 /**
- * Class Debug.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Debug"
  * )
  */
 class Debug extends Component {
+
   /**
    * {@inheritdoc}
    */
   public function postBuild(array &$build, ObjectInterface $context = NULL) {
     $alternative_template = 'openlayers--' . str_replace('_', '-', $context->getMachineName()) . '.tpl.php';
+    $template_value = file_get_contents(drupal_get_path('module', 'openlayers') . '/theme/openlayers.tpl.php');
 
     $build['parameters'][$this->getPluginId()] = array(
       '#type' => 'fieldset',
       '#title' => 'Map debug',
       '#description' => 'Here\'s a quick view of all the objects in the map.',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
+      '#attributes' => array(
+        'class' => array('collapsible', 'collapsed'),
+      ),
+      '#attached' => array(
+        'library' => array(
+          array('system', 'drupal.collapse'),
+        ),
+      ),
       'theme' => array(
         '#weight' => 20,
         '#type' => 'fieldset',
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
+        '#attributes' => array(
+          'class' => array('collapsible', 'collapsed'),
+        ),
         '#title' => 'Theming information',
         'template_content' => array(
           '#title' => 'Openlayers map template',
           '#type' => 'textarea',
-          '#default_value' => file_get_contents(drupal_get_path('module', 'openlayers') . '/theme/openlayers.tpl.php'),
-          '#description' => t('The default Openlayers template is <strong>openlayers.tpl.php</strong> for all the maps. You may override it by creating a file with the same name in your theme template\'s directory. You can also name it <em>openlayers--[map_machine_name].tpl.php</em> if you want to alter the display of this particular map only. For example: <strong>@template</strong>.', array('@template' => $alternative_template)),
+          '#default_value' => $template_value,
+          '#value' => $template_value,
+          '#description' => t("The default Openlayers template is <strong>openlayers.tpl.php</strong> for all the maps. You may override it by creating a file with the same name in your theme template's directory. You can also name it <em>openlayers--[map_machine_name].tpl.php</em> if you want to alter the display of this particular map only. For example: <strong>@template</strong>.", array('@template' => $alternative_template)),
         ),
       ),
     );
@@ -48,15 +54,17 @@ class Debug extends Component {
       $build['parameters'][$this->getPluginId()][$type] = array(
         '#type' => 'fieldset',
         '#title' => 'Plugin type: ' . $type,
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
+        '#attributes' => array(
+          'class' => array('collapsible', 'collapsed'),
+        ),
       );
 
       foreach ($objects as $object) {
         $build['parameters'][$this->getPluginId()][$type][$object->getMachineName()] = array(
           '#type' => 'fieldset',
-          '#collapsible' => TRUE,
-          '#collapsed' => TRUE,
+          '#attributes' => array(
+            'class' => array('collapsible', 'collapsed'),
+          ),
           '#title' => $object->getMachineName(),
           'configuration' => $this->getInfo($object),
         );
@@ -73,7 +81,7 @@ class Debug extends Component {
    * @return string
    *   The HTML.
    */
-  protected function toInfoArrayMarkup($data) {
+  protected function toInfoArrayMarkup(array $data) {
     $rows = array();
     foreach ($data as $name => $value) {
       if (is_array($value)) {
@@ -104,10 +112,13 @@ class Debug extends Component {
    * Array containing basic information about an OL Object.
    *
    * @param \Drupal\openlayers\Types\ObjectInterface $object
+   *   FIX.
+   *
    * @return array
+   *   FIX.
    */
   protected function getInfo(ObjectInterface $object) {
-    $js = $object->getJS();
+    $js = $object->getJs();
 
     $info = array(
       'mn' => array(
@@ -137,10 +148,11 @@ class Debug extends Component {
         '#title' => 'Options:',
         'options' => array(
           '#markup' => $this->toInfoArrayMarkup($js['opt']),
-        )
+        ),
       );
     }
 
     return $info;
   }
+
 }

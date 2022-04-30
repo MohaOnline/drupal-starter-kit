@@ -1,16 +1,11 @@
 <?php
-/**
- * @file
- * Source: OSM.
- */
 
 namespace Drupal\openlayers\Plugin\Source\OSM;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Plugin\Source\XYZ\XYZ;
-use Drupal\openlayers\Types\Source;
 
 /**
- * Class OSM.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "OSM"

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Style handler that provides vector features.
@@ -7,14 +8,14 @@
 /**
  * Class openlayers_views_plugin_style_source_vector.
  */
-class openlayers_views_plugin_style_source_vector extends views_plugin_style {
+class OpenlayersViewsPluginStyleSourceVector extends views_plugin_style {
 
   /**
    * {@inheritdoc}
    */
   public function render() {
     $grouped_results = $this->render_grouping($this->view->result, $this->options['grouping']);
-    $data = $this->map_features($grouped_results);
+    $data = $this->mapFeatures($grouped_results);
 
     // If we are not in preview, just return the data.
     if (empty($this->view->live_preview)) {
@@ -167,28 +168,37 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
         '#states' => $this->datasource_dependent('other_boundingbox'),
       );
     }
-    $form['data_source']['name_field'] = array(
-      '#type' => 'select',
-      '#title' => t('Title Field'),
-      '#description' => t('Choose the field which will appear as a title on tooltips.'),
-      '#options' => array_merge(array('' => ''), $fields),
-      '#default_value' => $this->options['data_source']['name_field'],
+
+    // Define the contents of popups.
+    $form['popups'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Popups'),
+      '#description' => t('Define the content of a popup for each feature.  You may use any valid HTML.  You can also include tokens for any field selected in the view (see Attributes & Styling section below).'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 3,
+    );
+    $form['popups']['content'] = array(
+      '#title' => 'Popup content (HTML)',
+      '#type' => 'textarea',
+      '#default_value' => !empty($this->options['popups']['content']) ?
+      $this->options['popups']['content'] : '${title}',
     );
 
-    $desc_options = array_merge(array(
-      '' => '',
-      '#row' => '<' . t('entire row') . '>',
-    ), $fields);
-
-    // Description field.
-    $form['data_source']['description_field'] = array(
-      '#type' => 'select',
-      '#title' => t('Description Content'),
-      '#description' => t('Choose the field or rendering method which will
-        appear as a description on tooltips or popups.'),
-      '#required' => FALSE,
-      '#options' => $desc_options,
-      '#default_value' => $this->options['data_source']['description_field'],
+    // Define the contents of tooltips.
+    $form['tooltips'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Tooltips'),
+      '#description' => t('Define the content of a tooltip for each feature.  You may use any valid HTML.  You can also include tokens for any field selected in the view (see Attributes & Styling section below).'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#weight' => 4,
+    );
+    $form['tooltips']['content'] = array(
+      '#title' => 'Tooltip content (HTML)',
+      '#type' => 'textarea',
+      '#default_value' => !empty($this->options['tooltips']['content']) ?
+      $this->options['tooltips']['content'] : '${title}',
     );
 
     // A simple way to display attributes and styling.
@@ -198,7 +208,7 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
       '#description' => t('Attributes are field data attached to each feature.  This can be used with styling to create Variable styling.'),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      '#weight' => 3,
+      '#weight' => 5,
     );
     $variable_fields = array();
     foreach ($this->view->display_handler->get_handlers('field') as $field => $handler) {
@@ -216,7 +226,7 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
       '#type' => 'checkboxes',
       '#options' => $variable_fields,
       '#default_value' => !empty($this->options['attributes']['display']) ?
-        $this->options['attributes']['display'] : array_combine(array_keys($variable_fields), array_keys($variable_fields)),
+      $this->options['attributes']['display'] : array_combine(array_keys($variable_fields), array_keys($variable_fields)),
       '#description' => t('Any fields that you select will be attached to '
         . 'their respective feature (point, line, polygon) as attributes.  '
         . 'These attributes can then be used to add variable styling to your '
@@ -233,14 +243,16 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
     );
   }
 
-
   /**
+   * Extract features.
    *
    * @param array $sets
+   *   The array of sets.
    *
-   * openlayers_views_style_data specific
+   * @return array
+   *   The array of features.
    */
-  public function map_features($sets = array()) {
+  public function mapFeatures(array $sets = array()) {
     $features = $excluded_fields = array();
     $handlers = $this->display->handler->get_handlers('field');
 
@@ -273,26 +285,12 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
         foreach ($this->view->field as $fid => $field) {
           $this->view->field[$fid]->options['exclude'] = $field_exclude[$fid];
         }
+       
+        //  Add the popup content field.
+        $attributes['popup_content'] = $this->options['popups']['content'];
 
-        // Add the 'name' attribute.
-        if (isset($this->options['data_source']['name_field'])) {
-          if (isset($attributes[$this->options['data_source']['name_field']])) {
-            $attributes['name'] = $attributes[$this->options['data_source']['name_field']];
-          }
-        }
-
-        // Add the 'description' attribute.
-        if (isset($this->options['data_source']['description_field'])) {
-          // Handle rendering the whole record.
-          if ($this->options['data_source']['description_field'] === '#row') {
-            $attributes['description'] = trim($this->row_plugin->render($record));
-          }
-          else {
-            if (isset($attributes[$this->options['data_source']['description_field']])) {
-              $attributes['description'] = $attributes[$this->options['data_source']['description_field']];
-            }
-          }
-        }
+        //  Add the tooltip content field.
+        $attributes['tooltip_content'] = $this->options['tooltips']['content'];
 
         // We do not need the rendered value for these fields,
         // just the raw value.
@@ -301,7 +299,9 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
           switch ($this->options['data_source']['value']) {
             case 'wkt':
               $handler = $handlers[$this->options['data_source']['wkt']];
-              $wkt = $handler->allow_advanced_render() ? $handler->advanced_render($record) : $handler->render($record);
+              if (is_object($handler)) {
+                $wkt = $handler->allow_advanced_render() ? $handler->advanced_render($record) : $handler->render($record);
+              }
               break;
 
             case 'other_latlon':
@@ -343,7 +343,7 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
    * Helper function to minify the output data.
    *
    * Borrowed from the Minify module.
-   * @link https://www.drupal.org/project/minify
+   * @link https://www.drupal.org/project/minify.
    *
    * @param string $buffer
    *   The string to minify.
@@ -356,10 +356,14 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
       return _minify_html($buffer);
     }
     $search = array(
-      '/\>[^\S ]+/s',     // strip whitespaces after tags, except space
-      '/[^\S ]+\</s',     // strip whitespaces before tags, except space
-      '/(\s)+/s',         // shorten multiple whitespace sequences
-      '/^\\s+|\\s+$/m',   // trim each line
+    // Strip whitespaces after tags, except space.
+      '/\>[^\S ]+/s',
+    // Strip whitespaces before tags, except space.
+      '/[^\S ]+\</s',
+    // Shorten multiple whitespace sequences.
+      '/(\s)+/s',
+    // Trim each line.
+      '/^\\s+|\\s+$/m',
     );
     $replace = array(
       '>',
@@ -368,7 +372,11 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
       '',
     );
     $buffer = preg_replace($search, $replace, $buffer);
-    $buffer = preg_replace_callback('/<!--([\\s\\S]*?)-->/', array($this, 'minify_remove_html_comment'), $buffer);
+    $buffer = preg_replace_callback(
+      '/<!--([\\s\\S]*?)-->/',
+      array($this, 'minify_remove_html_comment'),
+      $buffer
+    );
     return $buffer;
   }
 
@@ -376,7 +384,7 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
    * Remove HTML comments (not containing IE conditional comments).
    *
    * Borrowed from the Minify module.
-   * @link https://www.drupal.org/project/minify
+   * @link https://www.drupal.org/project/minify.
    *
    * @see openlayers_views_plugin_style_source_vector::minify_data()
    */
@@ -389,7 +397,7 @@ class openlayers_views_plugin_style_source_vector extends views_plugin_style {
   /**
    * Basically a macro because #state is rather verbose.
    *
-   * openlayers_views_style_data specific.
+   * Openlayers_views_style_data specific.
    */
   public function datasource_dependent($type) {
     return array('visible' => array('#edit-style-options-data-source-value' => array('value' => $type)));

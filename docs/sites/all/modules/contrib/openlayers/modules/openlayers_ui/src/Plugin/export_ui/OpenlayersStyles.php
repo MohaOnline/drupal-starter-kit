@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Class openlayers_components_ui.
- */
 
 namespace Drupal\openlayers_ui\UI;
+
 use Drupal\openlayers\Openlayers;
-use Drupal\openlayers\Types\MapInterface;
 
 /**
- * Class openlayers_components_ui.
+ * FIX - insert comment here.
  */
 class OpenlayersStyles extends \OpenlayersObjects {
 
@@ -30,15 +26,33 @@ class OpenlayersStyles extends \OpenlayersObjects {
    */
   public function list_table_header() {
     $header = array();
-    $header[] = array('data' => t('Preview'), 'class' => array('ctools-export-ui-preview'));
+    $header[] = array(
+      'data' => t('Preview'),
+      'class' => array('ctools-export-ui-preview'),
+    );
     if (!empty($this->plugin['export']['admin_title'])) {
-      $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-title'));
+      $header[] = array(
+        'data' => t('Name'),
+        'class' => array('ctools-export-ui-title'),
+      );
     }
 
-    $header[] = array('data' => t('Machine name'), 'class' => array('ctools-export-ui-name'));
-    $header[] = array('data' => t('Service'), 'class' => array('ctools-export-ui-service'));
-    $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
-    $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
+    $header[] = array(
+      'data' => t('Machine name'),
+      'class' => array('ctools-export-ui-name)'),
+    );
+    $header[] = array(
+      'data' => t('Service'),
+      'class' => array('ctools-export-ui-service'),
+    );
+    $header[] = array(
+      'data' => t('Storage'),
+      'class' => array('ctools-export-ui-storage'),
+    );
+    $header[] = array(
+      'data' => t('Operations'),
+      'class' => array('ctools-export-ui-operations'),
+    );
 
     return $header;
   }
@@ -57,7 +71,7 @@ class OpenlayersStyles extends \OpenlayersObjects {
 
     list($plugin_manager, $plugin_id) = explode(':', $item->factory_service);
     list($module, $plugin_type) = explode('.', $plugin_manager);
-    $object = \Drupal\openlayers\Openlayers::load($plugin_type, $item->machine_name);
+    $object = Openlayers::load($plugin_type, $item->machine_name);
 
     // Note: $item->{$schema['export']['export type string']} should have
     // already been set up by export.inc so we can use it safely.
@@ -104,23 +118,40 @@ class OpenlayersStyles extends \OpenlayersObjects {
     $map_render = $map->addLayer($layer->setStyle($object))->render();
 
     $this->rows[$name]['data'] = array();
-    $this->rows[$name]['class'] = !empty($item->disabled) ? array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
-    $this->rows[$name]['data'][] = array('data' => $map_render, 'class' => array('ctools-export-ui-title'));
+    $this->rows[$name]['class'] = !empty($item->disabled) ?
+      array('ctools-export-ui-disabled') : array('ctools-export-ui-enabled');
+    $this->rows[$name]['data'][] =
+      array('data' => $map_render, 'class' => array('ctools-export-ui-title'));
 
     // If we have an admin title, make it the first row.
     if (!empty($this->plugin['export']['admin_title'])) {
-      $this->rows[$name]['data'][] = array('data' => check_plain($item->{$this->plugin['export']['admin_title']}), 'class' => array('ctools-export-ui-title'));
+      $this->rows[$name]['data'][] = array(
+        'data' => check_plain($item->{$this->plugin['export']['admin_title']}),
+        'class' => array('ctools-export-ui-title'),
+      );
     }
-    $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
-    $this->rows[$name]['data'][] = array('data' => check_plain($item->factory_service), 'class' => array('ctools-export-ui-service'));
-    $this->rows[$name]['data'][] = array('data' => $type, 'class' => array('ctools-export-ui-storage'));
+    $this->rows[$name]['data'][] = array(
+      'data' => check_plain($name),
+      'class' => array('ctools-export-ui-name'),
+    );
+    $this->rows[$name]['data'][] = array(
+      'data' => check_plain($item->factory_service),
+      'class' => array('ctools-export-ui-service'),
+    );
+    $this->rows[$name]['data'][] = array(
+      'data' => $type,
+      'class' => array('ctools-export-ui-storage'),
+    );
 
     $ops = theme('links__ctools_dropbutton', array(
       'links' => $operations,
       'attributes' => array('class' => array('links', 'inline')),
     ));
 
-    $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
+    $this->rows[$name]['data'][] = array(
+      'data' => $ops,
+      'class' => array('ctools-export-ui-operations'),
+    );
 
     // Add an automatic mouseover of the description if one exists.
     if (!empty($this->plugin['export']['admin_description'])) {

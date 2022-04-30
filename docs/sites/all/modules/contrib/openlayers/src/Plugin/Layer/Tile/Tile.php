@@ -1,21 +1,18 @@
 <?php
-/**
- * @file
- * Layer: Tile.
- */
 
 namespace Drupal\openlayers\Plugin\Layer\Tile;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Layer;
 
 /**
- * Class Tile.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Tile"
  * )
  */
 class Tile extends Layer {
+
   /**
    * {@inheritdoc}
    */

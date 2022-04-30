@@ -1,15 +1,12 @@
 <?php
-/**
- * @file
- * Component: ZoomSource.
- */
 
 namespace Drupal\openlayers\Plugin\Component\ZoomToSource;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
+use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Component;
 
 /**
- * Class ZoomToSource.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "ZoomToSource"
@@ -27,7 +24,7 @@ class ZoomToSource extends Component {
       '#empty_option' => t('- Select a Source -'),
       '#default_value' => isset($form_state['item']->options['source']) ? $form_state['item']->options['source'] : '',
       '#description' => t('Select the source.'),
-      '#options' => \Drupal\openlayers\Openlayers::loadAllAsOptions('Source'),
+      '#options' => Openlayers::loadAllAsOptions('Source'),
       '#required' => TRUE,
       '#multiple' => TRUE,
     );
@@ -88,4 +85,5 @@ class ZoomToSource extends Component {
       '#description' => t('Duration of the zoom animation.'),
     );
   }
+
 }

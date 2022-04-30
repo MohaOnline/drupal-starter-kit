@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Class Source.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Class Source.
+ * FIX - Insert short comment here.
  */
-abstract class Source extends Object implements SourceInterface {
+abstract class Source extends Base implements SourceInterface {
   /**
    * The array containing the options.
    *

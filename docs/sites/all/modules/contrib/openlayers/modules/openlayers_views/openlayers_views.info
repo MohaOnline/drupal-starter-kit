@@ -7,15 +7,17 @@ dependencies[] = views
 dependencies[] = openlayers
 dependencies[] = geophp
 
+;files[] = views/OpenlayersViewsPluginStyleSourceVector.inc
+;files[] = views/OpenlayersViewsPluginDisplayOpenlayers.inc
+;files[] = views/OpenlayersViewsPluginMapViews.inc
 files[] = views/openlayers_views_plugin_style_source_vector.inc
 files[] = views/openlayers_views_plugin_display_openlayers.inc
 files[] = views/openlayers_views_plugin_map_views.inc
 
 registry_autoload[] = PSR-4
 
-; Information added by Drupal.org packaging script on 2016-01-03
-version = "7.x-3.1"
+; Information added by Drupal.org packaging script on 2022-04-29
+version = "7.x-3.2"
 core = "7.x"
 project = "openlayers"
-datestamp = "1451782149"
-
+datestamp = "1651252723"

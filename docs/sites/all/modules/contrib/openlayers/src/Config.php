@@ -1,13 +1,9 @@
 <?php
-/**
- * @file
- * Class openlayers_config.
- */
 
 namespace Drupal\openlayers;
 
 /**
- * Class openlayers_config.
+ * FIX - Insert short comment here.
  */
 class Config {
 
@@ -20,14 +16,12 @@ class Config {
    * @return array|null
    *   Returns the array or if a key is provided, it's value.
    */
-  static protected function defaults($key = NULL) {
+  protected static function defaults($key = NULL) {
     $defaults = array(
       'openlayers.js_css.group' => 'openlayers',
       'openlayers.js_css.weight' => 20,
       'openlayers.js_css.media' => 'screen',
       'openlayers.edit_view_map' => 'openlayers_map_view_edit_form',
-      'openlayers.default_ui_map' => 'openlayers_map_ui_default',
-      'openlayers.variant' => 'local:3.11.2',
       'openlayers.debug' => 0,
     );
     if ($key == NULL) {
@@ -48,8 +42,8 @@ class Config {
    * @return mixed
    *   The configuration value.
    */
-  static public function get($parents, $default_value = NULL) {
-    $options = \Drupal::service('variable')->get('openlayers_config');
+  public static function get($parents, $default_value = NULL) {
+    $options = \OpenlayersDrupal::service('variable')->get('openlayers_config', array());
 
     if (is_string($parents)) {
       $parents = explode('.', $parents);
@@ -58,7 +52,7 @@ class Config {
     if (is_array($parents)) {
       $notfound = FALSE;
       foreach ($parents as $parent) {
-        if (isset($options[$parent])) {
+        if (array_key_exists($parent, $options)) {
           $options = $options[$parent];
         }
         else {
@@ -71,7 +65,8 @@ class Config {
       }
     }
 
-    if ($value = Config::defaults(implode('.', $parents))) {
+    $value = Config::defaults(implode('.', $parents));
+    if (isset($value)) {
       return $value;
     }
 
@@ -93,8 +88,8 @@ class Config {
    * @return array
    *   The configuration array.
    */
-  static public function set($parents, $value) {
-    $config = \Drupal::service('variable')->get('openlayers_config', array());
+  public static function set($parents, $value) {
+    $config = \OpenlayersDrupal::service('variable')->get('openlayers_config', array());
 
     if (is_string($parents)) {
       $parents = explode('.', $parents);
@@ -109,7 +104,7 @@ class Config {
     }
     $ref = $value;
 
-    \Drupal::service('variable')->set('openlayers_config', $config);
+    \OpenlayersDrupal::service('variable')->set('openlayers_config', $config);
     return $config;
   }
 
@@ -122,7 +117,7 @@ class Config {
    * @return array
    *   The configuration array.
    */
-  static public function clear($parents) {
+  public static function clear($parents) {
     $config = \Drupal::service('variable')->get('openlayers_config', array());
     $ref = &$config;
 
@@ -148,7 +143,7 @@ class Config {
         }
       }
     }
-    \Drupal::service('variable')->set('openlayers_config', $config);
+    \OpenlayersDrupal::service('variable')->set('openlayers_config', $config);
     return $config;
   }
 

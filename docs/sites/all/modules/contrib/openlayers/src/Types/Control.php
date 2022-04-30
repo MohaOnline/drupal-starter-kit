@@ -1,15 +1,12 @@
 <?php
-/**
- * @file
- * Class Control.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Class Control.
+ * FIX: Insert short comment here.
  */
-abstract class Control extends Object implements ControlInterface {
+abstract class Control extends Base implements ControlInterface {
+
   /**
    * The array containing the options.
    *

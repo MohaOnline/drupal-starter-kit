@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Source: TileDebug.
- */
 
 namespace Drupal\openlayers\Plugin\Source\TileDebug;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class TileDebug.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "TileDebug"

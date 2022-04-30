@@ -1,26 +1,22 @@
 <?php
-/**
- * @file
- * Component: GeofieldWidget.
- */
 
 namespace Drupal\openlayers_geofield\Plugin\Component\GeofieldWidget;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Plugin\Source\Vector\Vector;
 use Drupal\openlayers\Types\Component;
-use Drupal\openlayers\Types\LayerInterface;
 use Drupal\openlayers\Types\ObjectInterface;
 use geoPHP;
 
 /**
- * Class GeofieldWidget.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *  id = "GeofieldWidget"
  * )
  */
 class GeofieldWidget extends Component {
+
   /**
    * {@inheritdoc}
    */
@@ -28,7 +24,7 @@ class GeofieldWidget extends Component {
     $form['options']['dataType'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Data type'),
-      '#description' => t('If more than one type is choosen a control to select the type to use is displayed when drawing.'),
+      '#description' => t('If multiple, a control to select the type to use is displayed when drawing.'),
       '#multiple' => TRUE,
       '#options' => array(
         'GeoJSON' => 'GeoJSON',
@@ -126,12 +122,13 @@ class GeofieldWidget extends Component {
    *
    * @return array
    *   An array containing the Geometry and the features.
+   *
    * @throws \exception
    */
   private function initialDataToGeomFeatures() {
     geophp_load();
     $initial_data = $this->getOption('initialData', '');
-    $geom  = new \GeometryCollection(array());
+    $geom = new \GeometryCollection(array());
     $features = array();
 
     // Process initial data. Ensure it's WKT.
@@ -153,7 +150,12 @@ class GeofieldWidget extends Component {
 
       // If we could parse the geom process further.
       if ($geom && !$geom->isEmpty()) {
-        if (in_array($geom->getGeomType(), array('MultiPoint', 'MultiLineString', 'MultiPolygon', 'GeometryCollection'))) {
+        if (in_array($geom->getGeomType(), array(
+          'MultiPoint',
+          'MultiLineString',
+          'MultiPolygon',
+          'GeometryCollection',
+        ))) {
           foreach ($geom->getComponents() as $component) {
             $features[] = array(
               'wkt' => $component->out('wkt'),
@@ -240,7 +242,7 @@ class GeofieldWidget extends Component {
 
     $geom = $this->initialDataToGeomFeatures();
     $wkt = '';
-    if (!empty($geom['geom'])) {
+    if (!empty($geom['geom']) && !$geom['geom']->isEmpty()) {
       $wkt = $geom['geom']->out('wkt');
     }
     $parents = $this->getOption('parents');
@@ -275,4 +277,5 @@ class GeofieldWidget extends Component {
       $build['parameters'][$this->getPluginId()] = $component;
     }
   }
+
 }

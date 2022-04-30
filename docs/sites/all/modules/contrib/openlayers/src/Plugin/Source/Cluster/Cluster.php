@@ -1,22 +1,19 @@
 <?php
-/**
- * @file
- * Source: Cluster.
- */
 
 namespace Drupal\openlayers\Plugin\Source\Cluster;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class Cluster.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Cluster"
  * )
  */
 class Cluster extends Source {
+
   /**
    * {@inheritdoc}
    */
@@ -39,7 +36,7 @@ class Cluster extends Source {
     );
 
     $zoomDistance = $this->getOption('zoomDistance', array());
-    $zoomDistance = array_map(function($v, $k) {
+    $zoomDistance = array_map(function ($v, $k) {
       return $k . ':' . $v;
     }, $zoomDistance, array_keys($zoomDistance));
 

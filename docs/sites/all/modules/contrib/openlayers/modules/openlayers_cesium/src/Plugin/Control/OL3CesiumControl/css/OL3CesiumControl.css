@@ -1,0 +1,15 @@
+.ol-ol3cesiumcontrol.ol-control {
+  top: 0.5em;
+  left: 5em;
+}
+
+.ol-ol3cesiumcontrol.ol-control button {
+  display: inline-block;
+  padding-bottom: 3px;
+}
+
+.ol-ol3cesiumcontrol.ol-control button.enable {
+  text-decoration: none;
+  background-color: #4c6079;
+  background-color: rgba(0,60,136,0.7);
+}

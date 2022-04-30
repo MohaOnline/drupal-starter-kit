@@ -1,33 +1,31 @@
 <?php
-/**
- * @file
- * Interface ObjectInterface.
- */
 
 namespace Drupal\openlayers\Types;
 
-use Drupal\Component\Plugin\PluginInspectionInterface;
+use OpenlayersDrupal\Component\Plugin\PluginInspectionInterface;
 
 /**
- * Interface openlayers_object_interface.
+ * FIX: Insert short comment here.
  */
 interface ObjectInterface extends PluginInspectionInterface {
+
   /**
    * Initializes the object.
    */
   public function init();
 
   /**
-   * Initializes the Collection,
-   * Import objects from options,
-   * Import the current object.
+   * Initializes the Collection.
+   *
+   * Initializes the Collection, imports objects from options, imports
+   * the current object.
    */
   public function initCollection();
 
   /**
    * The type of this object.
    *
-   * @return string|FALSE
+   * @return string|false
    *   The object type or FALSE on failure.
    */
   public function getType();
@@ -65,7 +63,7 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Returns an option.
    *
    * @param string|array $parents
-   *   TODO Define how this has to look like if it is an array.
+   *   FIX Define how this has to look like if it is an array.
    * @param mixed $default_value
    *   The default value to return if the option isn't set. Set to NULL if not
    *   defined.
@@ -79,7 +77,7 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Set an option.
    *
    * @param string|array $parents
-   *   TODO: Define how this has to look like if it is an array.
+   *   FIX: Define how this has to look like if it is an array.
    * @param mixed $value
    *   The value to set.
    *
@@ -134,7 +132,7 @@ interface ObjectInterface extends PluginInspectionInterface {
   /**
    * Defines dependencies.
    *
-   * TODO Define how this has to look like.
+   * FIX: Define how this has to look like.
    *
    * @return array
    *   The dependencies.
@@ -188,6 +186,7 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Return the object configuration.
    *
    * @return array
+   *   FIX.
    */
   public function getConfiguration();
 
@@ -195,7 +194,10 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Return an array of OL objects indexed by their type.
    *
    * @param string $type
+   *   FIX.
+   *
    * @return array
+   *   FIX.
    */
   public function getObjects($type = NULL);
 
@@ -236,6 +238,7 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Return the Collection object linked to the object.
    *
    * @return Collection
+   *   FIX
    */
   public function getCollection();
 
@@ -243,8 +246,9 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Return the JS to insert in the page when building the object.
    *
    * @return array
+   *   FIX
    */
-  public function getJS();
+  public function getJs();
 
   /**
    * Set the weight of an object.
@@ -274,6 +278,7 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Return the human name of the object.
    *
    * @return string
+   *   FIX
    */
   public function getName();
 
@@ -289,6 +294,7 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Return the description of the object.
    *
    * @return string
+   *   FIX
    */
   public function getDescription();
 
@@ -296,6 +302,7 @@ interface ObjectInterface extends PluginInspectionInterface {
    * Return the description of the object's plugin.
    *
    * @return string
+   *   FIX
    */
   public function getPluginDescription();
 
@@ -318,7 +325,7 @@ interface ObjectInterface extends PluginInspectionInterface {
   /**
    * Return the Factory Service of the object.
    *
-   * @return string|FALSE
+   * @return string|false
    *   The factory service otherwise FALSE.
    */
   public function getFactoryService();
@@ -371,4 +378,5 @@ interface ObjectInterface extends PluginInspectionInterface {
    *   The parent object.
    */
   public function setId($id);
+
 }

@@ -1,12 +1,9 @@
 <?php
-/**
- * @file
- * Class openlayers_objects_ui.
- */
 
 /**
- * Class openlayers_objects_ui.
+ * FIX - insert comment here.
  */
+
 abstract class OpenlayersObjects extends ctools_export_ui {
 
   /**
@@ -18,7 +15,7 @@ abstract class OpenlayersObjects extends ctools_export_ui {
    * If the keys all match up to the schema, this method will not need to be
    * overridden.
    */
-  function edit_form_submit(&$form, &$form_state) {
+  public function edit_form_submit(&$form, &$form_state) {
     parent::edit_form_submit($form, $form_state);
 
     if (isset($form_state['values']['attachToMap'])) {
@@ -64,13 +61,28 @@ abstract class OpenlayersObjects extends ctools_export_ui {
   public function list_table_header() {
     $header = array();
     if (!empty($this->plugin['export']['admin_title'])) {
-      $header[] = array('data' => t('Name'), 'class' => array('ctools-export-ui-title'));
+      $header[] = array(
+        'data' => t('Name'),
+        'class' => array('ctools-export-ui-title'),
+      );
     }
 
-    $header[] = array('data' => t('Machine name'), 'class' => array('ctools-export-ui-name'));
-    $header[] = array('data' => t('Service'), 'class' => array('ctools-export-ui-service'));
-    $header[] = array('data' => t('Storage'), 'class' => array('ctools-export-ui-storage'));
-    $header[] = array('data' => t('Operations'), 'class' => array('ctools-export-ui-operations'));
+    $header[] = array(
+      'data' => t('Machine name'),
+      'class' => array('ctools-export-ui-name'),
+    );
+    $header[] = array(
+      'data' => t('Service'),
+      'class' => array('ctools-export-ui-service'),
+    );
+    $header[] = array(
+      'data' => t('Storage'),
+      'class' => array('ctools-export-ui-storage'),
+    );
+    $header[] = array(
+      'data' => t('Operations'),
+      'class' => array('ctools-export-ui-operations'),
+    );
 
     return $header;
   }
@@ -133,22 +145,38 @@ abstract class OpenlayersObjects extends ctools_export_ui {
 
     // If we have an admin title, make it the first row.
     if (!empty($this->plugin['export']['admin_title'])) {
-      $this->rows[$name]['data'][] = array('data' => check_plain($item->{$this->plugin['export']['admin_title']}), 'class' => array('ctools-export-ui-title'));
+      $this->rows[$name]['data'][] = array(
+        'data' => check_plain($item->{$this->plugin['export']['admin_title']}),
+        'class' => array('ctools-export-ui-title'),
+      );
     }
-    $this->rows[$name]['data'][] = array('data' => check_plain($name), 'class' => array('ctools-export-ui-name'));
-    $this->rows[$name]['data'][] = array('data' => check_plain($item->factory_service), 'class' => array('ctools-export-ui-service'));
-    $this->rows[$name]['data'][] = array('data' => $type, 'class' => array('ctools-export-ui-storage'));
+    $this->rows[$name]['data'][] = array(
+      'data' => check_plain($name),
+      'class' => array('ctools-export-ui-name'),
+    );
+    $this->rows[$name]['data'][] = array(
+      'data' => check_plain($item->factory_service),
+      'class' => array('ctools-export-ui-service'),
+    );
+    $this->rows[$name]['data'][] = array(
+      'data' => $type,
+      'class' => array('ctools-export-ui-storage'),
+    );
 
     $ops = theme('links__ctools_dropbutton', array(
       'links' => $operations,
       'attributes' => array('class' => array('links', 'inline')),
     ));
 
-    $this->rows[$name]['data'][] = array('data' => $ops, 'class' => array('ctools-export-ui-operations'));
+    $this->rows[$name]['data'][] = array(
+      'data' => $ops,
+      'class' => array('ctools-export-ui-operations'),
+    );
 
     // Add an automatic mouseover of the description if one exists.
     if (!empty($this->plugin['export']['admin_description'])) {
-      $this->rows[$name]['title'] = $item->{$this->plugin['export']['admin_description']};
+      $this->rows[$name]['title'] =
+        $item->{$this->plugin['export']['admin_description']};
     }
   }
 
@@ -173,7 +201,9 @@ abstract class OpenlayersObjects extends ctools_export_ui {
 
         // Sets redirect path and options.
         $op = $form_state['op'];
-        $path = ('add' != $op) ? current_path() : 'admin/structure/openlayers/' . $this->plugin['menu']['menu item'] . '/list/' . $form_state['item']->machine_name . '/edit/start';
+        $path = ('add' != $op) ? current_path() : 'admin/structure/openlayers/' .
+          $this->plugin['menu']['menu item'] . '/list/' .
+          $form_state['item']->machine_name . '/edit/start';
         $this->plugin['redirect'][$op] = array($path, $options);
       }
     }

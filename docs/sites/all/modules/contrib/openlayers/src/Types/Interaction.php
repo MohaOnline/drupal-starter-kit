@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Class Interaction.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Class Interaction.
+ * FIX: Insert short comment here.
  */
-abstract class Interaction extends Object implements InteractionInterface {
+abstract class Interaction extends Base implements InteractionInterface {
   /**
    * The array containing the options.
    *

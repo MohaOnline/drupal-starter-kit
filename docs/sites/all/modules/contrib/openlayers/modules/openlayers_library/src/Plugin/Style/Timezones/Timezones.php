@@ -1,20 +1,16 @@
 <?php
-/**
- * @file
- * Style: Timezones.
- */
 
 namespace Drupal\openlayers_library\Plugin\Style\Timezones;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
-use Drupal\openlayers\Openlayers;
-use Drupal\openlayers\Types\ObjectInterface;
+
 use Drupal\openlayers\Types\Style;
 
 /**
- * Class Timezones.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *   id = "Timezones"
  * )
  */
-class Timezones extends Style {}
+class Timezones extends Style {
+
+}

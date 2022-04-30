@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Component: Bootstrap JS.
- */
 
 namespace Drupal\openlayers\Plugin\Component\BootstrapjsAlert;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Component;
 
 /**
- * Class BootstrapjsAlert.
+ * FIX - Insert short comment here.
  *
  * @OpenlayersPlugin(
  *  id = "BootstrapjsAlert"

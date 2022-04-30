@@ -45,9 +45,8 @@ Drupal.openlayers.pluginManager.register({
 
     /**
      * Create an overlay to anchor the popup to the map.
-     */
-
-    var overlay = new ol.Overlay({
+     */    
+    var popup = new ol.Overlay({
       element: container,
       positioning: data.opt.positioning,
       autoPan: data.opt.autoPan,
@@ -57,21 +56,50 @@ Drupal.openlayers.pluginManager.register({
       autoPanMargin: data.opt.autoPanMargin
     });
 
-    map.addOverlay(overlay);
+    map.addOverlay(popup);
 
     map.on('click', function(evt) {
-      var feature = map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
-        if (data.opt.frontend_layers[layer.mn] !== undefined) {
-          return feature;
+
+      if ('getFeaturesAtPixel' in map) {
+        //  Introduced in v4.3.0 - new map.getFeaturesAtPixel() method.
+        var features = map.getFeaturesAtPixel(evt.pixel);
+      } else {
+        //  Replaced in v4.3.0 - forEachFeatureAtPixel() method replaced.
+        features = [];        
+        map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+          features.push(feature);
+        });
+      }
+
+      var feature = undefined;
+
+      if (features && features.length > 0) {
+        for (item of features) {
+          feature = item;
         }
-      });
+      }
+
       if (feature) {
+        var featureProperties = feature.getProperties();
+        var popupContent = featureProperties.popup_content;
+
+        for (key in featureProperties) {        
+          if (key != 'popup_content') {
+            oldPopupContent = popupContent + '.';
+            while (oldPopupContent != popupContent) {
+              oldPopupContent = popupContent;
+              popupContent = popupContent.replace('${' + key + '}', featureProperties[key]);
+            }
+          }
+        }
+/*       
         jQuery(container).data('feature-key', feature[UID_PROPERTY_]);
 
         // If the feature is a cluster, then create a list of names and add it
         // to the overall feature's description. Wrap it in a container with
         // a max-height and overflow: scroll so it doesn't get too big.
         var features = feature.get('features');
+
         if (features !== undefined) {
           var names = [];
           features.forEach(function (item) {
@@ -84,16 +112,33 @@ Drupal.openlayers.pluginManager.register({
           }
           feature.set('name', names.length + ' item(s):');
         }
-
-        var name = feature.get('name') || '';
-        var description = feature.get('description') || '';
-
-        if (name != '' || description != '') {
-          content.innerHTML = '<div class="ol-popup-content"><div class="ol-popup-name">' + name + '</div><div class="ol-popup-description">' + description + '</div></div>';
+*/
+        if (popupContent != '') {
+          content.innerHTML = '<div class="ol-popup-content">' + popupContent + '</div>';
           container.style.display = 'block';
-          overlay.setPosition(evt.coordinate);
+          popup.setPosition(evt.coordinate);
+
+          // Allow other code to be triggered when a popup is displayed.
+          // See issue https://www.drupal.org/project/openlayers/issues/2687781.
+          jQuery(document).trigger('openlayers.Component:Popup', { 'overlay': popup, 'evt': evt });
         }
+      } else {
+        //  Close any open popup.
+        jQuery(container).hide();
       }
+    });
+    
+    //  Give option to show last popup automatically after page load
+    map.once('postrender', function(evt) {
+//console.log('Ready !!');
+      var extent = map.getView().calculateExtent(map.getSize());
+//console.log(extent);
+//console.log(map);
+//      map.forEachFeatureInExtent(extent, function(feature){
+//console.log(feature);          // do something 
+//      });
+//console.log(container);
+//      jQuery(container).show();
     });
   }
 });

@@ -15,7 +15,9 @@ Drupal.openlayers.pluginManager.register({
     // Select the related source or fallback to a generic one.
     if (data.opt.editLayer !== undefined && data.objects.layers[data.opt.editLayer] !== undefined) {
       vector_layer = data.objects.layers[data.opt.editLayer];
-      vector_layer.getSource().on('change', saveData);
+      if (vector_layer.getSource()) {
+        vector_layer.getSource().on('change', saveData);
+      }
     }
 
     if (data.opt.editStyle !== undefined && data.objects.styles[data.opt.editStyle] !== undefined) {
@@ -199,7 +201,7 @@ Drupal.openlayers.pluginManager.register({
         datas;
       try {
         if (data.opt.featureLimit && data.opt.featureLimit != -1 && data.opt.featureLimit < features.length) {
-          if (confirm(Drupal.t('You can add a maximum of !limit features. Dou you want to replace the last feature by the new one?', {'!limit': data.opt.featureLimit}))) {
+          if (confirm(Drupal.t('You can add a maximum of !limit features. Do you want to replace the last feature by the new one?', {'!limit': data.opt.featureLimit}))) {
             var lastFeature = features[features.length - 2];
             vector_layer.getSource().removeFeature(lastFeature);
           } else {

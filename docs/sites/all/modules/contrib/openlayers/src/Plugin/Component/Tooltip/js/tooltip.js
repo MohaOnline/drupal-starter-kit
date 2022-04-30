@@ -2,7 +2,6 @@ Drupal.openlayers.pluginManager.register({
   fs: 'openlayers.Component:Tooltip',
   init: function(data) {
     var map = data.map;
-
     var container = jQuery('<div/>', {
       id: 'tooltip',
       'class': 'ol-tooltip'
@@ -28,19 +27,43 @@ Drupal.openlayers.pluginManager.register({
       var pixel = map.getEventPixel(evt.originalEvent);
       var coordinates = map.getEventCoordinate(evt.originalEvent);
 
-      var feature = map.forEachFeatureAtPixel(pixel, function(feature, layer) {
-        if (layer.mn == data.opt.layer) {
-          return feature;
+      if ('getFeaturesAtPixel' in map) {
+        //  Introduced in v4.3.0 - new map.getFeaturesAtPixel() method.
+        var features = map.getFeaturesAtPixel(pixel);
+      } else {
+        //  Replaced in v4.3.0 - forEachFeatureAtPixel() method replaced.
+        features = [];        
+        map.forEachFeatureAtPixel(pixel, function(feature) {
+          features.push(feature);
+        });
+      }
+
+      var feature = undefined;
+      
+      if (features && features.length > 0) {
+        for (item of features) {
+          feature = item;
         }
-      });
+      }
 
       if (feature) {
-        var name = feature.get('name') || '';
-        var description = feature.get('description') || '';
+        var featureProperties = feature.getProperties();
+        var tooltipContent = featureProperties.tooltip_content;
+        for (key in featureProperties) {        
+          if (key != 'tooltip_content') {
+            oldTooltipContent = tooltipContent + '.';
+            while (oldTooltipContent != tooltipContent) {
+              oldTooltipContent = tooltipContent;
+              tooltipContent = tooltipContent.replace('${' + key + '}', featureProperties[key]);
+            }
+          }
+        }
 
-        overlay.setPosition(coordinates);
-        content.innerHTML = '<div class="ol-tooltip-name">' + name + '</div><div class="ol-tooltip-description">' + description + '</div>';
-        container.style.display = 'block';
+        if (tooltipContent != '') {
+          overlay.setPosition(coordinates);
+          content.innerHTML = '<div class="ol-tooltip-content">' + tooltipContent + '</div>';
+          container.style.display = 'block';
+        }
       } else {
         container.style.display = 'none';
       }

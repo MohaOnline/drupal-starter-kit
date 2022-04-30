@@ -1,15 +1,11 @@
 <?php
-/**
- * @file
- * Class Style.
- */
 
 namespace Drupal\openlayers\Types;
 
 /**
- * Class Style.
+ * FIX - Insert short comment here.
  */
-abstract class Style extends Object implements StyleInterface {
+abstract class Style extends Base implements StyleInterface {
   /**
    * The array containing the options.
    *
@@ -20,8 +16,8 @@ abstract class Style extends Object implements StyleInterface {
   /**
    * {@inheritdoc}
    */
-  public function getJS() {
-    $js = parent::getJS();
+  public function getJs() {
+    $js = parent::getJs();
 
     unset($js['opt']['styles']);
 

@@ -54,7 +54,14 @@ ol.control.LayerSwitcher = function(opt_options) {
 
 };
 
-ol.inherits(ol.control.LayerSwitcher, ol.control.Control);
+if (ol.hasOwnProperty('inherits')) {
+  //  Deprecated in v6.0.0 - ol.inherits function.
+  ol.inherits(ol.control.LayerSwitcher, ol.control.Control);
+} else {
+  //  Introduced in v6.0.0 - replace with ECMAScript classes.
+  ol.control.LayerSwitcher.prototype = Object.create(ol.control.Control.prototype);
+  ol.control.LayerSwitcher.prototype.constructor = ol.control.LayerSwitcher;
+}
 
 /**
  * Show the layer panel.

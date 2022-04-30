@@ -1,8 +1,12 @@
 <?php
+
 /**
  * @file
  * CTools Export UI plugin definition for interactions.
  */
+
+use Drupal\openlayers\Openlayers;
+use Drupal\openlayers_ui\UI\OpenlayersInteractions;
 
 /**
  * CTools Export UI plugin definition.
@@ -71,25 +75,39 @@ function openlayers_ui_OpenlayersInteractions_ctools_export_ui() {
  * Interaction base config form handler.
  */
 function openlayers_interaction_form_start($form, &$form_state) {
-  $class = new \Drupal\openlayers_ui\UI\OpenlayersInteractions();
+  $class = new OpenlayersInteractions();
   $class->init($form_state['plugin']);
   $class->edit_form($form, $form_state);
 
   $options = array();
-  foreach (\Drupal\openlayers\Openlayers::loadAllExportable('Map') as $machine_name => $map) {
+  $defaultOptions = array();
+
+  foreach (Openlayers::loadAllExportable('Map') as $machine_name => $map) {
     if (!is_object($map) || (property_exists($map, 'disabled') && ($map->disabled == 1 || $map->disabled == TRUE))) {
       continue;
     }
     $options[$machine_name] = $map->name;
+    $mapObject = Openlayers::load('map', $map);
+    $interactions = $mapObject->getOption('interactions', array());
+    if (in_array($form_state['item']->machine_name, $interactions)) {
+      $defaultOptions[] = $machine_name;
+    }
   }
 
-  $form['attachToMap'] = array(
-    '#type' => 'select',
-    '#title' => 'Add this to a map ?',
-    '#empty_option' => t('- Do no attach -'),
-    '#description' => 'Select the map to add this object to.',
+  // Define which map(s) this interaction is added to.
+  $form['attachMaps'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Attach to Maps ?'),
+    '#description' => t('Select one or maps to add this object to.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['attachMaps']['attachToMap'] = array(
+    '#type' => 'checkboxes',
+    '#title' => 'Maps:',
     '#options' => $options,
-    '#default_value' => isset($form_state['item']->attachToMap) ? $form_state['item']->attachToMap : '',
+    '#default_value' => $defaultOptions,
   );
 
   return $form;
@@ -99,7 +117,7 @@ function openlayers_interaction_form_start($form, &$form_state) {
  * Interaction base config form validation handler.
  */
 function openlayers_interaction_form_start_validate($form, &$form_state) {
-  $class = new \Drupal\openlayers_ui\UI\OpenlayersInteractions();
+  $class = new OpenlayersInteractions();
   $class->init($form_state['plugin']);
   $class->edit_form_validate($form, $form_state);
 }
@@ -108,9 +126,34 @@ function openlayers_interaction_form_start_validate($form, &$form_state) {
  * Interaction base config form submit handler.
  */
 function openlayers_interaction_form_start_submit($form, &$form_state) {
-  $class = new \Drupal\openlayers_ui\UI\OpenlayersInteractions();
+  $class = new OpenlayersInteractions();
   $class->init($form_state['plugin']);
   $class->edit_form_submit($form, $form_state);
+  
+  $attachMaps = $form_state['input']['attachToMap'];
+  $maps = Openlayers::loadAll('map');
+
+  foreach ($attachMaps as $key => $map) {
+    $interactions = $maps[$key]->getOption('interactions', array());
+    $newInteraction = $form_state['values']['machine_name'];
+   
+    // if new interaction is being added to a map
+    if (!is_null($attachMaps[$key]) && !in_array($newInteraction, $interactions)) {
+      $interactions[] = $newInteraction;
+      $maps[$key]->setOption('interactions', $interactions);
+      Openlayers::save($maps[$key]);
+    }
+    
+    // if new interaction is being deleted from a map
+    if (is_null($attachMaps[$key]) && in_array($newInteraction, $interactions)) {
+      if (($key2 = array_search($newInteraction, $interactions)) !== false) {
+        unset($interactions[$key2]);
+      }
+      $maps[$key]->setOption('interactions', $interactions);
+      Openlayers::save($maps[$key]);
+    }    
+  }
+
 }
 
 /**
@@ -123,7 +166,7 @@ function openlayers_interaction_form_type($form, &$form_state) {
     '#empty_option' => t('- Select a @plugin type -', array('@plugin' => 'Interaction')),
     '#default_value' => isset($form_state['item']->factory_service) ? $form_state['item']->factory_service : '',
     '#description' => t('Select the type of interaction.'),
-    '#options' => \Drupal\openlayers\Openlayers::getOLObjectsOptions('Interaction'),
+    '#options' => Openlayers::getOlObjectsOptions('Interaction'),
     '#required' => TRUE,
   );
 
@@ -141,7 +184,7 @@ function openlayers_interaction_form_type_submit($form, &$form_state) {
  * Interaction options config form handler.
  */
 function openlayers_interaction_form_options($form, &$form_state) {
-  if (($interaction = \Drupal\openlayers\Openlayers::load('Interaction', $form_state['item'])) == TRUE) {
+  if (($interaction = Openlayers::load('Interaction', $form_state['item'])) == TRUE) {
     $interaction->optionsForm($form, $form_state);
     $form['options']['#tree'] = TRUE;
   }
@@ -153,7 +196,7 @@ function openlayers_interaction_form_options($form, &$form_state) {
  * Interaction options config form validation handler.
  */
 function openlayers_interaction_form_options_validate($form, &$form_state) {
-  if (($interaction = \Drupal\openlayers\Openlayers::load('Interaction', $form_state['item'])) == TRUE) {
+  if (($interaction = Openlayers::load('Interaction', $form_state['item'])) == TRUE) {
     $interaction->optionsFormValidate($form, $form_state);
   }
 }
@@ -166,13 +209,7 @@ function openlayers_interaction_form_options_submit($form, &$form_state) {
     $form_state['item']->options = array_merge((array) $form_state['item']->options, (array) $form_state['values']['options']);
   }
 
-  if (($interaction = \Drupal\openlayers\Openlayers::load('Interaction', $form_state['item'])) == TRUE) {
-    if (!empty($form_state['item']->attachToMap) && ($map = \Drupal\openlayers\Openlayers::load('map', $form_state['item']->attachToMap)) == TRUE) {
-      $map->getCollection()->append($interaction);
-      \Drupal\openlayers\Openlayers::save($map);
-      unset($form_state['item']->attachToMap);
-    }
-
+  if (($interaction = Openlayers::load('Interaction', $form_state['item'])) == TRUE) {
     $interaction->optionsFormSubmit($form, $form_state);
   }
 }

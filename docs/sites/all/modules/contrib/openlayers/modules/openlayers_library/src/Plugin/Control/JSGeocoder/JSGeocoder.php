@@ -1,22 +1,20 @@
 <?php
-/**
- * @file
- * Control: JSGeocoder.
- */
 
 namespace Drupal\openlayers_library\Plugin\Control\JSGeocoder;
-use Drupal\openlayers\Component\Annotation\OpenlayersPlugin;
+
 use Drupal\openlayers\Types\Control;
 
 /**
- * Class JSGeocoder.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *  id = "JSGeocoder",
- *  description = "JSGeocoder input to geocode addresses to coordinates using Google services."
+ *  description = "JSGeocoder input to geocode addresses to coordinates
+ *    using Google services."
  * )
  */
 class JSGeocoder extends Control {
+
   /**
    * {@inheritdoc}
    */
@@ -54,4 +52,5 @@ class JSGeocoder extends Control {
       '#description' => 'Zoom to set the map to when Google return a successful result. 0 to disable.',
     );
   }
+
 }

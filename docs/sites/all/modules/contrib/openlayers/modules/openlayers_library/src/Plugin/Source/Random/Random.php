@@ -1,21 +1,19 @@
 <?php
-/**
- * @file
- * Source: Random.
- */
 
 namespace Drupal\openlayers_library\Plugin\Source\Random;
+
 use Drupal\openlayers\Openlayers;
 use Drupal\openlayers\Types\Source;
 
 /**
- * Class Random.
+ * FIX - insert comment here.
  *
  * @OpenlayersPlugin(
  *  id = "Random"
  * )
  */
 class Random extends Source {
+
   /**
    * {@inheritdoc}
    */
@@ -40,7 +38,10 @@ class Random extends Source {
       $form['options'][$geometry_type]['setRandomStyle'] = array(
         '#type' => 'checkbox',
         '#title' => t('Set random style on features ?'),
-        '#default_value' => $this->getOption(array($geometry_type, 'setRandomStyle'), 0),
+        '#default_value' => $this->getOption(
+          array($geometry_type, 'setRandomStyle'),
+          0
+        ),
       );
       $form['options'][$geometry_type]['styles'] = array(
         '#type' => 'select',
