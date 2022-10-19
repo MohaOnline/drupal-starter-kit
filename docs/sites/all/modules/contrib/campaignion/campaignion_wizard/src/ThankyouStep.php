@@ -10,7 +10,13 @@ class ThankyouStep extends WizardStep {
   protected $step = 'thank';
   protected $title = 'Thank you';
   protected $contentType;
-  protected $referenceField;
+
+  /**
+   * Reference to the items of the thank you page field of the edited node.
+   *
+   * @var array
+   */
+  protected $fieldItems;
   protected $doubleOptIn;
 
   public function __construct($wizard) {
@@ -23,7 +29,16 @@ class ThankyouStep extends WizardStep {
     ), $wizard->parameters);
     $parameters =& $parameters['thank_you_page'];
     $this->contentType = $parameters['type'];
-    $this->referenceField = &$wizard->node->{$parameters['reference']};
+    $this->fieldItems = &$wizard->node->{$parameters['reference']}[LANGUAGE_NONE];
+    if (is_null($this->fieldItems)) {
+      $this->fieldItems = [];
+    }
+    // Make sure we always have two field items otherwise the thank you page
+    // is renumbered to 0.
+    $this->fieldItems += [
+      0 => ['type' => 'node', 'node_reference_nid' => NULL],
+      1 => ['type' => 'node', 'node_reference_nid' => NULL],
+    ];
     $this->doubleOptIn = !empty($wizard->node->nid) && $this->hasDoubleOptIn();
   }
 
@@ -62,12 +77,12 @@ class ThankyouStep extends WizardStep {
   }
 
   protected function pageForm(&$form_state, $index, $title, $prefix) {
-    $field = &$this->referenceField['und'][$index];
+    $item = $this->fieldItems[$index] ?? ['type' => 'node'];
 
-    $type = $field['type'];
+    $type = $item['type'];
     $node = NULL;
-    if (isset($field['node_reference_nid'])) {
-      $node = node_load($field['node_reference_nid']);
+    if (isset($item['node_reference_nid'])) {
+      $node = node_load($item['node_reference_nid']);
     }
     if (!$node) {
       $node = $this->wizard->prepareNode($this->contentType);
@@ -132,7 +147,7 @@ class ThankyouStep extends WizardStep {
     $node_form['#tree'] = TRUE;
     $node_form['actions']['#access'] = FALSE;
 
-    $form['node_form'] =& $node_form;
+    $form['node_form'] = $node_form;
     $form['#attributes']['class'][] = 'thank-you-node-wrapper';
 
     $form['#tree'] = TRUE;
@@ -199,27 +214,20 @@ class ThankyouStep extends WizardStep {
     unset($form_state['values']);
     $action = $this->wizard->node;
 
-    // Be sure to always save two field items otherwise the thank you page
-    // is renumbered to 0.
-    $this->referenceField[LANGUAGE_NONE] += [
-      0 => ['type' => 'node', 'node_reference_nid' => NULL],
-      1 => ['type' => 'node', 'node_reference_nid' => NULL],
-    ];
-
     $thank_you_pages = array('thank_you_node' => Redirect::THANK_YOU_PAGE);
     if ($this->doubleOptIn) {
       $thank_you_pages['submission_node'] = Redirect::CONFIRMATION_PAGE;
     }
 
     foreach($thank_you_pages as $page => $index) {
-      $field = &$this->referenceField[LANGUAGE_NONE][$index];
-      $field['type'] = $values[$page]['type'];
+      $item = &$this->fieldItems[$index];
+      $item['type'] = $values[$page]['type'];
       if ($values[$page]['type'] == 'node') {
         $form_state['values'] =& $values[$page]['node_form'];
 
         $formObj = $form_state['embedded'][$page]['node_form']['formObject'];
         $formObj->submit($form, $form_state);
-        $field['node_reference_nid'] = $formObj->node()->nid;
+        $item['node_reference_nid'] = $formObj->node()->nid;
       }
     }
     // We completely ignore $node->webform['redirect'] and the redirect urls
@@ -231,10 +239,9 @@ class ThankyouStep extends WizardStep {
   }
 
   public function status() {
-    $items = $this->referenceField[LANGUAGE_NONE];
     $msg = [
       '#theme' => 'campaignion_wizard_thank_summary',
-      '#items' => $items,
+      '#items' => $this->fieldItems,
       '#node' => $this->wizard->node,
       '#double_optin' => $this->hasDoubleOptIn(),
     ];

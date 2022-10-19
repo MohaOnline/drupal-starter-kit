@@ -10,22 +10,32 @@ class AdminTitleTest extends \DrupalUnitTestCase {
    *
    * @var string
    */
-  public $publicTitle = 'Public title';
+  public $publicTitle = 'Public title &<>';
 
   /**
    * Default admin title.
    *
    * @var string
    */
-  public $adminTitle = 'Internal title';
+  public $adminTitle = 'Internal title &<>';
+
+  /**
+   * Create a stub node for testing.
+   */
+  protected function nodeStub() {
+    $node = (object) ['type' => 'petition', 'title' => $this->publicTitle];
+    $lang = field_language('node', $node, 'field_admin_title');
+    $node->field_admin_title[$lang][0]['value'] = $this->adminTitle;
+    $node->field_admin_title[$lang][0]['safe_value'] = check_plain($this->adminTitle);
+    return $node;
+  }
 
   /**
    * Test titles are set and public title is used on public paths.
    */
   public function testNodeLoadPublic() {
     campaignion_node_admin_path_is_admin(FALSE);
-    $node = (object) ['type' => 'petition', 'title' => $this->publicTitle];
-    $node->field_admin_title[FALSE][0]['safe_value'] = $this->adminTitle;
+    $node = $this->nodeStub();
 
     campaignion_node_admin_title_node_load([$node], 'petition');
     $this->assertEquals($node->title, $this->publicTitle);
@@ -40,8 +50,7 @@ class AdminTitleTest extends \DrupalUnitTestCase {
    */
   public function testNodeLoadAdmin() {
     campaignion_node_admin_path_is_admin(TRUE);
-    $node = (object) ['type' => 'petition', 'title' => $this->publicTitle];
-    $node->field_admin_title[FALSE][0]['safe_value'] = $this->adminTitle;
+    $node = $this->nodeStub();
 
     campaignion_node_admin_title_node_load([$node], 'petition');
     $this->assertEquals($node->title, $this->adminTitle);

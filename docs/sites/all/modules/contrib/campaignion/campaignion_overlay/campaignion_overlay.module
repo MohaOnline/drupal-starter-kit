@@ -54,7 +54,7 @@ function campaignion_overlay_views_pre_view(&$view, &$display_id, &$args) {
   // The prettier solution would be to do it the other way round (only add the
   // field_admin_title field if it is present), but that seems way more
   // complicated because the data structure in this hook is already processed.
-  if (!isset($view->field['field_admin_title'])) {
+  if ($view->field && !isset($view->field['field_admin_title'])) {
     $view->field['title']->options['exclude'] = FALSE;
   }
 }

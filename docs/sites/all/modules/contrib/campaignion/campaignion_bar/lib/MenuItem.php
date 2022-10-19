@@ -3,7 +3,7 @@
 namespace Drupal\campaignion_bar;
 
 function _campaignion_bar_sort_weight($a, $b) {
-  return $a->weight == $b->weight ? 0 : ( $a->weight > $b->weight ) ? 1 : -1;
+  return $a->weight == $b->weight ? 0 : (( $a->weight > $b->weight ) ? 1 : -1);
 }
 
 class MenuItem {

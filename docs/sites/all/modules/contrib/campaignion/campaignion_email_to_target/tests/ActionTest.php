@@ -31,12 +31,13 @@ class ActionTest extends \DrupalUnitTestCase {
     ] + $node_array);
     $type = Loader::instance()->type('email_to_target');
     $action = $this->getMockBuilder(Action::class)
-      ->setConstructorArgs([$type->parameters, $node, $api])
+      ->disableOriginalConstructor()
       ->setMethods(['getOptions', 'getExclusion', 'getMessage'])
       ->getMock();
     $action->method('getOptions')->will($this->returnValue([
       'dataset_name' => 'test_dataset',
     ]));
+    $action->__construct($type->parameters, $node, $api);
     $submission_o = $this->getMockBuilder(Submission::class)
       ->disableOriginalConstructor()
       ->getMock();

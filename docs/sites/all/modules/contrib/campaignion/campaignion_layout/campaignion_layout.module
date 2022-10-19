@@ -180,6 +180,7 @@ function campaignion_layout_form_node_form_alter(&$form, &$form_state) {
  */
 function campaignion_layout_campaignion_layout_dependent_fields() {
   $dependent_fields['layout_background_image'] = TRUE;
+  $dependent_fields['layout_headline'] = TRUE;
   return $dependent_fields;
 }
 

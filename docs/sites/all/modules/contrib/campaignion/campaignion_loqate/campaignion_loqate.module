@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations callbacks for this module.
+ */
+
+use \Drupal\manual_direct_debit_uk\AccountDataController;
+
+/**
+ * Implements hook_payment_forms_payment_form_alter().
+ */
+function campaignion_loqate_payment_forms_payment_form_alter(&$form, \Payment $payment) {
+  if (!($payment->method->controller instanceof AccountDataController)) {
+    return;
+  }
+  if (!($key = variable_get_value('campaignion_loqate_api_key'))) {
+    return;
+  }
+  $settings['sortCodeEndpoint'] = 'https://api.addressy.com/BankAccountValidation/Interactive/RetrieveBySortcode/v1.00/json3.ws';
+  $settings['accountEndpoint'] = 'https://api.addressy.com/BankAccountValidation/Interactive/Validate/v2.00/json3.ws';
+  $settings['key'] = $key;
+  $js_settings['type'] = 'setting';
+  $js_settings['data']['loqate'] = $settings;
+  $form['#attached']['js'][] = $js_settings;
+  $form['#after_build'][] = '_campaignion_loqate_add_rules';
+}
+
+function _campaignion_loqate_add_rules(array $element, array &$form_state) {
+  $rules[$element['bank_code']['#name']]['loqateSortCode'] = TRUE;
+  $rules[$element['bank_code']['#name']]['messages']['loqateSortCode'] = t('Please enter a valid sort code.');
+  $rules[$element['account']['#name']]['loqateAccount']['sortCodeElement'] = "#{$element['bank_code']['#id']}";
+  $rules[$element['account']['#name']]['messages']['loqateAccount'] = t('Please enter a valid account number.');
+  $settings['clientsideValidation']['forms'][$form_state['complete form']['#id']]['rules'] = $rules;
+  $element['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => $settings,
+  ];
+  return $element;
+}

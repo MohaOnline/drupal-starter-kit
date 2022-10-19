@@ -1,0 +1,15 @@
+name = Loqate
+description = Loqate validation for sort code and account number in webforms.
+core = 7.x
+
+dependencies[] = clientside_validation:clientside_validation
+dependencies[] = manual_direct_debit_uk
+dependencies[] = variable
+
+scripts[] = campaignion_loqate.min.js
+
+; Information added by Drupal.org packaging script on 2022-09-13
+version = "7.x-2.32"
+core = "7.x"
+project = "campaignion"
+datestamp = "1663071043"

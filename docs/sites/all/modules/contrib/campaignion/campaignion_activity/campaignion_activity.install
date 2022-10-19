@@ -163,6 +163,36 @@ function campaignion_activity_uninstall() {
 }
 
 /**
+ * Implements hook_update_dependencies().
+ */
+function campaignion_activity_update_dependencies() {
+  $dependencies = [];
+  // Nothing to do if the webform_confirm_email module wasn’t enabled before.
+  if (drupal_get_installed_schema_version('webform_confirm_email') != SCHEMA_UNINSTALLED) {
+    $dependencies['campaignion_activity'][10]['webform_confirm_email'] = 7211;
+  }
+  return $dependencies;
+}
+
+/**
+ * Update webform_submissions.confirmed based on activity data.
+ */
+function campaignion_activity_update_10() {
+  // Nothing to do if the webform_confirm_email module wasn’t enabled before.
+  if (drupal_get_installed_schema_version('webform_confirm_email') == SCHEMA_UNINSTALLED) {
+    return;
+  }
+  $sql = <<<SQL
+UPDATE {webform_submissions} s
+  INNER JOIN {campaignion_activity_webform} caw USING(nid, sid)
+  INNER JOIN {campaignion_activity} ca USING(activity_id)
+SET s.confirmed=caw.confirmed
+WHERE s.confirmed IS NOT NULL
+SQL;
+  db_query($sql);
+}
+
+/**
  * Remove newsletter activities.
  */
 function campaignion_activity_update_9() {

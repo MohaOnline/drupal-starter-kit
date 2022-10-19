@@ -90,15 +90,18 @@ DELETE wsd
 FROM {webform_submitted_data} wsd
   INNER JOIN {webform_component} wc USING(nid, cid)
   INNER JOIN {tmp_pseudo_addresses} USING(nid, sid)
-WHERE wc.form_key<>'email'
+WHERE wc.form_key NOT IN ('email', 'donation_amount')
 SQL;
     db_query($sql_delete_submitted_data);
 
     $sql_anonymize_email = <<<SQL
 UPDATE {webform_submitted_data} wsd
+  INNER JOIN {webform_component} wc USING(nid, cid)
   INNER JOIN {tmp_pseudo_addresses} t USING(nid, sid)
 SET wsd.data=t.email
-WHERE wsd.data NOT LIKE '%@deleted' AND wsd.data NOT LIKE '%@form-submission';
+WHERE wsd.data NOT LIKE '%@deleted'
+  AND wsd.data NOT LIKE '%@form-submission'
+  AND wc.form_key ='email';
 SQL;
     db_query($sql_anonymize_email);
 

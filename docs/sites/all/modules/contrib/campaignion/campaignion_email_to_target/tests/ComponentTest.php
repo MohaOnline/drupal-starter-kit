@@ -14,6 +14,12 @@ class ComponentTest extends \DrupalUnitTestCase {
    * New Component with all methods mocked that would need database access.
    */
   protected function mockComponent($pairs, $options = []) {
+    $node = (object) [
+      'type' => 'email_to_target',
+      'tnid' => NULL,
+      'nid' => NULL,
+      'uuid' => 'stub-uuid',
+    ];
     $action = $this->getMockBuilder(Action::class)
       ->disableOriginalConstructor()
       ->setMethods(['channel', 'getOptions', 'targetMessagePairs'])
@@ -25,13 +31,8 @@ class ComponentTest extends \DrupalUnitTestCase {
     ]);
     $action->method('targetMessagePairs')->willReturn($pairs);
     $action->method('channel')->willReturn($this->createMock(Email::class));
-    $node = (object) [
-      'type' => 'email_to_target',
-      'tnid' => NULL,
-      'nid' => NULL,
-      'uuid' => 'stub-uuid',
-      'action' => $action,
-    ];
+    $action->__construct([], $node, $this->createMock(Client::class));
+    $node->action = $action;
     node_object_prepare($node);
     $submission_o = $this->getMockBuilder(Submission::class)
       ->disableOriginalConstructor()
@@ -132,7 +133,8 @@ class ComponentTest extends \DrupalUnitTestCase {
       ->setMethods(['mail'])
       ->disableOriginalConstructor()
       ->getMock();
-    $channel->expects($this->once())->method('mail');
+    $channel->expects($this->once())->method('mail')
+      ->willReturn(['result' => TRUE]);
     $component->sendEmails($serialized_messages, $submission, $channel);
   }
 

@@ -1,0 +1,32 @@
+{
+  "name": "drupal-campaignion-loqate",
+  "version": "0.0.0",
+  "description": "JavaScript behavior for the loqate integration.",
+  "license": "MIT",
+  "type": "module",
+  "source": "src/main.js",
+  "main": "dist/main.cjs",
+  "module": "dist/main.js",
+  "exports": "../campaignion_loqate.min.js",
+
+  "scripts": {
+    "dev": "microbundle watch",
+    "dist": "microbundle",
+    "drupal": "yarn dist && cp dist/main.umd.js ../campaignion_loqate.min.js",
+    "test": "mocha --require @babel/register --ui tdd --reporter dot test",
+    "lint": "eslint src",
+    "fix": "eslint --fix src/**/*.js"
+  },
+  "devDependencies": {
+    "@moreonion/js-utils": "^0.1.2",
+    "core-js": "3",
+    "eslint": "^7.12.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.0.0",
+    "microbundle": "^0.14.2",
+    "mocha": "^9.2.0",
+    "sinon": "^13.0.1"
+  }
+}

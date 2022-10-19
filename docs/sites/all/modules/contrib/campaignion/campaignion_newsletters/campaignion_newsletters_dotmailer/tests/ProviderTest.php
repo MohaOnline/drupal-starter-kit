@@ -120,7 +120,7 @@ class ProviderTest extends DrupalUnitTestCase {
    */
   public function testUnsubscribe401() {
     list($provider, $api) = $this->mockProvider();
-    $api->method('get')->willReturn(TRUE);
+    $api->method('get')->willReturn(['id' => 'foo']);
     $api->method('delete')->will($this->throwException(new ApiError('dotmailer', 'Access denied', [], 401)));
     $this->expectException(ApiError::class);
     $list = new NewsletterList(['identifier' => 'mock_list']);

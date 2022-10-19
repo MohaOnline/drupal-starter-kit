@@ -8,9 +8,10 @@ dependencies[] = little_helpers:little_helpers (>=2.0-alpha10)
 features[features_api][] = api:2
 features[field_base][] = layout
 features[field_base][] = layout_background_image
+features[field_base][] = layout_headline
 
-; Information added by Drupal.org packaging script on 2022-03-15
-version = "7.x-2.29"
+; Information added by Drupal.org packaging script on 2022-09-13
+version = "7.x-2.32"
 core = "7.x"
 project = "campaignion"
-datestamp = "1647361549"
+datestamp = "1663071043"

@@ -79,7 +79,7 @@ function campaignion_node_admin_title_node_load($nodes, $types) {
     $node->public_title = $node->title;
     $node->admin_title = '';
     if ($field = field_get_items('node', $node, 'field_admin_title')) {
-      $node->admin_title = $field[0]['safe_value'];
+      $node->admin_title = $field[0]['value'];
     }
     if (campaignion_node_admin_path_is_admin() && $node->admin_title) {
       $node->title = $node->admin_title;

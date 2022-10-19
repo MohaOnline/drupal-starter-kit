@@ -117,20 +117,22 @@ class ActionBase {
   public function redirect(Submission $submission, $delta) {
     $field = $this->parameters['thank_you_page']['reference'];
 
-    $item = field_get_items('node', $this->node, $field)[$delta];
-    switch ($item['type']) {
-      case 'node':
-        $o = ['query' => [], 'fragment' => ''];
-        return ["node/{$item['node_reference_nid']}", $o];
+    $items = field_get_items('node', $this->node, $field);
+    if ($item = $items[$delta] ?? NULL) {
+      switch ($item['type']) {
+        case 'node':
+          $o = ['query' => [], 'fragment' => ''];
+          return ["node/{$item['node_reference_nid']}", $o];
 
-      case 'redirect':
-        $redirects = Redirect::byNid($this->node->nid, $delta);
-        foreach ($redirects as $r) {
-          if ($r->checkFilters($submission)) {
-            return $r->normalized();
+        case 'redirect':
+          $redirects = Redirect::byNid($this->node->nid, $delta);
+          foreach ($redirects as $r) {
+            if ($r->checkFilters($submission)) {
+              return $r->normalized();
+            }
           }
-        }
-        break;
+          break;
+      }
     }
   }
 

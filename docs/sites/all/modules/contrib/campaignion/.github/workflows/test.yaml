@@ -7,16 +7,20 @@ on:
 jobs:
   phpunit:
     runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        php-versions: ["7.3", "7.4"]
+    name: phpunit on PHP ${{ matrix.php-versions }}
     env:
       DB_DATABASE: drupal
       DB_USER: root
       DB_PASSWORD: root
     steps:
     - uses: actions/checkout@v2
-    - name: "Setup PHP 7.3"
+    - name: Setup PHP ${{ matrix.php-versions }}
       uses: shivammathur/setup-php@v2
       with:
-        php-version: "7.3"
+        php-version: ${{ matrix.php-versions }}
     - name: Start MySQL
       run: |
         sudo systemctl start mysql
@@ -40,10 +44,10 @@ jobs:
       run: |
         mkdir -p $COMPOSER_HOME
         cd $COMPOSER_HOME
-        composer require drush/drush:8.1.* phpunit/phpunit:^8 torotil/upal:2.0.0-RC1
+        composer require drush/drush:8.3.* phpunit/phpunit:^8 torotil/upal:2.0.0-RC1
     - name: Bootstrap drupal
       run: |
-        php -d sendmail_path=`which true` $COMPOSER_HOME/vendor/bin/drush.php --yes core-quick-drupal --core=drupal-7.69 --profile=testing --no-server --db-url=mysql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@127.0.0.1:3306/${{ env.DB_DATABASE }} --root=$ROOT
+        php -d sendmail_path=`which true` $COMPOSER_HOME/vendor/bin/drush.php --yes core-quick-drupal --core=drupal-7.82 --profile=testing --no-server --db-url=mysql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@127.0.0.1:3306/${{ env.DB_DATABASE }} --root=$ROOT
         ln -s $REPO $ROOT/sites/all/modules/module_under_test
         cd $ROOT
         curl https://www.drupal.org/files/issues/1891356-drupal_static_reset-on-module-changes-30-D7.patch | patch -p1
