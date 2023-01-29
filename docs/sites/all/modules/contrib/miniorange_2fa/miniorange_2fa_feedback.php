@@ -11,14 +11,13 @@ use Drupal\Core\Controller\ControllerBase;
 			//code to send email alert
         $reason = isset($_POST['deactivate_plugin']) ? $_POST['deactivate_plugin'] : "";
 		$q_feedback = $_POST['query_feedback'];
-      if(isset($_POST['miniorange_feedback_submit'])) {
+        if(isset($_POST['miniorange_feedback_submit'])) {
 
         $email = !empty(variable_get('mo_auth_customer_admin_email', '')) ? variable_get('mo_auth_customer_admin_email', '') : $_POST['miniorange_feedback_email'];
 
         $message = '<br><b>Reason: </b>' . $reason . '<br><b>Feedback: </b>' . $q_feedback;
 
         $url = 'https://login.xecurify.com/moas/api/notify/send';          //get_option( 'mo2f_host_name' ) . '/moas/api/notify/send';
-        $ch = curl_init($url);
 
         if (valid_email_address($email)) {
 
@@ -31,12 +30,6 @@ use Drupal\Core\Controller\ControllerBase;
             $apikey = "fFd2XcvTGDemZvbw1bcUesNJWEqKbbUq";
           }
 
-          $currentTimeInMillis = get_2fa_timestamp();
-          $stringToHash = $customerKey . $currentTimeInMillis . $apikey;
-          $hashValue = hash("sha512", $stringToHash);
-          $customerKeyHeader = "Customer-Key: " . $customerKey;
-          $timestampHeader = "Timestamp: " . $currentTimeInMillis;
-          $authorizationHeader = "Authorization: " . $hashValue;
           $fromEmail = $email;
           $query = '[Drupal-7 2FA Module]: ' . $message;
 
@@ -59,23 +52,8 @@ use Drupal\Core\Controller\ControllerBase;
           );
 
           $field_string = json_encode($fields);
-
-                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($ch, CURLOPT_ENCODING, "");
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);    # required for https urls
-                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-                curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", $customerKeyHeader, $timestampHeader, $authorizationHeader));
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $field_string);
-                $content = curl_exec($ch);
-
-          if (curl_errno($ch)) {
-            return json_encode(array("status" => 'ERROR', 'statusMessage' => curl_error($ch)));
-          }
-          curl_close($ch);
+          $response = MoAuthUtilities::callService($customerKey, $apikey, $url, $field_string);
+          return $response;
         }
       }
 		}
@@ -250,41 +228,3 @@ use Drupal\Core\Controller\ControllerBase;
 
 		echo $hidden_2fa_Field;
 	}
-
-
-	function get_2fa_timestamp() {
-		$url = 'https://login.xecurify.com/moas/rest/mobile/get-timestamp';
-		$ch  = curl_init( $url );
-
-		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
-		curl_setopt( $ch, CURLOPT_ENCODING, "" );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_AUTOREFERER, true );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYPEER, false );
-		curl_setopt( $ch, CURLOPT_SSL_VERIFYHOST, false ); // required for https urls
-
-		curl_setopt( $ch, CURLOPT_MAXREDIRS, 10 );
-
-		curl_setopt( $ch, CURLOPT_POST, true );
-
-		if ( defined( 'WP_PROXY_HOST' ) && defined( 'WP_PROXY_PORT' ) && defined( 'WP_PROXY_USERNAME' ) && defined( 'WP_PROXY_PASSWORD' ) ) {
-			curl_setopt( $ch, CURLOPT_PROXY, WP_PROXY_HOST );
-			curl_setopt( $ch, CURLOPT_PROXYPORT, WP_PROXY_PORT );
-			curl_setopt( $ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC );
-			curl_setopt( $ch, CURLOPT_PROXYUSERPWD, WP_PROXY_USERNAME . ':' . WP_PROXY_PASSWORD );
-		}
-
-		$content = curl_exec( $ch );
-
-		if ( curl_errno( $ch ) ) {
-			echo 'Error in sending curl Request';
-			exit ();
-		}
-		curl_close( $ch );
-
-		if(empty( $content )){
-			$currentTimeInMillis = round( microtime( true ) * 1000 );
-			$currentTimeInMillis = number_format( $currentTimeInMillis, 0, '', '' );
-		}
-		return empty( $content ) ? $currentTimeInMillis : $content;
-}

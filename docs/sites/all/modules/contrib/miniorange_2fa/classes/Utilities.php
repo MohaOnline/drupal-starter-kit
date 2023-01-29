@@ -204,31 +204,6 @@ class MoAuthUtilities {
         return TRUE;
     }
 
-    public static function get_timestamp() {
-    $url = MoAuthConstants::getBaseUrl() . '/rest/mobile/get-timestamp';
-    $ch = curl_init ( $url );
-
-    curl_setopt ( $ch, CURLOPT_FOLLOWLOCATION, true );
-    curl_setopt ( $ch, CURLOPT_ENCODING, "" );
-    curl_setopt ( $ch, CURLOPT_RETURNTRANSFER, true );
-    curl_setopt ( $ch, CURLOPT_AUTOREFERER, true );
-    curl_setopt ( $ch, CURLOPT_SSL_VERIFYPEER, false );
-    curl_setopt ( $ch, CURLOPT_SSL_VERIFYHOST, false ); // required for https urls
-
-    curl_setopt ( $ch, CURLOPT_MAXREDIRS, 10 );
-
-    curl_setopt ( $ch, CURLOPT_POST, true );
-
-    $content = curl_exec ( $ch );
-
-    if (curl_errno ( $ch )) {
-        echo 'Error in sending curl Request';
-        exit ();
-    }
-    curl_close ( $ch );
-    return $content;
-    }
-
     public static function getHiddenEmail($email) {
         $split = explode("@", $email);
         if (count($split) == 2) {
@@ -248,7 +223,7 @@ class MoAuthUtilities {
         return $indented;
     }
 
-    public static function callService($customer_id, $apiKey, $url, $json) {
+    public static function callService($customer_id, $apiKey, $url, $json,$json_decode=true) {
         if (! self::isCurlInstalled()) {
           return json_encode(array (
             "status" => 'CURL_ERROR',
@@ -256,45 +231,32 @@ class MoAuthUtilities {
           ));
         }
 
-        $ch = curl_init($url);
+        $currentTimeInMillis = round(microtime(true) * 1000);
+        $currentTimeInMillis = number_format($currentTimeInMillis, 0, '', '');
 
-        $current_time_in_millis = round(microtime(TRUE) * 1000);
+        $string_to_hash = $customer_id .$currentTimeInMillis . $apiKey;
+        $hashValue = hash("sha512", $string_to_hash);
+        $timestamp_header = number_format($currentTimeInMillis, 0, '', '' );
+        $header=array(
+          'Content-Type'=>'application/json',
+          'charset'=>'UTF - 8',
+          "Customer-Key"=>$customer_id,
+          "Timestamp"=>$timestamp_header,
+          "Authorization"=>$hashValue
+        );
 
-        $string_to_hash = $customer_id . number_format($current_time_in_millis, 0, '', '') . $apiKey;
-        $hash_value = hash("sha512", $string_to_hash);
-
-        $customer_key_header = "Customer-Key: " . $customer_id;
-        $timestamp_header = "Timestamp: " . number_format($current_time_in_millis, 0, '', '');
-        $authorization_header = "Authorization: " . $hash_value;
-
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-        curl_setopt($ch, CURLOPT_ENCODING, "");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-        curl_setopt($ch, CURLOPT_AUTOREFERER, TRUE);
-        // Required for https urls.
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-        curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array (
-          "Content-Type: application/json",
-          $customer_key_header,
-          $timestamp_header,
-          $authorization_header
-        ));
-        curl_setopt($ch, CURLOPT_POST, TRUE);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-        $content = curl_exec($ch);
-        // $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if (curl_errno($ch)) {
-          return json_encode(array (
-            "status" => 'CURL_ERROR',
-            "message" => curl_errno($ch)
-          ));
-        }
-        curl_close($ch);
-        return json_decode($content);
+        $response = drupal_http_request($url,[
+          'data' => $json,
+          'method'=>'POST',
+          'allow_redirects' => TRUE,
+          'http_errors' => FALSE,
+          'decode_content'  => true,
+          'verify' => FALSE,
+          'headers' =>$header
+        ]);
+        if($json_decode)
+        return json_decode($response->data);
+        return $response->data;
     }
 
   /**
@@ -448,22 +410,16 @@ class MoAuthUtilities {
    * Function to get the client IP address
    */
   static function get_client_ip() {
-    $ipaddress = '';
-    if (getenv('HTTP_CLIENT_IP'))
-      $ipaddress = getenv('HTTP_CLIENT_IP');
-    else if(getenv('REMOTE_ADDR'))
-      $ipaddress = getenv('REMOTE_ADDR');
-    else if(getenv('HTTP_X_FORWARDED_FOR'))
-      $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
-    else if(getenv('HTTP_X_FORWARDED'))
-      $ipaddress = getenv('HTTP_X_FORWARDED');
-    else if(getenv('HTTP_FORWARDED_FOR'))
-      $ipaddress = getenv('HTTP_FORWARDED_FOR');
-    else if(getenv('HTTP_FORWARDED'))
-      $ipaddress = getenv('HTTP_FORWARDED');
-    else
-      $ipaddress = 'UNKNOWN';
+    $ip_retrieve_parameters = variable_get('mo_auth_fetch_ip_parameters_order', self::getDefaultIPRetrieveParamaters());
+    $ip_retrieve_parameters_array = explode(';', $ip_retrieve_parameters);
 
+    $ipaddress = 'UNKNOWN';
+    foreach ($ip_retrieve_parameters_array as $parameter){
+      if(getenv(trim($parameter))){
+        $ipaddress = getenv($parameter);
+        break;
+      }
+    }
     return $ipaddress;
   }
 
@@ -494,6 +450,16 @@ class MoAuthUtilities {
           watchdog('miniorange_2fa', 'Error in deleting end user.');
 
       }
+  }
+
+
+  public static function getDefaultIPRetrieveParamaters(){
+    //creating the string to show parameters used to fetch IP
+    $IP_retrieve_parameters = '';
+    foreach (MoAuthConstants::$IP_RETRIEVE_PARAMETERS as $PARAMETER){
+      $IP_retrieve_parameters .= $PARAMETER . ';';
+    }
+    return $IP_retrieve_parameters;
   }
 
 }

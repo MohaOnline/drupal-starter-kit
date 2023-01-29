@@ -315,7 +315,7 @@ function mo_auth_inline_registration_page_two($form, &$form_state, $success_form
     $user_creation_limit_exceeded = $form_state['storage']['user_limit_exceeded'];
   }
   if ( $user_creation_limit_exceeded ) {
-     $message = t('Something went wrong. Please contact your administrator.');
+     $message = t( 'Something went wrong. Please contact your administrator.');
   }
   elseif ($success_form === TRUE && ! isset($form['mo_auth_verify_token'])) {
     $message = t('We have sent an one time passcode (OTP) to ' . $email . '. Enter the passcode to verify your email.');
@@ -728,7 +728,6 @@ function handle_page_four_submit($form, &$form_state) {
 
 	 $auth_api_handler = new AuthenticationAPIHandler($customer->getCustomerID(), $customer->getAPIKey());
    $response = $auth_api_handler->challenge($miniorange_user);
-
 	 if ( $response->status == 'SUCCESS' ) {
 	  $form_state['storage']['page_otp_validate'] = TRUE;
 	  $form_state['storage']['page_four_values'] = $form_state['values'];
@@ -736,7 +735,7 @@ function handle_page_four_submit($form, &$form_state) {
       return;
 	 }elseif ( $response->status == 'FAILED' ) {
 		 $error = $response->message;
-
+    
 		 /* If transactions limit exceeded return to the same form */
 		 if ( $error == 'The phone verification transaction limit has been exceeded. Please upgrade your premium plan.' ) {
              form_set_error('form', t('Something went wrong. Please contact your administrator.' ) );

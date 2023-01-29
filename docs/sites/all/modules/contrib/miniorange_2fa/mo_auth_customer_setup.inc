@@ -24,7 +24,8 @@ function mo_auth_customer_setup($form, &$form_state) {
             '#type' => 'textfield',
             '#title' => t('Please enter the OTP you received<span style="color: red">*</span>'),
             '#attributes' => array(
-                'autofocus' => 'true'
+                'autofocus' => 'true',
+                'style' => 'width:50%'
             ),
         );
         $form['mo_auth_customer_validate_otp_button'] = array (
@@ -207,7 +208,8 @@ function mo_auth_customer_setup($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Email<span class = "mo2f_red_color_star">*</span>'),
         '#attributes' => array (
-            'autofocus' => 'true'
+            'autofocus' => 'true',
+            'style' => 'width:50%'
         ),
     );
 
@@ -215,13 +217,13 @@ function mo_auth_customer_setup($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Phone'),
         '#id' => 'query_phone',
-        '#attributes' => array('class'=>array('query_phone'),),
-        '#description' => t('<strong>Note:</strong> Enter your phone number with country code (eg. +1xxxxxx )'),
+        '#attributes' => array('class'=>array('query_phone'), 'style' => 'width:50%'),
+        '#description' => t('Enter your phone number with country code (eg. +1xxxxxx )'),
     );
 
     $form['mo_auth_customer_setup_password'] = array (
         '#type' => 'password_confirm',
-        '#description' => t('<strong>Note:</strong> Enter your password with minimum length of 6.')
+        '#description' => t('Enter your password with minimum length of 6.')
     );
 
     $form['mo_auth_customer_setup_button'] = array (

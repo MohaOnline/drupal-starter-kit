@@ -14,14 +14,14 @@ function mo_auth_menu() {
         'title' => 'miniOrange Two-Factor Authentication',
         'description' => 'Configure Two-Factor Authentication settings for your site.',
         'page callback' => 'drupal_get_form',
-        'page arguments' => array('mo_auth_customer_setup'),
         'access arguments' => array('administer site configuration'),
+        'page arguments' => array('mo_auth_customer_setup'),
         'file' => 'mo_auth_customer_setup.inc',
     );
 
     $items['admin/config/people/mo_auth/customer_setup'] = array(
         'title' => 'Register/Login',
-        'weight' => -5,
+        'weight' => -6,
         'type' => MENU_DEFAULT_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('mo_auth_customer_setup'),
@@ -30,7 +30,7 @@ function mo_auth_menu() {
 
     $items['admin/config/people/mo_auth/setup'] = array(
         'title' => 'Setup Two-Factor',
-        'weight' => -4,
+        'weight' => -5,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('mo_auth_setup_twofactor'),
@@ -40,25 +40,25 @@ function mo_auth_menu() {
 
     $items['admin/config/people/mo_auth/login_settings'] = array(
         'title' => 'Login Settings',
-        'weight' => -3,
+        'weight' => -4,
         'type' => MENU_LOCAL_TASK,
-        'access arguments' => array('administer site configuration'),
+        'access arguments' => array('administer login settings tab'),
         'page arguments' => array('mo_auth_login_settings'),
         'file' => 'mo_auth_login_settings.inc',
     );
 
-  $items['admin/config/people/mo_auth/user_management'] = array(
-    'title' => 'User Management',
-    'weight' => -2,
-    'type' => MENU_LOCAL_TASK,
-    'access arguments' => array('administer site configuration'),
-    'page arguments' => array('mo_auth_user_management'),
-    'file' => 'mo_auth_user_management.inc',
-  );
+    $items['admin/config/people/mo_auth/user_management'] = array(
+        'title' => 'User Management',
+        'weight' => -3,
+        'type' => MENU_LOCAL_TASK,
+        'access arguments' => array('administer user management tab'),
+        'page arguments' => array('mo_auth_user_management'),
+        'file' => 'mo_auth_user_management.inc',
+    );
 
     $items['admin/config/people/mo_auth/licensing'] = array(
         'title' => 'Upgrade Plans',
-        'weight' => -1,
+        'weight' => -2,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
         'page arguments' => array('mo_auth_licensing'),
@@ -453,11 +453,6 @@ function mo_auth_form_alter_submit(&$form, &$form_state,$username = '', $rba_inv
       }
 
       $isUserAdmin = is_array($user->roles) && (in_array('administrator', $user->roles) || in_array('admin', $user->roles));
-      $remember_device = variable_get('mo_auth_remember_device','Not_Allowed') == 'Not_Allowed' ? false : true;
-      //Remember device enabled and user not loggin for the first time and only second factor enabled and backdoor url is used and enabled
-      if ( !empty($user->miniorange_registered_email) && $remember_device && !variable_get('mo_auth_two_factor_instead_password') && moIsBackdoorUrlEnabled( $isUserAdmin ) === TRUE ) {
-        MoAuthUtilities::mo2f_collect_device_attributes_handler($username);
-      }
     }
 
     if(  moIsBackdoorUrlEnabled( $isUserAdmin ) ) {
@@ -501,7 +496,15 @@ function mo_auth_form_alter_submit(&$form, &$form_state,$username = '', $rba_inv
         $TFARequired = MoAuthUtilities::check_roles_to_invoke_2fa($roles) && MoAuthUtilities::check_domain_to_invoke_2fa($user->mail);
       }
 
+
         if( variable_get('mo_auth_two_factor_instead_password') == true  || $TFARequired ) {
+
+          $remember_device = variable_get('mo_auth_remember_device','Not_Allowed') == 'Not_Allowed' ? false : true;
+          //Remember device enabled and user not login for the first time and only second factor enabled and backdoor url is used and enabled
+          if ( $rba_invoke_2fa == false && !empty($user->miniorange_registered_email) && $remember_device && !variable_get('mo_auth_two_factor_instead_password') && moIsBackdoorUrlEnabled( $isUserAdmin ) === TRUE ) {
+            MoAuthUtilities::mo2f_collect_device_attributes_handler($username);
+          }
+
           if (!empty($user->miniorange_registered_email)) {
             $user_email = $user->miniorange_registered_email[LANGUAGE_NONE][0]['value'];
             $license_type = variable_get('mo_auth_2fa_license_type', 'DEMO');
@@ -520,7 +523,13 @@ function mo_auth_form_alter_submit(&$form, &$form_state,$username = '', $rba_inv
               } else {
                 $link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
                 $link = str_replace("/node?destination=node", '', $link);
-                $form_state['redirect'] = $link . '/?need_second_factor_pass=1&uid=' . $user->uid . '';
+
+                if (strpos($link, '?')){
+                  $form_state['redirect'] = $link . '&need_second_factor_pass=1&uid=' . $user->uid . '';
+                }
+                else{
+                  $form_state['redirect'] = $link . '/?need_second_factor_pass=1&uid=' . $user->uid . '';
+                }
               }
               unset($form_state['storage']);
               drupal_goto($form_state['redirect']);
@@ -825,4 +834,22 @@ function mo_auth_collectattributes()
 
     //hook_form_alter_submit call for invoking 2FA
     mo_auth_form_alter_submit($form, $form_state, $username, true);
+}
+
+/**
+ * Invoke permission hook to give access of tab's depending on the roles
+ */
+function mo_auth_permission() {
+  return array(
+      'administer login settings tab' => array(
+          'title' => t('Login Settings Tab'),
+          'description' => t('Manage 2FA configurations for the entire site. This includes enabling/disabling 2FA for user accounts, changing the settings related to the role/domain-based 2FA, allowed 2FA methods, change/re-configure 2FA, and many more.'),
+          'restrict access' => TRUE,
+      ),
+      'administer user management tab' => array(
+          'title' => t('User Management Tab'),
+          'description' => t('Manage all users 2FA. This includes reset 2FA for user accounts.'),
+          'restrict access' => TRUE,
+      ),
+  );
 }

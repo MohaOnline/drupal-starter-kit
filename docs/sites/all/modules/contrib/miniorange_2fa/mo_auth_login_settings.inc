@@ -36,7 +36,7 @@
    $form['mo_auth_redirect_user_after_login'] = array(
      '#type' => 'textfield',
      '#default_value' => variable_get('mo_auth_redirect_after_login', ''),
-     '#attributes' => array('style' => 'width:700px', 'placeholder' => 'Enter the redirect URL'),
+     '#attributes' => array('style' => 'width:85%', 'placeholder' => 'Enter the redirect URL'),
      '#description' => t('<strong>Note: </strong>Enter the entire URL (<em> including https:// </em>) where you want to redirect user after login.'),
      '#disabled' => $disabled,
      '#prefix' => '<br><br><div><div class="mo2f-setup-header"><div class="mo2f-setup-header-top-left">Redirect user after login</div>
@@ -306,6 +306,26 @@
      '#description' => t('<strong>Note:</strong> If you whitelist the IPs then second factor authentication will not be invoked for those IPs.'),
    );
 
+   //creating the string to show parameters used to fetch IP
+   $IP_retrieve_parameters = MoAuthUtilities::getDefaultIPRetrieveParamaters();
+   $form['mo_auth_fetch_ip_parameters_order'] = array(
+     '#type' => 'textarea',
+     '#default_value' => variable_get('mo_auth_fetch_ip_parameters_order', $IP_retrieve_parameters),
+     '#disabled' => $is_free,
+     '#attributes' => array('placeholder' => t('Enter semicolon(;) separated IP Fetch parameters'),),
+     '#description' => '<strong>Note: </strong>The above parameters are used to retrieve the IP address against which the configured IP should be compared to whitelist. It should include '. $IP_retrieve_parameters
+                        . '<br>Change the order of the parameters as per your environment requirement. The first parameter in the entered order will be used to fetch the IP first and so on.',
+     '#states' => array('disabled' => array(':input[name = "mo_auth_two_factor_invoke_2fa_depending_upon_IP"]' => array('checked' => FALSE ), ),),
+   );
+
+   $form['mo_auth_reset_ip_retrieve_parameter'] = array(
+     '#type' => 'submit',
+     '#value' => t('Reset'),
+     '#disabled' => $disabled,
+     '#submit' => array('reset_ip_retrieve_parameter'),
+     '#suffix' => '<br>',
+   );
+
    $form['mo_auth_two_factor_whitelist_IP'] = array(
      '#type' => 'textarea',
      '#default_value' => variable_get('mo_auth_two_factor_whitelist_IP', ''),
@@ -429,7 +449,7 @@
      '#title' => t('Change Google Authenticator account name'),
      '#default_value' =>  variable_get('mo_auth_google_auth_app_name') == '' ? 'miniOrangeAuth' : urldecode( variable_get('mo_auth_google_auth_app_name') ),
      '#attributes' => array(
-       'style' => 'width:100%',
+       'style' => 'width:85%',
        //'pattern' => '^[a-zA-Z0-9@#$&()-_.]+$',
      ),
      '#disabled' => $disabled,
@@ -441,7 +461,7 @@
      '#type' => 'textfield',
      '#title'=>t('Enter your custom xecurify domain'),
      '#default_value' => variable_get('mo_auth_customer_domain_name','login'),
-     '#attributes' => array('style' => 'width:700px', 'placeholder' => 'Enter the redirect URL'),
+     '#attributes' => array('style' => 'width:85%', 'placeholder' => 'Enter the redirect URL'),
      '#description' => t('<strong>Note: </strong>Enter the branding name you have configured on our server ( Xecurify dashboard ). If you haven\'t already configured the branding keep the default value as <strong>login.</strong>'),
      '#disabled' => $disabled,
        '#prefix' => '<hr>',
@@ -474,11 +494,10 @@
          '#type' => 'textfield',
          '#title'=>t('Customize backdoor URL'),
          '#default_value' => $backdoor_query,
-         '#attributes' => array('style' => 'width:300px',),
+         '#attributes' => array('style' => 'width:85%',),
          '#disabled' => $disabled,
          '#suffix' => '<br>',
      );
-
 
        //RBA- Remember device feature
       $form['mo_auth_remember_device'] = array(
@@ -586,7 +605,7 @@
    }
 
 
-   /*
+   /**
     * Whitelist IP's
     * */
    $enableWhitelistIP = isset( $form['mo_auth_two_factor_invoke_2fa_depending_upon_IP']['#value'] ) && $form['mo_auth_two_factor_invoke_2fa_depending_upon_IP']['#value'] == 1 ? TRUE : FALSE;
@@ -601,6 +620,11 @@
    }
 
    variable_set('mo_auth_two_factor_whitelist_IP', $whitelistedIPs);
+
+   //creating the string to show parameters used to fetch IP
+   $default_IP_retrieve_parameters = MoAuthUtilities::getDefaultIPRetrieveParamaters();
+   $ip_retrieve_parameter = isset($form['mo_auth_fetch_ip_parameters_order']['#value']) ? $form['mo_auth_fetch_ip_parameters_order']['#value'] : $default_IP_retrieve_parameters;
+   variable_set('mo_auth_fetch_ip_parameters_order', $ip_retrieve_parameter);
 
    /**
     *  Allow Specific methods
@@ -672,4 +696,11 @@ function miniorange_2fa_send_query($form, &$form_state) {
     $phone = $form['miniorange_saml_phone_number_support']['#value'];
     $query = $form['miniorange_saml_support_query_support']['#value'];
     MoAuthUtilities::send_support_query($email, $phone, $query);
+}
+
+function reset_ip_retrieve_parameter($form, &$form_state){
+  //creating the string to show parameters used to fetch IP
+  $default_IP_retrieve_parameters = MoAuthUtilities::getDefaultIPRetrieveParamaters();
+  variable_set('mo_auth_fetch_ip_parameters_order', $default_IP_retrieve_parameters);
+  drupal_set_message(t("IP retrieve parameter reset successfully."), 'status');
 }

@@ -32,7 +32,7 @@ function mo_auth_user_management($form, &$form_state){
   $form['mo_auth_reset_2fa_username'] = array(
     '#type' => 'textfield',
     '#title' => t('Enter Username'),
-    '#attributes' => array('placeholder' => t('Enter Username')),
+    '#attributes' => array('placeholder' => t('Enter Username'),'style' => 'width:85%' ),
     '#disabled' => $disabled,
     '#description' => '<b>' . t(' Note: ') . '</b>' . t('Enter the username for which you want to reset the 2FA.'),
   );

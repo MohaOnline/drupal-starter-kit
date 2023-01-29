@@ -37,6 +37,15 @@ class MoAuthConstants {
     public static $AUTH_REGISTRATION_STATUS_API = '/api/auth/registration-status';
     public static $AUTH_GET_GOOGLE_AUTH_API = '/api/auth/google-auth-secret';
 
+    public static $IP_RETRIEVE_PARAMETERS = array(
+      'HTTP_CLIENT_IP',
+      'REMOTE_ADDR',
+      'HTTP_X_FORWARDED_FOR',
+      'HTTP_X_FORWARDED',
+      'HTTP_FORWARDED_FOR',
+      'HTTP_FORWARDED',
+    );
+
     public static function getBaseUrl() {
         $getBrandingName = variable_get('mo_auth_customer_domain_name', 'login');
        // return "https://" . $getBrandingName . ".xecurify-au.com/moas";  // Uncomment this line for Australian servers (and comment the one below)

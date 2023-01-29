@@ -19,7 +19,7 @@ function mo_auth_support($form, &$form_state) {
     $form['miniorange_2fa_email_address'] = array(
         '#type' => 'textfield',
         '#title' => t('Email'),
-        '#attributes' => array('placeholder' => 'Enter your email'),
+        '#attributes' => array('placeholder' => t('Enter your email'), 'style' => 'width:50%',),
         '#required' => TRUE,
         '#default_value' => variable_get('mo_auth_customer_admin_email', ''),
     );
@@ -28,7 +28,7 @@ function mo_auth_support($form, &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Phone'),
         '#id' => 'query_phone',
-        '#attributes' => array('class'=>array('query_phone'),),
+        '#attributes' => array('class'=>array('query_phone'), 'style' => 'width:50%',),
         '#default_value' => variable_get('mo_auth_customer_admin_phone', ''),
     );
 
