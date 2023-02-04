@@ -110,7 +110,7 @@ function _office_hours_block_process($element, &$form_state, $form) {
  *
  * Takes the #default_value and dissects it in hours, minutes and ampm indicator.
  */
-function _office_hours_select_value_callback($element, $input = FALSE, &$form_state) {
+function _office_hours_select_value_callback($element, $input, &$form_state) {
   return _office_hours_field_widget_time_parse($element['#default_value'], $element['#field_settings']['hoursformat']);
 }
 
@@ -161,7 +161,7 @@ function _office_hours_select_process($element, &$form_state, $form) {
  */
 function _office_hours_select_validate($element, &$form_state) {
   $hours = $element['hours']['#value'];
-  $minutes = ($element['minutes']['#value'] == 0) ? '00' : $element['minutes']['#value'];
+  $minutes = ($element['minutes']['#value'] == 0 || $element['minutes']['#value'] == '') ? '00' : $element['minutes']['#value'];
   if ($element['#field_settings']['hoursformat'] == 1) {
     // 12 hrs format with 'a.m.' or 'am'.
     if ($element['ampm']['#value'][0] == 'p' && $hours < 1200) {
@@ -178,10 +178,10 @@ function _office_hours_select_validate($element, &$form_state) {
   else {
     form_set_value($element, '', $form_state);
   }
-  if ($hours < 0000 || $hours > 2300) {
+  if ($hours != '' && ($hours < 0000 || $hours > 2300)) {
     form_error($element, t('Hours should be between 0 and 23.', array(), array('office_hours')));
   }
-  if ($minutes < 0 || $minutes > 59) {
+  if ($minutes != '' && ($minutes < 0 || $minutes > 59)) {
     form_error($element, t('Minutes should be between 0 and 59.', array(), array('office_hours')));
   }
 }

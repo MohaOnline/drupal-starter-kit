@@ -22,7 +22,8 @@
         var dateObj = new Date();
         var today = dateObj.getDay();
         var now = (dateObj.getHours() > 9 ? dateObj.getHours().toString() : '0' + dateObj.getHours().toString()) + (dateObj.getMinutes() > 9 ? dateObj.getMinutes().toString() : '0' + dateObj.getMinutes().toString());
-        jQuery.each(slots.days, function (day_index, day_value) {
+        var days2calc = slots.days2calc;
+        jQuery.each(days2calc, function (day_index, day_value) {
           var start_day = day_value.startday;
           if (!day_value.times) {
             return;
@@ -47,12 +48,12 @@
           });
         });
         if (open) {
-          $instance.children('.oh-current-open:first').removeClass('element-invisible');
-          $instance.children('.oh-current-closed:first').addClass('element-invisible');
+          $instance.children('.oh-current-open:first').removeClass('element-hidden');
+          $instance.children('.oh-current-closed:first').addClass('element-hidden');
         }
         else {
-          $instance.children('.oh-current-closed:first').removeClass('element-invisible');
-          $instance.children('.oh-current-open:first').addClass('element-invisible');
+          $instance.children('.oh-current-closed:first').removeClass('element-hidden');
+          $instance.children('.oh-current-open:first').addClass('element-hidden');
         }
       });
     }

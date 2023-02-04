@@ -367,6 +367,11 @@ function office_hours_field_formatter_view($entity_type, $entity, $field, $insta
     $days[(int) $next]['next'] = TRUE;
   }
 
+  // We have to separate display from JS 'Open' calculation here.
+  // So we copy the days array before it get modified for display:
+  // See https://www.drupal.org/project/office_hours/issues/2919519
+  $days2calc = $days;
+
   // Reorder weekdays to match the first day of the week, using formatter settings;
   // $days = date_week_days_ordered($days);  //using variable_get('date_first_day');
   if ($settings['date_first_day'] > 0) {
@@ -420,6 +425,7 @@ function office_hours_field_formatter_view($entity_type, $entity, $field, $insta
         'element'  => $items,
         'display'  => $display,
         'days'     => $days,
+        'days2calc'=> $days2calc,
         'settings' => $settings,
         'daynames' => $daynames,
         'timezone' => $timezone,
