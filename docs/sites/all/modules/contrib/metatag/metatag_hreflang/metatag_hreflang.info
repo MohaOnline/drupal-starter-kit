@@ -16,8 +16,8 @@ test_dependencies[] = devel:devel
 test_dependencies[] = entity_translation:entity_translation
 files[] = tests/MetatagHreflangWithEntityTranslationTest.test
 
-; Information added by Drupal.org packaging script on 2021-07-12
-version = "7.x-1.28"
+; Information added by Drupal.org packaging script on 2022-07-27
+version = "7.x-1.30"
 core = "7.x"
 project = "metatag"
-datestamp = "1626115939"
+datestamp = "1658935898"

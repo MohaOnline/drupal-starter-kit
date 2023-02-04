@@ -542,7 +542,7 @@ function metatag_bulk_revert_form_submit($form, &$form_state) {
 /**
  * Batch callback: delete custom metatags for selected bundles.
  */
-function metatag_bulk_revert_batch_operation($entity_type, $bundle, $tags, $languages, &$context) {
+function metatag_bulk_revert_batch_operation($entity_type, $bundle, array $tags, array $languages, array &$context) {
   if (!isset($context['sandbox']['current'])) {
     $context['sandbox']['count'] = 0;
     $context['sandbox']['current'] = 0;

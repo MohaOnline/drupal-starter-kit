@@ -35,6 +35,14 @@ abstract class MetatagTestBase extends DrupalWebTestCase {
     $modules[] = 'metatag_test';
 
     parent::setUp($modules);
+
+    // Work around a bug in core's token handling.
+    // @todo This is probably not a good idea.
+    // @see https://www.drupal.org/project/metatag/issues/3271006
+    // @see https://www.drupal.org/project/drupal/issues/1173706
+    $instance = field_read_instance('node', 'field_image', 'article');
+    $instance['settings']['file_directory'] = 'field/image';
+    field_update_instance($instance);
   }
 
   /**

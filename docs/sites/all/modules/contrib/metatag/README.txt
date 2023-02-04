@@ -357,7 +357,7 @@ functionality:
 * Alternative hreflang
   https://www.drupal.org/project/hreflang
   An alternative to the Metatag:hreflang module. Automatically outputs
-  <link rel="alternate" hreflang="x" href="http://" /> meta tags on every page
+  <link rel="alternate" hreflang="x" href="https://" /> meta tags on every page
   for each language/locale available on the site. Also does not provide any way
   of overriding the values or setting the x-default value.
 

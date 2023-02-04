@@ -301,7 +301,7 @@ function metatag_twitter_cards_metatag_info() {
   ) + $player_defaults;
   $info['tags']['twitter:player:stream:content_type'] = array(
     'label' => t('MP4 media stream MIME type'),
-    'description' => t('The MIME type for the media contained in the stream URL, as defined by <a href="!url">RFC 4337</a>.', array('!url' => 'http://tools.ietf.org/rfc/rfc4337.txt')),
+    'description' => t('The MIME type for the media contained in the stream URL, as defined by <a href="!url">RFC 4337</a>.', array('!url' => 'https://tools.ietf.org/rfc/rfc4337.txt')),
     'weight' => ++$weight,
     'devel_generate' => array(
       'maxlength' => 1,

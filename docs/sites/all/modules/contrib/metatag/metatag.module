@@ -365,7 +365,9 @@ function metatag_modify_metatags_action_form(array $context) {
     '#type' => 'checkbox',
     '#title' => t('Reset to metatag defaults'),
     '#default_value' => FALSE,
-    '#description' => t('Check to <strong>fully reset all metatags</strong> on the entities being modified to their <a href="@settings">default configuration</a>.', array('@settings' => url('admin/config/search/metatags'))),
+    '#description' => t('Check to <strong>fully reset all metatags</strong> on the entities being modified to their <a href="@settings">default configuration</a>.', array(
+      '@settings' => url('admin/config/search/metatags'),
+    )),
   );
 
   return $form;
@@ -380,7 +382,7 @@ function metatag_modify_metatags_action_form(array $context) {
  * @return array
  *   The updated metatag values that is ultimately keyed at $context['updates'].
  */
-function metatag_modify_metatags_action_submit($form, &$form_state) {
+function metatag_modify_metatags_action_submit(array $form, array &$form_state) {
   $updates = $form_state['values']['metatags'][LANGUAGE_NONE];
   $defaults = metatag_config_load_with_defaults($form['#entity_type']);
 
@@ -519,7 +521,7 @@ function metatag_config_get_replacements() {
 /**
  * Save a metatag configuration record to the database.
  */
-function metatag_config_save($config) {
+function metatag_config_save(object $config) {
   $config->is_new = empty($config->cid);
 
   // Allow modules to alter the configuration before it is saved using
@@ -712,7 +714,7 @@ function metatag_metatags_load_multiple($entity_type, array $entity_ids, array $
  *   The entity's primary ID.
  * @param int $revision_id
  *   The entity's revision ID.
- * @param array $metatags
+ * @param mixed $metatags
  *   All of the tag information, keyed by the language code. Most meta tags use
  *   the 'value' element, so the structure should look like:
  *   @code
@@ -1923,7 +1925,7 @@ function metatag_entity_type_disable($entity_type, $bundle = NULL) {
  *
  * @param string $instance
  *   The configuration instance key of the meta tags, e.g. "node:article".
- * @param array $metatags
+ * @param mixed $metatags
  *   An array of meta tags from metatag_metatags_view().
  */
 function metatag_page_set_metatags($instance, array $metatags) {
@@ -3172,7 +3174,7 @@ function metatag_translate_metatag($string, $tag_name, $context, $langcode = NUL
 /**
  * Translate a set of metatags to the current language.
  *
- * @param array $metatags
+ * @param mixed $metatags
  *   List of meta tags to be translated.
  * @param string $context
  *   An optional context to use with i18n.
@@ -3196,7 +3198,7 @@ function metatag_translate_metatags(array &$metatags, $context = NULL, $langcode
 /**
  * Update the translated definitions of meta tags.
  *
- * @param array $metatags
+ * @param mixed $metatags
  *   List of meta tags to have their translations updated.
  * @param string $context
  *   The string that will be used to group strings in the translation UI.
@@ -3237,7 +3239,7 @@ function metatag_translations_update(array $metatags, $context) {
 /**
  * Remove the translated definitions of meta tags.
  *
- * @param array $metatags
+ * @param mixed $metatags
  *   List of meta tags to have their translations updated.
  * @param string $context
  *   The string that will be used to group strings in the translation UI.

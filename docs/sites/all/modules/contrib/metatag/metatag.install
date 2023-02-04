@@ -353,7 +353,7 @@ function metatag_schema() {
  * Implements hook_install().
  */
 function metatag_install() {
-  drupal_set_message(t("Thank you for installing the Metatag module. It is recommended to read the module's <a href=\"!url\" title=\"Read the Metatag module's documentation\">README.txt</a> file as there are some known issues that may affect this site.", array('!url' => url(drupal_get_path('module', 'metatag') . '/README.txt'))));
+  drupal_set_message(t("Thank you for installing the Metatag module. It is recommended to read the module's <a href=\"!url\" aria-label=\"Read the Metatag module's documentation\">README.txt</a> file as there are some known issues that may affect this site.", array('!url' => url(drupal_get_path('module', 'metatag') . '/README.txt'))));
 
   // Always enable the node, taxonomy term and user entities.
   foreach (array('node', 'taxonomy_term', 'user') as $entity_type) {
@@ -1435,7 +1435,7 @@ function _metatag_remove_dupes($entity_type) {
       // More than one record, work out which one to keep.
       elseif (count($langs) > 1) {
         // Work out the entity's language.
-        $entity = entity_load($entity_type, $entity_id);
+        $entity = entity_load($entity_type, array($entity_id));
         $entity_language = entity_language($entity_type, $entity);
         if (empty($language)) {
           $entity_language = LANGUAGE_NONE;

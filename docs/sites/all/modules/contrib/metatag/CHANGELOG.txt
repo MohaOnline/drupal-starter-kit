@@ -1,3 +1,27 @@
+Metatag 7.x-1.30, 2022-07-27
+----------------------------
+#3300076 by DamienMcKenna, ttkaminski: HTTPS secure URL replacement typo.
+
+
+Metatag 7.x-1.29, 2022-07-26
+----------------------------
+#3224758 by DamienMcKenna, jrealsteed, mnico: Update to 1.28 caused panels to
+  break if metatags enable for the panel.
+#3106872 by DamienMcKenna: Change uses of http:// to https://.
+#3243694 by DamienMcKenna, Kasey_MK: Avoid similar-sounding links with different
+  purposes.
+#3270984 by DamienMcKenna: Test meta tags don't work.
+#3271006 by DamienMcKenna, FeyP: Fix tests in 7.x-1.x branch.
+#3271006 by DamienMcKenna, FeyP: Tests break due to change in core's default
+  file field path settings.
+#3293480 by Darren Oh, kellyimagined, DamienMcKenna: Fix incorrect
+  entity_load() call in _metatag_remove_dupes().
+#3243775 by mohit.bansal623, DamienMcKenna: Replace all title= attributes with
+  aria-label=.
+#3028344 by pramodga, DamienMcKenna, chakkche: Coding standards improvements.
+#3265196 by Dimiter, DamienMcKenna: Expand referrer-policy dropdown.
+
+
 Metatag 7.x-1.28, 2021-07-12
 ----------------------------
 #3137241 by tmin: metatag_metatags_form() breaks entire page/panel in some
