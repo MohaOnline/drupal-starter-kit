@@ -7,7 +7,7 @@
 /**
  * The Masked Input library URI.
  */
-define (MASKEDINPUT_DOWNLOAD_URI, 'http://cloud.github.com/downloads/digitalBush/jquery.maskedinput/jquery.maskedinput-1.3.js');
+define ('MASKEDINPUT_DOWNLOAD_URI', 'http://cloud.github.com/downloads/digitalBush/jquery.maskedinput/jquery.maskedinput-1.3.js');
 
 /**
  * Implements hook_drush_command().

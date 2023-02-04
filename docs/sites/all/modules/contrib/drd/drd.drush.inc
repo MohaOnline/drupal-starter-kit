@@ -509,7 +509,7 @@ function drush_drd_action() {
         }
         switch ($def['#type']) {
           case 'hidden':
-            continue;
+            continue 2;
 
           case 'file':
             if (file_exists($value)) {
@@ -560,7 +560,7 @@ function _drush_drd_action_help($action_name) {
       }
       switch ($def['#type']) {
         case 'hidden':
-          continue;
+          continue 2;
 
         case 'file':
           $value = 'A fully qualified filename';
