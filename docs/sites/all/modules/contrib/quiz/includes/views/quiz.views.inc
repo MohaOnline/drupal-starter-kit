@@ -106,36 +106,3 @@ function quiz_views_data_alter(&$data) {
   );
 }
 
-/**
- * Implements hook_views_pre_view().
- *
- * Replace the static field with dynamic fields.
- */
-function quiz_views_pre_view(view $view) {
-  if ($view->name == 'quiz_results') {
-    $fields = $view->get_items('field');
-
-    $quiz = node_load($view->args[0]);
-    foreach ($fields as $field_name => $field) {
-      if ($field['id'] == 'answers') {
-        $i = 0;
-        foreach (quiz_get_questions($quiz->nid, $quiz->vid) as $question) {
-          if ($quizQuestion = _quiz_question_get_instance($question)) {
-            if ($quizQuestion->isGraded()) {
-              $i++;
-              $newfield = array();
-              $newfield['id'] = 'answer';
-              $newfield['table'] = 'quiz_node_results';
-              $newfield['field'] = 'answer';
-              $newfield['label'] = t('@num. @question', array('@num' => $i, '@question' => $question->title));
-              $newfield['question_nid'] = $question->nid;
-              $newfield['question_vid'] = $question->vid;
-              $view->set_item($view->current_display, 'field', 'answer_' . $question->nid, $newfield);
-            }
-          }
-        }
-        $view->set_item($view->current_display, 'field', $field_name, NULL);
-      }
-    }
-  }
-}

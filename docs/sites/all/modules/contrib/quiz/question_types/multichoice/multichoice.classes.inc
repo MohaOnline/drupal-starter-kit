@@ -581,12 +581,12 @@ class MultichoiceQuestion extends QuizQuestion {
       // is updated, without destroying existing answer reports.
       $form['alternatives'][$i]['id'] = array(
         '#type' => 'value',
-        '#value' => $short['id'],
+        '#value' => isset($short['id']) ? $short['id'] : NULL,
       );
 
       $form['alternatives'][$i]['answer'] = array(
         '#type' => 'text_format',
-        '#default_value' => $short['answer']['value'],
+        '#default_value' => isset($short['answer']['value']) ? $short['answer']['value'] : NULL,
         '#required' => $i < 2,
         '#format' => isset($short['answer']['format']) ? $short['answer']['format'] : NULL,
         '#rows' => 3,
@@ -603,7 +603,7 @@ class MultichoiceQuestion extends QuizQuestion {
         '#title' => t('Feedback if chosen'),
         '#description' => t('This feedback is given to users who chooses this alternative.'),
         '#parents' => array('alternatives', $i, 'feedback_if_chosen'),
-        '#default_value' => $short['feedback_if_chosen']['value'],
+        '#default_value' => isset($short['feedback_if_chosen']['value']) ? $short['feedback_if_chosen']['value'] : NULL,
         '#format' => isset($short['feedback_if_chosen']['format']) ? $short['feedback_if_chosen']['format'] : NULL,
         '#rows' => 3,
       );
@@ -614,7 +614,7 @@ class MultichoiceQuestion extends QuizQuestion {
         '#title' => t('Feedback if not chosen'),
         '#description' => t("This feedback is given to users who doesn't choose this alternative."),
         '#parents' => array('alternatives', $i, 'feedback_if_not_chosen'),
-        '#default_value' => $short['feedback_if_not_chosen']['value'],
+        '#default_value' => isset($short['feedback_if_not_chosen']['value']) ? $short['feedback_if_not_chosen']['value'] : NULL,
         '#format' => isset($short['feedback_if_not_chosen']['format']) ? $short['feedback_if_not_chosen']['format'] : NULL,
         '#rows' => 3,
       );
@@ -633,7 +633,9 @@ class MultichoiceQuestion extends QuizQuestion {
         '#parents' => array('alternatives', $i, 'score_if_chosen'),
       );
 
-      $default_value = $short['score_if_not_chosen'];
+      if (is_array($short)) {
+        $default_value = $short['score_if_not_chosen'];
+      }
       if (!isset($default_value)) {
         $default_value = '0';
       }
@@ -812,7 +814,7 @@ class MultichoiceResponse extends QuizQuestionResponse {
    *   Array with values.
    */
   public function __construct($result_id, stdClass $question_node, $values = NULL) {
-    parent::__construct($result_id, $question_node, $values['user_answer']);
+    parent::__construct($result_id, $question_node, (isset($values['user_answer']) ? $values['user_answer'] : NULL));
     $this->user_answer_ids = array();
     // Tries is the tries part of the post data.
     if (isset($values['user_answer'])) {

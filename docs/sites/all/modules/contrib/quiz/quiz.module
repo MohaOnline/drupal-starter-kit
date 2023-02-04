@@ -1052,9 +1052,12 @@ function quiz_view($node) {
         drupal_set_message($available['message']);
       }
     }
+
+    $button_text = quiz_take_quiz($node) ? 'Resume @quiz' : 'Start @quiz';
+
     // Add a link to the take tab.
     $node->content['take'] = array(
-      '#markup' => l(t('Start @quiz', array('@quiz' => QUIZ_NAME)), 'node/' . $node->nid . '/take', array('attributes' => array('class' => array('quiz-start-link')))),
+      '#markup' => l(t($button_text, array('@quiz' => QUIZ_NAME)), 'node/' . $node->nid . '/take', array('attributes' => array('class' => array('quiz-start-link')))),
       '#weight' => 2,
     );
   }
@@ -1826,15 +1829,13 @@ function quiz_update_quiz_question_relationship($old_quiz_vid, $new_quiz_vid, $q
 }
 
 /**
- * Handles quiz taking.
- *
- * This gets executed when the main quiz node is first loaded.
+ * Find a resumable result for this quiz and the current user.
  *
  * @param $quiz
  *   The quiz node.
  *
- * @return
- *   Content array.
+ * @return QuizResult
+ *   Active quiz result.
  */
 function quiz_take_quiz($quiz) {
   global $user;
@@ -2162,7 +2163,7 @@ function quiz_is_passed($uid, $nid, $vid) {
 /**
  * Can a user take this quiz?
  */
-function quiz_quiz_access($op = 'take', $quiz, $account) {
+function quiz_quiz_access($op, $quiz, $account) {
   $hooks = array();
 
   $user_is_admin = node_access('update', $quiz);
@@ -2273,7 +2274,7 @@ function quiz_quiz_access($op = 'take', $quiz, $account) {
  * @return array
  *   An array keyed with: 'success' and 'message'.
  */
-function quiz_access($op = 'take', stdClass $quiz, stdClass $account = NULL) {
+function quiz_access($op, stdClass $quiz, stdClass $account = NULL) {
   if (!$account) {
     global $user;
     $account = $user;
@@ -2330,16 +2331,16 @@ function quiz_calculate_score($result_id) {
     // points_awarded is pre-scaled when the question is answered, so we just
     // need to find what max score it was scaled to.
     $weighted_score = $quiz_result_answer->points_awarded;
-    $QuizQuestionResponse = _quiz_question_response_get_instance($result_id, $question_node);
+    if ($QuizQuestionResponse = _quiz_question_response_get_instance($result_id, $question_node)) {
+      // Get the adjusted max score.
+      $max_score = $QuizQuestionResponse->getMaxScore();
 
-    // Get the adjusted max score.
-    $max_score = $QuizQuestionResponse->getMaxScore();
+      $numeric_score += $weighted_score;
+      $possible_score += $max_score;
 
-    $numeric_score += $weighted_score;
-    $possible_score += $max_score;
-
-    if (!$QuizQuestionResponse->isEvaluated()) {
-      $is_evaluated = 0;
+      if (!$QuizQuestionResponse->isEvaluated()) {
+        $is_evaluated = 0;
+      }
     }
   }
 
@@ -2874,7 +2875,7 @@ function quiz_get_questions($quiz_nid, $quiz_vid = NULL) {
   $query->fields('qnr', array('question_status', 'weight', 'max_score', 'auto_update_max_score', 'qnr_id', 'qnr_pid', 'child_nid', 'child_vid'));
   $query->addField('n', 'vid', 'latest_vid');
   $query->join('node_revision', 'nr', 'n.nid = nr.nid');
-  $query->leftJoin('quiz_node_relationship', 'qnr', 'nr.vid = qnr.child_vid');
+  $query->join('quiz_node_relationship', 'qnr', 'nr.vid = qnr.child_vid');
   $query->condition('n.status', 1);
   $query->condition('qnr.parent_nid', $quiz_nid);
   if ($quiz_vid) {
@@ -3536,7 +3537,7 @@ function quiz_access_question($quiz, $question_number) {
 
   $qinfo = $layout[$question_index];
   $question_node = node_load($qinfo['nid'], $qinfo['vid']);
-  $question_node_last = node_load($qinfo_last['nid'], $qinfo_last['vid']);
+  $question_node_last = $qinfo_last ? node_load($qinfo_last['nid'], $qinfo_last['vid']) : NULL;
 
   if (!$quiz->backwards_navigation) {
     // No backwards navigation.
@@ -3720,6 +3721,7 @@ function quiz_action_info() {
     'label' => t('Add questions to @quiz', array('@quiz' => QUIZ_NAME)),
     'configurable' => FALSE,
     'vbo_configurable' => FALSE,
+    'behavior' => array(''),
   );
 
   return $actions;
@@ -3771,26 +3773,26 @@ function quiz_feedback_can_review($option, QuizResult $quiz_result) {
     foreach ($review_options as $time_key => $shows) {
       // Loop through all the feedback times and check conditions.
       if ($set = rules_config_load("quiz_feedback_{$time_key}")) {
-        if (!$set->execute($quiz_result)) {
-          // The rule did not pass. Remove the quiz feedback time from
-          // eligbility.
-          unset($review_options[$time_key]);
-        }
-        else {
-          // Rules pass so now do something.
-          if ($time_key == 'end') {
+
+        $rule_passed = $set->execute($quiz_result);
+
+        if (in_array($time_key, array('question', 'end'))) {
+          // Special handling for built in conditions.
+          if ($rule_passed && $time_key == 'end') {
             if ($quiz_result->time_end && arg(2) != 'take') {
               $all_shows += array_filter($shows);
             }
           }
-          elseif ($time_key == 'question') {
+          if ($rule_passed && $time_key == 'question' && arg(2) == 'take') {
+            // Special handling for after question.
             if (!$quiz_result->time_end || $quiz_result->time_end >= REQUEST_TIME - 5) {
               $all_shows += array_filter($shows);
             }
           }
-          else {
-            $all_shows += array_filter($shows);
           }
+        else if ($rule_passed) {
+          // Not one of the above two, add all shows.
+          $all_shows += array_filter($shows);
         }
       }
     }
@@ -4100,6 +4102,40 @@ function quiz_field_access($op, $field, $entity_type, $entity, $account) {
     $instance = field_info_instance($entity_type, $field['field_name'], $entity->type);
     if (empty($instance['settings']['quiz_result_show_field'])) {
       return FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_views_pre_view().
+ *
+ * Replace the static field with dynamic fields.
+ */
+function quiz_views_pre_view(view $view) {
+  if ($view->name == 'quiz_results') {
+    $fields = $view->get_items('field');
+
+    $quiz = node_load($view->args[0]);
+    foreach ($fields as $field_name => $field) {
+      if ($field['id'] == 'answers') {
+        $i = 0;
+        foreach (quiz_get_questions($quiz->nid, $quiz->vid) as $question) {
+          if ($quizQuestion = _quiz_question_get_instance($question)) {
+            if ($quizQuestion->isGraded()) {
+              $i++;
+              $newfield = array();
+              $newfield['id'] = 'answer';
+              $newfield['table'] = 'quiz_node_results';
+              $newfield['field'] = 'answer';
+              $newfield['label'] = t('@num. @question', array('@num' => $i, '@question' => $question->title));
+              $newfield['question_nid'] = $question->nid;
+              $newfield['question_vid'] = $question->vid;
+              $view->set_item($view->current_display, 'field', 'answer_' . $question->nid, $newfield);
+            }
+          }
+        }
+        $view->set_item($view->current_display, 'field', $field_name, NULL);
+      }
     }
   }
 }

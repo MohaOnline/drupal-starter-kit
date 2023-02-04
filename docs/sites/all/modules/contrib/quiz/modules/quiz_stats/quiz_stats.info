@@ -5,8 +5,8 @@ package = Quiz addon
 dependencies[] = quiz
 dependencies[] = charts
 
-; Information added by Drupal.org packaging script on 2020-03-10
-version = "7.x-5.7"
+; Information added by Drupal.org packaging script on 2022-11-22
+version = "7.x-5.8"
 core = "7.x"
 project = "quiz"
-datestamp = "1583861062"
+datestamp = "1669156538"

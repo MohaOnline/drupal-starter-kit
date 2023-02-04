@@ -247,7 +247,7 @@ class QuizFeedbackTestCase extends QuizTestCase {
   }
 
   /**
-   * Test Quiz question body feedback.
+   * Test different feedback times.
    */
   public function testFeedbackTimes() {
     $this->drupalLogin($this->admin);

@@ -623,6 +623,11 @@ function _quiz_question_response_get_instance($result_id, $question, $answer = N
     $question = node_load($nid, $vid);
   }
 
+  if (!$question) {
+    // No question found. Can't return an instance.
+    return NULL;
+  }
+
   if (!empty($question->type)) {
     $constructor = $info[$question->type]['response provider'];
   }
@@ -762,6 +767,19 @@ function quiz_question_answering_form_submit(&$form, &$form_state) {
   }
   else {
     $questions = $quiz_result->getLayout();
+
+    // @see https://www.drupal.org/node/355875
+    // The user has answered a question or page of questions. We want to
+    // roll this up into 1 transaction to avoid locks. The transaction includes
+    // submitting all the questions and finalizing the quiz if necessary. The
+    // transaction goes out of scope after the form submits and all answers are
+    // saved and the quiz is scored.
+    //
+    // Without the transaction this introduces a lock condition because we have
+    // an arbitrary insert query inside of QuizQuestionResult::save(), and then
+    // an entity_save() after that. I believe under load this causes an issue as
+    // a doubleclick or something similar may try and submit the same question.
+    $transaction = db_transaction();
 
     if (!empty($form_state['values']['question'])) {
       foreach ($form_state['values']['question'] as $nid => $response) {

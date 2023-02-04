@@ -154,23 +154,24 @@ class QuizResultController extends EntityAPIController {
       // Loop through all the questions and get their feedback.
       $question_node = node_load($question['nid'], $question['vid']);
 
-      $instance = _quiz_question_response_get_instance($entity->result_id, $question_node);
-      if ($instance->getQuizQuestion()->hasFeedback()) {
-        $qras = entity_load('quiz_result_answer', FALSE, array(
-          'result_id' => $entity->result_id,
-          'question_nid' => $question_node->nid,
-          'question_vid' => $question_node->vid,
-        ));
-        $qra = reset($qras);
+      if ($instance = _quiz_question_response_get_instance($entity->result_id, $question_node)) {
+        if ($instance->getQuizQuestion()->hasFeedback()) {
+          $qras = entity_load('quiz_result_answer', FALSE, array(
+            'result_id' => $entity->result_id,
+            'question_nid' => $question_node->nid,
+            'question_vid' => $question_node->vid,
+          ));
+          $qra = reset($qras);
 
-        $feedback = $qra->view();
-        if (element_children($feedback['quiz_result_answer'][$instance->result_answer_id])) {
-          $questions[$question_node->nid] = array(
-            '#title' => t('Question @num', array('@num' => $question['display_number'])),
-            '#type' => 'fieldset',
-            'feedback' => $feedback,
-            '#weight' => $question['number'],
-          );
+          $feedback = $qra->view();
+          if (element_children($feedback['quiz_result_answer'][$instance->result_answer_id])) {
+            $questions[$question_node->nid] = array(
+              '#title' => t('Question @num', array('@num' => $question['display_number'])),
+              '#type' => 'fieldset',
+              'feedback' => $feedback,
+              '#weight' => $question['number'],
+            );
+          }
         }
       }
     }

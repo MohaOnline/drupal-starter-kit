@@ -75,13 +75,11 @@ class LongAnswerQuestion extends QuizQuestion {
       WHERE nid = :nid AND vid = :vid', array(':nid' => $this->node->nid, ':vid' => $this->node->vid))->fetchAssoc();
 
     if (is_array($res_a)) {
-      $props = array(
-        'rubric' => array(
-          'value' => $res_a['value'],
-          'format' => $res_a['format'],
-        ),
-        'answer_text_processing' => $res_a['answer_text_processing'],
+      $props['rubric'] = array(
+        'value' => $res_a['value'],
+        'format' => $res_a['format'],
       );
+      $props['answer_text_processing'] = $res_a['answer_text_processing'];
     }
 
     $this->nodeProperties = $props;
