@@ -90,9 +90,6 @@ function webform_confirm_email_schema_alter(&$schema) {
   $schema['webform_submissions']['fields']['confirmed'] = array(
     'description' => 'True if the email address for this submission was already confirmed.',
     'type'        => 'int',
-    'size'        => 'tiny',
-    'not null'    => TRUE,
-    'default'     => 0,
   );
   $schema['webform']['fields']['confirm_email_request_lifetime'] = array(
     'description' => 'Time in seconds after which an unconfirmed confirmation request may be deleted for this webform. NULL means don\'t delete requests',
@@ -160,6 +157,30 @@ function webform_confirm_email_uninstall() {
 // *****************************************
 // **************** UPDATES ****************
 // *****************************************
+
+/**
+ * Turn webform_submissions confirmed into a timestamp.
+ */
+function webform_confirm_email_update_7211() {
+  db_change_field('webform_submissions', 'confirmed', 'confirmed', array(
+    'description' => 'Timestamp of when the email address for this submission was first confirmed, otherwise NULL',
+    'type'        => 'int',
+  ));
+  db_update('webform_submissions')
+    ->fields(['confirmed' => NULL])
+    ->condition('confirmed', 0)
+    ->execute();
+  db_update('webform_submissions')
+    ->expression('confirmed', 'completed')
+    ->isNotNull('confirmed')
+    ->execute();
+  // Edge-case: Use a truish value even if $submission->completed was 0.
+  db_update('webform_submissions')
+    ->fields(['confirmed' => 1])
+    ->condition('completed', 0)
+    ->isNotNull('confirmed')
+    ->execute();
+}
 
 /**
  * Re-run 7208 for installations that have run it already.

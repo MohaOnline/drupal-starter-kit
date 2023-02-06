@@ -546,10 +546,12 @@ function theme_webform_confirm_email_emails_form($variables) {
   );
 
   $output = '';
-  foreach(array(
-      'emails'               => 'Standard emails (always send)',
-      'confirmation_request' => 'Confirmation request emails (always send)',
-      'confirmation'         => 'Confirmation emails (only send when the confirmation URL is used)') as $email_type => $title) {
+  $email_types = array(
+    'emails' => t('Emails (sent immediately after submission)'),
+    'confirmation_request' => t('Emails requesting confirmation (sent immediately after submission)'),
+    'confirmation' => t('Confirmation emails (sent after the first click on a confirmation link)'),
+  );
+  foreach ($email_types as $email_type => $title) {
     $rows = array();
 
     $eids = element_children($form[$email_type]);

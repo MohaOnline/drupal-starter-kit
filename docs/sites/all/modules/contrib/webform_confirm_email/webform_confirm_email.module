@@ -117,12 +117,12 @@ function webform_confirm_email_confirmation_access($node, $submission, $eid, $co
  */
 function webform_confirm_email_confirmation($node, $submission, $eid) {
   db_update('webform_submissions')
-    ->fields(array('confirmed' => 1))
+    ->fields(array('confirmed' => $_SERVER['REQUEST_TIME']))
     ->condition('nid', $node->nid)
     ->condition('sid', $submission->sid)
     ->execute();
-  $first_confirmation = !$submission->confirmed;
-  $submission->confirmed = 1;
+  $first_confirmation = is_null($submission->confirmed);
+  $submission->confirmed = $_SERVER['REQUEST_TIME'];
 
   $messages = db_select('webform_confirm_email_queued_emails', 'e')
     ->fields('e', array('email'))
@@ -375,15 +375,13 @@ function webform_confirm_email_tokens($type, $tokens, array $data = array(), arr
     $language_code = NULL;
   }
   $node = isset($data['node']) ? $data['node'] : node_load($submission->nid);
-  if (   $type === 'submission'
-      && isset($tokens['confirm_url'])
-      && !empty($data['webform-email'])) {
+  if ($type === 'submission' && !empty($data['webform-email'])) {
     $nid = (int) ($node->nid);
     $sid = (int) ($submission->sid);
     $eid = (int) $data['webform-email']['eid'];
     if (webform_confirm_email_get_email_type($nid, $eid) == WEBFORM_CONFIRM_EMAIL_CONFIRMATION_REQUEST) {
       $code = webform_confirm_email_generate_key($nid, $sid, $eid);
-      $confirm_url = url(
+      $confirm_url = $confirm_link = url(
         "node/$nid/sid/$sid/eid/$eid/confirm_email/$code",
         array(
           'absolute' => TRUE,
@@ -391,9 +389,10 @@ function webform_confirm_email_tokens($type, $tokens, array $data = array(), arr
         )
       );
       if (!empty($data['webform-email']['html'])) {
-        $confirm_url = "<a href=\"$confirm_url\">$confirm_url</a>";
+        $confirm_link = "<a href=\"$confirm_url\">$confirm_url</a>";
       }
-      $replacements['[submission:confirm_url]'] = $confirm_url;
+      $replacements['[submission:confirm_url:raw]'] = $confirm_url;
+      $replacements['[submission:confirm_url]'] = $confirm_link;
     }
   }
   elseif ($type === 'webform-submission' && !empty($tokens)) {
@@ -639,8 +638,12 @@ function _webform_confirm_email_range_confirmed($value = NULL) {
 function webform_confirm_email_query_webform_download_sids_alter($query) {
   $confirmed = _webform_confirm_email_range_confirmed();
   if (!empty($confirmed)) {
-    $op = $confirmed == WEBFORM_CONFIRM_EMAIL_FILTER_CONFIRMED ? '>' : '=';
-    $query->condition('ws.confirmed', 0, $op);
+    if ($confirmed == WEBFORM_CONFIRM_EMAIL_FILTER_CONFIRMED) {
+      $query->isNotNull('ws.confirmed');
+    }
+    else {
+      $query->isNull('ws.confirmed');
+    }
   }
 }
 
@@ -735,3 +738,60 @@ function webform_confirm_email_results_batch_rows($node, $format = 'delimited', 
   }
   webform_results_batch_rows($node, $format, $options, $context);
 }
+
+/**
+ * Implements hook_webform_results_download_submission_information_info().
+ */
+function webform_confirm_email_webform_results_download_submission_information_info() {
+  return array(
+    'webform_confirm_email_confirmed' => t('Confirmed Time'),
+  );
+}
+
+/**
+ * Implements hook_webform_results_download_submission_information_info_alter().
+ */
+function webform_confirm_email_webform_results_download_submission_information_info_alter(array &$submission_information) {
+  // Move Confirmed Time column after Modified Time column.
+  if (isset($submission_information['webform_modified_time']) && isset($submission_information['webform_confirm_email_confirmed'])) {
+    $confirmed = $submission_information['webform_confirm_email_confirmed'];
+    unset($submission_information['webform_confirm_email_confirmed']);
+    $new_info = [];
+    foreach ($submission_information as $column => $label) {
+      $new_info[$column] = $label;
+      if ($column == 'webform_modified_time') {
+        $new_info['webform_confirm_email_confirmed'] = $confirmed;
+      }
+    }
+    $submission_information = $new_info;
+  }
+}
+
+/**
+ * Implements hook_webform_results_download_submission_information_data().
+ *
+ * This is only used without the patch from #3086038.
+ */
+function webform_confirm_email_webform_results_download_submission_information_data($token, $submission, array $options, $serial_start, $row_count) {
+  if ($token == 'webform_confirm_email_confirmed') {
+    return webform_confirm_email_webform_results_download_submission_information_data_row($submission, $options, $serial_start, $row_count)['webform_confirm_email_confirmed'];
+  }
+}
+
+/**
+ * Implements hook_webform_results_download_submission_information_data_row().
+ *
+ * This hook is invoked directly if
+ * @link https://www.drupal.org/node/3086038 #3086038 @endlink
+ * is applied.
+ */
+function webform_confirm_email_webform_results_download_submission_information_data_row($submission, array $options, $serial_start, $row_count) {
+  $format_date = !empty($options['iso8601_date']) ? function ($timestamp) {
+    return format_date($timestamp, 'custom', 'Y-m-d\TH:i:s');
+  } : function ($timestamp) {
+    return format_date($timestamp, 'short');
+  };
+  $data['webform_confirm_email_confirmed'] = $submission->confirmed ? $format_date($submission->confirmed) : '';
+  return $data;
+}
+
