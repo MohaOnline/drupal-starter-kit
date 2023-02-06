@@ -43,6 +43,9 @@
 ); ?>
 <div class="<?php print implode(' ', $classes); ?>">
   <div class="popup-content info">
+    <?php if ($close_button_enabled) : ?>
+      <button class='eu-cookie-compliance-close-button'>Close</button>
+    <?php endif; ?>
     <div id="popup-text">
       <?php print $message ?>
       <?php if ($disagree_button) : ?>
@@ -75,6 +78,11 @@
     <?php endif; ?>
 
     <div id="popup-buttons" class="<?php if ($cookie_categories) : ?>eu-cookie-compliance-has-categories<?php endif; ?>">
+      <?php if ($tertiary_button_label) : ?>
+      <button type='button' class='<?php print $tertiary_button_class ?>'><?php print
+        $tertiary_button_label ?>
+      </button>
+      <?php endif; ?>
       <button type="button" class="<?php print $primary_button_class; ?>"><?php print $agree_button; ?></button>
       <?php if ($secondary_button_label) : ?>
         <button type="button" class="<?php print $secondary_button_class; ?>" ><?php print $secondary_button_label; ?></button>

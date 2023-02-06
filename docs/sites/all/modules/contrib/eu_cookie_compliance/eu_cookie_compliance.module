@@ -77,6 +77,30 @@ function eu_cookie_compliance_menu() {
       'access arguments' => array('display EU Cookie Compliance popup'),
     );
   }
+  if (eu_cookie_compliance_get_settings('withdraw_enabled')) {
+    // Cookie settings menu item suggestion which can be found in the
+    // 'navigation' menu.
+    // Toggles the withdraw banner using JavaScript. Because Drupal 7 doesn't
+    // allow menu items without link and callback, we use a dummy redirect to
+    // the privacy policy instead as fragment fallback.
+    $items['#editCookieSettings'] = array(
+      'title' => 'Cookie settings',
+      'description' => 'Toggle the cookie consent settings tray.',
+      'page callback' => 'eu_cookie_compliance_privacy_policy_redirect',
+      'type' => MENU_SUGGESTED_ITEM,
+      'access arguments' => array('display EU Cookie Compliance popup'),
+      'menu_name' => 'navigation',
+      'options' => array(
+        'external' => TRUE,
+        // Pseudo.
+        'fragment' => 'editCookieSettings',
+        'attributes' => array(
+          'class' => 'eu-cookie-compliance-toggle-withdraw-banner',
+          'rel' => 'nofollow',
+        ),
+      ),
+    );
+  }
 
   return $items;
 }
@@ -244,12 +268,16 @@ function eu_cookie_compliance_page_build(&$page) {
         }
       }
 
-      $withdraw_button_on_info_popup = $popup_settings['withdraw_button_on_info_popup'];
+      $withdraw_button_on_info_popup = $popup_settings['withdraw_enabled'];
       $save_preferences_button_label = '';
       $info_templates = array(
         'legacy' => 'eu_cookie_compliance_popup_info_consent_default',
         'new' => 'eu_cookie_compliance_popup_info',
       );
+
+      $tertiary_button_label = '';
+      $tertiary_button_class = '';
+      $close_button_enabled = FALSE;
 
       switch ($method) {
         case 'default':
@@ -289,6 +317,9 @@ function eu_cookie_compliance_page_build(&$page) {
           $primary_button_class = 'agree-button eu-cookie-compliance-default-button';
           $secondary_button_label = $popup_settings['withdraw_action_button_label'];
           $secondary_button_class = 'eu-cookie-withdraw-button eu-cookie-compliance-hidden';
+          $tertiary_button_label = $popup_settings['reject_button_label'];
+          $tertiary_button_class = 'eu-cookie-compliance-default-button eu-cookie-compliance-reject-button';
+          $close_button_enabled = !empty($popup_settings['close_button_enabled']) ? filter_xss($popup_settings['close_button_enabled']) : FALSE;
           $privacy_settings_tab_label = $withdraw_button_on_info_popup ? $popup_settings['withdraw_tab_button_label'] : FALSE;
           $popup_info_template = $info_templates[$popup_settings['info_template']];
           break;
@@ -332,6 +363,9 @@ function eu_cookie_compliance_page_build(&$page) {
         'secondary_button_label' => $secondary_button_label,
         'primary_button_class' => $primary_button_class,
         'secondary_button_class' => $secondary_button_class,
+        'tertiary_button_label' => $tertiary_button_label,
+        'tertiary_button_class' => $tertiary_button_class,
+        'close_button_enabled' => $close_button_enabled,
         'cookie_categories' => $cookie_categories,
         'save_preferences_button_label' => $save_preferences_button_label,
         'privacy_settings_tab_label' => $privacy_settings_tab_label,
@@ -345,6 +379,9 @@ function eu_cookie_compliance_page_build(&$page) {
         'secondary_button_label' => $secondary_button_label,
         'primary_button_class' => $primary_button_class,
         'secondary_button_class' => $secondary_button_class,
+        'tertiary_button_label' => $tertiary_button_label,
+        'tertiary_button_class' => $tertiary_button_class,
+        'close_button_enabled' => $close_button_enabled,
         'cookie_categories' => $cookie_categories,
         'save_preferences_button_label' => $save_preferences_button_label,
         'privacy_settings_tab_label' => $privacy_settings_tab_label,
@@ -415,6 +452,7 @@ function eu_cookie_compliance_page_build(&$page) {
         'cookie_value_agreed' => !empty($popup_settings['cookie_value_agreed']) ? $popup_settings['cookie_value_agreed'] : '2',
         'containing_element' => !empty($popup_settings['containing_element']) ? $popup_settings['containing_element'] : 'body',
         'automatic_cookies_removal' => !empty($popup_settings['automatic_cookies_removal']) ? $popup_settings['automatic_cookies_removal'] : '',
+        'close_button_action' => !empty($popup_settings['close_button_action']) ? $popup_settings['close_button_action'] : '',
       );
       // For some reason, we're getting the wrong language when editing the
       // localized form, so we shouldn't cache.
@@ -437,7 +475,7 @@ function eu_cookie_compliance_page_build(&$page) {
     $script_scope = isset($popup_settings['script_scope']) ? $popup_settings['script_scope'] : 'footer';
 
     // Add inline javascript.
-    $disabled_javascripts = isset($popup_settings['disabled_javascripts']) ? filter_xss($popup_settings['disabled_javascripts']) : '';
+    $disabled_javascripts = isset($popup_settings['disabled_javascripts']) ? str_replace('&amp;', '&', filter_xss($popup_settings['disabled_javascripts'])) : '';
     $load_disabled_scripts = '';
     if ($disabled_javascripts != '') {
       $load_disabled_scripts = '';
@@ -466,7 +504,7 @@ function eu_cookie_compliance_page_build(&$page) {
         if (substr($script, 0, 4) !== 'http' && substr($script, 0, 2) !== '//') {
           $script = '/' . $script;
         }
-        if ($category) {
+        if ($category !== NULL) {
           $load_disabled_scripts .= 'if (category === "' . $category . '") {';
         }
         $load_disabled_scripts .= 'var scriptTag = document.createElement("script");';
@@ -477,7 +515,7 @@ function eu_cookie_compliance_page_build(&$page) {
         if ($attach_name) {
           $load_disabled_scripts .= 'var EUCookieInterval' . $attach_name . '= setInterval(function() { if (Drupal.behaviors.' . $attach_name . ' !== undefined) { Drupal.behaviors.' . $attach_name . '.attach(document, Drupal.settings);clearInterval(EUCookieInterval' . $attach_name . ')};}, 100);';
         }
-        if ($category) {
+        if ($category !== NULL) {
           $load_disabled_scripts .= '}';
         }
       }
@@ -508,7 +546,7 @@ function eu_cookie_compliance_page_build(&$page) {
       drupal_add_css(drupal_get_path('module', 'eu_cookie_compliance') . '/css/eu_cookie_compliance.bare.css');
     }
     drupal_add_library('system', 'jquery.cookie');
-    drupal_add_js(drupal_get_path('module', 'eu_cookie_compliance') . '/js/eu_cookie_compliance.js', array(
+    drupal_add_js(drupal_get_path('module', 'eu_cookie_compliance') . '/js/eu_cookie_compliance.min.js', array(
       'type' => 'file',
       'scope' => $script_scope,
       'group' => JS_DEFAULT,
@@ -567,7 +605,9 @@ function eu_cookie_compliance_theme() {
         'primary_button_class' => NULL,
         'secondary_button_class' => NULL,
         'privacy_settings_tab_label' => NULL,
-        'cookie_categories' => NULL,
+        'tertiary_button_label' => NULL,
+        'tertiary_button_class' => NULL,
+        'close_button_enabled' => NULL,
         'method' => 'default',
       ),
       'path' => $path,
@@ -817,7 +857,7 @@ function eu_cookie_compliance_js_alter(&$javascript) {
 
           unset($javascript[$script]);
         }
-        else {
+        elseif ($js_disabled_script_position !== FALSE) {
           _eu_cookie_compliance_remove_script_from_loader($javascript, $script, $js_disabled_script_position);
         }
       }
@@ -867,6 +907,50 @@ function eu_cookie_compliance_library_alter(&$libraries, $module) {
   }
   $libraries['jquery.cookie']['js']['misc/jquery.cookie.js']['data'] = drupal_get_path('module', 'eu_cookie_compliance') . '/js/jquery.cookie-1.4.1.min.js';
   $libraries['jquery.cookie']['version'] = '1.4.1';
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function eu_cookie_compliance_block_info() {
+  // Cookie Settings button block:
+  $blocks['cookie_settings_button'] = array(
+    'info' => t('EU Cookie Compliance: "Cookie settings" Button'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function eu_cookie_compliance_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    // Cookie Settings button block:
+    case 'cookie_settings_button':
+      $block['subject'] = t('Cookie settings');
+      if (eu_cookie_compliance_get_settings('withdraw_enabled')) {
+        $block['content'] = array(
+          '#type' => 'link',
+          '#title' => t('Cookie settings'),
+          '#href' => '#',
+          '#attributes' => array(
+            'class' => 'button eu-cookie-compliance-toggle-withdraw-banner',
+            'onclick' => 'Drupal.eu_cookie_compliance.toggleWithdrawBanner(); return false;',
+            'rel' => 'nofollow',
+          ),
+        );
+      }
+      else {
+        $block['content'] = t('This block requires the "@withdraw_enabled_setting_name" to be enabled in !eu_cookie_compliance_settings.', array(
+          '@withdraw_enabled_setting_name' => t('Enable floating privacy settings tab and withdraw consent banner'),
+          '!eu_cookie_compliance_settings' => l(t('EU Cookie Compliance settings'), 'admin/config/system/eu-cookie-compliance'),
+        ));
+      }
+      break;
+  }
+  return $block;
 }
 
 /**
@@ -959,6 +1043,24 @@ function eu_cookie_compliance_store_consent($type) {
 
   drupal_json_output(NULL);
   drupal_exit();
+}
+
+/**
+ * Menu callback for the 'Cookie settings' menu item suggestion.
+ *
+ * Because that menu item is a JavaScript function which toggles
+ * Drupal.eu_cookie_compliance.toggleWithdrawBanner(); but Drupal 7 menu items
+ * require a callback, this is mainly a dummy placeholder.
+ *
+ * To give it useful functionality, we redirect to the privacy policy page if
+ * the placeholder link is accessed.
+ */
+function eu_cookie_compliance_privacy_policy_redirect() {
+  $popup_link = url(token_replace(eu_cookie_compliance_get_settings('popup_link')));
+  if (!empty($popup_link)) {
+    return drupal_goto($popup_link);
+  }
+  return drupal_goto('<front>');
 }
 
 /**

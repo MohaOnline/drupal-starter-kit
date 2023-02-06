@@ -97,7 +97,7 @@ function eu_cookie_compliance_admin_form(array $form, array $form_state) {
 
   $form['consent_option']['eu_cookie_compliance']['info'] = array(
     '#type' => 'markup',
-    '#markup' => t("The EU General Data Protection Regulation (GDPR) (see <a href=\"https://www.eugdpr.org/\" target=\"_blank\">https://www.eugdpr.org/</a>) comes into enforcement from 25 May 2018 and introduces new requirements for web sites which handle information that can be used to identify individuals. The regulation underlines that consent must be <strong>unambiguous</strong> and involve a <strong>clear affirmative action</strong>. When evaluating how to best handle the requirements in the GDPR, remember that if you have a basic web site where the visitors don't log in, you always have the option to <strong>not process data that identifies individuals</strong>, in which case you may not need this module. Also note that GDPR applies to any electronic processing or storage of personal data that your organization may do, and simply installing a module may not be enough to become fully GDPR compliant."),
+    '#markup' => t("The EU General Data Protection Regulation (GDPR) (see <a href=\"https://gdpr.eu/\" target=\"_blank\">https://gdpr.eu/</a>) comes into enforcement from 25 May 2018 and introduces new requirements for web sites which handle information that can be used to identify individuals. The regulation underlines that consent must be <strong>unambiguous</strong> and involve a <strong>clear affirmative action</strong>. When evaluating how to best handle the requirements in the GDPR, remember that if you have a basic web site where the visitors don't log in, you always have the option to <strong>not process data that identifies individuals</strong>, in which case you may not need this module. Also note that GDPR applies to any electronic processing or storage of personal data that your organization may do, and simply installing a module may not be enough to become fully GDPR compliant."),
   );
 
   $form['consent_option']['eu_cookie_compliance']['method'] = array(
@@ -448,6 +448,7 @@ function eu_cookie_compliance_admin_form(array $form, array $form_state) {
     '#type' => 'checkbox',
     '#title' => t('Enable floating privacy settings tab and withdraw consent banner'),
     '#default_value' => isset($popup_settings['withdraw_enabled']) ? $popup_settings['withdraw_enabled'] : '',
+    '#description' => t('Adds a floating privacy settings tab and withdraw consent banner. This option also provides a "Cookie settings" button block and menu item suggestion in the "Navigation" menu.'),
   );
 
   $form['withdraw_consent']['eu_cookie_compliance']['withdraw_button_on_info_popup'] = array(
@@ -485,6 +486,62 @@ function eu_cookie_compliance_admin_form(array $form, array $form_state) {
     '#title' => t('Withdraw consent button label'),
     '#default_value' => isset($popup_settings['withdraw_action_button_label']) ? $popup_settings['withdraw_action_button_label'] : '',
     '#description' => t('This button will withdraw consent when clicked.'),
+  );
+
+  $form['reject_button'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    '#title' => t('Reject button and close box'),
+    '#states' => array(
+      'visible' => array('input[name="eu_cookie_compliance[method]"]' => array('value' => 'categories')),
+    ),
+  );
+
+  $form['reject_button']['eu_cookie_compliance'] = array(
+    '#type' => 'item',
+    '#tree' => TRUE,
+  );
+
+  $form['reject_button']['eu_cookie_compliance']['reject_button_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable "Reject/deny all" button'),
+    '#default_value' => $popup_settings['reject_button_enabled'],
+  );
+
+  $form['reject_button']['eu_cookie_compliance']['reject_button_label'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Reject button label'),
+    '#default_value' => $popup_settings['reject_button_label'],
+    '#states' => array(
+      'visible' => array(
+        "input[name='eu_cookie_compliance[reject_button_enabled]']" => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  $form['reject_button']['eu_cookie_compliance']['close_button_enabled'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Close button/box enabled'),
+    '#default_value' => $popup_settings['close_button_enabled'],
+  );
+
+  $form['reject_button']['eu_cookie_compliance']['close_button_action'] = array(
+    '#type' => 'select',
+    '#title' => t('Close button action'),
+    '#options' => array(
+      'close_banner' => t('Close banner'),
+      'accept_all_cookies' => t('Accept all cookies'),
+      'reject_all_cookies' => t('Reject all cookies'),
+      'save_preferences' => t('Trigger Save preferences (for banner with categories)'),
+    ),
+    '#default_value' => $popup_settings['close_button_action'],
+    '#states' => array(
+      'visible' => array(
+        "input[name='eu_cookie_compliance[close_button_enabled]']" => array('checked' => TRUE),
+      ),
+    ),
+    '#description' => t('The default position of the close button is in the top right corner of the banner.'),
   );
 
   $form['thank_you'] = array(
@@ -732,17 +789,29 @@ function eu_cookie_compliance_admin_form(array $form, array $form_state) {
   );
 
   if (module_exists('geoip') || module_exists('smart_ip') || extension_loaded('geoip')) {
-    $form['eu_only']['eu_cookie_compliance']['eu_only'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Only display banner in EU countries.'),
-      '#default_value' => isset($popup_settings['eu_only']) ? $popup_settings['eu_only'] : 0,
-      '#description' => t('You can limit the number of countries for which the banner is displayed by checking this option. If you want to provide a list of countries other than current EU states, you may place an array in <code>$conf[\'eu_cookie_compliance_eu_countries\']</code> in your <code>settings.php</code> file. Using the <a href="http://drupal.org/project/geoip">geoip</a> module or the <a href="http://drupal.org/project/smart_ip">smart_ip</a> module or the <a href="http://www.php.net/manual/en/function.geoip-country-code-by-name.php">geoip_country_code_by_name()</a> PHP function.'),
+    $form['eu_only']['eu_cookie_compliance']['eu_info'] = array(
+      '#type' => 'markup',
+      '#markup' => t('You can limit the number of countries for which the banner is displayed. If you want to provide a list of countries other than current EU states, you may place an array in <code>$conf[\'eu_cookie_compliance_eu_countries\']</code> in your <code>settings.php</code> file. Using the <a href="http://drupal.org/project/geoip">geoip</a> module or the <a href="http://drupal.org/project/smart_ip">smart_ip</a> module or the <a href="http://www.php.net/manual/en/function.geoip-country-code-by-name.php">geoip_country_code_by_name()</a> PHP function.'),
     );
-    $form['eu_only']['eu_cookie_compliance']['eu_only_js'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('JavaScript-based (for Varnish): Only display banner in EU countries.'),
-      '#default_value' => isset($popup_settings['eu_only_js']) ? $popup_settings['eu_only_js'] : 0,
-      '#description' => t('This option also works for visitors that bypass Varnish. You can limit the number of countries for which the banner is displayed by checking this option. If you want to provide a list of countries other than current EU states, you may place an array in <code>$conf[\'eu_cookie_compliance_eu_countries\']</code> in your <code>settings.php</code> file. Using the <a href="http://drupal.org/project/geoip">geoip</a> module or the <a href="http://drupal.org/project/smart_ip">smart_ip</a> module or the <a href="http://www.php.net/manual/en/function.geoip-country-code-by-name.php">geoip_country_code_by_name()</a> PHP function.'),
+
+    if (isset($popup_settings['eu_only']) && $popup_settings['eu_only'] == 1) {
+      $eu_option_default_value = 'eu_only';
+    }
+    elseif (isset($popup_settings['eu_only_js']) && $popup_settings['eu_only_js'] == 1) {
+      $eu_option_default_value = 'eu_only_js';
+    }
+    else {
+      $eu_option_default_value = 'disabled';
+    }
+
+    $form['eu_only']['eu_cookie_compliance']['eu_option'] = array(
+      '#type' => 'radios',
+      '#options' => array(
+        'eu_only_js' => t('Use JavaScript to determine if the visitor is in a country where GDPR applies. Required if caching is enabled or a caching strategy such as varnish is utilized.'),
+        'eu_only' => t('I have no caching enabled or set up. Use non-JavaScript method.'),
+        'disabled' => t('Disabled. Show the banner to all visitors, also those in non-GDPR countries.'),
+      ),
+      '#default_value' => $eu_option_default_value,
     );
   }
   else {
@@ -944,6 +1013,18 @@ function eu_cookie_compliance_admin_form(array $form, array $form_state) {
  *   Form state array.
  */
 function eu_cookie_compliance_admin_form_validate(array $form, array &$form_state) {
+  $form_state['values']['eu_cookie_compliance']['eu_only_js'] = 0;
+  $form_state['values']['eu_cookie_compliance']['eu_only'] = 0;
+
+  if (!empty($form_state['values']['eu_cookie_compliance']['eu_option'])) {
+    if ($form_state['values']['eu_cookie_compliance']['eu_option'] === 'eu_only') {
+      $form_state['values']['eu_cookie_compliance']['eu_only'] = 1;
+    }
+    elseif ($form_state['values']['eu_cookie_compliance']['eu_option'] === 'eu_only_js') {
+      $form_state['values']['eu_cookie_compliance']['eu_only_js'] = 1;
+    }
+  }
+
   if ($form_state['values']['eu_cookie_compliance']['popup_agreed_enabled']) {
     if (empty($form_state['values']['eu_cookie_compliance']['popup_agreed']['value'])) {
       form_set_error('eu_cookie_compliance][popup_agreed', t('@name field is required', array('@name' => '"Thank you" banner message')));
@@ -1015,6 +1096,19 @@ function eu_cookie_compliance_admin_form_validate(array $form, array &$form_stat
     $form_state['values']['eu_cookie_compliance']['automatic_cookie_removal'] = FALSE;
     $form_state['values']['eu_cookie_compliance']['disabled_javascripts'] = '';
     $form_state['values']['eu_cookie_compliance']['withdraw_enabled'] = FALSE;
+  }
+
+  if ($form_state['values']['eu_cookie_compliance']['method'] !== 'categories') {
+    $form_state['values']['eu_cookie_compliance']['close_button_enabled'] = 0;
+    $form_state['values']['eu_cookie_compliance']['reject_button_enabled'] = 0;
+  }
+
+  if (!$form_state['values']['eu_cookie_compliance']['close_button_enabled']) {
+    $form_state['values']['eu_cookie_compliance']['close_button_action'] = 'close_banner';
+  }
+
+  if (!$form_state['values']['eu_cookie_compliance']['reject_button_enabled']) {
+    $form_state['values']['eu_cookie_compliance']['reject_button_label'] = '';
   }
 
   // Validate cookie name against valid characters.

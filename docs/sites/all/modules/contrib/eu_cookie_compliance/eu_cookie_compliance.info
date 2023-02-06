@@ -4,8 +4,8 @@ core = 7.x
 configure = admin/config/system/eu-cookie-compliance
 dependencies[] = ctools
 
-; Information added by Drupal.org packaging script on 2021-09-23
-version = "7.x-1.37"
+; Information added by Drupal.org packaging script on 2022-10-07
+version = "7.x-1.43"
 core = "7.x"
 project = "eu_cookie_compliance"
-datestamp = "1632421365"
+datestamp = "1665158007"
