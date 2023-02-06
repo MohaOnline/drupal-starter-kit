@@ -17,7 +17,7 @@ class MiniorangeUser {
   public function __construct($customerId, $username, $phone, $name, $authType, $email = "") {
     $this->customerId = $customerId;
     $this->username = $username;
-    $this->phone = str_replace(" ","",$phone);
+    $this->phone = isset($phone)?str_replace(" ","",$phone):null;
     $this->name = $name;
     $this->authType = $authType;
     $this->email = $email;

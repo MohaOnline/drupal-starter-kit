@@ -49,6 +49,8 @@ function mo_auth_setup_twofactor($form, &$form_state) {
       $users_active_method = AuthenticationType::getAuthType( 'AUTHY AUTHENTICATOR' );
     } elseif ( in_array( 'LASTPASS AUTHENTICATOR', $configured_methods ) ) {
       $users_active_method = AuthenticationType::getAuthType( 'LASTPASS AUTHENTICATOR' );
+    } elseif ( in_array( 'DUO AUTHENTICATOR', $configured_methods ) ) {
+      $users_active_method = AuthenticationType::getAuthType( 'DUO AUTHENTICATOR' );
     }
   }
   $users_active_method['name']=isset($users_active_method['code']) ? $users_active_method['code']: '';
@@ -82,6 +84,7 @@ function mo_auth_setup_twofactor($form, &$form_state) {
   $microsoftAuthenticationOption      = mo_auth_create_auth_type($user,AuthenticationType::$MICROSOFT_AUTHENTICATOR, $configured_methods, $users_active_method['code'], TRUE, $base_url);
   $authyAuthenticationOption          = mo_auth_create_auth_type($user,AuthenticationType::$AUTHY_AUTHENTICATOR, $configured_methods, $users_active_method['code'], TRUE, $base_url);
   $lastPassAuthenticationOption       = mo_auth_create_auth_type($user,AuthenticationType::$LASTPASS_AUTHENTICATOR, $configured_methods, $users_active_method['code'], TRUE, $base_url);
+  $duoAuthenticator                   = mo_auth_create_auth_type($user,AuthenticationType::$DUO_AUTHENTICATOR, $configured_methods, $users_active_method['code'], TRUE, $base_url);
 
   $options = array(
     AuthenticationType::$EMAIL_VERIFICATION['code']       => $emailVerificationOption,
@@ -89,6 +92,7 @@ function mo_auth_setup_twofactor($form, &$form_state) {
     AuthenticationType::$MICROSOFT_AUTHENTICATOR['code']  => $microsoftAuthenticationOption,
     AuthenticationType::$AUTHY_AUTHENTICATOR['code']      => $authyAuthenticationOption,
     AuthenticationType::$LASTPASS_AUTHENTICATOR['code']   => $lastPassAuthenticationOption,
+    AuthenticationType::$DUO_AUTHENTICATOR['code']        => $duoAuthenticator,
     AuthenticationType::$KBA['code']                      => $kbaAuth,
     AuthenticationType::$OTP_OVER_EMAIL['code']           => $OTPOverEMAILOption,
     AuthenticationType::$SMS['code']                      => $OTPOverSMSOption,

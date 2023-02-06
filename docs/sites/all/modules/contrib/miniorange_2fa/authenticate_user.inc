@@ -542,6 +542,8 @@ function mo_auth_build_otp_over_email_form($form, $base_url, $challenge_response
     $users_active_method = AuthenticationType::getAuthType( 'AUTHY AUTHENTICATOR' );
   } elseif ( in_array( 'LASTPASS AUTHENTICATOR', $configured_methods ) ) {
     $users_active_method = AuthenticationType::getAuthType( 'LASTPASS AUTHENTICATOR' );
+  } elseif ( in_array( 'DUO AUTHENTICATOR', $configured_methods ) ) {
+    $users_active_method = AuthenticationType::getAuthType( 'DUO AUTHENTICATOR' );
   }
 
   return $users_active_method;

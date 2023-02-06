@@ -99,16 +99,12 @@ function mo_auth_customer_setup($form, &$form_state) {
             'value' => variable_get('mo_auth_customer_id', '')
         );
         $options[4] = array (
-            'attribute' => 'API Key',
-            'value' => variable_get('mo_auth_customer_api_key', '')
+            'attribute' => 'Drupal Core Version',
+            'value' => VERSION
         );
         $options[5] = array (
-            'attribute' => 'Token Key',
-            'value' => variable_get('mo_auth_customer_token_key', '')
-        );
-        $options[6] = array (
-            'attribute' => 'App Secret',
-            'value' => variable_get('mo_auth_customer_app_secret', '')
+            'attribute' => 'PHP Version',
+            'value' => PHP_VERSION
         );
 
         $form['fieldset']['customerinfo'] = array (
@@ -504,6 +500,13 @@ function mo_auth_remove_customer_account()
     variable_del('mo_auth_customer_app_secret');
     variable_del('mo_auth_customer_app_secret');
     variable_del('mo_auth_customer_admin_password');
+    variable_del('mo_auth_2fa_license_type');
+    variable_del('mo_auth_2fa_license_plan');
+    variable_del('mo_auth_2fa_license_no_of_users');
+    variable_del('mo_auth_2fa_sms_remaining');
+    variable_del('mo_auth_2fa_email_remaining');
+    variable_del('mo_auth_2fa_license_expiry');
+    variable_del('mo_auth_2fa_support_expiry');
 
     variable_set('mo_auth_status', '');
 

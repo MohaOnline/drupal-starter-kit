@@ -28,23 +28,23 @@ function mo_auth_test_google_authenticator($form, &$form_state) {
     /**
      * To check which method (Soft Token, Google Authenticator') is being tested by user
      */
+    $authTypeCode  = AuthenticationType::$GOOGLE_AUTHENTICATOR['code'];
 
     if( in_array("google-authenticator", $url_parts ) ) {
-      $authTypeCode  = AuthenticationType::$GOOGLE_AUTHENTICATOR['code'];
       $pageTitle     = 'Test Google Authenticator';
       $messageHeader = t('Please enter the passcode generated on your Google Authenticator app.');
     } elseif( in_array("microsoft-authenticator", $url_parts ) ) {
-      $authTypeCode  = AuthenticationType::$GOOGLE_AUTHENTICATOR['code'];
       $pageTitle     = 'Test Microsoft Authenticator';
       $messageHeader = t('Please enter the passcode generated on your Microsoft Authenticator app.');
     } elseif( in_array("authy-authenticator", $url_parts ) ) {
-      $authTypeCode  = AuthenticationType::$GOOGLE_AUTHENTICATOR['code'];
       $pageTitle     = 'Test Authy Authenticator';
       $messageHeader = t('Please enter the passcode generated on your Authy Authenticator app.');
     } elseif( in_array("lastpass-authenticator", $url_parts ) ) {
-      $authTypeCode  = AuthenticationType::$GOOGLE_AUTHENTICATOR['code'];
       $pageTitle     = 'Test LastPass Authenticator';
       $messageHeader = t('Please enter the passcode generated on your LastPass Authenticator app.');
+    }elseif( in_array("duo-authenticator", $url_parts ) ) {
+      $pageTitle     = 'Test Duo Authenticator';
+      $messageHeader = t('Please enter the passcode generated on your Duo Authenticator app.');
     }
 
     $messageHeader = '<div class="mo2f-setup-header-top-left">'.$pageTitle.'</div></div><div class="mo2f-info">'.$messageHeader.'</div>';

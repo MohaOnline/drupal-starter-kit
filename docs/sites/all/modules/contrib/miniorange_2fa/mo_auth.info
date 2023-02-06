@@ -52,8 +52,8 @@ project = "miniorange_2fa"
 datestamp = "1624854296"
 
 
-; Information added by Drupal.org packaging script on 2022-06-17
-version = "7.x-2.23"
+; Information added by Drupal.org packaging script on 2023-01-25
+version = "7.x-2.26"
 core = "7.x"
 project = "miniorange_2fa"
-datestamp = "1655453365"
+datestamp = "1674625288"

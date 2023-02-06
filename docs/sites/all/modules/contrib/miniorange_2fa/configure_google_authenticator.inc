@@ -21,6 +21,9 @@ function mo_auth_configure_google_authenticator($form, &$form_state) {
   } elseif ( in_array("lastpass-authenticator", $url_parts ) ) {
     $App_Name = 'LastPass';
     $method_to_configure = AuthenticationType::$LASTPASS_AUTHENTICATOR['code'];
+  }elseif ( in_array("duo-authenticator", $url_parts ) ) {
+    $App_Name = 'Duo';
+    $method_to_configure = AuthenticationType::$DUO_AUTHENTICATOR['code'];
   }
   if (array_key_exists('secret', $form_state['input']) === FALSE) {
     $user_email = $user->miniorange_registered_email[LANGUAGE_NONE][0]['value'];
@@ -103,7 +106,7 @@ function mo_auth_configure_google_authenticator_submit($form, &$form_state) {
     /**
      * Delete all the configured TOTP methods as only one can be used at a time
      */
-    $configured_methods = array_values( array_diff( $configured_methods, array( 'MICROSOFT AUTHENTICATOR', 'GOOGLE AUTHENTICATOR', 'AUTHY AUTHENTICATOR', 'LASTPASS AUTHENTICATOR' ) ) );
+    $configured_methods = array_values( array_diff( $configured_methods, array( 'MICROSOFT AUTHENTICATOR', 'GOOGLE AUTHENTICATOR', 'AUTHY AUTHENTICATOR', 'LASTPASS AUTHENTICATOR', 'DUO AUTHENTICATOR' ) ) );
     array_push($configured_methods, $methodToConfigure );
     $user->configured_auth_methods[LANGUAGE_NONE] = array();
     foreach ($configured_methods as $value){

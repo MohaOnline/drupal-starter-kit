@@ -55,7 +55,7 @@
         <div style="float:right;display:inline-block;color:#0073aa;"><a href="?q=admin/config/people/mo_auth/licensing"><b>PREMIUM</b></a></div></div><div class="mo2f-info ' . $is_free_class . '">',
   	'#suffix' => '</div></div>',
   	'#disabled' => $is_free,
-  	'#title' => t('Enforce 2 Factor registration for users at login time.'),
+  	'#title' => t('Enforce users to set up their 2FA Method on First Login (Inline Registration)'),
     '#description' => t('<strong>Note:</strong> If second factor is not setup for the user trying to login, he will be asked to setup before login.'),
     '#states' => array(
     // Only enable this field when the 'mo_auth_enable_two_factor' checkbox is checked.
@@ -180,6 +180,22 @@
      '#default_value' => variable_get('mo_auth_2fa_domain_exception_emails', ''),
      '#description' => "<strong>Note:</strong>Enter semicolon(;) separated emails eg. person@xxx.com;person1@xxx.com, emails listed here will be considered as exception of domain based 2FA rule.</br>",
    );
+
+     $form['mo_2fa_rule'] = array(
+         '#type' => 'radios',
+         '#prefix' => '<br><br><div class="mo2f-info ' . $is_free_class . '"><div class="mo2f-info">
+                   <div class="mo2f_highlight_background_note"><b>Note: </b>If you are using Role based or Domain based 2FA, please ensure to configure the interaction between them. 
+                   <li>Invoke 2FA, if 2FA is required either due to Role or Domain: Select this radio button if you are using both role based and domain based 2FA.</li>
+                   <li>Invoke 2FA, if 2FA is required based on Role as well as Domain: Select this radio button if you are using any one of role based and domain based 2FA.</li></div></br>',
+
+         '#title' => t('Interaction between role based and domain based 2FA'),
+         '#default_value' => variable_get('mo_2fa_domain_and_role_rule','AND') == 'OR' ? 'OR' : 'AND',
+         '#options' => array(
+             'OR' => t('Invoke 2FA, if 2FA is required either due to Role or Domain'),
+             'AND' => t('Invoke 2FA, if 2FA is required  based on Role as well as Domain'),
+         ),
+         '#disabled' => $is_free,
+     );
 
    /**
     * Password complexity
@@ -433,16 +449,6 @@
      '#attributes' => array( 'style' => 'padding:0% 2%; margin-bottom:2%' ),
      '#markup'=>'<details ><summary class="mo_tfa_summary" >'.t("ADVANCE SETTINGS").'</summary><br><hr>'
    );
-   $form['mo_2fa_rule'] = array(
-     '#type' => 'radios',
-     '#title' => t('Interaction between role based and domain based 2FA'),
-     '#default_value' => variable_get('mo_2fa_domain_and_role_rule','OR') == 'OR' ? 'OR' : 'AND',
-     '#options' => array(
-       'OR' => t('Invoke 2FA, if 2FA is required either due to Role or Domain'),
-       'AND' => t('Invoke 2FA, if 2FA is required  based on Role as well as Domain'),
-     ),
-     '#disabled' => $is_free,
-   );
 
    $form['two_factor_google_authenticator_app_name'] = array(
      '#type' => 'textfield',
@@ -484,7 +490,7 @@
      $form['miniorange_2fa_enable_backdoor'] = array(
          '#type' => 'checkbox',
          '#title' => t('Check this option if you want to enable <b>backdoor login</b>'),
-         '#default_value' => variable_get('miniorange_2fa_enable_backdoor', FALSE),
+         '#default_value' => variable_get('miniorange_2fa_enable_backdoor', TRUE),
          '#disabled' => $disabled,
          '#description' => t('<b>Note: </b>Checking this option creates a backdoor to login to your website. User can login to Drupal site using username and password only.<br>
                              You can customize your backdoor url by replacing <b>"false"</b> with a string of your choice. <br><br> Note down this URL: <strong><code><a id="mo_saml_backdoor_url">'.$mo_backdoor_URL.'</a></code></strong> '),
@@ -520,6 +526,9 @@
         '#disabled' => $is_free,
       );
 
+   $form['markup_idp_attr_header_top_div_close'] = array(
+     '#markup' => '</div></div></div></div>',
+   );
 
    $form['actions'] = array('#type' => 'actions');
    $form['submit'] = array(
@@ -527,11 +536,7 @@
       '#value' => t('Save Settings'),
       '#disabled' => $disabled,
       '#prefix' => '<br><br>',
-      '#suffix' => '</div></div>',
-   );
-
-   $form['markup_idp_attr_header_top_div_close'] = array(
-      '#markup' => '</div></div></div>',
+      '#suffix' => '</div>',
    );
 
    MoAuthUtilities::addSupportForm($form, $form_state);

@@ -141,6 +141,16 @@ function mo_auth_menu() {
         'type' => MENU_LOCAL_TASK,
     );
 
+    $items['admin/config/people/mo_auth/setup/user/%user/configure/duo-authenticator'] = array(
+        'title' => 'Configure Duo Authenticator',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('mo_auth_configure_google_authenticator'),
+        'access callback' => 'mo_auth_is_user_logged_in',
+        'access arguments' => array('administer site configuration'),
+        'file' => 'configure_google_authenticator.inc',
+        'type' => MENU_LOCAL_TASK,
+    );
+
     $items['admin/config/people/mo_auth/setup/user/%user/configure/otp-over-sms'] = array(
         'title' => 'Configure OTP Over Email',
         'page callback' => 'drupal_get_form',
@@ -210,6 +220,15 @@ function mo_auth_menu() {
     );
     $items['admin/config/people/mo_auth/setup/user/%user/test/lastpass-authenticator'] = array(
         'title' => 'Test LastPass Authenticator',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('mo_auth_test_google_authenticator'),
+        'access callback' => 'mo_auth_is_user_logged_in',
+        'access arguments' => array('administer site configuration'),
+        'file' => 'test_google_authenticator.inc',
+        'type' => MENU_LOCAL_TASK,
+    );
+    $items['admin/config/people/mo_auth/setup/user/%user/test/duo-authenticator'] = array(
+        'title' => 'Test Duo Authenticator',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('mo_auth_test_google_authenticator'),
         'access callback' => 'mo_auth_is_user_logged_in',
@@ -377,7 +396,7 @@ function moIsBackdoorUrlEnabled ( $isUserAdmin ) {
 }
 
 function mo_auth_form_user_login_alter(&$form, &$form_state, $form_id) {
-    if ( MoAuthUtilities::isCustomerRegistered() ) {
+    if ( MoAuthUtilities::isCustomerRegistered() && !MoAuthUtilities::isMaintenanceMode()) {
         $loginSettings = new MoAuthLoginSettings();
         if ( $loginSettings->getEnable2Factor() && !MoAuthUtilities::check_white_IPs() ) {
             $form['#submit'] = array('mo_auth_form_alter_submit');
@@ -386,7 +405,7 @@ function mo_auth_form_user_login_alter(&$form, &$form_state, $form_id) {
 }
 
 function mo_auth_form_user_login_block_alter(&$form, &$form_state, $form_id) {
-    if ( MoAuthUtilities::isCustomerRegistered() ) {
+    if ( MoAuthUtilities::isCustomerRegistered() && !MoAuthUtilities::isMaintenanceMode()) {
         $loginSettings = new MoAuthLoginSettings();
         if ( $loginSettings->getEnable2Factor() && !MoAuthUtilities::check_white_IPs() ) {
             $form['#submit'] = array('mo_auth_form_alter_submit');
@@ -397,7 +416,7 @@ function mo_auth_form_user_login_block_alter(&$form, &$form_state, $form_id) {
 function mo_auth_form_alter(&$form, $form_state, $form_id) {
     global $user;
     $uid = isset($_GET['uid']) ? $_GET['uid'] : '';
-    if ($form_id == 'user_login_block' || $form_id == 'user_login_form' || $form_id == 'user_login') {
+    if (($form_id == 'user_login_block' || $form_id == 'user_login_form' || $form_id == 'user_login') && !MoAuthUtilities::isMaintenanceMode()) {
         $my = isset($_GET['need_second_factor_pass'])?$_GET['need_second_factor_pass']:0;
         $val1 = variable_get('mo_auth_two_factor_instead_password');
         $val2 = variable_get('mo_auth_enable_two_factor');

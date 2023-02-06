@@ -1380,7 +1380,7 @@ function saveConfigurationInDB(&$form_state,$isKba=FALSE){
   /**
    * Delete all the configured TOTP methods as only one can be used at a time
    */
-  $authenticators = array( 'MICROSOFT AUTHENTICATOR', 'GOOGLE AUTHENTICATOR', 'AUTHY AUTHENTICATOR', 'LASTPASS AUTHENTICATOR' );
+  $authenticators = array( 'MICROSOFT AUTHENTICATOR', 'GOOGLE AUTHENTICATOR', 'AUTHY AUTHENTICATOR', 'LASTPASS AUTHENTICATOR', 'DUO AUTHENTICATOR' );
 
   $configured_methods = array_values(array_diff( $configured_methods,$authenticators ));
   array_push($configured_methods, $method );

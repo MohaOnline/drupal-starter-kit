@@ -108,7 +108,6 @@ function mo_auth_licensing($form, &$form_state) {
                                 <p class="mo2f_pricing-title">Premium<br></p><br>
                                 <p style="font-size: 15px; color: #fff; text-align: center;margin-bottom:6px;">Yearly Subscription Fees**
                         <select required style=" margin-left: 7px;height:25px;">
-                            <option>Upto 5 users - $20 / year
                             <option>Upto 10 users - $40 / year
                             <option>Upto 20 users - $65 / year
                             <option>Upto 30 users - $90 / year

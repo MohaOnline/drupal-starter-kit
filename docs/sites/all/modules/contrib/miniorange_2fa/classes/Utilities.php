@@ -35,6 +35,7 @@ class MoAuthUtilities {
       AuthenticationType::$MICROSOFT_AUTHENTICATOR['code']  => AuthenticationType::$MICROSOFT_AUTHENTICATOR['name'],
       AuthenticationType::$AUTHY_AUTHENTICATOR['code']      => AuthenticationType::$AUTHY_AUTHENTICATOR['name'],
       AuthenticationType::$LASTPASS_AUTHENTICATOR['code']   => AuthenticationType::$LASTPASS_AUTHENTICATOR['name'],
+      AuthenticationType::$DUO_AUTHENTICATOR['code']        => AuthenticationType::$DUO_AUTHENTICATOR['name'],
       AuthenticationType::$SMS['code']                     => AuthenticationType::$SMS['name'],
       AuthenticationType::$OTP_OVER_EMAIL['code']          => AuthenticationType::$OTP_OVER_EMAIL['name'],
       AuthenticationType::$SMS_AND_EMAIL['code']           => AuthenticationType::$SMS_AND_EMAIL['name'],
@@ -460,6 +461,11 @@ class MoAuthUtilities {
       $IP_retrieve_parameters .= $PARAMETER . ';';
     }
     return $IP_retrieve_parameters;
+  }
+
+  public static function isMaintenanceMode(){
+    $maintenance_mode = variable_get('maintenance_mode');
+    return $maintenance_mode;
   }
 
 }

@@ -129,6 +129,9 @@ function mo_auth_uninstall() {
   variable_del('mo_auth_selected_2fa_methods');
   variable_del('mo_auth_remove_5th_step');
   variable_del('mo_auth_customer_domain_name');
+  variable_del('mo_auth_enable_domain_based_2fa');
+  variable_del('mo_auth_two_factor_domain_based_2fa_domains');
+  variable_del('mo_2fa_domains_are_white_or_black');
 
   variable_del('mo_auth_enable_password_checks');
   variable_del('mo_2fa_unique_password');
