@@ -3,7 +3,7 @@ description = Provides support for all Tripal modules and includes the Tripal AP
 core = 7.x
 project = tripal
 package = Tripal v2 Legacy
-version = 7.x-3.8
+version = 7.x-3.9
 configure = admin/tripal
 
 stylesheets[all][] = theme/css/tripal_core.css
@@ -14,8 +14,8 @@ dependencies[] = path
 dependencies[] = php
 dependencies[] = tripal
 dependencies[] = tripal_chado
-; Information added by Drupal.org packaging script on 2022-02-22
-version = "7.x-3.8"
+; Information added by Drupal.org packaging script on 2022-08-12
+version = "7.x-3.9"
 core = "7.x"
 project = "tripal"
-datestamp = "1645551560"
+datestamp = "1660338732"

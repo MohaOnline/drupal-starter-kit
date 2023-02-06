@@ -3,7 +3,7 @@ description = Supports the organism tables of Chado by providing pages for viewi
 core = 7.x
 project = tripal
 package = Tripal v2 Legacy
-version = 7.x-3.8
+version = 7.x-3.9
 configure = admin/tripal/legacy/tripal_organism
 
 stylesheets[all][] = theme/css/tripal_organism.css
@@ -13,8 +13,8 @@ dependencies[] = tripal_cv
 dependencies[] = tripal_db
 dependencies[] = tripal_chado_views
 
-; Information added by Drupal.org packaging script on 2022-02-22
-version = "7.x-3.8"
+; Information added by Drupal.org packaging script on 2022-08-12
+version = "7.x-3.9"
 core = "7.x"
 project = "tripal"
-datestamp = "1645551560"
+datestamp = "1660338732"

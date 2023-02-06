@@ -3,7 +3,7 @@ description = Tripal is a toolkit to facilitate construction of online genomic, 
 core = 7.x
 project = tripal
 package = Tripal
-version = 7.x-3.8
+version = 7.x-3.9
 configure = admin/tripal
 
 stylesheets[all][] = theme/css/tripal.css
@@ -37,8 +37,8 @@ dependencies[] = php
 dependencies[] = entity
 dependencies[] = redirect
 
-; Information added by Drupal.org packaging script on 2022-02-22
-version = "7.x-3.8"
+; Information added by Drupal.org packaging script on 2022-08-12
+version = "7.x-3.9"
 core = "7.x"
 project = "tripal"
-datestamp = "1645551560"
+datestamp = "1660338732"
