@@ -239,6 +239,7 @@ class NodeAccessExampleTestCase extends DrupalWebTestCase {
       $edit = array('body[und][0][value]' => $body);
       $this->drupalPost('node/' . $nid . '/edit', $edit, t('Save'));
       $this->assertText(t('has been updated'), 'Node was updated by "foobar" user');
+      $this->assertText(t('allowed because requester name (foobar) is specifically allowed'), 'Node was accessed by "foobar" user');
     }
 
     // Test that a privileged user can edit and delete private content.

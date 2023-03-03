@@ -4,8 +4,8 @@ package = Example modules
 core = 7.x
 files[] = js_example.test
 
-; Information added by Drupal.org packaging script on 2022-01-19
+; Information added by Drupal.org packaging script on 2023-02-17
 version = "7.x-1.x-dev"
 core = "7.x"
 project = "examples"
-datestamp = "1642590109"
+datestamp = "1676613793"

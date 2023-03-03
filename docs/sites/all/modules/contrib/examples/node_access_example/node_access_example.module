@@ -223,8 +223,10 @@ function node_access_example_node_access($node, $op, $account) {
   if (is_string($node)) {
     return NODE_ACCESS_IGNORE;
   }
-  if (($op == 'view' || $op == 'update') && (!empty($account->name) && $account->name == 'foobar') && !empty($node->private)) {
-    drupal_set_message(t('Access to node @nid allowed because requester name (@name) is specifically allowed', array('@name' => $node->name, '@uid' => $account->uid)));
+  // We check that we are logged in, the private flag (field) for this node
+  // was enabled, but our name is 'foobar', then we give access in any case.
+  if (($op == 'view' || $op == 'update') && (!empty($account->name) && $node->private && $account->name == 'foobar')) {
+    drupal_set_message(t('Access to node @nodename allowed because requester name (@name) is specifically allowed', array('@nodename' => $node->name, '@name' => $account->name)));
     return NODE_ACCESS_ALLOW;
   }
   return NODE_ACCESS_IGNORE;
