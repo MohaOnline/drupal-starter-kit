@@ -80,7 +80,7 @@ export default {
         case 'Create message': return Drupal.t('Add specific message')
         case 'Create exclusion': return Drupal.t('Add exclusion')
         case 'message to remaining targets': return Drupal.t('Message to all remaining targets')
-        case 'default message': return Drupal.t('Default message that will be sent to target(s)')
+        case 'default message': return Drupal.t('Default message to target(s)')
         case 'service unavailable title': return Drupal.t('Service unavailable')
         case 'service unavailable': return Drupal.t('The service is temporarily unavailable.\rYour messages could not be saved.\rPlease try again or contact support if the issue persists.')
         case 'unsaved changes title': return Drupal.t('Unsaved changes')

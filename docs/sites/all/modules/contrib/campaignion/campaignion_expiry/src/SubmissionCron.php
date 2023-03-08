@@ -57,10 +57,10 @@ class SubmissionCron {
   }
 
   /**
-   * Expire one batch of webform submissions.
+   * Define query to select submissions for expiry.
    */
-  protected function expireSubmissionBatch($up_to_time, $last_sid = 0, $batch_size = 1000) {
-    $sql_pseudo_addresses = <<<SQL
+  protected function selectBatchQuery($batch_size) {
+    return <<<SQL
 CREATE TEMPORARY TABLE {tmp_pseudo_addresses} (primary key (nid, sid))
 SELECT ws.nid, ws.sid, COALESCE(CONCAT(ca.contact_id, '@deleted'), CONCAT(ws.sid, '@form-submission')) as email
 FROM {webform_submissions} ws
@@ -72,7 +72,13 @@ WHERE ws.sid>:last_sid AND ws.submitted<:up_to_time AND ws.anonymized=0
 ORDER BY ws.sid
 LIMIT $batch_size;
 SQL;
-    db_query($sql_pseudo_addresses, [
+  }
+
+  /**
+   * Expire one batch of webform submissions.
+   */
+  protected function expireSubmissionBatch($up_to_time, $last_sid = 0, $batch_size = 1000) {
+    db_query($this->selectBatchQuery($batch_size), [
       ':up_to_time' => $up_to_time,
       ':last_sid' => $last_sid,
     ]);

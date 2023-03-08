@@ -8,8 +8,8 @@ dependencies[] = libraries
 dependencies[] = little_helpers
 dependencies[] = psr0
 
-; Information added by Drupal.org packaging script on 2022-09-13
-version = "7.x-2.32"
+; Information added by Drupal.org packaging script on 2023-02-14
+version = "7.x-2.34"
 core = "7.x"
 project = "campaignion"
-datestamp = "1663071043"
+datestamp = "1676391192"

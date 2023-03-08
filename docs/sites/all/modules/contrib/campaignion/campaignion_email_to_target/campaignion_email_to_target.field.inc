@@ -94,7 +94,7 @@ function _campaignion_email_to_target_options_field_widget_form($item) {
   ];
   $element['users_may_edit'] = [
     '#type' => 'checkbox',
-    '#title' => t('Supporters may edit the message sent to the target(s).'),
+    '#title' => t('Supporters may edit the message to the target(s).'),
     '#default_value' => $item['users_may_edit'],
   ];
   $element['selection_mode'] = [

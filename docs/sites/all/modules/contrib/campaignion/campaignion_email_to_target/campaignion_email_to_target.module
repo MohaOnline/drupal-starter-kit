@@ -53,7 +53,7 @@ function campaignion_email_to_target_campaignion_email_to_target_selection_modes
   ];
   $plugins['all'] = [
     'class' => All::class,
-    'title' => t('All — Messages are sent to all targets.'),
+    'title' => t('All — All targets are selected.'),
   ];
   $plugins['one'] = [
     'class' => One::class,

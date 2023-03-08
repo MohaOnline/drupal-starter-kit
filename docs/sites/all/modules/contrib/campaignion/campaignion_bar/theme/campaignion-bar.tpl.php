@@ -7,7 +7,7 @@
   <ul id="ae-sidemenu">
 
     <li id="ae-sidemenu-for-account"><a href="/user">Your account</a></li>
-    <li id="ae-sidemenu-for-help"><a class="tooltipped" title="Get Support or view the documentation" href="<?php print variable_get('campaignion_support_link', 'https://www.campaignion.org/campaignion-support'); ?>">Help & support</a></li>
+    <li id="ae-sidemenu-for-help"><a class="tooltipped" title="Get Support or view the documentation" href="<?php print variable_get('campaignion_support_link', 'https://support.impact-stack.org/hc'); ?>">Help & support</a></li>
     <li id="ae-sidemenu-for-logout"><a class="tooltipped" title="Want to leave?" href="/user/logout">Logout</a></li>
     <li id="ae-menu-hide"><a class="tooltipped" title="Hide this toolbar" href="#toggle">Hide the toolbar</a></li>
 
