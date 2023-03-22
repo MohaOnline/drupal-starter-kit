@@ -70,7 +70,7 @@ class TargetStep extends WizardStep {
       ],
       [
         'key' => 'salutation',
-        'description' => 'This field is how the target will be addressed in the email opening so should include any appropriate honorifics e.g. ‘Rt Hon John Smith MP’',
+        'description' => 'This field is how the target will be addressed in the message opening so should include any appropriate titles e.g. ‘Rt Hon John Smith MP’',
         'title' => 'Salutation',
       ],
       [
@@ -81,7 +81,8 @@ class TargetStep extends WizardStep {
       [
         'key' => 'group',
         'title' => 'Group',
-        'description' => 'Use this field to segment your list if you want to send different versions of the email to different people, e.g. ‘Chair’ vs ‘Member’. You can set these specific messages up on the next step of the page builder.',
+        'description' => 'Use this field to segment your list if you want to provide different versions of the message to different people, e.g. one CEO gets one message, another CEO gets a different message. You can set these specific messages up on the next step of the page builder.
+        ',
       ],
     ];
     // Used by the front end vue app. A set of 'key' => 'regex' pairs.
@@ -109,6 +110,7 @@ class TargetStep extends WizardStep {
       'url' => $this->api->getEndpoint(),
       'token' => $this->api->getAccessToken(),
     ];
+    $settings['datasetQuery'] = variable_get_value('campaignion_email_to_target_dataset_query');
 
     $settings = ['campaignion_email_to_target' => $settings];
     $dir = drupal_get_path('module', 'campaignion_email_to_target');

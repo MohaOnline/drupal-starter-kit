@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 const url = Drupal.settings.campaignion_email_to_target.endpoints['e2t-api'].url + '/'
+const datasetQuery = Drupal.settings.campaignion_email_to_target.datasetQuery
 const headers = {
   Authorization: 'Bearer ' + Drupal.settings.campaignion_email_to_target.endpoints['e2t-api'].token
 }
@@ -11,7 +12,7 @@ export default {
    * @return {Promise} axios response.
    */
   getDatasets () {
-    return axios.get(url, {headers})
+    return axios.get(url + datasetQuery, {headers})
   },
 
   /**

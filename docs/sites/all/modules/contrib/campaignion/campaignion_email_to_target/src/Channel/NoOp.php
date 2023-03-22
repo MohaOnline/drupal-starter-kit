@@ -53,4 +53,14 @@ class NoOp {
     return $pairs;
   }
 
+  /**
+   * Check whether to enable the test-mode for this channel.
+   *
+   * @return bool
+   *   Whether to enable the test-mode for this channel. Always FALSE.
+   */
+  public function testModeAvailable() {
+    return FALSE;
+  }
+
 }

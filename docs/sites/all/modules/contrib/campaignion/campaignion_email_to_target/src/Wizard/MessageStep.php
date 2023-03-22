@@ -42,14 +42,14 @@ class MessageStep extends WizardStep {
     $form = parent::stepForm($form, $form_state);
     $form['messages'] = [
       '#type' => 'container',
-      '#title' => t('Message that will be sent to target(s)'),
+      '#title' => t('Message directed to the target(s)'),
       '#id' => drupal_html_id('email-to-target-messages-widget'),
       '#attributes' => ['class' => ['email-to-target-messages-widget']],
     ];
 
     $info = token_get_info();
     $tokens = [];
-    foreach (['email-to-target', 'webform-tokens', 'submission'] as $type) {
+    foreach (['target', 'webform-tokens', 'submission'] as $type) {
       if (!isset($info['types'][$type])) {
         continue;
       }

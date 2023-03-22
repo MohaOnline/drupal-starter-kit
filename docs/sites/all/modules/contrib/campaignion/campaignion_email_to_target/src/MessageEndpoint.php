@@ -128,7 +128,7 @@ class MessageEndpoint {
     if (!$templates) {
       $templates[] = new MessageTemplate([
         'subject' => '',
-        'header' => t("Dear [email-to-target:salutation],\n"),
+        'header' => t("Dear [target:salutation],\n\n"),
         'message' => '',
         'footer' => t("\n\nYours sincerely,\n[submission:values:first_name] [submission:values:last_name]\n[submission:values:street_address]\n[submission:values:postcode]"),
       ]);

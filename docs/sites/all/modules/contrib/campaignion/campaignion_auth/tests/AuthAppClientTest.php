@@ -36,7 +36,7 @@ class AuthAppClientTest extends \DrupalUnitTestCase {
     $api = $this->instrumentedApi();
     $api->expects($this->once())
       ->method('send')
-      ->with('token/org1', [], [
+      ->with('token', [], [
         'public_key' => 'pk_',
         'secret_key' => 'sk_',
       ], [

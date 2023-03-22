@@ -16,7 +16,7 @@ foreach ($messages as $message): ?>
   <hr>
 <?php endif; ?>
 <div class="e2t-message">
-<h3><?php echo t('Email to: @name with subject line “@subject”', ['@name' => $message->display, '@subject' => $message->subject]); ?></h3>
+<h3><?php echo t('Message to: @name with subject line “@subject”', ['@name' => $message->display, '@subject' => $message->subject]); ?></h3>
 <?php echo _filter_autop($message->header); ?>
 <?php echo _filter_autop($message->message); ?>
 <?php echo _filter_autop($message->footer); ?>

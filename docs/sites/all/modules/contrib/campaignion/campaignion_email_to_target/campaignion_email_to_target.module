@@ -134,13 +134,12 @@ function campaignion_email_to_target_token_info() {
     try {
       $api = Container::get()->loadService('campaignion_email_to_target.api.Client');
       $dataset = $api->getDataset($ds_name);
-      $type = 'email-to-target';
-      $info['types'][$type] = [
-        'name' => t('Email-to-Target dataset: %name', ['%name' => $dataset->title]),
+      $info['types']['target'] = [
+        'name' => t('Target dataset: %name', ['%name' => $dataset->title]),
         'description' => t('Replace values based on the selected target(s).'),
       ];
       foreach ($dataset->attributes as $attribute) {
-        $info['tokens'][$type][$attribute->key] = [
+        $info['tokens']['target'][$attribute->key] = [
           'name' => $attribute->title,
           'description' => $attribute->description,
         ];
@@ -152,9 +151,9 @@ function campaignion_email_to_target_token_info() {
     }
   }
 
-  $info['tokens']['submission']['email-to-target-messages'] = [
-    'name' => t('The messages sent to targets'),
-    'description' => t('The messages sent to E2T targets.'),
+  $info['tokens']['submission']['target-messages'] = [
+    'name' => t('The messages directed at the targets'),
+    'description' => t('The messages directed at the targets.'),
   ];
 
   return $info;
@@ -169,8 +168,8 @@ function campaignion_email_to_target_tokens($type, array $tokens, array $data = 
     $submission = new Submission($node, $s);
     $replacements = Tokens::submissionTokens($tokens, $submission);
   }
-  if ($type == 'email-to-target' && !empty($data['email-to-target'])) {
-    $replacements = Tokens::messageTokens($tokens, $data['email-to-target']);
+  if ((($type == 'email-to-target') || ($type == 'target')) && !empty($data['target'])) {
+    $replacements = Tokens::messageTokens($tokens, $data['target']);
   }
   return $replacements;
 }
@@ -182,7 +181,7 @@ function campaignion_email_to_target_webform_component_info() {
   // Component types may only have 16 chars. So we can't use our namespace.
   $component_info['e2t_selector'] = [
     'label' => t('Target selector & Message editor'),
-    'description' => t('Allows users to select the target of an email to target action and allows them to edit the messages.'),
+    'description' => t('Allows users to select the target and edit the messages.'),
     'file' => 'webform.php',
     'features' => [],
   ];
@@ -267,7 +266,7 @@ function campaignion_email_to_target_theme() {
     ],
     'template' => 'campaignion-email-to-target-mail',
   ];
-  $hooks['campaignion_email_to_target_messages_token'] = [
+  $hooks['campaignion_target_messages_token'] = [
     'variables' => [
       'messages' => NULL,
       'submission' => NULL,

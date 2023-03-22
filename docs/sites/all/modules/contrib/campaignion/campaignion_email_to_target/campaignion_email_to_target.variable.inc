@@ -16,5 +16,12 @@ function campaignion_email_to_target_variable_info($options) {
     'default' => '',
     'localize' => FALSE,
   ];
+  $v['campaignion_email_to_target_dataset_query'] = [
+    'title' => t('Dataset GET-query string'),
+    'description' => t('Default query parameters for the dataset listing including the leading question mark.'),
+    'type' => 'string',
+    'default' => '',
+    'localize' => FALSE,
+  ];
   return $v;
 }

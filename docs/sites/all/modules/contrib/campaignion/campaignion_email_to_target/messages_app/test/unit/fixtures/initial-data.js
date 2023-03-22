@@ -5,17 +5,17 @@ export default {
       'description': 'Replace values based on the selected target(s).',
       'tokens': [
         {
-          'token': '[email-to-target:constituency.name]',
+          'token': '[target:constituency.name]',
           'title': 'Constituency name',
           'description': ''
         },
         {
-          'token': '[email-to-target:constituency.country.code]',
+          'token': '[target:constituency.country.code]',
           'title': 'Country code',
           'description': 'Country code (E, N, S or W)'
         },
         {
-          'token': '[email-to-target:constituency.country.name]',
+          'token': '[target:constituency.country.name]',
           'title': 'Country name',
           'description': 'Country name (ie. England)'
         }
@@ -53,7 +53,7 @@ export default {
       'urlLabel': '',
       'message': {
         'subject': '',
-        'header': 'Dear [email-to-target:salutation],\n',
+        'header': 'Dear [target:salutation],\n\n',
         'footer': '\n\nYours sincerely,\n[submission:values:first_name] [submission:values:last_name]\n[submission:values:street_address]\n[submission:values:postcode]',
         'body': ''
       }

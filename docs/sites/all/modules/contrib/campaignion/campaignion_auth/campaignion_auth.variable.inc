@@ -27,7 +27,7 @@ function campaignion_auth_variable_info($options) {
     'title' => t('Impact-stack organization'),
     'description' => t('Machine name of the impact-stack organization owning the data of this installation.'),
     'type' => 'string',
-    'default' => basename(conf_path()),
+    'default' => 'impact-stack>' . basename(conf_path()),
     'localize' => FALSE,
   ];
   return $v;

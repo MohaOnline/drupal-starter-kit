@@ -23,8 +23,8 @@ features[field_instance][] = field_collection_item-campaignion_overlay_options-c
 features[field_instance][] = field_collection_item-campaignion_overlay_options-campaignion_overlay_introduction
 features[views_view][] = actions_reference
 
-; Information added by Drupal.org packaging script on 2023-02-14
-version = "7.x-2.34"
+; Information added by Drupal.org packaging script on 2023-03-14
+version = "7.x-2.35"
 core = "7.x"
 project = "campaignion"
-datestamp = "1676391192"
+datestamp = "1678817142"

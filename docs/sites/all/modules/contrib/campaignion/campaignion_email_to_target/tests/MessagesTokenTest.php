@@ -66,10 +66,11 @@ class MessagesTokenTest extends DrupalUnitTestCase {
     $token_data['node'] = $this->nodeStub($components);
     $token_data['webform-submission'] = $this->submissionStub($data);
 
-    $actual = token_replace('[submission:email-to-target-messages]', $token_data);
+    $actual = token_replace('[submission:target-messages]', $token_data);
+    $actual_old = token_replace('[submission:email-to-target-messages]', $token_data);
     $expected = <<<STR
 <div class="e2t-message">
-<h3>Email to: Display name with subject line “Subject line”</h3>
+<h3>Message to: Display name with subject line “Subject line”</h3>
 <p>Header<br />
 with breaks</p>
 <p>Content<br />
@@ -81,6 +82,7 @@ Footer</p>
 
 STR;
     $this->assertEqual($expected, $actual);
+    $this->assertEqual($expected, $actual_old);
   }
 
 }

@@ -35,7 +35,7 @@ abstract class MessageTemplateInstance {
     if (empty($target['display_name']) && !empty($target['salutation'])) {
       $target['display_name'] = $target['salutation'];
     }
-    $data['email-to-target'] = $target;
+    $data['target'] = $target;
     $data['webform-submission'] = $submission;
     if ($submission) {
       $data['node'] = $submission->node;

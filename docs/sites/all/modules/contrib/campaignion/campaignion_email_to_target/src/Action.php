@@ -86,7 +86,10 @@ class Action extends ActionBase {
    * Create a link to view the action in test-mode.
    */
   public function testLink($title, $query = [], $options = []) {
-    return $this->_testLink($title, $query, $options);
+    if ($this->channel()->testModeAvailable()) {
+      return $this->_testLink($title, $query, $options);
+    }
+    return NULL;
   }
 
   /**

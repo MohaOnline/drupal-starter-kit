@@ -13,17 +13,27 @@ use Drupal\little_helpers\Webform\Webform;
  * Implements hook_init().
  */
 function campaignion_tracking_init() {
+  $events = module_invoke_all('campaignion_tracking_events');
+  drupal_alter('campaignion_tracking_events', $events);
+  $events_json = drupal_json_encode(array_filter(array_values($events)));
+  // Drupal.settings are always rendered as last <script> in the <head> so a
+  // inline script is used to set the variable early.
+  // See: drupal_pre_render_scripts()
+  $snippet = <<<SCRIPT
+Drupal.campaignion_tracking = {'events': JSON.parse('$events_json')};
+SCRIPT;
+  drupal_add_js($snippet, [
+    'type' => 'inline',
+    'every_page' => TRUE,
+    'group' => JS_LIBRARY,
+    'weight' => 10,
+  ]);
   $module_path = drupal_get_path('module', 'campaignion_tracking');
   drupal_add_js($module_path . '/js/events.js', [
     'every_page' => TRUE,
     'group' => JS_LIBRARY,
-    // Should be before drupal.js with weight -1 to run before behaviors.
-    'weight' => -5,
+    'weight' => 11,
   ]);
-  $events = module_invoke_all('campaignion_tracking_events');
-  drupal_alter('campaignion_tracking_events', $events);
-  $settings['campaignion_tracking']['events'] = array_filter(array_values($events));
-  drupal_add_js($settings, ['type' => 'setting']);
 }
 
 /**
