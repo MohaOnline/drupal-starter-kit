@@ -256,9 +256,9 @@ function _weather_update_places($fc) {
   // geoid, latitude, longitude, country, name.
   $place['geoid'] = $fc->location->location['geobase'] . "_" . $fc->location->location['geobaseid'];
   $place['latitude'] = (string) $fc->location->location['latitude'];
-  $place['latitude'] = round($place['latitude'], 5);
+  $place['latitude'] = round((float) $place['latitude'], 5);
   $place['longitude'] = (string) $fc->location->location['longitude'];
-  $place['longitude'] = round($place['longitude'], 5);
+  $place['longitude'] = round((float) $place['longitude'], 5);
   $place['country'] = (string) $fc->location->country;
   $place['name'] = (string) $fc->location->name;
   $url = (string) $fc->credit->link['url'];

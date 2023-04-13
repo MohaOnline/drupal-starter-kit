@@ -344,6 +344,10 @@ function weather_get_weather($geoid, $days = 0, $detailed = TRUE) {
     )->fetchAssoc();
     // If there is no entry yet, set up initial values.
     if ($meta === FALSE) {
+      // Ensure that $meta is an array from here on.
+      // Autovivification is deprecated in PHP 8.1 and will
+      // throw an error in PHP 9.
+      $meta = [];
       $meta['geoid'] = $geoid;
       $meta['last_update'] = $current_utc_time;
       $meta['next_update'] = $current_utc_time;
