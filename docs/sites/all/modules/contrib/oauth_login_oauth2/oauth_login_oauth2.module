@@ -2,6 +2,36 @@
 include 'includes/Handler.php';
 
 /**
+ * Implements hook_help().
+ */
+function oauth_login_oauth2_help($path, $arg)
+{
+    global $base_url;
+    switch ($path) {
+        case 'admin/help#oauth_login_oauth2':
+            $url = $base_url. '/admin';
+            $moduleLink = $url . '/config/people/oauth_login_oauth2';
+            $moduleLandingPage = 'https://plugins.miniorange.com/drupal-sso-oauth-openid-single-sign-on';
+            $setup_guides = 'https://plugins.miniorange.com/guide-to-enable-miniorange-oauth-client-for-drupal';
+            $output = '<h3>' . t('About <a target="_blank" href="' . $moduleLandingPage . '">[Know more]</a>') . '</h3>';
+            $output .= '<p>' . t('Drupal OAuth & OpenID Connect Login - OAuth2 Login SSO Login module for Drupal Single Sign-On allows users to login into Drupal with OAuth 2.0 and OpenID compliant applications such as Azure AD, Azure B2C, AWS Cognito, Google, Discord, Microsoft, Keycloak, OKTA, Salesforce, Wild Apricot, WHMCS, etc.  This module allows your Drupal site to act as a OAuth Client which can be configured to establish the trust between the Drupal site and various OAuth/OpenID Connect providers to securely authenticate the user into the Drupal site.') . '</p>';
+            $output .= '<h3>' . t('Configuration') . '</h3>';
+            $output .= '<p>' . t('Configure miniOrange OAuth Client under Configuration » <a target = "_blank" href=" ' . $url . ' ">People</a> » <a target = "_blank" href=" ' . $moduleLink . ' ">miniOrange OAuth Login</a>:') . '</p>';
+            $output .= '<p>
+                           <ol>
+                              <li>' . t('In the <a target="_blank" href="' . $moduleLink . '">Configure OAuth tab </a> of the module, you can configure your OAuth provider. You can also refer these <a target="_blank" href="' . $setup_guides . '">Setup Guides</a>.') . '</li>
+                              <li>' . t('Once the configuration is done, please click on the <strong>Test Configuration</strong> button on the same page to confirm the configurations.') . '</li>
+                              <li>' . t('If you need any assistance, just send us a query at <a href="mailto:drupalsupport@xecurify.com?subject=Drupal OAuth Login module - Need assistance">drupalsupport@xecurify.com</a> and we will get back to you very soon.') . '</li>
+                           </ol>
+                        </p>';
+            $output .= '<h3>' . t('Setup Guides') . '</h3>';
+            $output .= '<p>' . t('Click <a target="_blank" href="' . $setup_guides . '">here</a> to check out the setup guides for different OAuth/OpenID providers.') . '</p>';
+            return $output;
+    }
+}
+
+
+/**
  * Implements hook_menu().
  */
 
@@ -62,7 +92,7 @@ function oauth_login_oauth2_menu()
     );
 
     $items['admin/config/people/oauth_login_oauth2/request_for_demo'] = array(
-        'title' => 'Request For Demo',
+        'title' => 'Request for Trial',
         'weight' => -3,
         'type' => MENU_LOCAL_TASK,
         'access arguments' => array('administer site configuration'),
@@ -123,7 +153,7 @@ function oauth_login_oauth2_form_alter(&$form, &$form_state, $form_id) {
     $module_link = request_path();
 
     if ( $is_admin && strpos($module_link, 'oauth_login_oauth2') !== false ) {
-        drupal_set_message( t('<strong>If you want to test out the features that we provide in the paid versions of our module to ensure your business use case is fulfilled, please drop us an email at <a target="_blank" href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a> for the 7-days trial</strong>.'), 'warning');
+        drupal_set_message( t('<strong>If you want to test out the features that we provide in the paid versions of our module to ensure your business use case is fulfilled, please drop us an email at <a target="_blank" href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a> for the 7-days trial</strong>.'), 'warning',false);
     }
 
     global $base_url;
@@ -306,27 +336,20 @@ function test_config()
     /*************=================== Create user if not already present. ====================*********/
 
     if (!isset($account->uid)) {
-        // Check for number of auto-created users
-        if($mo_count <= 10)
-        {
-            $mo_count = $mo_count + 1;
-            variable_set('miniorange_oauth_client_free_users',$mo_count);
-            $default_role = 'authenticated user';
-            $random_password = user_password(8);
-            $result = db_select('role', 'rid')
-                ->fields('rid')
-                ->condition('name', $default_role,'=')
-                ->execute()
-                ->fetchAssoc();
-            $dc[$result['rid']]=$default_role;
-            $new_user = array(
-                'name' => $name,
-                'mail' => $email,
-                'pass' => $random_password,
-                'status' => 1,
-                'roles' =>  $dc
-            );
-            $account = user_save(NULL, $new_user);
+        echo '<div style="font-family:Calibri;padding:0 3%;">';
+            echo '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center;border:1px solid #E6B3B2;font-size:18pt;"> ERROR</div>
+                                <div style="color: #a94442;font-size:14pt; margin-bottom:20px;"><p><strong>Error: </strong>User Not Found in Drupal.</p>
+
+                                    <p>You can only log in the existing Drupal users in this version of the module.
+                                    <br>Please upgrade to either the Standard, Premium or the Enterprise version of the module in order to create unlimited new users.</p>
+                                </div>
+                                <div style="margin:3%;display:block;text-align:center;"></div>
+                                <div style="margin:3%;display:block;text-align:center;">
+                                    <form action="'.$base_url.'" method ="post">
+                                        <input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;box-sizing: border-box;border-color: #0073AA;box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;color: #FFF;"type="submit" value="Done">
+                                    </form>
+                                </div>';
+             exit;
         }
         else{
             echo '<br><br><br><br><br><div style="color: #111010;background-color: #fadbdb; padding:2%;margin-bottom:20px;text-align:center;
@@ -334,7 +357,7 @@ function test_config()
                         You can create only 10 new users in this version of the plugin/module. <br>Please upgrade to the enterprise version of the plugin in order to create unlimited new users.</div>';
             exit;
         }
-    }
+
     // Flood control check and check if user is blocked.
     $redirect_url ='';
     flood_clear_event($account->name);

@@ -15,13 +15,12 @@ function miniorange_oauth_client_request_for_demo($form,$form_state)
     );
 
     $form['markup_1'] = array(
-        '#markup' => '<h2>Request for demo</h2><hr><br>'
+        '#markup' => '<h2>Request for Trial</h2><hr><br>'
     );
 
     $form['markup_2'] = array(
         '#markup' => '<div class="mo_oauth_highlight_background_note_export"><p><strong>Want to test any of the Premium module before purchasing? </strong></p>
-            <p>Just send us a request, We will setup a demo site for you on our cloud with the premium module and provide you with the administrator credentials.
-                You can configure it with your OAuth Server and test all the premium features as per your requirement.</p>
+            <p>Just send us a query, and we will provide you with the full feature trial of the module accordingly.</p>
         </div><br>',
     );
 

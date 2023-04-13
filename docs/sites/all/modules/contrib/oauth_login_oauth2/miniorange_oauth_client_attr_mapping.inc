@@ -47,7 +47,7 @@
 
         $form['markup_cam'] = array(
             '#markup' => '<br><h3>Custom Attribute Mapping <a href="' . $base_url . '/admin/config/people/oauth_login_oauth2/licensing"><b>[Standard, Premium, Enterprise]</b></a></h3>
-                          <div class="mo_saml_highlight_background_note_1">Add the Drupal field attributes in the Attribute Name textfield and add the OAuth Server attributes that you need to map with the drupal attributes in the OAuth Server Attribute Name textfield. Drupal Field Attributes will be of type text. Add the machine name of the attribute in the Drupal Attribute textfield. 
+                          <div class="mo_saml_highlight_background_note_1">Add the Drupal field attributes in the Attribute Name textfield and add the OAuth Server attributes that you need to map with the drupal attributes in the OAuth Server Attribute Name textfield. Drupal Field Attributes will be of type text. Add the machine name of the attribute in the Drupal Attribute textfield.
                           <br><b>For example:</b> If the attribute name in the drupal is name then its machine name will be field_name.</div><br>',
         );
 
@@ -155,7 +155,6 @@
 
         $form['miniorange_oauth_client_attr_setup_button'] = array(
             '#type' => 'submit',
-            '#id' => 'button_config_center',
             '#value' => t('Save Configuration'),
             '#disabled' => TRUE,
             '#submit' => array('miniorange_oauth_client_attr_setup_submit'),

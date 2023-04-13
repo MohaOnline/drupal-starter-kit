@@ -87,7 +87,7 @@ function miniorange_oauth_client_license($form, $form_state)
                                 <li>&#x2714;</li>
                                 <li>&#x2714;</li>
                                 <li>&#x2714;</li>
-                                <li>Upto 5 Users </li>
+                                <li></li>
                                 <li> </li>
                                 <li> </li>
                                 <li> </li>
@@ -197,9 +197,9 @@ function miniorange_oauth_client_license($form, $form_state)
 <p style="padding-left: 1.5%"><b> Steps to Upgrade to Premium Module -</b></p>
  <p style="padding-left: 1.5%">1. After Clicking on the <b>Click to upgrade</b> button, you will be redirected to miniOrange Login Console. Enter your username and password with which you created an account with us. After that you will be redirected to payment page.<br>
     2. Enter your card details and complete the payment. On successful payment completion, you will see the link to download the premium module.<br>
-    3. Once you download the premium module, first delete existing module then install the premium module.<br><br>       
+    3. Once you download the premium module, first delete existing module then install the premium module.<br><br>
  * Multiple OAuth providers are supported using Xecurify Broker service. For more information contact us at using the <b>Support </b> button or by dropping us an email at <a href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a></p><br>
-    <p style="padding-left: 1.5%"><b>10 Days Return Policy - </b><br><br> 
+    <p style="padding-left: 1.5%"><b>10 Days Return Policy - </b><br><br>
     At miniOrange, we want to ensure that you are 100% happy with your purchase. If the module you purchased is not working as advertised and you have attempted to resolve any issues with our support team, which could not get resolved, we will refund the whole amount given that you raised a request for refund within the first 10 days of the purchase. Please email us at <a href="mailto:drupalsupport@xecurify.com">drupalsupport@xecurify.com</a> for any queries regarding the return policy.</p><br><br>
     </body>
     </html>',

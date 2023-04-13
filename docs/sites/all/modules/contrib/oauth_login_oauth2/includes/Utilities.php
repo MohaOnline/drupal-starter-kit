@@ -57,7 +57,7 @@ class Utilities {
 
         $form['miniorange_oauth_client_redirect_demo'] = array(
             '#type' => 'submit',
-            '#value' => t('Request for Demo'),
+            '#value' => t('Request for Trial'),
             '#submit' => array('rfd'),
             '#limit_validation_errors' => array(),
             '#attributes' => array('style' => 'background: #337ab7;color: #ffffff;text-shadow: 0 -1px 1px #337ab7, 1px 0 1px #337ab7, 0 1px 1px #337ab7, -1px 0 1px #337ab7;box-shadow: 0 1px 0 #337ab7;border-color: #337ab7 #337ab7 #337ab7;display:block;float:right;'),
@@ -84,7 +84,7 @@ class Utilities {
 
         $form['miniorange_saml_idp_support_side_button'] = array(
             '#type' => 'button',
-            '#value' => t('Request for Demo'),
+            '#value' => t('Request for Trial'),
             '#attributes' => array('style' => 'font-size: 15px;cursor: pointer;width: 170px;height: 35px;
                 background: rgba(43, 141, 65, 0.93);color: #ffffff;border-radius: 3px;transform: rotate(90deg);text-shadow: none;
                 position: relative;margin-left: -102px;top: 115px;'),
@@ -96,8 +96,7 @@ class Utilities {
 
 
         $form['markup_2'] = array(
-            '#markup' => '<b>Want to test any of the Premium module before purchasing?</b> <br>Just send us a request, We will setup a demo site for you on our cloud and provide you with the administrator credentials.
-                So that you can test all the premium features as per your requirement.
+            '#markup' => '<b>Want to test any of the Premium module before purchasing?</b> <br>Just send us a query, and we will provide you with the full feature trial of the module accordingly.
         <br>',
         );
 
@@ -180,7 +179,7 @@ class Utilities {
         }
     }
 
-    public static function drupal_is_cli() 
+    public static function drupal_is_cli()
     {
         if(!isset($_SERVER['SERVER_SOFTWARE']) && (php_sapi_name() == 'cli' || (is_numeric($_SERVER['argc']) && $_SERVER['argc'] > 0)))
             return TRUE;
@@ -241,7 +240,7 @@ class Utilities {
         );
 
         $form['miniorange_oauth_guide_table_list'] = array(
-            '#markup' => '<div class="table-responsive mo_guide_text-center" style="font-family: sans-serif;font-size: 15px;">          
+            '#markup' => '<div class="table-responsive mo_guide_text-center" style="font-family: sans-serif;font-size: 15px;">
                 <table class="mo_guide_table mo_guide_table-striped mo_guide_table-bordered" style="border: 1px solid #ddd;max-width: 100%;border-collapse: collapse;">
                     <thead>
                         <tr><th class="mo_guide_text-center" colspan="2"><strong>Providers</strong></th></tr>
@@ -355,8 +354,9 @@ class Utilities {
     {
         global $base_url;
         $server_attrs = variable_get('miniorange_oauth_client_attr_list_from_server');
-        $server_attrs = json_decode($server_attrs, TRUE);
-        if(empty($server_attrs)){
+        if (isset($server_attrs) && !empty($server_attrs)) {
+            $server_attrs = json_decode($server_attrs, TRUE);
+        }else{
             Utilities::spConfigGuide($form, $form_state);
             return;
         }
@@ -382,7 +382,7 @@ class Utilities {
                     <thead>
                         <tr>
                             <th class="mo_guide_text-center mo_td_values">ATTRIBUTE NAME</th>
-                            <th class="mo_guide_text-center mo_td_values">ATTRIBUTE VALUE</th>                         
+                            <th class="mo_guide_text-center mo_td_values">ATTRIBUTE VALUE</th>
                         </tr>
                     </thead>',
         );

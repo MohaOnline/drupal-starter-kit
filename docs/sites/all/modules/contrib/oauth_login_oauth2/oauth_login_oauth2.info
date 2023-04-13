@@ -10,8 +10,8 @@ files[] = includes/Utilities.php
 files[] = includes/miniorange_support.php
 scripts[] = js/testconfig.js
 
-; Information added by Drupal.org packaging script on 2022-03-03
-version = "7.x-1.20"
+; Information added by Drupal.org packaging script on 2023-03-23
+version = "7.x-1.23"
 core = "7.x"
 project = "oauth_login_oauth2"
-datestamp = "1646314964"
+datestamp = "1679555436"
