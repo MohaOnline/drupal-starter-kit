@@ -95,22 +95,4 @@ class SAML2_Response
         return $this->destination;
     }
 
-    /**
-     * Convert the response message to an XML element.
-     *
-     * @return DOMElement This response.
-     */
-    public function toUnsignedXML()
-    {
-        $root = parent::toUnsignedXML();
-
-        /** @var SAML2_Assertion|SAML2_EncryptedAssertion $assertion */
-        foreach ($this->assertions as $assertion) {
-
-            $assertion->toXML($root);
-        }
-
-        return $root;
-    }
-
 }

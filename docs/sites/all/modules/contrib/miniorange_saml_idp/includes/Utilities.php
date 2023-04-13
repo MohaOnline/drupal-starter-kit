@@ -50,7 +50,7 @@ class Utilities {
                         <tr><th class="mo_guide_text-center" style="font-weight:bold;">Service Providers</th><th class="mo_guide_text-center" style="font-weight:bold;">Links</th></tr>
                     </thead>
                     <tbody style="color:gray;">
-                        <tr><td>Tableau</td><td><strong><a href="https://plugins.miniorange.com/configure-tableau-sp-as-sp-and-drupal-8-as-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
+                        <tr><td>Tableau</td><td><strong><a href="https://plugins.miniorange.com/configure-tableau-as-sp-and-drupal-as-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Zendesk	</td><td><strong><a href="https://plugins.miniorange.com/zendesk-single-sign-sso-for-drupal-8-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Workplace by Facebook</td><td><strong><a href="https://plugins.miniorange.com/guide-drupal-idp-workplace-sp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>
                         <tr><td>Canvas LMS</td><td><strong><a href="https://plugins.miniorange.com/guide-to-configure-canvas-lms-as-sp-and-drupal-as-idp" class="mo_guide_text-color" target="_blank">Click Here</a></strong></td></tr>

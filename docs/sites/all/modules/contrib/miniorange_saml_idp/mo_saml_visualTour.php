@@ -6,12 +6,15 @@
 
     $Tour_taken = variable_get('mo_saml_tourTaken_' . getPage_name(), false);
 
+    $https = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on' ? 'https' : 'http';
+    $request_scheme = isset($_SERVER['REQUEST_SCHEME']) ? $_SERVER['REQUEST_SCHEME'] : $https;
+
     drupal_add_js(array('moTour' => array(
         'pageID' => getPage_name(),
         'tourData' => getTourData(getPage_name(),$Tour_taken),
         'tourTaken' => $Tour_taken,
         'addID' => addID(),
-        'pageURL' => $_SERVER['REQUEST_SCHEME'] . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
+        'pageURL' => $request_scheme . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'],
 
     )),array('type' => 'setting'));
     variable_set('mo_saml_tourTaken_' . getPage_name(), true);
