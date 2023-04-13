@@ -1,3 +1,7 @@
+Panopoly WYSIWYG 7.x-1.91, 2023-04-05
+-------------------
+- Cannot install due to TinyMCE download location no longer available.
+
 Panopoly WYSIWYG 7.x-1.90, 2022-07-22
 -------------------
 - No changes since last release.
