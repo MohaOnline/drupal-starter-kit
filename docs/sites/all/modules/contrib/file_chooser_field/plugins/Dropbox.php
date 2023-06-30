@@ -85,7 +85,11 @@ class DropboxChooserAPI extends FileChooserFieldPlugin {
    * {@inheritdoc}
    */
   public function download($destination, $url) {
-    return system_retrieve_file($url, $destination);
+    if (strpos($url, 'https://dl.dropboxusercontent.com/1/view/') === 0) {
+      return system_retrieve_file($url, $destination);
+    }
+
+    return FALSE;
   }
 
 }

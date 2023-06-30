@@ -286,7 +286,17 @@ function file_chooser_field_save_upload($element, $file_url) {
   // Download remote file.
   if (strstr($file_url, '::::')) {
     list($phpClassName, $remote_file) = explode("::::", $file_url);
+
+    $trusted_plugins = file_chooser_field_load_plugin_class_names();
+    if (!in_array($phpClassName, $trusted_plugins)) {
+      return FALSE;
+    }
+
     $local_file = file_chooser_field_plugin_method($phpClassName, 'download', array($destination, $remote_file));
+
+    if (!$local_file) {
+      return FALSE;
+    }
     // Invoke hook_file_chooser_field_download() when remote file gets downloaded.
     module_invoke_all('file_chooser_field_download', $phpClassName, $remote_file, $local_file);
   }

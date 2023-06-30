@@ -12,9 +12,8 @@ files[] = plugins/GoogleDrive.php
 files[] = plugins/OneDrive.php
 files[] = plugins/Example.php
 
-; Information added by Drupal.org packaging script on 2015-10-31
-version = "7.x-1.12"
+; Information added by Drupal.org packaging script on 2023-05-16
+version = "7.x-1.13"
 core = "7.x"
 project = "file_chooser_field"
-datestamp = "1446333840"
-
+datestamp = "1684261269"

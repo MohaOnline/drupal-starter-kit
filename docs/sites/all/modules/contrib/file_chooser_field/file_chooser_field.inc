@@ -33,6 +33,21 @@ function file_chooser_field_load_plugins() {
 }
 
 /**
+ * Get all available plugin class names.
+ */
+function file_chooser_field_load_plugin_class_names() {
+  $class_names = array();
+
+  $plugin_hooks = module_invoke_all('file_chooser_field_plugins');
+
+  foreach ($plugin_hooks as $plugin) {
+    $class_names[] = $plugin['phpClassName'];
+  }
+
+  return $class_names;
+}
+
+/**
  * Call plugin methods.
  */
 function file_chooser_field_plugin_method($class, $method, $args = array()) {

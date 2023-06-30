@@ -59,9 +59,14 @@ abstract class FileChooserFieldPlugin {
   abstract public function submitForm($form, &$form_state);
 
   /**
-   * Download remote file to Drupal.
+   * Download remote file to Drupal. Be very careful with this, the download
+   * method MUST validate the returned URL.
    *
-   * @return public://[remote-file-name]
+   * @return mixed
+   *  One of these possibilities:
+   *   - public://[remote-file-name]
+   *   - If validation fails, FALSE
+   *
    * @see file_chooser_field_save_upload().
    */
   abstract public function download($destination, $url);

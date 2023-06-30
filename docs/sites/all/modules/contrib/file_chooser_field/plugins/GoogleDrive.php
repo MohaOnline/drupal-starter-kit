@@ -132,7 +132,7 @@ class GooglePickerAPI extends FileChooserFieldPlugin {
    */
   public function download($destination, $url) {
     $local_file = '';
-    list($id, $orignal_name, $google_token) = explode('@@@', $url);
+    list($id, $original_name, $google_token) = explode('@@@', $url);
     $remote_url = 'https://www.googleapis.com/drive/v2/files/' . $id . '?alt=media';
     $options = array(
       'headers' => array(
@@ -141,7 +141,7 @@ class GooglePickerAPI extends FileChooserFieldPlugin {
     );
     $request = drupal_http_request($remote_url, $options);
     if ($request->code == 200) {
-      $local_file = file_unmanaged_save_data($request->data, $destination . '/' . $orignal_name);
+      $local_file = file_unmanaged_save_data($request->data, $destination . '/' . $original_name);
     }
     return $local_file;
   }

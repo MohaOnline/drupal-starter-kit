@@ -72,9 +72,13 @@ class Example extends FileChooserFieldPlugin {
    */
   public function download($destination, $url) {
     $local_file = '';
-    list($file_url, $orignal_name) = explode('@@@', $url);
-    $local_file = system_retrieve_file($file_url, $destination  . '/' . $orignal_name);
-    return $local_file;
+    list($file_url, $original_name) = explode('@@@', $url);
+
+    if (strpos($file_url, 'https://example.url') === 0) {
+      return system_retrieve_file($file_url, $destination  . '/' . $original_name);
+    }
+
+    return FALSE;
   }
 
 }
